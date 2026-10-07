@@ -1,0 +1,40 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "nav_home": "Home",
+  "nav_about": "About",
+  "nav_blog": "Blog",
+  "common_read_more": "Read more",
+  "common_search_placeholder": "Search articles and pages...",
+  "items_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} item",
+        "countPlural=*": "{count} items"
+      }
+    }
+  ],
+  "position_ordinal": [
+    {
+      "declarations": [
+        "input pos",
+        "local posOrdinal = pos: plural type=ordinal"
+      ],
+      "selectors": [
+        "posOrdinal"
+      ],
+      "match": {
+        "posOrdinal=one": "{pos}st",
+        "posOrdinal=two": "{pos}nd",
+        "posOrdinal=few": "{pos}rd",
+        "posOrdinal=*": "{pos}th"
+      }
+    }
+  ]
+}

@@ -6,17 +6,43 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "dev": "npm run messages:compile && astro dev --host 0.0.0.0 --port 3000",
+    "messages:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "npm run messages:compile && astro build && pagefind --site dist",
+    "smoke": "node scripts/smoke.mjs",
+    "clean": "rm -rf dist .astro src/paraglide",
+    "block:adapt": "node scripts/block-adapt.mjs",
+    "i18n:extract": "node scripts/i18n-extract.mjs",
+    "i18n:add": "node scripts/i18n-add.mjs",
+    "new:page": "node scripts/new-page.mjs",
+    "new:post": "node scripts/new-post.mjs",
+    "audit:i18n": "node scripts/audit-i18n.mjs"
   },
   "dependencies": {
+    "@astrojs/mdx": "^8.0.3",
+    "@inlang/paraglide-js": "^2.26.0",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.6",
+    "magic-string": "^1.4.3",
+    "pagefind": "^1.5.2",
     "tailwindcss": "^4.3.3"
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@pagefind/linux-x64",
+      "esbuild",
+      "sharp"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "knip": "^6.40.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
   }
 }

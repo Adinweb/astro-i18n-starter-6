@@ -1,3 +1,4 @@
-allowBuilds:
-  esbuild: true
-  sharp: true
+onlyBuiltDependencies:
+  - esbuild
+  - '@pagefind/linux-x64'
+  - sharp

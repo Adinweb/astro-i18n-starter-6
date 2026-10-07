@@ -1,0 +1,37 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "nav_home": "خانه",
+  "nav_about": "درباره ما",
+  "nav_blog": "وبلاگ",
+  "common_read_more": "ادامه مطلب",
+  "common_search_placeholder": "جستجو در مقالات و برگه\u200cها...",
+  "items_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} مورد",
+        "countPlural=*": "{count} مورد"
+      }
+    }
+  ],
+  "position_ordinal": [
+    {
+      "declarations": [
+        "input pos",
+        "local posOrdinal = pos: plural type=ordinal"
+      ],
+      "selectors": [
+        "posOrdinal"
+      ],
+      "match": {
+        "posOrdinal=*": "{pos}\u0645"
+      }
+    }
+  ]
+}

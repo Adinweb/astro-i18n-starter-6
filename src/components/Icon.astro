@@ -1,0 +1,30 @@
+---
+interface Props {
+  name: string;
+  size?: number | string;
+  class?: string;
+  'aria-hidden'?: boolean | 'true' | 'false';
+  'aria-label'?: string;
+}
+
+const {
+  name,
+  size = 20,
+  class: className = '',
+  'aria-hidden': ariaHidden = true,
+  'aria-label': ariaLabel,
+} = Astro.props;
+
+const sizePx = typeof size === 'number' ? `${size}px` : size;
+---
+
+<svg
+  class={className}
+  width={sizePx}
+  height={sizePx}
+  aria-hidden={ariaLabel ? undefined : ariaHidden}
+  aria-label={ariaLabel}
+  role={ariaLabel ? 'img' : 'presentation'}
+>
+  <use href={`/icons.svg#${name}`} />
+</svg>
