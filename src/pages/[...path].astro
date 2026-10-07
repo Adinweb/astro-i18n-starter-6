@@ -1,0 +1,23 @@
+---
+import { getSiteRoutes, type SiteRouteProps, type RouteType } from '@/libs/content/service';
+import PageView from '@/views/PageView.astro';
+import BlogPostView from '@/views/BlogPostView.astro';
+import BlogIndexView from '@/views/BlogIndexView.astro';
+
+export async function getStaticPaths() {
+  return await getSiteRoutes();
+}
+
+type Props = SiteRouteProps;
+const { routeType, entry, locale, alternates, url } = Astro.props;
+---
+
+{routeType === 'page' && entry && (
+  <PageView entry={entry} locale={locale} alternates={alternates} url={url} />
+)}
+{routeType === 'blog-entry' && entry && (
+  <BlogPostView entry={entry} locale={locale} alternates={alternates} url={url} />
+)}
+{routeType === 'blog-index' && (
+  <BlogIndexView locale={locale} alternates={alternates} url={url} />
+)}

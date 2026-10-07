@@ -1,0 +1,86 @@
+---
+import { render, type CollectionEntry } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getBreadcrumbs } from '@/libs/content/service';
+import { localizeHref } from '@/i18n/paths';
+import type { Locale } from '@/i18n/config';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  entry: CollectionEntry<'blog'>;
+  locale: Locale;
+  alternates: Record<Locale, string>;
+  url: string;
+}
+
+const { entry, locale, alternates, url } = Astro.props;
+const { Content } = await render(entry);
+
+const breadcrumbs = getBreadcrumbs(url, locale, { current: entry.data.title });
+const blogIndexHref = localizeHref('/blog', locale);
+
+const formattedDate = entry.data.publishedAt.toLocaleDateString(locale, {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<BaseLayout
+  title={entry.data.title}
+  description={entry.data.description}
+  locale={locale}
+  url={url}
+  alternates={alternates}
+>
+  <nav aria-label="Breadcrumbs" class="mb-6">
+    <ol class="flex flex-wrap items-center gap-2 text-xs text-muted">
+      {
+        breadcrumbs.map((crumb, idx) => (
+          <li class="flex items-center gap-2">
+            {idx > 0 && <span>/</span>}
+            {idx === breadcrumbs.length - 1 ? (
+              <span class="text-fg font-medium truncate max-w-xs">{crumb.label}</span>
+            ) : (
+              <a href={crumb.href} class="hover:text-primary transition-colors">
+                {crumb.label}
+              </a>
+            )}
+          </li>
+        ))
+      }
+    </ol>
+  </nav>
+
+  <article class="max-w-3xl">
+    <header class="border-b border-border pb-6 mb-8">
+      <div class="text-xs text-muted mb-2">
+        <span>{m.common_published_on({}, { locale })} </span>
+        <time datetime={entry.data.publishedAt.toISOString()}>
+          {formattedDate}
+        </time>
+      </div>
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-fg">
+        {entry.data.title}
+      </h1>
+      {entry.data.description && (
+        <p class="text-base text-muted mt-3">
+          {entry.data.description}
+        </p>
+      )}
+    </header>
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <footer class="mt-12 pt-6 border-t border-border">
+      <a
+        href={blogIndexHref}
+        class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+      >
+        ← {m.common_back_to_blog({}, { locale })}
+      </a>
+    </footer>
+  </article>
+</BaseLayout>

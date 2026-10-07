@@ -1,0 +1,86 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n/config';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  locale: Locale;
+  alternates: Record<Locale, string>;
+  url: string;
+}
+
+const { locale, alternates, url } = Astro.props;
+
+const allPosts = await getCollection('blog');
+const posts = allPosts
+  .filter((post) => {
+    if (post.data.draft) return false;
+    const parts = post.id.split('/');
+    const postLocale = parts[parts.length - 1];
+    return postLocale === locale;
+  })
+  .sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime());
+---
+
+<BaseLayout
+  title={m.nav_blog({}, { locale })}
+  description="Our latest articles, thoughts, and updates."
+  locale={locale}
+  url={url}
+  alternates={alternates}
+>
+  <div class="space-y-8">
+    <div class="border-b border-border pb-6">
+      <h1 class="text-3xl font-extrabold tracking-tight text-fg">
+        {m.nav_blog({}, { locale })}
+      </h1>
+      <p class="text-muted text-sm mt-2">
+        {m.items_count({ count: posts.length }, { locale })}
+      </p>
+    </div>
+
+    <div class="grid gap-6">
+      {
+        posts.map((post) => {
+          const postUrl =
+            locale === DEFAULT_LOCALE
+              ? `/blog/${post.data.slug}`
+              : `/${locale}/blog/${post.data.slug}`;
+
+          const formattedDate = post.data.publishedAt.toLocaleDateString(locale, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+
+          return (
+            <article class="p-6 rounded-xl border border-border bg-surface hover:border-primary/50 transition-colors shadow-xs">
+              <div class="text-xs text-muted mb-2">
+                <time datetime={post.data.publishedAt.toISOString()}>
+                  {formattedDate}
+                </time>
+              </div>
+              <h2 class="text-xl font-bold text-fg hover:text-primary transition-colors">
+                <a href={postUrl}>{post.data.title}</a>
+              </h2>
+              {post.data.description && (
+                <p class="text-sm text-muted mt-2 line-clamp-2">
+                  {post.data.description}
+                </p>
+              )}
+              <div class="mt-4">
+                <a
+                  href={postUrl}
+                  class="inline-flex items-center text-sm font-medium text-primary hover:underline"
+                >
+                  {m.common_read_more({}, { locale })} →
+                </a>
+              </div>
+            </article>
+          );
+        })
+      }
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,41 @@
+---
+import { siteConfig } from '@/libs/config/site';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n/config';
+
+interface Props {
+  title: string;
+  description?: string;
+  locale: Locale;
+  url: string;
+  alternates: Record<Locale, string>;
+}
+
+const { title, description = siteConfig.description, locale, url, alternates } = Astro.props;
+
+const canonicalUrl = new URL(url, siteConfig.url).href;
+const xDefaultUrl = alternates[DEFAULT_LOCALE]
+  ? new URL(alternates[DEFAULT_LOCALE], siteConfig.url).href
+  : canonicalUrl;
+---
+
+<title>{title} | {siteConfig.name}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonicalUrl} />
+
+{/* Hreflang Tags: count = locales.length + 1 */}
+{
+  Object.entries(alternates).map(([loc, path]) => (
+    <link
+      rel="alternate"
+      hreflang={loc}
+      href={new URL(path, siteConfig.url).href}
+    />
+  ))
+}
+<link rel="alternate" hreflang="x-default" href={xDefaultUrl} />
+
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content={locale} />

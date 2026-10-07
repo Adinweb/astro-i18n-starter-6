@@ -1,0 +1,34 @@
+/* eslint-disable */
+import { getLocale, experimentalStaticLocale } from '../runtime.js';
+
+/** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+
+/** @typedef {{}} Common_Not_Found_DescInputs */
+
+const en_common_not_found_desc = /** @type {(inputs: Common_Not_Found_DescInputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`The page you are looking for does not exist or has been moved.`)
+};
+
+const de_common_not_found_desc = /** @type {(inputs: Common_Not_Found_DescInputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Die gesuchte Seite existiert nicht oder wurde verschoben.`)
+};
+
+const fa_common_not_found_desc = /** @type {(inputs: Common_Not_Found_DescInputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`برگه‌ای که به دنبال آن هستید وجود ندارد یا منتقل شده است.`)
+};
+
+/**
+* | output |
+* | --- |
+* | "The page you are looking for does not exist or has been moved." |
+*
+* @param {Common_Not_Found_DescInputs} inputs
+* @param {{ locale?: "en" | "de" | "fa" }} options
+* @returns {LocalizedString}
+*/
+export const common_not_found_desc = /** @type {((inputs?: Common_Not_Found_DescInputs, options?: { locale?: "en" | "de" | "fa" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_Not_Found_DescInputs, { locale?: "en" | "de" | "fa" }, {}>} */ ((inputs = {}, options = {}) => {
+	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
+	if (locale === "de") return de_common_not_found_desc(inputs)
+	if (locale === "fa") return fa_common_not_found_desc(inputs)
+	return en_common_not_found_desc(inputs)
+});

@@ -1,0 +1,212 @@
+---
+import * as m from '@/paraglide/messages';
+import Icon from '@/components/Icon.astro';
+import type { Locale } from '@/i18n/config';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<div
+  id="search-dialog"
+  class="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/50 backdrop-blur-xs opacity-0 pointer-events-none transition-opacity duration-200"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="search-modal-title"
+  data-search-modal
+  data-locale={locale}
+  data-no-results={m.common_no_results({}, { locale })}
+  data-placeholder={m.common_type_to_search({}, { locale })}
+>
+  <div class="bg-surface text-fg rounded-xl shadow-2xl border border-border w-full max-w-xl overflow-hidden flex flex-col max-h-[70vh]">
+    <div class="flex items-center px-4 py-3 border-b border-border gap-3">
+      <Icon name="search" size={20} class="text-muted shrink-0" />
+      <input
+        id="search-input"
+        type="search"
+        placeholder={m.common_search_placeholder({}, { locale })}
+        class="w-full bg-transparent text-fg placeholder:text-muted focus:outline-none text-base"
+        autocomplete="off"
+      />
+      <button
+        id="search-close-btn"
+        type="button"
+        class="text-muted hover:text-fg p-1 rounded-md transition-colors cursor-pointer"
+        aria-label={m.common_close({}, { locale })}
+      >
+        <Icon name="close" size={18} />
+      </button>
+    </div>
+
+    <div id="search-results" class="overflow-y-auto p-4 flex flex-col gap-2 min-h-[120px]">
+      <p class="text-sm text-muted text-center py-6" id="search-placeholder-msg">
+        {m.common_type_to_search({}, { locale })}
+      </p>
+    </div>
+
+    <div class="px-4 py-2 border-t border-border bg-bg/50 text-xs text-muted flex items-center justify-between">
+      <span><kbd class="px-1.5 py-0.5 rounded bg-surface border border-border">ESC</kbd> {m.common_press_esc({}, { locale })}</span>
+      <span><kbd class="px-1.5 py-0.5 rounded bg-surface border border-border">⌘K</kbd></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  let searchData: Array<{ title: string; description: string; url: string; locale: string }> = [];
+  let isFetching = false;
+
+  function setupSearch() {
+    const dialog = document.querySelector<HTMLElement>('[data-search-modal]');
+    const input = document.getElementById('search-input') as HTMLInputElement | null;
+    const closeBtn = document.getElementById('search-close-btn');
+    const resultsContainer = document.getElementById('search-results');
+
+    if (!dialog || !input || !resultsContainer) return;
+
+    function openModal() {
+      dialog?.classList.remove('opacity-0', 'pointer-events-none');
+      dialog?.classList.add('opacity-100');
+      input?.focus();
+    }
+
+    function closeModal() {
+      dialog?.classList.add('opacity-0', 'pointer-events-none');
+      dialog?.classList.remove('opacity-100');
+      if (input) input.value = '';
+      if (resultsContainer) {
+        const placeholder = dialog?.dataset.placeholder || 'Type to search...';
+        resultsContainer.innerHTML = `<p class="text-sm text-muted text-center py-6">${placeholder}</p>`;
+      }
+    }
+
+    // Direct event listeners on buttons
+    closeBtn?.addEventListener('click', closeModal);
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) closeModal();
+    });
+
+    // Close when clicking an article link in results
+    resultsContainer.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement)?.closest('a')) {
+        closeModal();
+      }
+    });
+
+    async function performSearch(query: string) {
+      const activeLocale = dialog?.dataset.locale || 'en';
+      if (!query.trim()) {
+        const placeholder = dialog?.dataset.placeholder || 'Type to search...';
+        resultsContainer!.innerHTML = `<p class="text-sm text-muted text-center py-6">${placeholder}</p>`;
+        return;
+      }
+
+      // 1. Try Pagefind in production
+      try {
+        const pagefindUrl = '/pagefind/pagefind.js';
+        const pagefindModule = await import(/* @vite-ignore */ pagefindUrl);
+        await pagefindModule.init();
+        const search = await pagefindModule.search(query);
+        const results = await Promise.all(search.results.slice(0, 6).map((r: any) => r.data()));
+
+        const noResultsText = dialog?.dataset.noResults || 'No results';
+        if (results.length === 0) {
+          resultsContainer!.innerHTML = `<p class="text-sm text-muted text-center py-6">${noResultsText}</p>`;
+          return;
+        }
+
+        resultsContainer!.innerHTML = results
+          .map(
+            (r: any) => `
+            <a href="${r.url}" class="block p-3 rounded-lg hover:bg-surface-hover border border-transparent hover:border-border transition-colors">
+              <div class="font-medium text-fg text-sm">${r.meta?.title || r.url}</div>
+              <p class="text-xs text-muted line-clamp-2 mt-1">${r.excerpt || ''}</p>
+            </a>
+          `
+          )
+          .join('');
+        return;
+      } catch {
+        // Pagefind unavailable (e.g. in dev mode), proceed to dev fallback
+      }
+
+      // 2. Dev mode fallback using /api/search-dev.json
+      if (searchData.length === 0 && !isFetching) {
+        isFetching = true;
+        try {
+          const res = await fetch('/api/search-dev.json');
+          searchData = await res.json();
+        } catch {
+          searchData = [];
+        }
+        isFetching = false;
+      }
+
+      const q = query.toLowerCase();
+      const filtered = searchData
+        .filter((item) => item.locale === activeLocale)
+        .filter(
+          (item) =>
+            item.title.toLowerCase().includes(q) ||
+            item.description.toLowerCase().includes(q)
+        )
+        .slice(0, 6);
+
+      if (filtered.length === 0) {
+        const noResultsText = dialog?.dataset.noResults || 'No results';
+        resultsContainer!.innerHTML = `<p class="text-sm text-muted text-center py-6">${noResultsText}</p>`;
+        return;
+      }
+
+      resultsContainer!.innerHTML = filtered
+        .map(
+          (item) => `
+          <a href="${item.url}" class="block p-3 rounded-lg hover:bg-surface-hover border border-transparent hover:border-border transition-colors">
+            <div class="font-medium text-fg text-sm">${item.title}</div>
+            ${item.description ? `<p class="text-xs text-muted line-clamp-2 mt-1">${item.description}</p>` : ''}
+          </a>
+        `
+        )
+        .join('');
+    }
+
+    input.addEventListener('input', (e) => {
+      performSearch((e.target as HTMLInputElement).value);
+    });
+  }
+
+  // Global listeners (delegated)
+  document.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement)?.closest('[data-open-search]')) {
+      const dialog = document.querySelector<HTMLElement>('[data-search-modal]');
+      const input = document.getElementById('search-input') as HTMLInputElement | null;
+      dialog?.classList.remove('opacity-0', 'pointer-events-none');
+      dialog?.classList.add('opacity-100');
+      input?.focus();
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    const dialog = document.querySelector<HTMLElement>('[data-search-modal]');
+    const input = document.getElementById('search-input') as HTMLInputElement | null;
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      if (dialog?.classList.contains('opacity-0')) {
+        dialog.classList.remove('opacity-0', 'pointer-events-none');
+        dialog.classList.add('opacity-100');
+        input?.focus();
+      } else {
+        dialog?.classList.add('opacity-0', 'pointer-events-none');
+        dialog?.classList.remove('opacity-100');
+      }
+    } else if (e.key === 'Escape' && dialog && !dialog.classList.contains('opacity-0')) {
+      dialog.classList.add('opacity-0', 'pointer-events-none');
+      dialog.classList.remove('opacity-100');
+    }
+  });
+
+  setupSearch();
+  document.addEventListener('astro:page-load', setupSearch);
+</script>

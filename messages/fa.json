@@ -1,10 +1,18 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "nav_home": "خانه",
-  "nav_about": "درباره ما",
-  "nav_blog": "وبلاگ",
+  "common_back_home": "بازگشت به خانه",
+  "common_back_to_blog": "بازگشت به وبلاگ",
+  "common_change_language": "تغییر زبان",
+  "common_close": "بستن",
+  "common_no_results": "نتیجه\u200cای یافت نشد.",
+  "common_not_found_desc": "برگه\u200cای که به دنبال آن هستید وجود ندارد یا منتقل شده است.",
+  "common_not_found_title": "برگه پیدا نشد",
+  "common_press_esc": "برای بستن",
+  "common_published_on": "منتشر شده در",
   "common_read_more": "ادامه مطلب",
   "common_search_placeholder": "جستجو در مقالات و برگه\u200cها...",
+  "common_site_title": "استرو چندزبانه",
+  "common_type_to_search": "برای جستجو تایپ کنید...",
   "items_count": [
     {
       "declarations": [
@@ -20,6 +28,9 @@
       }
     }
   ],
+  "nav_about": "درباره ما",
+  "nav_blog": "وبلاگ",
+  "nav_home": "خانه",
   "position_ordinal": [
     {
       "declarations": [

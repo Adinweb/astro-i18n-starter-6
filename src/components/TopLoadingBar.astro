@@ -1,0 +1,137 @@
+---
+// TopLoadingBar: RTL-aware, persistent ClientRouter transition progress bar
+---
+
+<div
+  id="top-loading-bar-container"
+  transition:persist="top-loading-bar"
+  aria-hidden="true"
+>
+  <div id="top-loading-bar"></div>
+</div>
+
+<style>
+  #top-loading-bar-container {
+    position: fixed;
+    top: 0;
+    inset-inline-start: 0;
+    width: 100%;
+    height: 4px;
+    z-index: 999999;
+    pointer-events: none;
+  }
+
+  #top-loading-bar {
+    height: 100%;
+    width: 0%;
+    opacity: 0;
+    background-color: var(--color-primary, #6366f1);
+    box-shadow: 0 0 14px var(--color-primary, #6366f1), 0 0 6px var(--color-primary, #6366f1);
+  }
+</style>
+
+<script>
+  let trickleInterval: ReturnType<typeof setInterval> | null = null;
+  let resetTimeout: ReturnType<typeof setTimeout> | null = null;
+  let finishTimeout: ReturnType<typeof setTimeout> | null = null;
+  let startTimestamp = 0;
+  const MIN_DISPLAY_MS = 320; // Guarantees the loading bar is clearly visible
+
+  function getBar(): HTMLElement | null {
+    return document.getElementById('top-loading-bar');
+  }
+
+  function start() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const bar = getBar();
+    if (!bar) return;
+
+    if (resetTimeout) {
+      clearTimeout(resetTimeout);
+      resetTimeout = null;
+    }
+    if (finishTimeout) {
+      clearTimeout(finishTimeout);
+      finishTimeout = null;
+    }
+    if (trickleInterval) {
+      clearInterval(trickleInterval);
+      trickleInterval = null;
+    }
+
+    startTimestamp = Date.now();
+    bar.style.transition = 'width 250ms cubic-bezier(0.1, 0.7, 0.1, 1), opacity 150ms ease';
+    bar.style.opacity = '1';
+    bar.style.width = '35%';
+
+    let current = 35;
+    trickleInterval = setInterval(() => {
+      if (current < 85) {
+        current += Math.random() * 8 + 4;
+        if (current > 85) current = 85;
+        bar.style.width = `${current}%`;
+      }
+    }, 150);
+  }
+
+  function finish() {
+    const bar = getBar();
+    if (!bar) return;
+
+    if (trickleInterval) {
+      clearInterval(trickleInterval);
+      trickleInterval = null;
+    }
+
+    // Enforce minimum display duration so users actually perceive the navigation feedback
+    const elapsed = Date.now() - startTimestamp;
+    const delay = Math.max(0, MIN_DISPLAY_MS - elapsed);
+
+    finishTimeout = setTimeout(() => {
+      bar.style.transition = 'width 200ms ease-out, opacity 250ms ease 180ms';
+      bar.style.width = '100%';
+      bar.style.opacity = '0';
+
+      resetTimeout = setTimeout(() => {
+        bar.style.transition = 'none';
+        bar.style.width = '0%';
+      }, 500);
+    }, delay);
+  }
+
+  // Hook into Astro ClientRouter navigation lifecycle
+  document.addEventListener('astro:before-preparation', start);
+  document.addEventListener('astro:before-swap', () => {
+    const bar = getBar();
+    if (bar && bar.style.opacity === '1') {
+      bar.style.width = '90%';
+    }
+  });
+  document.addEventListener('astro:page-load', finish);
+
+  // Instant tactile feedback on clicking any internal link
+  document.addEventListener('click', (e) => {
+    const target = (e.target as HTMLElement)?.closest('a');
+    if (!target) return;
+    const href = target.getAttribute('href');
+    if (!href) return;
+    if (target.target && target.target !== '_self') return;
+    if (
+      href.startsWith('#') ||
+      href.startsWith('mailto:') ||
+      href.startsWith('tel:') ||
+      href.startsWith('javascript:')
+    )
+      return;
+    if (target.hasAttribute('download')) return;
+
+    try {
+      const url = new URL(href, window.location.href);
+      if (url.origin === window.location.origin) {
+        start();
+      }
+    } catch {
+      // ignore
+    }
+  });
+</script>

@@ -1,0 +1,104 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import { getLocaleMeta } from '@/i18n/locales';
+import { localizeHref } from '@/i18n/paths';
+import { type Locale } from '@/i18n/config';
+import * as m from '@/paraglide/messages';
+import Seo from '@/components/Seo.astro';
+import TopLoadingBar from '@/components/TopLoadingBar.astro';
+import LanguageSwitcher from '@/components/LanguageSwitcher.astro';
+import SearchModal from '@/components/SearchModal.astro';
+import Icon from '@/components/Icon.astro';
+import '@/styles/global.css';
+import '@/styles/prose.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  locale: Locale;
+  url: string;
+  alternates: Record<Locale, string>;
+}
+
+const { title, description, locale, url, alternates } = Astro.props;
+const meta = getLocaleMeta(locale);
+
+const homeHref = localizeHref('/', locale);
+const aboutHref = alternates.about || localizeHref('/about', locale);
+const blogHref = alternates.blog || localizeHref('/blog', locale);
+---
+
+<!doctype html>
+<html lang={meta.htmlLang} dir={meta.dir} class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <ClientRouter />
+    <Seo
+      title={title}
+      description={description}
+      locale={locale}
+      url={url}
+      alternates={alternates}
+    />
+  </head>
+  <body class="bg-bg text-fg min-h-screen flex flex-col antialiased selection:bg-primary/20">
+    <TopLoadingBar />
+
+    <header class="sticky top-0 z-40 w-full border-b border-border bg-surface/80 backdrop-blur-md">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        <a href={homeHref} class="font-bold text-lg tracking-tight hover:text-primary transition-colors flex items-center gap-2">
+          <span>{m.common_site_title({}, { locale })}</span>
+        </a>
+
+        <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
+          <a href={homeHref} class="hover:text-primary transition-colors">
+            {m.nav_home({}, { locale })}
+          </a>
+          <a href={aboutHref} class="hover:text-primary transition-colors">
+            {m.nav_about({}, { locale })}
+          </a>
+          <a href={blogHref} class="hover:text-primary transition-colors">
+            {m.nav_blog({}, { locale })}
+          </a>
+        </nav>
+
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            data-open-search
+            class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-surface hover:bg-surface-hover text-muted hover:text-fg text-sm transition-colors cursor-pointer"
+            aria-label={m.common_search_placeholder({}, { locale })}
+          >
+            <Icon name="search" size={16} />
+            <span class="hidden sm:inline text-xs">{m.common_search_placeholder({}, { locale })}</span>
+            <kbd class="hidden sm:inline text-[10px] bg-bg px-1 py-0.5 rounded border border-border">⌘K</kbd>
+          </button>
+
+          <LanguageSwitcher currentLocale={locale} alternates={alternates} />
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12">
+      <slot />
+    </main>
+
+    <footer class="border-t border-border bg-surface mt-auto py-8">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
+        <div>
+          © {new Date().getFullYear()} Astro i18n Starter. All rights reserved.
+        </div>
+        <div class="flex items-center gap-4">
+          <a href={homeHref} class="hover:underline">{m.nav_home({}, { locale })}</a>
+          <a href={aboutHref} class="hover:underline">{m.nav_about({}, { locale })}</a>
+          <a href={blogHref} class="hover:underline">{m.nav_blog({}, { locale })}</a>
+        </div>
+      </div>
+    </footer>
+
+    <SearchModal locale={locale} />
+  </body>
+</html>

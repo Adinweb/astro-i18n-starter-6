@@ -1,10 +1,18 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "nav_home": "Startseite",
-  "nav_about": "Über uns",
-  "nav_blog": "Blog",
+  "common_back_home": "Zurück zur Startseite",
+  "common_back_to_blog": "Zurück zum Blog",
+  "common_change_language": "Sprache ändern",
+  "common_close": "Schließen",
+  "common_no_results": "Keine Ergebnisse gefunden.",
+  "common_not_found_desc": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+  "common_not_found_title": "Seite nicht gefunden",
+  "common_press_esc": "zum Schließen",
+  "common_published_on": "Veröffentlicht am",
   "common_read_more": "Weiterlesen",
   "common_search_placeholder": "Artikel und Seiten durchsuchen...",
+  "common_site_title": "Astro i18n",
+  "common_type_to_search": "Tippen zum Suchen...",
   "items_count": [
     {
       "declarations": [
@@ -20,6 +28,9 @@
       }
     }
   ],
+  "nav_about": "Über uns",
+  "nav_blog": "Blog",
+  "nav_home": "Startseite",
   "position_ordinal": [
     {
       "declarations": [

@@ -1,0 +1,65 @@
+---
+import { LOCALES, type Locale } from '@/i18n/config';
+import { LOCALE_METADATA } from '@/i18n/locales';
+import Icon from '@/components/Icon.astro';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  currentLocale: Locale;
+  alternates: Record<Locale, string>;
+}
+
+const { currentLocale, alternates } = Astro.props;
+---
+
+<div class="relative inline-block text-start" data-language-switcher>
+  <label for="lang-select" class="sr-only">
+    {m.common_change_language({}, { locale: currentLocale })}
+  </label>
+  <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border bg-surface text-fg text-sm hover:bg-surface-hover transition-colors">
+    <Icon name="globe" size={16} class="text-muted shrink-0" />
+    <select
+      id="lang-select"
+      class="bg-transparent text-fg text-sm font-medium focus:outline-none cursor-pointer pe-1"
+      aria-label={m.common_change_language({}, { locale: currentLocale })}
+      data-switcher-select
+    >
+      {
+        LOCALES.map((loc) => {
+          const meta = LOCALE_METADATA[loc];
+          const targetUrl = alternates[loc];
+          const isCurrent = loc === currentLocale;
+          return (
+            <option
+              value={targetUrl || '#'}
+              selected={isCurrent}
+              disabled={!targetUrl}
+              class="bg-surface text-fg py-1"
+            >
+              {meta.name} {!targetUrl ? ' (N/A)' : ''}
+            </option>
+          );
+        })
+      }
+    </select>
+  </div>
+</div>
+
+<script>
+  import { navigate } from 'astro:transitions/client';
+
+  function setupLanguageSwitcher() {
+    const selects = document.querySelectorAll<HTMLSelectElement>('[data-switcher-select]');
+    selects.forEach((select) => {
+      select.addEventListener('change', (e) => {
+        const target = (e.target as HTMLSelectElement).value;
+        if (target && target !== '#' && target !== window.location.pathname) {
+          navigate(target);
+        }
+      });
+    });
+  }
+
+  setupLanguageSwitcher();
+  document.addEventListener('astro:page-load', setupLanguageSwitcher);
+</script>

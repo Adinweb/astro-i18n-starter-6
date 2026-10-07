@@ -1,0 +1,56 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/i18n/config';
+import { localizeHref } from '@/i18n/paths';
+import * as m from '@/paraglide/messages';
+
+const locale: Locale = DEFAULT_LOCALE;
+const alternates: Record<Locale, string> = {
+  en: '/404',
+  de: '/de/404',
+  fa: '/fa/404',
+};
+
+const homeHref = localizeHref('/', locale);
+---
+
+<BaseLayout
+  title={m.common_not_found_title({}, { locale })}
+  description={m.common_not_found_desc({}, { locale })}
+  locale={locale}
+  url="/404"
+  alternates={alternates}
+>
+  <div class="text-center py-20 px-4">
+    <p class="text-6xl font-extrabold text-primary mb-4">404</p>
+    <h1 class="text-3xl font-bold text-fg mb-4" id="not-found-title">
+      {m.common_not_found_title({}, { locale })}
+    </h1>
+    <p class="text-muted max-w-md mx-auto mb-8 text-base" id="not-found-desc">
+      {m.common_not_found_desc({}, { locale })}
+    </p>
+    <div>
+      <a
+        id="not-found-home-link"
+        href={homeHref}
+        class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-primary text-primary-fg font-medium hover:opacity-90 transition-opacity"
+      >
+        {m.common_back_home({}, { locale })}
+      </a>
+    </div>
+  </div>
+
+  <script define:vars={{ LOCALES, DEFAULT_LOCALE }}>
+    // Client-side locale-awareness for 404 page
+    const pathname = window.location.pathname;
+    const firstSegment = pathname.split('/').filter(Boolean)[0];
+    if (firstSegment && LOCALES.includes(firstSegment)) {
+      document.documentElement.lang = firstSegment;
+      document.documentElement.dir = firstSegment === 'fa' ? 'rtl' : 'ltr';
+      const homeLink = document.getElementById('not-found-home-link');
+      if (homeLink) {
+        homeLink.href = '/' + firstSegment;
+      }
+    }
+  </script>
+</BaseLayout>
