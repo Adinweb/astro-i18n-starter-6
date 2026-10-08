@@ -57,6 +57,21 @@ const { locale } = Astro.props;
 <script>
   let searchData: Array<{ title: string; description: string; url: string; locale: string }> = [];
   let isFetching = false;
+  let pagefindPromise: Promise<any> | null = null;
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+  let searchRequestId = 0;
+
+  async function getPagefindInstance() {
+    if (!pagefindPromise) {
+      pagefindPromise = (async () => {
+        const pagefindUrl = '/pagefind/pagefind.js';
+        const mod = await import(/* @vite-ignore */ pagefindUrl);
+        await mod.init();
+        return mod;
+      })();
+    }
+    return pagefindPromise;
+  }
 
   function setupSearch() {
     const dialog = document.querySelector<HTMLElement>('[data-search-modal]');
@@ -97,6 +112,8 @@ const { locale } = Astro.props;
 
     async function performSearch(query: string) {
       const activeLocale = dialog?.dataset.locale || 'en';
+      const requestId = ++searchRequestId;
+
       if (!query.trim()) {
         const placeholder = dialog?.dataset.placeholder || 'Type to search...';
         resultsContainer!.innerHTML = `<p class="text-sm text-muted text-center py-6">${placeholder}</p>`;
@@ -105,11 +122,12 @@ const { locale } = Astro.props;
 
       // 1. Try Pagefind in production
       try {
-        const pagefindUrl = '/pagefind/pagefind.js';
-        const pagefindModule = await import(/* @vite-ignore */ pagefindUrl);
-        await pagefindModule.init();
+        const pagefindModule = await getPagefindInstance();
         const search = await pagefindModule.search(query);
         const results = await Promise.all(search.results.slice(0, 6).map((r: any) => r.data()));
+
+        // Discard result if newer search was dispatched in the meantime
+        if (requestId !== searchRequestId) return;
 
         const noResultsText = dialog?.dataset.noResults || 'No results';
         if (results.length === 0) {
@@ -144,6 +162,8 @@ const { locale } = Astro.props;
         isFetching = false;
       }
 
+      if (requestId !== searchRequestId) return;
+
       const q = query.toLowerCase();
       const filtered = searchData
         .filter((item) => item.locale === activeLocale)
@@ -154,8 +174,8 @@ const { locale } = Astro.props;
         )
         .slice(0, 6);
 
+      const noResultsText = dialog?.dataset.noResults || 'No results';
       if (filtered.length === 0) {
-        const noResultsText = dialog?.dataset.noResults || 'No results';
         resultsContainer!.innerHTML = `<p class="text-sm text-muted text-center py-6">${noResultsText}</p>`;
         return;
       }
@@ -173,7 +193,11 @@ const { locale } = Astro.props;
     }
 
     input.addEventListener('input', (e) => {
-      performSearch((e.target as HTMLInputElement).value);
+      const val = (e.target as HTMLInputElement).value;
+      if (searchTimeout) clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        performSearch(val);
+      }, 150);
     });
   }
 

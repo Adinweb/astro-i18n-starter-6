@@ -40,9 +40,29 @@ const today = new Date().toISOString().split('T')[0];
 
 let baseBody = `\n# Article Header\n\nArticle content goes here...\n`;
 
-if (fromLocale && fs.existsSync(path.join(targetDir, `${fromLocale}.mdx`))) {
-  const fromContent = fs.readFileSync(path.join(targetDir, `${fromLocale}.mdx`), 'utf-8');
-  baseBody = fromContent.replace(/^---[\s\S]*?---/, '');
+if (fromLocale) {
+  let sourceFile = null;
+  if (fromLocale.includes('/')) {
+    const candidate = path.join(colDir, fromLocale.endsWith('.mdx') ? fromLocale : `${fromLocale}.mdx`);
+    if (fs.existsSync(candidate)) sourceFile = candidate;
+  } else if (fs.existsSync(path.join(colDir, fromLocale, 'en.mdx'))) {
+    sourceFile = path.join(colDir, fromLocale, 'en.mdx');
+  } else {
+    // Check if fromLocale matches a locale in an existing post group
+    const existingGroups = fs.readdirSync(colDir, { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== groupSlug);
+    for (const eg of existingGroups) {
+      const candidate = path.join(colDir, eg.name, `${fromLocale}.mdx`);
+      if (fs.existsSync(candidate)) {
+        sourceFile = candidate;
+        break;
+      }
+    }
+  }
+
+  if (sourceFile && fs.existsSync(sourceFile)) {
+    const fromContent = fs.readFileSync(sourceFile, 'utf-8');
+    baseBody = fromContent.replace(/^---[\s\S]*?---/, '');
+  }
 }
 
 for (const loc of LOCALES) {

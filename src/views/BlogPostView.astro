@@ -79,7 +79,7 @@ const formattedDate = entry.data.publishedAt.toLocaleDateString(locale, {
         href={blogIndexHref}
         class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
       >
-        ← {m.common_back_to_blog({}, { locale })}
+        <span class="inline-block rtl:rotate-180">←</span> {m.common_back_to_blog({}, { locale })}
       </a>
     </footer>
   </article>

@@ -3,7 +3,8 @@
   "compilerOptions": {
     "types": ["node"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@backend/*": ["./backend/*"]
     }
   },
   "include": [".astro/types.d.ts", "**/*"],

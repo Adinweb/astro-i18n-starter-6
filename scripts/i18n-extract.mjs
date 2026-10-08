@@ -50,13 +50,18 @@ if (fs.statSync(resolvedTarget).isDirectory()) {
   filesToProcess.push(resolvedTarget);
 }
 
-const messagesEnPath = path.join(rootDir, 'messages', 'en.json');
-const messagesDePath = path.join(rootDir, 'messages', 'de.json');
-const messagesFaPath = path.join(rootDir, 'messages', 'fa.json');
+const inlangSettings = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
+);
+const LOCALES = inlangSettings.locales;
 
-const enDict = JSON.parse(fs.readFileSync(messagesEnPath, 'utf-8'));
-const deDict = JSON.parse(fs.readFileSync(messagesDePath, 'utf-8'));
-const faDict = JSON.parse(fs.readFileSync(messagesFaPath, 'utf-8'));
+const dictsByLocale = {};
+for (const loc of LOCALES) {
+  const locPath = path.join(rootDir, 'messages', `${loc}.json`);
+  if (fs.existsSync(locPath)) {
+    dictsByLocale[loc] = JSON.parse(fs.readFileSync(locPath, 'utf-8'));
+  }
+}
 
 let extractedCount = 0;
 
@@ -117,11 +122,12 @@ for (const file of filesToProcess) {
     for (const r of replacements) {
       extractedCount++;
       if (autoAdd) {
-        if (!enDict[r.key]) {
-          enDict[r.key] = r.text;
-          deDict[r.key] = `[TODO: de] ${r.text}`;
-          faDict[r.key] = `[TODO: fa] ${r.text}`;
-          console.log(`  + Key created: ${r.key} = "${r.text}"`);
+        if (dictsByLocale.en && !dictsByLocale.en[r.key]) {
+          for (const loc of LOCALES) {
+            if (!dictsByLocale[loc]) continue;
+            dictsByLocale[loc][r.key] = loc === 'en' ? r.text : `[TODO: ${loc}] ${r.text}`;
+          }
+          console.log(`  + Key created: ${r.key} = "${r.text}" across locales: ${LOCALES.join(', ')}`);
         }
       }
 
@@ -155,10 +161,12 @@ if (autoAdd && !dryRun && extractedCount > 0) {
     return sorted;
   };
 
-  fs.writeFileSync(messagesEnPath, JSON.stringify(sortKeys(enDict), null, 2) + '\n', 'utf-8');
-  fs.writeFileSync(messagesDePath, JSON.stringify(sortKeys(deDict), null, 2) + '\n', 'utf-8');
-  fs.writeFileSync(messagesFaPath, JSON.stringify(sortKeys(faDict), null, 2) + '\n', 'utf-8');
-  console.log(`✅ Saved new dictionary keys to messages/*.json`);
+  for (const loc of LOCALES) {
+    if (!dictsByLocale[loc]) continue;
+    const locPath = path.join(rootDir, 'messages', `${loc}.json`);
+    fs.writeFileSync(locPath, JSON.stringify(sortKeys(dictsByLocale[loc]), null, 2) + '\n', 'utf-8');
+  }
+  console.log(`✅ Saved new dictionary keys across active messages/*.json files`);
 }
 
 console.log(`\n🎉 Extracted a total of ${extractedCount} item(s).`);

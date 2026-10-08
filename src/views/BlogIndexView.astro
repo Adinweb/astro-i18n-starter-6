@@ -72,9 +72,9 @@ const posts = allPosts
               <div class="mt-4">
                 <a
                   href={postUrl}
-                  class="inline-flex items-center text-sm font-medium text-primary hover:underline"
+                  class="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                 >
-                  {m.common_read_more({}, { locale })} →
+                  {m.common_read_more({}, { locale })} <span class="inline-block rtl:rotate-180">→</span>
                 </a>
               </div>
             </article>

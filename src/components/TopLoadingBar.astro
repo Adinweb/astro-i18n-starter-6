@@ -46,6 +46,11 @@
     const bar = getBar();
     if (!bar) return;
 
+    // Do not restart from 35% if already trickling
+    if (bar.style.opacity === '1' && trickleInterval !== null) {
+      return;
+    }
+
     if (resetTimeout) {
       clearTimeout(resetTimeout);
       resetTimeout = null;
