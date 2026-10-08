@@ -10,15 +10,15 @@ const en_nav_features = /** @type {(inputs: Nav_FeaturesInputs) => LocalizedStri
 };
 
 const de_nav_features = /** @type {(inputs: Nav_FeaturesInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`[TODO: de] Features`)
+	return /** @type {LocalizedString} */ (`Funktionen`)
 };
 
 const fa_nav_features = /** @type {(inputs: Nav_FeaturesInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`[TODO: fa] Features`)
+	return /** @type {LocalizedString} */ (`ویژگی‌ها`)
 };
 
 const fr_nav_features = /** @type {(inputs: Nav_FeaturesInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`[TODO: fr] features`)
+	return /** @type {LocalizedString} */ (`Fonctionnalités`)
 };
 
 /**

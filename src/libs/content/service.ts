@@ -1,5 +1,5 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/i18n/config';
+import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/i18n/locales';
 
 export type RouteType = 'page' | 'blog-entry' | 'blog-index';
 
@@ -188,3 +188,36 @@ export function getBreadcrumbs(
 
   return crumbs;
 }
+
+/**
+ * Resolves the true translated URL for any static page group (e.g. 'home', 'about', 'features')
+ * based on the actual slug defined in its content collection entry.
+ */
+export async function getPageUrl(group: string, locale: Locale): Promise<string> {
+  if (group === 'home' || group === '') {
+    return locale === DEFAULT_LOCALE ? '/' : `/${locale}`;
+  }
+
+  const allPages = await getCollection('pages');
+  const targetId = `${group}/${locale}`;
+  const page = allPages.find((p) => p.id === targetId && !p.data.draft);
+
+  if (page) {
+    const slug = page.data.slug !== undefined ? page.data.slug : group;
+    if (slug === '') {
+      return locale === DEFAULT_LOCALE ? '/' : `/${locale}`;
+    }
+    return locale === DEFAULT_LOCALE ? `/${slug}` : `/${locale}/${slug}`;
+  }
+
+  // Fallback to default locale slug if missing in requested locale
+  const defaultPage = allPages.find((p) => p.id === `${group}/${DEFAULT_LOCALE}` && !p.data.draft);
+  if (defaultPage) {
+    const defaultSlug = defaultPage.data.slug !== undefined ? defaultPage.data.slug : group;
+    return locale === DEFAULT_LOCALE ? `/${defaultSlug}` : `/${locale}/${defaultSlug}`;
+  }
+
+  return locale === DEFAULT_LOCALE ? `/${group}` : `/${locale}/${group}`;
+}
+
+

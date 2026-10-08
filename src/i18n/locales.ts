@@ -1,4 +1,12 @@
-import { type Locale } from './config';
+export const LOCALES = ['en', 'de', 'fa', 'fr'] as const;
+
+export type Locale = (typeof LOCALES)[number];
+
+export const DEFAULT_LOCALE: Locale = 'en';
+
+export function isLocale(value: string): value is Locale {
+  return (LOCALES as readonly string[]).includes(value);
+}
 
 export interface LocaleMeta {
   dir: 'ltr' | 'rtl';
@@ -37,3 +45,4 @@ export const LOCALE_METADATA = {
 export function getLocaleMeta(locale: Locale): LocaleMeta {
   return LOCALE_METADATA[locale];
 }
+

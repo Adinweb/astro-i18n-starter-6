@@ -4,6 +4,8 @@
   "common_back_to_blog": "بازگشت به وبلاگ",
   "common_change_language": "تغییر زبان",
   "common_close": "بستن",
+  "common_english_version_hint": "یا مشاهده این برگه به زبان انگلیسی:",
+  "common_go_english_version": "رفتن به نسخه انگلیسی",
   "common_no_results": "نتیجه‌ای یافت نشد.",
   "common_not_found_desc": "برگه‌ای که به دنبال آن هستید وجود ندارد یا منتقل شده است.",
   "common_not_found_title": "برگه پیدا نشد",
@@ -30,7 +32,7 @@
   ],
   "nav_about": "درباره ما",
   "nav_blog": "وبلاگ",
-  "nav_features": "[TODO: fa] Features",
+  "nav_features": "ویژگی‌ها",
   "nav_home": "خانه",
   "position_ordinal": [
     {

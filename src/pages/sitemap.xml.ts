@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getSiteRoutes } from '@/libs/content/service';
 import { siteConfig } from '@/libs/config/site';
-import { DEFAULT_LOCALE } from '@/i18n/config';
+import { DEFAULT_LOCALE } from '@/i18n/locales';
 
 export const GET: APIRoute = async () => {
   const routes = await getSiteRoutes();

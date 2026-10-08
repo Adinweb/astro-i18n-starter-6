@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, isLocale, type Locale } from './config';
+import { DEFAULT_LOCALE, isLocale, type Locale } from './locales';
 
 function normalizePath(pathname: string): string {
   if (!pathname || pathname === '/') return '/';

@@ -1,8 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions';
-import { getLocaleMeta } from '@/i18n/locales';
-import { localizeHref } from '@/i18n/paths';
-import { type Locale } from '@/i18n/config';
+import { getLocaleMeta, type Locale, DEFAULT_LOCALE } from '@/i18n/locales';
+import { getPageUrl } from '@/libs/content/service';
 import * as m from '@/paraglide/messages';
 import Seo from '@/components/Seo.astro';
 import TopLoadingBar from '@/components/TopLoadingBar.astro';
@@ -23,9 +22,10 @@ interface Props {
 const { title, description, locale, url, alternates } = Astro.props;
 const meta = getLocaleMeta(locale);
 
-const homeHref = localizeHref('/', locale);
-const aboutHref = alternates.about || localizeHref('/about', locale);
-const blogHref = alternates.blog || localizeHref('/blog', locale);
+const homeHref = await getPageUrl('home', locale);
+const aboutHref = await getPageUrl('about', locale);
+const featuresHref = await getPageUrl('features', locale);
+const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
 ---
 
 <!doctype html>
@@ -49,18 +49,21 @@ const blogHref = alternates.blog || localizeHref('/blog', locale);
 
     <header class="sticky top-0 z-40 w-full border-b border-border bg-surface/80 backdrop-blur-md">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-        <a href={homeHref} class="font-bold text-lg tracking-tight hover:text-primary transition-colors flex items-center gap-2">
+        <a href={homeHref} data-brand-link class="font-bold text-lg tracking-tight hover:text-primary transition-colors flex items-center gap-2">
           <span>{m.common_site_title({}, { locale })}</span>
         </a>
 
         <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
-          <a href={homeHref} class="hover:text-primary transition-colors">
+          <a href={homeHref} data-nav-link="home" class="hover:text-primary transition-colors">
             {m.nav_home({}, { locale })}
           </a>
-          <a href={aboutHref} class="hover:text-primary transition-colors">
+          <a href={aboutHref} data-nav-link="about" class="hover:text-primary transition-colors">
             {m.nav_about({}, { locale })}
           </a>
-          <a href={blogHref} class="hover:text-primary transition-colors">
+          <a href={featuresHref} data-nav-link="features" class="hover:text-primary transition-colors">
+            {m.nav_features({}, { locale })}
+          </a>
+          <a href={blogHref} data-nav-link="blog" class="hover:text-primary transition-colors">
             {m.nav_blog({}, { locale })}
           </a>
         </nav>
@@ -92,9 +95,10 @@ const blogHref = alternates.blog || localizeHref('/blog', locale);
           © {new Date().getFullYear()} Astro i18n Starter. All rights reserved.
         </div>
         <div class="flex items-center gap-4">
-          <a href={homeHref} class="hover:underline">{m.nav_home({}, { locale })}</a>
-          <a href={aboutHref} class="hover:underline">{m.nav_about({}, { locale })}</a>
-          <a href={blogHref} class="hover:underline">{m.nav_blog({}, { locale })}</a>
+          <a href={homeHref} data-nav-link="home" class="hover:underline">{m.nav_home({}, { locale })}</a>
+          <a href={aboutHref} data-nav-link="about" class="hover:underline">{m.nav_about({}, { locale })}</a>
+          <a href={featuresHref} data-nav-link="features" class="hover:underline">{m.nav_features({}, { locale })}</a>
+          <a href={blogHref} data-nav-link="blog" class="hover:underline">{m.nav_blog({}, { locale })}</a>
         </div>
       </div>
     </footer>

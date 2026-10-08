@@ -1,17 +1,42 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/i18n/config';
+import { DEFAULT_LOCALE, LOCALES, LOCALE_METADATA, type Locale } from '@/i18n/locales';
 import { localizeHref } from '@/i18n/paths';
+import { getPageUrl } from '@/libs/content/service';
 import * as m from '@/paraglide/messages';
 
 const locale: Locale = DEFAULT_LOCALE;
-const alternates: Record<Locale, string> = {
-  en: '/404',
-  de: '/de/404',
-  fa: '/fa/404',
-};
+
+const alternates = Object.fromEntries(
+  LOCALES.map((loc) => [loc, loc === DEFAULT_LOCALE ? '/404' : `/${loc}/404`])
+) as Record<Locale, string>;
 
 const homeHref = localizeHref('/', locale);
+
+const i18nData = Object.fromEntries(
+  await Promise.all(
+    LOCALES.map(async (loc) => [
+      loc,
+      {
+        title: m.common_not_found_title({}, { locale: loc }),
+        desc: m.common_not_found_desc({}, { locale: loc }),
+        backHome: m.common_back_home({}, { locale: loc }),
+        goEnglish: m.common_go_english_version({}, { locale: loc }),
+        englishHint: m.common_english_version_hint({}, { locale: loc }),
+        homeHref: await getPageUrl('home', loc),
+        aboutHref: await getPageUrl('about', loc),
+        featuresHref: await getPageUrl('features', loc),
+        blogHref: loc === DEFAULT_LOCALE ? '/blog' : `/${loc}/blog`,
+        navHome: m.nav_home({}, { locale: loc }),
+        navAbout: m.nav_about({}, { locale: loc }),
+        navFeatures: m.nav_features({}, { locale: loc }),
+        navBlog: m.nav_blog({}, { locale: loc }),
+        dir: LOCALE_METADATA[loc].dir,
+        lang: LOCALE_METADATA[loc].htmlLang,
+      },
+    ])
+  )
+);
 ---
 
 <BaseLayout
@@ -21,36 +46,124 @@ const homeHref = localizeHref('/', locale);
   url="/404"
   alternates={alternates}
 >
-  <div class="text-center py-20 px-4">
-    <p class="text-6xl font-extrabold text-primary mb-4">404</p>
+  <div class="text-center py-20 px-4 max-w-xl mx-auto">
+    <p class="text-7xl font-extrabold text-primary mb-4 tracking-tight">404</p>
     <h1 class="text-3xl font-bold text-fg mb-4" id="not-found-title">
       {m.common_not_found_title({}, { locale })}
     </h1>
-    <p class="text-muted max-w-md mx-auto mb-8 text-base" id="not-found-desc">
+    <p class="text-muted max-w-md mx-auto mb-8 text-base leading-relaxed" id="not-found-desc">
       {m.common_not_found_desc({}, { locale })}
     </p>
-    <div>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
       <a
         id="not-found-home-link"
         href={homeHref}
-        class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-primary text-primary-fg font-medium hover:opacity-90 transition-opacity"
+        class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-primary text-primary-fg font-medium hover:opacity-90 transition-opacity"
       >
         {m.common_back_home({}, { locale })}
       </a>
+
+      <a
+        id="not-found-english-link"
+        href="/"
+        class="hidden w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 rounded-lg border border-border bg-surface text-fg font-medium hover:bg-surface-hover transition-colors"
+      >
+        {m.common_go_english_version({}, { locale })}
+      </a>
     </div>
+
+    <p id="not-found-english-hint" class="hidden text-xs text-muted mt-4">
+      {m.common_english_version_hint({}, { locale })}
+    </p>
   </div>
 
-  <script define:vars={{ LOCALES, DEFAULT_LOCALE }}>
-    // Client-side locale-awareness for 404 page
-    const pathname = window.location.pathname;
-    const firstSegment = pathname.split('/').filter(Boolean)[0];
-    if (firstSegment && LOCALES.includes(firstSegment)) {
-      document.documentElement.lang = firstSegment;
-      document.documentElement.dir = firstSegment === 'fa' ? 'rtl' : 'ltr';
+  <script define:vars={{ LOCALES, DEFAULT_LOCALE, i18nData }}>
+    function updateNotFoundPage() {
+      const pathname = window.location.pathname;
+      const segments = pathname.split('/').filter(Boolean);
+      const firstSegment = segments[0];
+      const isKnownLocale = firstSegment && LOCALES.includes(firstSegment);
+      const detectedLocale = isKnownLocale ? firstSegment : DEFAULT_LOCALE;
+      const data = i18nData[detectedLocale] || i18nData[DEFAULT_LOCALE];
+
+      // Update document attributes & title
+      document.documentElement.lang = data.lang;
+      document.documentElement.dir = data.dir;
+      document.title = data.title + ' | Astro i18n';
+
+      // Update text nodes
+      const titleEl = document.getElementById('not-found-title');
+      if (titleEl) titleEl.textContent = data.title;
+
+      const descEl = document.getElementById('not-found-desc');
+      if (descEl) descEl.textContent = data.desc;
+
+      // Update home link
       const homeLink = document.getElementById('not-found-home-link');
       if (homeLink) {
-        homeLink.href = '/' + firstSegment;
+        homeLink.href = data.homeHref;
+        homeLink.textContent = data.backHome;
+      }
+
+      // Update navigation links on 404
+      document.querySelectorAll('[data-brand-link]').forEach((el) => {
+        el.setAttribute('href', data.homeHref);
+      });
+      document.querySelectorAll('[data-nav-link="home"]').forEach((el) => {
+        el.setAttribute('href', data.homeHref);
+        el.textContent = data.navHome;
+      });
+      document.querySelectorAll('[data-nav-link="about"]').forEach((el) => {
+        el.setAttribute('href', data.aboutHref);
+        el.textContent = data.navAbout;
+      });
+      document.querySelectorAll('[data-nav-link="features"]').forEach((el) => {
+        el.setAttribute('href', data.featuresHref);
+        el.textContent = data.navFeatures;
+      });
+      document.querySelectorAll('[data-nav-link="blog"]').forEach((el) => {
+        el.setAttribute('href', data.blogHref);
+        el.textContent = data.navBlog;
+      });
+
+      // Update "Go to English version of requested page" link
+      const englishLink = document.getElementById('not-found-english-link');
+      const englishHint = document.getElementById('not-found-english-hint');
+
+      if (englishLink) {
+        if (isKnownLocale && detectedLocale !== DEFAULT_LOCALE) {
+          const restOfPath = segments.slice(1).join('/');
+          const englishHref = restOfPath ? `/${restOfPath}` : '/';
+          englishLink.href = englishHref;
+          englishLink.textContent = data.goEnglish;
+          englishLink.classList.remove('hidden');
+
+          if (englishHint) {
+            englishHint.textContent = data.englishHint;
+            englishHint.classList.remove('hidden');
+          }
+        } else {
+          englishLink.classList.add('hidden');
+          if (englishHint) englishHint.classList.add('hidden');
+        }
+      }
+
+      // Update language switcher dropdown selection
+      const switcherSelect = document.querySelector('[data-switcher-select]');
+      if (switcherSelect) {
+        const expectedHref = detectedLocale === DEFAULT_LOCALE ? '/404' : `/${detectedLocale}/404`;
+        for (let i = 0; i < switcherSelect.options.length; i++) {
+          if (switcherSelect.options[i].value === expectedHref) {
+            switcherSelect.selectedIndex = i;
+            break;
+          }
+        }
       }
     }
+
+    updateNotFoundPage();
+    document.addEventListener('astro:page-load', updateNotFoundPage);
   </script>
 </BaseLayout>
+

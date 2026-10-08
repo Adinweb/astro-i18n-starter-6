@@ -4,6 +4,8 @@
   "common_back_to_blog": "Retour au blog",
   "common_change_language": "Changer de langue",
   "common_close": "Fermer",
+  "common_english_version_hint": "Ou consulter cette page en anglais :",
+  "common_go_english_version": "Aller à la version anglaise",
   "common_no_results": "Aucun résultat trouvé.",
   "common_not_found_desc": "La page que vous recherchez n’existe pas ou a été déplacée.",
   "common_not_found_title": "Page non trouvée",
@@ -30,7 +32,7 @@
   ],
   "nav_about": "À propos",
   "nav_blog": "Blog",
-  "nav_features": "[TODO: fr] features",
+  "nav_features": "Fonctionnalités",
   "nav_home": "Accueil",
   "position_ordinal": [
     {

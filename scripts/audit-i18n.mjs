@@ -12,6 +12,9 @@ const inlangSettings = JSON.parse(
 const LOCALES = inlangSettings.locales;
 const RESERVED_ROUTE_BASES = new Set(['blog', 'icons.svg', '404', 'sitemap.xml', 'robots.txt']);
 
+const args = process.argv.slice(2);
+const warnContent = args.includes('--warn-content') || args.includes('--lenient');
+
 let hasFatal = false;
 let warningCount = 0;
 
@@ -82,8 +85,13 @@ if (fs.existsSync(contentDir)) {
         const hasMdx = fs.existsSync(path.join(groupDir, `${loc}.mdx`));
         const hasMd = fs.existsSync(path.join(groupDir, `${loc}.md`));
         if (!hasMdx && !hasMd) {
-          console.error(`❌ FATAL: Missing locale file for group: src/content/${collection}/${group}/${loc}.mdx`);
-          hasFatal = true;
+          if (warnContent) {
+            console.warn(`⚠️ [WARN] Missing locale file for group: src/content/${collection}/${group}/${loc}.mdx`);
+            warningCount++;
+          } else {
+            console.error(`❌ FATAL: Missing locale file for group: src/content/${collection}/${group}/${loc}.mdx (use --warn-content to treat as warning)`);
+            hasFatal = true;
+          }
         }
       }
     }
