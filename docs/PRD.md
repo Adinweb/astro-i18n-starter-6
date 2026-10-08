@@ -126,7 +126,6 @@ npm run audit:i18n
 | **Route & Slug Mapping** | `src/libs/content/service.ts` | Resolves cross-locale slug alternates, breadcrumbs, and `getSiteRoutes()`. |
 | **Theme Tokens** | `src/styles/global.css` | Tailwind `@theme inline` block (oklch semantic variables). |
 | **Site Metadata** | `src/libs/config/site.ts` | Env-driven Zod schema (site URL, site name, social tags). |
-| **Backend Domain & Services** | `backend/` | API routes (`src/pages/api/*`), data contracts, search indexer, system telemetry. |
 
 ### 6.2 Strict URL Construction API (`src/i18n/paths.ts`)
 ```typescript

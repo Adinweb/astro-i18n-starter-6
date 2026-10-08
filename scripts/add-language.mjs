@@ -9,10 +9,17 @@ const langCode = args.find((a) => !a.startsWith('--'));
 let langName = '';
 let dir = 'ltr';
 let contentOption = null; // null: prompt user, true: create content, false: skip content
+let fromLocale = '';
+let isDraft = false;
 
 for (const arg of args) {
   if (arg.startsWith('--name=')) langName = arg.slice(7);
   else if (arg.startsWith('--dir=')) dir = arg.slice(6);
+  else if (arg.startsWith('--from=')) fromLocale = arg.slice(7);
+  else if (arg.startsWith('--source=')) fromLocale = arg.slice(9);
+  else if (arg.startsWith('--source-lang=')) fromLocale = arg.slice(14);
+  else if (arg === '--draft=true' || arg === '--draft') isDraft = true;
+  else if (arg === '--draft=false' || arg === '--publish' || arg === '--no-draft') isDraft = false;
   else if (arg === '--with-content' || arg === '--create-content' || arg === '--content=yes' || arg === '--content=true') {
     contentOption = true;
   } else if (arg === '--no-content' || arg === '--without-content' || arg === '--content=no' || arg === '--content=false') {
@@ -21,7 +28,7 @@ for (const arg of args) {
 }
 
 if (!langCode) {
-  console.error('Usage: npm run i18n:add-lang <locale-code> [--name="<Display Name>"] [--dir="ltr|rtl"] [--with-content|--no-content]');
+  console.error('Usage: npm run i18n:add-lang <locale-code> [--name="<Display Name>"] [--dir="ltr|rtl"] [--from=<source-locale>] [--with-content|--no-content] [--draft=true|false]');
   process.exit(1);
 }
 
@@ -43,16 +50,27 @@ if (['ar', 'fa', 'he', 'ur'].includes(langCode)) {
 const rootDir = process.cwd();
 console.log(`🌍 Adding new language: "${langCode}" (${langName}, dir=${dir})...\n`);
 
-// Helper to ask confirmation if not specified by flag
-async function confirmExistingContent() {
-  if (contentOption !== null) {
-    return contentOption;
+const inlangPath = path.join(rootDir, 'project.inlang', 'settings.json');
+const inlangSettings = JSON.parse(fs.readFileSync(inlangPath, 'utf-8'));
+const existingLocales = [...inlangSettings.locales];
+const defaultBaseLocale = inlangSettings.baseLocale || 'en';
+
+// Helper to prompt user or resolve options
+async function resolveContentOptions() {
+  let shouldCreate = contentOption;
+  let source = fromLocale;
+
+  if (source && !existingLocales.includes(source)) {
+    console.warn(`⚠️ Warning: Specified source locale "${source}" not found in [${existingLocales.join(', ')}]. Falling back to "${defaultBaseLocale}".`);
+    source = defaultBaseLocale;
   }
 
-  // Non-interactive fallback
   if (!process.stdin.isTTY) {
-    console.log('ℹ️ Non-interactive mode: defaulting to creating content files for existing content.');
-    return true;
+    if (shouldCreate === null) {
+      console.log('ℹ️ Non-interactive mode: defaulting to creating content files for existing content.');
+      shouldCreate = true;
+    }
+    return { shouldCreate, source: source || defaultBaseLocale };
   }
 
   const rl = readline.createInterface({
@@ -60,35 +78,50 @@ async function confirmExistingContent() {
     output: process.stdout,
   });
 
-  return new Promise((resolve) => {
-    rl.question(
-      `❓ Do you want to create content files for already existing content (pages and blog posts) in "${langCode}"? (y/n) [default: y]: `,
-      (answer) => {
-        rl.close();
-        const trimmed = answer.trim().toLowerCase();
-        if (trimmed === 'n' || trimmed === 'no') {
-          resolve(false);
-        } else {
-          resolve(true);
-        }
+  const question = (q) => new Promise((resolve) => rl.question(q, resolve));
+
+  try {
+    if (shouldCreate === null) {
+      const answer = await question(
+        `❓ Do you want to create content files for already existing content (pages and blog posts) in "${langCode}"? (y/n) [default: y]: `
+      );
+      const trimmed = answer.trim().toLowerCase();
+      shouldCreate = !(trimmed === 'n' || trimmed === 'no');
+    }
+
+    if (shouldCreate && !source) {
+      const answer = await question(
+        `❓ Which existing language should be used as template source to auto-generate content? (available: ${existingLocales.join(', ')}) [default: ${defaultBaseLocale}]: `
+      );
+      const chosen = answer.trim();
+      if (chosen && existingLocales.includes(chosen)) {
+        source = chosen;
+      } else {
+        source = defaultBaseLocale;
       }
-    );
-  });
+    }
+  } finally {
+    rl.close();
+  }
+
+  return { shouldCreate, source: source || defaultBaseLocale };
 }
 
+const { shouldCreate: shouldPopulateContent, source: sourceLocale } = await resolveContentOptions();
+
 // 1. Update project.inlang/settings.json
-const inlangPath = path.join(rootDir, 'project.inlang', 'settings.json');
-const inlangSettings = JSON.parse(fs.readFileSync(inlangPath, 'utf-8'));
 if (!inlangSettings.locales.includes(langCode)) {
   inlangSettings.locales.push(langCode);
   fs.writeFileSync(inlangPath, JSON.stringify(inlangSettings, null, 2) + '\n', 'utf-8');
   console.log(`✅ Added "${langCode}" to project.inlang/settings.json`);
 }
 
-// 2. Create messages/<locale>.json
-const enDictPath = path.join(rootDir, 'messages', 'en.json');
+// 2. Create messages/<locale>.json from sourceLocale dictionary
+const sourceDictPath = fs.existsSync(path.join(rootDir, 'messages', `${sourceLocale}.json`))
+  ? path.join(rootDir, 'messages', `${sourceLocale}.json`)
+  : path.join(rootDir, 'messages', 'en.json');
 const targetDictPath = path.join(rootDir, 'messages', `${langCode}.json`);
-const enDict = JSON.parse(fs.readFileSync(enDictPath, 'utf-8'));
+const sourceDict = JSON.parse(fs.readFileSync(sourceDictPath, 'utf-8'));
 
 const frTranslations = {
   common_back_home: 'Retour à l’accueil',
@@ -115,7 +148,7 @@ const newDict = {
   $schema: 'https://inlang.com/schema/inlang-message-format',
 };
 
-for (const [key, val] of Object.entries(enDict)) {
+for (const [key, val] of Object.entries(sourceDict)) {
   if (key.startsWith('$')) continue;
   if (key === 'items_count') {
     newDict[key] = [
@@ -149,7 +182,7 @@ for (const [key, val] of Object.entries(enDict)) {
 }
 
 fs.writeFileSync(targetDictPath, JSON.stringify(newDict, null, 2) + '\n', 'utf-8');
-console.log(`✅ Created messages/${langCode}.json`);
+console.log(`✅ Created messages/${langCode}.json (derived from "${sourceLocale}")`);
 
 // 3. Update src/i18n/locales.ts (SSOT for LOCALES and metadata)
 const localesPath = path.join(rootDir, 'src', 'i18n', 'locales.ts');
@@ -204,10 +237,8 @@ if (fs.existsSync(configPath)) {
 }
 
 // 4. Confirmation and population of missing content collection files
-const shouldPopulateContent = await confirmExistingContent();
-
 if (shouldPopulateContent) {
-  console.log(`\n📄 Creating content files for existing pages and posts...`);
+  console.log(`\n📄 Creating content files for existing pages and posts using source language "${sourceLocale}"...`);
   const contentDir = path.join(rootDir, 'src', 'content');
   if (fs.existsSync(contentDir)) {
     const collections = fs.readdirSync(contentDir, { withFileTypes: true })
@@ -224,31 +255,51 @@ if (shouldPopulateContent) {
         const groupDir = path.join(colDir, group);
         const targetFile = path.join(groupDir, `${langCode}.mdx`);
         if (!fs.existsSync(targetFile)) {
-          const enFile = path.join(groupDir, 'en.mdx');
+          // Resolve candidate source file
+          const preferredSourceFile = path.join(groupDir, `${sourceLocale}.mdx`);
+          const fallbackSourceFile = path.join(groupDir, `${defaultBaseLocale}.mdx`);
+          const sourceCandidate = fs.existsSync(preferredSourceFile)
+            ? preferredSourceFile
+            : fs.existsSync(fallbackSourceFile)
+            ? fallbackSourceFile
+            : fs.readdirSync(groupDir).find((f) => f.endsWith('.mdx') || f.endsWith('.md'))
+            ? path.join(groupDir, fs.readdirSync(groupDir).find((f) => f.endsWith('.mdx') || f.endsWith('.md')))
+            : null;
+
           let title = group;
           let slug = group === 'home' ? '' : `${group}-${langCode}`;
           let description = `Description for ${group}`;
+          let body = 'Contenu à venir...';
 
-          if (fs.existsSync(enFile)) {
-            const enContent = fs.readFileSync(enFile, 'utf-8');
-            const tMatch = enContent.match(/title:\s*"([^"]+)"/);
+          if (sourceCandidate && fs.existsSync(sourceCandidate)) {
+            const rawContent = fs.readFileSync(sourceCandidate, 'utf-8');
+            const tMatch = rawContent.match(/title:\s*"([^"]+)"/);
             if (tMatch) title = tMatch[1];
+            const dMatch = rawContent.match(/description:\s*"([^"]+)"/);
+            if (dMatch) description = dMatch[1];
+
+            const bodyStripped = rawContent.replace(/^---[\s\S]*?---/, '').trim();
+            if (bodyStripped) {
+              body = bodyStripped;
+            }
           }
 
+          const pageTitle = langCode === 'fr'
+            ? (group === 'home' ? 'Bienvenue sur Astro i18n' : group === 'about' ? 'À propos de nous' : title)
+            : `[TODO: ${langCode}] ${title}`;
+
           const mdxContent = `---
-title: "${langCode === 'fr' ? (group === 'home' ? 'Bienvenue sur Astro i18n' : group === 'about' ? 'À propos de nous' : title) : `[TODO: ${langCode}] ${title}`}"
+title: "${pageTitle}"
 slug: "${slug}"
 description: "${description}"
 ${collection === 'blog' ? 'publishedAt: ' + new Date().toISOString().split('T')[0] : ''}
-draft: false
+draft: ${isDraft}
 ---
 
-# ${langCode === 'fr' ? (group === 'home' ? 'Bienvenue sur Astro i18n' : group === 'about' ? 'À propos de nous' : title) : title}
-
-Contenu à venir...
+${body.startsWith('#') ? body : `# ${pageTitle}\n\n${body}`}
 `;
           fs.writeFileSync(targetFile, mdxContent, 'utf-8');
-          console.log(`  + Created content: src/content/${collection}/${group}/${langCode}.mdx`);
+          console.log(`  + Created content: src/content/${collection}/${group}/${langCode}.mdx (from "${sourceCandidate ? path.basename(sourceCandidate, '.mdx') : 'default'}")`);
         }
       }
     }

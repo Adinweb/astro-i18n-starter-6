@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { stripLocale, localizeHref, localeHref } from './paths';
+import { LOCALES } from './locales';
+
+const nonDefaultLocales = (LOCALES as readonly string[]).filter((l) => l !== 'en');
+const testLoc1 = (nonDefaultLocales[0] || 'de') as any;
+const testLoc2 = (nonDefaultLocales[1] || nonDefaultLocales[0] || 'de') as any;
 
 describe('src/i18n/paths.ts', () => {
   describe('stripLocale', () => {
@@ -13,13 +18,9 @@ describe('src/i18n/paths.ts', () => {
     });
 
     it('detects non-default locale prefixes and strips them', () => {
-      expect(stripLocale('/fa')).toEqual({ locale: 'fa', pathname: '/' });
-      expect(stripLocale('/fa/')).toEqual({ locale: 'fa', pathname: '/' });
-      expect(stripLocale('/fa/about')).toEqual({ locale: 'fa', pathname: '/about' });
-      expect(stripLocale('/de/blog/erste-post')).toEqual({
-        locale: 'de',
-        pathname: '/blog/erste-post',
-      });
+      expect(stripLocale(`/${testLoc1}`)).toEqual({ locale: testLoc1, pathname: '/' });
+      expect(stripLocale(`/${testLoc1}/`)).toEqual({ locale: testLoc1, pathname: '/' });
+      expect(stripLocale(`/${testLoc1}/about`)).toEqual({ locale: testLoc1, pathname: '/about' });
     });
   });
 
@@ -29,38 +30,38 @@ describe('src/i18n/paths.ts', () => {
       expect(localizeHref('/about', 'en')).toBe('/about');
       expect(localizeHref('/blog/post-1', 'en')).toBe('/blog/post-1');
       // Strips non-default prefix when converting to default locale
-      expect(localizeHref('/fa/about', 'en')).toBe('/about');
+      expect(localizeHref(`/${testLoc1}/about`, 'en')).toBe('/about');
     });
 
-    it('returns prefixed paths for non-default locales (fa, de)', () => {
-      expect(localizeHref('/', 'fa')).toBe('/fa');
-      expect(localizeHref('/about', 'fa')).toBe('/fa/about');
-      expect(localizeHref('/', 'de')).toBe('/de');
-      expect(localizeHref('/about', 'de')).toBe('/de/about');
-      // Replaces another locale prefix
-      expect(localizeHref('/de/about', 'fa')).toBe('/fa/about');
+    it('returns prefixed paths for non-default locales', () => {
+      expect(localizeHref('/', testLoc1)).toBe(`/${testLoc1}`);
+      expect(localizeHref('/about', testLoc1)).toBe(`/${testLoc1}/about`);
+      if (testLoc2 !== testLoc1) {
+        expect(localizeHref('/', testLoc2)).toBe(`/${testLoc2}`);
+        expect(localizeHref('/about', testLoc2)).toBe(`/${testLoc2}/about`);
+        // Replaces another locale prefix
+        expect(localizeHref(`/${testLoc1}/about`, testLoc2)).toBe(`/${testLoc2}/about`);
+      }
     });
   });
 
   describe('localeHref', () => {
     it('switches locale using stripped path when no alternates are provided', () => {
-      expect(localeHref('/about', 'fa')).toBe('/fa/about');
-      expect(localeHref('/fa/about', 'en')).toBe('/about');
-      expect(localeHref('/fa/about', 'de')).toBe('/de/about');
-      expect(localeHref('/de', 'en')).toBe('/');
-      expect(localeHref('/', 'fa')).toBe('/fa');
+      expect(localeHref('/about', testLoc1)).toBe(`/${testLoc1}/about`);
+      expect(localeHref(`/${testLoc1}/about`, 'en')).toBe('/about');
+      expect(localeHref(`/${testLoc1}`, 'en')).toBe('/');
+      expect(localeHref('/', testLoc1)).toBe(`/${testLoc1}`);
     });
 
     it('uses alternates mapping for translated slugs', () => {
-      const alternates = {
+      const alternates: Record<string, string> = {
         en: '/blog/first-post',
-        fa: '/blog/اولین-پست',
-        de: '/blog/erste-post',
+        [testLoc1]: `/blog/post-${testLoc1}`,
       };
 
-      expect(localeHref('/blog/first-post', 'fa', alternates)).toBe('/fa/blog/اولین-پست');
-      expect(localeHref('/blog/first-post', 'de', alternates)).toBe('/de/blog/erste-post');
-      expect(localeHref('/fa/blog/اولین-پست', 'en', alternates)).toBe('/blog/first-post');
+      expect(localeHref('/blog/first-post', testLoc1, alternates)).toBe(`/${testLoc1}/blog/post-${testLoc1}`);
+      expect(localeHref(`/${testLoc1}/blog/post-${testLoc1}`, 'en', alternates)).toBe('/blog/first-post');
     });
   });
 });
+

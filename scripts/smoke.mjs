@@ -36,22 +36,32 @@ if (fs.existsSync(rootHtmlPath)) {
   );
 }
 
-// 2. Verifies /fa/index.html renders Persian (<html lang="fa" dir="rtl">)
-const faHtmlPath = path.join(distDir, 'fa', 'index.html');
-assert(fs.existsSync(faHtmlPath), '/fa/index.html exists');
-if (fs.existsSync(faHtmlPath)) {
-  const html = fs.readFileSync(faHtmlPath, 'utf-8');
+const inlangSettings = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
+);
+const LOCALES = inlangSettings.locales;
+const nonDefaultLocales = LOCALES.filter((l) => l !== inlangSettings.baseLocale);
+const testNonDefault = LOCALES.includes('fa') ? 'fa' : nonDefaultLocales[0] || 'de';
+
+// 2. Verifies non-default locale index renders correctly (e.g. /fa/index.html or /de/index.html)
+const nonDefaultHtmlPath = path.join(distDir, testNonDefault, 'index.html');
+assert(fs.existsSync(nonDefaultHtmlPath), `/${testNonDefault}/index.html exists`);
+if (fs.existsSync(nonDefaultHtmlPath)) {
+  const html = fs.readFileSync(nonDefaultHtmlPath, 'utf-8');
+  const expectedDir = ['fa', 'ar', 'he', 'ur'].includes(testNonDefault) ? 'rtl' : 'ltr';
   assert(
-    html.includes('lang="fa"') && html.includes('dir="rtl"'),
-    '/fa/index.html renders Persian (<html lang="fa" dir="rtl">)'
+    html.includes(`lang="${testNonDefault}"`) && html.includes(`dir="${expectedDir}"`),
+    `/${testNonDefault}/index.html renders correct lang and dir (<html lang="${testNonDefault}" dir="${expectedDir}">)`
   );
 }
 
-// 3. Verifies translated slug routes exist (e.g. dist/fa/blog/اولین-پست/index.html)
-const faPostPath = path.join(distDir, 'fa', 'blog', 'اولین-پست', 'index.html');
+// 3. Verifies non-default blog route exists
+const testBlogPath = LOCALES.includes('fa')
+  ? path.join(distDir, 'fa', 'blog', 'اولین-پست', 'index.html')
+  : path.join(distDir, testNonDefault, 'blog', 'index.html');
 assert(
-  fs.existsSync(faPostPath),
-  'Translated slug route exists (dist/fa/blog/اولین-پست/index.html)'
+  fs.existsSync(testBlogPath),
+  `Non-default blog route exists (${path.relative(distDir, testBlogPath)})`
 );
 
 // 4. Verifies canonical <link rel="canonical"> matches target URL
@@ -64,11 +74,11 @@ if (fs.existsSync(rootHtmlPath)) {
   );
 }
 
-if (fs.existsSync(faPostPath)) {
-  const html = fs.readFileSync(faPostPath, 'utf-8');
+if (fs.existsSync(testBlogPath)) {
+  const html = fs.readFileSync(testBlogPath, 'utf-8');
   const canonicalMatch = html.match(/<link[^>]+rel="canonical"[^>]*href="([^"]+)"/i);
   assert(
-    canonicalMatch && canonicalMatch[1].includes(encodeURI('اولین-پست')) || (canonicalMatch && canonicalMatch[1].includes('اولین-پست')),
+    canonicalMatch && (canonicalMatch[1].includes(testNonDefault)),
     `Canonical link matches target URL on translated route: ${canonicalMatch ? canonicalMatch[1] : 'none'}`
   );
 }

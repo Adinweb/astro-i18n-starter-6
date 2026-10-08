@@ -13,10 +13,6 @@ const de_common_site_title = /** @type {(inputs: Common_Site_TitleInputs) => Loc
 	return /** @type {LocalizedString} */ (`Astro i18n`)
 };
 
-const fa_common_site_title = /** @type {(inputs: Common_Site_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`استرو چندزبانه`)
-};
-
 const fr_common_site_title = /** @type {(inputs: Common_Site_TitleInputs) => LocalizedString} */ () => {
 	return /** @type {LocalizedString} */ (`Astro i18n`)
 };
@@ -27,13 +23,12 @@ const fr_common_site_title = /** @type {(inputs: Common_Site_TitleInputs) => Loc
 * | "Astro i18n" |
 *
 * @param {Common_Site_TitleInputs} inputs
-* @param {{ locale?: "en" | "de" | "fa" | "fr" }} options
+* @param {{ locale?: "en" | "de" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const common_site_title = /** @type {((inputs?: Common_Site_TitleInputs, options?: { locale?: "en" | "de" | "fa" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_Site_TitleInputs, { locale?: "en" | "de" | "fa" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+export const common_site_title = /** @type {((inputs?: Common_Site_TitleInputs, options?: { locale?: "en" | "de" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_Site_TitleInputs, { locale?: "en" | "de" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "de") return de_common_site_title(inputs)
-	if (locale === "fa") return fa_common_site_title(inputs)
 	if (locale === "fr") return fr_common_site_title(inputs)
 	return en_common_site_title(inputs)
 });

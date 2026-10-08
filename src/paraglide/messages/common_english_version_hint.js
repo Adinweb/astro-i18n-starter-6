@@ -13,10 +13,6 @@ const de_common_english_version_hint = /** @type {(inputs: Common_English_Versio
 	return /** @type {LocalizedString} */ (`Oder diese Seite auf Englisch ansehen:`)
 };
 
-const fa_common_english_version_hint = /** @type {(inputs: Common_English_Version_HintInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`یا مشاهده این برگه به زبان انگلیسی:`)
-};
-
 const fr_common_english_version_hint = /** @type {(inputs: Common_English_Version_HintInputs) => LocalizedString} */ () => {
 	return /** @type {LocalizedString} */ (`Ou consulter cette page en anglais :`)
 };
@@ -27,13 +23,12 @@ const fr_common_english_version_hint = /** @type {(inputs: Common_English_Versio
 * | "Or view this page in English:" |
 *
 * @param {Common_English_Version_HintInputs} inputs
-* @param {{ locale?: "en" | "de" | "fa" | "fr" }} options
+* @param {{ locale?: "en" | "de" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const common_english_version_hint = /** @type {((inputs?: Common_English_Version_HintInputs, options?: { locale?: "en" | "de" | "fa" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_English_Version_HintInputs, { locale?: "en" | "de" | "fa" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+export const common_english_version_hint = /** @type {((inputs?: Common_English_Version_HintInputs, options?: { locale?: "en" | "de" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_English_Version_HintInputs, { locale?: "en" | "de" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "de") return de_common_english_version_hint(inputs)
-	if (locale === "fa") return fa_common_english_version_hint(inputs)
 	if (locale === "fr") return fr_common_english_version_hint(inputs)
 	return en_common_english_version_hint(inputs)
 });

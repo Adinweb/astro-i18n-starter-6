@@ -13,10 +13,6 @@ const de_common_not_found_desc = /** @type {(inputs: Common_Not_Found_DescInputs
 	return /** @type {LocalizedString} */ (`Die gesuchte Seite existiert nicht oder wurde verschoben.`)
 };
 
-const fa_common_not_found_desc = /** @type {(inputs: Common_Not_Found_DescInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`برگه‌ای که به دنبال آن هستید وجود ندارد یا منتقل شده است.`)
-};
-
 const fr_common_not_found_desc = /** @type {(inputs: Common_Not_Found_DescInputs) => LocalizedString} */ () => {
 	return /** @type {LocalizedString} */ (`La page que vous recherchez n’existe pas ou a été déplacée.`)
 };
@@ -27,13 +23,12 @@ const fr_common_not_found_desc = /** @type {(inputs: Common_Not_Found_DescInputs
 * | "The page you are looking for does not exist or has been moved." |
 *
 * @param {Common_Not_Found_DescInputs} inputs
-* @param {{ locale?: "en" | "de" | "fa" | "fr" }} options
+* @param {{ locale?: "en" | "de" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const common_not_found_desc = /** @type {((inputs?: Common_Not_Found_DescInputs, options?: { locale?: "en" | "de" | "fa" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_Not_Found_DescInputs, { locale?: "en" | "de" | "fa" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
+export const common_not_found_desc = /** @type {((inputs?: Common_Not_Found_DescInputs, options?: { locale?: "en" | "de" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_Not_Found_DescInputs, { locale?: "en" | "de" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "de") return de_common_not_found_desc(inputs)
-	if (locale === "fa") return fa_common_not_found_desc(inputs)
 	if (locale === "fr") return fr_common_not_found_desc(inputs)
 	return en_common_not_found_desc(inputs)
 });

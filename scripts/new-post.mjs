@@ -6,14 +6,20 @@ const args = process.argv.slice(2);
 const groupSlug = args.find((a) => !a.startsWith('--'));
 let collection = 'blog';
 let fromLocale = '';
+let customTitle = '';
+let publishAll = false;
 
 for (const arg of args) {
   if (arg.startsWith('--collection=')) collection = arg.slice(13);
   else if (arg.startsWith('--from=')) fromLocale = arg.slice(7);
+  else if (arg.startsWith('--source=')) fromLocale = arg.slice(9);
+  else if (arg.startsWith('--title=')) customTitle = arg.slice(8);
+  else if (arg === '--publish' || arg === '--no-draft' || arg === '--draft=false') publishAll = true;
+  else if (arg === '--draft=true' || arg === '--draft') publishAll = false;
 }
 
 if (!groupSlug) {
-  console.error('Usage: npm run new:post <group-slug> [--collection=<name>] [--from=<locale>]');
+  console.error('Usage: npm run new:post <group-slug> [--collection=<name>] [--from=<locale>] [--title="<title>"] [--publish|--draft=false]');
   process.exit(1);
 }
 
@@ -36,6 +42,8 @@ const inlangSettings = JSON.parse(
   fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
 );
 const LOCALES = inlangSettings.locales;
+const defaultLocale = inlangSettings.baseLocale || 'en';
+const sourceLocale = fromLocale || defaultLocale;
 const today = new Date().toISOString().split('T')[0];
 
 let baseBody = `\n# Article Header\n\nArticle content goes here...\n`;
@@ -45,6 +53,8 @@ if (fromLocale) {
   if (fromLocale.includes('/')) {
     const candidate = path.join(colDir, fromLocale.endsWith('.mdx') ? fromLocale : `${fromLocale}.mdx`);
     if (fs.existsSync(candidate)) sourceFile = candidate;
+  } else if (fs.existsSync(path.join(colDir, fromLocale, `${fromLocale}.mdx`))) {
+    sourceFile = path.join(colDir, fromLocale, `${fromLocale}.mdx`);
   } else if (fs.existsSync(path.join(colDir, fromLocale, 'en.mdx'))) {
     sourceFile = path.join(colDir, fromLocale, 'en.mdx');
   } else {
@@ -65,13 +75,15 @@ if (fromLocale) {
   }
 }
 
-for (const loc of LOCALES) {
-  const isEn = loc === 'en';
-  const isFrom = loc === fromLocale;
-  const isDraft = !(isEn || isFrom);
+const sourceTitle = customTitle || groupSlug.replace(/-/g, ' ');
 
-  const slug = loc === 'fa' ? `${groupSlug}-fa` : loc === 'de' ? `${groupSlug}-de` : groupSlug;
-  const title = isEn ? groupSlug.replace(/-/g, ' ') : `[TODO: ${loc}] ${groupSlug.replace(/-/g, ' ')}`;
+for (const loc of LOCALES) {
+  const isSource = loc === sourceLocale;
+  const isDraft = publishAll ? false : !isSource;
+
+  const isDefault = loc === defaultLocale;
+  const slug = isDefault ? groupSlug : `${groupSlug}-${loc}`;
+  const title = isSource ? sourceTitle : `[TODO: ${loc}] ${sourceTitle}`;
 
   const content = `---
 title: "${title}"
@@ -87,3 +99,12 @@ ${baseBody}
 }
 
 console.log(`✅ Created synchronized article group in src/content/${collection}/${groupSlug}/ across locales: ${LOCALES.join(', ')}`);
+console.log(`ℹ️ Source locale: "${sourceLocale}" (title: "${sourceTitle}")`);
+
+if (!publishAll) {
+  const draftedLocales = LOCALES.filter((l) => l !== sourceLocale);
+  console.log(`📝 Note: Non-source locales (${draftedLocales.join(', ')}) are marked as "draft: true" so they won't appear on blog index until translated.`);
+  console.log(`   (To publish all locales immediately next time, pass --publish or --draft=false).`);
+} else {
+  console.log(`🚀 All locales published immediately with "draft: false".`);
+}

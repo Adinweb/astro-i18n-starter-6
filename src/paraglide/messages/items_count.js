@@ -18,12 +18,6 @@ const de_items_count = /** @type {(inputs: Items_CountInputs) => LocalizedString
 	
 };
 
-const fa_items_count = /** @type {(inputs: Items_CountInputs) => LocalizedString} */ (i) => {const countPlural = registry.plural("fa", i?.count, {});
-	if (countPlural === "one") return /** @type {LocalizedString} */ (`${i?.count} مورد`);
-	return /** @type {LocalizedString} */ (`${i?.count} مورد`)
-	
-};
-
 const fr_items_count = /** @type {(inputs: Items_CountInputs) => LocalizedString} */ (i) => {const countPlural = registry.plural("fr", i?.count, {});
 	if (countPlural === "one") return /** @type {LocalizedString} */ (`${i?.count} élément`);
 	return /** @type {LocalizedString} */ (`${i?.count} éléments`)
@@ -37,13 +31,12 @@ const fr_items_count = /** @type {(inputs: Items_CountInputs) => LocalizedString
 * | * | "{count} items" |
 *
 * @param {Items_CountInputs} inputs
-* @param {{ locale?: "en" | "de" | "fa" | "fr" }} options
+* @param {{ locale?: "en" | "de" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const items_count = /** @type {((inputs: Items_CountInputs, options?: { locale?: "en" | "de" | "fa" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Items_CountInputs, { locale?: "en" | "de" | "fa" | "fr" }, {}>} */ ((inputs, options = {}) => {
+export const items_count = /** @type {((inputs: Items_CountInputs, options?: { locale?: "en" | "de" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Items_CountInputs, { locale?: "en" | "de" | "fr" }, {}>} */ ((inputs, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "de") return de_items_count(inputs)
-	if (locale === "fa") return fa_items_count(inputs)
 	if (locale === "fr") return fr_items_count(inputs)
 	return en_items_count(inputs)
 });
