@@ -101,19 +101,23 @@ Manage the server using `astro dev status`, `astro dev logs`, and `astro dev sto
 Agents should execute these scripts instead of performing brittle manual file manipulations:
 
 ### 4.1 Content Scaffolding
-* **Create a new static page group across all locales:**
+* **Create or update a static page group across all locales:**
   ```bash
   npm run new:page <page-key> [--title="<Title>"] [--from=<source-locale>] [--publish]
+  # Update existing page frontmatter across all locales without overwriting markdown bodies:
+  npm run new:page <page-key> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"]
   ```
   *Example:* `npm run new:page contact --title="Contact Us" --from=en`  
-  *Actions performed:* Creates `src/content/pages/contact/{en,de,fr,fa,ar}.mdx`, generates localized slugs, and registers `nav_contact` key across all dictionaries.
+  *Actions performed:* Creates or updates `src/content/pages/contact/{en,de,fr,fa,ar}.mdx`, generates localized slugs, preserves body copy, and registers `nav_contact` key across all dictionaries.
 
-* **Create a new blog article across all locales:**
+* **Create or update a blog article across all locales:**
   ```bash
   npm run new:post <group-slug> [--from=<source-locale>] [--title="<Title>"] [--publish]
+  # Update existing post frontmatter across all locales without manual file rewrites:
+  npm run new:post <group-slug> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"]
   ```
   *Example:* `npm run new:post ai-agents --from=en --title="AI Coding Agents" --publish`  
-  *Actions performed:* Creates `src/content/blog/ai-agents/{en,de,fr,fa,ar}.mdx` with synchronized frontmatter.
+  *Actions performed:* Creates or updates `src/content/blog/ai-agents/{en,de,fr,fa,ar}.mdx` with synchronized frontmatter.
 
 ### 4.2 Content Removal
 * **Remove an entire page or a single locale:**
@@ -155,6 +159,14 @@ Agents should execute these scripts instead of performing brittle manual file ma
   ```bash
   npm run i18n:add -- --category=<cat> --key=<key> --en="English" --fa="فارسی" --ar="العربية" --de="Deutsch" --fr="Français"
   ```
+
+* **Batch add translation keys (JSON file, CLI JSON, or stdin):**
+  ```bash
+  npm run i18n:add-batch -- --file=translations.json [--category=<cat>]
+  npm run i18n:add-batch -- --json='{"cart_checkout": {"en": "Checkout", "fa": "تسویه حساب"}}'
+  cat keys.json | npm run i18n:add-batch
+  ```
+  *Actions performed:* Merges multiple keys into all locale dictionaries with automatic parity placeholders, sorts keys alphabetically, and triggers a single Paraglide recompile.
 
 ---
 

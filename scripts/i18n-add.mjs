@@ -4,6 +4,18 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 
 const args = process.argv.slice(2);
+
+// Check if user passed batch options (--json, --file, or --batch)
+if (args.some((a) => a.startsWith('--json=') || a.startsWith('--file=') || a === '--batch')) {
+  const batchArgs = args.filter((a) => a !== '--batch').map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ');
+  try {
+    execSync(`node scripts/i18n-add-batch.mjs ${batchArgs}`, { stdio: 'inherit' });
+    process.exit(0);
+  } catch (err) {
+    process.exit(err.status || 1);
+  }
+}
+
 let category = '';
 let key = '';
 const textByLocale = {};
@@ -24,6 +36,7 @@ for (const arg of args) {
 
 if (!category || !key) {
   console.error('Usage: npm run i18n:add -- --category=<category> --key=<key> [--en="..."] [--fa="..."] [--de="..."]');
+  console.error('For multiple keys, use: npm run i18n:add-batch -- --file=<path> or --json=\'<json>\'');
   process.exit(1);
 }
 

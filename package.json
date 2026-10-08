@@ -16,6 +16,7 @@
     "block:adapt": "node scripts/block-adapt.mjs",
     "i18n:extract": "node scripts/i18n-extract.mjs",
     "i18n:add": "node scripts/i18n-add.mjs",
+    "i18n:add-batch": "node scripts/i18n-add-batch.mjs",
     "new:page": "node scripts/new-page.mjs",
     "new:post": "node scripts/new-post.mjs",
     "remove:page": "node scripts/remove-page.mjs",
