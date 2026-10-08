@@ -16,7 +16,11 @@ interface Props {
 const { entry, locale, alternates, url } = Astro.props;
 const { Content } = await render(entry);
 
-const breadcrumbs = getBreadcrumbs(url, locale, { current: entry.data.title });
+const breadcrumbs = getBreadcrumbs(url, locale, {
+  current: entry.data.title,
+  home: m.nav_home({}, { locale }),
+  blog: m.nav_blog({}, { locale }),
+});
 const blogIndexHref = localizeHref('/blog', locale);
 
 const formattedDate = entry.data.publishedAt.toLocaleDateString(locale, {
@@ -33,7 +37,7 @@ const formattedDate = entry.data.publishedAt.toLocaleDateString(locale, {
   url={url}
   alternates={alternates}
 >
-  <nav aria-label="Breadcrumbs" class="mb-6">
+  <nav aria-label={m.common_breadcrumbs({}, { locale })} class="mb-6">
     <ol class="flex flex-wrap items-center gap-2 text-xs text-muted">
       {
         breadcrumbs.map((crumb, idx) => (

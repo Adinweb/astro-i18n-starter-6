@@ -45,15 +45,16 @@ const { currentLocale, alternates } = Astro.props;
 </div>
 
 <script>
-  import { navigate } from 'astro:transitions/client';
-
   function setupLanguageSwitcher() {
     const selects = document.querySelectorAll<HTMLSelectElement>('[data-switcher-select]');
     selects.forEach((select) => {
+      if (select.dataset.bound === 'true') return;
+      select.dataset.bound = 'true';
+
       select.addEventListener('change', (e) => {
         const target = (e.target as HTMLSelectElement).value;
         if (target && target !== '#' && target !== window.location.pathname) {
-          navigate(target);
+          window.location.assign(target);
         }
       });
     });

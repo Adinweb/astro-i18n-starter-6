@@ -3,6 +3,7 @@ import * as m from '@/paraglide/messages';
 import { LOCALES } from './locales';
 
 const hasFa = (LOCALES as readonly string[]).includes('fa');
+const hasAr = (LOCALES as readonly string[]).includes('ar');
 
 describe('ICU Plurals and Selectordinal', () => {
   describe('items_count (Plurals)', () => {
@@ -21,6 +22,14 @@ describe('ICU Plurals and Selectordinal', () => {
       it('formats singular and plural in Persian', () => {
         expect(m.items_count({ count: 1 }, { locale: 'fa' as any })).toBe('1 مورد');
         expect(m.items_count({ count: 10 }, { locale: 'fa' as any })).toBe('10 مورد');
+      });
+    }
+
+    if (hasAr) {
+      it('formats plurals in Arabic', () => {
+        expect(m.items_count({ count: 1 }, { locale: 'ar' as any })).toBe('1 عنصر');
+        expect(m.items_count({ count: 2 }, { locale: 'ar' as any })).toBe('عنصران');
+        expect(m.items_count({ count: 5 }, { locale: 'ar' as any })).toBe('5 عناصر');
       });
     }
   });
@@ -43,6 +52,12 @@ describe('ICU Plurals and Selectordinal', () => {
       it('formats ordinals in Persian', () => {
         expect(m.position_ordinal({ pos: 1 }, { locale: 'fa' as any })).toBe('1م');
         expect(m.position_ordinal({ pos: 5 }, { locale: 'fa' as any })).toBe('5م');
+      });
+    }
+
+    if (hasAr) {
+      it('formats ordinals in Arabic', () => {
+        expect(m.position_ordinal({ pos: 1 }, { locale: 'ar' as any })).toBe('المركز 1');
       });
     }
   });

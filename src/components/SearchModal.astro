@@ -80,6 +80,8 @@ const { locale } = Astro.props;
     const resultsContainer = document.getElementById('search-results');
 
     if (!dialog || !input || !resultsContainer) return;
+    if (dialog.dataset.bound === 'true') return;
+    dialog.dataset.bound = 'true';
 
     function openModal() {
       dialog?.classList.remove('opacity-0', 'pointer-events-none');

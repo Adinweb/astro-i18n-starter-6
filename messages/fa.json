@@ -1,0 +1,56 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "blog_index_description": "جدیدترین مقالات، دیدگاه‌ها و به‌روزرسانی‌های ما.",
+  "common_all_rights_reserved": "تمامی حقوق محفوظ است.",
+  "common_back_home": "بازگشت به خانه",
+  "common_back_to_blog": "بازگشت به وبلاگ",
+  "common_breadcrumbs": "مسیر راهنما",
+  "common_change_language": "تغییر زبان",
+  "common_close": "بستن",
+  "common_english_version_hint": "یا این صفحه را به نسخه انگلیسی مشاهده کنید:",
+  "common_go_english_version": "مشاهده نسخه انگلیسی",
+  "common_menu": "منو",
+  "common_no_results": "نتیجه‌ای یافت نشد.",
+  "common_not_found_desc": "صفحه‌ای که به دنبال آن هستید وجود ندارد یا منتقل شده است.",
+  "common_not_found_title": "صفحه پیدا نشد",
+  "common_press_esc": "برای بستن",
+  "common_published_on": "منتشر شده در",
+  "common_read_more": "ادامه مطلب",
+  "common_search_placeholder": "جستجوی مقالات و صفحات...",
+  "common_site_title": "استارتر آسترو",
+  "common_type_to_search": "برای جستجو تایپ کنید...",
+  "items_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} مورد",
+        "countPlural=*": "{count} مورد"
+      }
+    }
+  ],
+  "nav_about": "درباره ما",
+  "nav_blog": "وبلاگ",
+  "nav_features": "ویژگی‌ها",
+  "nav_home": "خانه",
+  "nav_pricing": "قیمت‌گذاری",
+  "position_ordinal": [
+    {
+      "declarations": [
+        "input pos",
+        "local posOrdinal = pos: plural type=ordinal"
+      ],
+      "selectors": [
+        "posOrdinal"
+      ],
+      "match": {
+        "posOrdinal=*": "{pos}م"
+      }
+    }
+  ]
+}

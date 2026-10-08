@@ -166,8 +166,22 @@ export function getBreadcrumbs(
   locale: Locale,
   titles?: { current?: string; home?: string; blog?: string }
 ): BreadcrumbItem[] {
-  const homeLabel = titles?.home || ((locale as string) === 'fa' ? 'خانه' : (locale as string) === 'de' ? 'Startseite' : 'Home');
-  const blogLabel = titles?.blog || ((locale as string) === 'fa' ? 'وبلاگ' : 'Blog');
+  const defaultHomeLabels: Record<string, string> = {
+    fa: 'خانه',
+    ar: 'الرئيسية',
+    de: 'Startseite',
+    fr: 'Accueil',
+    en: 'Home',
+  };
+  const defaultBlogLabels: Record<string, string> = {
+    fa: 'وبلاگ',
+    ar: 'المدونة',
+    de: 'Blog',
+    fr: 'Blog',
+    en: 'Blog',
+  };
+  const homeLabel = titles?.home || defaultHomeLabels[locale] || 'Home';
+  const blogLabel = titles?.blog || defaultBlogLabels[locale] || 'Blog';
   const homeHref = locale === DEFAULT_LOCALE ? '/' : `/${locale}`;
   const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
 

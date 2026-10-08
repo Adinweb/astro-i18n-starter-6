@@ -28,10 +28,12 @@ const i18nData = Object.fromEntries(
         homeHref: await getPageUrl('home', loc),
         aboutHref: await getPageUrl('about', loc),
         featuresHref: await getPageUrl('features', loc),
+        pricingHref: await getPageUrl('pricing', loc),
         blogHref: loc === DEFAULT_LOCALE ? '/blog' : `/${loc}/blog`,
         navHome: m.nav_home({}, { locale: loc }),
         navAbout: m.nav_about({}, { locale: loc }),
         navFeatures: m.nav_features({}, { locale: loc }),
+        navPricing: m.nav_pricing({}, { locale: loc }),
         navBlog: m.nav_blog({}, { locale: loc }),
         dir: LOCALE_METADATA[loc].dir,
         lang: LOCALE_METADATA[loc].htmlLang,
@@ -123,6 +125,10 @@ const i18nData = Object.fromEntries(
       document.querySelectorAll('[data-nav-link="features"]').forEach((el) => {
         el.setAttribute('href', data.featuresHref);
         el.textContent = data.navFeatures;
+      });
+      document.querySelectorAll('[data-nav-link="pricing"]').forEach((el) => {
+        el.setAttribute('href', data.pricingHref);
+        el.textContent = data.navPricing;
       });
       document.querySelectorAll('[data-nav-link="blog"]').forEach((el) => {
         el.setAttribute('href', data.blogHref);

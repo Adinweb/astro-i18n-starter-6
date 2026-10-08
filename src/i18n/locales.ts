@@ -1,4 +1,4 @@
-export const LOCALES = ['en', 'de', 'fr'] as const;
+export const LOCALES = ['en', 'de', 'fr', 'fa', 'ar'] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -33,6 +33,18 @@ export const LOCALE_METADATA = {
     htmlLang: 'fr',
     name: 'Français',
     fontFamily: 'var(--font-sans)',
+  },
+  fa: {
+    dir: 'rtl',
+    htmlLang: 'fa',
+    name: 'فارسی',
+    fontFamily: 'var(--font-fa)',
+  },
+  ar: {
+    dir: 'rtl',
+    htmlLang: 'ar',
+    name: 'العربية',
+    fontFamily: 'var(--font-ar)',
   },
 } satisfies Record<Locale, LocaleMeta>;
 

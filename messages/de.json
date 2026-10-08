@@ -1,11 +1,15 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "blog_index_description": "Unsere neuesten Artikel, Gedanken und Updates.",
+  "common_all_rights_reserved": "Alle Rechte vorbehalten.",
   "common_back_home": "Zurück zur Startseite",
   "common_back_to_blog": "Zurück zum Blog",
+  "common_breadcrumbs": "Brotkrümelnavigation",
   "common_change_language": "Sprache ändern",
   "common_close": "Schließen",
   "common_english_version_hint": "Oder diese Seite auf Englisch ansehen:",
   "common_go_english_version": "Zur englischen Version wechseln",
+  "common_menu": "Menü",
   "common_no_results": "Keine Ergebnisse gefunden.",
   "common_not_found_desc": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
   "common_not_found_title": "Seite nicht gefunden",
@@ -34,7 +38,7 @@
   "nav_blog": "Blog",
   "nav_features": "Funktionen",
   "nav_home": "Startseite",
-  "nav_pricing": "[TODO: de] pricing",
+  "nav_pricing": "Preise",
   "position_ordinal": [
     {
       "declarations": [

@@ -14,7 +14,8 @@
 
 :root {
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-fa: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+  --font-fa: 'Vazirmatn', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+  --font-ar: 'Noto Sans Arabic', 'Geeza Pro', 'Al Bayan', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
 }
 
 body {
@@ -23,6 +24,10 @@ body {
 
 :lang(fa) {
   font-family: var(--font-fa);
+}
+
+:lang(ar) {
+  font-family: var(--font-ar);
 }
 
 :lang(en), :lang(de), :lang(fr) {

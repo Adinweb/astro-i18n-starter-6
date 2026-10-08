@@ -55,6 +55,18 @@ if (fs.existsSync(nonDefaultHtmlPath)) {
   );
 }
 
+if (LOCALES.includes('ar')) {
+  const arHtmlPath = path.join(distDir, 'ar', 'index.html');
+  assert(fs.existsSync(arHtmlPath), '/ar/index.html exists');
+  if (fs.existsSync(arHtmlPath)) {
+    const html = fs.readFileSync(arHtmlPath, 'utf-8');
+    assert(
+      html.includes('lang="ar"') && html.includes('dir="rtl"'),
+      '/ar/index.html renders Arabic with RTL (<html lang="ar" dir="rtl">)'
+    );
+  }
+}
+
 // 3. Verifies non-default blog route exists
 const testBlogPath = LOCALES.includes('fa')
   ? path.join(distDir, 'fa', 'blog', 'اولین-پست', 'index.html')

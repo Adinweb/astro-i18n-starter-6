@@ -25,6 +25,7 @@ const meta = getLocaleMeta(locale);
 const homeHref = await getPageUrl('home', locale);
 const aboutHref = await getPageUrl('about', locale);
 const featuresHref = await getPageUrl('features', locale);
+const pricingHref = await getPageUrl('pricing', locale);
 const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
 ---
 
@@ -63,6 +64,9 @@ const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
           <a href={featuresHref} data-nav-link="features" class="hover:text-primary transition-colors">
             {m.nav_features({}, { locale })}
           </a>
+          <a href={pricingHref} data-nav-link="pricing" class="hover:text-primary transition-colors">
+            {m.nav_pricing({}, { locale })}
+          </a>
           <a href={blogHref} data-nav-link="blog" class="hover:text-primary transition-colors">
             {m.nav_blog({}, { locale })}
           </a>
@@ -81,7 +85,42 @@ const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
           </button>
 
           <LanguageSwitcher currentLocale={locale} alternates={alternates} />
+
+          <button
+            type="button"
+            data-mobile-menu-btn
+            class="md:hidden flex items-center justify-center p-2 rounded-md border border-border bg-surface hover:bg-surface-hover text-muted hover:text-fg transition-colors cursor-pointer"
+            aria-label={m.common_menu({}, { locale })}
+            aria-expanded="false"
+            aria-controls="mobile-nav-menu"
+          >
+            <Icon name="menu" size={18} class="block open-icon" />
+            <Icon name="close" size={18} class="hidden close-icon" />
+          </button>
         </div>
+      </div>
+
+      <!-- Mobile Navigation Drawer -->
+      <div
+        id="mobile-nav-menu"
+        data-mobile-menu
+        class="hidden md:hidden border-t border-border bg-surface/95 px-4 py-4 space-y-3 text-sm font-medium transition-all"
+      >
+        <a href={homeHref} data-nav-link="home" class="block py-1 hover:text-primary transition-colors">
+          {m.nav_home({}, { locale })}
+        </a>
+        <a href={aboutHref} data-nav-link="about" class="block py-1 hover:text-primary transition-colors">
+          {m.nav_about({}, { locale })}
+        </a>
+        <a href={featuresHref} data-nav-link="features" class="block py-1 hover:text-primary transition-colors">
+          {m.nav_features({}, { locale })}
+        </a>
+        <a href={pricingHref} data-nav-link="pricing" class="block py-1 hover:text-primary transition-colors">
+          {m.nav_pricing({}, { locale })}
+        </a>
+        <a href={blogHref} data-nav-link="blog" class="block py-1 hover:text-primary transition-colors">
+          {m.nav_blog({}, { locale })}
+        </a>
       </div>
     </header>
 
@@ -92,17 +131,60 @@ const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
     <footer class="border-t border-border bg-surface mt-auto py-8">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
         <div>
-          © {new Date().getFullYear()} Astro i18n Starter. All rights reserved.
+          © {new Date().getFullYear()} {m.common_site_title({}, { locale })}. {m.common_all_rights_reserved({}, { locale })}
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex flex-wrap items-center gap-4">
           <a href={homeHref} data-nav-link="home" class="hover:underline">{m.nav_home({}, { locale })}</a>
           <a href={aboutHref} data-nav-link="about" class="hover:underline">{m.nav_about({}, { locale })}</a>
           <a href={featuresHref} data-nav-link="features" class="hover:underline">{m.nav_features({}, { locale })}</a>
+          <a href={pricingHref} data-nav-link="pricing" class="hover:underline">{m.nav_pricing({}, { locale })}</a>
           <a href={blogHref} data-nav-link="blog" class="hover:underline">{m.nav_blog({}, { locale })}</a>
         </div>
       </div>
     </footer>
 
     <SearchModal locale={locale} />
+
+    <script>
+      function setupMobileMenu() {
+        const btn = document.querySelector<HTMLButtonElement>('[data-mobile-menu-btn]');
+        const menu = document.querySelector<HTMLElement>('[data-mobile-menu]');
+        if (!btn || !menu || btn.dataset.bound === 'true') return;
+        btn.dataset.bound = 'true';
+
+        const openIcon = btn.querySelector('.open-icon');
+        const closeIcon = btn.querySelector('.close-icon');
+
+        function toggleMenu() {
+          const isClosed = menu?.classList.contains('hidden');
+          if (isClosed) {
+            menu?.classList.remove('hidden');
+            btn?.setAttribute('aria-expanded', 'true');
+            openIcon?.classList.add('hidden');
+            closeIcon?.classList.remove('hidden');
+          } else {
+            menu?.classList.add('hidden');
+            btn?.setAttribute('aria-expanded', 'false');
+            openIcon?.classList.remove('hidden');
+            closeIcon?.classList.add('hidden');
+          }
+        }
+
+        btn.addEventListener('click', toggleMenu);
+
+        // Close on clicking a link inside
+        menu.addEventListener('click', (e) => {
+          if ((e.target as HTMLElement)?.closest('a')) {
+            menu.classList.add('hidden');
+            btn.setAttribute('aria-expanded', 'false');
+            openIcon?.classList.remove('hidden');
+            closeIcon?.classList.add('hidden');
+          }
+        });
+      }
+
+      setupMobileMenu();
+      document.addEventListener('astro:page-load', setupMobileMenu);
+    </script>
   </body>
 </html>

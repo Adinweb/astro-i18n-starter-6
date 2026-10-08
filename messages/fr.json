@@ -1,11 +1,15 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "blog_index_description": "Nos derniers articles, réflexions et actualités.",
+  "common_all_rights_reserved": "Tous droits réservés.",
   "common_back_home": "Retour à l’accueil",
   "common_back_to_blog": "Retour au blog",
+  "common_breadcrumbs": "Fil d'Ariane",
   "common_change_language": "Changer de langue",
   "common_close": "Fermer",
   "common_english_version_hint": "Ou consulter cette page en anglais :",
   "common_go_english_version": "Aller à la version anglaise",
+  "common_menu": "Menu",
   "common_no_results": "Aucun résultat trouvé.",
   "common_not_found_desc": "La page que vous recherchez n’existe pas ou a été déplacée.",
   "common_not_found_title": "Page non trouvée",
@@ -34,7 +38,7 @@
   "nav_blog": "Blog",
   "nav_features": "Fonctionnalités",
   "nav_home": "Accueil",
-  "nav_pricing": "[TODO: fr] pricing",
+  "nav_pricing": "Tarifs",
   "position_ordinal": [
     {
       "declarations": [

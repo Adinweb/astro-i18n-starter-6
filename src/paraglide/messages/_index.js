@@ -1,11 +1,15 @@
 /* eslint-disable */
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+export * from './blog_index_description.js'
+export * from './common_all_rights_reserved.js'
 export * from './common_back_home.js'
 export * from './common_back_to_blog.js'
+export * from './common_breadcrumbs.js'
 export * from './common_change_language.js'
 export * from './common_close.js'
 export * from './common_english_version_hint.js'
 export * from './common_go_english_version.js'
+export * from './common_menu.js'
 export * from './common_no_results.js'
 export * from './common_not_found_desc.js'
 export * from './common_not_found_title.js'

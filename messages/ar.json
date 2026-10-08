@@ -1,0 +1,57 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "blog_index_description": "أحدث المقالات والأفكار والتحديثات لدينا.",
+  "common_all_rights_reserved": "جميع الحقوق محفوظة.",
+  "common_back_home": "العودة إلى الرئيسية",
+  "common_back_to_blog": "العودة إلى المدونة",
+  "common_breadcrumbs": "مسار التنقل",
+  "common_change_language": "تغيير اللغة",
+  "common_close": "إغلاق",
+  "common_english_version_hint": "أو تصفح هذه الصفحة بالإنجليزية:",
+  "common_go_english_version": "الانتقال إلى النسخة الإنجليزية",
+  "common_menu": "القائمة",
+  "common_no_results": "لم يتم العثور على نتائج.",
+  "common_not_found_desc": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+  "common_not_found_title": "الصفحة غير موجودة",
+  "common_press_esc": "للإغلاق",
+  "common_published_on": "نُشر في",
+  "common_read_more": "اقرأ المزيد",
+  "common_search_placeholder": "ابحث في المقالات والصفحات...",
+  "common_site_title": "أسترو i18n",
+  "common_type_to_search": "اكتب للبحث...",
+  "items_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} عنصر",
+        "countPlural=two": "عنصران",
+        "countPlural=*": "{count} عناصر"
+      }
+    }
+  ],
+  "nav_about": "من نحن",
+  "nav_blog": "المدونة",
+  "nav_features": "المميزات",
+  "nav_home": "الرئيسية",
+  "nav_pricing": "الأسعار",
+  "position_ordinal": [
+    {
+      "declarations": [
+        "input pos",
+        "local posOrdinal = pos: plural type=ordinal"
+      ],
+      "selectors": [
+        "posOrdinal"
+      ],
+      "match": {
+        "posOrdinal=*": "المركز {pos}"
+      }
+    }
+  ]
+}
