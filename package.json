@@ -33,13 +33,6 @@
   "allowScripts": {
     "esbuild": true
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@pagefind/linux-x64",
-      "esbuild",
-      "sharp"
-    ]
-  },
   "devDependencies": {
     "@types/node": "^26.6.4",
     "knip": "^6.40.0",

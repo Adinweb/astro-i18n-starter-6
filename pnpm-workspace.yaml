@@ -1,4 +1,0 @@
-onlyBuiltDependencies:
-  - esbuild
-  - '@pagefind/linux-x64'
-  - sharp
