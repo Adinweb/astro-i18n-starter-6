@@ -22,6 +22,12 @@ const fa_position_ordinal = /** @type {(inputs: Position_OrdinalInputs) => Local
 	const posOrdinal = registry.plural("fa", i?.pos, { type: "ordinal" });return /** @type {LocalizedString} */ (`${i?.pos}م`)
 };
 
+const fr_position_ordinal = /** @type {(inputs: Position_OrdinalInputs) => LocalizedString} */ (i) => {const posOrdinal = registry.plural("fr", i?.pos, { type: "ordinal" });
+	if (posOrdinal === "one") return /** @type {LocalizedString} */ (`${i?.pos}er`);
+	return /** @type {LocalizedString} */ (`${i?.pos}e`)
+	
+};
+
 /**
 * | posOrdinal | output |
 * | --- | --- |
@@ -31,12 +37,13 @@ const fa_position_ordinal = /** @type {(inputs: Position_OrdinalInputs) => Local
 * | * | "{pos}th" |
 *
 * @param {Position_OrdinalInputs} inputs
-* @param {{ locale?: "en" | "de" | "fa" }} options
+* @param {{ locale?: "en" | "de" | "fa" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const position_ordinal = /** @type {((inputs: Position_OrdinalInputs, options?: { locale?: "en" | "de" | "fa" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Position_OrdinalInputs, { locale?: "en" | "de" | "fa" }, {}>} */ ((inputs, options = {}) => {
+export const position_ordinal = /** @type {((inputs: Position_OrdinalInputs, options?: { locale?: "en" | "de" | "fa" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Position_OrdinalInputs, { locale?: "en" | "de" | "fa" | "fr" }, {}>} */ ((inputs, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "de") return de_position_ordinal(inputs)
 	if (locale === "fa") return fa_position_ordinal(inputs)
+	if (locale === "fr") return fr_position_ordinal(inputs)
 	return en_position_ordinal(inputs)
 });

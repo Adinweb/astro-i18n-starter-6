@@ -17,18 +17,23 @@ const fa_common_published_on = /** @type {(inputs: Common_Published_OnInputs) =>
 	return /** @type {LocalizedString} */ (`منتشر شده در`)
 };
 
+const fr_common_published_on = /** @type {(inputs: Common_Published_OnInputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Publié le`)
+};
+
 /**
 * | output |
 * | --- |
 * | "Published on" |
 *
 * @param {Common_Published_OnInputs} inputs
-* @param {{ locale?: "en" | "de" | "fa" }} options
+* @param {{ locale?: "en" | "de" | "fa" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const common_published_on = /** @type {((inputs?: Common_Published_OnInputs, options?: { locale?: "en" | "de" | "fa" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_Published_OnInputs, { locale?: "en" | "de" | "fa" }, {}>} */ ((inputs = {}, options = {}) => {
+export const common_published_on = /** @type {((inputs?: Common_Published_OnInputs, options?: { locale?: "en" | "de" | "fa" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_Published_OnInputs, { locale?: "en" | "de" | "fa" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "de") return de_common_published_on(inputs)
 	if (locale === "fa") return fa_common_published_on(inputs)
+	if (locale === "fr") return fr_common_published_on(inputs)
 	return en_common_published_on(inputs)
 });

@@ -17,18 +17,23 @@ const fa_common_no_results = /** @type {(inputs: Common_No_ResultsInputs) => Loc
 	return /** @type {LocalizedString} */ (`نتیجه‌ای یافت نشد.`)
 };
 
+const fr_common_no_results = /** @type {(inputs: Common_No_ResultsInputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Aucun résultat trouvé.`)
+};
+
 /**
 * | output |
 * | --- |
 * | "No results found." |
 *
 * @param {Common_No_ResultsInputs} inputs
-* @param {{ locale?: "en" | "de" | "fa" }} options
+* @param {{ locale?: "en" | "de" | "fa" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const common_no_results = /** @type {((inputs?: Common_No_ResultsInputs, options?: { locale?: "en" | "de" | "fa" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_No_ResultsInputs, { locale?: "en" | "de" | "fa" }, {}>} */ ((inputs = {}, options = {}) => {
+export const common_no_results = /** @type {((inputs?: Common_No_ResultsInputs, options?: { locale?: "en" | "de" | "fa" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_No_ResultsInputs, { locale?: "en" | "de" | "fa" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "de") return de_common_no_results(inputs)
 	if (locale === "fa") return fa_common_no_results(inputs)
+	if (locale === "fr") return fr_common_no_results(inputs)
 	return en_common_no_results(inputs)
 });

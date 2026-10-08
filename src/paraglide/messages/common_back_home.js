@@ -17,18 +17,23 @@ const fa_common_back_home = /** @type {(inputs: Common_Back_HomeInputs) => Local
 	return /** @type {LocalizedString} */ (`بازگشت به خانه`)
 };
 
+const fr_common_back_home = /** @type {(inputs: Common_Back_HomeInputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Retour à l’accueil`)
+};
+
 /**
 * | output |
 * | --- |
 * | "Back to Home" |
 *
 * @param {Common_Back_HomeInputs} inputs
-* @param {{ locale?: "en" | "de" | "fa" }} options
+* @param {{ locale?: "en" | "de" | "fa" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const common_back_home = /** @type {((inputs?: Common_Back_HomeInputs, options?: { locale?: "en" | "de" | "fa" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_Back_HomeInputs, { locale?: "en" | "de" | "fa" }, {}>} */ ((inputs = {}, options = {}) => {
+export const common_back_home = /** @type {((inputs?: Common_Back_HomeInputs, options?: { locale?: "en" | "de" | "fa" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_Back_HomeInputs, { locale?: "en" | "de" | "fa" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "de") return de_common_back_home(inputs)
 	if (locale === "fa") return fa_common_back_home(inputs)
+	if (locale === "fr") return fr_common_back_home(inputs)
 	return en_common_back_home(inputs)
 });

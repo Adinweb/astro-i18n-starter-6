@@ -6,39 +6,33 @@ import { execSync } from 'node:child_process';
 const args = process.argv.slice(2);
 let category = '';
 let key = '';
-let faText = '';
-let enText = '';
-let deText = '';
+const textByLocale = {};
 
 for (const arg of args) {
-  if (arg.startsWith('--category=')) category = arg.slice(11);
-  else if (arg.startsWith('--key=')) key = arg.slice(6);
-  else if (arg.startsWith('--fa=')) faText = arg.slice(5);
-  else if (arg.startsWith('--en=')) enText = arg.slice(5);
-  else if (arg.startsWith('--de=')) deText = arg.slice(5);
+  if (arg.startsWith('--category=')) {
+    category = arg.slice(11);
+  } else if (arg.startsWith('--key=')) {
+    key = arg.slice(6);
+  } else if (arg.startsWith('--')) {
+    const eqIdx = arg.indexOf('=');
+    if (eqIdx !== -1) {
+      const locKey = arg.slice(2, eqIdx);
+      textByLocale[locKey] = arg.slice(eqIdx + 1);
+    }
+  }
 }
 
-if (!category || !key || !faText) {
-  console.error('Usage: npm run i18n:add -- --category=<category> --key=<key> --fa="متن فارسی" [--en="..."] [--de="..."]');
+if (!category || !key) {
+  console.error('Usage: npm run i18n:add -- --category=<category> --key=<key> [--en="..."] [--fa="..."] [--de="..."]');
   process.exit(1);
 }
 
 const fullKey = `${category}_${key}`;
 const rootDir = process.cwd();
 
-const paths = {
-  en: path.join(rootDir, 'messages', 'en.json'),
-  de: path.join(rootDir, 'messages', 'de.json'),
-  fa: path.join(rootDir, 'messages', 'fa.json'),
-};
-
-const enDict = JSON.parse(fs.readFileSync(paths.en, 'utf-8'));
-const deDict = JSON.parse(fs.readFileSync(paths.de, 'utf-8'));
-const faDict = JSON.parse(fs.readFileSync(paths.fa, 'utf-8'));
-
-faDict[fullKey] = faText;
-enDict[fullKey] = enText || `[TODO: en] ${key}`;
-deDict[fullKey] = deText || `[TODO: de] ${key}`;
+const inlangPath = path.join(rootDir, 'project.inlang', 'settings.json');
+const inlangSettings = JSON.parse(fs.readFileSync(inlangPath, 'utf-8'));
+const LOCALES = inlangSettings.locales;
 
 const sortKeys = (obj) => {
   const sorted = {};
@@ -46,11 +40,21 @@ const sortKeys = (obj) => {
   return sorted;
 };
 
-fs.writeFileSync(paths.en, JSON.stringify(sortKeys(enDict), null, 2) + '\n', 'utf-8');
-fs.writeFileSync(paths.de, JSON.stringify(sortKeys(deDict), null, 2) + '\n', 'utf-8');
-fs.writeFileSync(paths.fa, JSON.stringify(sortKeys(faDict), null, 2) + '\n', 'utf-8');
+for (const loc of LOCALES) {
+  const filePath = path.join(rootDir, 'messages', `${loc}.json`);
+  if (!fs.existsSync(filePath)) continue;
+  const dict = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 
-console.log(`✅ Registered key "${fullKey}" across en, de, fa dictionaries.`);
+  if (textByLocale[loc]) {
+    dict[fullKey] = textByLocale[loc];
+  } else {
+    dict[fullKey] = `[TODO: ${loc}] ${key}`;
+  }
+
+  fs.writeFileSync(filePath, JSON.stringify(sortKeys(dict), null, 2) + '\n', 'utf-8');
+}
+
+console.log(`✅ Registered key "${fullKey}" across all active locales (${LOCALES.join(', ')}).`);
 console.log('🔄 Recompiling Paraglide messages...');
 
 try {

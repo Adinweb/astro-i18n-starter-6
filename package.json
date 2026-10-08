@@ -18,6 +18,7 @@
     "i18n:add": "node scripts/i18n-add.mjs",
     "new:page": "node scripts/new-page.mjs",
     "new:post": "node scripts/new-post.mjs",
+    "i18n:add-lang": "node scripts/add-language.mjs",
     "audit:i18n": "node scripts/audit-i18n.mjs"
   },
   "dependencies": {

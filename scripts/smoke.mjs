@@ -4,7 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const distDir = path.resolve(__dirname, '..', 'dist');
+const rootDir = path.resolve(__dirname, '..');
+const distDir = path.resolve(rootDir, 'dist');
 
 console.log('🧪 Starting Smoke Test Suite over dist/ ...\n');
 
@@ -72,18 +73,25 @@ if (fs.existsSync(faPostPath)) {
   );
 }
 
-// 5. Verifies hreflang tags: exactly locales.length + 1 tags (en, de, fa, x-default)
+// 5. Verifies hreflang tags: exactly locales.length + 1 tags (self + alternates + x-default)
 if (fs.existsSync(rootHtmlPath)) {
   const html = fs.readFileSync(rootHtmlPath, 'utf-8');
   const hreflangMatches = [...html.matchAll(/<link[^>]+rel="alternate"[^>]+hreflang="([^"]+)"/gi)];
   const langs = hreflangMatches.map((m) => m[1]);
-  assert(
-    langs.length === 4,
-    `Hreflang tags count is exactly 4 (found: ${langs.length} -> ${langs.join(', ')})`
+
+  const inlangSettings = JSON.parse(
+    fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
   );
-  assert(langs.includes('en'), 'Hreflang includes "en"');
-  assert(langs.includes('de'), 'Hreflang includes "de"');
-  assert(langs.includes('fa'), 'Hreflang includes "fa"');
+  const LOCALES = inlangSettings.locales;
+  const expectedCount = LOCALES.length + 1;
+
+  assert(
+    langs.length === expectedCount,
+    `Hreflang tags count is exactly ${expectedCount} (found: ${langs.length} -> ${langs.join(', ')})`
+  );
+  for (const loc of LOCALES) {
+    assert(langs.includes(loc), `Hreflang includes "${loc}"`);
+  }
   assert(langs.includes('x-default'), 'Hreflang includes "x-default"');
 }
 

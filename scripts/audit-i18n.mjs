@@ -6,7 +6,10 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 
-const LOCALES = ['en', 'de', 'fa'];
+const inlangSettings = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
+);
+const LOCALES = inlangSettings.locales;
 const RESERVED_ROUTE_BASES = new Set(['blog', 'icons.svg', '404', 'sitemap.xml', 'robots.txt']);
 
 let hasFatal = false;

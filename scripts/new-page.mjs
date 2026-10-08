@@ -28,44 +28,27 @@ if (fs.existsSync(targetDir)) {
 
 fs.mkdirSync(targetDir, { recursive: true });
 
-const files = {
-  'en.mdx': `---
-title: "${title}"
-slug: "${pageKey}"
-description: "Description for ${title}"
+const inlangSettings = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
+);
+const LOCALES = inlangSettings.locales;
+
+for (const loc of LOCALES) {
+  const isEn = loc === 'en';
+  const slug = isEn ? pageKey : `${pageKey}-${loc}`;
+  const pageTitle = isEn ? title : `[TODO: ${loc}] ${title}`;
+  const content = `---
+title: "${pageTitle}"
+slug: "${slug}"
+description: "${isEn ? `Description for ${title}` : `[TODO: ${loc}] Description for ${title}`}"
 draft: false
 ---
 
-# ${title}
+# ${pageTitle}
 
-Content coming soon...
-`,
-  'de.mdx': `---
-title: "[TODO: de] ${title}"
-slug: "${pageKey}-de"
-description: "[TODO: de] Description for ${title}"
-draft: false
----
-
-# [TODO: de] ${title}
-
-Inhalt folgt in Kürze...
-`,
-  'fa.mdx': `---
-title: "[TODO: fa] ${title}"
-slug: "${pageKey}-fa"
-description: "[TODO: fa] Description for ${title}"
-draft: false
----
-
-# [TODO: fa] ${title}
-
-محتوا به زودی افزوده خواهد شد...
-`,
-};
-
-for (const [filename, content] of Object.entries(files)) {
-  fs.writeFileSync(path.join(targetDir, filename), content, 'utf-8');
+${isEn ? 'Content coming soon...' : loc === 'fa' ? 'محتوا به زودی افزوده خواهد شد...' : 'Inhalt folgt in Kürze...'}
+`;
+  fs.writeFileSync(path.join(targetDir, `${loc}.mdx`), content, 'utf-8');
 }
 
 console.log(`✅ Scaffolding complete in src/content/pages/${pageKey}/`);

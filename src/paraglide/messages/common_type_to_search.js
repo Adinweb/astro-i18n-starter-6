@@ -17,18 +17,23 @@ const fa_common_type_to_search = /** @type {(inputs: Common_Type_To_SearchInputs
 	return /** @type {LocalizedString} */ (`برای جستجو تایپ کنید...`)
 };
 
+const fr_common_type_to_search = /** @type {(inputs: Common_Type_To_SearchInputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Tapez pour rechercher...`)
+};
+
 /**
 * | output |
 * | --- |
 * | "Type to search..." |
 *
 * @param {Common_Type_To_SearchInputs} inputs
-* @param {{ locale?: "en" | "de" | "fa" }} options
+* @param {{ locale?: "en" | "de" | "fa" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const common_type_to_search = /** @type {((inputs?: Common_Type_To_SearchInputs, options?: { locale?: "en" | "de" | "fa" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_Type_To_SearchInputs, { locale?: "en" | "de" | "fa" }, {}>} */ ((inputs = {}, options = {}) => {
+export const common_type_to_search = /** @type {((inputs?: Common_Type_To_SearchInputs, options?: { locale?: "en" | "de" | "fa" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Common_Type_To_SearchInputs, { locale?: "en" | "de" | "fa" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "de") return de_common_type_to_search(inputs)
 	if (locale === "fa") return fa_common_type_to_search(inputs)
+	if (locale === "fr") return fr_common_type_to_search(inputs)
 	return en_common_type_to_search(inputs)
 });

@@ -4,13 +4,13 @@
   "common_back_to_blog": "بازگشت به وبلاگ",
   "common_change_language": "تغییر زبان",
   "common_close": "بستن",
-  "common_no_results": "نتیجه\u200cای یافت نشد.",
-  "common_not_found_desc": "برگه\u200cای که به دنبال آن هستید وجود ندارد یا منتقل شده است.",
+  "common_no_results": "نتیجه‌ای یافت نشد.",
+  "common_not_found_desc": "برگه‌ای که به دنبال آن هستید وجود ندارد یا منتقل شده است.",
   "common_not_found_title": "برگه پیدا نشد",
   "common_press_esc": "برای بستن",
   "common_published_on": "منتشر شده در",
   "common_read_more": "ادامه مطلب",
-  "common_search_placeholder": "جستجو در مقالات و برگه\u200cها...",
+  "common_search_placeholder": "جستجو در مقالات و برگه‌ها...",
   "common_site_title": "استرو چندزبانه",
   "common_type_to_search": "برای جستجو تایپ کنید...",
   "items_count": [
@@ -30,6 +30,7 @@
   ],
   "nav_about": "درباره ما",
   "nav_blog": "وبلاگ",
+  "nav_features": "[TODO: fa] Features",
   "nav_home": "خانه",
   "position_ordinal": [
     {
@@ -41,7 +42,7 @@
         "posOrdinal"
       ],
       "match": {
-        "posOrdinal=*": "{pos}\u0645"
+        "posOrdinal=*": "{pos}م"
       }
     }
   ]

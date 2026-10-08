@@ -17,18 +17,23 @@ const fa_nav_blog = /** @type {(inputs: Nav_BlogInputs) => LocalizedString} */ (
 	return /** @type {LocalizedString} */ (`وبلاگ`)
 };
 
+const fr_nav_blog = /** @type {(inputs: Nav_BlogInputs) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Blog`)
+};
+
 /**
 * | output |
 * | --- |
 * | "Blog" |
 *
 * @param {Nav_BlogInputs} inputs
-* @param {{ locale?: "en" | "de" | "fa" }} options
+* @param {{ locale?: "en" | "de" | "fa" | "fr" }} options
 * @returns {LocalizedString}
 */
-export const nav_blog = /** @type {((inputs?: Nav_BlogInputs, options?: { locale?: "en" | "de" | "fa" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Nav_BlogInputs, { locale?: "en" | "de" | "fa" }, {}>} */ ((inputs = {}, options = {}) => {
+export const nav_blog = /** @type {((inputs?: Nav_BlogInputs, options?: { locale?: "en" | "de" | "fa" | "fr" }) => LocalizedString) & import('../runtime.js').MessageMetadata<Nav_BlogInputs, { locale?: "en" | "de" | "fa" | "fr" }, {}>} */ ((inputs = {}, options = {}) => {
 	const locale = experimentalStaticLocale ?? options.locale ?? getLocale()
 	if (locale === "de") return de_nav_blog(inputs)
 	if (locale === "fa") return fa_nav_blog(inputs)
+	if (locale === "fr") return fr_nav_blog(inputs)
 	return en_nav_blog(inputs)
 });

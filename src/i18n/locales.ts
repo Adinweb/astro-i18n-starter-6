@@ -26,6 +26,12 @@ export const LOCALE_METADATA = {
     name: 'فارسی',
     fontFamily: 'var(--font-fa)',
   },
+  fr: {
+    dir: 'ltr',
+    htmlLang: 'fr',
+    name: 'Français',
+    fontFamily: 'var(--font-sans)',
+  },
 } satisfies Record<Locale, LocaleMeta>;
 
 export function getLocaleMeta(locale: Locale): LocaleMeta {

@@ -20,7 +20,7 @@ export const baseLocale = "en";
  *     throw new Error('Locale is not available');
  *   }
  */
-export const locales = /** @type {const} */ (["en","de","fa"]);
+export const locales = /** @type {const} */ (["en","de","fa","fr"]);
 /** @type {string} */
 export const cookieName = "PARAGLIDE_LOCALE";
 /** @type {number} */
@@ -65,6 +65,10 @@ export const urlPatterns = [
       [
         "fa",
         ":protocol://:domain(.*)::port?/fa/:path(.*)?"
+      ],
+      [
+        "fr",
+        ":protocol://:domain(.*)::port?/fr/:path(.*)?"
       ],
       [
         "en",

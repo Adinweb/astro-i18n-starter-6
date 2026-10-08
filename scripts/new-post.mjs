@@ -32,7 +32,10 @@ if (fs.existsSync(targetDir)) {
 
 fs.mkdirSync(targetDir, { recursive: true });
 
-const LOCALES = ['en', 'de', 'fa'];
+const inlangSettings = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
+);
+const LOCALES = inlangSettings.locales;
 const today = new Date().toISOString().split('T')[0];
 
 let baseBody = `\n# Article Header\n\nArticle content goes here...\n`;

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "common_back_home": "Retour à l’accueil",
+  "common_back_to_blog": "Retour au blog",
+  "common_change_language": "Changer de langue",
+  "common_close": "Fermer",
+  "common_no_results": "Aucun résultat trouvé.",
+  "common_not_found_desc": "La page que vous recherchez n’existe pas ou a été déplacée.",
+  "common_not_found_title": "Page non trouvée",
+  "common_press_esc": "pour fermer",
+  "common_published_on": "Publié le",
+  "common_read_more": "En savoir plus",
+  "common_search_placeholder": "Rechercher des articles et des pages...",
+  "common_site_title": "Astro i18n",
+  "common_type_to_search": "Tapez pour rechercher...",
+  "items_count": [
+    {
+      "declarations": [
+        "input count",
+        "local countPlural = count: plural"
+      ],
+      "selectors": [
+        "countPlural"
+      ],
+      "match": {
+        "countPlural=one": "{count} élément",
+        "countPlural=*": "{count} éléments"
+      }
+    }
+  ],
+  "nav_about": "À propos",
+  "nav_blog": "Blog",
+  "nav_features": "[TODO: fr] features",
+  "nav_home": "Accueil",
+  "position_ordinal": [
+    {
+      "declarations": [
+        "input pos",
+        "local posOrdinal = pos: plural type=ordinal"
+      ],
+      "selectors": [
+        "posOrdinal"
+      ],
+      "match": {
+        "posOrdinal=one": "{pos}er",
+        "posOrdinal=*": "{pos}e"
+      }
+    }
+  ]
+}
