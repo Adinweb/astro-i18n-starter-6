@@ -74,6 +74,7 @@ const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
 
         <div class="flex items-center gap-2">
           
+          
 
           <button
             type="button"
@@ -89,55 +90,82 @@ const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
 <a
             href={pricingHref}
             data-cta-link="get-started"
-            class="hidden sm:inline-flex h-8 items-center rounded-md bg-primary px-3.5 text-xs font-semibold text-primary-fg transition-opacity hover:opacity-90"
+            class="hidden h-8 items-center rounded-md bg-primary px-3.5 text-xs font-semibold text-primary-fg transition-opacity hover:opacity-90 sm:inline-flex"
           >
             {m.common_get_started({}, { locale })}
-          </a>
-          
+          </a>          
           <button
             type="button"
             data-mobile-menu-btn
-            class="md:hidden flex items-center justify-center p-2 rounded-md border border-border bg-surface hover:bg-surface-hover text-muted hover:text-fg transition-colors cursor-pointer"
+            class="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface hover:bg-surface-hover text-muted hover:text-fg transition-colors cursor-pointer md:hidden"
             aria-label={m.common_menu({}, { locale })}
             aria-expanded="false"
             aria-controls="mobile-nav-menu"
           >
-            <Icon name="menu" size={18} class="block open-icon" />
-            <Icon name="close" size={18} class="hidden close-icon" />
+            <Icon name="menu" size={16} />
           </button>
         </div>
       </div>
 
-      <!-- Mobile Navigation Drawer -->
-      <div
-        id="mobile-nav-menu"
-        data-mobile-menu
-        class="hidden md:hidden border-t border-border bg-surface/95 px-4 py-4 space-y-3 text-sm font-medium transition-all"
-      >
-        <a href={homeHref} data-nav-link="home" class="block py-1 hover:text-primary transition-colors">
+    </header>
+
+    <!-- Mobile Navigation Drawer (fixed overlay + slide-in panel, rendered outside <header> so backdrop-blur doesn't trap fixed positioning) -->
+    <div
+      data-mobile-menu-overlay
+      class="pointer-events-none fixed inset-0 z-50 bg-black/50 opacity-0 transition-opacity duration-300 md:hidden"
+      aria-hidden="true"
+    ></div>
+    <aside
+      id="mobile-nav-menu"
+      data-mobile-menu
+      inert
+      class="invisible fixed top-0 bottom-0 start-0 z-50 flex w-80 max-w-[85vw] flex-col bg-surface shadow-2xl transition-transform duration-300 ease-out ltr:-translate-x-full rtl:translate-x-full md:hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-label={m.common_menu({}, { locale })}
+    >
+      <div class="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border px-4">
+        <a href={homeHref} data-brand-link class="truncate font-bold text-lg tracking-tight hover:text-primary transition-colors">
+          {m.common_site_title({}, { locale })}
+        </a>
+        <button
+          type="button"
+          data-close-menu
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-surface hover:bg-surface-hover text-muted hover:text-fg transition-colors cursor-pointer"
+          aria-label={m.common_close({}, { locale })}
+        >
+          <Icon name="close" size={16} />
+        </button>
+      </div>
+
+      <nav class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 text-sm font-medium">
+        <a href={homeHref} data-nav-link="home" class="block rounded-md px-3 py-2.5 hover:bg-surface-hover hover:text-primary transition-colors">
           {m.nav_home({}, { locale })}
         </a>
-        <a href={aboutHref} data-nav-link="about" class="block py-1 hover:text-primary transition-colors">
+        <a href={aboutHref} data-nav-link="about" class="block rounded-md px-3 py-2.5 hover:bg-surface-hover hover:text-primary transition-colors">
           {m.nav_about({}, { locale })}
         </a>
-        <a href={featuresHref} data-nav-link="features" class="block py-1 hover:text-primary transition-colors">
+        <a href={featuresHref} data-nav-link="features" class="block rounded-md px-3 py-2.5 hover:bg-surface-hover hover:text-primary transition-colors">
           {m.nav_features({}, { locale })}
         </a>
-        <a href={pricingHref} data-nav-link="pricing" class="block py-1 hover:text-primary transition-colors">
+        <a href={pricingHref} data-nav-link="pricing" class="block rounded-md px-3 py-2.5 hover:bg-surface-hover hover:text-primary transition-colors">
           {m.nav_pricing({}, { locale })}
         </a>
-        <a href={blogHref} data-nav-link="blog" class="block py-1 hover:text-primary transition-colors">
+        <a href={blogHref} data-nav-link="blog" class="block rounded-md px-3 py-2.5 hover:bg-surface-hover hover:text-primary transition-colors">
           {m.nav_blog({}, { locale })}
         </a>
+      </nav>
+
+      <div class="shrink-0 border-t border-border p-4">
         <a
           href={pricingHref}
           data-cta-link="get-started"
-          class="mt-1 inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-fg transition-opacity hover:opacity-90 sm:hidden"
+          class="flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-fg transition-opacity hover:opacity-90"
         >
           {m.common_get_started({}, { locale })}
         </a>
       </div>
-    </header>
+    </aside>
 
     <main data-pagefind-body class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12">
       <slot />
@@ -163,39 +191,54 @@ const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
     <script>
       function setupMobileMenu() {
         const btn = document.querySelector<HTMLButtonElement>('[data-mobile-menu-btn]');
-        const menu = document.querySelector<HTMLElement>('[data-mobile-menu]');
-        if (!btn || !menu || btn.dataset.bound === 'true') return;
+        const overlay = document.querySelector<HTMLElement>('[data-mobile-menu-overlay]');
+        const drawer = document.querySelector<HTMLElement>('[data-mobile-menu]');
+        const closeBtn = document.querySelector<HTMLButtonElement>('[data-close-menu]');
+        if (!btn || !overlay || !drawer || btn.dataset.bound === 'true') return;
         btn.dataset.bound = 'true';
 
-        const openIcon = btn.querySelector('.open-icon');
-        const closeIcon = btn.querySelector('.close-icon');
+        const DRAWER_CLOSED = ['ltr:-translate-x-full', 'rtl:translate-x-full', 'invisible'];
+        const OVERLAY_CLOSED = ['opacity-0', 'pointer-events-none'];
 
-        function toggleMenu() {
-          const isClosed = menu?.classList.contains('hidden');
-          if (isClosed) {
-            menu?.classList.remove('hidden');
-            btn?.setAttribute('aria-expanded', 'true');
-            openIcon?.classList.add('hidden');
-            closeIcon?.classList.remove('hidden');
-          } else {
-            menu?.classList.add('hidden');
-            btn?.setAttribute('aria-expanded', 'false');
-            openIcon?.classList.remove('hidden');
-            closeIcon?.classList.add('hidden');
-          }
+        function openMenu() {
+          drawer!.classList.remove(...DRAWER_CLOSED);
+          drawer!.removeAttribute('inert');
+          overlay!.classList.remove(...OVERLAY_CLOSED);
+          btn!.setAttribute('aria-expanded', 'true');
+          document.documentElement.style.overflow = 'hidden';
+          closeBtn?.focus({ preventScroll: true });
         }
 
-        btn.addEventListener('click', toggleMenu);
+        function closeMenu() {
+          if (drawer!.classList.contains('invisible')) return;
+          drawer!.classList.add(...DRAWER_CLOSED);
+          drawer!.setAttribute('inert', '');
+          overlay!.classList.add(...OVERLAY_CLOSED);
+          btn!.setAttribute('aria-expanded', 'false');
+          document.documentElement.style.overflow = '';
+        }
 
-        // Close on clicking a link inside
-        menu.addEventListener('click', (e) => {
-          if ((e.target as HTMLElement)?.closest('a')) {
-            menu.classList.add('hidden');
-            btn.setAttribute('aria-expanded', 'false');
-            openIcon?.classList.remove('hidden');
-            closeIcon?.classList.add('hidden');
-          }
+        btn.addEventListener('click', () => {
+          if (drawer!.classList.contains('invisible')) openMenu();
+          else closeMenu();
         });
+
+        closeBtn?.addEventListener('click', closeMenu);
+
+        // Close when clicking outside the drawer (on the overlay).
+        overlay.addEventListener('click', closeMenu);
+
+        // Close on link navigation inside the drawer.
+        drawer.addEventListener('click', (e) => {
+          if ((e.target as HTMLElement)?.closest('a')) closeMenu();
+        });
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') closeMenu();
+        });
+
+        // Never leave a stale open drawer across client-side transitions.
+        document.addEventListener('astro:before-preparation', closeMenu);
       }
 
       setupMobileMenu();
