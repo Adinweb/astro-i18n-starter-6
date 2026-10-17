@@ -12,52 +12,133 @@ const { currentLocale, alternates } = Astro.props;
 ---
 
 <div class="relative inline-block text-start" data-language-switcher>
-  <label for="lang-select" class="sr-only">
-    {m.common_change_language({}, { locale: currentLocale })}
-  </label>
-  <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border bg-surface text-fg text-sm hover:bg-surface-hover transition-colors">
-    <Icon name="globe" size={16} class="text-muted shrink-0" />
-    <select
-      id="lang-select"
-      class="bg-transparent text-fg text-sm font-medium focus:outline-none cursor-pointer pe-1"
-      aria-label={m.common_change_language({}, { locale: currentLocale })}
-      data-switcher-select
-    >
-      {
-        LOCALES.map((loc) => {
-          const meta = LOCALE_METADATA[loc];
-          const targetUrl = alternates[loc];
-          const isCurrent = loc === currentLocale;
+  <button
+    type="button"
+    data-switcher-button
+    class="flex h-8 items-center gap-1 rounded-md border border-border bg-surface px-2 text-fg transition-colors hover:bg-surface-hover cursor-pointer"
+    aria-haspopup="menu"
+    aria-expanded="false"
+    aria-label={m.common_change_language({}, { locale: currentLocale })}
+    title={m.common_change_language({}, { locale: currentLocale })}
+  >
+    <Icon name="globe" size={15} class="text-muted shrink-0" />
+    <span class="text-xs font-semibold tracking-wide uppercase">{currentLocale}</span>
+    <!-- <Icon name="chevron" size={14} class="text-muted shrink-0 transition-transform duration-200" data-switcher-chevron /> -->
+  </button>
+
+  <div
+    data-switcher-menu
+    class="absolute end-0 top-[calc(100%+6px)] z-50 hidden min-w-36 rounded-lg border border-border bg-surface p-1 shadow-lg"
+    role="menu"
+  >
+    {
+      LOCALES.map((loc) => {
+        const meta = LOCALE_METADATA[loc];
+        const targetUrl = alternates[loc];
+        const isCurrent = loc === currentLocale;
+        if (!targetUrl) {
           return (
-            <option
-              value={targetUrl || '#'}
-              selected={isCurrent}
-              disabled={!targetUrl}
-              class="bg-surface text-fg py-1"
+            <span
+              class="flex w-full cursor-not-allowed items-center justify-between gap-3 rounded-md px-2.5 py-1.5 text-sm text-muted opacity-40"
+              aria-disabled="true"
             >
-              {meta.name} {!targetUrl ? ' (N/A)' : ''}
-            </option>
+              <span class="truncate">{meta.name}</span>
+              <span class="text-[11px] font-semibold uppercase tracking-wide">{loc}</span>
+            </span>
           );
-        })
-      }
-    </select>
+        }
+        return (
+          <a
+            href={targetUrl}
+            data-switcher-link
+            data-target={targetUrl}
+            role="menuitem"
+            aria-current={isCurrent ? 'true' : undefined}
+            class:list={[
+              'flex w-full items-center justify-between gap-3 rounded-md px-2.5 py-1.5 text-sm transition-colors hover:bg-surface-hover',
+              isCurrent ? 'bg-primary/10 font-medium text-primary' : 'text-fg',
+            ]}
+          >
+            <span class="truncate">{meta.name}</span>
+            <span class="flex items-center gap-1.5">
+              <span class="text-[11px] font-semibold uppercase tracking-wide opacity-60">{loc}</span>
+              {isCurrent && <Icon name="check" size={14} class="shrink-0" />}
+            </span>
+          </a>
+        );
+      })
+    }
   </div>
 </div>
 
 <script>
   function setupLanguageSwitcher() {
-    const selects = document.querySelectorAll<HTMLSelectElement>('[data-switcher-select]');
-    selects.forEach((select) => {
-      if (select.dataset.bound === 'true') return;
-      select.dataset.bound = 'true';
+    document.querySelectorAll<HTMLElement>('[data-language-switcher]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
 
-      select.addEventListener('change', (e) => {
-        const target = (e.target as HTMLSelectElement).value;
-        if (target && target !== '#' && target !== window.location.pathname) {
-          window.location.assign(target);
+      const button = root.querySelector<HTMLButtonElement>('[data-switcher-button]');
+      const menu = root.querySelector<HTMLElement>('[data-switcher-menu]');
+      const chevron = root.querySelector<HTMLElement>('[data-switcher-chevron]');
+      if (!button || !menu) return;
+
+      function close() {
+        menu!.classList.add('hidden');
+        button!.setAttribute('aria-expanded', 'false');
+        chevron?.classList.remove('rotate-180');
+      }
+
+      button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isClosed = menu!.classList.contains('hidden');
+        if (isClosed) {
+          menu!.classList.remove('hidden');
+          button!.setAttribute('aria-expanded', 'true');
+          chevron?.classList.add('rotate-180');
+        } else {
+          close();
         }
       });
+
+      // Static full navigation so <html lang/dir> + fonts re-apply (no SPA transition).
+      menu.querySelectorAll<HTMLAnchorElement>('[data-switcher-link]').forEach((link) => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const target = link.dataset.target;
+          close();
+          if (target) window.location.assign(target);
+        });
+      });
+
+      // Close on client-side page transitions so stale open menus never persist.
+      document.addEventListener('astro:before-preparation', close);
     });
+
+    // Global dismiss listeners — bound once for the whole session.
+    if (document.documentElement.dataset.langSwitcherGlobal !== 'true') {
+      document.documentElement.dataset.langSwitcherGlobal = 'true';
+      document.addEventListener(
+        'click',
+        (e) => {
+          if (!(e.target as HTMLElement)?.closest('[data-language-switcher]')) {
+            document.querySelectorAll('[data-switcher-menu]').forEach((m) => m.classList.add('hidden'));
+            document
+              .querySelectorAll('[data-switcher-button]')
+              .forEach((b) => b.setAttribute('aria-expanded', 'false'));
+            document.querySelectorAll('[data-switcher-chevron]').forEach((c) => c.classList.remove('rotate-180'));
+          }
+        },
+        { capture: true }
+      );
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          document.querySelectorAll('[data-switcher-menu]').forEach((m) => m.classList.add('hidden'));
+          document
+            .querySelectorAll('[data-switcher-button]')
+            .forEach((b) => b.setAttribute('aria-expanded', 'false'));
+        }
+      });
+    }
   }
 
   setupLanguageSwitcher();
