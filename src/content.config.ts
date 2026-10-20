@@ -19,6 +19,19 @@ const slugSchema = z.string().refine(
   'Use letters, digits, and single hyphens or zero-width joiners only (empty is allowed only for the home page).'
 );
 
+/**
+ * Taxonomy keys double as URL query values and message keys, so they stay
+ * ASCII, lowercase, and hyphen-separated. Visible labels are localized in
+ * `src/libs/content/taxonomy.ts`.
+ */
+const taxonomyKey = z
+  .string()
+  .min(1)
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    'Use lowercase letters, digits, and single hyphens (for example "design-systems").'
+  );
+
 const baseSchema = z.object({
   title: z.string().min(1),
   slug: slugSchema,
@@ -27,6 +40,8 @@ const baseSchema = z.object({
   author: z.string().min(1).optional(),
   publishedAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
+  categories: z.array(taxonomyKey).default([]),
+  tags: z.array(taxonomyKey).default([]),
   draft: z.boolean().default(false),
 });
 

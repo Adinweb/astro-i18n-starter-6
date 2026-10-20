@@ -1,9 +1,18 @@
 ---
-title: "First Blog Post"
-slug: "first-post-fr"
-description: "Description for first-post"
-publishedAt: 2026-10-07
+title: "Premier article de blog"
+slug: "premier-article"
+description: "Une introduction à notre architecture de contenu multilingue."
+publishedAt: 2026-10-01
+image: "/images/blog/first-post.png"
+categories: ["guides"]
+tags: ["architecture", "i18n"]
 draft: false
 ---
 
-Contenu à venir...
+Bienvenue dans notre premier article ! Il illustre les slugs localisés et les collections de contenu symétriques.
+
+Dans ce modèle :
+
+- Les articles sont organisés par dossiers de groupe : `src/content/blog/<group>/<locale>.mdx`.
+- Les slugs sont entièrement traduits pour chaque langue.
+- Les liens vers les langues alternatives sont résolus automatiquement pour les balises hreflang et le sélecteur de langue.

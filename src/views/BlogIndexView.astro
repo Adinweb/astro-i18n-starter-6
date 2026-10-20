@@ -1,7 +1,14 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { getBlogPostHref } from '@/libs/content/service';
+import PostCard from '@/components/PostCard.astro';
+import { getBlogIndexHref, getBlogPostHref } from '@/libs/content/service';
+import {
+  buildBlogFilterQuery,
+  collectTaxonomyKeys,
+  type BlogFilters,
+} from '@/libs/content/blog';
+import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import type { Locale } from '@/i18n/config';
 import * as m from '@/paraglide/messages';
 
@@ -21,6 +28,17 @@ const posts = allPosts
     return parts[parts.length - 1] === locale;
   })
   .sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime());
+
+const taxonomy = posts.map((post) => post.data);
+const categories = collectTaxonomyKeys(taxonomy, 'categories');
+const tags = collectTaxonomyKeys(taxonomy, 'tags');
+const blogHref = getBlogIndexHref(locale);
+
+const filterHref = (filters: BlogFilters) => `${blogHref}${buildBlogFilterQuery(filters)}`;
+const totalLabel = m.blog_filter_showing(
+  { visible: String(posts.length), total: String(posts.length) },
+  { locale }
+);
 ---
 
 <BaseLayout
@@ -31,56 +49,237 @@ const posts = allPosts
   alternates={alternates}
 >
   <div class="space-y-8">
-    <div class="border-b border-border pb-6">
-      <h1 class="text-3xl font-extrabold tracking-tight text-fg">
+    <header class="max-w-2xl space-y-3">
+      <h1 class="text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
         {m.nav_blog({}, { locale })}
       </h1>
-      <p class="text-muted text-sm mt-2">
-        {m.items_count({ count: posts.length }, { locale })}
+      <p class="text-base leading-relaxed text-muted">
+        {m.blog_index_description({}, { locale })}
       </p>
-    </div>
+    </header>
 
     {
-      posts.length === 0 && (
-        <p class="rounded-xl border border-border bg-surface p-6 text-sm text-muted">
+      posts.length === 0 ? (
+        <p class="rounded-2xl border border-dashed border-border bg-surface p-10 text-center text-sm text-muted">
           {m.blog_empty({}, { locale })}
         </p>
+      ) : (
+        <div class="space-y-8">
+          <section
+            class="space-y-4 rounded-2xl border border-border bg-surface/70 p-4 sm:p-5"
+            data-blog-filter
+            data-base-href={blogHref}
+            data-showing-template={m.blog_filter_showing(
+              { visible: '{visible}', total: '{total}' },
+              { locale }
+            )}
+          >
+            <nav class="flex flex-wrap items-center gap-2" aria-label={m.blog_filter_by_category({}, { locale })}>
+              <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                {m.blog_categories({}, { locale })}
+              </span>
+              <a
+                href={blogHref}
+                data-filter-chip
+                data-filter-category=""
+                class="inline-flex items-center rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-fg"
+              >
+                {m.blog_all_posts({}, { locale })}
+              </a>
+              {
+                categories.map((category) => (
+                  <a
+                    href={filterHref({ category, tags: [] })}
+                    data-filter-chip
+                    data-filter-category={category}
+                    class="inline-flex items-center rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-fg"
+                  >
+                    {getCategoryLabel(category, locale)}
+                  </a>
+                ))
+              }
+            </nav>
+
+            <div class="h-px bg-border"></div>
+
+            <div class="flex flex-wrap items-center gap-2" role="group" aria-label={m.blog_filter_by_tag({}, { locale })}>
+              <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                {m.blog_tags({}, { locale })}
+              </span>
+              {
+                tags.map((tag) => (
+                  <a
+                    href={filterHref({ category: null, tags: [tag] })}
+                    data-filter-chip
+                    data-filter-tag={tag}
+                    class="inline-flex items-center rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-fg"
+                  >
+                    <span class="me-1 text-muted/70" aria-hidden="true" dir="ltr">#</span>
+                    {getTagLabel(tag, locale)}
+                  </a>
+                ))
+              }
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-muted">
+              <p role="status" aria-live="polite" data-blog-status>{totalLabel}</p>
+              <a
+                href={blogHref}
+                data-blog-clear
+                class="font-medium text-primary hover:underline"
+                hidden
+              >
+                {m.blog_filter_clear({}, { locale })}
+              </a>
+            </div>
+          </section>
+
+          <p
+            class="rounded-2xl border border-dashed border-border bg-surface p-10 text-center text-sm text-muted"
+            data-blog-empty
+            hidden
+          >
+            {m.blog_filter_empty({}, { locale })}
+          </p>
+
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {
+              posts.map((post, index) => (
+                <PostCard
+                  post={post}
+                  locale={locale}
+                  href={getBlogPostHref(post.data.slug, locale)}
+                  priority={index === 0}
+                />
+              ))
+            }
+          </div>
+        </div>
       )
     }
-
-    <div class="grid gap-6">
-      {
-        posts.map((post) => {
-          const postUrl = getBlogPostHref(post.data.slug, locale);
-          const formattedDate = post.data.publishedAt.toLocaleDateString(locale, {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          });
-
-          return (
-            <article class="p-6 rounded-xl border border-border bg-surface hover:border-primary/50 transition-colors shadow-xs">
-              <div class="text-xs text-muted mb-2">
-                <time datetime={post.data.publishedAt.toISOString()}>{formattedDate}</time>
-              </div>
-              <h2 class="text-xl font-bold text-fg hover:text-primary transition-colors">
-                <a href={postUrl}>{post.data.title}</a>
-              </h2>
-              {post.data.description && (
-                <p class="text-sm text-muted mt-2 line-clamp-2">{post.data.description}</p>
-              )}
-              <div class="mt-4">
-                <a
-                  href={postUrl}
-                  class="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                >
-                  {m.common_read_more({}, { locale })} <span class="inline-block rtl:rotate-180">→</span>
-                </a>
-              </div>
-            </article>
-          );
-        })
-      }
-    </div>
   </div>
 </BaseLayout>
+
+<style>
+  [data-filter-chip][aria-current='true'] {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+    color: var(--color-primary-fg);
+  }
+
+  /* Card layout uses `flex`, so enforce the hidden state explicitly. */
+  [data-post-card][hidden] {
+    display: none !important;
+  }
+</style>
+
+<script>
+  import {
+    NO_FILTERS,
+    buildBlogFilterQuery,
+    hasActiveFilters,
+    matchesBlogFilters,
+    parseBlogFilters,
+    toggleBlogTag,
+    type BlogFilters,
+    type BlogTaxonomy,
+  } from '@/libs/content/blog';
+
+  function setupBlogFilters() {
+    const root = document.querySelector<HTMLElement>('[data-blog-filter]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const cards = [...document.querySelectorAll<HTMLElement>('[data-post-card]')].map((element) => ({
+      element,
+      taxonomy: {
+        categories: (element.dataset.categories ?? '').split(' ').filter(Boolean),
+        tags: (element.dataset.tags ?? '').split(' ').filter(Boolean),
+      } satisfies BlogTaxonomy,
+    }));
+
+    const status = root.querySelector<HTMLElement>('[data-blog-status]');
+    const empty = document.querySelector<HTMLElement>('[data-blog-empty]');
+    const clear = root.querySelector<HTMLAnchorElement>('[data-blog-clear]');
+    const categoryChips = [...root.querySelectorAll<HTMLAnchorElement>('[data-filter-category]')];
+    const tagChips = [...root.querySelectorAll<HTMLAnchorElement>('[data-filter-tag]')];
+    const template = root.dataset.showingTemplate ?? '';
+    const baseHref = root.dataset.baseHref ?? window.location.pathname;
+
+    let filters: BlogFilters = parseBlogFilters(window.location.search);
+
+    const setActive = (element: HTMLElement, active: boolean) => {
+      if (active) element.setAttribute('aria-current', 'true');
+      else element.removeAttribute('aria-current');
+    };
+
+    const render = (updateUrl = true) => {
+      let visible = 0;
+      for (const card of cards) {
+        const matches = matchesBlogFilters(card.taxonomy, filters);
+        card.element.hidden = !matches;
+        if (matches) visible += 1;
+      }
+
+      for (const chip of categoryChips) {
+        const isAllChip = chip.dataset.filterCategory === '';
+        setActive(
+          chip,
+          isAllChip ? !hasActiveFilters(filters) : chip.dataset.filterCategory === filters.category
+        );
+      }
+      for (const chip of tagChips) {
+        setActive(chip, filters.tags.includes(chip.dataset.filterTag ?? ''));
+      }
+
+      if (status) {
+        status.textContent = template
+          .replace('{visible}', String(visible))
+          .replace('{total}', String(cards.length));
+      }
+      if (empty) empty.hidden = visible !== 0;
+      if (clear) clear.hidden = !hasActiveFilters(filters);
+
+      if (updateUrl) {
+        window.history.replaceState(null, '', `${baseHref}${buildBlogFilterQuery(filters)}`);
+      }
+    };
+
+    root.addEventListener('click', (event) => {
+      const target = (event.target as HTMLElement | null)?.closest<HTMLAnchorElement>(
+        '[data-filter-chip], [data-blog-clear]'
+      );
+      if (!target) return;
+
+      event.preventDefault();
+
+      if (target.hasAttribute('data-blog-clear')) {
+        filters = NO_FILTERS;
+      } else if (target.dataset.filterCategory !== undefined) {
+        const category = target.dataset.filterCategory || null;
+        filters = category === null ? NO_FILTERS : { category, tags: filters.tags };
+      } else if (target.dataset.filterTag) {
+        filters = toggleBlogTag(filters, target.dataset.filterTag);
+      }
+
+      render();
+    });
+
+    document.addEventListener('blog:filters-restore', () => {
+      filters = parseBlogFilters(window.location.search);
+      render(false);
+    });
+
+    render();
+  }
+
+  if (document.documentElement.dataset.blogFilterHistoryBound !== 'true') {
+    document.documentElement.dataset.blogFilterHistoryBound = 'true';
+    window.addEventListener('popstate', () => {
+      document.dispatchEvent(new CustomEvent('blog:filters-restore'));
+    });
+  }
+
+  setupBlogFilters();
+  document.addEventListener('astro:page-load', setupBlogFilters);
+</script>

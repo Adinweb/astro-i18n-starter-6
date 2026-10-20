@@ -17,6 +17,16 @@ export function parseFrontmatter(rawContent) {
     if (colonIdx === -1) continue;
     const key = line.slice(0, colonIdx).trim();
     let val = line.slice(colonIdx + 1).trim();
+    if (val.startsWith('[') && val.endsWith(']')) {
+      const inner = val.slice(1, -1).trim();
+      data[key] = inner
+        ? inner
+            .split(',')
+            .map((item) => item.trim().replace(/^(["'])(.*)\1$/, '$2'))
+            .filter(Boolean)
+        : [];
+      continue;
+    }
     if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
       val = val.slice(1, -1);
     } else if (val === 'true') {
@@ -33,7 +43,9 @@ export function stringifyFrontmatter(data, body) {
   const lines = ['---'];
   for (const [k, v] of Object.entries(data)) {
     if (v === undefined) continue;
-    if (typeof v === 'boolean') {
+    if (Array.isArray(v)) {
+      lines.push(`${k}: [${v.map((item) => `"${String(item).replace(/"/g, '\\"')}"`).join(', ')}]`);
+    } else if (typeof v === 'boolean') {
       lines.push(`${k}: ${v}`);
     } else if (typeof v === 'number') {
       lines.push(`${k}: ${v}`);
@@ -69,6 +81,9 @@ export function runCli() {
   let isSyncFrontmatter = false;
   let syncAll = false;
   let updateHeading = true;
+  let customImage = '';
+  let customCategories = null;
+  let customTags = null;
   const titlesByLocale = {};
   const descriptionsByLocale = {};
   let jsonData = null;
@@ -93,6 +108,19 @@ export function runCli() {
       hasCustomDesc = true;
     } else if (arg.startsWith('--date=') || arg.startsWith('--publishedAt=')) {
       customDate = arg.startsWith('--date=') ? arg.slice(7) : arg.slice(14);
+    } else if (arg.startsWith('--image=')) {
+      // Accept both `images/cover.png` and `/images/cover.png`. The schemas
+      // require a public-root path, and unprefixed values also survive the
+      // path rewriting Git Bash applies to leading-slash arguments.
+      const value = arg.slice(8).trim();
+      customImage = value && !value.startsWith('/') ? `/${value}` : value;
+    } else if (arg.startsWith('--categories=') || arg.startsWith('--category=')) {
+      const rawValue = arg.slice(arg.startsWith('--categories=') ? 13 : 11);
+      const values = rawValue
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+      customCategories = [...(customCategories ?? []), ...values];
     } else if (arg.startsWith('--title:')) {
       const eqIdx = arg.indexOf('=');
       if (eqIdx !== -1) {
@@ -106,6 +134,13 @@ export function runCli() {
         const loc = arg.slice(prefixLen, eqIdx);
         descriptionsByLocale[loc] = arg.slice(eqIdx + 1);
       }
+    } else if (arg.startsWith('--tags=') || arg.startsWith('--tag=')) {
+      const rawValue = arg.slice(arg.startsWith('--tags=') ? 7 : 6);
+      const values = rawValue
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+      customTags = [...(customTags ?? []), ...values];
     } else if (arg.startsWith('--data=')) {
       try {
         jsonData = JSON.parse(arg.slice(7));
@@ -142,6 +177,9 @@ Creation Options:
   --desc="<description>"       Description for the post
   --from=<locale>              Source locale to branch or clone body from
   --publish / --draft=false    Publish immediately across all locales (default marks non-source as draft)
+  --category="a,b"             Blog category keys (repeatable, comma-separated)
+  --tags="x,y"                 Blog tag keys (repeatable, comma-separated)
+  --image=images/cover.png     Featured image served from public/ (a leading "/" is added)
 
 Update / Sync Options:
   --update                     Update an existing article group without rewriting markdown body
@@ -244,6 +282,17 @@ Update / Sync Options:
         fmData.publishedAt = customDate;
       }
 
+      // Taxonomy and featured image resolution
+      if (customImage) {
+        fmData.image = customImage;
+      }
+      if (customCategories && customCategories.length > 0) {
+        fmData.categories = customCategories;
+      }
+      if (customTags && customTags.length > 0) {
+        fmData.tags = customTags;
+      }
+
       // Draft resolution
       if (hasDraftArg) {
         fmData.draft = !publishAll;
@@ -334,11 +383,21 @@ Update / Sync Options:
 
     const dateValue = customDate || today;
 
+    const taxonomyLines = [
+      customImage ? `image: "${customImage}"` : '',
+      customCategories?.length
+        ? `categories: [${customCategories.map((item) => `"${item}"`).join(', ')}]`
+        : '',
+      customTags?.length ? `tags: [${customTags.map((item) => `"${item}"`).join(', ')}]` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
     const content = `---
 title: "${title}"
 slug: "${slug}"
 description: "${description}"
-publishedAt: ${dateValue}
+${taxonomyLines ? `${taxonomyLines}\n` : ''}publishedAt: ${dateValue}
 draft: ${isDraft}
 ---
 ${baseBody}

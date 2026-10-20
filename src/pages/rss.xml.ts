@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { siteConfig } from '@/libs/config/site';
 import { getBlogPostHref } from '@/libs/content/service';
+import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import { DEFAULT_LOCALE, isLocale } from '@/i18n/locales';
 
 function escapeXml(value: string): string {
@@ -30,6 +31,12 @@ export const GET: APIRoute = async () => {
       const url = absolute(getBlogPostHref(post.data.slug, locale));
       const published = post.data.publishedAt.toISOString();
       const updated = (post.data.updatedAt ?? post.data.publishedAt).toISOString();
+      const categories = [
+        ...post.data.categories.map((key) => getCategoryLabel(key, locale)),
+        ...post.data.tags.map((key) => getTagLabel(key, locale)),
+      ]
+        .map((term) => `    <category term="${escapeXml(term)}" />`)
+        .join('\n');
 
       return `  <entry>
     <title>${escapeXml(post.data.title)}</title>
@@ -37,7 +44,7 @@ export const GET: APIRoute = async () => {
     <id>${escapeXml(url)}</id>
     <published>${published}</published>
     <updated>${updated}</updated>
-    <summary>${escapeXml(post.data.description ?? '')}</summary>
+    <summary>${escapeXml(post.data.description ?? '')}</summary>${categories ? `\n${categories}` : ''}
   </entry>`;
     })
     .join('\n');

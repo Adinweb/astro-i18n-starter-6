@@ -164,6 +164,90 @@ function brandPixel(width, height, options = {}) {
   };
 }
 
+function hslToRgb(h, s, l) {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const hue = ((h % 360) + 360) % 360 / 60;
+  const x = c * (1 - Math.abs((hue % 2) - 1));
+  const [r1, g1, b1] =
+    hue < 1
+      ? [c, x, 0]
+      : hue < 2
+        ? [x, c, 0]
+        : hue < 3
+          ? [0, c, x]
+          : hue < 4
+            ? [0, x, c]
+            : hue < 5
+              ? [x, 0, c]
+              : [c, 0, x];
+  const m = l - c / 2;
+  return [(r1 + m) * 255, (g1 + m) * 255, (b1 + m) * 255];
+}
+
+/**
+ * Abstract editorial cover art: deep navy, two colour glows, technical rings,
+ * and a dot grid. Deterministic for a given hue, so covers stay reproducible.
+ */
+function coverPixel(width, height, hue) {
+  const accent = hslToRgb(hue, 0.72, 0.6);
+  const secondary = hslToRgb((hue + 52) % 360, 0.7, 0.58);
+
+  return (x, y) => {
+    const nx = x / width;
+    const ny = y / height;
+
+    let r = mix(9, 21, ny);
+    let g = mix(12, 26, ny);
+    let b = mix(26, 50, ny);
+
+    const glowA = Math.max(0, 1 - Math.hypot(nx - 0.18, ny - 0.12) * 1.55) ** 2;
+    const glowB = Math.max(0, 1 - Math.hypot(nx - 0.88, ny - 0.92) * 1.6) ** 2;
+    r += glowA * accent[0] * 0.72 + glowB * secondary[0] * 0.42;
+    g += glowA * accent[1] * 0.72 + glowB * secondary[1] * 0.42;
+    b += glowA * accent[2] * 0.72 + glowB * secondary[2] * 0.42;
+
+    // Concentric rings anchored toward the top-end corner.
+    const centerX = 0.82;
+    const centerY = 0.18;
+    const ringDistance = Math.hypot(nx - centerX, ny - centerY);
+    const ringPhase = (ringDistance % 0.085) / 0.085;
+    const ring = ringDistance < 0.5 && ringPhase < 0.07 ? 0.16 * (1 - ringDistance * 1.6) : 0;
+
+    // Dot grid in the bottom-start quadrant.
+    const dotX = (nx % 0.045) - 0.0225;
+    const dotY = (ny % 0.045) - 0.0225;
+    const dot =
+      nx < 0.52 && ny > 0.54 && Math.hypot(dotX, dotY) < 0.0042
+        ? 0.2 * Math.min(1, (0.9 - ny) * 2.4 + 0.35)
+        : 0;
+
+    // Soft diagonal light band for depth.
+    const band = Math.max(0, 1 - Math.abs(nx * 0.8 + ny * 0.6 - 0.82) * 5) * 0.08;
+
+    const veil = Math.min(1, ring + dot + band);
+    r = mix(r, 255, veil);
+    g = mix(g, 255, veil);
+    b = mix(b, 255, veil);
+
+    // Gentle vignette so the card edges read as deliberate.
+    const vignette = Math.max(0, Math.hypot(nx - 0.5, ny - 0.5) - 0.35) * 0.35;
+    r = mix(r, 4, vignette);
+    g = mix(g, 6, vignette);
+    b = mix(b, 14, vignette);
+
+    return [Math.round(r), Math.round(g), Math.round(b), 255];
+  };
+}
+
+function writeCover(filename, width, height, hue) {
+  const directory = path.join(publicDir, 'images', 'blog');
+  fs.mkdirSync(directory, { recursive: true });
+  const filePath = path.join(directory, filename);
+  fs.writeFileSync(filePath, encodePng(width, height, coverPixel(width, height, hue)));
+  const kb = (fs.statSync(filePath).size / 1024).toFixed(1);
+  console.log(`✅ public/images/blog/${filename} (${width}×${height}, ${kb} KB)`);
+}
+
 function writeAsset(filename, width, height, options) {
   const filePath = path.join(publicDir, filename);
   fs.writeFileSync(filePath, encodePng(width, height, brandPixel(width, height, options)));
@@ -176,3 +260,18 @@ writeAsset('apple-touch-icon.png', 180, 180, { icon: true });
 writeAsset('icon-192.png', 192, 192, { icon: true });
 writeAsset('icon-512.png', 512, 512, { icon: true });
 writeAsset('og-default.png', 1200, 630, { icon: false });
+
+// One cover per blog group so `assets:generate` keeps artwork in sync with posts.
+const COVER_HUES = [262, 198, 330, 158, 32, 286, 210, 350];
+const blogDir = path.join(rootDir, 'src', 'content', 'blog');
+if (fs.existsSync(blogDir)) {
+  const groups = fs
+    .readdirSync(blogDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+
+  groups.forEach((group, index) => {
+    writeCover(`${group}.png`, 1200, 675, COVER_HUES[index % COVER_HUES.length]);
+  });
+}

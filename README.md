@@ -126,7 +126,7 @@ All automation scripts run from the terminal using `pnpm run <command>`:
 | `pnpm run audit:i18n` | Audits parity, placeholders, used keys, content and route collisions | `pnpm run audit:i18n` |
 | `pnpm run smoke` | Runs HTML, SEO, feed, manifest and H1 assertions on `dist/` | `pnpm run smoke` |
 | `pnpm run knip` | Finds dead files, exports and dependencies | `pnpm run knip` |
-| `pnpm run assets:generate` | Regenerates PNG icons and the OG image | `pnpm run assets:generate` |
+| `pnpm run assets:generate` | Regenerates PNG icons, the OG image, and per-post blog covers | `pnpm run assets:generate` |
 
 ---
 
@@ -156,9 +156,35 @@ No template edits are required.
 ### 2. Adding a New Blog Post
 Run the article scaffolder:
 ```bash
-pnpm run new:post modern-web -- --title="Modern Web Development" --publish
+pnpm run new:post modern-web -- \
+  --title="Modern Web Development" \
+  --category=engineering \
+  --tags="astro,performance" \
+  --image=images/blog/modern-web.png \
+  --publish
 ```
 This generates synchronized files in `src/content/blog/modern-web/` across all supported languages. You can customize the localized `slug` in each file's frontmatter (e.g. `slug: "توسعه-وب-مدرن"` in `fa.mdx`).
+
+#### Blog frontmatter
+| Field | Purpose |
+| :--- | :--- |
+| `image` | Featured cover (`/images/...`), rendered on cards, the article hero, and `og:image`. |
+| `categories` | Language-neutral keys such as `engineering`. Rendered from `blog_category_<key>`. |
+| `tags` | Language-neutral keys such as `i18n`. Rendered from `blog_tag_<key>`. |
+| `author` | Optional byline, also emitted in the `BlogPosting` JSON-LD. |
+
+Taxonomy keys must be lowercase ASCII with single hyphens (`design-systems`) because they double as URL query values. Their visible labels live in `messages/*.json`; `pnpm run i18n:add` can add a label for a new key. Unknown keys still render, humanized (`design-systems` → “Design Systems”).
+
+Covers are generated from code, one per blog group:
+```bash
+pnpm run assets:generate
+```
+
+#### Blog listing, filtering, and taxonomy
+* The index at `/blog/` renders a responsive card grid with cover art, category badge, tags, date, and reading time.
+* Category pills and tag chips filter the grid client-side and sync the URL (`?category=engineering&tag=astro,rtl`), so filtered views are shareable and deep-linkable. Tags combine with AND semantics; category and tag filters combine too.
+* A live `role="status"` line reports how many articles match, and a “Clear filters” action appears whenever a filter is active. Without JavaScript every article stays visible — filtering is progressive enhancement.
+* Post pages show the featured image, category/tag links back into the filtered index, reading time, and `articleSection`/`keywords` metadata.
 
 ### 3. Adding a New Language
 To add Spanish (`es`), Italian (`it`), or another language:

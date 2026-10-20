@@ -124,6 +124,34 @@ This is the body text that should never be deleted.
     expect(serialized).toContain('This is the body text that should never be deleted.');
   });
 
+  it('round-trips blog taxonomy arrays through post frontmatter', () => {
+    const raw = `---
+title: "Taxonomy Post"
+slug: "taxonomy-post"
+description: "With categories"
+image: "/images/blog/taxonomy-post.png"
+categories: ["engineering", "guides"]
+tags: ["astro", "i18n"]
+publishedAt: 2026-06-01
+draft: false
+---
+
+Body copy.
+`;
+
+    const { data, body } = parsePostFm(raw) as { data: Record<string, any>; body: string };
+    expect(data.categories).toEqual(['engineering', 'guides']);
+    expect(data.tags).toEqual(['astro', 'i18n']);
+    expect(data.image).toBe('/images/blog/taxonomy-post.png');
+
+    data.tags = ['astro', 'rtl', 'performance'];
+    const serialized = stringifyPostFm(data, body);
+    expect(serialized).toContain('categories: ["engineering", "guides"]');
+    expect(serialized).toContain('tags: ["astro", "rtl", "performance"]');
+    expect(serialized).toContain('image: "/images/blog/taxonomy-post.png"');
+    expect(serialized).toContain('Body copy.');
+  });
+
   it('parses post frontmatter and preserves publishedAt and markdown body', () => {
     const raw = `---
 title: "Tech Trends 2026"

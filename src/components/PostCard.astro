@@ -1,0 +1,99 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Icon from '@/components/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { getReadingTime } from '@/libs/content/blog';
+import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+  locale: Locale;
+  href: string;
+  /** Loads the cover eagerly; use only for the first card above the fold. */
+  priority?: boolean;
+}
+
+const { post, locale, href } = Astro.props;
+const priority = Astro.props.priority ?? false;
+
+const { title, description, image, categories, tags, publishedAt } = post.data;
+const category = categories[0];
+const formattedDate = publishedAt.toLocaleDateString(locale, {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+const readingTime = getReadingTime(post.body);
+const visibleTags = tags.slice(0, 2);
+const hiddenTagCount = tags.length - visibleTags.length;
+---
+
+<article
+  class="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30"
+  data-post-card
+  data-categories={categories.join(' ')}
+  data-tags={tags.join(' ')}
+>
+  <div class="relative aspect-[16/9] overflow-hidden bg-linear-to-br from-primary/20 via-surface-hover to-accent/15">
+    {
+      image ? (
+        <img
+          src={image}
+          alt=""
+          width="1200"
+          height="675"
+          loading={priority ? 'eager' : 'lazy'}
+          decoding={priority ? 'sync' : 'async'}
+          fetchpriority={priority ? 'high' : 'auto'}
+          class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+        />
+      ) : (
+        <div class="flex h-full items-center justify-center text-primary/40">
+          <Icon name="globe" size={44} />
+        </div>
+      )
+    }
+    {category && (
+      <span class="absolute bottom-3 start-3 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+        {getCategoryLabel(category, locale)}
+      </span>
+    )}
+  </div>
+
+  <div class="flex flex-1 flex-col gap-2.5 p-5">
+    <h2 class="line-clamp-2 text-lg font-bold leading-snug tracking-tight text-fg">
+      <a
+        href={href}
+        class="transition-colors after:absolute after:inset-0 hover:text-primary focus-visible:outline-none"
+      >
+        {title}
+      </a>
+    </h2>
+
+    {description && <p class="line-clamp-2 text-sm leading-relaxed text-muted">{description}</p>}
+
+    {
+      visibleTags.length > 0 && (
+        <ul class="flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
+          {visibleTags.map((tag) => (
+            <li class="rounded-full border border-border bg-surface px-2 py-0.5 font-medium">
+              {getTagLabel(tag, locale)}
+            </li>
+          ))}
+          {hiddenTagCount > 0 && (
+            <li class="rounded-full border border-border bg-surface px-2 py-0.5 font-medium">
+              +{hiddenTagCount}
+            </li>
+          )}
+        </ul>
+      )
+    }
+
+    <div class="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2 text-xs text-muted">
+      <time datetime={publishedAt.toISOString()}>{formattedDate}</time>
+      <span aria-hidden="true">·</span>
+      <span>{m.blog_read_time({ count: readingTime }, { locale })}</span>
+    </div>
+  </div>
+</article>

@@ -15,6 +15,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
    - Content schemas: `src/content.config.ts`.
    - Slugs & alternates: `src/libs/content/service.ts`.
+   - Blog filters & reading time: `src/libs/content/blog.ts`; taxonomy labels: `src/libs/content/taxonomy.ts`.
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
 2. **Lean Router Dispatcher Pattern**:
    - Never create dynamic routing files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
@@ -48,7 +49,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ├── public/                    # Static assets (favicons, etc.)
 ├── scripts/                   # Developer CLI automation suite (13 scripts)
 ├── src/
-│   ├── components/            # Reusable Astro components (Icon, LanguageSwitcher, SearchModal, Seo, TopLoadingBar)
+│   ├── components/            # Reusable Astro components (Icon, LanguageSwitcher, PostCard, SearchModal, Seo, TopLoadingBar)
 │   ├── content/               # Symmetrical content collections:
 │   │   ├── pages/<group>/     # Static pages (en.mdx, de.mdx, fr.mdx, fa.mdx, ar.mdx)
 │   │   └── blog/<group>/      # Blog posts with localized slugs
@@ -119,8 +120,8 @@ Agents should execute these scripts instead of performing brittle manual file ma
   # Update existing post frontmatter across all locales without manual file rewrites:
   pnpm run new:post <group-slug> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"]
   ```
-  *Example:* `pnpm run new:post ai-agents --from=en --title="AI Coding Agents" --publish`  
-  *Actions performed:* Creates or updates `src/content/blog/ai-agents/{en,de,fr,fa,ar}.mdx` with synchronized frontmatter.
+  *Example:* `pnpm run new:post ai-agents --from=en --title="AI Coding Agents" --category=engineering --tags="astro,i18n" --image=images/blog/ai-agents.png --publish`  
+  *Actions performed:* Creates or updates `src/content/blog/ai-agents/{en,de,fr,fa,ar}.mdx` with synchronized frontmatter, including `categories`, `tags`, and the featured `image`.
 
 ### 4.2 Content Removal
 * **Remove an entire page or a single locale:**

@@ -128,6 +128,10 @@ pnpm run new:post -- tech-trends --update --sync-frontmatter --title="Modern Tec
   To prevent unreviewed placeholder translations (`[TODO: ...]`) from appearing publicly on the live blog index (`/fa/blog`, `/de/blog`, etc.), `new:post` sets `draft: true` on non-source locales by default.
   * To show a post on a specific language's blog listing, set `draft: false` in its frontmatter.
   * To publish all languages immediately upon creation, pass `--publish` or `--draft=false`.
+* **Blog taxonomy and covers:** Pass `--category=engineering`, `--tags="astro,performance"`, and `--image=images/blog/my-post.png` when scaffolding (a leading `/` is added automatically) so cards, filters, and the article hero are populated from the start. The same flags work with `--update`, and inline YAML arrays are preserved when frontmatter is rewritten.
+  * Category and tag keys stay language-neutral (`engineering`, `i18n`); visible labels are message keys (`blog_category_engineering`, `blog_tag_i18n`). Unknown keys fall back to a humanized label, so a new tag never blocks a build.
+  * Run `pnpm run assets:generate` after adding a post group to produce `public/images/blog/<group>.png` (1200×675).
+  * Filtering lives entirely in `src/libs/content/blog.ts`; the blog index syncs `?category=…&tag=a,b` so filtered views are linkable.
 * **Updating Frontmatter:** Pass `--update` or `--sync-frontmatter` to update `title`, `description`, `date`, or `draft` across all 5 language files while preserving markdown body content.
 
 ### 3. Scaffolding New Pages (`pnpm run new:page`)
