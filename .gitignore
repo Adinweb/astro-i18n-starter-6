@@ -15,7 +15,13 @@ pnpm-debug.log*
 
 # environment variables
 .env
-.env.production
+.env.*
+!.env.example
+
+# test/build caches
+coverage/
+*.tsbuildinfo
+.pnpm-deps.log
 
 # macOS-specific files
 .DS_Store
@@ -25,4 +31,3 @@ pnpm-debug.log*
 
 # paraglide generated files
 src/paraglide/
-src/paraglide/README.md

@@ -1,5 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "blog_empty": "لم يتم نشر أي مقالات بعد.",
   "blog_index_description": "أحدث المقالات والأفكار والتحديثات لدينا.",
   "common_all_rights_reserved": "جميع الحقوق محفوظة.",
   "common_back_home": "العودة إلى الرئيسية",
@@ -19,6 +20,7 @@
   "common_read_more": "اقرأ المزيد",
   "common_search_placeholder": "ابحث في المقالات والصفحات...",
   "common_site_title": "أسترو i18n",
+  "common_skip_to_content": "تخطَّ إلى المحتوى",
   "common_type_to_search": "اكتب للبحث...",
   "items_count": [
     {

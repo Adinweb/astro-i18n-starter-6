@@ -13,6 +13,8 @@
     "src/test/**"
   ],
   "ignoreDependencies": [
-    "tailwindcss"
+    "tailwindcss",
+    "@fontsource-variable/vazirmatn",
+    "@fontsource-variable/noto-sans-arabic"
   ]
 }

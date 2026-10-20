@@ -10,228 +10,276 @@ interface Props {
 const { locale } = Astro.props;
 ---
 
-<div
+<dialog
   id="search-dialog"
-  class="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/50 backdrop-blur-xs opacity-0 pointer-events-none transition-opacity duration-200"
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="search-modal-title"
   data-search-modal
   data-locale={locale}
   data-no-results={m.common_no_results({}, { locale })}
   data-placeholder={m.common_type_to_search({}, { locale })}
+  aria-labelledby="search-modal-title"
+  class="m-auto w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-xl border border-border bg-surface p-0 text-fg shadow-2xl backdrop:bg-black/50 backdrop:backdrop-blur-xs"
 >
-  <div class="bg-surface text-fg rounded-xl shadow-2xl border border-border w-full max-w-xl overflow-hidden flex flex-col max-h-[70vh]">
-    <div class="flex items-center px-4 py-3 border-b border-border gap-3">
-      <Icon name="search" size={20} class="text-muted shrink-0" />
+  <div class="flex max-h-[70vh] flex-col">
+    <h2 id="search-modal-title" class="sr-only">
+      {m.common_search_placeholder({}, { locale })}
+    </h2>
+
+    <div class="flex items-center gap-3 border-b border-border px-4 py-3">
+      <Icon name="search" size={20} class="shrink-0 text-muted" />
       <input
         id="search-input"
         type="search"
         placeholder={m.common_search_placeholder({}, { locale })}
-        class="w-full bg-transparent text-fg placeholder:text-muted focus:outline-none text-base"
+        class="w-full bg-transparent text-base text-fg placeholder:text-muted focus:outline-none"
         autocomplete="off"
+        aria-label={m.common_search_placeholder({}, { locale })}
       />
       <button
         id="search-close-btn"
         type="button"
-        class="text-muted hover:text-fg p-1 rounded-md transition-colors cursor-pointer"
+        class="cursor-pointer rounded-md p-1 text-muted transition-colors hover:text-fg"
         aria-label={m.common_close({}, { locale })}
       >
         <Icon name="close" size={18} />
       </button>
     </div>
 
-    <div id="search-results" class="overflow-y-auto p-4 flex flex-col gap-2 min-h-[120px]">
-      <p class="text-sm text-muted text-center py-6" id="search-placeholder-msg">
+    <div id="search-results" class="flex min-h-30 flex-col gap-2 overflow-y-auto p-4">
+      <p class="py-6 text-center text-sm text-muted" id="search-placeholder-msg">
         {m.common_type_to_search({}, { locale })}
       </p>
     </div>
 
-    <div class="px-4 py-2 border-t border-border bg-bg/50 text-xs text-muted flex items-center justify-between">
-      <span><kbd class="px-1.5 py-0.5 rounded bg-surface border border-border">ESC</kbd> {m.common_press_esc({}, { locale })}</span>
-      <span><kbd class="px-1.5 py-0.5 rounded bg-surface border border-border">⌘K</kbd></span>
+    <div class="flex items-center justify-between border-t border-border bg-bg/50 px-4 py-2 text-xs text-muted">
+      <span>
+        <kbd class="rounded border border-border bg-surface px-1.5 py-0.5">ESC</kbd>
+        {m.common_press_esc({}, { locale })}
+      </span>
+      <span><kbd class="rounded border border-border bg-surface px-1.5 py-0.5">⌘K</kbd></span>
     </div>
   </div>
-</div>
+</dialog>
 
 <script>
-  let searchData: Array<{ title: string; description: string; url: string; locale: string }> = [];
-  let isFetching = false;
+  interface SearchItem {
+    title: string;
+    description: string;
+    url: string;
+    locale: string;
+  }
+
+  let searchData: SearchItem[] = [];
+  let isFetchingDevIndex = false;
   let pagefindPromise: Promise<any> | null = null;
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
   let searchRequestId = 0;
 
+  function getDialog() {
+    return document.querySelector<HTMLDialogElement>('[data-search-modal]');
+  }
+
+  function getResults() {
+    return document.getElementById('search-results');
+  }
+
+  function setMessage(text: string) {
+    const container = getResults();
+    if (!container) return;
+    container.replaceChildren();
+    const message = document.createElement('p');
+    message.className = 'py-6 text-center text-sm text-muted';
+    message.textContent = text;
+    container.append(message);
+  }
+
+  function createResultLink(href: string, title: string, excerpt: string) {
+    const link = document.createElement('a');
+    link.href = href;
+    link.className =
+      'block rounded-lg border border-transparent p-3 transition-colors hover:border-border hover:bg-surface-hover';
+
+    const heading = document.createElement('div');
+    heading.className = 'text-sm font-medium text-fg';
+    heading.textContent = title;
+    link.append(heading);
+
+    if (excerpt) {
+      const description = document.createElement('p');
+      description.className = 'mt-1 line-clamp-2 text-xs text-muted';
+      description.textContent = excerpt;
+      link.append(description);
+    }
+
+    return link;
+  }
+
+  /** Pagefind excerpts contain markup; keep only the text for safe DOM rendering. */
+  function plainText(html: string) {
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    return container.textContent ?? '';
+  }
+
   async function getPagefindInstance() {
     if (!pagefindPromise) {
+      const pagefindUrl = '/pagefind/pagefind.js';
       pagefindPromise = (async () => {
-        const pagefindUrl = '/pagefind/pagefind.js';
         const mod = await import(/* @vite-ignore */ pagefindUrl);
         await mod.init();
         return mod;
-      })();
+      })().catch((error) => {
+        pagefindPromise = null;
+        throw error;
+      });
     }
     return pagefindPromise;
   }
 
+  function resetSearch(dialog: HTMLDialogElement) {
+    const input = document.getElementById('search-input') as HTMLInputElement | null;
+    if (input) input.value = '';
+    setMessage(dialog.dataset.placeholder || 'Type to search...');
+  }
+
   function setupSearch() {
-    const dialog = document.querySelector<HTMLElement>('[data-search-modal]');
+    const dialog = getDialog();
     const input = document.getElementById('search-input') as HTMLInputElement | null;
     const closeBtn = document.getElementById('search-close-btn');
-    const resultsContainer = document.getElementById('search-results');
+    const resultsContainer = getResults();
 
     if (!dialog || !input || !resultsContainer) return;
     if (dialog.dataset.bound === 'true') return;
-    dialog.dataset.bound = 'true';
 
-    function openModal() {
-      dialog?.classList.remove('opacity-0', 'pointer-events-none');
-      dialog?.classList.add('opacity-100');
-      input?.focus();
-    }
+    const modal: HTMLDialogElement = dialog;
+    const searchInput: HTMLInputElement = input;
+    const resultsEl: HTMLElement = resultsContainer;
+    modal.dataset.bound = 'true';
 
-    function closeModal() {
-      dialog?.classList.add('opacity-0', 'pointer-events-none');
-      dialog?.classList.remove('opacity-100');
-      if (input) input.value = '';
-      if (resultsContainer) {
-        const placeholder = dialog?.dataset.placeholder || 'Type to search...';
-        resultsContainer.innerHTML = `<p class="text-sm text-muted text-center py-6">${placeholder}</p>`;
-      }
-    }
-
-    // Direct event listeners on buttons
-    closeBtn?.addEventListener('click', closeModal);
-    dialog.addEventListener('click', (e) => {
-      if (e.target === dialog) closeModal();
+    closeBtn?.addEventListener('click', () => modal.close());
+    modal.addEventListener('click', (event) => {
+      // The dialog element itself is only the backdrop area outside the panel.
+      if (event.target === modal) modal.close();
     });
+    modal.addEventListener('close', () => resetSearch(modal));
+    modal.addEventListener('cancel', () => resetSearch(modal));
 
-    // Close when clicking an article link in results
-    resultsContainer.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement)?.closest('a')) {
-        closeModal();
-      }
+    resultsEl.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement)?.closest('a')) modal.close();
     });
 
     async function performSearch(query: string) {
-      const activeLocale = dialog?.dataset.locale || 'en';
+      const activeLocale = modal.dataset.locale || 'en';
       const requestId = ++searchRequestId;
 
       if (!query.trim()) {
-        const placeholder = dialog?.dataset.placeholder || 'Type to search...';
-        resultsContainer!.innerHTML = `<p class="text-sm text-muted text-center py-6">${placeholder}</p>`;
+        setMessage(modal.dataset.placeholder || 'Type to search...');
         return;
       }
 
-      // 1. Try Pagefind in production
-      try {
-        const pagefindModule = await getPagefindInstance();
-        const search = await pagefindModule.search(query);
-        const results = await Promise.all(search.results.slice(0, 6).map((r: any) => r.data()));
-
-        // Discard result if newer search was dispatched in the meantime
-        if (requestId !== searchRequestId) return;
-
-        const noResultsText = dialog?.dataset.noResults || 'No results';
-        if (results.length === 0) {
-          resultsContainer!.innerHTML = `<p class="text-sm text-muted text-center py-6">${noResultsText}</p>`;
-          return;
-        }
-
-        resultsContainer!.innerHTML = results
-          .map(
-            (r: any) => `
-            <a href="${r.url}" class="block p-3 rounded-lg hover:bg-surface-hover border border-transparent hover:border-border transition-colors">
-              <div class="font-medium text-fg text-sm">${r.meta?.title || r.url}</div>
-              <p class="text-xs text-muted line-clamp-2 mt-1">${r.excerpt || ''}</p>
-            </a>
-          `
-          )
-          .join('');
-        return;
-      } catch {
-        // Pagefind unavailable (e.g. in dev mode), proceed to dev fallback
-      }
-
-      // 2. Dev mode fallback using /api/search-dev.json
-      if (searchData.length === 0 && !isFetching) {
-        isFetching = true;
+      if (import.meta.env.PROD) {
         try {
-          const res = await fetch('/api/search-dev.json');
-          searchData = await res.json();
+          const pagefind = await getPagefindInstance();
+          const search = await pagefind.search(query);
+          const pagefindResults = await Promise.all(
+            search.results.slice(0, 6).map((result: any) => result.data())
+          );
+
+          if (requestId !== searchRequestId) return;
+
+          if (pagefindResults.length === 0) {
+            setMessage(modal.dataset.noResults || 'No results');
+            return;
+          }
+
+          resultsEl.replaceChildren(
+            ...pagefindResults.map((result: any) =>
+              createResultLink(
+                result.url,
+                result.meta?.title || result.url,
+                plainText(result.excerpt || '')
+              )
+            )
+          );
+          return;
+        } catch {
+          // Pagefind is unavailable (for example on an unindexed preview); use
+          // the dev index below as a graceful fallback.
+        }
+      }
+
+      if (searchData.length === 0 && !isFetchingDevIndex) {
+        isFetchingDevIndex = true;
+        try {
+          const response = await fetch('/api/search-dev.json');
+          if (!response.ok) throw new Error(`Search index responded ${response.status}`);
+          searchData = await response.json();
         } catch {
           searchData = [];
+        } finally {
+          isFetchingDevIndex = false;
         }
-        isFetching = false;
       }
 
       if (requestId !== searchRequestId) return;
 
-      const q = query.toLowerCase();
+      const normalized = query.trim().toLowerCase();
       const filtered = searchData
         .filter((item) => item.locale === activeLocale)
         .filter(
           (item) =>
-            item.title.toLowerCase().includes(q) ||
-            item.description.toLowerCase().includes(q)
+            item.title.toLowerCase().includes(normalized) ||
+            item.description.toLowerCase().includes(normalized)
         )
         .slice(0, 6);
 
-      const noResultsText = dialog?.dataset.noResults || 'No results';
       if (filtered.length === 0) {
-        resultsContainer!.innerHTML = `<p class="text-sm text-muted text-center py-6">${noResultsText}</p>`;
+        setMessage(modal.dataset.noResults || 'No results');
         return;
       }
 
-      resultsContainer!.innerHTML = filtered
-        .map(
-          (item) => `
-          <a href="${item.url}" class="block p-3 rounded-lg hover:bg-surface-hover border border-transparent hover:border-border transition-colors">
-            <div class="font-medium text-fg text-sm">${item.title}</div>
-            ${item.description ? `<p class="text-xs text-muted line-clamp-2 mt-1">${item.description}</p>` : ''}
-          </a>
-        `
-        )
-        .join('');
+      resultsEl.replaceChildren(
+        ...filtered.map((item) => createResultLink(item.url, item.title, item.description))
+      );
     }
 
-    input.addEventListener('input', (e) => {
-      const val = (e.target as HTMLInputElement).value;
+    searchInput.addEventListener('input', () => {
+      const value = searchInput.value;
       if (searchTimeout) clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        performSearch(val);
-      }, 150);
+      searchTimeout = setTimeout(() => performSearch(value), 150);
     });
+
+    if (document.documentElement.dataset.searchShortcutsBound !== 'true') {
+      document.documentElement.dataset.searchShortcutsBound = 'true';
+
+      document.addEventListener('click', (event) => {
+        if ((event.target as HTMLElement)?.closest('[data-open-search]')) {
+          const current = getDialog();
+          if (!current) return;
+          current.showModal();
+          requestAnimationFrame(() => {
+            document.getElementById('search-input')?.focus();
+          });
+        }
+      });
+
+      window.addEventListener('keydown', (event) => {
+        const current = getDialog();
+        if (!current) return;
+
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+          event.preventDefault();
+          if (current.open) {
+            current.close();
+          } else {
+            current.showModal();
+            requestAnimationFrame(() => {
+              document.getElementById('search-input')?.focus();
+            });
+          }
+        }
+      });
+    }
   }
-
-  // Global listeners (delegated)
-  document.addEventListener('click', (e) => {
-    if ((e.target as HTMLElement)?.closest('[data-open-search]')) {
-      const dialog = document.querySelector<HTMLElement>('[data-search-modal]');
-      const input = document.getElementById('search-input') as HTMLInputElement | null;
-      dialog?.classList.remove('opacity-0', 'pointer-events-none');
-      dialog?.classList.add('opacity-100');
-      input?.focus();
-    }
-  });
-
-  window.addEventListener('keydown', (e) => {
-    const dialog = document.querySelector<HTMLElement>('[data-search-modal]');
-    const input = document.getElementById('search-input') as HTMLInputElement | null;
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-      e.preventDefault();
-      if (dialog?.classList.contains('opacity-0')) {
-        dialog.classList.remove('opacity-0', 'pointer-events-none');
-        dialog.classList.add('opacity-100');
-        input?.focus();
-      } else {
-        dialog?.classList.add('opacity-0', 'pointer-events-none');
-        dialog?.classList.remove('opacity-100');
-      }
-    } else if (e.key === 'Escape' && dialog && !dialog.classList.contains('opacity-0')) {
-      dialog.classList.add('opacity-0', 'pointer-events-none');
-      dialog.classList.remove('opacity-100');
-    }
-  });
 
   setupSearch();
   document.addEventListener('astro:page-load', setupSearch);

@@ -47,14 +47,16 @@ if (inlangSettings.locales.length <= 1) {
   process.exit(1);
 }
 
+if (!force && !process.stdin.isTTY) {
+  console.error('❌ Refusing to remove a language in a non-interactive session without --force.');
+  console.error('   Re-run with --force and optionally --with-content once verified.');
+  process.exit(1);
+}
+
 async function confirmDeletion() {
   if (force) {
-    return { proceed: true, deleteContent: contentOption !== false };
-  }
-
-  if (!process.stdin.isTTY) {
-    console.log('ℹ️ Non-interactive mode: proceeding with language removal and content deletion.');
-    return { proceed: true, deleteContent: contentOption !== false };
+    // Content is opt-in: --force alone removes only configuration and dictionaries.
+    return { proceed: true, deleteContent: contentOption === true };
   }
 
   const rl = readline.createInterface({

@@ -1,5 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "blog_empty": "Aucun article n'a encore été publié.",
   "blog_index_description": "Nos derniers articles, réflexions et actualités.",
   "common_all_rights_reserved": "Tous droits réservés.",
   "common_back_home": "Retour à l’accueil",
@@ -19,6 +20,7 @@
   "common_read_more": "En savoir plus",
   "common_search_placeholder": "Rechercher des articles et des pages...",
   "common_site_title": "Astro i18n",
+  "common_skip_to_content": "Aller au contenu",
   "common_type_to_search": "Tapez pour rechercher...",
   "items_count": [
     {

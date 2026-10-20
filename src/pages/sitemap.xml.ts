@@ -20,11 +20,16 @@ export const GET: APIRoute = async () => {
         })
         .join('\n');
 
+      const entryData = route.props.entry?.data;
+      const modified = entryData?.updatedAt ?? entryData?.publishedAt;
+      const lastmod = modified ? `\n    <lastmod>${modified.toISOString()}</lastmod>` : '';
+      const changefreq = route.props.routeType === 'page' ? 'monthly' : 'weekly';
+
       return `  <url>
     <loc>${locUrl}</loc>
 ${alternateTags}
-    <xhtml:link rel="alternate" hreflang="x-default" href="${xDefaultUrl}" />
-    <changefreq>weekly</changefreq>
+    <xhtml:link rel="alternate" hreflang="x-default" href="${xDefaultUrl}" />${lastmod}
+    <changefreq>${changefreq}</changefreq>
   </url>`;
     })
     .join('\n');

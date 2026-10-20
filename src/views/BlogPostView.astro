@@ -1,15 +1,15 @@
 ---
 import { render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { getBreadcrumbs } from '@/libs/content/service';
-import { localizeHref } from '@/i18n/paths';
+import { getBreadcrumbs, getBlogIndexHref } from '@/libs/content/service';
+import { siteConfig } from '@/libs/config/site';
 import type { Locale } from '@/i18n/config';
 import * as m from '@/paraglide/messages';
 
 interface Props {
   entry: CollectionEntry<'blog'>;
   locale: Locale;
-  alternates: Record<Locale, string>;
+  alternates: Partial<Record<Locale, string>>;
   url: string;
 }
 
@@ -17,22 +17,52 @@ const { entry, locale, alternates, url } = Astro.props;
 const { Content } = await render(entry);
 
 const breadcrumbs = getBreadcrumbs(url, locale, {
-  current: entry.data.title,
   home: m.nav_home({}, { locale }),
   blog: m.nav_blog({}, { locale }),
+  current: entry.data.title,
 });
-const blogIndexHref = localizeHref('/blog', locale);
+const blogIndexHref = getBlogIndexHref(locale);
 
 const formattedDate = entry.data.publishedAt.toLocaleDateString(locale, {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
 });
+
+const canonicalUrl = new URL(url, siteConfig.url).href;
+const imageUrl = entry.data.image
+  ? new URL(entry.data.image, siteConfig.url).href
+  : new URL(siteConfig.ogImage, siteConfig.url).href;
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: entry.data.title,
+  description: entry.data.description,
+  image: imageUrl,
+  datePublished: entry.data.publishedAt.toISOString(),
+  dateModified: (entry.data.updatedAt ?? entry.data.publishedAt).toISOString(),
+  inLanguage: locale,
+  mainEntityOfPage: canonicalUrl,
+  author: {
+    '@type': entry.data.author ? 'Person' : 'Organization',
+    name: entry.data.author ?? siteConfig.name,
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: siteConfig.name,
+    url: siteConfig.url,
+  },
+};
 ---
 
 <BaseLayout
   title={entry.data.title}
   description={entry.data.description}
+  image={entry.data.image}
+  type="article"
+  publishedTime={entry.data.publishedAt.toISOString()}
+  schema={schema}
   locale={locale}
   url={url}
   alternates={alternates}
@@ -60,17 +90,13 @@ const formattedDate = entry.data.publishedAt.toLocaleDateString(locale, {
     <header class="border-b border-border pb-6 mb-8">
       <div class="text-xs text-muted mb-2">
         <span>{m.common_published_on({}, { locale })} </span>
-        <time datetime={entry.data.publishedAt.toISOString()}>
-          {formattedDate}
-        </time>
+        <time datetime={entry.data.publishedAt.toISOString()}>{formattedDate}</time>
       </div>
       <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-fg">
         {entry.data.title}
       </h1>
       {entry.data.description && (
-        <p class="text-base text-muted mt-3">
-          {entry.data.description}
-        </p>
+        <p class="text-base text-muted mt-3">{entry.data.description}</p>
       )}
     </header>
 

@@ -15,8 +15,10 @@ if (!fs.existsSync(distDir)) {
 }
 
 let failed = false;
+let checks = 0;
 
 function assert(condition, message) {
+  checks += 1;
   if (!condition) {
     console.error(`❌ FAILED: ${message}`);
     failed = true;
@@ -25,122 +27,239 @@ function assert(condition, message) {
   }
 }
 
-// 1. Verifies /index.html renders default locale (<html lang="en" dir="ltr">)
-const rootHtmlPath = path.join(distDir, 'index.html');
-assert(fs.existsSync(rootHtmlPath), 'Root index.html exists');
-if (fs.existsSync(rootHtmlPath)) {
-  const html = fs.readFileSync(rootHtmlPath, 'utf-8');
+function readHtml(relativePath) {
+  const filePath = path.join(distDir, relativePath);
+  return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : null;
+}
+
+function count(html, pattern) {
+  return [...html.matchAll(pattern)].length;
+}
+
+function readFrontmatterSlug(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  const raw = fs.readFileSync(filePath, 'utf-8');
+  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return null;
+  const slugLine = match[1].match(/^slug:\s*["']?(.*?)["']?\s*$/m);
+  return slugLine ? slugLine[1].trim() : null;
+}
+
+const settings = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
+);
+const LOCALES = settings.locales;
+const DEFAULT_LOCALE = settings.baseLocale || 'en';
+const RTL_LOCALES = new Set(['fa', 'ar', 'he', 'ur', 'ps', 'ckb']);
+const dirFor = (locale) => (RTL_LOCALES.has(locale) ? 'rtl' : 'ltr');
+const nonDefaultLocales = LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
+const testLocale = nonDefaultLocales.includes('fa') ? 'fa' : nonDefaultLocales[0];
+
+// ---------------------------------------------------------------------------
+// 1. Default locale renders prefix-less at the root with the right lang/dir
+// ---------------------------------------------------------------------------
+const rootHtml = readHtml('index.html');
+assert(rootHtml !== null, 'Root index.html exists');
+if (rootHtml) {
   assert(
-    html.includes('lang="en"') && html.includes('dir="ltr"'),
-    '/index.html renders default locale (<html lang="en" dir="ltr">)'
+    rootHtml.includes(`lang="${DEFAULT_LOCALE}"`) &&
+      rootHtml.includes(`dir="${dirFor(DEFAULT_LOCALE)}"`),
+    `Root renders the default locale (<html lang="${DEFAULT_LOCALE}" dir="${dirFor(DEFAULT_LOCALE)}">)`
+  );
+  assert(
+    count(rootHtml, /<h1[\s>]/g) === 1,
+    `Root page has exactly one <h1> (found ${count(rootHtml, /<h1[\s>]/g)})`
+  );
+  assert(
+    !rootHtml.includes(`href="/${DEFAULT_LOCALE}/`) &&
+      !rootHtml.includes(`href="/${DEFAULT_LOCALE}"`),
+    'Default locale links are prefix-less'
+  );
+  const canonical = rootHtml.match(/<link[^>]+rel="canonical"[^>]*href="([^"]+)"/i);
+  assert(
+    Boolean(canonical && canonical[1].endsWith('/') && /^https?:\/\//.test(canonical[1])),
+    `Canonical link is absolute with a trailing slash: ${canonical ? canonical[1] : 'none'}`
+  );
+  const ogImage = rootHtml.match(/<meta[^>]+property="og:image"[^>]*content="([^"]+)"/i);
+  assert(
+    Boolean(ogImage && /^https?:\/\//.test(ogImage[1])),
+    'Open Graph image is an absolute URL'
+  );
+  assert(
+    rootHtml.includes('application/ld+json'),
+    'Root emits JSON-LD structured data'
+  );
+  assert(
+    rootHtml.includes('application/rss+xml'),
+    'Root advertises the RSS feed'
   );
 }
 
-const inlangSettings = JSON.parse(
-  fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
-);
-const LOCALES = inlangSettings.locales;
-const nonDefaultLocales = LOCALES.filter((l) => l !== inlangSettings.baseLocale);
-const testNonDefault = LOCALES.includes('fa') ? 'fa' : nonDefaultLocales[0] || 'de';
+// ---------------------------------------------------------------------------
+// 2. Non-default locale pages keep their prefix, language, and direction
+// ---------------------------------------------------------------------------
+if (testLocale) {
+  const html = readHtml(path.join(testLocale, 'index.html'));
+  assert(html !== null, `/${testLocale}/index.html exists`);
+  if (html) {
+    assert(
+      html.includes(`lang="${testLocale}"`) && html.includes(`dir="${dirFor(testLocale)}"`),
+      `/${testLocale}/ renders <html lang="${testLocale}" dir="${dirFor(testLocale)}">`
+    );
+    assert(count(html, /<h1[\s>]/g) === 1, `/${testLocale}/ has exactly one <h1>`);
+  }
 
-// 2. Verifies non-default locale index renders correctly (e.g. /fa/index.html or /de/index.html)
-const nonDefaultHtmlPath = path.join(distDir, testNonDefault, 'index.html');
-assert(fs.existsSync(nonDefaultHtmlPath), `/${testNonDefault}/index.html exists`);
-if (fs.existsSync(nonDefaultHtmlPath)) {
-  const html = fs.readFileSync(nonDefaultHtmlPath, 'utf-8');
-  const expectedDir = ['fa', 'ar', 'he', 'ur'].includes(testNonDefault) ? 'rtl' : 'ltr';
-  assert(
-    html.includes(`lang="${testNonDefault}"`) && html.includes(`dir="${expectedDir}"`),
-    `/${testNonDefault}/index.html renders correct lang and dir (<html lang="${testNonDefault}" dir="${expectedDir}">)`
-  );
+  const blogIndex = readHtml(path.join(testLocale, 'blog', 'index.html'));
+  assert(blogIndex !== null, `/${testLocale}/blog/index.html exists`);
 }
 
 if (LOCALES.includes('ar')) {
-  const arHtmlPath = path.join(distDir, 'ar', 'index.html');
-  assert(fs.existsSync(arHtmlPath), '/ar/index.html exists');
-  if (fs.existsSync(arHtmlPath)) {
-    const html = fs.readFileSync(arHtmlPath, 'utf-8');
+  const html = readHtml(path.join('ar', 'index.html'));
+  assert(html !== null, '/ar/index.html exists');
+  if (html) {
     assert(
       html.includes('lang="ar"') && html.includes('dir="rtl"'),
-      '/ar/index.html renders Arabic with RTL (<html lang="ar" dir="rtl">)'
+      '/ar/ renders Arabic with RTL'
     );
   }
 }
 
-// 3. Verifies non-default blog route exists
-const testBlogPath = LOCALES.includes('fa')
-  ? path.join(distDir, 'fa', 'blog', 'اولین-پست', 'index.html')
-  : path.join(distDir, testNonDefault, 'blog', 'index.html');
-assert(
-  fs.existsSync(testBlogPath),
-  `Non-default blog route exists (${path.relative(distDir, testBlogPath)})`
-);
+// ---------------------------------------------------------------------------
+// 3. Localized article slugs resolve to real built pages
+// ---------------------------------------------------------------------------
+let blogArticleHtml = null;
+let blogArticlePath = null;
+const blogRoot = path.join(rootDir, 'src', 'content', 'blog');
+if (fs.existsSync(blogRoot) && testLocale) {
+  const firstGroup = fs
+    .readdirSync(blogRoot, { withFileTypes: true })
+    .find((entry) => entry.isDirectory())?.name;
 
-// 4. Verifies canonical <link rel="canonical"> matches target URL
-if (fs.existsSync(rootHtmlPath)) {
-  const html = fs.readFileSync(rootHtmlPath, 'utf-8');
-  const canonicalMatch = html.match(/<link[^>]+rel="canonical"[^>]*href="([^"]+)"/i);
+  if (firstGroup) {
+    const slug = readFrontmatterSlug(
+      path.join(blogRoot, firstGroup, `${testLocale}.mdx`)
+    );
+    if (slug) {
+      const relative = path.join(testLocale, 'blog', slug, 'index.html');
+      blogArticleHtml = readHtml(relative);
+      blogArticlePath = relative;
+      assert(blogArticleHtml !== null, `Localized article exists: ${relative}`);
+    }
+  }
+}
+
+if (blogArticleHtml) {
+  const canonical = blogArticleHtml.match(
+    /<link[^>]+rel="canonical"[^>]*href="([^"]+)"/i
+  );
   assert(
-    canonicalMatch && canonicalMatch[1].endsWith('/'),
-    `Canonical link present and valid on root: ${canonicalMatch ? canonicalMatch[1] : 'none'}`
+    Boolean(canonical && canonical[1].includes(`/${testLocale}/`)),
+    'Article canonical includes the locale prefix'
+  );
+  assert(
+    count(blogArticleHtml, /<h1[\s>]/g) === 1,
+    `Article has exactly one <h1> (${blogArticlePath})`
+  );
+  const ogType = blogArticleHtml.match(/<meta[^>]+property="og:type"[^>]*content="([^"]+)"/i);
+  assert(Boolean(ogType && ogType[1] === 'article'), 'Article OG type is "article"');
+  assert(
+    blogArticleHtml.includes('"@type":"BlogPosting"') ||
+      blogArticleHtml.includes('"@type": "BlogPosting"'),
+    'Article emits BlogPosting JSON-LD'
   );
 }
 
-if (fs.existsSync(testBlogPath)) {
-  const html = fs.readFileSync(testBlogPath, 'utf-8');
-  const canonicalMatch = html.match(/<link[^>]+rel="canonical"[^>]*href="([^"]+)"/i);
+// ---------------------------------------------------------------------------
+// 4. Hreflang coverage on the home page
+// ---------------------------------------------------------------------------
+if (rootHtml) {
+  const langs = [...rootHtml.matchAll(/<link[^>]+rel="alternate"[^>]+hreflang="([^"]+)"/gi)].map(
+    (match) => match[1]
+  );
+  const expected = LOCALES.length + 1;
   assert(
-    canonicalMatch && (canonicalMatch[1].includes(testNonDefault)),
-    `Canonical link matches target URL on translated route: ${canonicalMatch ? canonicalMatch[1] : 'none'}`
+    langs.length === expected,
+    `Hreflang count is ${expected} (found ${langs.length}: ${langs.join(', ')})`
   );
-}
-
-// 5. Verifies hreflang tags: exactly locales.length + 1 tags (self + alternates + x-default)
-if (fs.existsSync(rootHtmlPath)) {
-  const html = fs.readFileSync(rootHtmlPath, 'utf-8');
-  const hreflangMatches = [...html.matchAll(/<link[^>]+rel="alternate"[^>]+hreflang="([^"]+)"/gi)];
-  const langs = hreflangMatches.map((m) => m[1]);
-
-  const inlangSettings = JSON.parse(
-    fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
-  );
-  const LOCALES = inlangSettings.locales;
-  const expectedCount = LOCALES.length + 1;
-
-  assert(
-    langs.length === expectedCount,
-    `Hreflang tags count is exactly ${expectedCount} (found: ${langs.length} -> ${langs.join(', ')})`
-  );
-  for (const loc of LOCALES) {
-    assert(langs.includes(loc), `Hreflang includes "${loc}"`);
+  for (const locale of LOCALES) {
+    assert(langs.includes(locale), `Hreflang includes "${locale}"`);
   }
   assert(langs.includes('x-default'), 'Hreflang includes "x-default"');
 }
 
-// 6. Verifies dist/icons.svg exists and contains compiled icon symbols
-const iconsSvgPath = path.join(distDir, 'icons.svg');
-assert(fs.existsSync(iconsSvgPath), 'dist/icons.svg exists');
-if (fs.existsSync(iconsSvgPath)) {
-  const svgContent = fs.readFileSync(iconsSvgPath, 'utf-8');
+// ---------------------------------------------------------------------------
+// 5. Static endpoints and generated assets
+// ---------------------------------------------------------------------------
+assert(fs.existsSync(path.join(distDir, 'sitemap.xml')), 'dist/sitemap.xml exists');
+const sitemap = readHtml('sitemap.xml');
+if (sitemap) {
   assert(
-    svgContent.includes('<symbol id="search"') && svgContent.includes('<symbol id="globe"'),
-    'dist/icons.svg contains compiled icon symbols (search, globe)'
+    sitemap.includes('hreflang="x-default"'),
+    'Sitemap emits x-default alternates'
+  );
+  for (const locale of LOCALES) {
+    assert(
+      sitemap.includes(`hreflang="${locale}"`),
+      `Sitemap includes hreflang="${locale}"`
+    );
+  }
+  assert(sitemap.includes('<lastmod>'), 'Sitemap includes lastmod timestamps');
+}
+
+assert(fs.existsSync(path.join(distDir, 'rss.xml')), 'dist/rss.xml exists');
+const rss = readHtml('rss.xml');
+if (rss) {
+  assert(rss.includes('<feed') && rss.includes('<entry>'), 'RSS feed contains entries');
+}
+
+assert(fs.existsSync(path.join(distDir, 'site.webmanifest')), 'dist/site.webmanifest exists');
+for (const asset of ['apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'og-default.png']) {
+  assert(fs.existsSync(path.join(distDir, asset)), `dist/${asset} exists`);
+}
+
+assert(fs.existsSync(path.join(distDir, '404.html')), 'dist/404.html exists');
+const notFound = readHtml('404.html');
+if (notFound) {
+  assert(notFound.includes('name="robots"'), '404 page is noindex');
+  assert(count(notFound, /<h1[\s>]/g) === 1, '404 page has exactly one <h1>');
+}
+
+const iconsSvg = readHtml('icons.svg');
+assert(iconsSvg !== null, 'dist/icons.svg exists');
+if (iconsSvg) {
+  assert(
+    iconsSvg.includes('<symbol id="search"') && iconsSvg.includes('<symbol id="globe"'),
+    'icons.svg contains compiled symbols'
   );
 }
 
-// 7. Verifies dist/pagefind/ search bundle exists
 const pagefindDir = path.join(distDir, 'pagefind');
-assert(fs.existsSync(pagefindDir), 'dist/pagefind/ search bundle exists');
+assert(fs.existsSync(pagefindDir), 'dist/pagefind/ exists');
 if (fs.existsSync(pagefindDir)) {
-  const pagefindJs = path.join(pagefindDir, 'pagefind.js');
-  assert(fs.existsSync(pagefindJs), 'dist/pagefind/pagefind.js entry point exists');
+  assert(
+    fs.existsSync(path.join(pagefindDir, 'pagefind.js')),
+    'dist/pagefind/pagefind.js exists'
+  );
+}
+
+const searchIndex = readHtml(path.join('api', 'search-dev.json'));
+assert(searchIndex !== null, 'Fallback search index exists');
+if (searchIndex) {
+  try {
+    const items = JSON.parse(searchIndex);
+    assert(Array.isArray(items) && items.length > 0, 'Fallback search index contains items');
+    assert(
+      items.every((item) => typeof item.url === 'string' && item.url.endsWith('/')),
+      'Fallback search index URLs use canonical trailing slashes'
+    );
+  } catch {
+    assert(false, 'Fallback search index is valid JSON');
+  }
 }
 
 console.log('\n----------------------------------------');
 if (failed) {
-  console.error('❌ Smoke test suite failed.');
+  console.error(`❌ Smoke test suite failed (${checks} checks).`);
   process.exit(1);
-} else {
-  console.log('🎉 All 7 Smoke test specifications verified successfully!');
-  process.exit(0);
 }
+console.log(`🎉 All ${checks} smoke checks passed!`);

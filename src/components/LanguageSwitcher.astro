@@ -5,7 +5,7 @@ import * as m from '@/paraglide/messages';
 
 interface Props {
   currentLocale: Locale;
-  alternates: Record<Locale, string>;
+  alternates: Partial<Record<Locale, string>>;
 }
 
 const { currentLocale, alternates } = Astro.props;
@@ -16,7 +16,6 @@ const { currentLocale, alternates } = Astro.props;
     type="button"
     data-switcher-button
     class="flex h-8 items-center gap-1 rounded-md border border-border bg-surface px-2 text-fg transition-colors hover:bg-surface-hover cursor-pointer"
-    aria-haspopup="menu"
     aria-expanded="false"
     aria-label={m.common_change_language({}, { locale: currentLocale })}
     title={m.common_change_language({}, { locale: currentLocale })}
@@ -29,7 +28,6 @@ const { currentLocale, alternates } = Astro.props;
   <div
     data-switcher-menu
     class="absolute end-0 top-[calc(100%+6px)] z-50 hidden min-w-36 rounded-lg border border-border bg-surface p-1 shadow-lg"
-    role="menu"
   >
     {
       LOCALES.map((loc) => {
@@ -52,7 +50,6 @@ const { currentLocale, alternates } = Astro.props;
             href={targetUrl}
             data-switcher-link
             data-target={targetUrl}
-            role="menuitem"
             aria-current={isCurrent ? 'true' : undefined}
             class:list={[
               'flex w-full items-center justify-between gap-3 rounded-md px-2.5 py-1.5 text-sm transition-colors hover:bg-surface-hover',
@@ -72,75 +69,59 @@ const { currentLocale, alternates } = Astro.props;
 </div>
 
 <script>
+  function closeAllSwitchers() {
+    document.querySelectorAll<HTMLElement>('[data-switcher-menu]').forEach((menu) => {
+      menu.classList.add('hidden');
+    });
+    document
+      .querySelectorAll('[data-switcher-button]')
+      .forEach((button) => button.setAttribute('aria-expanded', 'false'));
+    document
+      .querySelectorAll('[data-switcher-chevron]')
+      .forEach((chevron) => chevron.classList.remove('rotate-180'));
+  }
+
   function setupLanguageSwitcher() {
-    document.querySelectorAll<HTMLElement>('[data-language-switcher]').forEach((root) => {
-      if (root.dataset.bound === 'true') return;
-      root.dataset.bound = 'true';
+    // Delegated listeners are bound once per document; they keep working across
+    // ClientRouter transitions because the elements are queried at event time.
+    if (document.documentElement.dataset.langSwitcherGlobal === 'true') return;
+    document.documentElement.dataset.langSwitcherGlobal = 'true';
 
-      const button = root.querySelector<HTMLButtonElement>('[data-switcher-button]');
-      const menu = root.querySelector<HTMLElement>('[data-switcher-menu]');
-      const chevron = root.querySelector<HTMLElement>('[data-switcher-chevron]');
-      if (!button || !menu) return;
-
-      function close() {
-        menu!.classList.add('hidden');
-        button!.setAttribute('aria-expanded', 'false');
-        chevron?.classList.remove('rotate-180');
+    document.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      const link = target?.closest<HTMLAnchorElement>('[data-switcher-link]');
+      if (link) {
+        event.preventDefault();
+        closeAllSwitchers();
+        if (link.dataset.target) window.location.assign(link.dataset.target);
+        return;
       }
 
-      button.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isClosed = menu!.classList.contains('hidden');
-        if (isClosed) {
-          menu!.classList.remove('hidden');
-          button!.setAttribute('aria-expanded', 'true');
-          chevron?.classList.add('rotate-180');
-        } else {
-          close();
+      const button = target?.closest<HTMLButtonElement>('[data-switcher-button]');
+      if (button) {
+        event.stopPropagation();
+        const root = button.closest<HTMLElement>('[data-language-switcher]');
+        const menu = root?.querySelector<HTMLElement>('[data-switcher-menu]');
+        if (!menu) return;
+        const willOpen = menu.classList.contains('hidden');
+        closeAllSwitchers();
+        if (willOpen) {
+          menu.classList.remove('hidden');
+          button.setAttribute('aria-expanded', 'true');
+          root?.querySelector('[data-switcher-chevron]')?.classList.add('rotate-180');
         }
-      });
+        return;
+      }
 
-      // Static full navigation so <html lang/dir> + fonts re-apply (no SPA transition).
-      menu.querySelectorAll<HTMLAnchorElement>('[data-switcher-link]').forEach((link) => {
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          const target = link.dataset.target;
-          close();
-          if (target) window.location.assign(target);
-        });
-      });
-
-      // Close on client-side page transitions so stale open menus never persist.
-      document.addEventListener('astro:before-preparation', close);
+      if (!target?.closest('[data-language-switcher]')) closeAllSwitchers();
     });
 
-    // Global dismiss listeners — bound once for the whole session.
-    if (document.documentElement.dataset.langSwitcherGlobal !== 'true') {
-      document.documentElement.dataset.langSwitcherGlobal = 'true';
-      document.addEventListener(
-        'click',
-        (e) => {
-          if (!(e.target as HTMLElement)?.closest('[data-language-switcher]')) {
-            document.querySelectorAll('[data-switcher-menu]').forEach((m) => m.classList.add('hidden'));
-            document
-              .querySelectorAll('[data-switcher-button]')
-              .forEach((b) => b.setAttribute('aria-expanded', 'false'));
-            document.querySelectorAll('[data-switcher-chevron]').forEach((c) => c.classList.remove('rotate-180'));
-          }
-        },
-        { capture: true }
-      );
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          document.querySelectorAll('[data-switcher-menu]').forEach((m) => m.classList.add('hidden'));
-          document
-            .querySelectorAll('[data-switcher-button]')
-            .forEach((b) => b.setAttribute('aria-expanded', 'false'));
-        }
-      });
-    }
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeAllSwitchers();
+    });
+
+    document.addEventListener('astro:before-preparation', closeAllSwitchers);
   }
 
   setupLanguageSwitcher();
-  document.addEventListener('astro:page-load', setupLanguageSwitcher);
 </script>

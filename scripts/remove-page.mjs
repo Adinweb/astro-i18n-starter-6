@@ -35,8 +35,14 @@ if (!fs.existsSync(targetGroupDir)) {
   process.exit(1);
 }
 
+if (!force && !process.stdin.isTTY) {
+  console.error('❌ Refusing to delete in a non-interactive session without --force.');
+  console.error('   Re-run with --force once you have verified the target.');
+  process.exit(1);
+}
+
 async function confirmDeletion() {
-  if (force || !process.stdin.isTTY) {
+  if (force) {
     return true;
   }
 

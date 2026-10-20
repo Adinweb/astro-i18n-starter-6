@@ -1,56 +1,29 @@
 import type { APIRoute } from 'astro';
-import { getCollection } from 'astro:content';
-import { DEFAULT_LOCALE } from '@/i18n/config';
+import { getSiteRoutes } from '@/libs/content/service';
 
+/**
+ * Development-only fallback for the search modal. It reuses the route builder
+ * so URLs, localized slugs, and draft filtering always match the built site.
+ */
 export const GET: APIRoute = async () => {
-  const pages = await getCollection('pages');
-  const posts = await getCollection('blog');
+  const routes = await getSiteRoutes();
 
-  const items = [
-    ...pages
-      .filter((p) => !p.data.draft)
-      .map((p) => {
-        const parts = p.id.split('/');
-        const group = parts.slice(0, -1).join('/');
-        const locale = parts[parts.length - 1];
-        const isHome = group === 'home';
-        const slug = isHome ? '' : p.data.slug || group;
-        const url =
-          locale === DEFAULT_LOCALE
-            ? slug ? `/${slug}` : '/'
-            : slug ? `/${locale}/${slug}` : `/${locale}`;
-
-        return {
-          title: p.data.title,
-          description: p.data.description || '',
-          url,
-          locale,
-        };
-      }),
-    ...posts
-      .filter((post) => !post.data.draft)
-      .map((post) => {
-        const parts = post.id.split('/');
-        const locale = parts[parts.length - 1];
-        const slug = post.data.slug;
-        const url =
-          locale === DEFAULT_LOCALE
-            ? `/blog/${slug}`
-            : `/${locale}/blog/${slug}`;
-
-        return {
-          title: post.data.title,
-          description: post.data.description || '',
-          url,
-          locale,
-        };
-      }),
-  ];
+  const items = routes
+    .filter((route) => route.props.entry)
+    .map((route) => {
+      const entry = route.props.entry!;
+      return {
+        title: entry.data.title,
+        description: entry.data.description ?? '',
+        url: route.props.url,
+        locale: route.props.locale,
+      };
+    });
 
   return new Response(JSON.stringify(items), {
     headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache',
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
     },
   });
 };

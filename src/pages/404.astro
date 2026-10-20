@@ -25,11 +25,11 @@ const i18nData = Object.fromEntries(
         backHome: m.common_back_home({}, { locale: loc }),
         goEnglish: m.common_go_english_version({}, { locale: loc }),
         englishHint: m.common_english_version_hint({}, { locale: loc }),
-        homeHref: await getPageUrl('home', loc),
+        homeHref: await getPageUrl('home', loc) ?? localizeHref('/', loc),
         aboutHref: await getPageUrl('about', loc),
         featuresHref: await getPageUrl('features', loc),
         pricingHref: await getPageUrl('pricing', loc),
-        blogHref: loc === DEFAULT_LOCALE ? '/blog' : `/${loc}/blog`,
+        blogHref: localizeHref('/blog', loc),
         navHome: m.nav_home({}, { locale: loc }),
         navAbout: m.nav_about({}, { locale: loc }),
         navFeatures: m.nav_features({}, { locale: loc }),
@@ -49,6 +49,8 @@ const i18nData = Object.fromEntries(
   locale={locale}
   url="/404"
   alternates={alternates}
+  noindex
+  noPagefind
 >
   <div class="text-center py-20 px-4 max-w-xl mx-auto">
     <p class="text-7xl font-extrabold text-primary mb-4 tracking-tight">404</p>
@@ -87,8 +89,10 @@ const i18nData = Object.fromEntries(
       const pathname = window.location.pathname;
       const segments = pathname.split('/').filter(Boolean);
       const firstSegment = segments[0];
-      const isKnownLocale = firstSegment && LOCALES.includes(firstSegment);
-      const detectedLocale = isKnownLocale ? firstSegment : DEFAULT_LOCALE;
+      const isKnownLocale = Boolean(
+        firstSegment && LOCALES.some((locale) => locale === firstSegment)
+      );
+      const detectedLocale = isKnownLocale && firstSegment ? firstSegment : DEFAULT_LOCALE;
       const data = i18nData[detectedLocale] || i18nData[DEFAULT_LOCALE];
 
       // Update document attributes & title
@@ -118,18 +122,18 @@ const i18nData = Object.fromEntries(
         el.setAttribute('href', data.homeHref);
         el.textContent = data.navHome;
       });
-      document.querySelectorAll('[data-nav-link="about"]').forEach((el) => {
-        el.setAttribute('href', data.aboutHref);
-        el.textContent = data.navAbout;
-      });
-      document.querySelectorAll('[data-nav-link="features"]').forEach((el) => {
-        el.setAttribute('href', data.featuresHref);
-        el.textContent = data.navFeatures;
-      });
-      document.querySelectorAll('[data-nav-link="pricing"]').forEach((el) => {
-        el.setAttribute('href', data.pricingHref);
-        el.textContent = data.navPricing;
-      });
+      const navUpdates = [
+        ['about', data.aboutHref, data.navAbout],
+        ['features', data.featuresHref, data.navFeatures],
+        ['pricing', data.pricingHref, data.navPricing],
+      ];
+      for (const [key, href, label] of navUpdates) {
+        if (!href) continue;
+        document.querySelectorAll(`[data-nav-link="${key}"]`).forEach((el) => {
+          el.setAttribute('href', href);
+          el.textContent = label;
+        });
+      }
       document.querySelectorAll('[data-nav-link="blog"]').forEach((el) => {
         el.setAttribute('href', data.blogHref);
         el.textContent = data.navBlog;
@@ -157,21 +161,13 @@ const i18nData = Object.fromEntries(
         }
       }
 
-      // Update language switcher dropdown selection
-      const switcherSelect = document.querySelector('[data-switcher-select]');
-      if (switcherSelect) {
-        const expectedHref = detectedLocale === DEFAULT_LOCALE ? '/404' : `/${detectedLocale}/404`;
-        for (let i = 0; i < switcherSelect.options.length; i++) {
-          if (switcherSelect.options[i].value === expectedHref) {
-            switcherSelect.selectedIndex = i;
-            break;
-          }
-        }
-      }
     }
 
     updateNotFoundPage();
-    document.addEventListener('astro:page-load', updateNotFoundPage);
+    if (document.documentElement.dataset.notFoundBound !== 'true') {
+      document.documentElement.dataset.notFoundBound = 'true';
+      document.addEventListener('astro:page-load', updateNotFoundPage);
+    }
   </script>
 </BaseLayout>
 

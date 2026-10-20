@@ -6,11 +6,27 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 
-const inlangSettings = JSON.parse(
+const settings = JSON.parse(
   fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
 );
-const LOCALES = inlangSettings.locales;
-const RESERVED_ROUTE_BASES = new Set(['blog', 'icons.svg', '404', 'sitemap.xml', 'robots.txt']);
+const LOCALES = settings.locales;
+const BASE_LOCALE = settings.baseLocale || 'en';
+
+if (!LOCALES.includes(BASE_LOCALE)) {
+  console.error(`❌ FATAL: baseLocale "${BASE_LOCALE}" is not listed in locales.`);
+  process.exit(1);
+}
+
+const RESERVED_ROUTE_BASES = new Set([
+  'blog',
+  '404',
+  'api',
+  'icons.svg',
+  'robots.txt',
+  'rss.xml',
+  'site.webmanifest',
+  'sitemap.xml',
+]);
 
 const args = process.argv.slice(2);
 const warnContent = args.includes('--warn-content') || args.includes('--lenient');
@@ -18,174 +34,311 @@ const warnContent = args.includes('--warn-content') || args.includes('--lenient'
 let hasFatal = false;
 let warningCount = 0;
 
+function fatal(message) {
+  console.error(`❌ FATAL: ${message}`);
+  hasFatal = true;
+}
+
 console.log('🔍 Running i18n Audit Suite...\n');
 
-// 1. Dictionary Key Parity (FATAL / Exit 1)
-console.log('--- 1. Dictionary Key Parity ---');
+// ---------------------------------------------------------------------------
+// 1. Dictionary parity: keys, placeholder signatures, and empty values
+// ---------------------------------------------------------------------------
+console.log('--- 1. Dictionary Parity ---');
 const messagesDir = path.join(rootDir, 'messages');
 const dictionaries = {};
 
-for (const loc of LOCALES) {
-  const filePath = path.join(messagesDir, `${loc}.json`);
+for (const locale of LOCALES) {
+  const filePath = path.join(messagesDir, `${locale}.json`);
   if (!fs.existsSync(filePath)) {
-    console.error(`❌ FATAL: Missing dictionary file: ${filePath}`);
-    hasFatal = true;
-  } else {
-    try {
-      dictionaries[loc] = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    } catch (e) {
-      console.error(`❌ FATAL: Failed to parse ${filePath}:`, e.message);
-      hasFatal = true;
-    }
+    fatal(`Missing dictionary file: messages/${locale}.json`);
+    continue;
+  }
+  try {
+    dictionaries[locale] = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  } catch (error) {
+    fatal(`Failed to parse messages/${locale}.json: ${error.message}`);
   }
 }
 
-if (dictionaries.en) {
-  const baseKeys = Object.keys(dictionaries.en).filter((k) => !k.startsWith('$'));
+function messageKeys(dictionary) {
+  return Object.keys(dictionary).filter((key) => !key.startsWith('$'));
+}
 
-  for (const loc of LOCALES) {
-    if (loc === 'en' || !dictionaries[loc]) continue;
-    const targetKeys = new Set(Object.keys(dictionaries[loc]).filter((k) => !k.startsWith('$')));
-
-    const missingKeys = baseKeys.filter((k) => !targetKeys.has(k));
-    if (missingKeys.length > 0) {
-      console.error(`❌ FATAL: ${loc}.json is missing keys present in en.json: ${missingKeys.join(', ')}`);
-      hasFatal = true;
+function placeholderSignature(value) {
+  const names = new Set();
+  const collect = (text) => {
+    for (const match of String(text).matchAll(/\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:[,}])/g)) {
+      names.add(match[1]);
     }
+  };
 
-    const extraKeys = Array.from(targetKeys).filter((k) => !baseKeys.includes(k));
-    if (extraKeys.length > 0) {
-      console.error(`❌ FATAL: ${loc}.json has extra keys not in en.json: ${extraKeys.join(', ')}`);
-      hasFatal = true;
+  if (typeof value === 'string') {
+    collect(value);
+  } else if (Array.isArray(value)) {
+    for (const variant of value) {
+      for (const declaration of variant?.declarations ?? []) {
+        const match = String(declaration).match(/^input\s+([A-Za-z_][A-Za-z0-9_]*)/);
+        if (match) names.add(match[1]);
+      }
+      for (const text of Object.values(variant?.match ?? {})) collect(text);
+    }
+  } else if (value && typeof value === 'object') {
+    for (const text of Object.values(value)) collect(text);
+  }
+
+  return [...names].sort().join(',');
+}
+
+const baseDictionary = dictionaries[BASE_LOCALE];
+if (baseDictionary) {
+  const baseKeys = messageKeys(baseDictionary);
+
+  for (const locale of LOCALES) {
+    const dictionary = dictionaries[locale];
+    if (!dictionary) continue;
+
+    const keys = messageKeys(dictionary);
+    const keySet = new Set(keys);
+
+    const missing = baseKeys.filter((key) => !keySet.has(key));
+    if (missing.length) fatal(`${locale}.json is missing keys: ${missing.join(', ')}`);
+
+    const extra = keys.filter((key) => !baseKeys.includes(key));
+    if (extra.length) fatal(`${locale}.json has extra keys: ${extra.join(', ')}`);
+
+    for (const key of baseKeys) {
+      if (!(key in dictionary)) continue;
+      const value = dictionary[key];
+      if (typeof value === 'string' && value.trim() === '') {
+        fatal(`${locale}.json has an empty value for "${key}"`);
+      }
+
+      const expected = placeholderSignature(baseDictionary[key]);
+      const actual = placeholderSignature(value);
+      if (expected !== actual) {
+        fatal(
+          `${locale}.json placeholders for "${key}" differ from ${BASE_LOCALE}.json ` +
+            `(expected {${expected}}, got {${actual}})`
+        );
+      }
     }
   }
 
   if (!hasFatal) {
-    console.log(`✅ Dictionary keys in parity across all locales (${baseKeys.length} keys).`);
+    console.log(`✅ Keys and placeholders in parity across ${LOCALES.length} locales (${baseKeys.length} keys).`);
   }
-}
 
-// 2. Content Collection Parity (FATAL / Exit 1)
-console.log('\n--- 2. Content Collection Parity ---');
-const contentDir = path.join(rootDir, 'src', 'content');
-if (fs.existsSync(contentDir)) {
-  const collections = fs.readdirSync(contentDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name);
-
-  for (const collection of collections) {
-    const colDir = path.join(contentDir, collection);
-    const groups = fs.readdirSync(colDir, { withFileTypes: true })
-      .filter((d) => d.isDirectory())
-      .map((d) => d.name);
-
-    for (const group of groups) {
-      const groupDir = path.join(colDir, group);
-      for (const loc of LOCALES) {
-        const hasMdx = fs.existsSync(path.join(groupDir, `${loc}.mdx`));
-        const hasMd = fs.existsSync(path.join(groupDir, `${loc}.md`));
-        if (!hasMdx && !hasMd) {
-          if (warnContent) {
-            console.warn(`⚠️ [WARN] Missing locale file for group: src/content/${collection}/${group}/${loc}.mdx`);
-            warningCount++;
-          } else {
-            console.error(`❌ FATAL: Missing locale file for group: src/content/${collection}/${group}/${loc}.mdx (use --warn-content to treat as warning)`);
-            hasFatal = true;
-          }
+  // Every `m.key(...)` call must resolve to a compiled dictionary entry.
+  const usageDir = path.join(rootDir, 'src');
+  const usedKeys = new Map();
+  const walk = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === 'paraglide') continue;
+        walk(fullPath);
+      } else if (/\.(astro|ts|tsx|js)$/.test(entry.name)) {
+        const content = fs.readFileSync(fullPath, 'utf-8');
+        for (const match of content.matchAll(/\bm\.([A-Za-z_][A-Za-z0-9_]*)\s*\(/g)) {
+          usedKeys.set(match[1], path.relative(rootDir, fullPath));
         }
       }
     }
-  }
+  };
+  walk(usageDir);
 
-  if (!hasFatal) {
-    console.log('✅ All content collection groups have matching files for all locales.');
+  const missingUsage = [...usedKeys].filter(([key]) => !(key in baseDictionary));
+  if (missingUsage.length) {
+    for (const [key, file] of missingUsage) {
+      fatal(`Message "${key}" used in ${file} is not defined in ${BASE_LOCALE}.json`);
+    }
+  } else {
+    console.log(`✅ All ${usedKeys.size} statically referenced message keys exist.`);
   }
-} else {
-  console.log('⚠️ No content directory found.');
 }
 
-// 3. Slug Collision Guard (FATAL / Exit 1)
-console.log('\n--- 3. Slug Collision Guard ---');
-function extractFrontmatter(filePath) {
+// ---------------------------------------------------------------------------
+// 2. Content parity and frontmatter validity
+// ---------------------------------------------------------------------------
+console.log('\n--- 2. Content Collection Parity ---');
+const contentDir = path.join(rootDir, 'src', 'content');
+
+function readFrontmatter(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) return {};
-  const lines = match[1].split(/\r?\n/);
+  if (!match) return null;
+
   const data = {};
-  for (const line of lines) {
-    const [key, ...rest] = line.split(':');
-    if (key && rest.length > 0) {
-      let val = rest.join(':').trim();
-      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-        val = val.slice(1, -1);
-      }
-      data[key.trim()] = val;
+  for (const line of match[1].split(/\r?\n/)) {
+    const separator = line.indexOf(':');
+    if (separator <= 0) continue;
+    const key = line.slice(0, separator).trim();
+    let value = line.slice(separator + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
     }
+    data[key] = value;
   }
   return data;
 }
 
-if (fs.existsSync(contentDir)) {
-  const collections = fs.readdirSync(contentDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name);
+function localeFile(groupDir, locale) {
+  for (const extension of ['mdx', 'md']) {
+    const candidate = path.join(groupDir, `${locale}.${extension}`);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+}
 
-  for (const loc of LOCALES) {
-    const seenSlugs = new Map(); // slug -> filePath
+const groups = [];
+if (!fs.existsSync(contentDir)) {
+  console.log('⚠️ No content directory found.');
+} else {
+  const collections = fs
+    .readdirSync(contentDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
 
-    for (const collection of collections) {
-      const colDir = path.join(contentDir, collection);
-      const groups = fs.readdirSync(colDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory())
-        .map((d) => d.name);
+  for (const collection of collections) {
+    const collectionDir = path.join(contentDir, collection);
+    for (const group of fs.readdirSync(collectionDir, { withFileTypes: true })) {
+      if (!group.isDirectory()) continue;
+      const groupDir = path.join(collectionDir, group.name);
+      groups.push({ collection, group: group.name, groupDir });
 
-      for (const group of groups) {
-        const groupDir = path.join(colDir, group);
-        const targetFile = fs.existsSync(path.join(groupDir, `${loc}.mdx`))
-          ? path.join(groupDir, `${loc}.mdx`)
-          : path.existsSync(path.join(groupDir, `${loc}.md`))
-          ? path.join(groupDir, `${loc}.md`)
-          : null;
-
-        if (targetFile) {
-          const fm = extractFrontmatter(targetFile);
-          const slug = fm.slug !== undefined ? fm.slug : group;
-
-          // For static pages, check against reserved top-level routes
-          if (collection === 'pages' && RESERVED_ROUTE_BASES.has(slug)) {
-            console.error(`❌ FATAL: Slug "${slug}" in ${targetFile} collides with reserved route base.`);
-            hasFatal = true;
+      for (const locale of LOCALES) {
+        if (!localeFile(groupDir, locale)) {
+          const message = `Missing ${locale}.mdx for src/content/${collection}/${group.name}`;
+          if (warnContent) {
+            console.warn(`⚠️ [WARN] ${message}`);
+            warningCount += 1;
+          } else {
+            fatal(message);
           }
+        }
+      }
 
-          if (slug !== '') {
-            const key = `${collection}:${slug}`;
-            if (seenSlugs.has(key)) {
-              console.error(`❌ FATAL: Duplicate slug "${slug}" detected in ${collection} for locale "${loc}":\n  - ${seenSlugs.get(key)}\n  - ${targetFile}`);
-              hasFatal = true;
-            } else {
-              seenSlugs.set(key, targetFile);
-            }
-          }
+      const files = fs.readdirSync(groupDir);
+      for (const file of files) {
+        const locale = file.replace(/\.(mdx|md)$/, '');
+        if (!file.match(/\.(mdx|md)$/)) continue;
+        if (!LOCALES.includes(locale)) {
+          fatal(`Unknown locale file: src/content/${collection}/${group.name}/${file}`);
         }
       }
     }
   }
 
   if (!hasFatal) {
-    console.log('✅ No slug collisions detected.');
+    console.log(`✅ All ${groups.length} content groups have a file for every locale.`);
   }
 }
 
-// 4. Unextracted Text Scanner (WARNING / Exit 0)
+// ---------------------------------------------------------------------------
+// 3. Slugs, required frontmatter, and route collisions
+// ---------------------------------------------------------------------------
+console.log('\n--- 3. Slug & Route Guard ---');
+const SLUG_PATTERN = /^[\p{L}\p{N}\p{M}]+(?:[\u200C\u200D-][\p{L}\p{N}\p{M}]+)*$/u;
+let slugFatal = false;
+
+for (const { collection, group, groupDir } of groups) {
+  for (const locale of LOCALES) {
+    const file = localeFile(groupDir, locale);
+    if (!file) continue;
+
+    const frontmatter = readFrontmatter(file);
+    const relative = path.relative(rootDir, file);
+
+    if (!frontmatter) {
+      fatal(`${relative} has no frontmatter block`);
+      slugFatal = true;
+      continue;
+    }
+
+    if (!frontmatter.title?.trim()) {
+      fatal(`${relative} is missing a non-empty "title"`);
+      slugFatal = true;
+    }
+
+    if (collection === 'blog' && !frontmatter.publishedAt) {
+      fatal(`${relative} is missing "publishedAt"`);
+      slugFatal = true;
+    }
+
+    const slug = frontmatter.slug;
+    if (slug === undefined || slug === '') {
+      if (collection === 'pages' && group === 'home') continue;
+      fatal(`${relative} is missing a non-empty "slug"`);
+      slugFatal = true;
+      continue;
+    }
+
+    if (!SLUG_PATTERN.test(slug)) {
+      fatal(`Invalid slug "${slug}" in ${relative} (use letters, digits, and single hyphens)`);
+      slugFatal = true;
+    }
+
+    if (collection === 'pages' && RESERVED_ROUTE_BASES.has(slug)) {
+      fatal(`Slug "${slug}" in ${relative} collides with a reserved route`);
+      slugFatal = true;
+    }
+  }
+}
+
+for (const locale of LOCALES) {
+  const seen = new Map();
+
+  const addRoute = (routePath, source) => {
+    const key = `/${locale === BASE_LOCALE ? '' : `${locale}/`}${routePath}`;
+    if (seen.has(key)) {
+      fatal(`Route collision for "${key}":\n  - ${seen.get(key)}\n  - ${source}`);
+      slugFatal = true;
+    } else {
+      seen.set(key, source);
+    }
+  };
+
+  for (const { collection, group, groupDir } of groups) {
+    const file = localeFile(groupDir, locale);
+    if (!file) continue;
+    const frontmatter = readFrontmatter(file);
+    if (!frontmatter) continue;
+    const slug = frontmatter.slug ?? '';
+
+    if (collection === 'pages') {
+      addRoute(slug, file);
+    } else {
+      addRoute(`blog/${slug}`, file);
+    }
+  }
+
+  // Blog index is registered once per locale by the content service.
+  addRoute('blog', 'generated blog index');
+}
+
+if (!slugFatal) {
+  console.log('✅ Frontmatter valid and no route collisions detected.');
+}
+
+// ---------------------------------------------------------------------------
+// 4. Unextracted text scanner (warnings only)
+// ---------------------------------------------------------------------------
 console.log('\n--- 4. Unextracted Text Scanner (Warnings) ---');
-function scanDirForAstro(dir) {
-  let files = [];
+const skippedTemplatePatterns = [/©/, /^[0-9]+$/, /^[\s|·/–—↑←→]+$/];
+
+function scanAstro(dir) {
+  const files = [];
   if (!fs.existsSync(dir)) return files;
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      files = files.concat(scanDirForAstro(fullPath));
+      if (entry.name === 'paraglide') continue;
+      files.push(...scanAstro(fullPath));
     } else if (entry.name.endsWith('.astro')) {
       files.push(fullPath);
     }
@@ -193,38 +346,36 @@ function scanDirForAstro(dir) {
   return files;
 }
 
-const astroFiles = scanDirForAstro(path.join(rootDir, 'src'));
-for (const file of astroFiles) {
+for (const file of scanAstro(path.join(rootDir, 'src'))) {
   const content = fs.readFileSync(file, 'utf-8');
-  // Strip frontmatter
   const template = content.replace(/^---[\s\S]*?---/, '');
-  // Look for text between tags
-  const lines = template.split(/\r?\n/);
-  lines.forEach((line, lineIdx) => {
-    // Basic heuristic: text node with 3+ words that does not use {m. and is not a comment/import
-    const textMatch = line.match(/>([^<>{}\n]+)</);
-    if (textMatch) {
-      const text = textMatch[1].trim();
-      if (text.length > 8 && !text.startsWith('{') && !text.startsWith('//') && !text.startsWith('/*')) {
-        // Emit warning without breaking build
-        console.warn(`⚠️ [WARN] Potential unextracted text in ${path.relative(rootDir, file)}:${lineIdx + 1}: "${text}"`);
-        warningCount++;
-      }
+
+  template.split(/\r?\n/).forEach((line, lineIndex) => {
+    if (/\{m\.[A-Za-z0-9_]+\s*\(/.test(line) || /\{[^}]*\}/.test(line)) return;
+    const match = line.match(/>([^<>{}\n]+)</);
+    if (!match) return;
+
+    const text = match[1].trim();
+    if (text.length <= 8 || skippedTemplatePatterns.some((pattern) => pattern.test(text))) {
+      return;
     }
+
+    console.warn(
+      `⚠️ [WARN] Potential unextracted text in ${path.relative(rootDir, file)}:${lineIndex + 1}: "${text}"`
+    );
+    warningCount += 1;
   });
 }
 
 if (warningCount === 0) {
   console.log('✅ Unextracted text scanner clean (0 warnings).');
 } else {
-  console.log(`ℹ️ Scanned template files, emitted ${warningCount} warnings.`);
+  console.log(`ℹ️ Emitted ${warningCount} warning(s).`);
 }
 
 console.log('\n----------------------------------------');
 if (hasFatal) {
-  console.error('❌ Audit Failed: Resolve fatal errors above.');
+  console.error('❌ Audit Failed: resolve the fatal errors above.');
   process.exit(1);
-} else {
-  console.log('🎉 Audit Passed: 0 fatal errors.');
-  process.exit(0);
 }
+console.log('🎉 Audit Passed: 0 fatal errors.');

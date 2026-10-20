@@ -1,41 +1,93 @@
 ---
 import { siteConfig } from '@/libs/config/site';
-import { DEFAULT_LOCALE, type Locale } from '@/i18n/locales';
+import { DEFAULT_LOCALE, LOCALES, getOgLocale, type Locale } from '@/i18n/locales';
 
 interface Props {
   title: string;
   description?: string;
   locale: Locale;
   url: string;
-  alternates: Record<Locale, string>;
+  alternates: Partial<Record<Locale, string>>;
+  siteName?: string;
+  image?: string;
+  type?: 'website' | 'article';
+  publishedTime?: string;
+  schema?: Record<string, unknown> | Record<string, unknown>[];
+  noindex?: boolean;
 }
 
-const { title, description = siteConfig.description, locale, url, alternates } = Astro.props;
+const {
+  title,
+  description = siteConfig.description,
+  locale,
+  url,
+  alternates,
+  siteName = siteConfig.name,
+  image,
+  type = 'website',
+  publishedTime,
+  schema,
+  noindex = false,
+} = Astro.props;
 
 const canonicalUrl = new URL(url, siteConfig.url).href;
-const xDefaultUrl = alternates[DEFAULT_LOCALE]
-  ? new URL(alternates[DEFAULT_LOCALE], siteConfig.url).href
-  : canonicalUrl;
+const defaultAlternate = alternates[DEFAULT_LOCALE];
+const xDefaultUrl = new URL(defaultAlternate ?? url, siteConfig.url).href;
+const imageUrl = new URL(image ?? siteConfig.ogImage, siteConfig.url).href;
+// Only the generated default image has known dimensions; custom images are left unannotated.
+const imageSize = image ? undefined : { width: siteConfig.ogImageWidth, height: siteConfig.ogImageHeight };
+
+const alternateHrefs = Object.entries(alternates)
+  .filter(([, href]) => Boolean(href))
+  .map(([loc, href]) => [loc, new URL(href!, siteConfig.url).href] as const);
+
+const ogLocales = LOCALES.filter((loc) => loc !== locale)
+  .filter((loc) => Boolean(alternates[loc]))
+  .map((loc) => getOgLocale(loc));
+
+const jsonLd = schema
+  ? JSON.stringify(schema).replace(/</g, '\\u003c')
+  : undefined;
 ---
 
-<title>{title} | {siteConfig.name}</title>
+<title>{title} | {siteName}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={canonicalUrl} />
+<link rel="alternate" type="application/rss+xml" title={`${siteName} RSS`} href={new URL('/rss.xml', siteConfig.url).href} />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
 
-{/* Hreflang Tags: count = locales.length + 1 */}
+{/* Hreflang: one entry per available translation + x-default. */}
 {
-  Object.entries(alternates).map(([loc, path]) => (
-    <link
-      rel="alternate"
-      hreflang={loc}
-      href={new URL(path, siteConfig.url).href}
-    />
+  alternateHrefs.map(([loc, href]) => (
+    <link rel="alternate" hreflang={loc} href={href} />
   ))
 }
 <link rel="alternate" hreflang="x-default" href={xDefaultUrl} />
 
+<meta property="og:site_name" content={siteName} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonicalUrl} />
-<meta property="og:type" content="website" />
-<meta property="og:locale" content={locale} />
+<meta property="og:type" content={type} />
+<meta property="og:locale" content={getOgLocale(locale)} />
+{ogLocales.map((loc) => <meta property="og:locale:alternate" content={loc} />)}
+<meta property="og:image" content={imageUrl} />
+{
+  imageSize && (
+    <>
+      <meta property="og:image:width" content={String(imageSize.width)} />
+      <meta property="og:image:height" content={String(imageSize.height)} />
+    </>
+  )
+}
+<meta property="og:image:alt" content={title} />
+{type === 'article' && publishedTime && (
+  <meta property="article:published_time" content={publishedTime} />
+)}
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
+
+{jsonLd && <script type="application/ld+json" set:html={jsonLd} is:inline />}

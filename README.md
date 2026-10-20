@@ -16,9 +16,12 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Zero Route Collisions**: A single Lean Router Dispatcher (`src/pages/[...path].astro`) dynamically handles all localized pages, translated slugs, and index views.
 * **Compile-Time i18n via Paraglide**: Strongly typed translations with native ICU plurals and ordinals, compiled directly to tree-shakeable JS functions without runtime overhead.
 * **Symmetrical Content Collections**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs and cross-language alternate linking.
-* **Search Built-In**: Production indexing with **Pagefind** over static output, plus an instant dev-mode JSON search fallback.
+* **Search Built-In**: Production indexing with **Pagefind** over static output, plus a locale-aware JSON fallback when Pagefind is unavailable.
+* **SEO & Social Metadata**: Canonical URLs, hreflang plus `x-default`, Open Graph/Twitter cards, `WebSite`/`BlogPosting` JSON-LD, a multilingual sitemap with `lastmod`, and an Atom feed at `/rss.xml`.
+* **Accessible by Default**: Native `<dialog>` mobile menu and search, exactly one `<h1>` per page, skip link, visible focus rings, and reduced-motion support.
+* **Raster Brand Assets From Code**: `scripts/generate-assets.mjs` deterministically produces the app icons and Open Graph image with no image-editing dependency.
 * **SVG Sprite Endpoint**: Zero-JS, cacheable build-time SVG sprite (`/icons.svg`) with an `<Icon name="..." />` component.
-* **Turnkey Developer CLI Suite**: 11 automation scripts to scaffold pages/posts, add/remove languages, adapt Tailwind blocks, extract translations, and audit dictionary parity.
+* **Turnkey Developer CLI Suite**: Automation scripts to scaffold pages/posts, add/remove languages, adapt Tailwind blocks, extract translations, audit dictionary parity, and detect dead code.
 
 ---
 
@@ -26,16 +29,18 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 
 ### Prerequisites
 * **Node.js** `>= 22.12.0`
-* **npm** (or `pnpm`)
+* **pnpm** `>= 10` (declared through `packageManager`; the scripts also run under `npm`)
+
+> Builds require `SITE_URL` so canonical, sitemap, RSS, and Open Graph URLs are absolute. Copy `.env.example` to `.env` and set the public origin.
 
 ### 1. Install Dependencies
 ```bash
-npm install
+pnpm install
 ```
 
 ### 2. Start the Development Server
 ```bash
-npm run dev
+pnpm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
@@ -47,9 +52,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### 3. Build for Production
 ```bash
-npm run build
+pnpm run build
 ```
 This compiles Paraglide messages, builds all static HTML pages into `dist/`, and indexes the site with Pagefind.
+
+> Canonical URLs always end in `/` (Astro `trailingSlash: 'always'`). Most static hosts redirect `/about` to `/about/` automatically; if yours does not, enable that redirect so every page resolves to its canonical form.
 
 ---
 
@@ -60,7 +67,7 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 ├── messages/                  # Dictionaries (en.json, de.json, fr.json, fa.json, ar.json)
 ├── project.inlang/            # Paraglide JS configuration & settings
 ├── public/                    # Static assets (favicons, robots, etc.)
-├── scripts/                   # Developer automation CLI scripts (11 tools)
+├── scripts/                   # Developer automation CLI scripts (13 tools)
 ├── src/
 │   ├── components/            # Reusable UI components
 │   │   ├── Icon.astro         # SVG sprite icon renderer (<Icon name="..." />)
@@ -79,14 +86,16 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   └── BaseLayout.astro   # Main layout: header, mobile menu drawer, main, footer
 │   ├── libs/
 │   │   ├── config/site.ts     # Site metadata & Zod validation
+│   │   ├── config/navigation.ts # Locale-aware navigation builder
 │   │   └── content/service.ts # Route resolution, slug alternates & breadcrumbs
 │   ├── pages/
 │   │   ├── [...path].astro    # Lean Router Dispatcher (< 30 lines)
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
 │   │   ├── icons.svg.ts       # SVG sprite endpoint
-│   │   ├── sitemap.xml.ts     # Multi-lingual sitemap with x-default
+│   │   ├── rss.xml.ts         # Atom feed for all published articles
+│   │   ├── sitemap.xml.ts     # Multi-lingual sitemap with x-default + lastmod
 │   │   ├── robots.txt.ts      # Robots.txt pointing to sitemap
-│   │   └── api/search-dev.json.ts # Dev-mode search endpoint
+│   │   └── api/search-dev.json.ts # Locale-aware search fallback index
 │   ├── paraglide/             # Generated Paraglide code (gitignored, do not edit)
 │   ├── styles/
 │   │   ├── global.css         # Tailwind v4 @theme inline + font stacks
@@ -101,21 +110,23 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 
 ## 🛠️ Developer CLI Suite
 
-All automation scripts run from the terminal using `npm run <command>`:
+All automation scripts run from the terminal using `pnpm run <command>`:
 
 | Command | Action | Example |
 | :--- | :--- | :--- |
-| `npm run new:page` | Scaffolds a new page across all locales | `npm run new:page contact -- --title="Contact Us"` |
-| `npm run new:post` | Scaffolds a new blog post across all locales | `npm run new:post ai-trends -- --title="AI Trends" --publish` |
-| `npm run remove:page` | Deletes a page and cleans dictionary navigation keys | `npm run remove:page contact -- --force` |
-| `npm run remove:post` | Deletes a blog post across all locales | `npm run remove:post ai-trends -- --force` |
-| `npm run i18n:add-lang` | Adds a new language, dictionary, and content files | `npm run i18n:add-lang -- es --name="Español" --with-content` |
-| `npm run i18n:remove-lang` | Removes a language and cleans associated files | `npm run i18n:remove-lang -- es --with-content --force` |
-| `npm run block:adapt` | Adapts external Tailwind HTML/JSX to logical RTL tokens | `npm run block:adapt -- --file=src/components/MyCard.astro` |
-| `npm run i18n:extract` | Extracts raw copy into Paraglide message keys | `npm run i18n:extract -- --target=src/components/MyCard.astro --key=card --auto-add --replace` |
-| `npm run i18n:add` | Adds a single translation key to all dictionaries | `npm run i18n:add -- --category=nav --key=docs --en="Docs" --fa="مستندات"` |
-| `npm run audit:i18n` | Audits dictionary parity, content parity & slug collisions | `npm run audit:i18n` |
-| `npm run smoke` | Runs HTML smoke test assertions on `dist/` | `npm run smoke` |
+| `pnpm run new:page` | Scaffolds a new page across all locales | `pnpm run new:page contact -- --title="Contact Us"` |
+| `pnpm run new:post` | Scaffolds a new blog post across all locales | `pnpm run new:post ai-trends -- --title="AI Trends" --publish` |
+| `pnpm run remove:page` | Deletes a page and cleans dictionary navigation keys | `pnpm run remove:page contact -- --force` |
+| `pnpm run remove:post` | Deletes a blog post across all locales | `pnpm run remove:post ai-trends -- --force` |
+| `pnpm run i18n:add-lang` | Adds a new language, dictionary, and content files | `pnpm run i18n:add-lang -- es --name="Español" --with-content` |
+| `pnpm run i18n:remove-lang` | Removes a language and cleans associated files | `pnpm run i18n:remove-lang -- es --with-content --force` |
+| `pnpm run block:adapt` | Adapts external Tailwind HTML/JSX to logical RTL tokens | `pnpm run block:adapt -- --file=src/components/MyCard.astro` |
+| `pnpm run i18n:extract` | Extracts raw copy into Paraglide message keys | `pnpm run i18n:extract -- --target=src/components/MyCard.astro --key=card --auto-add --replace` |
+| `pnpm run i18n:add` | Adds a single translation key to all dictionaries | `pnpm run i18n:add -- --category=nav --key=docs --en="Docs" --fa="مستندات"` |
+| `pnpm run audit:i18n` | Audits parity, placeholders, used keys, content and route collisions | `pnpm run audit:i18n` |
+| `pnpm run smoke` | Runs HTML, SEO, feed, manifest and H1 assertions on `dist/` | `pnpm run smoke` |
+| `pnpm run knip` | Finds dead files, exports and dependencies | `pnpm run knip` |
+| `pnpm run assets:generate` | Regenerates PNG icons and the OG image | `pnpm run assets:generate` |
 
 ---
 
@@ -124,7 +135,7 @@ All automation scripts run from the terminal using `npm run <command>`:
 ### 1. Adding a New Page
 Run the scaffolding CLI:
 ```bash
-npm run new:page team -- --title="Our Team"
+pnpm run new:page team -- --title="Our Team"
 ```
 This will:
 1. Create `src/content/pages/team/{en,de,fr,fa,ar}.mdx`.
@@ -132,27 +143,27 @@ This will:
 3. Register the `nav_team` translation key in all `messages/*.json` files.
 4. Recompile Paraglide messages automatically.
 
-To display the new page in the navigation bar, add the link in `src/layouts/BaseLayout.astro`:
-```astro
-const teamHref = await getPageUrl('team', locale);
-
-// In desktop <nav>:
-<a href={teamHref} data-nav-link="team" class="hover:text-primary transition-colors">
-  {m.nav_team({}, { locale })}
-</a>
+To display the new page in the navigation bar, register it once in the navigation single source of truth — the header, mobile drawer, and footer all consume `getNavigation()`:
+```ts
+// src/libs/config/navigation.ts
+const PAGE_ITEMS = [
+  // ...
+  { key: 'team', group: 'team', label: (locale) => m.nav_team({}, { locale }) },
+] as const;
 ```
+No template edits are required.
 
 ### 2. Adding a New Blog Post
 Run the article scaffolder:
 ```bash
-npm run new:post modern-web -- --title="Modern Web Development" --publish
+pnpm run new:post modern-web -- --title="Modern Web Development" --publish
 ```
 This generates synchronized files in `src/content/blog/modern-web/` across all supported languages. You can customize the localized `slug` in each file's frontmatter (e.g. `slug: "توسعه-وب-مدرن"` in `fa.mdx`).
 
 ### 3. Adding a New Language
 To add Spanish (`es`), Italian (`it`), or another language:
 ```bash
-npm run i18n:add-lang -- es --name="Español" --dir="ltr" --with-content --from=en
+pnpm run i18n:add-lang -- es --name="Español" --dir="ltr" --with-content --from=en
 ```
 The script automatically:
 * Registers `es` in `project.inlang/settings.json`.
@@ -173,7 +184,7 @@ To make Persian (`fa`) or Arabic (`ar`) the prefix-less default:
    ```
 3. Run verification:
    ```bash
-   npm run messages:compile && npm test && npm run audit:i18n && npm run build && npm run smoke
+   pnpm run messages:compile && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke
    ```
 Persian instantly routes to `/`, `/درباره-ما`, `/قیمت‌گذاری`, while English routes to `/en`, `/en/about`, etc.
 
@@ -208,20 +219,28 @@ Run the full quality assurance pipeline:
 
 ```bash
 # 1. TypeScript Strict Check
-npm run lint
+pnpm run lint
 
-# 2. Vitest Unit Tests (Paths, ICU plurals/ordinals, and Resolvers)
-npm test
+# 2. Vitest Unit Tests (paths, ICU, routes, and CLI helpers)
+pnpm test
 
-# 3. i18n Parity Audit
-npm run audit:i18n
+# 3. i18n Parity, Placeholder, Content & Route Audit
+pnpm run audit:i18n
 
-# 4. Production Build & Pagefind Indexing
-npm run build
+# 4. Production Build & Pagefind Indexing (runs the audit first)
+SITE_URL=https://example.com pnpm run build
 
-# 5. Post-Build HTML Smoke Test
-npm run smoke
+# 5. Post-Build HTML, SEO, Feed & Asset Smoke Test
+pnpm run smoke
+
+# 6. Dead Code / Dependency Check
+pnpm run knip
+
+# Regenerate icons and the Open Graph image
+pnpm run assets:generate
 ```
+
+The same pipeline runs on every push and pull request in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) against a throwaway `SITE_URL`.
 
 ---
 

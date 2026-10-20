@@ -1,7 +1,9 @@
 ---
 import { ClientRouter } from 'astro:transitions';
-import { getLocaleMeta, type Locale, DEFAULT_LOCALE } from '@/i18n/locales';
-import { getPageUrl } from '@/libs/content/service';
+import { getLocaleMeta, type Locale } from '@/i18n/locales';
+import { localizeHref } from '@/i18n/paths';
+import { getNavigation } from '@/libs/config/navigation';
+import { siteConfig } from '@/libs/config/site';
 import * as m from '@/paraglide/messages';
 import Seo from '@/components/Seo.astro';
 import TopLoadingBar from '@/components/TopLoadingBar.astro';
@@ -16,26 +18,62 @@ interface Props {
   description?: string;
   locale: Locale;
   url: string;
-  alternates: Record<Locale, string>;
+  alternates: Partial<Record<Locale, string>>;
+  switcherAlternates?: Partial<Record<Locale, string>>;
+  noindex?: boolean;
+  noPagefind?: boolean;
+  showSearch?: boolean;
+  image?: string;
+  type?: 'website' | 'article';
+  publishedTime?: string;
+  schema?: Record<string, unknown> | Record<string, unknown>[];
 }
 
-const { title, description, locale, url, alternates } = Astro.props;
-const meta = getLocaleMeta(locale);
+const {
+  title,
+  description,
+  locale,
+  url,
+  alternates,
+  switcherAlternates,
+  noindex = false,
+  noPagefind = false,
+  showSearch = true,
+  image,
+  type = 'website',
+  publishedTime,
+  schema,
+} = Astro.props;
 
-const homeHref = await getPageUrl('home', locale);
-const aboutHref = await getPageUrl('about', locale);
-const featuresHref = await getPageUrl('features', locale);
-const pricingHref = await getPageUrl('pricing', locale);
-const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
+const meta = getLocaleMeta(locale);
+const siteName = siteConfig.name;
+const navItems = await getNavigation(locale, url);
+const homeHref = navItems.find((item) => item.key === 'home')?.href ?? localizeHref('/', locale);
+const pricingHref = navItems.find((item) => item.key === 'pricing')?.href;
+const currentYear = new Date().getFullYear();
+
+const structuredData = schema ?? {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: siteName,
+  url: siteConfig.url,
+  description: siteConfig.description,
+  inLanguage: locale,
+};
 ---
 
 <!doctype html>
-<html lang={meta.htmlLang} dir={meta.dir} class="scroll-smooth">
+<html lang={meta.htmlLang} dir={meta.dir} class="scroll-smooth" style={`font-family: ${meta.fontFamily};`}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#4338ca" />
+    <meta name="color-scheme" content="light" />
+    <meta name="generator" content={Astro.generator} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <ClientRouter />
     <Seo
       title={title}
@@ -43,57 +81,81 @@ const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
       locale={locale}
       url={url}
       alternates={alternates}
+      siteName={siteName}
+      image={image}
+      type={type}
+      publishedTime={publishedTime}
+      schema={structuredData}
+      noindex={noindex}
     />
   </head>
   <body class="bg-bg text-fg min-h-screen flex flex-col antialiased selection:bg-primary/20">
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-fg"
+    >
+      {m.common_skip_to_content({}, { locale })}
+    </a>
+
     <TopLoadingBar />
 
     <header class="sticky top-0 z-40 w-full border-b border-border bg-surface/80 backdrop-blur-md">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
         <a href={homeHref} data-brand-link class="font-bold text-lg tracking-tight hover:text-primary transition-colors flex items-center gap-2">
-          <span>{m.common_site_title({}, { locale })}</span>
+          <span>{siteName}</span>
         </a>
 
-        <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
-          <a href={homeHref} data-nav-link="home" class="hover:text-primary transition-colors">
-            {m.nav_home({}, { locale })}
-          </a>
-          <a href={aboutHref} data-nav-link="about" class="hover:text-primary transition-colors">
-            {m.nav_about({}, { locale })}
-          </a>
-          <a href={featuresHref} data-nav-link="features" class="hover:text-primary transition-colors">
-            {m.nav_features({}, { locale })}
-          </a>
-          <a href={pricingHref} data-nav-link="pricing" class="hover:text-primary transition-colors">
-            {m.nav_pricing({}, { locale })}
-          </a>
-          <a href={blogHref} data-nav-link="blog" class="hover:text-primary transition-colors">
-            {m.nav_blog({}, { locale })}
-          </a>
+        <nav class="hidden md:flex items-center gap-6 text-sm font-medium" aria-label={m.common_menu({}, { locale })}>
+          {
+            navItems.map((item) => (
+              <a
+                href={item.href}
+                data-nav-link={item.key}
+                aria-current={item.active ? 'page' : undefined}
+                class:list={[
+                  'hover:text-primary transition-colors',
+                  item.active && 'text-primary',
+                ]}
+              >
+                {item.label}
+              </a>
+            ))
+          }
         </nav>
 
         <div class="flex items-center gap-2">
-          
-          
+          {
+            showSearch && (
+              <button
+                type="button"
+                data-open-search
+                aria-haspopup="dialog"
+                class="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface hover:bg-surface-hover text-muted hover:text-fg transition-colors cursor-pointer"
+                aria-label={m.common_search_placeholder({}, { locale })}
+                title={m.common_search_placeholder({}, { locale })}
+              >
+                <Icon name="search" size={15} />
+              </button>
+            )
+          }
 
-          <button
-            type="button"
-            data-open-search
-            class="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface hover:bg-surface-hover text-muted hover:text-fg transition-colors cursor-pointer"
-            aria-label={m.common_search_placeholder({}, { locale })}
-            title={m.common_search_placeholder({}, { locale })}
-          >
-            <Icon name="search" size={15} />
-          </button>
+          <LanguageSwitcher
+            currentLocale={locale}
+            alternates={switcherAlternates ?? alternates}
+          />
 
-          <LanguageSwitcher currentLocale={locale} alternates={alternates} />
-<a
-            href={pricingHref}
-            data-cta-link="get-started"
-            class="hidden h-8 items-center rounded-md bg-primary px-3.5 text-xs font-semibold text-primary-fg transition-opacity hover:opacity-90 sm:inline-flex"
-          >
-            {m.common_get_started({}, { locale })}
-          </a>          
+          {
+            pricingHref && (
+              <a
+                href={pricingHref}
+                data-cta-link="get-started"
+                class="hidden h-8 items-center rounded-md bg-primary px-3.5 text-xs font-semibold text-primary-fg transition-opacity hover:opacity-90 sm:inline-flex"
+              >
+                {m.common_get_started({}, { locale })}
+              </a>
+            )
+          }
+
           <button
             type="button"
             data-mobile-menu-btn
@@ -106,27 +168,17 @@ const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
           </button>
         </div>
       </div>
-
     </header>
 
-    <!-- Mobile Navigation Drawer (fixed overlay + slide-in panel, rendered outside <header> so backdrop-blur doesn't trap fixed positioning) -->
-    <div
-      data-mobile-menu-overlay
-      class="pointer-events-none fixed inset-0 z-50 bg-black/50 opacity-0 transition-opacity duration-300 md:hidden"
-      aria-hidden="true"
-    ></div>
-    <aside
+    <dialog
       id="mobile-nav-menu"
       data-mobile-menu
-      inert
-      class="invisible fixed top-0 bottom-0 start-0 z-50 flex w-80 max-w-[85vw] flex-col bg-surface shadow-2xl transition-transform duration-300 ease-out ltr:-translate-x-full rtl:translate-x-full md:hidden"
-      role="dialog"
-      aria-modal="true"
+      class="m-0 h-dvh max-h-none w-80 max-w-[85vw] border-0 bg-surface p-0 text-fg shadow-2xl md:hidden"
       aria-label={m.common_menu({}, { locale })}
     >
       <div class="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border px-4">
         <a href={homeHref} data-brand-link class="truncate font-bold text-lg tracking-tight hover:text-primary transition-colors">
-          {m.common_site_title({}, { locale })}
+          {siteName}
         </a>
         <button
           type="button"
@@ -139,110 +191,147 @@ const blogHref = locale === DEFAULT_LOCALE ? '/blog' : `/${locale}/blog`;
       </div>
 
       <nav class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 text-sm font-medium">
-        <a href={homeHref} data-nav-link="home" class="block rounded-md px-3 py-2.5 hover:bg-surface-hover hover:text-primary transition-colors">
-          {m.nav_home({}, { locale })}
-        </a>
-        <a href={aboutHref} data-nav-link="about" class="block rounded-md px-3 py-2.5 hover:bg-surface-hover hover:text-primary transition-colors">
-          {m.nav_about({}, { locale })}
-        </a>
-        <a href={featuresHref} data-nav-link="features" class="block rounded-md px-3 py-2.5 hover:bg-surface-hover hover:text-primary transition-colors">
-          {m.nav_features({}, { locale })}
-        </a>
-        <a href={pricingHref} data-nav-link="pricing" class="block rounded-md px-3 py-2.5 hover:bg-surface-hover hover:text-primary transition-colors">
-          {m.nav_pricing({}, { locale })}
-        </a>
-        <a href={blogHref} data-nav-link="blog" class="block rounded-md px-3 py-2.5 hover:bg-surface-hover hover:text-primary transition-colors">
-          {m.nav_blog({}, { locale })}
-        </a>
+        {
+          navItems.map((item) => (
+            <a
+              href={item.href}
+              data-nav-link={item.key}
+              aria-current={item.active ? 'page' : undefined}
+              class:list={[
+                'block rounded-md px-3 py-2.5 hover:bg-surface-hover hover:text-primary transition-colors',
+                item.active && 'text-primary',
+              ]}
+            >
+              {item.label}
+            </a>
+          ))
+        }
       </nav>
 
-      <div class="shrink-0 border-t border-border p-4">
-        <a
-          href={pricingHref}
-          data-cta-link="get-started"
-          class="flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-fg transition-opacity hover:opacity-90"
-        >
-          {m.common_get_started({}, { locale })}
-        </a>
-      </div>
-    </aside>
+      {
+        pricingHref && (
+          <div class="shrink-0 border-t border-border p-4">
+            <a
+              href={pricingHref}
+              data-cta-link="get-started"
+              class="flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-fg transition-opacity hover:opacity-90"
+            >
+              {m.common_get_started({}, { locale })}
+            </a>
+          </div>
+        )
+      }
+    </dialog>
 
-    <main data-pagefind-body class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12">
+    <main
+      id="main-content"
+      tabindex="-1"
+      data-pagefind-body={noPagefind ? undefined : true}
+      data-pagefind-ignore={noPagefind ? true : undefined}
+      class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12"
+    >
       <slot />
     </main>
 
     <footer class="border-t border-border bg-surface mt-auto py-8">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
-        <div>
-          © {new Date().getFullYear()} {m.common_site_title({}, { locale })}. {m.common_all_rights_reserved({}, { locale })}
+        <div id="footer-rights">
+          © <span data-current-year>{currentYear}</span> {siteName}. {m.common_all_rights_reserved({}, { locale })}
         </div>
-        <div class="flex flex-wrap items-center gap-4">
-          <a href={homeHref} data-nav-link="home" class="hover:underline">{m.nav_home({}, { locale })}</a>
-          <a href={aboutHref} data-nav-link="about" class="hover:underline">{m.nav_about({}, { locale })}</a>
-          <a href={featuresHref} data-nav-link="features" class="hover:underline">{m.nav_features({}, { locale })}</a>
-          <a href={pricingHref} data-nav-link="pricing" class="hover:underline">{m.nav_pricing({}, { locale })}</a>
-          <a href={blogHref} data-nav-link="blog" class="hover:underline">{m.nav_blog({}, { locale })}</a>
-        </div>
+        <nav class="flex flex-wrap items-center gap-4" aria-label={m.common_menu({}, { locale })}>
+          {
+            navItems.map((item) => (
+              <a
+                href={item.href}
+                data-nav-link={item.key}
+                aria-current={item.active ? 'page' : undefined}
+                class="hover:underline"
+              >
+                {item.label}
+              </a>
+            ))
+          }
+        </nav>
       </div>
     </footer>
 
-    <SearchModal locale={locale} />
+    {showSearch && <SearchModal locale={locale} />}
 
-    <script>
-      function setupMobileMenu() {
-        const btn = document.querySelector<HTMLButtonElement>('[data-mobile-menu-btn]');
-        const overlay = document.querySelector<HTMLElement>('[data-mobile-menu-overlay]');
-        const drawer = document.querySelector<HTMLElement>('[data-mobile-menu]');
-        const closeBtn = document.querySelector<HTMLButtonElement>('[data-close-menu]');
-        if (!btn || !overlay || !drawer || btn.dataset.bound === 'true') return;
-        btn.dataset.bound = 'true';
-
-        const DRAWER_CLOSED = ['ltr:-translate-x-full', 'rtl:translate-x-full', 'invisible'];
-        const OVERLAY_CLOSED = ['opacity-0', 'pointer-events-none'];
-
-        function openMenu() {
-          drawer!.classList.remove(...DRAWER_CLOSED);
-          drawer!.removeAttribute('inert');
-          overlay!.classList.remove(...OVERLAY_CLOSED);
-          btn!.setAttribute('aria-expanded', 'true');
-          document.documentElement.style.overflow = 'hidden';
-          closeBtn?.focus({ preventScroll: true });
-        }
-
-        function closeMenu() {
-          if (drawer!.classList.contains('invisible')) return;
-          drawer!.classList.add(...DRAWER_CLOSED);
-          drawer!.setAttribute('inert', '');
-          overlay!.classList.add(...OVERLAY_CLOSED);
-          btn!.setAttribute('aria-expanded', 'false');
-          document.documentElement.style.overflow = '';
-        }
-
-        btn.addEventListener('click', () => {
-          if (drawer!.classList.contains('invisible')) openMenu();
-          else closeMenu();
-        });
-
-        closeBtn?.addEventListener('click', closeMenu);
-
-        // Close when clicking outside the drawer (on the overlay).
-        overlay.addEventListener('click', closeMenu);
-
-        // Close on link navigation inside the drawer.
-        drawer.addEventListener('click', (e) => {
-          if ((e.target as HTMLElement)?.closest('a')) closeMenu();
-        });
-
-        document.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape') closeMenu();
-        });
-
-        // Never leave a stale open drawer across client-side transitions.
-        document.addEventListener('astro:before-preparation', closeMenu);
+    <style>
+      [data-mobile-menu] {
+        inset-block: 0;
+        inset-inline-start: 0;
+        inset-inline-end: auto;
+        margin: 0;
+        height: 100dvh;
+        max-height: none;
+        width: 20rem;
+        max-width: 85vw;
       }
 
+      [data-mobile-menu]::backdrop {
+        background: rgb(0 0 0 / 0.5);
+      }
+
+      :where(a, button, input, select, textarea):focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+    </style>
+
+    <script>
+      function updateYear() {
+        document.querySelectorAll<HTMLElement>('[data-current-year]').forEach((el) => {
+          el.textContent = String(new Date().getFullYear());
+        });
+      }
+
+      function setupMobileMenu() {
+        const btn = document.querySelector<HTMLButtonElement>('[data-mobile-menu-btn]');
+        const dialog = document.querySelector<HTMLDialogElement>('[data-mobile-menu]');
+        const closeBtn = document.querySelector<HTMLButtonElement>('[data-close-menu]');
+        if (!btn || !dialog || btn.dataset.bound === 'true') return;
+        btn.dataset.bound = 'true';
+
+        const close = () => {
+          if (dialog.open) dialog.close();
+        };
+
+        btn.addEventListener('click', () => {
+          if (!dialog.open) dialog.showModal();
+          btn.setAttribute('aria-expanded', 'true');
+        });
+
+        closeBtn?.addEventListener('click', close);
+        dialog.addEventListener('close', () => {
+          btn.setAttribute('aria-expanded', 'false');
+        });
+        dialog.addEventListener('click', (event) => {
+          if (event.target === dialog) close();
+          if ((event.target as HTMLElement)?.closest('a')) close();
+        });
+      }
+
+      if (document.documentElement.dataset.baseLayoutBound !== 'true') {
+        document.documentElement.dataset.baseLayoutBound = 'true';
+        document.addEventListener('astro:page-load', () => {
+          updateYear();
+          setupMobileMenu();
+        });
+        document.addEventListener('astro:before-preparation', () => {
+          const dialog = document.querySelector<HTMLDialogElement>('[data-mobile-menu]');
+          if (dialog?.open) dialog.close();
+        });
+      }
+
+      updateYear();
       setupMobileMenu();
-      document.addEventListener('astro:page-load', setupMobileMenu);
     </script>
   </body>
 </html>

@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@import '@fontsource-variable/vazirmatn';
+@import '@fontsource-variable/noto-sans-arabic';
+@import 'tailwindcss';
 
 @theme inline {
   --color-bg: oklch(98% 0.005 240);
@@ -14,12 +16,13 @@
 
 :root {
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-fa: 'Vazirmatn', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
-  --font-ar: 'Noto Sans Arabic', 'Geeza Pro', 'Al Bayan', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+  --font-fa: 'Vazirmatn Variable', 'Vazirmatn', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+  --font-ar: 'Noto Sans Arabic Variable', 'Noto Sans Arabic', 'Geeza Pro', 'Al Bayan', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
 }
 
 body {
   font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
 }
 
 :lang(fa) {

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 import MagicString from 'magic-string';
 
 const args = process.argv.slice(2);
@@ -54,6 +55,7 @@ const inlangSettings = JSON.parse(
   fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
 );
 const LOCALES = inlangSettings.locales;
+const BASE_LOCALE = inlangSettings.baseLocale || 'en';
 
 const dictsByLocale = {};
 for (const loc of LOCALES) {
@@ -122,17 +124,27 @@ for (const file of filesToProcess) {
     for (const r of replacements) {
       extractedCount++;
       if (autoAdd) {
-        if (dictsByLocale.en && !dictsByLocale.en[r.key]) {
+        if (dictsByLocale[BASE_LOCALE] && !dictsByLocale[BASE_LOCALE][r.key]) {
           for (const loc of LOCALES) {
             if (!dictsByLocale[loc]) continue;
-            dictsByLocale[loc][r.key] = loc === 'en' ? r.text : `[TODO: ${loc}] ${r.text}`;
+            dictsByLocale[loc][r.key] =
+              loc === BASE_LOCALE ? r.text : `[TODO: ${loc}] ${r.text}`;
           }
           console.log(`  + Key created: ${r.key} = "${r.text}" across locales: ${LOCALES.join(', ')}`);
         }
       }
 
       if (replace) {
-        s.overwrite(r.start, r.end, `{m.${r.key}()}`);
+        // Prefer the file's own locale variable so extracted calls remain
+        // locale-correct instead of silently falling back to the default.
+        const call = /\bconst\s+locale\b|\{[^}]*\blocale\b[^}]*\}\s*=\s*Astro\.props/.test(
+          content
+        )
+          ? `{m.${r.key}({}, { locale })}`
+          : /\bcurrentLocale\b/.test(content)
+            ? `{m.${r.key}({}, { locale: currentLocale })}`
+            : `{m.${r.key}({})}`;
+        s.overwrite(r.start, r.end, call);
       }
     }
 
@@ -167,6 +179,7 @@ if (autoAdd && !dryRun && extractedCount > 0) {
     fs.writeFileSync(locPath, JSON.stringify(sortKeys(dictsByLocale[loc]), null, 2) + '\n', 'utf-8');
   }
   console.log(`✅ Saved new dictionary keys across active messages/*.json files`);
+  execSync('npm run messages:compile', { stdio: 'inherit' });
 }
 
 console.log(`\n🎉 Extracted a total of ${extractedCount} item(s).`);

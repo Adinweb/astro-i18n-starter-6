@@ -1,5 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "blog_empty": "هنوز مقاله‌ای منتشر نشده است.",
   "blog_index_description": "جدیدترین مقالات، دیدگاه‌ها و به‌روزرسانی‌های ما.",
   "common_all_rights_reserved": "تمامی حقوق محفوظ است.",
   "common_back_home": "بازگشت به خانه",
@@ -19,6 +20,7 @@
   "common_read_more": "ادامه مطلب",
   "common_search_placeholder": "جستجوی مقالات و صفحات...",
   "common_site_title": "استارتر آسترو",
+  "common_skip_to_content": "پرش به محتوا",
   "common_type_to_search": "برای جستجو تایپ کنید...",
   "items_count": [
     {
