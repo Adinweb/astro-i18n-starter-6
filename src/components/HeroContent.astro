@@ -1,0 +1,53 @@
+---
+/**
+ * Inner content for the hero band: an optional eyebrow, the hero heading and
+ * an optional description. Rendered inside `PageHero`'s default slot, on top
+ * of the section's background image.
+ */
+import { HERO_TITLE_ID } from '@/libs/config/hero';
+
+interface Props {
+  /** Rendered as the hero's single `<h1>`. */
+  title: string;
+  description?: string;
+  /** Small uppercase label rendered above the title. */
+  eyebrow?: string;
+}
+
+const { title, description, eyebrow } = Astro.props;
+---
+
+<div class="max-w-3xl">
+  <span class="mb-5 block h-1 w-12 rounded-full bg-accent" aria-hidden="true"></span>
+
+  {
+    eyebrow && (
+      <p class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/90 backdrop-blur-sm">
+        {eyebrow}
+      </p>
+    )
+  }
+
+  <h1
+    id={HERO_TITLE_ID}
+    class="text-balance text-4xl font-extrabold leading-[1.08] tracking-tight text-white drop-shadow-[0_2px_18px_rgb(0_0_0/0.5)] sm:text-5xl lg:text-6xl"
+  >
+    {title}
+  </h1>
+
+  {
+    description && (
+      <p class="mt-5 max-w-2xl text-pretty text-base leading-relaxed text-white/90 drop-shadow-[0_1px_12px_rgb(0_0_0/0.5)] sm:text-lg">
+        {description}
+      </p>
+    )
+  }
+
+  {
+    Astro.slots.has('default') && (
+      <div class="mt-6">
+        <slot />
+      </div>
+    )
+  }
+</div>

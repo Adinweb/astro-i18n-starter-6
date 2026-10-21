@@ -1,6 +1,8 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import HeroContent from '@/components/HeroContent.astro';
 import PostCard from '@/components/PostCard.astro';
 import { getBlogIndexHref, getBlogPostHref } from '@/libs/content/service';
 import {
@@ -47,17 +49,16 @@ const totalLabel = m.blog_filter_showing(
   locale={locale}
   url={url}
   alternates={alternates}
+  hero
 >
-  <div class="space-y-8">
-    <header class="max-w-2xl space-y-3">
-      <h1 class="text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
-        {m.nav_blog({}, { locale })}
-      </h1>
-      <p class="text-base leading-relaxed text-muted">
-        {m.blog_index_description({}, { locale })}
-      </p>
-    </header>
+  <PageHero slot="hero">
+    <HeroContent
+      title={m.nav_blog({}, { locale })}
+      description={m.blog_index_description({}, { locale })}
+    />
+  </PageHero>
 
+  <div class="space-y-8">
     {
       posts.length === 0 ? (
         <p class="rounded-2xl border border-dashed border-border bg-surface p-10 text-center text-sm text-muted">
@@ -241,7 +242,13 @@ const totalLabel = m.blog_filter_showing(
       if (clear) clear.hidden = !hasActiveFilters(filters);
 
       if (updateUrl) {
-        window.history.replaceState(null, '', `${baseHref}${buildBlogFilterQuery(filters)}`);
+        // Preserve Astro's router state: replacing it with `null` breaks the
+        // ClientRouter's history handling when navigating back to this page.
+        window.history.replaceState(
+          window.history.state,
+          '',
+          `${baseHref}${buildBlogFilterQuery(filters)}`
+        );
       }
     };
 
@@ -270,7 +277,7 @@ const totalLabel = m.blog_filter_showing(
       render(false);
     });
 
-    render();
+    render(false);
   }
 
   if (document.documentElement.dataset.blogFilterHistoryBound !== 'true') {

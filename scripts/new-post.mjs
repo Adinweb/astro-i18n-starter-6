@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
 
 export function parseFrontmatter(rawContent) {
   const match = rawContent.match(/^---\r?\n([\s\S]*?)\r?\n---([\s\S]*)$/);
@@ -57,12 +58,47 @@ export function stringifyFrontmatter(data, body) {
     }
   }
   lines.push('---');
-  const cleanBody = body.startsWith('\n') ? body : '\n' + body;
-  return lines.join('\n') + cleanBody;
+  // Keep the file's own line ending, so updating a file does not rewrite it
+  // with mixed endings — and so a CRLF body keeps its leading blank line.
+  const eol = body.includes('\r\n') ? '\r\n' : '\n';
+  const cleanBody = /^\r?\n/.test(body) ? body : eol + body;
+  return lines.join(eol) + cleanBody;
 }
 
 export function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Normalizes a `--image` value into a public-root path.
+ *
+ * Git Bash rewrites an argument that starts with a slash into an absolute
+ * Windows path (`/images/x.png` becomes `C:/Program Files/Git/images/x.png`),
+ * so the intended path is recovered by dropping the prepended Git root.
+ * Returns an empty string when the value cannot be mapped to a public path.
+ */
+export function normalizePublicPath(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const mangled = raw.match(/^(?:[A-Za-z]:)?[\\/]?(?:.*[\\/])?Git[\\/](.+)$/);
+  if (mangled) return `/${mangled[1].replace(/\\/g, '/')}`;
+  if (/^[A-Za-z]:[\\/]/.test(raw)) return '';
+  return raw.startsWith('/') ? raw : `/${raw}`;
+}
+
+/**
+ * Resolves the `--image` option into the path written to the frontmatter.
+ *
+ * Returns an empty string when the post opts out of its own cover artwork
+ * (`--image=none`) and falls back to the shared image, and `null` when the
+ * value cannot be mapped to a public path.
+ */
+export function resolveImageOption(raw, fallback) {
+  const value = String(raw ?? '').trim();
+  if (value.toLowerCase() === 'none') return '';
+  const normalized = normalizePublicPath(value);
+  if (!normalized) return null;
+  return normalized || fallback;
 }
 
 export function runCli() {
@@ -82,6 +118,7 @@ export function runCli() {
   let syncAll = false;
   let updateHeading = true;
   let customImage = '';
+  let noImage = false;
   let customCategories = null;
   let customTags = null;
   const titlesByLocale = {};
@@ -109,11 +146,19 @@ export function runCli() {
     } else if (arg.startsWith('--date=') || arg.startsWith('--publishedAt=')) {
       customDate = arg.startsWith('--date=') ? arg.slice(7) : arg.slice(14);
     } else if (arg.startsWith('--image=')) {
-      // Accept both `images/cover.png` and `/images/cover.png`. The schemas
-      // require a public-root path, and unprefixed values also survive the
-      // path rewriting Git Bash applies to leading-slash arguments.
-      const value = arg.slice(8).trim();
-      customImage = value && !value.startsWith('/') ? `/${value}` : value;
+      const raw = arg.slice(8).trim();
+      // Accept both `images/cover.png` and `/images/cover.png`. The schema
+      // requires a public-root path. `none` opts out of a group-specific
+      // cover, and the post then uses the shared artwork.
+      const resolved = resolveImageOption(raw, '');
+      if (resolved === null) {
+        console.error(
+          `❌ Invalid --image value: "${raw}". Use a public-root path such as "images/blog/cover.png", or "none" to opt out.`
+        );
+        process.exit(1);
+      }
+      noImage = resolved === '';
+      customImage = resolved;
     } else if (arg.startsWith('--categories=') || arg.startsWith('--category=')) {
       const rawValue = arg.slice(arg.startsWith('--categories=') ? 13 : 11);
       const values = rawValue
@@ -180,6 +225,7 @@ Creation Options:
   --category="a,b"             Blog category keys (repeatable, comma-separated)
   --tags="x,y"                 Blog tag keys (repeatable, comma-separated)
   --image=images/cover.png     Featured image served from public/ (a leading "/" is added)
+  --image=none                 Use the shared hero artwork instead of a group-specific cover
 
 Update / Sync Options:
   --update                     Update an existing article group without rewriting markdown body
@@ -283,7 +329,9 @@ Update / Sync Options:
       }
 
       // Taxonomy and featured image resolution
-      if (customImage) {
+      if (noImage) {
+        delete fmData.image;
+      } else if (customImage) {
         fmData.image = customImage;
       }
       if (customCategories && customCategories.length > 0) {
@@ -359,6 +407,14 @@ Update / Sync Options:
 
   const sourceTitle = customTitle || groupSlug.replace(/-/g, ' ');
 
+  // Every group owns its cover. The artwork is drawn from code by
+  // `assets:generate`, so the referenced file always exists once it is run.
+  // `--image=none` opts out, and the post falls back to the shared artwork.
+  const defaultGroupImage = ['blog', 'pages'].includes(collection)
+    ? `/images/${collection}/${groupSlug}.png`
+    : '';
+  const groupImage = noImage ? '' : customImage || defaultGroupImage;
+
   for (const loc of LOCALES) {
     const isSource = loc === sourceLocale;
     const isDraft = publishAll ? false : !isSource;
@@ -384,7 +440,7 @@ Update / Sync Options:
     const dateValue = customDate || today;
 
     const taxonomyLines = [
-      customImage ? `image: "${customImage}"` : '',
+      groupImage ? `image: "${groupImage}"` : '',
       customCategories?.length
         ? `categories: [${customCategories.map((item) => `"${item}"`).join(', ')}]`
         : '',
@@ -408,6 +464,21 @@ ${baseBody}
 
   console.log(`✅ Created synchronized article group in src/content/${collection}/${groupSlug}/ across locales: ${LOCALES.join(', ')}`);
   console.log(`ℹ️ Source locale: "${sourceLocale}" (title: "${sourceTitle}")`);
+  console.log(
+    groupImage
+      ? `ℹ️ Hero background: "${groupImage}"`
+      : 'ℹ️ Hero background: shared artwork (--image=none)'
+  );
+
+  // Draw the artwork for the new group, so its cover is never broken.
+  try {
+    execSync('node scripts/generate-assets.mjs', { stdio: 'inherit' });
+  } catch (e) {
+    console.warn('⚠️ Warning: Failed to generate the cover artwork:', e.message);
+    if (groupImage) {
+      console.warn(`   Run "pnpm run assets:generate" to create "${groupImage}".`);
+    }
+  }
 
   if (!publishAll) {
     const draftedLocales = LOCALES.filter((l) => l !== sourceLocale);

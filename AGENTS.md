@@ -47,9 +47,13 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ├── messages/                  # Dictionaries (en.json, de.json, fr.json, fa.json, ar.json)
 ├── project.inlang/            # Paraglide compiler configuration (settings.json)
 ├── public/                    # Static assets (favicons, etc.)
+│   └── images/                # Generated artwork:
+│       ├── hero/default.png   # Shared hero background (no page image of its own)
+│       ├── pages/<group>.png  # One hero background per page group
+│       └── blog/<group>.png   # One cover per blog group
 ├── scripts/                   # Developer CLI automation suite (13 scripts)
 ├── src/
-│   ├── components/            # Reusable Astro components (Icon, LanguageSwitcher, PostCard, SearchModal, Seo, TopLoadingBar)
+│   ├── components/            # Reusable Astro components (Icon, LanguageSwitcher, PageHero, HeroContent, BlogPostHeroContent, PostCard, SearchModal, Seo, TopLoadingBar)
 │   ├── content/               # Symmetrical content collections:
 │   │   ├── pages/<group>/     # Static pages (en.mdx, de.mdx, fr.mdx, fa.mdx, ar.mdx)
 │   │   └── blog/<group>/      # Blog posts with localized slugs
@@ -60,6 +64,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   ├── layouts/               # BaseLayout.astro (HTML head, lang/dir, header, mobile drawer, footer)
 │   ├── libs/                  # Core services:
 │   │   ├── config/site.ts     # Site metadata & Zod schema
+│   │   ├── config/hero.ts     # DEFAULT_HERO_IMAGE + HERO_TITLE_ID
 │   │   └── content/service.ts # getSiteRoutes(), getPageUrl(), getBreadcrumbs()
 │   ├── pages/                 # Minimal physical pages:
 │   │   ├── [...path].astro    # Lean Router Dispatcher (< 30 lines)
@@ -89,7 +94,7 @@ Always use these exact pnpm scripts:
 | `pnpm run build` | `messages:compile` + audit + `astro build` + `pagefind` | After major changes |
 | `pnpm run smoke` | HTML, SEO, feed, asset & H1 assertions on `dist/` | After every production build |
 | `pnpm run knip` | Dead files, exports, and dependencies | Before releases |
-| `pnpm run assets:generate` | Regenerate PNG icons and the OG image | After brand changes |
+| `pnpm run assets:generate` | Regenerate PNG icons, the OG image and all hero/cover artwork | After brand changes or when a page/post group is added |
 
 ### Dev Server Management
 In this environment, start the server using background mode:
@@ -107,12 +112,12 @@ Agents should execute these scripts instead of performing brittle manual file ma
 ### 4.1 Content Scaffolding
 * **Create or update a static page group across all locales:**
   ```bash
-  pnpm run new:page <page-key> [--title="<Title>"] [--from=<source-locale>] [--publish]
+  pnpm run new:page <page-key> [--title="<Title>"] [--from=<source-locale>] [--image=images/pages/contact.png|none] [--publish]
   # Update existing page frontmatter across all locales without overwriting markdown bodies:
   pnpm run new:page <page-key> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"]
   ```
   *Example:* `pnpm run new:page contact --title="Contact Us" --from=en`  
-  *Actions performed:* Creates or updates `src/content/pages/contact/{en,de,fr,fa,ar}.mdx`, generates localized slugs, preserves body copy, and registers `nav_contact` key across all dictionaries.
+  *Actions performed:* Creates or updates `src/content/pages/contact/{en,de,fr,fa,ar}.mdx`, generates localized slugs, preserves body copy, registers the `nav_contact` key across all dictionaries, and points every locale's `image` frontmatter at the page's hero background. Without `--image`, the page uses the generated `/images/pages/<page-key>.png` and `assets:generate` is run to create it.
 
 * **Create or update a blog article across all locales:**
   ```bash
@@ -121,7 +126,7 @@ Agents should execute these scripts instead of performing brittle manual file ma
   pnpm run new:post <group-slug> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"]
   ```
   *Example:* `pnpm run new:post ai-agents --from=en --title="AI Coding Agents" --category=engineering --tags="astro,i18n" --image=images/blog/ai-agents.png --publish`  
-  *Actions performed:* Creates or updates `src/content/blog/ai-agents/{en,de,fr,fa,ar}.mdx` with synchronized frontmatter, including `categories`, `tags`, and the featured `image`.
+  *Actions performed:* Creates or updates `src/content/blog/ai-agents/{en,de,fr,fa,ar}.mdx` with synchronized frontmatter, including `categories`, `tags`, and the featured `image` (the group cover `/images/blog/<group>.png` by default, or the shared artwork with `--image=none`).
 
 ### 4.2 Content Removal
 * **Remove an entire page or a single locale:**
@@ -201,7 +206,16 @@ To make another language (e.g., Farsi `fa` or Arabic `ar`) the prefix-less defau
    ```
    *Result:* Persian instantly routes to `/`, `/darbare-ma`, `/blog/اولین-پست`, while English routes to `/en/`, `/en/about/`, etc.
 
-### Playbook C: Adding an SVG Icon
+### Playbook C: The Hero Background
+The hero band is rendered by `src/components/PageHero.astro`. The page's or post's image **is** the background of the section — one sharp, full-bleed image layer, never a card beside the copy and never a blurred duplicate.
+
+1. The background comes from the entry's `image` frontmatter (`/images/pages/<group>.png` for pages, `/images/blog/<group>.png` for posts). Without one, `DEFAULT_HERO_IMAGE` (`/images/hero/default.png`) is used.
+2. Inner content is supplied through the default slot: `HeroContent.astro` for pages and the blog index, `BlogPostHeroContent.astro` for posts. `PageHero` itself renders no copy.
+3. All artwork is drawn from code by `scripts/generate-assets.mjs`. Run `pnpm run assets:generate` after adding a page or post group, or after changing the palette in that script. The palette is luminance-normalised, so every hue reads at the same perceived brightness.
+4. The scrims are **vertical** gradients only, so the band is identical in LTR and RTL. Keep it that way: a horizontal scrim would need an `rtl:` variant.
+5. The image element carries `transition:persist` keyed by its path, so the same artwork is never decoded twice during client-side navigation, and a different artwork always replaces it.
+
+### Playbook D: Adding an SVG Icon
 1. Open `src/pages/icons.svg.ts`.
 2. Add the SVG `<path>` inner content to the `icons` object:
    ```typescript
@@ -230,3 +244,5 @@ To make another language (e.g., Farsi `fa` or Arabic `ar`) the prefix-less defau
 | Inline `<svg>` `<path>` blobs in HTML | Add icon symbol to `src/pages/icons.svg.ts` and use `<Icon name="..." />` |
 | Using `navigate()` for language switching | Use `window.location.assign(target)` for static language switch |
 | Missing `el.dataset.bound` guard in scripts | Check `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';` |
+| Showing the hero image as a card next to the copy, or blurring it | Make the image the section background (one sharp, full-bleed layer) in `PageHero.astro` |
+| Shipping a dark hero illustration under a heavy scrim | Keep the artwork luminous (`assets:generate`) and the scrim light |

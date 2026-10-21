@@ -74,6 +74,20 @@ function mix(a, b, t) {
   return a + (b - a) * t;
 }
 
+/**
+ * Scales a colour to a target relative luminance, keeping its hue.
+ *
+ * Equal HSL lightness looks very different across hues — a teal reads far
+ * brighter than a blue — so the artwork is normalised to keep every hue at a
+ * comparable perceived brightness.
+ */
+function withLuminance([r, g, b], target) {
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  if (luminance <= 0) return [r, g, b];
+  const k = target / luminance;
+  return [Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k)];
+}
+
 function distanceToSegment(px, py, ax, ay, bx, by) {
   const dx = bx - ax;
   const dy = by - ay;
@@ -185,67 +199,85 @@ function hslToRgb(h, s, l) {
 }
 
 /**
- * Abstract editorial cover art: deep navy, two colour glows, technical rings,
- * and a dot grid. Deterministic for a given hue, so covers stay reproducible.
+ * Abstract editorial artwork: a deep saturated wash, two colour glows,
+ * technical rings and a dot grid. Deterministic for a given hue, so covers
+ * stay reproducible.
+ *
+ * The palette is deliberately luminous. This artwork is used as the *background*
+ * of the hero band, where only a light scrim may sit on top of it — a dark
+ * illustration would be swallowed by the scrim that keeps the copy legible,
+ * and the hero would read as a plain black bar.
+ *
+ * The features are placed in the vertical middle so the artwork still reads
+ * after the wide crop a short, full-bleed hero band takes out of a 16:9 image.
  */
-function coverPixel(width, height, hue) {
-  const accent = hslToRgb(hue, 0.72, 0.6);
-  const secondary = hslToRgb((hue + 52) % 360, 0.7, 0.58);
+function artPixel(width, height, hue) {
+  const accent = withLuminance(hslToRgb(hue, 0.82, 0.62), 118);
+  const secondary = withLuminance(hslToRgb((hue + 46) % 360, 0.78, 0.58), 96);
+  const deep = withLuminance(hslToRgb((hue + 8) % 360, 0.64, 0.24), 42);
 
   return (x, y) => {
     const nx = x / width;
     const ny = y / height;
 
-    let r = mix(9, 21, ny);
-    let g = mix(12, 26, ny);
-    let b = mix(26, 50, ny);
+    // Base wash — deep and saturated, never flat black.
+    let r = mix(deep[0] * 0.62, deep[0] * 1.25, ny);
+    let g = mix(deep[1] * 0.62, deep[1] * 1.25, ny);
+    let b = mix(deep[2] * 0.62, deep[2] * 1.25, ny);
 
-    const glowA = Math.max(0, 1 - Math.hypot(nx - 0.18, ny - 0.12) * 1.55) ** 2;
-    const glowB = Math.max(0, 1 - Math.hypot(nx - 0.88, ny - 0.92) * 1.6) ** 2;
-    r += glowA * accent[0] * 0.72 + glowB * secondary[0] * 0.42;
-    g += glowA * accent[1] * 0.72 + glowB * secondary[1] * 0.42;
-    b += glowA * accent[2] * 0.72 + glowB * secondary[2] * 0.42;
+    // Two wide, soft glows carry the colour.
+    const glowA = Math.max(0, 1 - Math.hypot((nx - 0.26) * 0.92, (ny - 0.4) * 1.3)) ** 1.8;
+    const glowB = Math.max(0, 1 - Math.hypot((nx - 0.8) * 0.88, (ny - 0.58) * 1.2)) ** 1.9;
+    r += glowA * accent[0] * 0.95 + glowB * secondary[0] * 0.82;
+    g += glowA * accent[1] * 0.95 + glowB * secondary[1] * 0.82;
+    b += glowA * accent[2] * 0.95 + glowB * secondary[2] * 0.82;
 
-    // Concentric rings anchored toward the top-end corner.
-    const centerX = 0.82;
-    const centerY = 0.18;
+    // Concentric rings anchored in the middle-end.
+    const centerX = 0.74;
+    const centerY = 0.44;
     const ringDistance = Math.hypot(nx - centerX, ny - centerY);
-    const ringPhase = (ringDistance % 0.085) / 0.085;
-    const ring = ringDistance < 0.5 && ringPhase < 0.07 ? 0.16 * (1 - ringDistance * 1.6) : 0;
+    const ringPhase = (ringDistance % 0.07) / 0.07;
+    const ring = ringDistance < 0.62 && ringPhase < 0.055 ? 0.4 * (1 - ringDistance * 1.05) : 0;
 
-    // Dot grid in the bottom-start quadrant.
-    const dotX = (nx % 0.045) - 0.0225;
-    const dotY = (ny % 0.045) - 0.0225;
+    // Dot grid across the lower-start quadrant.
+    const dotX = (nx % 0.04) - 0.02;
+    const dotY = (ny % 0.04) - 0.02;
     const dot =
-      nx < 0.52 && ny > 0.54 && Math.hypot(dotX, dotY) < 0.0042
-        ? 0.2 * Math.min(1, (0.9 - ny) * 2.4 + 0.35)
+      nx < 0.5 && ny > 0.5 && Math.hypot(dotX, dotY) < 0.0038
+        ? 0.34 * Math.min(1, (0.95 - ny) * 2.2 + 0.45)
         : 0;
 
-    // Soft diagonal light band for depth.
-    const band = Math.max(0, 1 - Math.abs(nx * 0.8 + ny * 0.6 - 0.82) * 5) * 0.08;
+    // Diagonal light sweep for depth.
+    const band = Math.max(0, 1 - Math.abs(nx * 0.75 + ny * 0.66 - 0.86) * 4.2) * 0.16;
 
     const veil = Math.min(1, ring + dot + band);
     r = mix(r, 255, veil);
     g = mix(g, 255, veil);
     b = mix(b, 255, veil);
 
-    // Gentle vignette so the card edges read as deliberate.
-    const vignette = Math.max(0, Math.hypot(nx - 0.5, ny - 0.5) - 0.35) * 0.35;
-    r = mix(r, 4, vignette);
-    g = mix(g, 6, vignette);
-    b = mix(b, 14, vignette);
+    // Soft vignette so the edges read as deliberate.
+    const vignette = Math.max(0, Math.hypot(nx - 0.5, ny - 0.5) - 0.34) * 0.26;
+    r = mix(r, 6, vignette);
+    g = mix(g, 8, vignette);
+    b = mix(b, 22, vignette);
 
-    return [Math.round(r), Math.round(g), Math.round(b), 255];
+    return [
+      Math.round(Math.min(255, Math.max(0, r))),
+      Math.round(Math.min(255, Math.max(0, g))),
+      Math.round(Math.min(255, Math.max(0, b))),
+      255,
+    ];
   };
 }
 
-function writeCover(filename, width, height, hue) {
-  const directory = path.join(publicDir, 'images', 'blog');
-  fs.mkdirSync(directory, { recursive: true });
-  const filePath = path.join(directory, filename);
-  fs.writeFileSync(filePath, encodePng(width, height, coverPixel(width, height, hue)));
+/** Writes generated artwork into `public/<directory>`. */
+function writeArtwork(directory, filename, width, height, hue) {
+  const targetDir = path.join(publicDir, directory);
+  fs.mkdirSync(targetDir, { recursive: true });
+  const filePath = path.join(targetDir, filename);
+  fs.writeFileSync(filePath, encodePng(width, height, artPixel(width, height, hue)));
   const kb = (fs.statSync(filePath).size / 1024).toFixed(1);
-  console.log(`✅ public/images/blog/${filename} (${width}×${height}, ${kb} KB)`);
+  console.log(`✅ public/${directory}/${filename} (${width}×${height}, ${kb} KB)`);
 }
 
 function writeAsset(filename, width, height, options) {
@@ -261,17 +293,27 @@ writeAsset('icon-192.png', 192, 192, { icon: true });
 writeAsset('icon-512.png', 512, 512, { icon: true });
 writeAsset('og-default.png', 1200, 630, { icon: false });
 
-// One cover per blog group so `assets:generate` keeps artwork in sync with posts.
-const COVER_HUES = [262, 198, 330, 158, 32, 286, 210, 350];
-const blogDir = path.join(rootDir, 'src', 'content', 'blog');
-if (fs.existsSync(blogDir)) {
-  const groups = fs
-    .readdirSync(blogDir, { withFileTypes: true })
+// The default hero background, used by every page without artwork of its own.
+writeArtwork('images/hero', 'default.png', 1920, 1080, 258);
+
+/** Lists the group folder names of a content collection, sorted. */
+function contentGroups(collectionDir) {
+  if (!fs.existsSync(collectionDir)) return [];
+  return fs
+    .readdirSync(collectionDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort();
-
-  groups.forEach((group, index) => {
-    writeCover(`${group}.png`, 1200, 675, COVER_HUES[index % COVER_HUES.length]);
-  });
 }
+
+// One cover per blog group so `assets:generate` keeps artwork in sync with posts.
+const COVER_HUES = [262, 198, 330, 158, 32, 286, 210, 350];
+contentGroups(path.join(rootDir, 'src', 'content', 'blog')).forEach((group, index) => {
+  writeArtwork('images/blog', `${group}.png`, 1200, 675, COVER_HUES[index % COVER_HUES.length]);
+});
+
+// One cover per page group, so every page has its own hero background.
+const PAGE_HUES = [232, 292, 172, 336, 208, 24];
+contentGroups(path.join(rootDir, 'src', 'content', 'pages')).forEach((group, index) => {
+  writeArtwork('images/pages', `${group}.png`, 1200, 675, PAGE_HUES[index % PAGE_HUES.length]);
+});

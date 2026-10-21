@@ -44,12 +44,47 @@ export function stringifyFrontmatter(data, body) {
     }
   }
   lines.push('---');
-  const cleanBody = body.startsWith('\n') ? body : '\n' + body;
-  return lines.join('\n') + cleanBody;
+  // Keep the file's own line ending, so updating a file does not rewrite it
+  // with mixed endings — and so a CRLF body keeps its leading blank line.
+  const eol = body.includes('\r\n') ? '\r\n' : '\n';
+  const cleanBody = /^\r?\n/.test(body) ? body : eol + body;
+  return lines.join(eol) + cleanBody;
 }
 
 export function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Normalizes a `--image` value into a public-root path.
+ *
+ * Git Bash rewrites an argument that starts with a slash into an absolute
+ * Windows path (`/images/x.png` becomes `C:/Program Files/Git/images/x.png`),
+ * so the intended path is recovered by dropping the prepended Git root.
+ * Returns an empty string when the value cannot be mapped to a public path.
+ */
+export function normalizePublicPath(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const mangled = raw.match(/^(?:[A-Za-z]:)?[\\/]?(?:.*[\\/])?Git[\\/](.+)$/);
+  if (mangled) return `/${mangled[1].replace(/\\/g, '/')}`;
+  if (/^[A-Za-z]:[\\/]/.test(raw)) return '';
+  return raw.startsWith('/') ? raw : `/${raw}`;
+}
+
+/**
+ * Resolves the `--image` option into the path written to the frontmatter.
+ *
+ * Returns an empty string when the page opts out of its own hero artwork
+ * (`--image=none`) and falls back to the shared image, and `null` when the
+ * value cannot be mapped to a public path.
+ */
+export function resolveImageOption(raw, fallback) {
+  const value = String(raw ?? '').trim();
+  if (value.toLowerCase() === 'none') return '';
+  const normalized = normalizePublicPath(value);
+  if (!normalized) return null;
+  return normalized || fallback;
 }
 
 export function runCli() {
@@ -68,6 +103,8 @@ export function runCli() {
   let syncAll = false;
   let updateHeading = true;
   let skipNav = false;
+  let customImage = '';
+  let noImage = false;
   const titlesByLocale = {};
   const descriptionsByLocale = {};
   let jsonData = null;
@@ -124,6 +161,20 @@ export function runCli() {
       updateHeading = false;
     } else if (arg === '--no-nav' || arg === '--skip-nav') {
       skipNav = true;
+    } else if (arg.startsWith('--image=')) {
+      const raw = arg.slice(8).trim();
+      // Accept both `images/cover.png` and `/images/cover.png`. The schema
+      // requires a public-root path. `none` opts out of a page-specific hero
+      // background, and the page then uses the shared artwork.
+      const resolved = resolveImageOption(raw, '');
+      if (resolved === null) {
+        console.error(
+          `❌ Invalid --image value: "${raw}". Use a public-root path such as "images/pages/contact.png", or "none" to opt out.`
+        );
+        process.exit(1);
+      }
+      noImage = resolved === '';
+      customImage = resolved;
     }
   }
 
@@ -137,6 +188,8 @@ Creation Options:
   --desc="<desc>"              Description for the page
   --from=<locale>              Source locale to branch from (default: baseLocale / en)
   --publish / --draft=false    Publish immediately across all locales
+  --image=images/cover.png     Hero background served from public/ (a leading "/" is added)
+  --image=none                 Use the shared hero artwork instead of a page-specific one
 
 Update / Sync Options:
   --update                     Update an existing page group without rewriting markdown body
@@ -238,6 +291,13 @@ Update / Sync Options:
         fmData.draft = isDraft;
       }
 
+      // Hero background resolution
+      if (noImage) {
+        delete fmData.image;
+      } else if (customImage) {
+        fmData.image = customImage;
+      }
+
       // Heading update in markdown body if requested
       if (updateHeading && fmData.title && oldTitle && oldTitle !== fmData.title) {
         const headingRegex = new RegExp(`^(\\s*#\\s*)${escapeRegex(oldTitle)}(\\s*)$`, 'm');
@@ -284,6 +344,12 @@ Update / Sync Options:
   // -------------------------------------------------------------
   fs.mkdirSync(targetDir, { recursive: true });
 
+  // Every page owns its hero background. The artwork is drawn from code by
+  // `assets:generate`, so the referenced file always exists once it is run.
+  // `--image=none` opts out, and the page falls back to the shared artwork.
+  const pageImage = noImage ? '' : customImage || `/images/pages/${pageKey}.png`;
+  const imageLine = pageImage ? `image: "${pageImage}"\n` : '';
+
   for (const loc of LOCALES) {
     const isSource = loc === sourceLocale;
     const isDefault = loc === defaultLocale;
@@ -317,7 +383,7 @@ Update / Sync Options:
 title: "${pageTitle}"
 slug: "${slug}"
 description: "${pageDesc}"
-draft: ${isDraft}
+${imageLine}draft: ${isDraft}
 ---
 
 # ${pageTitle}
@@ -329,6 +395,19 @@ ${stubBody}
 
   console.log(`✅ Scaffolding complete in src/content/pages/${pageKey}/ across locales: ${LOCALES.join(', ')}`);
   console.log(`ℹ️ Source locale: "${sourceLocale}" (title: "${title}")`);
+  console.log(
+    pageImage
+      ? `ℹ️ Hero background: "${pageImage}"`
+      : 'ℹ️ Hero background: shared artwork (--image=none)'
+  );
+
+  // Draw the artwork for the new page, so its hero background is never broken.
+  try {
+    execSync('node scripts/generate-assets.mjs', { stdio: 'inherit' });
+  } catch (e) {
+    console.warn('⚠️ Warning: Failed to generate the hero artwork:', e.message);
+    console.warn(`   Run "pnpm run assets:generate" to create "${pageImage}".`);
+  }
 
   // Register nav translation key
   if (!skipNav) {

@@ -1,7 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeBatchData } from '../../../scripts/i18n-add-batch.mjs';
-import { parseFrontmatter as parsePageFm, stringifyFrontmatter as stringifyPageFm } from '../../../scripts/new-page.mjs';
-import { parseFrontmatter as parsePostFm, stringifyFrontmatter as stringifyPostFm } from '../../../scripts/new-post.mjs';
+import { mergeTranslation } from '../../../scripts/i18n-add.mjs';
+import {
+  normalizePublicPath,
+  parseFrontmatter as parsePageFm,
+  resolveImageOption as resolvePageImage,
+  stringifyFrontmatter as stringifyPageFm,
+} from '../../../scripts/new-page.mjs';
+import {
+  parseFrontmatter as parsePostFm,
+  resolveImageOption as resolvePostImage,
+  stringifyFrontmatter as stringifyPostFm,
+} from '../../../scripts/new-post.mjs';
 
 describe('scripts/i18n-add-batch.mjs normalizeBatchData', () => {
   const activeLocales = ['en', 'de', 'fr', 'fa', 'ar'];
@@ -179,5 +189,82 @@ Content exploring future AI workflows...
     expect(serialized).toContain('description: "Synchronized new description"');
     expect(serialized).toContain('publishedAt: 2026-05-15');
     expect(serialized).toContain('Content exploring future AI workflows...');
+  });
+});
+
+describe('Hero background paths (new-page.mjs normalizePublicPath)', () => {
+  it('keeps a public-root path as-is', () => {
+    expect(normalizePublicPath('/images/pages/contact.png')).toBe('/images/pages/contact.png');
+  });
+
+  it('adds the leading slash to a relative path', () => {
+    expect(normalizePublicPath('images/pages/contact.png')).toBe('/images/pages/contact.png');
+  });
+
+  it('recovers the intended path from a Git Bash mangled argument', () => {
+    // Git Bash rewrites `/images/x.png` into `<git-root>/images/x.png`.
+    expect(normalizePublicPath('C:/Program Files/Git/images/pages/contact.png')).toBe(
+      '/images/pages/contact.png'
+    );
+    expect(normalizePublicPath('/usr/bin/Git/images/blog/post.png')).toBe('/images/blog/post.png');
+  });
+
+  it('rejects an absolute Windows path that is not under a Git root', () => {
+    expect(normalizePublicPath('C:/Windows/System32/evil.png')).toBe('');
+  });
+
+  it('returns an empty string for a missing value', () => {
+    expect(normalizePublicPath('')).toBe('');
+    expect(normalizePublicPath(undefined)).toBe('');
+  });
+});
+
+describe('Hero image option (resolveImageOption)', () => {
+  it('normalizes a public path', () => {
+    expect(resolvePageImage('images/pages/contact.png', '')).toBe('/images/pages/contact.png');
+    expect(resolvePostImage('/images/blog/post.png', '')).toBe('/images/blog/post.png');
+  });
+
+  it('opts out of a page-specific artwork with "none"', () => {
+    expect(resolvePageImage('none', '')).toBe('');
+    expect(resolvePageImage('NONE', '')).toBe('');
+    expect(resolvePostImage('none', '')).toBe('');
+  });
+
+  it('rejects a value that cannot be mapped to a public path', () => {
+    expect(resolvePageImage('C:/Windows/System32/evil.png', '')).toBeNull();
+  });
+
+  it('omits the image from the frontmatter when it is empty', () => {
+    const serialized = stringifyPageFm(
+      { title: 'Page', slug: 'page', description: 'Desc', image: undefined },
+      '\n# Page\n'
+    );
+    expect(serialized).not.toContain('image:');
+    expect(serialized).toContain('title: "Page"');
+  });
+});
+
+describe('Translation preservation (i18n-add.mjs mergeTranslation)', () => {
+  it('applies the explicit translation for the given locale', () => {
+    const merged = mergeTranslation({}, 'nav_features', 'en', 'features', { en: 'Features' });
+    expect(merged.nav_features).toBe('Features');
+  });
+
+  it('keeps an existing translation in a locale without an explicit value', () => {
+    const dict = { nav_features: 'Funktionen' };
+    const merged = mergeTranslation(dict, 'nav_features', 'de', 'features', { en: 'Features' });
+    expect(merged.nav_features).toBe('Funktionen');
+  });
+
+  it('seeds a placeholder only for a key that does not exist yet', () => {
+    const merged = mergeTranslation({}, 'nav_features', 'de', 'features', { en: 'Features' });
+    expect(merged.nav_features).toBe('[TODO: de] features');
+  });
+
+  it('never mutates the dictionary it was given', () => {
+    const dict = { nav_features: 'Funktionen' };
+    mergeTranslation(dict, 'nav_features', 'en', 'features', { en: 'Features' });
+    expect(dict.nav_features).toBe('Funktionen');
   });
 });

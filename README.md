@@ -19,7 +19,8 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Search Built-In**: Production indexing with **Pagefind** over static output, plus a locale-aware JSON fallback when Pagefind is unavailable.
 * **SEO & Social Metadata**: Canonical URLs, hreflang plus `x-default`, Open Graph/Twitter cards, `WebSite`/`BlogPosting` JSON-LD, a multilingual sitemap with `lastmod`, and an Atom feed at `/rss.xml`.
 * **Accessible by Default**: Native `<dialog>` mobile menu and search, exactly one `<h1>` per page, skip link, visible focus rings, and reduced-motion support.
-* **Raster Brand Assets From Code**: `scripts/generate-assets.mjs` deterministically produces the app icons and Open Graph image with no image-editing dependency.
+* **Image-Backed Hero Bands**: Every page and post opens with a full-bleed hero whose background *is* the entry's artwork — one sharp image layer, never a card beside the copy and never a blurred duplicate. Scrims are vertical only, so the band reads identically in LTR and RTL.
+* **Raster Brand Assets From Code**: `scripts/generate-assets.mjs` deterministically produces the app icons, the Open Graph image, and all hero/cover artwork with no image-editing dependency.
 * **SVG Sprite Endpoint**: Zero-JS, cacheable build-time SVG sprite (`/icons.svg`) with an `<Icon name="..." />` component.
 * **Turnkey Developer CLI Suite**: Automation scripts to scaffold pages/posts, add/remove languages, adapt Tailwind blocks, extract translations, audit dictionary parity, and detect dead code.
 
@@ -67,11 +68,18 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 ├── messages/                  # Dictionaries (en.json, de.json, fr.json, fa.json, ar.json)
 ├── project.inlang/            # Paraglide JS configuration & settings
 ├── public/                    # Static assets (favicons, robots, etc.)
+│   └── images/                # Generated artwork:
+│       ├── hero/default.png   # Shared hero background (no page image of its own)
+│       ├── pages/<group>.png  # One hero background per page group
+│       └── blog/<group>.png   # One cover per blog group
 ├── scripts/                   # Developer automation CLI scripts (13 tools)
 ├── src/
 │   ├── components/            # Reusable UI components
 │   │   ├── Icon.astro         # SVG sprite icon renderer (<Icon name="..." />)
 │   │   ├── LanguageSwitcher.astro # Dropdown with translated alternate links
+│   │   ├── PageHero.astro     # Hero shell: full-bleed background + light-shaping scrims
+│   │   ├── HeroContent.astro  # Hero copy for pages and the blog index
+│   │   ├── BlogPostHeroContent.astro # Hero copy for articles (breadcrumbs, meta)
 │   │   ├── SearchModal.astro  # Accessible search modal (Pagefind + Dev fallback)
 │   │   ├── Seo.astro          # Canonical links & hreflang tags (locales + 1)
 │   │   └── TopLoadingBar.astro # RTL-aware page transition progress indicator
@@ -126,7 +134,7 @@ All automation scripts run from the terminal using `pnpm run <command>`:
 | `pnpm run audit:i18n` | Audits parity, placeholders, used keys, content and route collisions | `pnpm run audit:i18n` |
 | `pnpm run smoke` | Runs HTML, SEO, feed, manifest and H1 assertions on `dist/` | `pnpm run smoke` |
 | `pnpm run knip` | Finds dead files, exports and dependencies | `pnpm run knip` |
-| `pnpm run assets:generate` | Regenerates PNG icons, the OG image, and per-post blog covers | `pnpm run assets:generate` |
+| `pnpm run assets:generate` | Regenerates PNG icons, the OG image, and all hero/cover artwork | `pnpm run assets:generate` |
 
 ---
 
@@ -141,7 +149,10 @@ This will:
 1. Create `src/content/pages/team/{en,de,fr,fa,ar}.mdx`.
 2. Generate localized slugs (`slug: "team"`, `slug: "team-de"`, etc.).
 3. Register the `nav_team` translation key in all `messages/*.json` files.
-4. Recompile Paraglide messages automatically.
+4. Point every locale's `image` frontmatter at `/images/pages/team.png` and generate that artwork.
+5. Recompile Paraglide messages automatically.
+
+Pass `--image=/images/pages/team.png` to use a different file, or `--image=none` to leave the page without artwork of its own.
 
 To display the new page in the navigation bar, register it once in the navigation single source of truth — the header, mobile drawer, and footer all consume `getNavigation()`:
 ```ts
@@ -165,6 +176,8 @@ pnpm run new:post modern-web -- \
 ```
 This generates synchronized files in `src/content/blog/modern-web/` across all supported languages. You can customize the localized `slug` in each file's frontmatter (e.g. `slug: "توسعه-وب-مدرن"` in `fa.mdx`).
 
+Without `--image`, the post points at its group cover `/images/blog/<group>.png` and that artwork is generated for you. Pass `--image=none` to use the shared hero artwork instead.
+
 #### Blog frontmatter
 | Field | Purpose |
 | :--- | :--- |
@@ -179,6 +192,15 @@ Covers are generated from code, one per blog group:
 ```bash
 pnpm run assets:generate
 ```
+
+#### The hero band
+Every page and post opens with a hero band rendered by `src/components/PageHero.astro`:
+
+* The entry's `image` frontmatter **is** the background of the band — one sharp, full-bleed image layer. It is never cropped into a card beside the copy and never blurred.
+* Only two overlays shape the light: a scrim that deepens towards the bottom where the copy sits, and a wash under the fixed header. Both are vertical gradients, so the band is identical in LTR and RTL.
+* Inner copy is passed through the default slot: `HeroContent.astro` for pages and the blog index, `BlogPostHeroContent.astro` for articles. `PageHero` renders no copy of its own.
+* Without an `image`, the shared artwork at `/images/hero/default.png` is used.
+* All artwork is drawn from code by `scripts/generate-assets.mjs`, so it is reproducible and needs no image editor. The palette is luminance-normalised, so every hue reads at the same perceived brightness.
 
 #### Blog listing, filtering, and taxonomy
 * The index at `/blog/` renders a responsive card grid with cover art, category badge, tags, date, and reading time.
@@ -262,7 +284,7 @@ pnpm run smoke
 # 6. Dead Code / Dependency Check
 pnpm run knip
 
-# Regenerate icons and the Open Graph image
+# Regenerate icons, the Open Graph image, and all hero/cover artwork
 pnpm run assets:generate
 ```
 

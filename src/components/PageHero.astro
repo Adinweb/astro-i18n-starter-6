@@ -1,0 +1,77 @@
+---
+/**
+ * Full-width hero band rendered at the top of page views, underneath the fixed
+ * header.
+ *
+ * The band *is* the page's image: a single, sharp, full-bleed copy of the
+ * featured image (or the shared artwork) is the background of the section. It
+ * is not blurred, not cropped into a card and not duplicated — the artwork
+ * stays legible and sharp behind the copy.
+ *
+ * Two overlays only shape light, and both are vertical, so the band reads
+ * identically in LTR and RTL:
+ *
+ *  - a scrim that deepens towards the bottom, where the copy sits;
+ *  - a wash under the fixed header, so the navigation keeps its contrast.
+ *
+ * The image element is carried across navigations with `transition:persist`.
+ * The persist key is derived from the image path, so the layer is only reused
+ * when the background is actually the same — a different artwork always
+ * replaces it.
+ */
+import { DEFAULT_HERO_IMAGE, HERO_TITLE_ID } from '@/libs/config/hero';
+
+interface Props {
+  /**
+   * Image of the page. Used as the background of the band. Defaults to the
+   * shared artwork when the page has no image of its own.
+   */
+  image?: string;
+  /** Background image of the band. Defaults to `image` or the shared artwork. */
+  backdrop?: string;
+  /** Override for the persisted background key. Defaults to the background path. */
+  persistKey?: string;
+}
+
+const { image, backdrop, persistKey } = Astro.props;
+const background = backdrop ?? image ?? DEFAULT_HERO_IMAGE;
+const backdropKey = `hero-backdrop:${persistKey ?? background}`;
+// Intrinsic size of the artwork, so the browser reserves the right aspect ratio.
+const isSharedArtwork = background === DEFAULT_HERO_IMAGE;
+const backdropWidth = isSharedArtwork ? 1920 : 1200;
+const backdropHeight = isSharedArtwork ? 1080 : 675;
+---
+
+<section
+  aria-labelledby={HERO_TITLE_ID}
+  data-page-hero
+  class="relative isolate w-full overflow-hidden bg-fg"
+>
+  <!-- The page image *is* the background of this section. -->
+  <div class="absolute inset-0" data-hero-background aria-hidden="true">
+    <img
+      src={background}
+      alt=""
+      width={backdropWidth}
+      height={backdropHeight}
+      loading="eager"
+      decoding="async"
+      fetchpriority="high"
+      transition:persist={backdropKey}
+      class="absolute inset-0 h-full w-full object-cover"
+    />
+    <!-- Scrim: keeps the copy legible and deepens towards the bottom. -->
+    <div
+      class="absolute inset-0 bg-linear-to-t from-fg/92 from-8% via-fg/62 via-50% to-transparent to-90%"
+    >
+    </div>
+    <!-- Wash under the fixed header, so the navigation keeps its contrast. -->
+    <div class="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-fg/60 to-transparent"></div>
+  </div>
+
+  <div
+    class="relative mx-auto flex min-h-[24rem] w-full max-w-5xl flex-col justify-end px-4 pb-12 pt-28 sm:min-h-[28rem] sm:px-6 sm:pb-16 sm:pt-32 lg:min-h-[32rem]"
+  >
+    <slot />
+  </div>
+</section>

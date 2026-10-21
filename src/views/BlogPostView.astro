@@ -1,8 +1,10 @@
 ---
 import { render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
 import { getBreadcrumbs, getBlogIndexHref } from '@/libs/content/service';
-import { buildBlogFilterQuery, getReadingTime } from '@/libs/content/blog';
+import { buildBlogFilterQuery } from '@/libs/content/blog';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import { siteConfig } from '@/libs/config/site';
 import type { Locale } from '@/i18n/config';
@@ -25,16 +27,7 @@ const breadcrumbs = getBreadcrumbs(url, locale, {
   current: title,
 });
 const blogIndexHref = getBlogIndexHref(locale);
-const categoryHref = (category: string) =>
-  `${blogIndexHref}${buildBlogFilterQuery({ category, tags: [] })}`;
 const tagHref = (tag: string) => `${blogIndexHref}${buildBlogFilterQuery({ category: null, tags: [tag] })}`;
-
-const formattedDate = publishedAt.toLocaleDateString(locale, {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
-const readingTime = getReadingTime(entry.body);
 
 const canonicalUrl = new URL(url, siteConfig.url).href;
 const imageUrl = image
@@ -75,82 +68,22 @@ const schema = {
   locale={locale}
   url={url}
   alternates={alternates}
+  hero
 >
-  <nav aria-label={m.common_breadcrumbs({}, { locale })} class="mb-6">
-    <ol class="flex flex-wrap items-center gap-2 text-xs text-muted">
-      {
-        breadcrumbs.map((crumb, idx) => (
-          <li class="flex items-center gap-2">
-            {idx > 0 && <span>/</span>}
-            {idx === breadcrumbs.length - 1 ? (
-              <span class="max-w-xs truncate font-medium text-fg">{crumb.label}</span>
-            ) : (
-              <a href={crumb.href} class="transition-colors hover:text-primary">
-                {crumb.label}
-              </a>
-            )}
-          </li>
-        ))
-      }
-    </ol>
-  </nav>
+  <PageHero slot="hero" image={image}>
+    <BlogPostHeroContent
+      title={title}
+      description={description}
+      locale={locale}
+      categories={categories}
+      author={author}
+      body={entry.body}
+      publishedAt={publishedAt}
+      breadcrumbs={breadcrumbs}
+    />
+  </PageHero>
 
   <article class="max-w-3xl">
-    {
-      image && (
-        <div class="mb-8 overflow-hidden rounded-2xl border border-border bg-surface-hover">
-          <img
-            src={image}
-            alt={title}
-            width="1200"
-            height="675"
-            loading="eager"
-            decoding="sync"
-            fetchpriority="high"
-            class="aspect-[16/9] w-full object-cover"
-          />
-        </div>
-      )
-    }
-
-    <header class="mb-8 border-b border-border pb-6">
-      {
-        categories.length > 0 && (
-          <ul class="mb-3 flex flex-wrap items-center gap-2">
-            {categories.map((category) => (
-              <li>
-                <a
-                  href={categoryHref(category)}
-                  class="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-primary transition-colors hover:bg-primary/15"
-                >
-                  {getCategoryLabel(category, locale)}
-                </a>
-              </li>
-            ))}
-          </ul>
-        )
-      }
-
-      <h1 class="text-3xl font-extrabold tracking-tight text-fg md:text-4xl">{title}</h1>
-
-      {description && <p class="mt-3 text-base leading-relaxed text-muted">{description}</p>}
-
-      <div class="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-        <span>{m.common_published_on({}, { locale })}</span>
-        <time datetime={publishedAt.toISOString()}>{formattedDate}</time>
-        <span aria-hidden="true">·</span>
-        <span>{m.blog_read_time({ count: readingTime }, { locale })}</span>
-        {
-          author && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span>{author}</span>
-            </>
-          )
-        }
-      </div>
-    </header>
-
     <div class="prose">
       <Content />
     </div>
