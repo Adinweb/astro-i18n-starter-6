@@ -4,57 +4,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
+import { contentStub } from './lib/content-stub.mjs';
+import {
+  escapeRegex,
+  parseFrontmatter,
+  stringifyFrontmatter,
+} from './lib/frontmatter.mjs';
 
-export function parseFrontmatter(rawContent) {
-  const match = rawContent.match(/^---\r?\n([\s\S]*?)\r?\n---([\s\S]*)$/);
-  if (!match) {
-    return { data: {}, body: rawContent };
-  }
-  const fmText = match[1];
-  const body = match[2];
-  const data = {};
-  const lines = fmText.split(/\r?\n/);
-  for (const line of lines) {
-    const colonIdx = line.indexOf(':');
-    if (colonIdx === -1) continue;
-    const key = line.slice(0, colonIdx).trim();
-    let val = line.slice(colonIdx + 1).trim();
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-      val = val.slice(1, -1);
-    } else if (val === 'true') {
-      val = true;
-    } else if (val === 'false') {
-      val = false;
-    }
-    data[key] = val;
-  }
-  return { data, body };
-}
-
-export function stringifyFrontmatter(data, body) {
-  const lines = ['---'];
-  for (const [k, v] of Object.entries(data)) {
-    if (v === undefined) continue;
-    if (typeof v === 'boolean') {
-      lines.push(`${k}: ${v}`);
-    } else if (typeof v === 'number') {
-      lines.push(`${k}: ${v}`);
-    } else {
-      const strVal = String(v).replace(/"/g, '\\"');
-      lines.push(`${k}: "${strVal}"`);
-    }
-  }
-  lines.push('---');
-  // Keep the file's own line ending, so updating a file does not rewrite it
-  // with mixed endings — and so a CRLF body keeps its leading blank line.
-  const eol = body.includes('\r\n') ? '\r\n' : '\n';
-  const cleanBody = /^\r?\n/.test(body) ? body : eol + body;
-  return lines.join(eol) + cleanBody;
-}
-
-export function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+export { parseFrontmatter, stringifyFrontmatter };
 
 /**
  * The page's hero artwork is referenced relative to the entry file, so Astro
@@ -154,7 +111,7 @@ export function runCli() {
   if (!pageKey) {
     console.log(`
 Usage:
-  npm run new:page <page-key> [options]
+  pnpm run new:page <page-key> [options]
 
 Creation Options:
   --title="<title>"            Title for the page (source locale)
@@ -244,14 +201,7 @@ Update / Sync Options:
           description: `[TODO: ${loc}] Description for ${title}`,
           draft: isDraft,
         };
-        const stubBody = loc === 'fa' || loc === 'ar'
-          ? 'محتوا به زودی افزوده خواهد شد...'
-          : loc === 'de'
-          ? 'Inhalt folgt in Kürze...'
-          : loc === 'fr'
-          ? 'Contenu à venir...'
-          : 'Content coming soon...';
-        body = `\n# ${fmData.title}\n\n${stubBody}\n`;
+        body = `\n# ${fmData.title}\n\n${contentStub(loc)}\n`;
       }
 
       const oldTitle = fmData.title || '';
@@ -383,13 +333,7 @@ Update / Sync Options:
       pageDesc = isSource ? `Description for ${title}` : `[TODO: ${loc}] Description for ${title}`;
     }
 
-    const stubBody = loc === 'fa' || loc === 'ar'
-      ? 'محتوا به زودی افزوده خواهد شد...'
-      : loc === 'de'
-      ? 'Inhalt folgt in Kürze...'
-      : loc === 'fr'
-      ? 'Contenu à venir...'
-      : 'Content coming soon...';
+    const stubBody = contentStub(loc);
 
     const content = `---
 title: "${pageTitle}"

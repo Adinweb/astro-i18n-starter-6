@@ -26,7 +26,7 @@ for (const arg of args) {
 }
 
 if (!targetPath) {
-  console.error('Usage: npm run i18n:extract -- --target=<file-or-dir> --key=<namespace> [--auto-add] [--replace] [--dry-run]');
+  console.error('Usage: pnpm run i18n:extract -- --target=<file-or-dir> --key=<namespace> [--auto-add] [--replace] [--dry-run]');
   process.exit(1);
 }
 
@@ -179,7 +179,7 @@ if (autoAdd && !dryRun && extractedCount > 0) {
     fs.writeFileSync(locPath, JSON.stringify(sortKeys(dictsByLocale[loc]), null, 2) + '\n', 'utf-8');
   }
   console.log(`✅ Saved new dictionary keys across active messages/*.json files`);
-  execSync('npm run messages:compile', { stdio: 'inherit' });
+  execSync('pnpm run messages:compile', { stdio: 'inherit' });
 }
 
 console.log(`\n🎉 Extracted a total of ${extractedCount} item(s).`);

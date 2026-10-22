@@ -11,6 +11,11 @@ import { fileURLToPath } from 'node:url';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const publicDir = path.join(rootDir, 'public');
+// Brand dimensions and the default social-card path are owned by
+// `app.config.json`, so the generator and the app cannot disagree.
+const appConfig = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8')
+);
 // Artwork lives next to the content that uses it, so Astro's `image()`
 // helper can resolve it relative to the entry file and optimize it.
 // `public/` is reserved for files that need a stable, unprocessed URL.
@@ -286,16 +291,24 @@ function writeArtwork(collection, group, width, height, hue) {
 
 function writeAsset(filename, width, height, options) {
   const filePath = path.join(publicDir, filename);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, encodePng(width, height, brandPixel(width, height, options)));
   const kb = (fs.statSync(filePath).size / 1024).toFixed(1);
   console.log(`✅ public/${filename} (${width}×${height}, ${kb} KB)`);
 }
 
 fs.mkdirSync(publicDir, { recursive: true });
-writeAsset('apple-touch-icon.png', 180, 180, { icon: true });
-writeAsset('icon-192.png', 192, 192, { icon: true });
-writeAsset('icon-512.png', 512, 512, { icon: true });
-writeAsset('og-default.png', 1200, 630, { icon: false });
+
+const { appleTouchIcon, icons } = appConfig.brand;
+writeAsset(appleTouchIcon.file, appleTouchIcon.size, appleTouchIcon.size, { icon: true });
+for (const icon of icons) {
+  writeAsset(icon.file, icon.size, icon.size, { icon: true });
+}
+
+const { socialImage } = appConfig.site;
+writeAsset(socialImage.path.replace(/^\/+/, ''), socialImage.width, socialImage.height, {
+  icon: false,
+});
 
 // The shared hero background is a photograph (`src/assets/hero/hero-0.jpg`),
 // not generated artwork, so it is not produced here.

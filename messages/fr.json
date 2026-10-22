@@ -12,7 +12,6 @@
   "blog_filter_by_tag": "Filtrer par étiquette",
   "blog_filter_clear": "Réinitialiser les filtres",
   "blog_filter_empty": "Aucun article ne correspond à ces filtres sur cette page.",
-  "blog_filter_showing": "Affichage de {visible} sur {total} articles",
   "blog_filter_showing_page": "Affichage de {visible} sur {total} articles sur cette page",
   "blog_index_description": "Nos derniers articles, réflexions et actualités.",
   "blog_pagination_label": "Pagination du blog",
@@ -43,9 +42,7 @@
   "common_not_found_title": "Page non trouvée",
   "common_press_esc": "pour fermer",
   "common_published_on": "Publié le",
-  "common_read_more": "En savoir plus",
   "common_search_placeholder": "Rechercher des articles et des pages...",
-  "common_site_title": "Astro i18n",
   "common_skip_to_content": "Aller au contenu",
   "common_type_to_search": "Tapez pour rechercher...",
   "items_count": [

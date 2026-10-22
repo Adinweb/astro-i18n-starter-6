@@ -1,6 +1,6 @@
 import * as m from '@/paraglide/messages';
 import type { Locale } from '@/i18n/locales';
-import { stripLocale, withTrailingSlash } from '@/i18n/paths';
+import { getPathname, stripLocale, withTrailingSlash } from '@/i18n/paths';
 import { getBlogIndexHref, getPageUrl } from '@/libs/content/service';
 
 export interface NavItem {
@@ -10,15 +10,16 @@ export interface NavItem {
   active: boolean;
 }
 
+/**
+ * Pages shown in the header, drawer, and footer. A page's navigation key is
+ * its content group, which is also the `nav_<key>` message key that
+ * `new:page` registers.
+ */
 const PAGE_ITEMS = [
-  { key: 'home', group: 'home', label: (locale: Locale) => m.nav_home({}, { locale }) },
-  { key: 'about', group: 'about', label: (locale: Locale) => m.nav_about({}, { locale }) },
-  {
-    key: 'features',
-    group: 'features',
-    label: (locale: Locale) => m.nav_features({}, { locale }),
-  },
-  { key: 'pricing', group: 'pricing', label: (locale: Locale) => m.nav_pricing({}, { locale }) },
+  { group: 'home', label: (locale: Locale) => m.nav_home({}, { locale }) },
+  { group: 'about', label: (locale: Locale) => m.nav_about({}, { locale }) },
+  { group: 'features', label: (locale: Locale) => m.nav_features({}, { locale }) },
+  { group: 'pricing', label: (locale: Locale) => m.nav_pricing({}, { locale }) },
 ] as const;
 
 const BLOG_ITEM = {
@@ -27,10 +28,8 @@ const BLOG_ITEM = {
 } as const;
 
 function isActive(href: string, currentUrl: string): boolean {
-  const hrefPath = withTrailingSlash(stripLocale(href).pathname.split(/[?#]/)[0] || '/');
-  const currentPath = withTrailingSlash(
-    stripLocale(currentUrl).pathname.split(/[?#]/)[0] || '/'
-  );
+  const hrefPath = withTrailingSlash(getPathname(stripLocale(href).pathname));
+  const currentPath = withTrailingSlash(getPathname(stripLocale(currentUrl).pathname));
 
   if (hrefPath === currentPath) return true;
   return hrefPath !== '/' && currentPath.startsWith(hrefPath);
@@ -43,7 +42,7 @@ export async function getNavigation(locale: Locale, currentUrl = ''): Promise<Na
     const href = await getPageUrl(item.group, locale);
     if (!href) continue;
     items.push({
-      key: item.key,
+      key: item.group,
       label: item.label(locale),
       href,
       active: isActive(href, currentUrl),

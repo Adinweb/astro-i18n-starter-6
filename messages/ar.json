@@ -12,7 +12,6 @@
   "blog_filter_by_tag": "تصفية حسب الوسم",
   "blog_filter_clear": "مسح عوامل التصفية",
   "blog_filter_empty": "لا توجد مقالات تطابق عوامل التصفية هذه في هذه الصفحة.",
-  "blog_filter_showing": "عرض {visible} من {total} مقالة",
   "blog_filter_showing_page": "عرض {visible} من {total} مقالة في هذه الصفحة",
   "blog_index_description": "أحدث المقالات والأفكار والتحديثات لدينا.",
   "blog_pagination_label": "ترقيم صفحات المدونة",
@@ -43,9 +42,7 @@
   "common_not_found_title": "الصفحة غير موجودة",
   "common_press_esc": "للإغلاق",
   "common_published_on": "نُشر في",
-  "common_read_more": "اقرأ المزيد",
   "common_search_placeholder": "ابحث في المقالات والصفحات...",
-  "common_site_title": "أسترو i18n",
   "common_skip_to_content": "تخطَّ إلى المحتوى",
   "common_type_to_search": "اكتب للبحث...",
   "items_count": [

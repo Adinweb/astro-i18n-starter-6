@@ -11,9 +11,10 @@ import {
   collectTaxonomyKeys,
   type BlogFilters,
 } from '@/libs/content/blog';
+import { getSortedLocaleEntries } from '@/libs/content/entries';
 import { buildPageWindow, PAGE_GAP, paginate } from '@/libs/content/pagination';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
-import type { Locale } from '@/i18n/config';
+import type { Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
 
 interface Props {
@@ -30,14 +31,7 @@ interface Props {
 
 const { locale, alternates, url, page, totalPages, perPage } = Astro.props;
 
-const allPosts = await getCollection('blog');
-const posts = allPosts
-  .filter((post) => {
-    if (post.data.draft) return false;
-    const parts = post.id.split('/');
-    return parts[parts.length - 1] === locale;
-  })
-  .sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime());
+const posts = getSortedLocaleEntries(await getCollection('blog'), locale);
 
 // The taxonomy chips are built from the whole collection, so every page of
 // the index offers the same filters.

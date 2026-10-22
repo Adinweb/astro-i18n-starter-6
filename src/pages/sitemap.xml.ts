@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getSiteRoutes } from '@/libs/content/service';
-import { siteConfig } from '@/libs/config/site';
+import { absoluteUrl } from '@/libs/config/app';
 import { DEFAULT_LOCALE } from '@/i18n/locales';
 
 export const GET: APIRoute = async () => {
@@ -8,14 +8,14 @@ export const GET: APIRoute = async () => {
 
   const urlEntries = routes
     .map((route) => {
-      const locUrl = new URL(route.props.url, siteConfig.url).href;
-      const xDefaultUrl = route.props.alternates[DEFAULT_LOCALE]
-        ? new URL(route.props.alternates[DEFAULT_LOCALE], siteConfig.url).href
-        : locUrl;
+      const locUrl = absoluteUrl(route.props.url);
+      const xDefaultUrl = absoluteUrl(
+        route.props.alternates[DEFAULT_LOCALE] ?? route.props.url
+      );
 
       const alternateTags = Object.entries(route.props.alternates)
         .map(([locale, altPath]) => {
-          const altHref = new URL(altPath, siteConfig.url).href;
+          const altHref = absoluteUrl(altPath);
           return `    <xhtml:link rel="alternate" hreflang="${locale}" href="${altHref}" />`;
         })
         .join('\n');

@@ -62,8 +62,8 @@ export function runCli() {
   }
 
   if (!category || !key) {
-    console.error('Usage: npm run i18n:add -- --category=<category> --key=<key> [--en="..."] [--fa="..."] [--de="..."]');
-    console.error('For multiple keys, use: npm run i18n:add-batch -- --file=<path> or --json=\'{"key": {"en": "..."}}\'');
+    console.error('Usage: pnpm run i18n:add -- --category=<category> --key=<key> [--en="..."] [--fa="..."] [--de="..."]');
+    console.error('For multiple keys, use: pnpm run i18n:add-batch -- --file=<path> or --json=\'{"key": {"en": "..."}}\'');
     process.exit(1);
   }
 
@@ -93,7 +93,7 @@ export function runCli() {
   console.log('🔄 Recompiling Paraglide messages...');
 
   try {
-    execSync('npm run messages:compile', { stdio: 'inherit' });
+    execSync('pnpm run messages:compile', { stdio: 'inherit' });
     console.log('🎉 Paraglide recompiled successfully.');
   } catch (e) {
     console.error('❌ Failed to recompile messages:', e.message);

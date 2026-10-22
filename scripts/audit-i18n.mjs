@@ -17,17 +17,6 @@ if (!LOCALES.includes(BASE_LOCALE)) {
   process.exit(1);
 }
 
-const RESERVED_ROUTE_BASES = new Set([
-  'blog',
-  '404',
-  'api',
-  'icons.svg',
-  'robots.txt',
-  'rss.xml',
-  'site.webmanifest',
-  'sitemap.xml',
-]);
-
 const args = process.argv.slice(2);
 const warnContent = args.includes('--warn-content') || args.includes('--lenient');
 
@@ -42,9 +31,106 @@ function fatal(message) {
 console.log('🔍 Running i18n Audit Suite...\n');
 
 // ---------------------------------------------------------------------------
-// 1. Dictionary parity: keys, placeholder signatures, and empty values
+// 1. Locale configuration parity
+//
+// `project.inlang/settings.json` drives Paraglide; `src/i18n/locales.ts`
+// drives routing and metadata. They must describe the same language set, or
+// content and URLs silently disagree about which locales exist.
 // ---------------------------------------------------------------------------
-console.log('--- 1. Dictionary Parity ---');
+console.log('--- 1. Locale Configuration Parity ---');
+const localesSourcePath = path.join(rootDir, 'src', 'i18n', 'locales.ts');
+
+function readLocalesSource() {
+  const source = fs.readFileSync(localesSourcePath, 'utf-8');
+  const listMatch = source.match(/export const LOCALES\s*=\s*\[([\s\S]*?)\]\s*as const/);
+  const locales = listMatch
+    ? [...listMatch[1].matchAll(/['"]([^'"]+)['"]/g)].map((match) => match[1])
+    : [];
+  const defaultMatch = source.match(
+    /export const DEFAULT_LOCALE\s*:\s*Locale\s*=\s*['"]([^'"]+)['"]/
+  );
+  const metadataMatch = source.match(
+    /export const LOCALE_METADATA\s*=\s*\{([\s\S]*?)\}\s*satisfies\s+Record<Locale,\s*LocaleMeta>/
+  );
+  const metadata = {};
+
+  if (metadataMatch) {
+    for (const block of metadataMatch[1].matchAll(
+      /^  ([A-Za-z0-9_-]+):\s*\{([\s\S]*?)^  \},?\r?$/gm
+    )) {
+      metadata[block[1]] = {
+        dir: block[2].match(/dir:\s*'(ltr|rtl)'/)?.[1],
+        htmlLang: block[2].match(/htmlLang:\s*'([^']+)'/)?.[1],
+        name: block[2].match(/name:\s*'([^']+)'/)?.[1],
+        fontFamily: block[2].match(/fontFamily:\s*'([^']+)'/)?.[1],
+      };
+    }
+  }
+
+  return { locales, defaultLocale: defaultMatch?.[1], metadata };
+}
+
+let localeConfigOk = true;
+const recordLocaleFatal = (message) => {
+  localeConfigOk = false;
+  fatal(message);
+};
+
+if (!fs.existsSync(localesSourcePath)) {
+  recordLocaleFatal('Missing src/i18n/locales.ts');
+} else {
+  const { locales: tsLocales, defaultLocale, metadata } = readLocalesSource();
+
+  if (tsLocales.length === 0) {
+    recordLocaleFatal('Could not read LOCALES from src/i18n/locales.ts');
+  } else if (JSON.stringify(tsLocales) !== JSON.stringify(LOCALES)) {
+    recordLocaleFatal(
+      `source LOCALES [${tsLocales.join(', ')}] differ from project.inlang locales [${LOCALES.join(', ')}]`
+    );
+  }
+
+  if (defaultLocale !== BASE_LOCALE) {
+    recordLocaleFatal(
+      `DEFAULT_LOCALE (${defaultLocale ?? 'missing'}) differs from baseLocale (${BASE_LOCALE})`
+    );
+  }
+
+  for (const locale of LOCALES) {
+    const meta = metadata[locale];
+    if (!meta) {
+      recordLocaleFatal(`LOCALE_METADATA is missing "${locale}"`);
+      continue;
+    }
+    if (!meta.dir || !['ltr', 'rtl'].includes(meta.dir)) {
+      recordLocaleFatal(`LOCALE_METADATA["${locale}"].dir must be "ltr" or "rtl"`);
+    }
+    if (!meta.htmlLang?.trim()) {
+      recordLocaleFatal(`LOCALE_METADATA["${locale}"].htmlLang is empty`);
+    }
+    if (!meta.name?.trim()) {
+      recordLocaleFatal(`LOCALE_METADATA["${locale}"].name is empty`);
+    }
+    if (!meta.fontFamily?.trim()) {
+      recordLocaleFatal(`LOCALE_METADATA["${locale}"].fontFamily is empty`);
+    }
+  }
+
+  const extraMetadata = Object.keys(metadata).filter((locale) => !LOCALES.includes(locale));
+  if (extraMetadata.length) {
+    recordLocaleFatal(`LOCALE_METADATA defines unregistered locales: ${extraMetadata.join(', ')}`);
+  }
+
+  if (localeConfigOk) {
+    console.log(
+      `✅ project.inlang/settings.json and src/i18n/locales.ts agree on ${LOCALES.length} locales.`
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 2. Dictionary parity: keys, placeholder signatures, and empty values
+// ---------------------------------------------------------------------------
+console.log('\n--- 2. Dictionary Parity ---');
 const messagesDir = path.join(rootDir, 'messages');
 const dictionaries = {};
 
@@ -160,9 +246,9 @@ if (baseDictionary) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Content parity and frontmatter validity
+// 3. Content parity and frontmatter validity
 // ---------------------------------------------------------------------------
-console.log('\n--- 2. Content Collection Parity ---');
+console.log('\n--- 3. Content Collection Parity ---');
 const contentDir = path.join(rootDir, 'src', 'content');
 
 function readFrontmatter(filePath) {
@@ -240,9 +326,34 @@ if (!fs.existsSync(contentDir)) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Slugs, required frontmatter, and route collisions
+// 4. Slugs, required frontmatter, and route collisions
 // ---------------------------------------------------------------------------
-console.log('\n--- 3. Slug & Route Guard ---');
+console.log('\n--- 4. Slug & Route Guard ---');
+
+/**
+ * Top-level route bases that page slugs must not shadow. Derived from the
+ * physical files in `src/pages/`, so adding an endpoint (or the 404 page) is
+ * protected without touching this audit.
+ */
+function deriveReservedRouteBases() {
+  const pagesDir = path.join(rootDir, 'src', 'pages');
+  // The blog index is generated rather than a file in src/pages.
+  const reserved = new Set(['blog']);
+  if (!fs.existsSync(pagesDir)) return reserved;
+
+  for (const entry of fs.readdirSync(pagesDir, { withFileTypes: true })) {
+    if (entry.name.startsWith('[')) continue;
+    if (entry.isDirectory()) {
+      reserved.add(entry.name);
+      continue;
+    }
+    reserved.add(entry.name.replace(/\.(astro|ts|tsx|js)$/, ''));
+  }
+
+  return reserved;
+}
+
+const RESERVED_ROUTE_BASES = deriveReservedRouteBases();
 const SLUG_PATTERN = /^[\p{L}\p{N}\p{M}]+(?:[\u200C\u200D-][\p{L}\p{N}\p{M}]+)*$/u;
 // The formats Astro's image pipeline accepts as input.
 const IMAGE_EXTENSIONS = new Set([
@@ -339,7 +450,7 @@ for (const locale of LOCALES) {
     }
   };
 
-  for (const { collection, group, groupDir } of groups) {
+  for (const { collection, groupDir } of groups) {
     const file = localeFile(groupDir, locale);
     if (!file) continue;
     const frontmatter = readFrontmatter(file);
@@ -362,9 +473,9 @@ if (!slugFatal) {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Unextracted text scanner (warnings only)
+// 5. Unextracted text scanner (warnings only)
 // ---------------------------------------------------------------------------
-console.log('\n--- 4. Unextracted Text Scanner (Warnings) ---');
+console.log('\n--- 5. Unextracted Text Scanner (Warnings) ---');
 const skippedTemplatePatterns = [/©/, /^[0-9]+$/, /^[\s|·/–—↑←→]+$/];
 
 function scanAstro(dir) {

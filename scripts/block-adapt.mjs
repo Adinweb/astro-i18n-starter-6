@@ -16,7 +16,7 @@ for (const arg of args) {
 }
 
 if (!filePath) {
-  console.error('Usage: npm run block:adapt -- --file=<path-to-file> [--dry-run]');
+  console.error('Usage: pnpm run block:adapt -- --file=<path-to-file> [--dry-run]');
   process.exit(1);
 }
 

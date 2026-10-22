@@ -1,7 +1,11 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { DEFAULT_LOCALE, LOCALES, isLocale, type Locale } from '@/i18n/locales';
-import { localizeHref, stripLocale, withTrailingSlash } from '@/i18n/paths';
-import { POSTS_PER_PAGE } from '@/libs/config/blog';
+import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/i18n/locales';
+import { getPathname, localizeHref, stripLocale, withTrailingSlash } from '@/i18n/paths';
+import { POSTS_PER_PAGE } from '@/libs/config/app';
+import {
+  groupPublishedEntries,
+  isPublished,
+} from '@/libs/content/entries';
 import { getPageCount } from '@/libs/content/pagination';
 
 interface RouteBase {
@@ -42,23 +46,6 @@ type EntryLike<T extends 'pages' | 'blog'> = {
 };
 
 const BLOG_BASE = 'blog';
-
-function parseEntryId(id: string): { group: string; locale: Locale } {
-  const parts = id.split('/');
-  if (parts.length < 2) {
-    throw new Error(`[ContentService] Invalid content entry ID: "${id}". Expected format: "<group>/<locale>".`);
-  }
-
-  const locale = parts[parts.length - 1];
-  if (!isLocale(locale)) {
-    throw new Error(
-      `[ContentService] Unknown locale "${locale}" in content entry "${id}". ` +
-        `Add it to src/i18n/locales.ts and project.inlang/settings.json first.`
-    );
-  }
-
-  return { group: parts.slice(0, -1).join('/'), locale };
-}
 
 function pathToParam(urlPath: string): string | undefined {
   const clean = urlPath.replace(/^\/+|\/+$/g, '');
@@ -101,7 +88,9 @@ function resolvePageUrl(
   group: string,
   locale: Locale
 ): string | null {
-  const page = pages.find((entry) => entry.id === `${group}/${locale}` && !entry.data.draft);
+  const page = pages.find(
+    (entry) => entry.id === `${group}/${locale}` && isPublished(entry)
+  );
   if (!page) return null;
 
   const slug = pageSlug(group, page);
@@ -127,17 +116,7 @@ export function buildSiteRoutes(
     });
   };
 
-  const pagesByGroup = new Map<string, Map<Locale, EntryLike<'pages'>>>();
-  for (const page of pages) {
-    if (page.data.draft) continue;
-    const { group, locale } = parseEntryId(page.id);
-    if (!pagesByGroup.has(group)) pagesByGroup.set(group, new Map());
-    const localeMap = pagesByGroup.get(group)!;
-    if (localeMap.has(locale)) {
-      throw new Error(`[ContentService] Duplicate page entry for "${group}/${locale}".`);
-    }
-    localeMap.set(locale, page);
-  }
+  const pagesByGroup = groupPublishedEntries(pages, 'pages');
 
   const homePages = pagesByGroup.get('home');
   if (!homePages?.has(DEFAULT_LOCALE)) {
@@ -175,17 +154,7 @@ export function buildSiteRoutes(
   // The blog index is paginated, so the post map has to exist before the
   // index routes are registered: the number of pages of a locale follows from
   // the number of published posts that locale has.
-  const postsByGroup = new Map<string, Map<Locale, EntryLike<'blog'>>>();
-  for (const post of posts) {
-    if (post.data.draft) continue;
-    const { group, locale } = parseEntryId(post.id);
-    if (!postsByGroup.has(group)) postsByGroup.set(group, new Map());
-    const localeMap = postsByGroup.get(group)!;
-    if (localeMap.has(locale)) {
-      throw new Error(`[ContentService] Duplicate blog entry for "${group}/${locale}".`);
-    }
-    localeMap.set(locale, post);
-  }
+  const postsByGroup = groupPublishedEntries(posts, 'blog');
 
   const postsPerLocale = new Map<Locale, number>(LOCALES.map((locale) => [locale, 0]));
   for (const [, localeMap] of postsByGroup) {
@@ -274,7 +243,7 @@ export interface BreadcrumbLabels {
 }
 
 function pathOnly(pathname: string): string {
-  return withTrailingSlash(stripLocale(pathname).pathname.split(/[?#]/)[0] || '/');
+  return withTrailingSlash(getPathname(stripLocale(pathname).pathname));
 }
 
 export function getBreadcrumbs(

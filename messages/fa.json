@@ -12,7 +12,6 @@
   "blog_filter_by_tag": "فیلتر بر اساس برچسب",
   "blog_filter_clear": "پاک‌کردن فیلترها",
   "blog_filter_empty": "هیچ نوشته‌ای با این فیلترها در این صفحه مطابقت ندارد.",
-  "blog_filter_showing": "نمایش {visible} از {total} نوشته",
   "blog_filter_showing_page": "نمایش {visible} از {total} نوشته در این صفحه",
   "blog_index_description": "جدیدترین مقالات، دیدگاه‌ها و به‌روزرسانی‌های ما.",
   "blog_pagination_label": "صفحه‌بندی وبلاگ",
@@ -43,9 +42,7 @@
   "common_not_found_title": "صفحه پیدا نشد",
   "common_press_esc": "برای بستن",
   "common_published_on": "منتشر شده در",
-  "common_read_more": "ادامه مطلب",
   "common_search_placeholder": "جستجوی مقالات و صفحات...",
-  "common_site_title": "استارتر آسترو",
   "common_skip_to_content": "پرش به محتوا",
   "common_type_to_search": "برای جستجو تایپ کنید...",
   "items_count": [

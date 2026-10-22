@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const distDir = path.resolve(rootDir, 'dist');
+const appConfig = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8')
+);
 
 console.log('🧪 Starting Smoke Test Suite over dist/ ...\n');
 
@@ -50,8 +53,33 @@ const settings = JSON.parse(
 );
 const LOCALES = settings.locales;
 const DEFAULT_LOCALE = settings.baseLocale || 'en';
-const RTL_LOCALES = new Set(['fa', 'ar', 'he', 'ur', 'ps', 'ckb']);
-const dirFor = (locale) => (RTL_LOCALES.has(locale) ? 'rtl' : 'ltr');
+
+/**
+ * Text direction per locale, read from `src/i18n/locales.ts` (the SSOT). The
+ * smoke test must not keep a second list of RTL languages that can drift from
+ * the metadata the site is built with.
+ */
+function readLocaleDirections() {
+  const source = fs.readFileSync(
+    path.join(rootDir, 'src', 'i18n', 'locales.ts'),
+    'utf-8'
+  );
+  const metadata = source.match(
+    /export const LOCALE_METADATA\s*=\s*\{([\s\S]*?)\}\s*satisfies\s+Record<Locale,\s*LocaleMeta>/
+  );
+  const directions = {};
+  if (!metadata) return directions;
+
+  for (const block of metadata[1].matchAll(
+    /^  ([A-Za-z0-9_-]+):\s*\{\s*dir:\s*'(ltr|rtl)'/gm
+  )) {
+    directions[block[1]] = block[2];
+  }
+  return directions;
+}
+
+const LOCALE_DIRECTIONS = readLocaleDirections();
+const dirFor = (locale) => LOCALE_DIRECTIONS[locale] ?? 'ltr';
 const nonDefaultLocales = LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
 const testLocale = nonDefaultLocales.includes('fa') ? 'fa' : nonDefaultLocales[0];
 
@@ -85,6 +113,7 @@ if (rootHtml) {
     Boolean(ogImage && /^https?:\/\//.test(ogImage[1])),
     'Open Graph image is an absolute URL'
   );
+
   assert(
     rootHtml.includes('application/ld+json'),
     'Root emits JSON-LD structured data'
@@ -213,7 +242,46 @@ if (rss) {
 }
 
 assert(fs.existsSync(path.join(distDir, 'site.webmanifest')), 'dist/site.webmanifest exists');
-for (const asset of ['apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'og-default.png']) {
+const manifest = readHtml('site.webmanifest');
+if (manifest) {
+  try {
+    const data = JSON.parse(manifest);
+    assert(data.name === appConfig.site.name, 'Manifest name matches app.config.json');
+    assert(
+      data.short_name === appConfig.site.shortName,
+      'Manifest short_name matches app.config.json'
+    );
+    assert(
+      data.theme_color === appConfig.brand.themeColor,
+      'Manifest theme_color matches app.config.json'
+    );
+    assert(
+      data.background_color === appConfig.brand.backgroundColor,
+      'Manifest background_color matches app.config.json'
+    );
+    assert(
+      Array.isArray(data.icons) && data.icons.length === appConfig.brand.icons.length,
+      'Manifest icons match app.config.json'
+    );
+    assert(
+      appConfig.brand.icons.every((icon) =>
+        data.icons.some(
+          (entry) => entry.src === `/${icon.file}` && entry.sizes === `${icon.size}x${icon.size}`
+        )
+      ),
+      'Manifest icon files and sizes match app.config.json'
+    );
+  } catch {
+    assert(false, 'Manifest is valid JSON');
+  }
+}
+
+const brandAssets = [
+  appConfig.brand.appleTouchIcon.file,
+  ...appConfig.brand.icons.map((icon) => icon.file),
+  appConfig.site.socialImage.path.replace(/^\/+/, ''),
+];
+for (const asset of brandAssets) {
   assert(fs.existsSync(path.join(distDir, asset)), `dist/${asset} exists`);
 }
 
@@ -222,6 +290,43 @@ const notFound = readHtml('404.html');
 if (notFound) {
   assert(notFound.includes('name="robots"'), '404 page is noindex');
   assert(count(notFound, /<h1[\s>]/g) === 1, '404 page has exactly one <h1>');
+
+  // The 404 has no artwork, so it uses the site-wide card. Its declared
+  // dimensions must describe the generated PNG: a stale or resized
+  // `public/og-default.png` would otherwise ship a lying og:image card.
+  const card = notFound.match(
+    /<meta[^>]+property="og:image"[^>]*content="([^"]+)"/i
+  );
+  const cardWidth = notFound.match(
+    /<meta[^>]+property="og:image:width"[^>]*content="(\d+)"/i
+  );
+  const cardHeight = notFound.match(
+    /<meta[^>]+property="og:image:height"[^>]*content="(\d+)"/i
+  );
+  assert(
+    Boolean(card && cardWidth && cardHeight),
+    'Default social card declares an absolute URL and its dimensions'
+  );
+
+  if (card && cardWidth && cardHeight) {
+    const imagePath = decodeURIComponent(new URL(card[1]).pathname).replace(/^\/+/, '');
+    const imageFile = path.join(distDir, imagePath);
+    const exists = fs.existsSync(imageFile);
+    assert(exists, `Default social card exists in dist: ${imagePath}`);
+    if (exists) {
+      const png = fs.readFileSync(imageFile);
+      const isPng = png.length > 24 && png.toString('ascii', 1, 4) === 'PNG';
+      assert(isPng, 'Default social card is a PNG');
+      if (isPng) {
+        const actualWidth = png.readUInt32BE(16);
+        const actualHeight = png.readUInt32BE(20);
+        assert(
+          Number(cardWidth[1]) === actualWidth && Number(cardHeight[1]) === actualHeight,
+          `Default social card dimensions match the file (${actualWidth}x${actualHeight})`
+        );
+      }
+    }
+  }
 }
 
 const iconsSvg = readHtml('icons.svg');
@@ -260,12 +365,7 @@ if (searchIndex) {
 // ---------------------------------------------------------------------------
 // 6. Blog pagination: generated page routes, pager markup and rel=prev/next
 // ---------------------------------------------------------------------------
-const blogConfigSource = fs.readFileSync(
-  path.join(rootDir, 'src', 'libs', 'config', 'blog.ts'),
-  'utf-8'
-);
-const perPageMatch = blogConfigSource.match(/POSTS_PER_PAGE\s*=\s*(\d+)/);
-const postsPerPage = perPageMatch ? Number(perPageMatch[1]) : 0;
+const postsPerPage = appConfig.blog.postsPerPage;
 
 /** Published (non-draft) posts of one locale, counted from the content source. */
 function countPublishedPosts(locale) {

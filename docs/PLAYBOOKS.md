@@ -209,11 +209,12 @@ pnpm run remove:page -- pricing --locale=de --force
 The blog index is a **static, paginated** listing: one URL per page per locale. Nothing is paginated in the browser, so every page is a real, linkable, crawlable document.
 
 ### 1. Changing the Page Size
-The single source of truth is `src/libs/config/blog.ts`:
-```ts
-export const POSTS_PER_PAGE = 9;   // 3 columns × 3 rows
+The single source of truth is `app.config.json`:
+```json
+"blog": { "postsPerPage": 9 }
 ```
-* The route builder (`src/libs/content/service.ts`) and the view (`src/views/BlogIndexView.astro`) both read this constant, so the number of generated pages and the number of rendered cards can never drift apart.
+`src/libs/config/app.ts` validates the file and exposes the value as `POSTS_PER_PAGE`.
+* The route builder (`src/libs/content/service.ts`), the view (`src/views/BlogIndexView.astro`), and the smoke test all read that value, so the number of generated pages and the number of rendered cards can never drift apart.
 * Changing the value is enough — no template edit is needed. Rebuild to see the new page set.
 
 ### 2. The URL of a Page

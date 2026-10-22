@@ -10,7 +10,7 @@ import {
 } from './service';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/i18n/locales';
 import { localizeHref } from '@/i18n/paths';
-import { POSTS_PER_PAGE } from '@/libs/config/blog';
+import { POSTS_PER_PAGE } from '@/libs/config/app';
 import * as m from '@/paraglide/messages';
 
 const nonDefaultLocales = LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);

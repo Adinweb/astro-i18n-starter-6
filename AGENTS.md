@@ -15,8 +15,10 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
    - Content schemas: `src/content.config.ts`.
    - Slugs & alternates: `src/libs/content/service.ts`.
+   - Content entry invariants (IDs, drafts, locale selection, sorting): `src/libs/content/entries.ts`.
    - Blog filters & reading time: `src/libs/content/blog.ts`; taxonomy labels: `src/libs/content/taxonomy.ts`.
-   - Blog pagination: page size in `src/libs/config/blog.ts` (`POSTS_PER_PAGE`), page math in `src/libs/content/pagination.ts` (`paginate`, `buildPageWindow`), page URLs in `src/libs/content/service.ts` (`getBlogPageHref`).
+   - Application config: `app.config.json`, validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, brand assets, dev server).
+   - Blog pagination: page size `blog.postsPerPage` in `app.config.json` (exposed as `POSTS_PER_PAGE`), page math in `src/libs/content/pagination.ts` (`paginate`, `buildPageWindow`), page URLs in `src/libs/content/service.ts` (`getBlogPageHref`).
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
 2. **Lean Router Dispatcher Pattern**:
    - Never create dynamic routing files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
@@ -49,11 +51,12 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ```text
 /
 ├── .agents/skills/            # Agent skills (e.g. astro-i18n-starter/SKILL.md)
+├── app.config.json            # SSOT for site, brand, blog pagination & dev server values
 ├── messages/                  # Dictionaries (en.json, de.json, fr.json, fa.json, ar.json)
 ├── project.inlang/            # Paraglide compiler configuration (settings.json)
 ├── public/                    # Static assets that need a stable, unprocessed URL (favicons, manifest icons, default OG card)
 ├── scripts/                   # Developer CLI automation suite (13 scripts + lib/)
-│   └── lib/prompt.mjs         # Shared confirmation prompt for the remove:* scripts
+│   └── lib/                   # Shared prompt, frontmatter, content-stub, and artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph (no page image of its own)
 │   ├── components/            # Reusable Astro components (Icon, IconButton, LanguageSwitcher, PageHero, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, Seo, TopLoadingBar)
@@ -64,13 +67,12 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │       └── <group>.png    # Cover artwork of the group, next to the entries
 │   ├── i18n/                  # Core i18n engine:
 │   │   ├── locales.ts         # SSOT for LOCALES, DEFAULT_LOCALE, metadata (dir, font, name)
-│   │   ├── config.ts          # Re-exports locales.ts
-│   │   └── paths.ts           # Pure URL utilities (localizeHref, localeHref, stripLocale)
+│   │   └── paths.ts           # Pure URL utilities (localizeHref, localeHref, stripLocale, getPathname)
 │   ├── layouts/               # BaseLayout.astro (HTML head, lang/dir, header, mobile drawer, footer)
 │   ├── libs/                  # Core services:
-│   │   ├── config/site.ts     # Site metadata & Zod schema
-│   │   ├── config/hero.ts     # DEFAULT_HERO_IMAGE + HERO_TITLE_ID
-│   │   ├── config/blog.ts     # POSTS_PER_PAGE — how many posts one index page holds
+│   │   ├── config/app.ts      # Validates app.config.json; typed site/brand/blog values & hero defaults
+│   │   ├── config/navigation.ts # Header/drawer/footer navigation builder
+│   │   ├── content/entries.ts # Entry ID parsing, draft filtering, locale selection, sorting
 │   │   ├── content/service.ts # getSiteRoutes(), getPageUrl(), getBreadcrumbs()
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
 │   │   └── content/social.ts  # Builds the optimized og:image card
@@ -78,6 +80,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── [...path].astro    # Lean Router Dispatcher (< 30 lines)
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
 │   │   ├── icons.svg.ts       # SVG sprite endpoint
+│   │   ├── site.webmanifest.ts # Web app manifest generated from app.config.json
 │   │   ├── rss.xml.ts         # Atom feed for all published articles
 │   │   ├── sitemap.xml.ts     # Multi-lingual sitemap with x-default + lastmod
 │   │   ├── robots.txt.ts      # Robots.txt pointing to sitemap
@@ -98,7 +101,7 @@ Always use these exact pnpm scripts:
 | `pnpm run messages:compile` | Compiles `messages/*.json` into `src/paraglide/` | After modifying dictionary keys |
 | `pnpm run lint` | Messages compile + `astro check` + `tsc --noEmit` | After any code changes |
 | `pnpm test` | Vitest unit tests (paths, ICU plurals/ordinals, routes, CLI helpers) | After routing or logic changes |
-| `pnpm run audit:i18n` | Dictionary/placeholder parity, content parity, used keys, slug & route collisions | Before commits & builds |
+| `pnpm run audit:i18n` | Locale-config parity, dictionary/placeholder parity, content parity, used keys, slug & route collisions | Before commits & builds |
 | `pnpm run build` | `messages:compile` + audit + `astro build` + `pagefind` | After major changes |
 | `pnpm run smoke` | HTML, SEO, feed, asset & H1 assertions on `dist/` | After every production build |
 | `pnpm run knip` | Dead files, exports, and dependencies | Before releases |
@@ -193,7 +196,7 @@ Agents should execute these scripts instead of performing brittle manual file ma
 1. Verify the static page exists under `src/content/pages/<page-key>/`. If not, run `pnpm run new:page <page-key>` (this also registers `nav_<page-key>`).
 2. Add the page group to `PAGE_ITEMS` in `src/libs/config/navigation.ts`:
    ```ts
-   { key: '<page-key>', group: '<page-key>', label: (locale) => m.nav_<page-key>({}, { locale }) }
+   { group: '<page-key>', label: (locale) => m.nav_<page-key>({}, { locale }) }
    ```
 3. The desktop header, mobile dialog, and footer all consume `getNavigation()`, so no template edits are needed. Missing locale files are skipped automatically.
 4. Run `pnpm run lint && pnpm test && pnpm run audit:i18n`.
@@ -244,11 +247,11 @@ The hero band is rendered by `src/components/PageHero.astro`. The page's or post
 ### Playbook E: Changing the Blog Pagination
 The blog index is a static, paginated listing. One page of posts is one route, and the route set is derived from the content — never hand-written.
 
-1. The page size lives in `src/libs/config/blog.ts`:
-   ```ts
-   export const POSTS_PER_PAGE = 9;   // 3 columns × 3 rows
+1. The page size is `blog.postsPerPage` in `app.config.json`:
+   ```json
+   "blog": { "postsPerPage": 9 }
    ```
-   Both the route builder (`src/libs/content/service.ts`) and the view (`src/views/BlogIndexView.astro`) read this constant, so the number of generated pages and the number of rendered cards can never drift apart.
+   `src/libs/config/app.ts` exposes it as `POSTS_PER_PAGE`. Both the route builder (`src/libs/content/service.ts`) and the view (`src/views/BlogIndexView.astro`) read that value, and the smoke test counts from it, so generated pages and rendered cards can never drift apart.
 2. The URL of a page is built by `getBlogPageHref(page, locale)`:
    * page 1 → `/blog/` (the index itself, prefix-less in the default locale)
    * page 2+ → `/blog/page/2/` (localized: `/de/blog/page/2/`, `/fa/blog/page/2/`)

@@ -11,9 +11,9 @@ function printHelp() {
 Batch Translation Script (i18n:add-batch)
 ========================================
 Usage:
-  npm run i18n:add-batch -- --file=<path-to-json> [--category=<cat>]
-  npm run i18n:add-batch -- --json='{...}' [--category=<cat>]
-  cat translations.json | npm run i18n:add-batch
+  pnpm run i18n:add-batch -- --file=<path-to-json> [--category=<cat>]
+  pnpm run i18n:add-batch -- --json='{...}' [--category=<cat>]
+  cat translations.json | pnpm run i18n:add-batch
 
 Supported JSON structures:
   1. Key-to-Locale map:
@@ -279,7 +279,7 @@ export function runCli() {
   if (!skipCompile) {
     console.log('🔄 Recompiling Paraglide messages...');
     try {
-      execSync('npm run messages:compile', { stdio: 'inherit' });
+      execSync('pnpm run messages:compile', { stdio: 'inherit' });
       console.log('🎉 Paraglide recompiled successfully.');
     } catch (e) {
       console.error('❌ Failed to recompile messages:', e.message);

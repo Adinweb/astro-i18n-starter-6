@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
-import { siteConfig } from '@/libs/config/site';
+import { absoluteUrl } from '@/libs/config/app';
 
 export const GET: APIRoute = async () => {
-  const sitemapUrl = new URL('/sitemap.xml', siteConfig.url).href;
+  const sitemapUrl = absoluteUrl('/sitemap.xml');
 
   const text = `User-agent: *
 Allow: /

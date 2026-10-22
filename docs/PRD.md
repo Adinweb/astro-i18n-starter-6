@@ -100,9 +100,9 @@ npm run audit:i18n
 
 | Decision | Specification |
 | :--- | :--- |
-| **Locales Seeded** | `en` (Default/Source, LTR), `de` (LTR), `fa` (RTL). |
+| **Locales Seeded** | `en` (Default/Source, LTR), `de`/`fr` (LTR), `fa`/`ar` (RTL). |
 | **URL Strategy** | **Prefix-less Default Locale:** Default (`en`) routes to `/`, `/about`, `/blog/first-post`. Non-default (`fa`, `de`) route to `/fa`, `/fa/about`, `/fa/blog/اولین-پست`, `/de`, etc. |
-| **Default Swapping** | Controlled entirely in `src/i18n/config.ts`. If `DEFAULT_LOCALE = 'fa'`, Persian becomes prefix-less (`/`) and English becomes prefixed (`/en`). |
+| **Default Swapping** | Controlled entirely in `src/i18n/locales.ts`. If `DEFAULT_LOCALE = 'fa'`, Persian becomes prefix-less (`/`) and English becomes prefixed (`/en`). |
 | **Routing Architecture** | **Lean Router Dispatcher:** `src/pages/[...path].astro` delegates rendering to dedicated views (`PageView.astro`, `BlogPostView.astro`, `BlogIndexView.astro`), avoiding fatal dynamic route collisions. |
 | **Static Pages Model** | Static pages (`about`, `privacy`) live as first-class entries in `src/content/pages/{group}/{locale}.mdx`. Zero separate registries or configs. |
 | **404 Strategy** | Standalone `src/pages/404.astro`. Reads path prefix to detect locale; falls back to `DEFAULT_LOCALE`. |
@@ -118,18 +118,19 @@ npm run audit:i18n
 
 | Architectural Fact | Owner Module | Downstream Consumers |
 | :--- | :--- | :--- |
-| **Locale Configuration** | `src/i18n/config.ts` | `DEFAULT_LOCALE`, `LOCALES`, `Locale` type, URL helpers, sitemap, hreflang. |
-| **Locale Metadata** | `src/i18n/locales.ts` | `satisfies Record<Locale, LocaleMeta>` (attaches `dir`, `htmlLang`, `fontFamily`). |
+| **Locale Configuration** | `src/i18n/locales.ts` | `DEFAULT_LOCALE`, `LOCALES`, `Locale` type, `dir`/`htmlLang`/`fontFamily` metadata. |
+| **URL Construction** | `src/i18n/paths.ts` | `localizeHref`, `localeHref`, `stripLocale`, `getPathname`, `withTrailingSlash`. |
 | **UI Strings** | `messages/{locale}.json` | Paraglide compiler → `src/paraglide/messages.js`. |
-| **URL Construction** | `src/i18n/paths.ts` | **Exactly 3 pure functions:** `localizeHref`, `localeHref`, `stripLocale`. |
+| **Entry Invariants** | `src/libs/content/entries.ts` | Entry-ID parsing, draft filtering, locale selection, and sorting, shared by routes, views, and the feed. |
 | **Content Schemas** | `src/content.config.ts` | Collection loaders (`pages`, `blog`), frontmatter validation, group mapping. |
 | **Route & Slug Mapping** | `src/libs/content/service.ts` | Resolves cross-locale slug alternates, breadcrumbs, and `getSiteRoutes()`. |
 | **Theme Tokens** | `src/styles/global.css` | Tailwind `@theme inline` block (oklch semantic variables). |
-| **Site Metadata** | `src/libs/config/site.ts` | Env-driven Zod schema (site URL, site name, social tags). |
+| **Application Config** | `app.config.json` → `src/libs/config/app.ts` | Site metadata, brand colours/icons, social card, blog page size, dev server; validated with Zod and shared with the CLI scripts. |
+| **Site Origin** | `astro.config.mjs` (`SITE_URL`) | Injected as `import.meta.env.SITE`; `absoluteUrl()` resolves canonical, sitemap, feed, and OG URLs. |
 
 ### 6.2 Strict URL Construction API (`src/i18n/paths.ts`)
 ```typescript
-import { DEFAULT_LOCALE, type Locale } from './config';
+import { DEFAULT_LOCALE, type Locale } from './locales';
 
 export function localizeHref(pathname: string, targetLocale: Locale): string;
 export function stripLocale(pathname: string): { locale: Locale; pathname: string };
@@ -358,8 +359,8 @@ The smoke test script (`scripts/smoke.mjs`) parses `dist/` directly:
 For operations that modify business logic, the agent refers to written playbooks rather than writing speculative code:
 
 ### Playbook 1: Swapping the Default Locale
-1. Open `src/i18n/config.ts`.
-2. Change `export const DEFAULT_LOCALE = 'en';` to target (e.g., `'fa'`).
+1. Open `src/i18n/locales.ts`.
+2. Change `export const DEFAULT_LOCALE: Locale = 'en';` to target (e.g., `'fa'`).
 3. If necessary, update `baseLocale` in `project.inlang/settings.json`.
 4. Run `pnpm test && pnpm build && pnpm smoke`.
 5. *Result:* Persian immediately becomes prefix-less (`/`), English becomes prefixed (`/en/`), and hreflang `x-default` points to Persian.
@@ -382,7 +383,7 @@ For operations that modify business logic, the agent refers to written playbooks
   2. Verify Pagefind indexing compatibility with Persian text.
   3. Record spike results in `docs/SPIKE_RESULTS.md`.
 * Scaffold Astro 7, TypeScript strict, Tailwind v4 (`@tailwindcss/vite`).
-* Setup `project.inlang/settings.json` and `src/i18n/config.ts`.
+* Setup `project.inlang/settings.json` and `src/i18n/locales.ts`.
 * Create `src/pages/icons.svg.ts` endpoint and `<Icon />` component.
 * Create script stubs in `scripts/` so verification commands exist.
 * **Exit Criteria (DoD):** `pnpm lint`, `pnpm messages:compile`, and `pnpm build` succeed with 0 errors.
@@ -393,7 +394,7 @@ For operations that modify business logic, the agent refers to written playbooks
 * Write comprehensive unit tests for `paths.ts` in `src/i18n/paths.test.ts`.
 * Seed ICU messages (`messages/{en,de,fa}.json`) with nav, common, plural, and ordinal keys.
 * Setup `src/content.config.ts` (`pages` and `blog` collections).
-* Seed sample pages (`home`, `about`) and sample blog post across all 3 locales with translated slugs.
+* Seed sample pages (`home`, `about`) and sample blog posts across all configured locales with translated slugs.
 * Build `src/libs/content/service.ts` (resolves routes, alternates, and breadcrumbs).
 * Write unit tests for content resolvers and ICU plurals/ordinals.
 * Implement `scripts/audit-i18n.mjs` (`npm run audit:i18n`).
@@ -406,7 +407,7 @@ For operations that modify business logic, the agent refers to written playbooks
 * Build `404.astro` (locale-aware via path prefix).
 * Implement `src/pages/sitemap.xml.ts` and `src/pages/robots.txt.ts`.
 * Build views: `PageView.astro`, `BlogIndexView.astro`, `BlogPostView.astro`.
-* **Exit Criteria (DoD):** `pnpm build` generates all static HTML files for all 3 locales (prefix-less `en`, prefixed `fa` and `de`).
+* **Exit Criteria (DoD):** `pnpm build` generates all static HTML files for every configured locale (prefix-less default, prefixed others).
 
 ### Phase 3 — UI Shell, Search & RTL Polish
 * Implement `LanguageSwitcher.astro` (uses alternates from route context; disables untranslated targets).
@@ -450,4 +451,4 @@ For operations that modify business logic, the agent refers to written playbooks
 * **Acknowledge and Save:** Save this prompt verbatim to `docs/PRD.md`.
 * **At Phase Boundaries:** Report the exact terminal output of the Definition of Done commands.
 * **Stop on Ambiguity:** If an unexpected edge case arises, pause and provide the technical options before proceeding.
-* **Final Handover:** Deliver a green build with all 3 locales rendering properly, verifiable via `pnpm smoke`.
+* **Final Handover:** Deliver a green build with every configured locale rendering properly, verifiable via `pnpm smoke`.

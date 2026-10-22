@@ -4,71 +4,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
+import {
+  escapeRegex,
+  parseFrontmatter,
+  stringifyFrontmatter,
+} from './lib/frontmatter.mjs';
 
-export function parseFrontmatter(rawContent) {
-  const match = rawContent.match(/^---\r?\n([\s\S]*?)\r?\n---([\s\S]*)$/);
-  if (!match) {
-    return { data: {}, body: rawContent };
-  }
-  const fmText = match[1];
-  const body = match[2];
-  const data = {};
-  const lines = fmText.split(/\r?\n/);
-  for (const line of lines) {
-    const colonIdx = line.indexOf(':');
-    if (colonIdx === -1) continue;
-    const key = line.slice(0, colonIdx).trim();
-    let val = line.slice(colonIdx + 1).trim();
-    if (val.startsWith('[') && val.endsWith(']')) {
-      const inner = val.slice(1, -1).trim();
-      data[key] = inner
-        ? inner
-            .split(',')
-            .map((item) => item.trim().replace(/^(["'])(.*)\1$/, '$2'))
-            .filter(Boolean)
-        : [];
-      continue;
-    }
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-      val = val.slice(1, -1);
-    } else if (val === 'true') {
-      val = true;
-    } else if (val === 'false') {
-      val = false;
-    }
-    data[key] = val;
-  }
-  return { data, body };
-}
-
-export function stringifyFrontmatter(data, body) {
-  const lines = ['---'];
-  for (const [k, v] of Object.entries(data)) {
-    if (v === undefined) continue;
-    if (Array.isArray(v)) {
-      lines.push(`${k}: [${v.map((item) => `"${String(item).replace(/"/g, '\\"')}"`).join(', ')}]`);
-    } else if (typeof v === 'boolean') {
-      lines.push(`${k}: ${v}`);
-    } else if (typeof v === 'number') {
-      lines.push(`${k}: ${v}`);
-    } else if (k === 'publishedAt') {
-      lines.push(`${k}: ${v}`);
-    } else {
-      const strVal = String(v).replace(/"/g, '\\"');
-      lines.push(`${k}: "${strVal}"`);
-    }
-  }
-  lines.push('---');
-  // Keep the file's own line ending, so updating a file does not rewrite it
-  // with mixed endings — and so a CRLF body keeps its leading blank line.
-  const eol = body.includes('\r\n') ? '\r\n' : '\n';
-  const cleanBody = /^\r?\n/.test(body) ? body : eol + body;
-  return lines.join(eol) + cleanBody;
-}
-
-export function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+export { parseFrontmatter, stringifyFrontmatter };
 
 /**
  * The post's cover is referenced relative to the entry file, so Astro resolves
@@ -187,7 +129,7 @@ export function runCli() {
   if (!groupSlug) {
     console.log(`
 Usage:
-  npm run new:post <group-slug> [options]
+  pnpm run new:post <group-slug> [options]
 
 Creation Options:
   --collection=<name>          Content collection name (default: "blog")

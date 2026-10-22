@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { execSync } from 'node:child_process';
+import { contentStub } from './lib/content-stub.mjs';
 
 const args = process.argv.slice(2);
 const langCode = args.find((a) => !a.startsWith('--'));
@@ -28,7 +29,7 @@ for (const arg of args) {
 }
 
 if (!langCode) {
-  console.error('Usage: npm run i18n:add-lang <locale-code> [--name="<Display Name>"] [--dir="ltr|rtl"] [--from=<source-locale>] [--with-content|--no-content] [--draft=true|false]');
+  console.error('Usage: pnpm run i18n:add-lang <locale-code> [--name="<Display Name>"] [--dir="ltr|rtl"] [--from=<source-locale>] [--with-content|--no-content] [--draft=true|false]');
   process.exit(1);
 }
 
@@ -135,9 +136,7 @@ const frTranslations = {
   common_not_found_title: 'Page non trouvée',
   common_press_esc: 'pour fermer',
   common_published_on: 'Publié le',
-  common_read_more: 'En savoir plus',
   common_search_placeholder: 'Rechercher des articles et des pages...',
-  common_site_title: 'Astro i18n',
   common_type_to_search: 'Tapez pour rechercher...',
   nav_about: 'À propos',
   nav_blog: 'Blog',
@@ -191,7 +190,7 @@ let localesCode = fs.readFileSync(localesPath, 'utf-8');
 if (!localesCode.includes(`'${langCode}'`)) {
   localesCode = localesCode.replace(
     /export const LOCALES = \[(.*?)\] as const;/s,
-    (m, p1) => {
+    (_match, p1) => {
       const existing = p1
         .split(',')
         .map((s) => s.trim())
@@ -204,7 +203,12 @@ if (!localesCode.includes(`'${langCode}'`)) {
 }
 
 if (!localesCode.includes(`${langCode}:`)) {
-  const fontVar = dir === 'rtl' ? 'var(--font-fa)' : 'var(--font-sans)';
+  const fontVar =
+    langCode === 'ar'
+      ? 'var(--font-ar)'
+      : dir === 'rtl'
+        ? 'var(--font-fa)'
+        : 'var(--font-sans)';
   const newMetaBlock = `  ${langCode}: {
     dir: '${dir}',
     htmlLang: '${langCode}',
@@ -217,24 +221,6 @@ if (!localesCode.includes(`${langCode}:`)) {
 }
 
 fs.writeFileSync(localesPath, localesCode, 'utf-8');
-
-// Also update src/i18n/config.ts if it defines LOCALES directly
-const configPath = path.join(rootDir, 'src', 'i18n', 'config.ts');
-if (fs.existsSync(configPath)) {
-  let configCode = fs.readFileSync(configPath, 'utf-8');
-  if (configCode.includes('export const LOCALES = [') && !configCode.includes(`'${langCode}'`)) {
-    configCode = configCode.replace(
-      /export const LOCALES = \[(.*?)\] as const;/s,
-      (m, p1) => {
-        const existing = p1.split(',').map((s) => s.trim()).filter(Boolean);
-        existing.push(`'${langCode}'`);
-        return `export const LOCALES = [${existing.join(', ')}] as const;`;
-      }
-    );
-    fs.writeFileSync(configPath, configCode, 'utf-8');
-    console.log(`✅ Updated src/i18n/config.ts with "${langCode}"`);
-  }
-}
 
 // 4. Confirmation and population of missing content collection files
 if (shouldPopulateContent) {
@@ -269,7 +255,7 @@ if (shouldPopulateContent) {
           let title = group;
           let slug = group === 'home' ? '' : `${group}-${langCode}`;
           let description = `Description for ${group}`;
-          let body = 'Contenu à venir...';
+          let body = contentStub(langCode);
           // The artwork lives in the group folder, so the new locale can
           // reference the very same file the source locale uses.
           let image = '';
@@ -317,7 +303,7 @@ ${body.startsWith('#') ? body : `# ${pageTitle}\n\n${body}`}
 // 5. Compile Paraglide
 console.log('\n🔄 Compiling Paraglide messages...');
 try {
-  execSync('npm run messages:compile', { stdio: 'inherit' });
+  execSync('pnpm run messages:compile', { stdio: 'inherit' });
   console.log(`🎉 Language "${langCode}" added successfully!`);
 } catch (e) {
   console.error('❌ Failed to compile messages:', e.message);

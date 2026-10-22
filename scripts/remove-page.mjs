@@ -18,7 +18,7 @@ for (const arg of args) {
 }
 
 if (!pageKey) {
-  console.error('Usage: npm run remove:page <page-key> [--locale=<locale>] [--no-clean-nav] [--force]');
+  console.error('Usage: pnpm run remove:page <page-key> [--locale=<locale>] [--no-clean-nav] [--force]');
   process.exit(1);
 }
 
@@ -99,7 +99,7 @@ if (targetLocale) {
         console.log(`🧹 Cleaned translation key "${navKey}" from dictionaries.`);
         console.log('🔄 Recompiling Paraglide messages...');
         try {
-          execSync('npm run messages:compile', { stdio: 'inherit' });
+          execSync('pnpm run messages:compile', { stdio: 'inherit' });
           console.log('🎉 Paraglide recompiled successfully.');
         } catch (e) {
           console.warn('⚠️ Warning: Failed to recompile Paraglide messages:', e.message);

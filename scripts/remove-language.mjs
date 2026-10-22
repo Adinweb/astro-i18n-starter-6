@@ -20,7 +20,7 @@ for (const arg of args) {
 }
 
 if (!langCode) {
-  console.error('Usage: npm run i18n:remove-lang <locale-code> [--with-content|--keep-content] [--force]');
+  console.error('Usage: pnpm run i18n:remove-lang <locale-code> [--with-content|--keep-content] [--force]');
   process.exit(1);
 }
 
@@ -94,7 +94,7 @@ if (fs.existsSync(localesPath)) {
   // Remove from LOCALES array
   localesCode = localesCode.replace(
     /export const LOCALES = \[(.*?)\] as const;/s,
-    (m, p1) => {
+    (_match, p1) => {
       const remaining = p1
         .split(',')
         .map((s) => s.trim())
@@ -111,27 +111,7 @@ if (fs.existsSync(localesPath)) {
   console.log(`✅ Updated LOCALES and LOCALE_METADATA in src/i18n/locales.ts`);
 }
 
-// 4. Update src/i18n/config.ts if it directly defined LOCALES
-const configPath = path.join(rootDir, 'src', 'i18n', 'config.ts');
-if (fs.existsSync(configPath)) {
-  let configCode = fs.readFileSync(configPath, 'utf-8');
-  if (configCode.includes('export const LOCALES = [')) {
-    configCode = configCode.replace(
-      /export const LOCALES = \[(.*?)\] as const;/s,
-      (m, p1) => {
-        const remaining = p1
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s && s !== `'${langCode}'` && s !== `"${langCode}"`);
-        return `export const LOCALES = [${remaining.join(', ')}] as const;`;
-      }
-    );
-    fs.writeFileSync(configPath, configCode, 'utf-8');
-    console.log(`✅ Updated src/i18n/config.ts`);
-  }
-}
-
-// 5. Delete content files if requested
+// 4. Delete content files if requested
 if (deleteContent) {
   console.log(`\n📄 Deleting content files for "${langCode}"...`);
   const contentDir = path.join(rootDir, 'src', 'content');
@@ -168,10 +148,10 @@ if (deleteContent) {
   console.log(`ℹ️ Kept content files for "${langCode}" under src/content/ as requested.`);
 }
 
-// 6. Recompile Paraglide messages
+// 5. Recompile Paraglide messages
 console.log('\n🔄 Recompiling Paraglide messages...');
 try {
-  execSync('npm run messages:compile', { stdio: 'inherit' });
+  execSync('pnpm run messages:compile', { stdio: 'inherit' });
   console.log(`🎉 Language "${langCode}" successfully removed!`);
 } catch (e) {
   console.error('❌ Failed to recompile messages:', e.message);

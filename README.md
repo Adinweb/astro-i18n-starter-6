@@ -33,9 +33,9 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 
 ### Prerequisites
 * **Node.js** `>= 22.12.0`
-* **pnpm** `>= 10` (declared through `packageManager`; the scripts also run under `npm`)
+* **pnpm** `>= 10` (declared through `packageManager`; the CLI scripts call pnpm internally)
 
-> Set `SITE_URL` so canonical, sitemap, RSS, and Open Graph URLs are absolute: copy `.env.example` to `.env` and set the public origin. A **local** build without it still runs — it falls back to `http://localhost:4321` and warns — while a **CI or deployment** build fails, so a deploy can never ship placeholder URLs.
+> Set `SITE_URL` so canonical, sitemap, RSS, and Open Graph URLs are absolute: copy `.env.example` to `.env` and set the public origin. A **local** build without it still runs — it falls back to the dev origin configured in `app.config.json` and warns — while a **CI or deployment** build fails, so a deploy can never ship placeholder URLs.
 
 ### 1. Install Dependencies
 ```bash
@@ -46,7 +46,7 @@ pnpm install
 ```bash
 pnpm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open the URL printed by Astro — by default [http://localhost:4321](http://localhost:4321), using the port from `app.config.json`.
 
 > **Background Mode**: If running in an agentic or background environment:
 > ```bash
@@ -68,11 +68,12 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 
 ```text
 ├── .agents/skills/            # AI Agent skills (e.g. astro-i18n-starter)
+├── app.config.json            # Single source of truth for app, brand, blog & server values
 ├── messages/                  # Dictionaries (en.json, de.json, fr.json, fa.json, ar.json)
 ├── project.inlang/            # Paraglide JS configuration & settings
-├── public/                    # Static assets that need a stable URL (favicons, robots, manifest icons)
+├── public/                    # Static assets that need a stable URL (favicons, browser icons)
 ├── scripts/                   # Developer automation CLI scripts (13 tools)
-│   └── lib/prompt.mjs         # Shared confirmation prompt for the remove:* tools
+│   └── lib/                   # Shared prompt, frontmatter, and artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph (no page image of its own)
 │   ├── components/            # Reusable UI components
@@ -84,7 +85,7 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── BlogPostHeroContent.astro # Hero copy for articles (breadcrumbs, meta)
 │   │   ├── SearchModal.astro  # Accessible search modal (Pagefind + Dev fallback)
 │   │   ├── Seo.astro          # Canonical links & hreflang tags (locales + 1)
-│   │   └── TopLoadingBar.astro # RTL-aware page transition progress indicator
+│   │   └── TopLoadingBar.astro # Page transition progress bar (reduced-motion aware)
 │   ├── content/               # Multilingual Content Collections
 │   │   ├── pages/             # Static pages: home, about, features, pricing
 │   │   │   └── <group>/       # The group folder also holds its hero artwork
@@ -92,14 +93,13 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │       └── <group>/       # The group folder also holds its cover artwork
 │   ├── i18n/                  # Core i18n Single Source of Truth (SSOT)
 │   │   ├── locales.ts         # LOCALES array, DEFAULT_LOCALE, metadata (dir, fonts)
-│   │   ├── config.ts          # Config re-export
-│   │   └── paths.ts           # Pure path functions (localizeHref, localeHref, stripLocale)
+│   │   └── paths.ts           # Pure path functions (localizeHref, localeHref, stripLocale, getPathname)
 │   ├── layouts/
 │   │   └── BaseLayout.astro   # Main layout: header, mobile menu drawer, main, footer
 │   ├── libs/
-│   │   ├── config/site.ts     # Site metadata & Zod validation
+│   │   ├── config/app.ts      # Validates app.config.json; typed site/brand/blog values
 │   │   ├── config/navigation.ts # Locale-aware navigation builder
-│   │   ├── config/blog.ts     # POSTS_PER_PAGE — the size of one blog index page
+│   │   ├── content/entries.ts # Entry IDs, draft filtering, locale selection & sorting
 │   │   ├── content/service.ts # Route resolution, slug alternates & breadcrumbs
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
 │   │   └── content/social.ts  # Optimized og:image card
@@ -107,6 +107,7 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── [...path].astro    # Lean Router Dispatcher (< 30 lines)
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
 │   │   ├── icons.svg.ts       # SVG sprite endpoint
+│   │   ├── site.webmanifest.ts # Web app manifest generated from app.config.json
 │   │   ├── rss.xml.ts         # Atom feed for all published articles
 │   │   ├── sitemap.xml.ts     # Multi-lingual sitemap with x-default + lastmod
 │   │   ├── robots.txt.ts      # Robots.txt pointing to sitemap
@@ -120,6 +121,19 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │       ├── BlogIndexView.astro # Blog listing page
 │       └── BlogPostView.astro # Individual article renderer
 ```
+
+---
+
+## ⚙️ Configuration
+
+All application-level values that must stay in sync across the app and the CLI scripts live in [`app.config.json`](app.config.json):
+
+* **`site`** — name, short name, description, default social card path and size.
+* **`brand`** — browser theme/background colours, Apple touch icon, manifest icons.
+* **`blog.postsPerPage`** — how many posts one index page holds.
+* **`server`** — dev host/port, also used as the local fallback site origin.
+
+[`src/libs/config/app.ts`](src/libs/config/app.ts) validates that file with Zod and exposes typed values (`siteConfig`, `POSTS_PER_PAGE`, hero defaults, `absoluteUrl`). The asset generator, web manifest, and smoke tests read the same file. Framework-only settings remain in `astro.config.mjs`, and locale configuration in `src/i18n/locales.ts` + `project.inlang/settings.json`.
 
 ---
 
@@ -138,7 +152,7 @@ All automation scripts run from the terminal using `pnpm run <command>`:
 | `pnpm run block:adapt` | Adapts external Tailwind HTML/JSX to logical RTL tokens | `pnpm run block:adapt -- --file=src/components/MyCard.astro` |
 | `pnpm run i18n:extract` | Extracts raw copy into Paraglide message keys | `pnpm run i18n:extract -- --target=src/components/MyCard.astro --key=card --auto-add --replace` |
 | `pnpm run i18n:add` | Adds a single translation key to all dictionaries | `pnpm run i18n:add -- --category=nav --key=docs --en="Docs" --fa="مستندات"` |
-| `pnpm run audit:i18n` | Audits parity, placeholders, used keys, content and route collisions | `pnpm run audit:i18n` |
+| `pnpm run audit:i18n` | Audits locale-config parity, placeholders, used keys, content and route collisions | `pnpm run audit:i18n` |
 | `pnpm run smoke` | Runs HTML, SEO, feed, manifest and H1 assertions on `dist/` | `pnpm run smoke` |
 | `pnpm run knip` | Finds dead files, exports and dependencies | `pnpm run knip` |
 | `pnpm run assets:generate` | Regenerates PNG icons, the OG image, and all hero/cover artwork next to the content groups | `pnpm run assets:generate` |
@@ -166,7 +180,7 @@ To display the new page in the navigation bar, register it once in the navigatio
 // src/libs/config/navigation.ts
 const PAGE_ITEMS = [
   // ...
-  { key: 'team', group: 'team', label: (locale) => m.nav_team({}, { locale }) },
+  { group: 'team', label: (locale) => m.nav_team({}, { locale }) },
 ] as const;
 ```
 No template edits are required.
@@ -227,7 +241,7 @@ Every picture on the site is served through Astro's image pipeline, never as a r
 #### Blog pagination
 The index is paginated statically — no client-side slicing, no infinite scroll:
 
-* The page size is a single constant, `POSTS_PER_PAGE` in `src/libs/config/blog.ts` (default `9` — three columns × three rows). The route builder and the view read the same constant, so the number of generated pages and the number of rendered cards can never drift apart.
+* The page size is a single value, `blog.postsPerPage` in `app.config.json` (default `9` — three columns × three rows), exposed as `POSTS_PER_PAGE` by `src/libs/config/app.ts`. The route builder, the view, and the smoke test read the same value, so the number of generated pages and the number of rendered cards can never drift apart.
 * One page is one route, per locale. Page one is the index itself (`/blog/`), every later page lives under `/blog/page/<n>/` and is localized like every other URL (`/de/blog/page/2/`, `/fa/blog/page/2/`).
 * The page count of a locale follows from the number of *published* posts that locale has, so a locale with fewer posts simply has fewer pages. The `alternates` map falls back to the last available page, so the language switcher never leads to a missing URL.
 * The pager is rendered by `src/views/BlogIndexView.astro` only when there is more than one page. Its arrows use the `chevron-left` icon flipped with `rtl:rotate-180` / `rotate-180 rtl:rotate-0`, so they follow the reading direction, and every pager link keeps the active taxonomy filter.
@@ -321,7 +335,7 @@ pnpm test
 pnpm run audit:i18n
 
 # 4. Production Build & Pagefind Indexing (runs the audit first)
-#    Locally it falls back to http://localhost:4321 with a warning;
+#    Locally it falls back to the dev origin in app.config.json with a warning;
 #    in CI (CI=true) it fails unless SITE_URL is set.
 SITE_URL=https://example.com pnpm run build
 

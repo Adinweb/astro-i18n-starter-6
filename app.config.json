@@ -1,0 +1,39 @@
+{
+  "site": {
+    "name": "Astro i18n Starter",
+    "shortName": "Astro i18n",
+    "description": "Production-grade, multi-lingual Astro v7 starter template with RTL support.",
+    "socialImage": {
+      "path": "/og-default.png",
+      "width": 1200,
+      "height": 630
+    }
+  },
+  "brand": {
+    "themeColor": "#4338ca",
+    "backgroundColor": "#f8fafc",
+    "appleTouchIcon": {
+      "file": "apple-touch-icon.png",
+      "size": 180
+    },
+    "icons": [
+      {
+        "file": "icon-192.png",
+        "size": 192,
+        "purpose": "any"
+      },
+      {
+        "file": "icon-512.png",
+        "size": 512,
+        "purpose": "any"
+      }
+    ]
+  },
+  "blog": {
+    "postsPerPage": 9
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 4321
+  }
+}

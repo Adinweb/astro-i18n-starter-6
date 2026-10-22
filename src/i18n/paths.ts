@@ -20,6 +20,19 @@ function normalizePath(pathname: string): string {
 }
 
 /**
+ * The path of a URL without its query string or hash.
+ *
+ * Always starts with `/` and never has a trailing slash (except for the root),
+ * so two URLs that address the same route compare equal regardless of how the
+ * caller wrote them. Page canonicalization is a separate step
+ * (`withTrailingSlash`), because file endpoints keep their extension.
+ */
+export function getPathname(url: string): string {
+  const { pathname } = splitSuffix(url);
+  return normalizePath(pathname);
+}
+
+/**
  * Pages use canonical trailing slashes (`/about/`, `/fa/blog/`), while file
  * endpoints (`/sitemap.xml`, `/rss.xml`, `/icons.svg`) keep their extension.
  */

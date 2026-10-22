@@ -16,7 +16,7 @@ for (const arg of args) {
 }
 
 if (!groupSlug) {
-  console.error('Usage: npm run remove:post <group-slug> [--collection=<name>] [--locale=<locale>] [--force]');
+  console.error('Usage: pnpm run remove:post <group-slug> [--collection=<name>] [--locale=<locale>] [--force]');
   process.exit(1);
 }
 

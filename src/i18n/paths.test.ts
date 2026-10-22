@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { stripLocale, localizeHref, localeHref, withTrailingSlash } from './paths';
+import {
+  stripLocale,
+  localizeHref,
+  localeHref,
+  getPathname,
+  withTrailingSlash,
+} from './paths';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from './locales';
 
 const nonDefaultLocales = LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
@@ -7,6 +13,20 @@ const testLoc1 = (nonDefaultLocales[0] ?? 'de') as Locale;
 const testLoc2 = (nonDefaultLocales[1] ?? nonDefaultLocales[0] ?? 'fr') as Locale;
 
 describe('src/i18n/paths.ts', () => {
+  describe('getPathname', () => {
+    it('strips query strings and hashes', () => {
+      expect(getPathname('/about?ref=nav')).toBe('/about');
+      expect(getPathname('/de/blog/#top')).toBe('/de/blog');
+    });
+
+    it('normalizes leading and trailing slashes', () => {
+      expect(getPathname('')).toBe('/');
+      expect(getPathname('about')).toBe('/about');
+      expect(getPathname('/about/')).toBe('/about');
+      expect(getPathname('/')).toBe('/');
+    });
+  });
+
   describe('withTrailingSlash', () => {
     it('canonicalizes page paths', () => {
       expect(withTrailingSlash('/')).toBe('/');

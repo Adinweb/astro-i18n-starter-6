@@ -7,6 +7,15 @@ import mdx from '@astrojs/mdx';
 const isBuild = process.env.npm_lifecycle_event === 'build' || process.argv.includes('build');
 const mode = isBuild ? 'production' : 'development';
 
+// Application-level values live in one file (see src/libs/config/app.ts).
+// It is read here rather than imported so the dev server, the fallback site
+// origin, and the app all share the same port.
+const appConfig = JSON.parse(
+  fs.readFileSync(new URL('./app.config.json', import.meta.url), 'utf-8')
+);
+const { host: serverHost, port: serverPort } = appConfig.server;
+const fallbackSite = `http://localhost:${serverPort}`;
+
 /**
  * Minimal .env reader. Astro injects the resolved `site` into
  * `import.meta.env.SITE`, so this is the only place that needs to read it.
@@ -50,7 +59,7 @@ if (isBuild && !siteUrl && isDeployment) {
   );
 }
 
-const site = siteUrl ?? 'http://localhost:4321';
+const site = siteUrl ?? fallbackSite;
 
 if (isBuild && !siteUrl) {
   console.warn(
@@ -78,7 +87,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
   server: {
-    host: '0.0.0.0',
-    port: 4321,
+    host: serverHost,
+    port: serverPort,
   },
 });

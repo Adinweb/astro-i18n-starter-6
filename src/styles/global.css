@@ -36,16 +36,17 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/*
+ * RTL script stacks. LTR locales inherit `--font-sans` from `body`, and each
+ * locale's stack is also applied from `LOCALE_METADATA` on `<html>`; these
+ * rules keep mixed-language content in the right typeface.
+ */
 :lang(fa) {
   font-family: var(--font-fa);
 }
 
 :lang(ar) {
   font-family: var(--font-ar);
-}
-
-:lang(en), :lang(de), :lang(fr) {
-  font-family: var(--font-sans);
 }
 
 /*
