@@ -11,7 +11,9 @@ const siteName = siteConfig.name;
 
 // A 404 has no translations of its own: one static document serves every
 // unknown path. Language switching therefore leads to each locale's home
-// page, the closest page that is guaranteed to exist.
+// page, the closest page that is guaranteed to exist. The canonical URL is
+// that home page too: the 404 is served at whatever address was requested,
+// and `/404` itself is not a page of the site.
 const alternates = Object.fromEntries(
   LOCALES.map((loc) => [loc, localizeHref('/', loc)])
 ) as Record<Locale, string>;
@@ -50,7 +52,7 @@ const i18nData = Object.fromEntries(
   title={m.common_not_found_title({}, { locale })}
   description={m.common_not_found_desc({}, { locale })}
   locale={locale}
-  url="/404"
+  url={homeHref}
   alternates={alternates}
   noindex
   noPagefind

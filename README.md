@@ -353,6 +353,18 @@ The same pipeline runs on every push and pull request in [`.github/workflows/ci.
 
 ---
 
+## 📚 Documentation
+
+| Document | Language | Contents |
+| --- | --- | --- |
+| [docs/GUIDE-FA.md](docs/GUIDE-FA.md) | فارسی | راهنمای جامع کاربر: همهٔ ویژگی‌ها با مثال (نصب، محتوا، CLI، RTL، وبلاگ، SEO، استقرار) |
+| [README.md](README.md) | English | Feature overview, quick start, and operational guide |
+| [AGENTS.md](AGENTS.md) | English | Contract rules and playbooks for AI coding agents |
+| [docs/PRD.md](docs/PRD.md) | English | Master build prompt: goals, architecture, and definition of done |
+| [docs/PLAYBOOKS.md](docs/PLAYBOOKS.md) | English | Step-by-step playbooks for common changes |
+
+---
+
 ## 📄 License
 
 MIT

@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readLocaleConfig } from './lib/locales.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -48,6 +49,24 @@ function readFrontmatterSlug(filePath) {
   return slugLine ? slugLine[1].trim() : null;
 }
 
+/**
+ * The attributes of the document element.
+ *
+ * The `lang` and `dir` of a page are read from the `<html>` tag itself. A
+ * substring search over the whole document would also match the `dir="ltr"` of
+ * the loading bar, which every page carries, and would then pass on every
+ * page — including a page whose `dir` is wrong.
+ */
+function htmlAttributes(html) {
+  const tag = html.match(/<html\b([^>]*)>/i);
+  if (!tag) return null;
+  const attributes = {};
+  for (const attr of tag[1].matchAll(/([a-zA-Z][a-zA-Z0-9-]*)\s*=\s*"([^"]*)"/g)) {
+    attributes[attr[1].toLowerCase()] = attr[2];
+  }
+  return attributes;
+}
+
 const settings = JSON.parse(
   fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
 );
@@ -59,29 +78,23 @@ const DEFAULT_LOCALE = settings.baseLocale || 'en';
  * smoke test must not keep a second list of RTL languages that can drift from
  * the metadata the site is built with.
  */
-function readLocaleDirections() {
-  const source = fs.readFileSync(
-    path.join(rootDir, 'src', 'i18n', 'locales.ts'),
-    'utf-8'
-  );
-  const metadata = source.match(
-    /export const LOCALE_METADATA\s*=\s*\{([\s\S]*?)\}\s*satisfies\s+Record<Locale,\s*LocaleMeta>/
-  );
-  const directions = {};
-  if (!metadata) return directions;
+const { metadata: LOCALE_METADATA } = readLocaleConfig();
+const LOCALE_DIRECTIONS = Object.fromEntries(
+  Object.entries(LOCALE_METADATA).map(([locale, meta]) => [locale, meta.dir])
+);
 
-  for (const block of metadata[1].matchAll(
-    /^  ([A-Za-z0-9_-]+):\s*\{\s*dir:\s*'(ltr|rtl)'/gm
-  )) {
-    directions[block[1]] = block[2];
-  }
-  return directions;
-}
-
-const LOCALE_DIRECTIONS = readLocaleDirections();
 const dirFor = (locale) => LOCALE_DIRECTIONS[locale] ?? 'ltr';
 const nonDefaultLocales = LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
 const testLocale = nonDefaultLocales.includes('fa') ? 'fa' : nonDefaultLocales[0];
+
+// A locale without a direction is a configuration error, not a default: the
+// direction checks below would silently pass on a page whose `dir` is wrong.
+for (const locale of LOCALES) {
+  assert(
+    LOCALE_DIRECTIONS[locale] === 'ltr' || LOCALE_DIRECTIONS[locale] === 'rtl',
+    `Locale "${locale}" declares a direction in src/i18n/locales.ts`
+  );
+}
 
 // ---------------------------------------------------------------------------
 // 1. Default locale renders prefix-less at the root with the right lang/dir
@@ -89,9 +102,13 @@ const testLocale = nonDefaultLocales.includes('fa') ? 'fa' : nonDefaultLocales[0
 const rootHtml = readHtml('index.html');
 assert(rootHtml !== null, 'Root index.html exists');
 if (rootHtml) {
+  const rootAttributes = htmlAttributes(rootHtml);
   assert(
-    rootHtml.includes(`lang="${DEFAULT_LOCALE}"`) &&
-      rootHtml.includes(`dir="${dirFor(DEFAULT_LOCALE)}"`),
+    Boolean(
+      rootAttributes &&
+        rootAttributes.lang === DEFAULT_LOCALE &&
+        rootAttributes.dir === dirFor(DEFAULT_LOCALE)
+    ),
     `Root renders the default locale (<html lang="${DEFAULT_LOCALE}" dir="${dirFor(DEFAULT_LOCALE)}">)`
   );
   assert(
@@ -131,8 +148,13 @@ if (testLocale) {
   const html = readHtml(path.join(testLocale, 'index.html'));
   assert(html !== null, `/${testLocale}/index.html exists`);
   if (html) {
+    const attributes = htmlAttributes(html);
     assert(
-      html.includes(`lang="${testLocale}"`) && html.includes(`dir="${dirFor(testLocale)}"`),
+      Boolean(
+        attributes &&
+          attributes.lang === testLocale &&
+          attributes.dir === dirFor(testLocale)
+      ),
       `/${testLocale}/ renders <html lang="${testLocale}" dir="${dirFor(testLocale)}">`
     );
     assert(count(html, /<h1[\s>]/g) === 1, `/${testLocale}/ has exactly one <h1>`);
@@ -146,8 +168,9 @@ if (LOCALES.includes('ar')) {
   const html = readHtml(path.join('ar', 'index.html'));
   assert(html !== null, '/ar/index.html exists');
   if (html) {
+    const attributes = htmlAttributes(html);
     assert(
-      html.includes('lang="ar"') && html.includes('dir="rtl"'),
+      Boolean(attributes && attributes.lang === 'ar' && attributes.dir === 'rtl'),
       '/ar/ renders Arabic with RTL'
     );
   }

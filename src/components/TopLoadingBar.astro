@@ -110,11 +110,29 @@
     // in a few milliseconds still reads as feedback instead of a flicker.
     hideTimer = window.setTimeout(() => {
       hideTimer = null;
-      bar.classList.remove('loading', 'done');
-      bar.style.transform = 'scaleX(0)';
-      bar.style.opacity = '0';
-      progress = 0;
+      reset();
     }, HIDE_DELAY_MS);
+  }
+
+  /**
+   * Puts the bar back into its hidden state.
+   *
+   * Used when the page is being put into the back/forward cache: the timers are
+   * frozen together with the page, so a bar that was left in its "done" state
+   * would greet the visitor with a full-width stripe the moment the page is
+   * restored.
+   */
+  function reset() {
+    clearTimers();
+    isActive = false;
+    progress = 0;
+
+    const bar = document.getElementById('nprogress');
+    if (!bar) return;
+
+    bar.classList.remove('loading', 'done');
+    bar.style.transform = 'scaleX(0)';
+    bar.style.opacity = '0';
   }
 
   if (document.documentElement.dataset.topLoadingBarBound !== 'true') {
@@ -122,6 +140,8 @@
     document.addEventListener('astro:before-preparation', start);
     document.addEventListener('astro:after-preparation', finish);
     document.addEventListener('astro:page-load', finish);
-    window.addEventListener('pagehide', finish);
+    // `pagehide` also fires when the page enters the back/forward cache, where
+    // the bar must not be left in a visible state.
+    window.addEventListener('pagehide', reset);
   }
 </script>

@@ -19,6 +19,7 @@ import {
   parseFrontmatter as parsePostFm,
   stringifyFrontmatter as stringifyPostFm,
 } from '../../../scripts/new-post.mjs';
+import { parseLocaleConfig, readLocaleConfig } from '../../../scripts/lib/locales.mjs';
 
 describe('scripts/i18n-add-batch.mjs normalizeBatchData', () => {
   const activeLocales = ['en', 'de', 'fr', 'fa', 'ar'];
@@ -339,5 +340,63 @@ describe('Translation preservation (i18n-add.mjs mergeTranslation)', () => {
     const dict = { nav_features: 'Funktionen' };
     mergeTranslation(dict, 'nav_features', 'en', 'features', { en: 'Features' });
     expect(dict.nav_features).toBe('Funktionen');
+  });
+});
+
+describe('Locale configuration (scripts/lib/locales.mjs)', () => {
+  const source = `
+export const LOCALES = ['en', 'fa'] as const;
+export const DEFAULT_LOCALE: Locale = 'en';
+export const LOCALE_METADATA = {
+  en: {
+    dir: 'ltr',
+    htmlLang: 'en',
+    name: 'English',
+    fontFamily: 'var(--font-sans)',
+  },
+  fa: {
+    dir: 'rtl',
+    htmlLang: 'fa',
+    name: 'فارسی',
+    fontFamily: 'var(--font-fa)',
+  },
+} satisfies Record<Locale, LocaleMeta>;
+`;
+
+  it('reads the locale list, the default locale and the metadata', () => {
+    const config = parseLocaleConfig(source);
+    expect(config.locales).toEqual(['en', 'fa']);
+    expect(config.defaultLocale).toBe('en');
+    expect(config.metadata.fa.dir).toBe('rtl');
+    expect(config.metadata.en.fontFamily).toBe('var(--font-sans)');
+  });
+
+  it('does not depend on the order of the keys inside a locale block', () => {
+    const reordered = source.replace(
+      /(\n  \w+: \{\n)    dir: '(\w+)',\n/g,
+      '$1    htmlLang: "x",\n    dir: "$2",\n'
+    );
+    expect(parseLocaleConfig(reordered).metadata.fa.dir).toBe('rtl');
+    expect(parseLocaleConfig(reordered).metadata.en.dir).toBe('ltr');
+  });
+
+  it('reports a locale without a direction instead of guessing one', () => {
+    const withoutDirection = source.replace("    dir: 'rtl',\n", '');
+    expect(parseLocaleConfig(withoutDirection).metadata.fa.dir).toBeUndefined();
+  });
+
+  it('describes the locales this project actually builds', () => {
+    const config = readLocaleConfig();
+    const settings = JSON.parse(
+      fs.readFileSync(
+        path.join(process.cwd(), 'project.inlang', 'settings.json'),
+        'utf-8'
+      )
+    );
+    expect(config.locales).toEqual(settings.locales);
+    expect(config.defaultLocale).toBe(settings.baseLocale);
+    for (const locale of config.locales) {
+      expect(['ltr', 'rtl']).toContain(config.metadata[locale].dir);
+    }
   });
 });

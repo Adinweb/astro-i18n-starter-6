@@ -17,25 +17,70 @@ const { host: serverHost, port: serverPort } = appConfig.server;
 const fallbackSite = `http://localhost:${serverPort}`;
 
 /**
- * Minimal .env reader. Astro injects the resolved `site` into
+ * Reads a variable from one `.env` file.
+ *
+ * A key may be defined more than once in one file. The last definition wins,
+ * the way dotenv resolves it, so this reader never reports a value that Vite
+ * would have overridden.
+ *
+ * @param {URL} fileUrl
+ * @param {string} key
+ * @returns {string | undefined}
+ */
+function readEnvFile(fileUrl, key) {
+  let content;
+  try {
+    content = fs.readFileSync(fileUrl, 'utf-8');
+  } catch {
+    // The file does not exist; keep looking.
+    return undefined;
+  }
+
+  let result;
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+
+    const match = line.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!match || match[1] !== key) continue;
+
+    const value = match[2].trim();
+    const quote = value[0];
+    if (value.length > 1 && (quote === '"' || quote === "'") && value.endsWith(quote)) {
+      result = value.slice(1, -1);
+      continue;
+    }
+
+    // An unquoted value ends at the first inline comment; a `#` that is part
+    // of the value (a URL fragment) is kept.
+    const comment = value.indexOf(' #');
+    result = comment === -1 ? value : value.slice(0, comment).trim();
+  }
+
+  return result;
+}
+
+/**
+ * Minimal `.env` reader. Astro injects the resolved `site` into
  * `import.meta.env.SITE`, so this is the only place that needs to read it.
- * Shell environment always wins over the file.
+ *
+ * The file list and its precedence mirror Vite's, so a value that Vite would
+ * see is seen here too: `.env` is overridden by `.env.local`, which is
+ * overridden by `.env.<mode>`, which is overridden by `.env.<mode>.local`.
+ * The shell environment always wins over every file.
+ *
  * @param {string} key
  * @returns {string | undefined}
  */
 function readEnvValue(key) {
-  for (const file of [`.env.${mode}`, '.env']) {
-    try {
-      const content = fs.readFileSync(new URL(file, import.meta.url), 'utf-8');
-      const match = content.match(new RegExp(`^\\s*${key}\\s*=\\s*(.*)$`, 'm'));
-      if (match) {
-        return match[1].trim().replace(/^(['"])(.*)\1$/, '$2');
-      }
-    } catch {
-      // File does not exist; keep looking.
-    }
+  let value;
+  for (const file of ['.env', '.env.local', `.env.${mode}`, `.env.${mode}.local`]) {
+    const found = readEnvFile(new URL(file, import.meta.url), key);
+    // A later file overrides an earlier one, so the highest priority file
+    // that defines the key is the one that wins.
+    if (found !== undefined) value = found;
   }
-  return undefined;
+  return value;
 }
 
 const siteUrl = process.env.SITE_URL ?? readEnvValue('SITE_URL');

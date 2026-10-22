@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { LOCALES_SOURCE_PATH, readLocaleConfig } from './lib/locales.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -38,37 +39,6 @@ console.log('🔍 Running i18n Audit Suite...\n');
 // content and URLs silently disagree about which locales exist.
 // ---------------------------------------------------------------------------
 console.log('--- 1. Locale Configuration Parity ---');
-const localesSourcePath = path.join(rootDir, 'src', 'i18n', 'locales.ts');
-
-function readLocalesSource() {
-  const source = fs.readFileSync(localesSourcePath, 'utf-8');
-  const listMatch = source.match(/export const LOCALES\s*=\s*\[([\s\S]*?)\]\s*as const/);
-  const locales = listMatch
-    ? [...listMatch[1].matchAll(/['"]([^'"]+)['"]/g)].map((match) => match[1])
-    : [];
-  const defaultMatch = source.match(
-    /export const DEFAULT_LOCALE\s*:\s*Locale\s*=\s*['"]([^'"]+)['"]/
-  );
-  const metadataMatch = source.match(
-    /export const LOCALE_METADATA\s*=\s*\{([\s\S]*?)\}\s*satisfies\s+Record<Locale,\s*LocaleMeta>/
-  );
-  const metadata = {};
-
-  if (metadataMatch) {
-    for (const block of metadataMatch[1].matchAll(
-      /^  ([A-Za-z0-9_-]+):\s*\{([\s\S]*?)^  \},?\r?$/gm
-    )) {
-      metadata[block[1]] = {
-        dir: block[2].match(/dir:\s*'(ltr|rtl)'/)?.[1],
-        htmlLang: block[2].match(/htmlLang:\s*'([^']+)'/)?.[1],
-        name: block[2].match(/name:\s*'([^']+)'/)?.[1],
-        fontFamily: block[2].match(/fontFamily:\s*'([^']+)'/)?.[1],
-      };
-    }
-  }
-
-  return { locales, defaultLocale: defaultMatch?.[1], metadata };
-}
 
 let localeConfigOk = true;
 const recordLocaleFatal = (message) => {
@@ -76,10 +46,10 @@ const recordLocaleFatal = (message) => {
   fatal(message);
 };
 
-if (!fs.existsSync(localesSourcePath)) {
+if (!fs.existsSync(LOCALES_SOURCE_PATH)) {
   recordLocaleFatal('Missing src/i18n/locales.ts');
 } else {
-  const { locales: tsLocales, defaultLocale, metadata } = readLocalesSource();
+  const { locales: tsLocales, defaultLocale, metadata } = readLocaleConfig();
 
   if (tsLocales.length === 0) {
     recordLocaleFatal('Could not read LOCALES from src/i18n/locales.ts');

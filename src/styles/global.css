@@ -37,10 +37,19 @@ body {
 }
 
 /*
- * RTL script stacks. LTR locales inherit `--font-sans` from `body`, and each
- * locale's stack is also applied from `LOCALE_METADATA` on `<html>`; these
- * rules keep mixed-language content in the right typeface.
+ * Script stacks per language.
+ *
+ * The locale's own stack is applied to `<html>` from `LOCALE_METADATA`, and
+ * these rules cover everything below it: a Latin passage inside a Persian
+ * article is marked with `lang="en"` and must keep the Latin typeface, and a
+ * Persian passage inside an English article must do the same in reverse.
  */
+:lang(en),
+:lang(de),
+:lang(fr) {
+  font-family: var(--font-sans);
+}
+
 :lang(fa) {
   font-family: var(--font-fa);
 }
