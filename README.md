@@ -16,10 +16,13 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Zero Route Collisions**: A single Lean Router Dispatcher (`src/pages/[...path].astro`) dynamically handles all localized pages, translated slugs, and index views.
 * **Compile-Time i18n via Paraglide**: Strongly typed translations with native ICU plurals and ordinals, compiled directly to tree-shakeable JS functions without runtime overhead.
 * **Symmetrical Content Collections**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs and cross-language alternate linking.
+* **Paginated Blog Index**: The listing is a static, paginated route set — one URL per page per locale (`/blog/`, `/blog/page/2/`, `/de/blog/page/2/`) — with a localized pager, `rel="prev"` / `rel="next"` head links, and no client-side pagination.
 * **Search Built-In**: Production indexing with **Pagefind** over static output, plus a locale-aware JSON fallback when Pagefind is unavailable.
 * **SEO & Social Metadata**: Canonical URLs, hreflang plus `x-default`, Open Graph/Twitter cards, `WebSite`/`BlogPosting` JSON-LD, a multilingual sitemap with `lastmod`, and an Atom feed at `/rss.xml`.
 * **Accessible by Default**: Native `<dialog>` mobile menu and search, exactly one `<h1>` per page, skip link, visible focus rings, and reduced-motion support.
-* **Image-Backed Hero Bands**: Every page and post opens with a full-bleed hero whose background *is* the entry's artwork — one sharp image layer, never a card beside the copy and never a blurred duplicate. Scrims are vertical only, so the band reads identically in LTR and RTL.
+* **Image-Backed Hero Bands**: Every page and post opens with a full-bleed hero whose background *is* the entry's artwork — one image layer, never a card beside the copy and never a duplicated layer. The picture is defocused into atmosphere and shaped by vertical scrims, so the band reads identically in LTR and RTL.
+* **Optimized Image Pipeline**: Every picture is served through Astro's image pipeline — WebP output, a responsive `srcset` with the right `sizes`, and an `og:image` cropped to the social ratio. A 263 KB hero PNG becomes a 7 KB WebP on a phone.
+* **Frosted-Glass Design System**: The header, its icon controls, the calls to action and every chip are defined once in `src/styles/global.css` and composed everywhere else, so the whole site speaks one visual language.
 * **Raster Brand Assets From Code**: `scripts/generate-assets.mjs` deterministically produces the app icons, the Open Graph image, and all hero/cover artwork with no image-editing dependency.
 * **SVG Sprite Endpoint**: Zero-JS, cacheable build-time SVG sprite (`/icons.svg`) with an `<Icon name="..." />` component.
 * **Turnkey Developer CLI Suite**: Automation scripts to scaffold pages/posts, add/remove languages, adapt Tailwind blocks, extract translations, audit dictionary parity, and detect dead code.
@@ -32,7 +35,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Node.js** `>= 22.12.0`
 * **pnpm** `>= 10` (declared through `packageManager`; the scripts also run under `npm`)
 
-> Builds require `SITE_URL` so canonical, sitemap, RSS, and Open Graph URLs are absolute. Copy `.env.example` to `.env` and set the public origin.
+> Set `SITE_URL` so canonical, sitemap, RSS, and Open Graph URLs are absolute: copy `.env.example` to `.env` and set the public origin. A **local** build without it still runs — it falls back to `http://localhost:4321` and warns — while a **CI or deployment** build fails, so a deploy can never ship placeholder URLs.
 
 ### 1. Install Dependencies
 ```bash
@@ -67,25 +70,26 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 ├── .agents/skills/            # AI Agent skills (e.g. astro-i18n-starter)
 ├── messages/                  # Dictionaries (en.json, de.json, fr.json, fa.json, ar.json)
 ├── project.inlang/            # Paraglide JS configuration & settings
-├── public/                    # Static assets (favicons, robots, etc.)
-│   └── images/                # Generated artwork:
-│       ├── hero/default.png   # Shared hero background (no page image of its own)
-│       ├── pages/<group>.png  # One hero background per page group
-│       └── blog/<group>.png   # One cover per blog group
+├── public/                    # Static assets that need a stable URL (favicons, robots, manifest icons)
 ├── scripts/                   # Developer automation CLI scripts (13 tools)
+│   └── lib/prompt.mjs         # Shared confirmation prompt for the remove:* tools
 ├── src/
+│   ├── assets/hero/hero-0.jpg # Shared hero photograph (no page image of its own)
 │   ├── components/            # Reusable UI components
 │   │   ├── Icon.astro         # SVG sprite icon renderer (<Icon name="..." />)
+│   │   ├── IconButton.astro   # Icon-only button (glass or ghost variant)
 │   │   ├── LanguageSwitcher.astro # Dropdown with translated alternate links
 │   │   ├── PageHero.astro     # Hero shell: full-bleed background + light-shaping scrims
-│   │   ├── HeroContent.astro  # Hero copy for pages and the blog index
+│   │   ├── HeroCopy.astro     # Shared hero copy (heading, description, slots)
 │   │   ├── BlogPostHeroContent.astro # Hero copy for articles (breadcrumbs, meta)
 │   │   ├── SearchModal.astro  # Accessible search modal (Pagefind + Dev fallback)
 │   │   ├── Seo.astro          # Canonical links & hreflang tags (locales + 1)
 │   │   └── TopLoadingBar.astro # RTL-aware page transition progress indicator
 │   ├── content/               # Multilingual Content Collections
 │   │   ├── pages/             # Static pages: home, about, features, pricing
+│   │   │   └── <group>/       # The group folder also holds its hero artwork
 │   │   └── blog/              # Blog articles with localized slugs
+│   │       └── <group>/       # The group folder also holds its cover artwork
 │   ├── i18n/                  # Core i18n Single Source of Truth (SSOT)
 │   │   ├── locales.ts         # LOCALES array, DEFAULT_LOCALE, metadata (dir, fonts)
 │   │   ├── config.ts          # Config re-export
@@ -95,7 +99,10 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   ├── libs/
 │   │   ├── config/site.ts     # Site metadata & Zod validation
 │   │   ├── config/navigation.ts # Locale-aware navigation builder
-│   │   └── content/service.ts # Route resolution, slug alternates & breadcrumbs
+│   │   ├── config/blog.ts     # POSTS_PER_PAGE — the size of one blog index page
+│   │   ├── content/service.ts # Route resolution, slug alternates & breadcrumbs
+│   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
+│   │   └── content/social.ts  # Optimized og:image card
 │   ├── pages/
 │   │   ├── [...path].astro    # Lean Router Dispatcher (< 30 lines)
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
@@ -106,7 +113,7 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   └── api/search-dev.json.ts # Locale-aware search fallback index
 │   ├── paraglide/             # Generated Paraglide code (gitignored, do not edit)
 │   ├── styles/
-│   │   ├── global.css         # Tailwind v4 @theme inline + font stacks
+│   │   ├── global.css         # Tailwind v4 @theme inline + glass design system + font stacks
 │   │   └── prose.css          # Article formatting with RTL isolation for code blocks
 │   └── views/
 │       ├── PageView.astro     # Static page renderer
@@ -134,7 +141,7 @@ All automation scripts run from the terminal using `pnpm run <command>`:
 | `pnpm run audit:i18n` | Audits parity, placeholders, used keys, content and route collisions | `pnpm run audit:i18n` |
 | `pnpm run smoke` | Runs HTML, SEO, feed, manifest and H1 assertions on `dist/` | `pnpm run smoke` |
 | `pnpm run knip` | Finds dead files, exports and dependencies | `pnpm run knip` |
-| `pnpm run assets:generate` | Regenerates PNG icons, the OG image, and all hero/cover artwork | `pnpm run assets:generate` |
+| `pnpm run assets:generate` | Regenerates PNG icons, the OG image, and all hero/cover artwork next to the content groups | `pnpm run assets:generate` |
 
 ---
 
@@ -149,10 +156,10 @@ This will:
 1. Create `src/content/pages/team/{en,de,fr,fa,ar}.mdx`.
 2. Generate localized slugs (`slug: "team"`, `slug: "team-de"`, etc.).
 3. Register the `nav_team` translation key in all `messages/*.json` files.
-4. Point every locale's `image` frontmatter at `/images/pages/team.png` and generate that artwork.
+4. Point every locale's `image` frontmatter at `./team.png` — the artwork sits next to the entries — and generate that artwork.
 5. Recompile Paraglide messages automatically.
 
-Pass `--image=/images/pages/team.png` to use a different file, or `--image=none` to leave the page without artwork of its own.
+Pass `--image=cover.png` to use a different file: the path is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file. Pass `--image=none` to leave the page without artwork of its own.
 
 To display the new page in the navigation bar, register it once in the navigation single source of truth — the header, mobile drawer, and footer all consume `getNavigation()`:
 ```ts
@@ -171,17 +178,17 @@ pnpm run new:post modern-web -- \
   --title="Modern Web Development" \
   --category=engineering \
   --tags="astro,performance" \
-  --image=images/blog/modern-web.png \
+  --image=cover.png \
   --publish
 ```
 This generates synchronized files in `src/content/blog/modern-web/` across all supported languages. You can customize the localized `slug` in each file's frontmatter (e.g. `slug: "توسعه-وب-مدرن"` in `fa.mdx`).
 
-Without `--image`, the post points at its group cover `/images/blog/<group>.png` and that artwork is generated for you. Pass `--image=none` to use the shared hero artwork instead.
+Without `--image`, the post points at its group cover `./<group>.png` — next to the entries — and that artwork is generated for you. Pass `--image=none` to use the shared hero artwork instead.
 
 #### Blog frontmatter
 | Field | Purpose |
 | :--- | :--- |
-| `image` | Featured cover (`/images/...`), rendered on cards, the article hero, and `og:image`. |
+| `image` | Featured cover (`./<file>.png`, relative to the entry), rendered on cards, the article hero, and `og:image`. Astro resolves it against the entry file and optimizes it. |
 | `categories` | Language-neutral keys such as `engineering`. Rendered from `blog_category_<key>`. |
 | `tags` | Language-neutral keys such as `i18n`. Rendered from `blog_tag_<key>`. |
 | `author` | Optional byline, also emitted in the `BlogPosting` JSON-LD. |
@@ -196,17 +203,36 @@ pnpm run assets:generate
 #### The hero band
 Every page and post opens with a hero band rendered by `src/components/PageHero.astro`:
 
-* The entry's `image` frontmatter **is** the background of the band — one sharp, full-bleed image layer. It is never cropped into a card beside the copy and never blurred.
-* Only two overlays shape the light: a scrim that deepens towards the bottom where the copy sits, and a wash under the fixed header. Both are vertical gradients, so the band is identical in LTR and RTL.
-* Inner copy is passed through the default slot: `HeroContent.astro` for pages and the blog index, `BlogPostHeroContent.astro` for articles. `PageHero` renders no copy of its own.
-* Without an `image`, the shared artwork at `/images/hero/default.png` is used.
-* All artwork is drawn from code by `scripts/generate-assets.mjs`, so it is reproducible and needs no image editor. The palette is luminance-normalised, so every hue reads at the same perceived brightness.
+* The entry's `image` frontmatter **is** the background of the band — one full-bleed image layer. It is never cropped into a card beside the copy and never duplicated.
+* The image is defocused (`blur-md` with a slight scale-up) so it reads as atmosphere rather than as a competing picture, and the copy sits on top of it.
+* Three overlays shape the light: a flat tonal wash, a scrim that deepens towards the bottom where the copy sits, and a wash under the fixed header. All are vertical or flat, so the band is identical in LTR and RTL.
+* Inner copy is passed through the default slot: `HeroCopy.astro` for pages and the blog index, `BlogPostHeroContent.astro` for articles. `PageHero` renders no copy of its own.
+* Without an `image`, the shared photograph `src/assets/hero/hero-0.jpg` is used.
+* The per-group artwork is drawn from code by `scripts/generate-assets.mjs`, so it is reproducible and needs no image editor. The palette is luminance-normalised, so every hue reads at the same perceived brightness.
+
+#### The image pipeline
+Every picture on the site is served through Astro's image pipeline, never as a raw file:
+
+* A group's artwork lives next to its entries (`src/content/<collection>/<group>/<group>.png`), because the frontmatter reference is relative to the entry file. The shared photograph is imported from `src/assets/hero/`.
+* Astro's `image()` schema helper (`src/content.config.ts`) resolves the frontmatter reference against the entry file and checks that the file exists, so a path with no asset behind it fails the build instead of silently rendering a broken hero.
+* `<Image>` renders WebP with a responsive `srcset`; the hero offers `sizes="100vw"` and the blog cards `(min-width: 1024px) 310px, (min-width: 640px) 50vw, 100vw`. The widths are capped at the width of the source, so a picture is never upscaled.
+* `og:image` is built by `src/libs/content/social.ts`: the artwork is cropped to the 1.91:1 social ratio and encoded as JPEG, so a crawler never downloads the full-size file.
 
 #### Blog listing, filtering, and taxonomy
 * The index at `/blog/` renders a responsive card grid with cover art, category badge, tags, date, and reading time.
 * Category pills and tag chips filter the grid client-side and sync the URL (`?category=engineering&tag=astro,rtl`), so filtered views are shareable and deep-linkable. Tags combine with AND semantics; category and tag filters combine too.
 * A live `role="status"` line reports how many articles match, and a “Clear filters” action appears whenever a filter is active. Without JavaScript every article stays visible — filtering is progressive enhancement.
 * Post pages show the featured image, category/tag links back into the filtered index, reading time, and `articleSection`/`keywords` metadata.
+
+#### Blog pagination
+The index is paginated statically — no client-side slicing, no infinite scroll:
+
+* The page size is a single constant, `POSTS_PER_PAGE` in `src/libs/config/blog.ts` (default `9` — three columns × three rows). The route builder and the view read the same constant, so the number of generated pages and the number of rendered cards can never drift apart.
+* One page is one route, per locale. Page one is the index itself (`/blog/`), every later page lives under `/blog/page/<n>/` and is localized like every other URL (`/de/blog/page/2/`, `/fa/blog/page/2/`).
+* The page count of a locale follows from the number of *published* posts that locale has, so a locale with fewer posts simply has fewer pages. The `alternates` map falls back to the last available page, so the language switcher never leads to a missing URL.
+* The pager is rendered by `src/views/BlogIndexView.astro` only when there is more than one page. Its arrows use the `chevron-left` icon flipped with `rtl:rotate-180` / `rotate-180 rtl:rotate-0`, so they follow the reading direction, and every pager link keeps the active taxonomy filter.
+* `Seo.astro` and `BaseLayout.astro` accept `prevUrl` / `nextUrl` and emit `<link rel="prev">` / `<link rel="next">`; pages beyond the first get a distinct document title (`Blog — Page 2 of 3`).
+* `pnpm run smoke` derives the expected page count from the content collection and asserts that every page exists, that the `rel="prev"` / `rel="next"` links point at the right neighbours, and that no page beyond the last one was generated.
 
 ### 3. Adding a New Language
 To add Spanish (`es`), Italian (`it`), or another language:
@@ -259,6 +285,25 @@ To flip arrow icons in RTL layouts, use Tailwind's `rtl:` variant:
 <span class="inline-block rtl:rotate-180">→</span>
 ```
 
+### 6. Using the Glass Design System
+Every frosted surface, button and chip in the project is defined **once**, in `src/styles/global.css`. Compose those classes instead of re-declaring the treatment in a component:
+
+| Class | Use it for |
+| :--- | :--- |
+| `glass-surface` | The frosted navigation bar. |
+| `glass-control` | A control inside the glass bar (icon button, locale switcher). |
+| `ghost-control` | A control on an opaque panel (drawer, modal). |
+| `cta` | The primary call to action. |
+| `btn-secondary` | The outlined call to action. |
+| `chip` | Pill-shaped filter and taxonomy chips. |
+
+Icon-only controls go through one component, so their size, shape and accessible name are consistent:
+```astro
+<IconButton icon="search" label={m.common_search_placeholder({}, { locale })} data-open-search />
+```
+
+The glass palette is tokenised (`--color-glass`, `--color-glass-control`, `--color-glass-border`, `--color-glass-hover`), so the translucency of the whole site is tuned from one place.
+
 ---
 
 ## 🧪 Testing & Verification
@@ -276,6 +321,8 @@ pnpm test
 pnpm run audit:i18n
 
 # 4. Production Build & Pagefind Indexing (runs the audit first)
+#    Locally it falls back to http://localhost:4321 with a warning;
+#    in CI (CI=true) it fails unless SITE_URL is set.
 SITE_URL=https://example.com pnpm run build
 
 # 5. Post-Build HTML, SEO, Feed & Asset Smoke Test

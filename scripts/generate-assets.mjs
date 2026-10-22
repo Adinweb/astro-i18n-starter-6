@@ -11,6 +11,10 @@ import { fileURLToPath } from 'node:url';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const publicDir = path.join(rootDir, 'public');
+// Artwork lives next to the content that uses it, so Astro's `image()`
+// helper can resolve it relative to the entry file and optimize it.
+// `public/` is reserved for files that need a stable, unprocessed URL.
+const contentDir = path.join(rootDir, 'src', 'content');
 
 const CRC_TABLE = (() => {
   const table = new Uint32Array(256);
@@ -270,14 +274,14 @@ function artPixel(width, height, hue) {
   };
 }
 
-/** Writes generated artwork into `public/<directory>`. */
-function writeArtwork(directory, filename, width, height, hue) {
-  const targetDir = path.join(publicDir, directory);
+/** Writes the generated artwork of a content group next to its entries. */
+function writeArtwork(collection, group, width, height, hue) {
+  const targetDir = path.join(contentDir, collection, group);
   fs.mkdirSync(targetDir, { recursive: true });
-  const filePath = path.join(targetDir, filename);
+  const filePath = path.join(targetDir, `${group}.png`);
   fs.writeFileSync(filePath, encodePng(width, height, artPixel(width, height, hue)));
   const kb = (fs.statSync(filePath).size / 1024).toFixed(1);
-  console.log(`✅ public/${directory}/${filename} (${width}×${height}, ${kb} KB)`);
+  console.log(`✅ src/content/${collection}/${group}/${group}.png (${width}×${height}, ${kb} KB)`);
 }
 
 function writeAsset(filename, width, height, options) {
@@ -293,8 +297,8 @@ writeAsset('icon-192.png', 192, 192, { icon: true });
 writeAsset('icon-512.png', 512, 512, { icon: true });
 writeAsset('og-default.png', 1200, 630, { icon: false });
 
-// The default hero background, used by every page without artwork of its own.
-writeArtwork('images/hero', 'default.png', 1920, 1080, 258);
+// The shared hero background is a photograph (`src/assets/hero/hero-0.jpg`),
+// not generated artwork, so it is not produced here.
 
 /** Lists the group folder names of a content collection, sorted. */
 function contentGroups(collectionDir) {
@@ -308,12 +312,12 @@ function contentGroups(collectionDir) {
 
 // One cover per blog group so `assets:generate` keeps artwork in sync with posts.
 const COVER_HUES = [262, 198, 330, 158, 32, 286, 210, 350];
-contentGroups(path.join(rootDir, 'src', 'content', 'blog')).forEach((group, index) => {
-  writeArtwork('images/blog', `${group}.png`, 1200, 675, COVER_HUES[index % COVER_HUES.length]);
+contentGroups(path.join(contentDir, 'blog')).forEach((group, index) => {
+  writeArtwork('blog', group, 1200, 675, COVER_HUES[index % COVER_HUES.length]);
 });
 
 // One cover per page group, so every page has its own hero background.
 const PAGE_HUES = [232, 292, 172, 336, 208, 24];
-contentGroups(path.join(rootDir, 'src', 'content', 'pages')).forEach((group, index) => {
-  writeArtwork('images/pages', `${group}.png`, 1200, 675, PAGE_HUES[index % PAGE_HUES.length]);
+contentGroups(path.join(contentDir, 'pages')).forEach((group, index) => {
+  writeArtwork('pages', group, 1200, 675, PAGE_HUES[index % PAGE_HUES.length]);
 });

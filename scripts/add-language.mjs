@@ -270,6 +270,9 @@ if (shouldPopulateContent) {
           let slug = group === 'home' ? '' : `${group}-${langCode}`;
           let description = `Description for ${group}`;
           let body = 'Contenu à venir...';
+          // The artwork lives in the group folder, so the new locale can
+          // reference the very same file the source locale uses.
+          let image = '';
 
           if (sourceCandidate && fs.existsSync(sourceCandidate)) {
             const rawContent = fs.readFileSync(sourceCandidate, 'utf-8');
@@ -277,6 +280,8 @@ if (shouldPopulateContent) {
             if (tMatch) title = tMatch[1];
             const dMatch = rawContent.match(/description:\s*"([^"]+)"/);
             if (dMatch) description = dMatch[1];
+            const iMatch = rawContent.match(/^image:\s*"([^"]+)"/m);
+            if (iMatch) image = iMatch[1];
 
             const bodyStripped = rawContent.replace(/^---[\s\S]*?---/, '').trim();
             if (bodyStripped) {
@@ -292,7 +297,7 @@ if (shouldPopulateContent) {
 title: "${pageTitle}"
 slug: "${slug}"
 description: "${description}"
-${collection === 'blog' ? 'publishedAt: ' + new Date().toISOString().split('T')[0] : ''}
+${image ? `image: "${image}"\n` : ''}${collection === 'blog' ? 'publishedAt: ' + new Date().toISOString().split('T')[0] : ''}
 draft: ${isDraft}
 ---
 

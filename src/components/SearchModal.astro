@@ -1,6 +1,7 @@
 ---
 import * as m from '@/paraglide/messages';
 import Icon from '@/components/Icon.astro';
+import IconButton from '@/components/IconButton.astro';
 import type { Locale } from '@/i18n/config';
 
 interface Props {
@@ -34,14 +35,13 @@ const { locale } = Astro.props;
         autocomplete="off"
         aria-label={m.common_search_placeholder({}, { locale })}
       />
-      <button
+      <IconButton
         id="search-close-btn"
-        type="button"
-        class="cursor-pointer rounded-md p-1 text-muted transition-colors hover:text-fg"
-        aria-label={m.common_close({}, { locale })}
-      >
-        <Icon name="close" size={18} />
-      </button>
+        icon="close"
+        size={18}
+        variant="ghost"
+        label={m.common_close({}, { locale })}
+      />
     </div>
 
     <div id="search-results" class="flex min-h-30 flex-col gap-2 overflow-y-auto p-4">

@@ -3,10 +3,14 @@ import {
   buildSiteRoutes,
   getBreadcrumbs,
   getBlogIndexHref,
+  getBlogPageHref,
   getBlogPostHref,
+  type SiteRoute,
+  type SiteRouteProps,
 } from './service';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/i18n/locales';
 import { localizeHref } from '@/i18n/paths';
+import { POSTS_PER_PAGE } from '@/libs/config/blog';
 import * as m from '@/paraglide/messages';
 
 const nonDefaultLocales = LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
@@ -42,6 +46,13 @@ function postEntry(
 }
 
 describe('src/libs/content/service.ts', () => {
+  type BlogIndexRoute = SiteRoute & {
+    props: Extract<SiteRouteProps, { routeType: 'blog-index' }>;
+  };
+
+  const isBlogIndexRoute = (route: SiteRoute): route is BlogIndexRoute =>
+    route.props.routeType === 'blog-index';
+
   describe('getBreadcrumbs', () => {
     it('returns a single home crumb for the home page', () => {
       expect(
@@ -179,6 +190,80 @@ describe('src/libs/content/service.ts', () => {
         )
       ).toThrow(/Duplicate route collision/);
       expect(routes.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('blog index pagination', () => {
+    const manyPosts = (count: number, locale: Locale, drafts = 0) =>
+      Array.from({ length: count }, (_, index) => {
+        const slug = `post-${String(index + 1).padStart(2, '0')}`;
+        return postEntry(`${slug}/${locale}`, { slug, draft: index < drafts });
+      });
+
+    it('builds the href of every page', () => {
+      expect(getBlogPageHref(1, DEFAULT_LOCALE)).toBe(getBlogIndexHref(DEFAULT_LOCALE));
+      expect(getBlogPageHref(2, DEFAULT_LOCALE)).toBe('/blog/page/2/');
+      expect(getBlogPageHref(3, 'de')).toBe('/de/blog/page/3/');
+    });
+
+    it('registers one route per page of the index', () => {
+      const routes = buildSiteRoutes(
+        [pageEntry(`home/${DEFAULT_LOCALE}`, { slug: '' })],
+        manyPosts(POSTS_PER_PAGE * 2 + 2, DEFAULT_LOCALE)
+      );
+
+      const indexRoutes = routes.filter(
+        (route): route is BlogIndexRoute =>
+          isBlogIndexRoute(route) && route.props.locale === DEFAULT_LOCALE
+      );
+
+      expect(indexRoutes.map((route) => route.props.url)).toEqual([
+        '/blog/',
+        '/blog/page/2/',
+        '/blog/page/3/',
+      ]);
+      expect(indexRoutes.map((route) => route.props.page)).toEqual([1, 2, 3]);
+      expect(indexRoutes.every((route) => route.props.totalPages === 3)).toBe(true);
+      expect(indexRoutes.every((route) => route.props.perPage === POSTS_PER_PAGE)).toBe(true);
+    });
+
+    it('points the alternates of a page at the same page of every locale', () => {
+      const routes = buildSiteRoutes(
+        [pageEntry(`home/${DEFAULT_LOCALE}`, { slug: '' })],
+        LOCALES.flatMap((locale) => manyPosts(POSTS_PER_PAGE + 1, locale))
+      );
+
+      const secondPage = routes.find((route) => route.props.url === '/blog/page/2/');
+      expect(secondPage).toBeDefined();
+      expect(secondPage!.props.alternates[DEFAULT_LOCALE]).toBe('/blog/page/2/');
+      expect(secondPage!.props.alternates['de']).toBe('/de/blog/page/2/');
+    });
+
+    it('falls back to the last page of a locale that has fewer posts', () => {
+      const routes = buildSiteRoutes(
+        [pageEntry(`home/${DEFAULT_LOCALE}`, { slug: '' })],
+        manyPosts(POSTS_PER_PAGE * 2 + 1, DEFAULT_LOCALE)
+      );
+
+      const thirdPage = routes.find((route) => route.props.url === '/blog/page/3/');
+      expect(thirdPage).toBeDefined();
+      // The other locales only have one page, so their alternate points there
+      // instead of at a URL that does not exist.
+      expect(thirdPage!.props.alternates['de']).toBe('/de/blog/');
+    });
+
+    it('counts only published posts', () => {
+      const routes = buildSiteRoutes(
+        [pageEntry(`home/${DEFAULT_LOCALE}`, { slug: '' })],
+        manyPosts(POSTS_PER_PAGE + 1, DEFAULT_LOCALE, 1)
+      );
+
+      const indexRoutes = routes.filter(
+        (route): route is BlogIndexRoute =>
+          isBlogIndexRoute(route) && route.props.locale === DEFAULT_LOCALE
+      );
+      expect(indexRoutes).toHaveLength(1);
+      expect(indexRoutes[0].props.url).toBe('/blog/');
     });
   });
 });

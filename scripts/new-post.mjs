@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
+import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
 
 export function parseFrontmatter(rawContent) {
   const match = rawContent.match(/^---\r?\n([\s\S]*?)\r?\n---([\s\S]*)$/);
@@ -70,37 +71,9 @@ export function escapeRegex(str) {
 }
 
 /**
- * Normalizes a `--image` value into a public-root path.
- *
- * Git Bash rewrites an argument that starts with a slash into an absolute
- * Windows path (`/images/x.png` becomes `C:/Program Files/Git/images/x.png`),
- * so the intended path is recovered by dropping the prepended Git root.
- * Returns an empty string when the value cannot be mapped to a public path.
+ * The post's cover is referenced relative to the entry file, so Astro resolves
+ * and optimizes it (see `scripts/lib/image-reference.mjs`).
  */
-export function normalizePublicPath(value) {
-  const raw = String(value ?? '').trim();
-  if (!raw) return '';
-  const mangled = raw.match(/^(?:[A-Za-z]:)?[\\/]?(?:.*[\\/])?Git[\\/](.+)$/);
-  if (mangled) return `/${mangled[1].replace(/\\/g, '/')}`;
-  if (/^[A-Za-z]:[\\/]/.test(raw)) return '';
-  return raw.startsWith('/') ? raw : `/${raw}`;
-}
-
-/**
- * Resolves the `--image` option into the path written to the frontmatter.
- *
- * Returns an empty string when the post opts out of its own cover artwork
- * (`--image=none`) and falls back to the shared image, and `null` when the
- * value cannot be mapped to a public path.
- */
-export function resolveImageOption(raw, fallback) {
-  const value = String(raw ?? '').trim();
-  if (value.toLowerCase() === 'none') return '';
-  const normalized = normalizePublicPath(value);
-  if (!normalized) return null;
-  return normalized || fallback;
-}
-
 export function runCli() {
   const args = process.argv.slice(2);
   const groupSlug = args.find((a) => !a.startsWith('--'));
@@ -147,13 +120,13 @@ export function runCli() {
       customDate = arg.startsWith('--date=') ? arg.slice(7) : arg.slice(14);
     } else if (arg.startsWith('--image=')) {
       const raw = arg.slice(8).trim();
-      // Accept both `images/cover.png` and `/images/cover.png`. The schema
-      // requires a public-root path. `none` opts out of a group-specific
-      // cover, and the post then uses the shared artwork.
+      // The path is relative to the content file, the way Astro's `image()`
+      // helper resolves it. `none` opts out of a group-specific cover, and
+      // the post then uses the shared artwork.
       const resolved = resolveImageOption(raw, '');
       if (resolved === null) {
         console.error(
-          `❌ Invalid --image value: "${raw}". Use a public-root path such as "images/blog/cover.png", or "none" to opt out.`
+          `❌ Invalid --image value: "${raw}". Use a path relative to the content file such as "cover.png", or "none" to opt out.`
         );
         process.exit(1);
       }
@@ -224,7 +197,7 @@ Creation Options:
   --publish / --draft=false    Publish immediately across all locales (default marks non-source as draft)
   --category="a,b"             Blog category keys (repeatable, comma-separated)
   --tags="x,y"                 Blog tag keys (repeatable, comma-separated)
-  --image=images/cover.png     Featured image served from public/ (a leading "/" is added)
+  --image=cover.png            Featured image, referenced relative to the content file
   --image=none                 Use the shared hero artwork instead of a group-specific cover
 
 Update / Sync Options:
@@ -273,6 +246,25 @@ Update / Sync Options:
   if (fs.existsSync(targetDir) && (isUpdate || isSyncFrontmatter)) {
     console.log(`🔄 Updating existing article group: src/content/${collection}/${groupSlug}/`);
     const updatedLocales = [];
+
+    // A custom cover has to sit next to the content, so it is copied into the
+    // group folder before the frontmatter is rewritten.
+    if (customImage) {
+      const placed = placeArtworkFor({
+        value: customImage,
+        rootDir,
+        groupDir: targetDir,
+        group: groupSlug,
+      });
+      if (!placed) {
+        console.error(
+          `❌ Artwork not found: "${customImage}". It was looked up next to the content (${path.relative(rootDir, targetDir)}) and in the project root.`
+        );
+        console.error('   Pass a path to an existing image file, or "none" to use the shared hero artwork.');
+        process.exit(1);
+      }
+      customImage = placed;
+    }
     const sourceTitle = customTitle || groupSlug.replace(/-/g, ' ');
 
     for (const loc of LOCALES) {
@@ -375,6 +367,26 @@ Update / Sync Options:
   // -------------------------------------------------------------
   // NEW ARTICLE CREATION MODE
   // -------------------------------------------------------------
+  // A custom cover is copied into the group folder, because the frontmatter
+  // reference is relative to the entry file. This runs before the group
+  // folder is created, so a missing artwork leaves nothing behind.
+  if (customImage) {
+    const placed = placeArtworkFor({
+      value: customImage,
+      rootDir,
+      groupDir: targetDir,
+      group: groupSlug,
+    });
+    if (!placed) {
+      console.error(
+        `❌ Artwork not found: "${customImage}". It was looked up next to the content (${path.relative(rootDir, targetDir)}) and in the project root.`
+      );
+      console.error('   Pass a path to an existing image file, or "none" to use the shared hero artwork.');
+      process.exit(1);
+    }
+    customImage = placed;
+  }
+
   fs.mkdirSync(targetDir, { recursive: true });
 
   let baseBody = `\n# Article Header\n\nArticle content goes here...\n`;
@@ -411,7 +423,7 @@ Update / Sync Options:
   // `assets:generate`, so the referenced file always exists once it is run.
   // `--image=none` opts out, and the post falls back to the shared artwork.
   const defaultGroupImage = ['blog', 'pages'].includes(collection)
-    ? `/images/${collection}/${groupSlug}.png`
+    ? `./${groupSlug}.png`
     : '';
   const groupImage = noImage ? '' : customImage || defaultGroupImage;
 

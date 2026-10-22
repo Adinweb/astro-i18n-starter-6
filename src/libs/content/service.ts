@@ -1,6 +1,8 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { DEFAULT_LOCALE, LOCALES, isLocale, type Locale } from '@/i18n/locales';
 import { localizeHref, stripLocale, withTrailingSlash } from '@/i18n/paths';
+import { POSTS_PER_PAGE } from '@/libs/config/blog';
+import { getPageCount } from '@/libs/content/pagination';
 
 interface RouteBase {
   locale: Locale;
@@ -8,10 +10,19 @@ interface RouteBase {
   url: string;
 }
 
-type SiteRouteProps =
+export type SiteRouteProps =
   | (RouteBase & { routeType: 'page'; entry: CollectionEntry<'pages'> })
   | (RouteBase & { routeType: 'blog-entry'; entry: CollectionEntry<'blog'> })
-  | (RouteBase & { routeType: 'blog-index'; entry?: undefined });
+  | (RouteBase & {
+      routeType: 'blog-index';
+      entry?: undefined;
+      /** 1-based number of the page this route serves. */
+      page: number;
+      /** How many pages the locale's blog index has. */
+      totalPages: number;
+      /** How many posts a page holds. */
+      perPage: number;
+    });
 
 export interface SiteRoute {
   params: {
@@ -67,6 +78,18 @@ function pageSlug(group: string, entry: EntryLike<'pages'>): string {
 
 export function getBlogIndexHref(locale: Locale): string {
   return localizeHref(`/${BLOG_BASE}`, locale);
+}
+
+/**
+ * Href of one page of the blog index.
+ *
+ * The first page is the index itself (`/blog/`), every later page lives under
+ * `/blog/page/<n>/`. The path is localized like every other URL, so the
+ * German third page is `/de/blog/page/3/`.
+ */
+export function getBlogPageHref(page: number, locale: Locale): string {
+  if (page <= 1) return getBlogIndexHref(locale);
+  return localizeHref(`/${BLOG_BASE}/page/${Math.trunc(page)}`, locale);
 }
 
 export function getBlogPostHref(slug: string, locale: Locale): string {
@@ -149,21 +172,9 @@ export function buildSiteRoutes(
     }
   }
 
-  const blogIndexAlternates: Partial<Record<Locale, string>> = {};
-  for (const locale of LOCALES) {
-    blogIndexAlternates[locale] = getBlogIndexHref(locale);
-  }
-
-  for (const locale of LOCALES) {
-    const url = blogIndexAlternates[locale]!;
-    registerRoute(url, {
-      routeType: 'blog-index',
-      locale,
-      alternates: blogIndexAlternates,
-      url,
-    });
-  }
-
+  // The blog index is paginated, so the post map has to exist before the
+  // index routes are registered: the number of pages of a locale follows from
+  // the number of published posts that locale has.
   const postsByGroup = new Map<string, Map<Locale, EntryLike<'blog'>>>();
   for (const post of posts) {
     if (post.data.draft) continue;
@@ -174,6 +185,45 @@ export function buildSiteRoutes(
       throw new Error(`[ContentService] Duplicate blog entry for "${group}/${locale}".`);
     }
     localeMap.set(locale, post);
+  }
+
+  const postsPerLocale = new Map<Locale, number>(LOCALES.map((locale) => [locale, 0]));
+  for (const [, localeMap] of postsByGroup) {
+    for (const [locale] of localeMap) {
+      postsPerLocale.set(locale, (postsPerLocale.get(locale) ?? 0) + 1);
+    }
+  }
+
+  const pagesPerLocale = new Map<Locale, number>();
+  for (const locale of LOCALES) {
+    pagesPerLocale.set(locale, getPageCount(postsPerLocale.get(locale) ?? 0, POSTS_PER_PAGE));
+  }
+
+  // One route per page of the index, per locale. The alternates point at the
+  // same page in the other locales; a locale with fewer pages falls back to
+  // its last page, so the language switcher never leads to a missing URL.
+  for (const locale of LOCALES) {
+    const totalPages = pagesPerLocale.get(locale)!;
+
+    for (let page = 1; page <= totalPages; page += 1) {
+      const url = getBlogPageHref(page, locale);
+      const alternates: Partial<Record<Locale, string>> = {};
+
+      for (const other of LOCALES) {
+        const otherPages = pagesPerLocale.get(other)!;
+        alternates[other] = getBlogPageHref(Math.min(page, otherPages), other);
+      }
+
+      registerRoute(url, {
+        routeType: 'blog-index',
+        locale,
+        alternates,
+        url,
+        page,
+        totalPages,
+        perPage: POSTS_PER_PAGE,
+      });
+    }
   }
 
   for (const [, localeMap] of postsByGroup.entries()) {

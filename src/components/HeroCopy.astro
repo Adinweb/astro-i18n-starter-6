@@ -1,0 +1,72 @@
+---
+/**
+ * The copy block of a hero band: the accent rule, the heading, the optional
+ * description and two slots.
+ *
+ * `PageHero` owns the background and the band; this component owns the
+ * typography. Pages, the blog index and blog posts therefore share one
+ * heading scale and one description scale instead of repeating the classes.
+ */
+import { HERO_TITLE_ID } from '@/libs/config/hero';
+
+interface Props {
+  /** Rendered as the hero's single `<h1>`. */
+  title: string;
+  description?: string;
+  /**
+   * Typographic scale of the band. `page` for the wide bands of pages and the
+   * blog index, `post` for the tighter band of a single article.
+   */
+  size?: 'page' | 'post';
+}
+
+const { title, description, size = 'page' } = Astro.props;
+
+const SCALES = {
+  page: {
+    title: 'text-4xl sm:text-5xl lg:text-6xl',
+    description: 'max-w-2xl',
+  },
+  post: {
+    title: 'text-3xl sm:text-4xl lg:text-5xl',
+    description: 'max-w-xl',
+  },
+} as const;
+
+const scale = SCALES[size];
+// A prelude (breadcrumbs, category pills) sits between the accent rule and
+// the heading, so the heading needs a little air above it.
+const hasPrelude = Astro.slots.has('prelude');
+---
+
+<div class="max-w-3xl">
+  <span class="mb-5 block h-1 w-12 rounded-full bg-accent" aria-hidden="true"></span>
+
+  <slot name="prelude" />
+
+  <h1
+    id={HERO_TITLE_ID}
+    class:list={[
+      'text-balance font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-[0_2px_18px_rgb(0_0_0/0.5)]',
+      scale.title,
+      hasPrelude && 'mt-5',
+    ]}
+  >
+    {title}
+  </h1>
+
+  {
+    description && (
+      <p
+        class:list={[
+          'mt-5 text-pretty text-base leading-relaxed text-white/90 drop-shadow-[0_1px_12px_rgb(0_0_0/0.5)] sm:text-lg',
+          scale.description,
+        ]}
+      >
+        {description}
+      </p>
+    )
+  }
+
+  <slot />
+</div>

@@ -3,43 +3,60 @@
  * Full-width hero band rendered at the top of page views, underneath the fixed
  * header.
  *
- * The band *is* the page's image: a single, sharp, full-bleed copy of the
- * featured image (or the shared artwork) is the background of the section. It
- * is not blurred, not cropped into a card and not duplicated — the artwork
- * stays legible and sharp behind the copy.
+ * The band *is* the page's image: a single, full-bleed copy of the featured
+ * image (or the shared photograph) is the background of the section. It is
+ * defocused — a soft blur with a slight scale-up, so the picture reads as
+ * atmosphere instead of competing with the copy — and it is never duplicated,
+ * cropped into a card or shown beside the text.
  *
- * Two overlays only shape light, and both are vertical, so the band reads
- * identically in LTR and RTL:
+ * Three overlays shape the light, and all of them are vertical or flat, so the
+ * band reads identically in LTR and RTL:
  *
+ *  - a tonal wash that pulls the picture towards the theme's dark base;
  *  - a scrim that deepens towards the bottom, where the copy sits;
  *  - a wash under the fixed header, so the navigation keeps its contrast.
+ *
+ * The picture is rendered through Astro's image pipeline, so the browser is
+ * offered a WebP rendition at the width it actually needs instead of the
+ * full-size original.
  *
  * The image element is carried across navigations with `transition:persist`.
  * The persist key is derived from the image path, so the layer is only reused
  * when the background is actually the same — a different artwork always
  * replaces it.
  */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
 import { DEFAULT_HERO_IMAGE, HERO_TITLE_ID } from '@/libs/config/hero';
 
 interface Props {
   /**
    * Image of the page. Used as the background of the band. Defaults to the
-   * shared artwork when the page has no image of its own.
+   * shared photograph when the page has no image of its own.
+   *
+   * Content entries hand over the metadata Astro resolved for them, so the
+   * band is served from the optimized renditions of the very same file.
    */
-  image?: string;
-  /** Background image of the band. Defaults to `image` or the shared artwork. */
-  backdrop?: string;
-  /** Override for the persisted background key. Defaults to the background path. */
-  persistKey?: string;
+  image?: ImageMetadata;
 }
 
-const { image, backdrop, persistKey } = Astro.props;
-const background = backdrop ?? image ?? DEFAULT_HERO_IMAGE;
-const backdropKey = `hero-backdrop:${persistKey ?? background}`;
-// Intrinsic size of the artwork, so the browser reserves the right aspect ratio.
-const isSharedArtwork = background === DEFAULT_HERO_IMAGE;
-const backdropWidth = isSharedArtwork ? 1920 : 1200;
-const backdropHeight = isSharedArtwork ? 1080 : 675;
+const { image } = Astro.props;
+const background = image ?? DEFAULT_HERO_IMAGE;
+const backdropKey = `hero-backdrop:${background.src}`;
+
+/**
+ * Renditions offered to the browser. The band is full-bleed, so `sizes` is
+ * `100vw`.
+ *
+ * The list never asks for more than the source has, and it always contains
+ * the source width itself — so the browser can serve the picture at its
+ * native size instead of scaling a smaller rendition up.
+ */
+const widths = [
+  ...new Set([480, 768, 1024, 1280, 1920, 2560, background.width]),
+]
+  .filter((width) => width <= background.width)
+  .sort((a, b) => a - b);
 ---
 
 <section
@@ -49,24 +66,29 @@ const backdropHeight = isSharedArtwork ? 1080 : 675;
 >
   <!-- The page image *is* the background of this section. -->
   <div class="absolute inset-0" data-hero-background aria-hidden="true">
-    <img
+    <Image
       src={background}
       alt=""
-      width={backdropWidth}
-      height={backdropHeight}
+      widths={widths}
+      sizes="100vw"
+      format="webp"
+      quality={70}
+      layout="full-width"
       loading="eager"
       decoding="async"
       fetchpriority="high"
       transition:persist={backdropKey}
-      class="absolute inset-0 h-full w-full object-cover"
+      class="absolute inset-0 h-full w-full scale-105 object-cover blur-md"
     />
+    <!-- Tonal wash: ties the picture to the theme's dark base. -->
+    <div class="absolute inset-0 bg-fg/35"></div>
     <!-- Scrim: keeps the copy legible and deepens towards the bottom. -->
     <div
-      class="absolute inset-0 bg-linear-to-t from-fg/92 from-8% via-fg/62 via-50% to-transparent to-90%"
+      class="absolute inset-0 bg-linear-to-t from-fg/95 from-8% via-fg/70 via-48% to-transparent to-90%"
     >
     </div>
     <!-- Wash under the fixed header, so the navigation keeps its contrast. -->
-    <div class="absolute inset-x-0 top-0 h-32 bg-linear-to-b from-fg/60 to-transparent"></div>
+    <div class="absolute inset-x-0 top-0 h-36 bg-linear-to-b from-fg/75 to-transparent"></div>
   </div>
 
   <div

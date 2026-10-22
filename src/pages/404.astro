@@ -65,7 +65,7 @@ const i18nData = Object.fromEntries(
       <a
         id="not-found-home-link"
         href={homeHref}
-        class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-primary text-primary-fg font-medium hover:opacity-90 transition-opacity"
+        class="cta w-full sm:w-auto"
       >
         {m.common_back_home({}, { locale })}
       </a>
@@ -73,7 +73,7 @@ const i18nData = Object.fromEntries(
       <a
         id="not-found-english-link"
         href="/"
-        class="hidden w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 rounded-lg border border-border bg-surface text-fg font-medium hover:bg-surface-hover transition-colors"
+        class="btn-secondary hidden w-full sm:w-auto"
       >
         {m.common_go_english_version({}, { locale })}
       </a>

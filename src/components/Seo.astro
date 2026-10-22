@@ -1,5 +1,7 @@
 ---
+import type { ImageMetadata } from 'astro';
 import { siteConfig } from '@/libs/config/site';
+import { getSocialImage } from '@/libs/content/social';
 import { DEFAULT_LOCALE, LOCALES, getOgLocale, type Locale } from '@/i18n/locales';
 
 interface Props {
@@ -9,11 +11,16 @@ interface Props {
   url: string;
   alternates: Partial<Record<Locale, string>>;
   siteName?: string;
-  image?: string;
+  /** Artwork of the entry, already resolved by Astro's image pipeline. */
+  image?: ImageMetadata;
   type?: 'website' | 'article';
   publishedTime?: string;
   schema?: Record<string, unknown> | Record<string, unknown>[];
   noindex?: boolean;
+  /** URL of the previous page of a paginated listing. */
+  prevUrl?: string;
+  /** URL of the next page of a paginated listing. */
+  nextUrl?: string;
 }
 
 const {
@@ -28,14 +35,22 @@ const {
   publishedTime,
   schema,
   noindex = false,
+  prevUrl,
+  nextUrl,
 } = Astro.props;
 
 const canonicalUrl = new URL(url, siteConfig.url).href;
 const defaultAlternate = alternates[DEFAULT_LOCALE];
 const xDefaultUrl = new URL(defaultAlternate ?? url, siteConfig.url).href;
-const imageUrl = new URL(image ?? siteConfig.ogImage, siteConfig.url).href;
-// Only the generated default image has known dimensions; custom images are left unannotated.
-const imageSize = image ? undefined : { width: siteConfig.ogImageWidth, height: siteConfig.ogImageHeight };
+
+// The page's own artwork becomes a social card, cropped and encoded by
+// Astro's image pipeline. Pages without artwork fall back to the site card.
+const socialImage = await getSocialImage(image);
+const imageUrl = socialImage?.url ?? new URL(siteConfig.ogImage, siteConfig.url).href;
+const imageSize = socialImage ?? {
+  width: siteConfig.ogImageWidth,
+  height: siteConfig.ogImageHeight,
+};
 
 const alternateHrefs = Object.entries(alternates)
   .filter(([, href]) => Boolean(href))
@@ -53,6 +68,8 @@ const jsonLd = schema
 <title>{title} | {siteName}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={canonicalUrl} />
+{prevUrl && <link rel="prev" href={new URL(prevUrl, siteConfig.url).href} />}
+{nextUrl && <link rel="next" href={new URL(nextUrl, siteConfig.url).href} />}
 <link rel="alternate" type="application/rss+xml" title={`${siteName} RSS`} href={new URL('/rss.xml', siteConfig.url).href} />
 {noindex && <meta name="robots" content="noindex, nofollow" />}
 

@@ -1,0 +1,53 @@
+---
+/**
+ * Icon-only button.
+ *
+ * Used by the header, the mobile drawer and the search modal so that every
+ * icon control in the project shares one size, one shape and one glass
+ * treatment. The visual definition lives in `src/styles/global.css`
+ * (`.glass-control` / `.ghost-control`); this component only adds the icon
+ * and the accessible name.
+ */
+import Icon from '@/components/Icon.astro';
+
+interface Props {
+  /** Name of the symbol registered in `src/pages/icons.svg.ts`. */
+  icon: string;
+  /** Accessible name. Doubles as the tooltip. */
+  label: string;
+  /** Edge length of the icon, in pixels. */
+  size?: number;
+  /**
+   * `glass` for controls sitting inside the frosted header, `ghost` for
+   * controls on opaque panels.
+   */
+  variant?: 'glass' | 'ghost';
+  /** Extra classes merged onto the button. */
+  class?: string;
+  /** Any other attribute (`data-*`, `aria-*`, …) is forwarded verbatim. */
+  [key: string]: unknown;
+}
+
+const {
+  icon,
+  label,
+  size = 18,
+  variant = 'glass',
+  class: className = '',
+  ...rest
+} = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={[
+    variant === 'glass' ? 'glass-control' : 'ghost-control',
+    'h-9 w-9 shrink-0 cursor-pointer',
+    className,
+  ]}
+  {...rest}
+  aria-label={label}
+  title={label}
+>
+  <Icon name={icon} size={size} />
+</button>

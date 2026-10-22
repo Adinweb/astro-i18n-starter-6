@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import readline from 'node:readline';
 import { execSync } from 'node:child_process';
+import { askYesNo, confirmDeletion } from './lib/prompt.mjs';
 
 const args = process.argv.slice(2);
 const langCode = args.find((a) => !a.startsWith('--'));
@@ -53,48 +53,23 @@ if (!force && !process.stdin.isTTY) {
   process.exit(1);
 }
 
-async function confirmDeletion() {
-  if (force) {
-    // Content is opt-in: --force alone removes only configuration and dictionaries.
-    return { proceed: true, deleteContent: contentOption === true };
-  }
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  const question = (q) => new Promise((resolve) => rl.question(q, resolve));
-
-  try {
-    const confirmLang = await question(
-      `⚠️ Are you sure you want to completely remove language "${langCode}"? (y/n) [default: n]: `
-    );
-    const trimmed = confirmLang.trim().toLowerCase();
-    if (trimmed !== 'y' && trimmed !== 'yes') {
-      return { proceed: false, deleteContent: false };
-    }
-
-    let deleteContent = contentOption;
-    if (deleteContent === null) {
-      const confirmContent = await question(
-        `❓ Do you also want to delete all "${langCode}.mdx" content files across pages and blog posts? (y/n) [default: y]: `
-      );
-      const trimmedContent = confirmContent.trim().toLowerCase();
-      deleteContent = !(trimmedContent === 'n' || trimmedContent === 'no');
-    }
-
-    return { proceed: true, deleteContent };
-  } finally {
-    rl.close();
-  }
-}
-
-const { proceed, deleteContent } = await confirmDeletion();
+const proceed = await confirmDeletion({
+  question: `⚠️ Are you sure you want to completely remove language "${langCode}"? (y/n) [default: n]: `,
+  force,
+});
 
 if (!proceed) {
   console.log('🛑 Operation cancelled. No changes were made.');
   process.exit(0);
+}
+
+// Content is opt-in: --force alone removes only configuration and dictionaries.
+let deleteContent = contentOption === true;
+if (!force && contentOption === null) {
+  deleteContent = await askYesNo(
+    `❓ Do you also want to delete all "${langCode}.mdx" content files across pages and blog posts? (y/n) [default: y]: `,
+    { defaultYes: true }
+  );
 }
 
 console.log(`\n🗑️ Removing language "${langCode}"...`);

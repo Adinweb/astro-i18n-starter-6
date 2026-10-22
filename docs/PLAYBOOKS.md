@@ -128,9 +128,9 @@ pnpm run new:post -- tech-trends --update --sync-frontmatter --title="Modern Tec
   To prevent unreviewed placeholder translations (`[TODO: ...]`) from appearing publicly on the live blog index (`/fa/blog`, `/de/blog`, etc.), `new:post` sets `draft: true` on non-source locales by default.
   * To show a post on a specific language's blog listing, set `draft: false` in its frontmatter.
   * To publish all languages immediately upon creation, pass `--publish` or `--draft=false`.
-* **Blog taxonomy and covers:** Pass `--category=engineering`, `--tags="astro,performance"`, and `--image=images/blog/my-post.png` when scaffolding (a leading `/` is added automatically) so cards, filters, and the article hero are populated from the start. The same flags work with `--update`, and inline YAML arrays are preserved when frontmatter is rewritten.
+* **Blog taxonomy and covers:** Pass `--category=engineering`, `--tags="astro,performance"`, and `--image=cover.png` when scaffolding (the file is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file) so cards, filters, and the article hero are populated from the start. The same flags work with `--update`, and inline YAML arrays are preserved when frontmatter is rewritten.
   * Category and tag keys stay language-neutral (`engineering`, `i18n`); visible labels are message keys (`blog_category_engineering`, `blog_tag_i18n`). Unknown keys fall back to a humanized label, so a new tag never blocks a build.
-  * Run `pnpm run assets:generate` after adding a post group to produce `public/images/blog/<group>.png` (1200×675).
+  * Run `pnpm run assets:generate` after adding a post group to produce `src/content/blog/<group>/<group>.png` (1200×675).
   * Filtering lives entirely in `src/libs/content/blog.ts`; the blog index syncs `?category=…&tag=a,b` so filtered views are linkable.
 * **Updating Frontmatter:** Pass `--update` or `--sync-frontmatter` to update `title`, `description`, `date`, or `draft` across all 5 language files while preserving markdown body content.
 
@@ -201,5 +201,52 @@ pnpm run remove:page -- pricing --locale=de --force
 ```
 * Automatically cleans up `nav_<page-key>` from all dictionary files (`messages/*.json`) and recompiles Paraglide messages.
 * Guards the critical `home` page from deletion without `--force`.
+
+---
+
+## Playbook 6: Working with the Paginated Blog Index
+
+The blog index is a **static, paginated** listing: one URL per page per locale. Nothing is paginated in the browser, so every page is a real, linkable, crawlable document.
+
+### 1. Changing the Page Size
+The single source of truth is `src/libs/config/blog.ts`:
+```ts
+export const POSTS_PER_PAGE = 9;   // 3 columns × 3 rows
+```
+* The route builder (`src/libs/content/service.ts`) and the view (`src/views/BlogIndexView.astro`) both read this constant, so the number of generated pages and the number of rendered cards can never drift apart.
+* Changing the value is enough — no template edit is needed. Rebuild to see the new page set.
+
+### 2. The URL of a Page
+Page URLs are built by `getBlogPageHref(page, locale)` in `src/libs/content/service.ts`:
+
+| Page | Default locale (`en`) | Other locales |
+| :--- | :--- | :--- |
+| 1 | `/blog/` | `/de/blog/`, `/fa/blog/` |
+| 2 | `/blog/page/2/` | `/de/blog/page/2/`, `/fa/blog/page/2/` |
+
+* Never hardcode `/blog/page/2` — the locale prefix and the trailing slash are the job of `localizeHref`.
+* A requested page is always clamped into `1..totalPages`, so a stale link (`/blog/page/99/`) can never produce an out-of-range slice.
+* The number of pages of a locale follows from the number of *published* posts that locale has. A locale with fewer posts has fewer pages, and its `alternates` map falls back to its last page, so the language switcher never leads to a missing URL.
+
+### 3. The Page Math
+All of it is pure and lives in `src/libs/content/pagination.ts` (unit-tested in `pagination.test.ts`):
+```ts
+const { items, page, totalPages, previousPage, nextPage } = paginate(posts, page, perPage);
+const window = buildPageWindow(page, totalPages);   // holes become the PAGE_GAP ellipsis
+```
+
+### 4. The Pager UI
+`src/views/BlogIndexView.astro` renders the pager only when there is more than one page:
+* The previous/next arrows use the `chevron-left` symbol from `/icons.svg`, flipped with `rtl:rotate-180` / `rotate-180 rtl:rotate-0`, so the direction follows the reading direction.
+* Every pager link carries the active taxonomy filter query, so paging never drops the selection.
+* `Seo.astro` / `BaseLayout.astro` accept `prevUrl` / `nextUrl` and emit `<link rel="prev">` / `<link rel="next">`; pages beyond the first get a distinct document title (`Blog — Page 2 of 3`).
+
+### 5. Verify
+```bash
+pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke
+```
+`pnpm run smoke` derives the expected page count from the content collection and asserts that every page exists, that `rel="prev"` / `rel="next"` point at the right neighbours, that the pager is present only when there is more than one page, and that no page beyond the last one was generated.
+
+> To see the pager while developing, temporarily lower `POSTS_PER_PAGE` (e.g. `1`) and rebuild — the starter ships only three posts per locale, so the default of `9` renders a single page.
 
 

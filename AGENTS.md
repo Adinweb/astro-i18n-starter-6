@@ -16,6 +16,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Content schemas: `src/content.config.ts`.
    - Slugs & alternates: `src/libs/content/service.ts`.
    - Blog filters & reading time: `src/libs/content/blog.ts`; taxonomy labels: `src/libs/content/taxonomy.ts`.
+   - Blog pagination: page size in `src/libs/config/blog.ts` (`POSTS_PER_PAGE`), page math in `src/libs/content/pagination.ts` (`paginate`, `buildPageWindow`), page URLs in `src/libs/content/service.ts` (`getBlogPageHref`).
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
 2. **Lean Router Dispatcher Pattern**:
    - Never create dynamic routing files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
@@ -36,6 +37,10 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - In Astro components using `<ClientRouter />`, `astro:page-load` fires on both initial load and every client transition. Always guard DOM element listeners with `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';`.
 8. **Render-Time Message Invocation**:
    - Call `m.<key>({}, { locale })` inside component render cycles or templates. Never call message functions at module evaluation scope.
+9. **Shared Visual Language**:
+   - Frosted surfaces, buttons and chips are defined **once** in `src/styles/global.css` (`.glass-surface`, `.glass-control`, `.ghost-control`, `.cta`, `.btn-secondary`, `.chip`). Never re-declare those treatments in a component; compose the class instead.
+   - Icon-only controls are rendered by `src/components/IconButton.astro`. Do not hand-roll a `<button>` with an `<Icon>` inside.
+   - Shared hero copy (heading, description, slots) lives in `src/components/HeroCopy.astro`. Pages, the blog index and blog posts all compose it, so the typography cannot drift.
 
 ---
 
@@ -46,17 +51,17 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ├── .agents/skills/            # Agent skills (e.g. astro-i18n-starter/SKILL.md)
 ├── messages/                  # Dictionaries (en.json, de.json, fr.json, fa.json, ar.json)
 ├── project.inlang/            # Paraglide compiler configuration (settings.json)
-├── public/                    # Static assets (favicons, etc.)
-│   └── images/                # Generated artwork:
-│       ├── hero/default.png   # Shared hero background (no page image of its own)
-│       ├── pages/<group>.png  # One hero background per page group
-│       └── blog/<group>.png   # One cover per blog group
-├── scripts/                   # Developer CLI automation suite (13 scripts)
+├── public/                    # Static assets that need a stable, unprocessed URL (favicons, manifest icons, default OG card)
+├── scripts/                   # Developer CLI automation suite (13 scripts + lib/)
+│   └── lib/prompt.mjs         # Shared confirmation prompt for the remove:* scripts
 ├── src/
-│   ├── components/            # Reusable Astro components (Icon, LanguageSwitcher, PageHero, HeroContent, BlogPostHeroContent, PostCard, SearchModal, Seo, TopLoadingBar)
+│   ├── assets/hero/hero-0.jpg # Shared hero photograph (no page image of its own)
+│   ├── components/            # Reusable Astro components (Icon, IconButton, LanguageSwitcher, PageHero, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, Seo, TopLoadingBar)
 │   ├── content/               # Symmetrical content collections:
 │   │   ├── pages/<group>/     # Static pages (en.mdx, de.mdx, fr.mdx, fa.mdx, ar.mdx)
+│   │   │   └── <group>.png    # Hero artwork of the group, next to the entries
 │   │   └── blog/<group>/      # Blog posts with localized slugs
+│   │       └── <group>.png    # Cover artwork of the group, next to the entries
 │   ├── i18n/                  # Core i18n engine:
 │   │   ├── locales.ts         # SSOT for LOCALES, DEFAULT_LOCALE, metadata (dir, font, name)
 │   │   ├── config.ts          # Re-exports locales.ts
@@ -65,7 +70,10 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   ├── libs/                  # Core services:
 │   │   ├── config/site.ts     # Site metadata & Zod schema
 │   │   ├── config/hero.ts     # DEFAULT_HERO_IMAGE + HERO_TITLE_ID
-│   │   └── content/service.ts # getSiteRoutes(), getPageUrl(), getBreadcrumbs()
+│   │   ├── config/blog.ts     # POSTS_PER_PAGE — how many posts one index page holds
+│   │   ├── content/service.ts # getSiteRoutes(), getPageUrl(), getBreadcrumbs()
+│   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
+│   │   └── content/social.ts  # Builds the optimized og:image card
 │   ├── pages/                 # Minimal physical pages:
 │   │   ├── [...path].astro    # Lean Router Dispatcher (< 30 lines)
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
@@ -75,7 +83,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── robots.txt.ts      # Robots.txt pointing to sitemap
 │   │   └── api/search-dev.json.ts # Locale-aware search fallback index
 │   ├── paraglide/             # AUTO-GENERATED compiled messages (DO NOT EDIT)
-│   ├── styles/                # global.css (Tailwind v4 @theme inline + fonts), prose.css
+│   ├── styles/                # global.css (Tailwind v4 @theme inline + glass system + fonts), prose.css
 │   └── views/                 # Presentation views (PageView, BlogIndexView, BlogPostView)
 ```
 
@@ -112,12 +120,12 @@ Agents should execute these scripts instead of performing brittle manual file ma
 ### 4.1 Content Scaffolding
 * **Create or update a static page group across all locales:**
   ```bash
-  pnpm run new:page <page-key> [--title="<Title>"] [--from=<source-locale>] [--image=images/pages/contact.png|none] [--publish]
+  pnpm run new:page <page-key> [--title="<Title>"] [--from=<source-locale>] [--image=cover.png|none] [--publish]
   # Update existing page frontmatter across all locales without overwriting markdown bodies:
   pnpm run new:page <page-key> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"]
   ```
   *Example:* `pnpm run new:page contact --title="Contact Us" --from=en`  
-  *Actions performed:* Creates or updates `src/content/pages/contact/{en,de,fr,fa,ar}.mdx`, generates localized slugs, preserves body copy, registers the `nav_contact` key across all dictionaries, and points every locale's `image` frontmatter at the page's hero background. Without `--image`, the page uses the generated `/images/pages/<page-key>.png` and `assets:generate` is run to create it.
+  *Actions performed:* Creates or updates `src/content/pages/contact/{en,de,fr,fa,ar}.mdx`, generates localized slugs, preserves body copy, registers the `nav_contact` key across all dictionaries, and points every locale's `image` frontmatter at the page's hero background. Without `--image`, the page uses the generated `./<page-key>.png` (next to the entries) and `assets:generate` is run to create it. With `--image`, the file is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file.
 
 * **Create or update a blog article across all locales:**
   ```bash
@@ -125,8 +133,8 @@ Agents should execute these scripts instead of performing brittle manual file ma
   # Update existing post frontmatter across all locales without manual file rewrites:
   pnpm run new:post <group-slug> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"]
   ```
-  *Example:* `pnpm run new:post ai-agents --from=en --title="AI Coding Agents" --category=engineering --tags="astro,i18n" --image=images/blog/ai-agents.png --publish`  
-  *Actions performed:* Creates or updates `src/content/blog/ai-agents/{en,de,fr,fa,ar}.mdx` with synchronized frontmatter, including `categories`, `tags`, and the featured `image` (the group cover `/images/blog/<group>.png` by default, or the shared artwork with `--image=none`).
+  *Example:* `pnpm run new:post ai-agents --from=en --title="AI Coding Agents" --category=engineering --tags="astro,i18n" --image=cover.png --publish`  
+  *Actions performed:* Creates or updates `src/content/blog/ai-agents/{en,de,fr,fa,ar}.mdx` with synchronized frontmatter, including `categories`, `tags`, and the featured `image` (the group cover `./<group>.png` by default, or the shared artwork with `--image=none`).
 
 ### 4.2 Content Removal
 * **Remove an entire page or a single locale:**
@@ -207,13 +215,16 @@ To make another language (e.g., Farsi `fa` or Arabic `ar`) the prefix-less defau
    *Result:* Persian instantly routes to `/`, `/darbare-ma`, `/blog/اولین-پست`, while English routes to `/en/`, `/en/about/`, etc.
 
 ### Playbook C: The Hero Background
-The hero band is rendered by `src/components/PageHero.astro`. The page's or post's image **is** the background of the section — one sharp, full-bleed image layer, never a card beside the copy and never a blurred duplicate.
+The hero band is rendered by `src/components/PageHero.astro`. The page's or post's image **is** the background of the section — one full-bleed image layer, never a card beside the copy and never a duplicated layer.
 
-1. The background comes from the entry's `image` frontmatter (`/images/pages/<group>.png` for pages, `/images/blog/<group>.png` for posts). Without one, `DEFAULT_HERO_IMAGE` (`/images/hero/default.png`) is used.
-2. Inner content is supplied through the default slot: `HeroContent.astro` for pages and the blog index, `BlogPostHeroContent.astro` for posts. `PageHero` itself renders no copy.
-3. All artwork is drawn from code by `scripts/generate-assets.mjs`. Run `pnpm run assets:generate` after adding a page or post group, or after changing the palette in that script. The palette is luminance-normalised, so every hue reads at the same perceived brightness.
-4. The scrims are **vertical** gradients only, so the band is identical in LTR and RTL. Keep it that way: a horizontal scrim would need an `rtl:` variant.
-5. The image element carries `transition:persist` keyed by its path, so the same artwork is never decoded twice during client-side navigation, and a different artwork always replaces it.
+1. The background comes from the entry's `image` frontmatter — a path **relative to the content file** (`./<group>.png`). Without one, `DEFAULT_HERO_IMAGE` (`src/assets/hero/hero-0.jpg`) is used.
+2. The path is resolved by Astro's `image()` schema helper in `src/content.config.ts`: it resolves the reference against the entry file, checks that the file exists and hands the entry ready-made image metadata. A missing file therefore fails the build instead of shipping a broken hero. The artwork of a group lives next to its entries (`src/content/<collection>/<group>/<group>.png`), because that is where the relative reference points.
+3. Inner content is supplied through the default slot: `HeroCopy.astro` for pages and the blog index, `BlogPostHeroContent.astro` for posts (which composes `HeroCopy`). `PageHero` itself renders no copy.
+4. The image is **defocused** (`blur-md` plus a `scale-105` so the soft edge stays hidden) — it reads as atmosphere, not as a competing picture. The copy sits on top of it.
+5. Three overlays shape the light: a flat tonal wash (`bg-fg/35`), a bottom scrim and a wash under the fixed header. All of them are vertical or flat, so the band is identical in LTR and RTL. Keep it that way: a horizontal scrim would need an `rtl:` variant.
+6. The per-group artwork is drawn from code by `scripts/generate-assets.mjs`. Run `pnpm run assets:generate` after adding a page or post group, or after changing the palette in that script. The palette is luminance-normalised, so every hue reads at the same perceived brightness. The shared hero photograph is **not** generated — it is a real image in `src/assets/hero/`.
+7. The picture is rendered with `<Image>`: WebP output, a `srcset` of responsive widths and `sizes="100vw"`. The widths are capped at the width of the source so the picture is never upscaled.
+8. The image element carries `transition:persist` keyed by its path, so the same artwork is never decoded twice during client-side navigation, and a different artwork always replaces it.
 
 ### Playbook D: Adding an SVG Icon
 1. Open `src/pages/icons.svg.ts`.
@@ -230,6 +241,34 @@ The hero band is rendered by `src/components/PageHero.astro`. The page's or post
    ```
    *Never paste raw `<svg>` with inline paths directly into templates.*
 
+### Playbook E: Changing the Blog Pagination
+The blog index is a static, paginated listing. One page of posts is one route, and the route set is derived from the content — never hand-written.
+
+1. The page size lives in `src/libs/config/blog.ts`:
+   ```ts
+   export const POSTS_PER_PAGE = 9;   // 3 columns × 3 rows
+   ```
+   Both the route builder (`src/libs/content/service.ts`) and the view (`src/views/BlogIndexView.astro`) read this constant, so the number of generated pages and the number of rendered cards can never drift apart.
+2. The URL of a page is built by `getBlogPageHref(page, locale)`:
+   * page 1 → `/blog/` (the index itself, prefix-less in the default locale)
+   * page 2+ → `/blog/page/2/` (localized: `/de/blog/page/2/`, `/fa/blog/page/2/`)
+   *Never* hardcode `/blog/page/2` — the locale prefix and the trailing slash are the job of `localizeHref`.
+3. The page math is pure and lives in `src/libs/content/pagination.ts`:
+   * `paginate(items, page, perPage)` slices the list and reports `previousPage` / `nextPage`.
+   * `buildPageWindow(page, totalPages)` renders the number window; holes become the `PAGE_GAP` ellipsis.
+   * A requested page is always clamped into `1..totalPages`, so a stale link (`/blog/page/99/`) can never produce an out-of-range slice.
+4. `buildSiteRoutes()` registers one `blog-index` route per page **per locale**, and the page count of a locale follows from the number of *published* posts that locale has. A locale with fewer posts falls back to its last page in the `alternates` map, so the language switcher never leads to a missing URL.
+5. The pager is rendered by `src/views/BlogIndexView.astro`:
+   * it is only rendered when there is more than one page;
+   * the previous/next arrows use the `chevron-left` icon flipped with `rtl:rotate-180` / `rotate-180 rtl:rotate-0`, so the direction follows the reading direction;
+   * every pager link carries the active taxonomy filter query, so paging never drops the selection.
+6. `Seo.astro` / `BaseLayout.astro` accept `prevUrl` / `nextUrl` and emit `<link rel="prev">` / `<link rel="next">` for the paginated pages. The document title of page two and beyond is `Blog — Page 2 of 3`.
+7. After a change run:
+   ```bash
+   pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke
+   ```
+   `pnpm run smoke` derives the expected page count from the content collection and asserts that every page exists, that `rel="prev"` / `rel="next"` point at the right neighbours, and that no page beyond the last one was generated.
+
 ---
 
 ## 6. Forbidden Anti-Patterns (Zero Tolerance)
@@ -244,5 +283,9 @@ The hero band is rendered by `src/components/PageHero.astro`. The page's or post
 | Inline `<svg>` `<path>` blobs in HTML | Add icon symbol to `src/pages/icons.svg.ts` and use `<Icon name="..." />` |
 | Using `navigate()` for language switching | Use `window.location.assign(target)` for static language switch |
 | Missing `el.dataset.bound` guard in scripts | Check `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';` |
-| Showing the hero image as a card next to the copy, or blurring it | Make the image the section background (one sharp, full-bleed layer) in `PageHero.astro` |
+| Showing the hero image as a card next to the copy, or duplicating it | Make the image the section background (one full-bleed layer) in `PageHero.astro` |
 | Shipping a dark hero illustration under a heavy scrim | Keep the artwork luminous (`assets:generate`) and the scrim light |
+| Re-declaring a button, chip or frosted surface in a component | Compose `.cta`, `.btn-secondary`, `.chip`, `.glass-*` from `src/styles/global.css` |
+| Hand-rolling an icon-only `<button>` with an `<Icon>` inside | Use `<IconButton icon="..." label="..." />` |
+| Serving a page image from `public/` or with a raw `<img src>` | Keep it next to the content entry, reference it as `./<file>.png` and render it with `<Image />` |
+| Rendering every blog post on one page, or hardcoding `/blog/page/2` | Slice with `paginate()` and link with `getBlogPageHref(page, locale)` |

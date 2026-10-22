@@ -31,14 +31,33 @@ function readEnvValue(key) {
 
 const siteUrl = process.env.SITE_URL ?? readEnvValue('SITE_URL');
 
-if (isBuild && !siteUrl) {
+/**
+ * A build that will be **deployed** must know its public origin: the
+ * canonical links, the sitemap and the feed are absolute. A local build is a
+ * preview, where the origin is known, so it only warns. `CI` is the signal
+ * (Astro sets `NODE_ENV=production` for every build, local ones included, so
+ * it cannot tell the two apart), and `ASTRO_REQUIRE_SITE_URL` forces the
+ * strict behaviour anywhere.
+ */
+const isDeployment =
+  ['1', 'true', 'yes'].includes(String(process.env.CI ?? '').toLowerCase()) ||
+  ['1', 'true', 'yes'].includes(String(process.env.ASTRO_REQUIRE_SITE_URL ?? '').toLowerCase());
+
+if (isBuild && !siteUrl && isDeployment) {
   throw new Error(
-    'SITE_URL is required for production builds. Add it to .env or set it in the environment ' +
+    'SITE_URL is required for a deployment build. Add it to .env or set it in the environment ' +
       '(for example: SITE_URL=https://your-domain.com), then run the build again.'
   );
 }
 
-const site = siteUrl ?? 'http://localhost:3000';
+const site = siteUrl ?? 'http://localhost:4321';
+
+if (isBuild && !siteUrl) {
+  console.warn(
+    `[astro] SITE_URL is not set — building with ${site}. ` +
+      'Set SITE_URL in .env before deploying.'
+  );
+}
 
 try {
   new URL(site);
@@ -60,6 +79,6 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 3000,
+    port: 4321,
   },
 });

@@ -1,15 +1,22 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { normalizeBatchData } from '../../../scripts/i18n-add-batch.mjs';
 import { mergeTranslation } from '../../../scripts/i18n-add.mjs';
 import {
-  normalizePublicPath,
+  normalizeImageReference,
+  resolveImageOption,
+  findArtworkFile,
+  placeArtwork,
+  placeArtworkFor,
+} from '../../../scripts/lib/image-reference.mjs';
+import {
   parseFrontmatter as parsePageFm,
-  resolveImageOption as resolvePageImage,
   stringifyFrontmatter as stringifyPageFm,
 } from '../../../scripts/new-page.mjs';
 import {
   parseFrontmatter as parsePostFm,
-  resolveImageOption as resolvePostImage,
   stringifyFrontmatter as stringifyPostFm,
 } from '../../../scripts/new-post.mjs';
 
@@ -139,7 +146,7 @@ This is the body text that should never be deleted.
 title: "Taxonomy Post"
 slug: "taxonomy-post"
 description: "With categories"
-image: "/images/blog/taxonomy-post.png"
+image: "./taxonomy-post.png"
 categories: ["engineering", "guides"]
 tags: ["astro", "i18n"]
 publishedAt: 2026-06-01
@@ -152,13 +159,13 @@ Body copy.
     const { data, body } = parsePostFm(raw) as { data: Record<string, any>; body: string };
     expect(data.categories).toEqual(['engineering', 'guides']);
     expect(data.tags).toEqual(['astro', 'i18n']);
-    expect(data.image).toBe('/images/blog/taxonomy-post.png');
+    expect(data.image).toBe('./taxonomy-post.png');
 
     data.tags = ['astro', 'rtl', 'performance'];
     const serialized = stringifyPostFm(data, body);
     expect(serialized).toContain('categories: ["engineering", "guides"]');
     expect(serialized).toContain('tags: ["astro", "rtl", "performance"]');
-    expect(serialized).toContain('image: "/images/blog/taxonomy-post.png"');
+    expect(serialized).toContain('image: "./taxonomy-post.png"');
     expect(serialized).toContain('Body copy.');
   });
 
@@ -192,47 +199,49 @@ Content exploring future AI workflows...
   });
 });
 
-describe('Hero background paths (new-page.mjs normalizePublicPath)', () => {
-  it('keeps a public-root path as-is', () => {
-    expect(normalizePublicPath('/images/pages/contact.png')).toBe('/images/pages/contact.png');
+describe('Hero artwork references (scripts/lib/image-reference.mjs)', () => {
+  it('turns a file name into a reference relative to the content file', () => {
+    expect(normalizeImageReference('cover.png')).toBe('./cover.png');
+    expect(normalizeImageReference('./cover.png')).toBe('./cover.png');
   });
 
-  it('adds the leading slash to a relative path', () => {
-    expect(normalizePublicPath('images/pages/contact.png')).toBe('/images/pages/contact.png');
+  it('keeps a sub-directory relative to the content file', () => {
+    expect(normalizeImageReference('art/cover.png')).toBe('./art/cover.png');
   });
 
   it('recovers the intended path from a Git Bash mangled argument', () => {
     // Git Bash rewrites `/images/x.png` into `<git-root>/images/x.png`.
-    expect(normalizePublicPath('C:/Program Files/Git/images/pages/contact.png')).toBe(
-      '/images/pages/contact.png'
+    expect(normalizeImageReference('C:/Program Files/Git/images/pages/contact.png')).toBe(
+      './images/pages/contact.png'
     );
-    expect(normalizePublicPath('/usr/bin/Git/images/blog/post.png')).toBe('/images/blog/post.png');
+    expect(normalizeImageReference('/usr/bin/Git/images/blog/post.png')).toBe(
+      './images/blog/post.png'
+    );
   });
 
   it('rejects an absolute Windows path that is not under a Git root', () => {
-    expect(normalizePublicPath('C:/Windows/System32/evil.png')).toBe('');
+    expect(normalizeImageReference('C:/Windows/System32/evil.png')).toBe('');
   });
 
   it('returns an empty string for a missing value', () => {
-    expect(normalizePublicPath('')).toBe('');
-    expect(normalizePublicPath(undefined)).toBe('');
+    expect(normalizeImageReference('')).toBe('');
+    expect(normalizeImageReference(undefined)).toBe('');
   });
 });
 
 describe('Hero image option (resolveImageOption)', () => {
-  it('normalizes a public path', () => {
-    expect(resolvePageImage('images/pages/contact.png', '')).toBe('/images/pages/contact.png');
-    expect(resolvePostImage('/images/blog/post.png', '')).toBe('/images/blog/post.png');
+  it('normalizes a reference', () => {
+    expect(resolveImageOption('cover.png', '')).toBe('./cover.png');
+    expect(resolveImageOption('./blog/post.png', '')).toBe('./blog/post.png');
   });
 
   it('opts out of a page-specific artwork with "none"', () => {
-    expect(resolvePageImage('none', '')).toBe('');
-    expect(resolvePageImage('NONE', '')).toBe('');
-    expect(resolvePostImage('none', '')).toBe('');
+    expect(resolveImageOption('none', '')).toBe('');
+    expect(resolveImageOption('NONE', '')).toBe('');
   });
 
-  it('rejects a value that cannot be mapped to a public path', () => {
-    expect(resolvePageImage('C:/Windows/System32/evil.png', '')).toBeNull();
+  it('rejects a value that cannot be mapped to a reference', () => {
+    expect(resolveImageOption('C:/Windows/System32/evil.png', '')).toBeNull();
   });
 
   it('omits the image from the frontmatter when it is empty', () => {
@@ -242,6 +251,70 @@ describe('Hero image option (resolveImageOption)', () => {
     );
     expect(serialized).not.toContain('image:');
     expect(serialized).toContain('title: "Page"');
+  });
+});
+
+describe('Artwork placement (scripts/lib/image-reference.mjs)', () => {
+  let rootDir = '';
+  let groupDir = '';
+
+  beforeEach(() => {
+    rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astro-artwork-'));
+    groupDir = path.join(rootDir, 'src', 'content', 'pages', 'contact');
+    fs.mkdirSync(groupDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(rootDir, { recursive: true, force: true });
+  });
+
+  it('finds the artwork next to the content and in the project root', () => {
+    const inGroup = path.join(groupDir, 'cover.png');
+    fs.writeFileSync(inGroup, 'x');
+    expect(findArtworkFile('./cover.png', rootDir, groupDir)).toBe(inGroup);
+
+    const inRoot = path.join(rootDir, 'brand.png');
+    fs.writeFileSync(inRoot, 'x');
+    expect(findArtworkFile('./brand.png', rootDir, groupDir)).toBe(inRoot);
+  });
+
+  it('returns null when no artwork exists', () => {
+    expect(findArtworkFile('./missing.png', rootDir, groupDir)).toBeNull();
+  });
+
+  it('copies an artwork into the group folder and references the copy', () => {
+    const source = path.join(rootDir, 'brand.png');
+    fs.writeFileSync(source, 'x');
+
+    const reference = placeArtwork({ sourceFile: source, groupDir, group: 'contact' });
+
+    expect(reference).toBe('./brand.png');
+    expect(fs.existsSync(path.join(groupDir, 'brand.png'))).toBe(true);
+  });
+
+  it('keeps a file that already sits in the group folder', () => {
+    const source = path.join(groupDir, 'cover.png');
+    fs.writeFileSync(source, 'x');
+
+    const reference = placeArtwork({ sourceFile: source, groupDir, group: 'contact' });
+
+    expect(reference).toBe('./cover.png');
+  });
+
+  it('renames an artwork the generator would overwrite', () => {
+    const source = path.join(rootDir, 'contact.png');
+    fs.writeFileSync(source, 'x');
+
+    const reference = placeArtwork({ sourceFile: source, groupDir, group: 'contact' });
+
+    expect(reference).toBe('./contact-custom.png');
+    expect(fs.existsSync(path.join(groupDir, 'contact-custom.png'))).toBe(true);
+  });
+
+  it('reports a missing artwork instead of a broken reference', () => {
+    expect(
+      placeArtworkFor({ value: './missing.png', rootDir, groupDir, group: 'contact' })
+    ).toBeNull();
   });
 });
 

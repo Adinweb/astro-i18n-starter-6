@@ -2,14 +2,16 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageHero from '@/components/PageHero.astro';
-import HeroContent from '@/components/HeroContent.astro';
+import HeroCopy from '@/components/HeroCopy.astro';
 import PostCard from '@/components/PostCard.astro';
-import { getBlogIndexHref, getBlogPostHref } from '@/libs/content/service';
+import Icon from '@/components/Icon.astro';
+import { getBlogIndexHref, getBlogPageHref, getBlogPostHref } from '@/libs/content/service';
 import {
   buildBlogFilterQuery,
   collectTaxonomyKeys,
   type BlogFilters,
 } from '@/libs/content/blog';
+import { buildPageWindow, PAGE_GAP, paginate } from '@/libs/content/pagination';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import type { Locale } from '@/i18n/config';
 import * as m from '@/paraglide/messages';
@@ -18,9 +20,15 @@ interface Props {
   locale: Locale;
   alternates: Partial<Record<Locale, string>>;
   url: string;
+  /** 1-based number of the page this route serves. */
+  page: number;
+  /** How many pages the locale's blog index has. */
+  totalPages: number;
+  /** How many posts a page holds. */
+  perPage: number;
 }
 
-const { locale, alternates, url } = Astro.props;
+const { locale, alternates, url, page, totalPages, perPage } = Astro.props;
 
 const allPosts = await getCollection('blog');
 const posts = allPosts
@@ -31,31 +39,49 @@ const posts = allPosts
   })
   .sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime());
 
+// The taxonomy chips are built from the whole collection, so every page of
+// the index offers the same filters.
 const taxonomy = posts.map((post) => post.data);
 const categories = collectTaxonomyKeys(taxonomy, 'categories');
 const tags = collectTaxonomyKeys(taxonomy, 'tags');
 const blogHref = getBlogIndexHref(locale);
 
+// Only the posts of the current page are rendered; the pager links to the
+// rest of the collection.
+const { items: pagePosts } = paginate(posts, page, perPage);
+
 const filterHref = (filters: BlogFilters) => `${blogHref}${buildBlogFilterQuery(filters)}`;
-const totalLabel = m.blog_filter_showing(
-  { visible: String(posts.length), total: String(posts.length) },
+const totalLabel = m.blog_filter_showing_page(
+  { visible: String(pagePosts.length), total: String(pagePosts.length) },
   { locale }
 );
+
+const pageHref = (target: number) => getBlogPageHref(target, locale);
+const previousHref = page > 1 ? pageHref(page - 1) : undefined;
+const nextHref = page < totalPages ? pageHref(page + 1) : undefined;
+const pageWindow = buildPageWindow(page, totalPages);
+
+const pageStatus = m.blog_pagination_status(
+  { page: String(page), totalPages: String(totalPages) },
+  { locale }
+);
+// Only the deeper pages need a distinct document title; page one keeps the
+// plain name of the blog.
+const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` : m.nav_blog({}, { locale });
 ---
 
 <BaseLayout
-  title={m.nav_blog({}, { locale })}
+  title={pageTitle}
   description={m.blog_index_description({}, { locale })}
   locale={locale}
   url={url}
   alternates={alternates}
+  prevUrl={previousHref}
+  nextUrl={nextHref}
   hero
 >
   <PageHero slot="hero">
-    <HeroContent
-      title={m.nav_blog({}, { locale })}
-      description={m.blog_index_description({}, { locale })}
-    />
+    <HeroCopy title={m.nav_blog({}, { locale })} description={m.blog_index_description({}, { locale })} />
   </PageHero>
 
   <div class="space-y-8">
@@ -69,8 +95,8 @@ const totalLabel = m.blog_filter_showing(
           <section
             class="space-y-4 rounded-2xl border border-border bg-surface/70 p-4 sm:p-5"
             data-blog-filter
-            data-base-href={blogHref}
-            data-showing-template={m.blog_filter_showing(
+            data-base-href={url}
+            data-showing-template={m.blog_filter_showing_page(
               { visible: '{visible}', total: '{total}' },
               { locale }
             )}
@@ -83,7 +109,7 @@ const totalLabel = m.blog_filter_showing(
                 href={blogHref}
                 data-filter-chip
                 data-filter-category=""
-                class="inline-flex items-center rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-fg"
+                class="chip px-3 py-1.5 text-xs"
               >
                 {m.blog_all_posts({}, { locale })}
               </a>
@@ -93,7 +119,7 @@ const totalLabel = m.blog_filter_showing(
                     href={filterHref({ category, tags: [] })}
                     data-filter-chip
                     data-filter-category={category}
-                    class="inline-flex items-center rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-fg"
+                    class="chip px-3 py-1.5 text-xs"
                   >
                     {getCategoryLabel(category, locale)}
                   </a>
@@ -113,7 +139,7 @@ const totalLabel = m.blog_filter_showing(
                     href={filterHref({ category: null, tags: [tag] })}
                     data-filter-chip
                     data-filter-tag={tag}
-                    class="inline-flex items-center rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-fg"
+                    class="chip px-3 py-1.5 text-xs"
                   >
                     <span class="me-1 text-muted/70" aria-hidden="true" dir="ltr">#</span>
                     {getTagLabel(tag, locale)}
@@ -145,7 +171,7 @@ const totalLabel = m.blog_filter_showing(
 
           <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {
-              posts.map((post, index) => (
+              pagePosts.map((post, index) => (
                 <PostCard
                   post={post}
                   locale={locale}
@@ -155,6 +181,73 @@ const totalLabel = m.blog_filter_showing(
               ))
             }
           </div>
+
+          {
+            totalPages > 1 && (
+              <div class="mt-10 space-y-3">
+                <p class="text-center text-xs text-muted" data-blog-page-status>
+                  {pageStatus}
+                </p>
+                <nav
+                  class="flex flex-wrap items-center justify-center gap-1.5"
+                  aria-label={m.blog_pagination_label({}, { locale })}
+                  data-blog-pagination
+                >
+                  {previousHref && (
+                    <a
+                      href={previousHref}
+                      rel="prev"
+                      data-page-link="previous"
+                      data-page-href={previousHref}
+                      class="btn-secondary gap-1.5 px-4 py-2 text-xs"
+                    >
+                      <Icon name="chevron-left" size={16} class="shrink-0 rtl:rotate-180" />
+                      {m.blog_pagination_previous({}, { locale })}
+                    </a>
+                  )}
+
+                  {pageWindow.map((entry) =>
+                    entry === PAGE_GAP ? (
+                      <span class="px-1 text-xs text-muted" aria-hidden="true">
+                        …
+                      </span>
+                    ) : (
+                      <a
+                        href={pageHref(entry)}
+                        data-page-link="page"
+                        data-page-href={pageHref(entry)}
+                        aria-label={m.blog_pagination_page({ page: String(entry) }, { locale })}
+                        aria-current={entry === page ? 'page' : undefined}
+                        class:list={[
+                          'chip h-9 min-w-9 justify-center px-3 text-xs',
+                          entry === page && 'border-primary bg-primary text-primary-fg',
+                        ]}
+                      >
+                        {entry}
+                      </a>
+                    )
+                  )}
+
+                  {nextHref && (
+                    <a
+                      href={nextHref}
+                      rel="next"
+                      data-page-link="next"
+                      data-page-href={nextHref}
+                      class="btn-secondary gap-1.5 px-4 py-2 text-xs"
+                    >
+                      {m.blog_pagination_next({}, { locale })}
+                      <Icon
+                        name="chevron-left"
+                        size={16}
+                        class="shrink-0 rotate-180 rtl:rotate-0"
+                      />
+                    </a>
+                  )}
+                </nav>
+              </div>
+            )
+          }
         </div>
       )
     }
@@ -204,6 +297,9 @@ const totalLabel = m.blog_filter_showing(
     const clear = root.querySelector<HTMLAnchorElement>('[data-blog-clear]');
     const categoryChips = [...root.querySelectorAll<HTMLAnchorElement>('[data-filter-category]')];
     const tagChips = [...root.querySelectorAll<HTMLAnchorElement>('[data-filter-tag]')];
+    // The pager links to the other pages of the index. They carry the active
+    // filter, so walking through the pages keeps the selection.
+    const pageLinks = [...document.querySelectorAll<HTMLAnchorElement>('[data-page-link]')];
     const template = root.dataset.showingTemplate ?? '';
     const baseHref = root.dataset.baseHref ?? window.location.pathname;
 
@@ -241,13 +337,19 @@ const totalLabel = m.blog_filter_showing(
       if (empty) empty.hidden = visible !== 0;
       if (clear) clear.hidden = !hasActiveFilters(filters);
 
+      const query = buildBlogFilterQuery(filters);
+      for (const link of pageLinks) {
+        const pageBase = link.dataset.pageHref;
+        if (pageBase) link.setAttribute('href', `${pageBase}${query}`);
+      }
+
       if (updateUrl) {
         // Preserve Astro's router state: replacing it with `null` breaks the
         // ClientRouter's history handling when navigating back to this page.
         window.history.replaceState(
           window.history.state,
           '',
-          `${baseHref}${buildBlogFilterQuery(filters)}`
+          `${baseHref}${query}`
         );
       }
     };

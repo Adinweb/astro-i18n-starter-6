@@ -5,6 +5,7 @@ import PageHero from '@/components/PageHero.astro';
 import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
 import { getBreadcrumbs, getBlogIndexHref } from '@/libs/content/service';
 import { buildBlogFilterQuery } from '@/libs/content/blog';
+import { getSocialImage } from '@/libs/content/social';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import { siteConfig } from '@/libs/config/site';
 import type { Locale } from '@/i18n/config';
@@ -30,9 +31,9 @@ const blogIndexHref = getBlogIndexHref(locale);
 const tagHref = (tag: string) => `${blogIndexHref}${buildBlogFilterQuery({ category: null, tags: [tag] })}`;
 
 const canonicalUrl = new URL(url, siteConfig.url).href;
-const imageUrl = image
-  ? new URL(image, siteConfig.url).href
-  : new URL(siteConfig.ogImage, siteConfig.url).href;
+// The schema points at the same optimized card the `og:image` meta tag uses.
+const socialImage = await getSocialImage(image);
+const imageUrl = socialImage?.url ?? new URL(siteConfig.ogImage, siteConfig.url).href;
 
 const schema = {
   '@context': 'https://schema.org',
@@ -97,7 +98,7 @@ const schema = {
           {tags.map((tag) => (
             <a
               href={tagHref(tag)}
-              class="inline-flex items-center rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted transition-colors hover:border-primary/50 hover:text-fg"
+              class="chip px-3 py-1 text-xs"
             >
               <span class="me-1 text-muted/70" aria-hidden="true" dir="ltr">
                 #

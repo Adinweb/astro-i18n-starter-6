@@ -1,5 +1,6 @@
 ---
 import type { CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
 import Icon from '@/components/Icon.astro';
 import type { Locale } from '@/i18n/locales';
 import { getReadingTime } from '@/libs/content/blog';
@@ -14,10 +15,22 @@ interface Props {
   priority?: boolean;
 }
 
-const { post, locale, href } = Astro.props;
-const priority = Astro.props.priority ?? false;
+const { post, locale, href, priority = false } = Astro.props;
 
 const { title, description, image, categories, tags, publishedAt } = post.data;
+// `image` is the metadata Astro resolved from the entry's frontmatter.
+const cover = image;
+/**
+ * Renditions offered to the browser. The card is at most ~310px wide, so the
+ * list covers 1x and 2x of that. It never asks for more than the source has
+ * and always contains the source width itself, so a small cover is served at
+ * its native size instead of being scaled up.
+ */
+const coverWidths = cover
+  ? [...new Set([320, 480, 640, 800, cover.width])]
+      .filter((width) => width <= cover.width)
+      .sort((a, b) => a - b)
+  : [];
 const category = categories[0];
 const formattedDate = publishedAt.toLocaleDateString(locale, {
   year: 'numeric',
@@ -37,12 +50,15 @@ const hiddenTagCount = tags.length - visibleTags.length;
 >
   <div class="relative aspect-[16/9] overflow-hidden bg-linear-to-br from-primary/20 via-surface-hover to-accent/15">
     {
-      image ? (
-        <img
-          src={image}
+      cover ? (
+        <Image
+          src={cover}
           alt=""
-          width="1200"
-          height="675"
+          widths={coverWidths}
+          sizes="(min-width: 1024px) 310px, (min-width: 640px) 50vw, 100vw"
+          format="webp"
+          quality={75}
+          layout="constrained"
           loading={priority ? 'eager' : 'lazy'}
           decoding={priority ? 'sync' : 'async'}
           fetchpriority={priority ? 'high' : 'auto'}
@@ -77,12 +93,12 @@ const hiddenTagCount = tags.length - visibleTags.length;
       visibleTags.length > 0 && (
         <ul class="flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
           {visibleTags.map((tag) => (
-            <li class="rounded-full border border-border bg-surface px-2 py-0.5 font-medium">
+            <li class="chip px-2 py-0.5 text-[11px]">
               {getTagLabel(tag, locale)}
             </li>
           ))}
           {hiddenTagCount > 0 && (
-            <li class="rounded-full border border-border bg-surface px-2 py-0.5 font-medium">
+            <li class="chip px-2 py-0.5 text-[11px]">
               +{hiddenTagCount}
             </li>
           )}

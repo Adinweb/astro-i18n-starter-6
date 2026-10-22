@@ -28,5 +28,12 @@ const props = Astro.props;
   />
 )}
 {props.routeType === 'blog-index' && (
-  <BlogIndexView locale={props.locale} alternates={props.alternates} url={props.url} />
+  <BlogIndexView
+    locale={props.locale}
+    alternates={props.alternates}
+    url={props.url}
+    page={props.page}
+    totalPages={props.totalPages}
+    perPage={props.perPage}
+  />
 )}

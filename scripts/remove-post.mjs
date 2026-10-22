@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import readline from 'node:readline';
+import { confirmDeletion } from './lib/prompt.mjs';
 
 const args = process.argv.slice(2);
 const groupSlug = args.find((a) => !a.startsWith('--'));
@@ -34,33 +34,14 @@ if (!force && !process.stdin.isTTY) {
   process.exit(1);
 }
 
-async function confirmDeletion() {
-  if (force) {
-    return true;
-  }
+const targetDesc = targetLocale
+  ? `"${targetLocale}.mdx" in post "${groupSlug}"`
+  : `entire post directory for "${groupSlug}" (all languages)`;
 
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  const question = (q) => new Promise((resolve) => rl.question(q, resolve));
-
-  try {
-    const targetDesc = targetLocale
-      ? `"${targetLocale}.mdx" in post "${groupSlug}"`
-      : `entire post directory for "${groupSlug}" (all languages)`;
-    const answer = await question(
-      `⚠️ Are you sure you want to delete ${targetDesc}? (y/n) [default: n]: `
-    );
-    const trimmed = answer.trim().toLowerCase();
-    return trimmed === 'y' || trimmed === 'yes';
-  } finally {
-    rl.close();
-  }
-}
-
-const proceed = await confirmDeletion();
+const proceed = await confirmDeletion({
+  question: `⚠️ Are you sure you want to delete ${targetDesc}? (y/n) [default: n]: `,
+  force,
+});
 if (!proceed) {
   console.log('🛑 Operation cancelled. No changes were made.');
   process.exit(0);
@@ -81,6 +62,7 @@ if (targetLocale) {
     process.exit(1);
   }
 } else {
+  // The group's cover lives inside the group folder, so it is removed with it.
   fs.rmSync(targetGroupDir, { recursive: true, force: true });
   console.log(`✅ Successfully removed article group: src/content/${collection}/${groupSlug}/`);
 }

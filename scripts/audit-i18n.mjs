@@ -244,6 +244,18 @@ if (!fs.existsSync(contentDir)) {
 // ---------------------------------------------------------------------------
 console.log('\n--- 3. Slug & Route Guard ---');
 const SLUG_PATTERN = /^[\p{L}\p{N}\p{M}]+(?:[\u200C\u200D-][\p{L}\p{N}\p{M}]+)*$/u;
+// The formats Astro's image pipeline accepts as input.
+const IMAGE_EXTENSIONS = new Set([
+  'jpeg',
+  'jpg',
+  'png',
+  'apng',
+  'tiff',
+  'webp',
+  'gif',
+  'svg',
+  'avif',
+]);
 let slugFatal = false;
 
 for (const { collection, group, groupDir } of groups) {
@@ -286,6 +298,30 @@ for (const { collection, group, groupDir } of groups) {
     if (collection === 'pages' && RESERVED_ROUTE_BASES.has(slug)) {
       fatal(`Slug "${slug}" in ${relative} collides with a reserved route`);
       slugFatal = true;
+    }
+
+    // The `image` field is a path relative to the content file: Astro's
+    // `image()` helper resolves it, checks that the file exists and hands the
+    // entry ready-made image metadata.
+    const image = frontmatter.image;
+    if (image) {
+      if (!image.startsWith('./') && !image.startsWith('../')) {
+        fatal(
+          `Image "${image}" in ${relative} must be a path relative to the content file (for example "./cover.png")`
+        );
+        slugFatal = true;
+      } else {
+        const asset = path.resolve(path.dirname(file), image);
+        if (!fs.existsSync(asset)) {
+          fatal(`Image "${image}" in ${relative} has no file at ${path.relative(rootDir, asset)}`);
+          slugFatal = true;
+        } else if (!IMAGE_EXTENSIONS.has(path.extname(asset).slice(1).toLowerCase())) {
+          fatal(
+            `Image "${image}" in ${relative} is not a format Astro can optimize (${IMAGE_EXTENSIONS.join(', ')})`
+          );
+          slugFatal = true;
+        }
+      }
     }
   }
 }

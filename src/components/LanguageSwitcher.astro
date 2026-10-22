@@ -15,14 +15,13 @@ const { currentLocale, alternates } = Astro.props;
   <button
     type="button"
     data-switcher-button
-    class="flex h-8 items-center gap-1 rounded-md border border-border bg-surface px-2 text-fg transition-colors hover:bg-surface-hover cursor-pointer"
+    class="glass-control h-9 cursor-pointer px-3 text-fg"
     aria-expanded="false"
     aria-label={m.common_change_language({}, { locale: currentLocale })}
     title={m.common_change_language({}, { locale: currentLocale })}
   >
-    <Icon name="globe" size={15} class="text-muted shrink-0" />
+    <Icon name="globe" size={15} class="shrink-0" />
     <span class="text-xs font-semibold tracking-wide uppercase">{currentLocale}</span>
-    <!-- <Icon name="chevron" size={14} class="text-muted shrink-0 transition-transform duration-200" data-switcher-chevron /> -->
   </button>
 
   <div
@@ -76,9 +75,6 @@ const { currentLocale, alternates } = Astro.props;
     document
       .querySelectorAll('[data-switcher-button]')
       .forEach((button) => button.setAttribute('aria-expanded', 'false'));
-    document
-      .querySelectorAll('[data-switcher-chevron]')
-      .forEach((chevron) => chevron.classList.remove('rotate-180'));
   }
 
   function setupLanguageSwitcher() {
@@ -108,7 +104,6 @@ const { currentLocale, alternates } = Astro.props;
         if (willOpen) {
           menu.classList.remove('hidden');
           button.setAttribute('aria-expanded', 'true');
-          root?.querySelector('[data-switcher-chevron]')?.classList.add('rotate-180');
         }
         return;
       }

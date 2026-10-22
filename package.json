@@ -46,6 +46,7 @@
     "@astrojs/check": "^0.9.10",
     "@types/node": "^26.6.4",
     "knip": "^6.40.0",
+    "sharp": "^0.35.5",
     "typescript": "^6.0.3",
     "vitest": "^5.0.3"
   }

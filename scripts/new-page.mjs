@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
+import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
 
 export function parseFrontmatter(rawContent) {
   const match = rawContent.match(/^---\r?\n([\s\S]*?)\r?\n---([\s\S]*)$/);
@@ -56,37 +57,9 @@ export function escapeRegex(str) {
 }
 
 /**
- * Normalizes a `--image` value into a public-root path.
- *
- * Git Bash rewrites an argument that starts with a slash into an absolute
- * Windows path (`/images/x.png` becomes `C:/Program Files/Git/images/x.png`),
- * so the intended path is recovered by dropping the prepended Git root.
- * Returns an empty string when the value cannot be mapped to a public path.
+ * The page's hero artwork is referenced relative to the entry file, so Astro
+ * resolves and optimizes it (see `scripts/lib/image-reference.mjs`).
  */
-export function normalizePublicPath(value) {
-  const raw = String(value ?? '').trim();
-  if (!raw) return '';
-  const mangled = raw.match(/^(?:[A-Za-z]:)?[\\/]?(?:.*[\\/])?Git[\\/](.+)$/);
-  if (mangled) return `/${mangled[1].replace(/\\/g, '/')}`;
-  if (/^[A-Za-z]:[\\/]/.test(raw)) return '';
-  return raw.startsWith('/') ? raw : `/${raw}`;
-}
-
-/**
- * Resolves the `--image` option into the path written to the frontmatter.
- *
- * Returns an empty string when the page opts out of its own hero artwork
- * (`--image=none`) and falls back to the shared image, and `null` when the
- * value cannot be mapped to a public path.
- */
-export function resolveImageOption(raw, fallback) {
-  const value = String(raw ?? '').trim();
-  if (value.toLowerCase() === 'none') return '';
-  const normalized = normalizePublicPath(value);
-  if (!normalized) return null;
-  return normalized || fallback;
-}
-
 export function runCli() {
   const args = process.argv.slice(2);
   const pageKey = args.find((a) => !a.startsWith('--'));
@@ -163,13 +136,13 @@ export function runCli() {
       skipNav = true;
     } else if (arg.startsWith('--image=')) {
       const raw = arg.slice(8).trim();
-      // Accept both `images/cover.png` and `/images/cover.png`. The schema
-      // requires a public-root path. `none` opts out of a page-specific hero
+      // The path is relative to the content file, the way Astro's `image()`
+      // helper resolves it. `none` opts out of a page-specific hero
       // background, and the page then uses the shared artwork.
       const resolved = resolveImageOption(raw, '');
       if (resolved === null) {
         console.error(
-          `❌ Invalid --image value: "${raw}". Use a public-root path such as "images/pages/contact.png", or "none" to opt out.`
+          `❌ Invalid --image value: "${raw}". Use a path relative to the content file such as "cover.png", or "none" to opt out.`
         );
         process.exit(1);
       }
@@ -188,7 +161,7 @@ Creation Options:
   --desc="<desc>"              Description for the page
   --from=<locale>              Source locale to branch from (default: baseLocale / en)
   --publish / --draft=false    Publish immediately across all locales
-  --image=images/cover.png     Hero background served from public/ (a leading "/" is added)
+  --image=cover.png            Hero background, referenced relative to the content file
   --image=none                 Use the shared hero artwork instead of a page-specific one
 
 Update / Sync Options:
@@ -230,6 +203,25 @@ Update / Sync Options:
   if (fs.existsSync(targetDir) && (isUpdate || isSyncFrontmatter)) {
     console.log(`🔄 Updating existing page group: src/content/pages/${pageKey}/`);
     const updatedLocales = [];
+
+    // A custom artwork has to sit next to the content, so it is copied into
+    // the group folder before the frontmatter is rewritten.
+    if (customImage) {
+      const placed = placeArtworkFor({
+        value: customImage,
+        rootDir,
+        groupDir: targetDir,
+        group: pageKey,
+      });
+      if (!placed) {
+        console.error(
+          `❌ Artwork not found: "${customImage}". It was looked up next to the content (${path.relative(rootDir, targetDir)}) and in the project root.`
+        );
+        console.error('   Pass a path to an existing image file, or "none" to use the shared hero artwork.');
+        process.exit(1);
+      }
+      customImage = placed;
+    }
 
     for (const loc of LOCALES) {
       const filePath = path.join(targetDir, `${loc}.mdx`);
@@ -342,12 +334,32 @@ Update / Sync Options:
   // -------------------------------------------------------------
   // NEW PAGE CREATION MODE
   // -------------------------------------------------------------
+  // A custom artwork is copied into the group folder, because the frontmatter
+  // reference is relative to the entry file. This runs before the group
+  // folder is created, so a missing artwork leaves nothing behind.
+  if (customImage) {
+    const placed = placeArtworkFor({
+      value: customImage,
+      rootDir,
+      groupDir: targetDir,
+      group: pageKey,
+    });
+    if (!placed) {
+      console.error(
+        `❌ Artwork not found: "${customImage}". It was looked up next to the content (${path.relative(rootDir, targetDir)}) and in the project root.`
+      );
+      console.error('   Pass a path to an existing image file, or "none" to use the shared hero artwork.');
+      process.exit(1);
+    }
+    customImage = placed;
+  }
+
   fs.mkdirSync(targetDir, { recursive: true });
 
   // Every page owns its hero background. The artwork is drawn from code by
   // `assets:generate`, so the referenced file always exists once it is run.
   // `--image=none` opts out, and the page falls back to the shared artwork.
-  const pageImage = noImage ? '' : customImage || `/images/pages/${pageKey}.png`;
+  const pageImage = noImage ? '' : customImage || `./${pageKey}.png`;
   const imageLine = pageImage ? `image: "${pageImage}"\n` : '';
 
   for (const loc of LOCALES) {

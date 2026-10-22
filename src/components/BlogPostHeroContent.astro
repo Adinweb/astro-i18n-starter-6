@@ -3,11 +3,11 @@
  * Inner content for the hero band of a blog post: breadcrumbs, category links,
  * the post heading, its description and the publication meta row.
  *
- * Rendered inside `PageHero`'s default slot, on top of the section's
- * background image, so the post hero can be reused or restyled without
- * touching the hero shell.
+ * The heading and description come from the shared `HeroCopy`, so a post and a
+ * page never drift apart typographically. Rendered inside `PageHero`'s default
+ * slot, on top of the section's background image.
  */
-import { HERO_TITLE_ID } from '@/libs/config/hero';
+import HeroCopy from '@/components/HeroCopy.astro';
 import { getBlogIndexHref, type BreadcrumbItem } from '@/libs/content/service';
 import { buildBlogFilterQuery, getReadingTime } from '@/libs/content/blog';
 import { getCategoryLabel } from '@/libs/content/taxonomy';
@@ -50,61 +50,46 @@ const formattedDate = publishedAt.toLocaleDateString(locale, {
 const readingTime = getReadingTime(body);
 ---
 
-<div class="max-w-3xl">
-  <span class="mb-5 block h-1 w-12 rounded-full bg-accent" aria-hidden="true"></span>
+<HeroCopy title={title} description={description} size="post">
+  <Fragment slot="prelude">
+    <nav aria-label={m.common_breadcrumbs({}, { locale })}>
+      <ol class="flex flex-wrap items-center gap-2 text-xs text-white/90 drop-shadow-[0_1px_8px_rgb(0_0_0/0.5)]">
+        {
+          breadcrumbs.map((crumb, index) => (
+            <li class="flex items-center gap-2">
+              {index > 0 && <span aria-hidden="true">/</span>}
+              {index === breadcrumbs.length - 1 ? (
+                <span class="max-w-xs truncate font-medium text-white">{crumb.label}</span>
+              ) : (
+                <a href={crumb.href} class="transition-colors hover:text-white">
+                  {crumb.label}
+                </a>
+              )}
+            </li>
+          ))
+        }
+      </ol>
+    </nav>
 
-  <nav aria-label={m.common_breadcrumbs({}, { locale })}>
-    <ol class="flex flex-wrap items-center gap-2 text-xs text-white/90 drop-shadow-[0_1px_8px_rgb(0_0_0/0.5)]">
-      {
-        breadcrumbs.map((crumb, index) => (
-          <li class="flex items-center gap-2">
-            {index > 0 && <span aria-hidden="true">/</span>}
-            {index === breadcrumbs.length - 1 ? (
-              <span class="max-w-xs truncate font-medium text-white">{crumb.label}</span>
-            ) : (
-              <a href={crumb.href} class="transition-colors hover:text-white">
-                {crumb.label}
+    {
+      categories.length > 0 && (
+        <ul class="mt-4 flex flex-wrap items-center gap-2">
+          {categories.map((category) => (
+            <li>
+              <a
+                href={categoryHref(category)}
+                class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+              >
+                {getCategoryLabel(category, locale)}
               </a>
-            )}
-          </li>
-        ))
-      }
-    </ol>
-  </nav>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </Fragment>
 
-  {
-    categories.length > 0 && (
-      <ul class="mt-4 flex flex-wrap items-center gap-2">
-        {categories.map((category) => (
-          <li>
-            <a
-              href={categoryHref(category)}
-              class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm transition-colors hover:bg-white/25"
-            >
-              {getCategoryLabel(category, locale)}
-            </a>
-          </li>
-        ))}
-      </ul>
-    )
-  }
-
-  <h1
-    id={HERO_TITLE_ID}
-    class="mt-5 text-balance text-3xl font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-[0_2px_18px_rgb(0_0_0/0.5)] sm:text-4xl lg:text-5xl"
-  >
-    {title}
-  </h1>
-
-  {
-    description && (
-      <p class="mt-5 max-w-xl text-pretty text-base leading-relaxed text-white/90 drop-shadow-[0_1px_12px_rgb(0_0_0/0.5)] sm:text-lg">
-        {description}
-      </p>
-    )
-  }
-
-  <div class="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/90 drop-shadow-[0_1px_8px_rgb(0_0_0/0.5)]">
+  <div slot="default" class="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/90 drop-shadow-[0_1px_8px_rgb(0_0_0/0.5)]">
     <span>{m.common_published_on({}, { locale })}</span>
     <time datetime={publishedAt.toISOString()}>{formattedDate}</time>
     <span aria-hidden="true">·</span>
@@ -118,4 +103,4 @@ const readingTime = getReadingTime(body);
       )
     }
   </div>
-</div>
+</HeroCopy>
