@@ -309,10 +309,10 @@ npm run new:post <group-slug> [--collection=<name>] [--from=<locale>]
   1. Validates `src/content/<collection>` (defaults to `blog`).
   2. Creates directory `src/content/<collection>/<group-slug>/`.
   3. Emits `<locale>.mdx` for every configured locale (`en.mdx`, `de.mdx`, `fa.mdx`).
-  4. If `--from` is specified, copies body content and frontmatter structure from that locale.
+  4. If `--clone-from=<group>` is specified, copies the body content of that existing group; `--from` only selects the source locale.
   5. Pre-populates frontmatter:
      * `title`: `"[TODO: <locale>] <group-slug>"`
-     * `slug`: Localized slug placeholder
+     * `slug`: Localized slug placeholder (`<group-slug>-<locale>`, or the group key for the source/default locale)
      * `description`: `"[TODO: <locale>] Description"`
      * `publishedAt`: Current ISO date
      * `draft: true` (except for source locale)
@@ -329,7 +329,7 @@ npm run audit:i18n
 * **Script:** `scripts/audit-i18n.mjs`
 * **Verification Checks:**
   1. **Dictionary Key Parity (FATAL / Exit 1):** Verifies all keys in `en.json` exist in `de.json` and `fa.json`. Fails build if missing.
-  2. **Content Collection Parity (FATAL / Exit 1):** Verifies all group folders in `src/content/*/*/` contain `.mdx` files for all active locales.
+  2. **Content Collection Parity (WARNING / Exit 0):** Reports every group folder in `src/content/*/*/` that has no `.mdx` file for an active locale. A group that exists in fewer languages than the site is a normal state (a post written only in English), so this never breaks the build.
   3. **Slug Collision Guard (FATAL / Exit 1):** Ensures no localized slug collides with a top-level route base or another page in the same locale.
   4. **Unextracted Text Scanner (WARNING / Exit 0):** Scans `.astro` templates for raw text nodes not wrapped in `m.*()` calls, emitting warnings with file and line numbers without breaking the build.
 
@@ -339,7 +339,7 @@ npm run audit:i18n
 
 The project must pass the following suite at phase boundaries:
 ```bash
-pnpm lint && pnpm test && npm run audit:i18n && pnpm build && pnpm smoke
+pnpm lint && pnpm test && npm run audit:i18n && pnpm build && pnpm smoke && pnpm knip && pnpm verify:cli
 ```
 
 ### Smoke Test Specifications (`pnpm smoke`)

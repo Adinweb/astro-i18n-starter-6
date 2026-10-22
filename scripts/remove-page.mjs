@@ -17,6 +17,39 @@ for (const arg of args) {
   else if (arg === '--force' || arg === '-y' || arg === '--yes') force = true;
 }
 
+/**
+ * Removes `nav_<pageKey>` from the dictionaries of the given locales.
+ *
+ * A dictionary that keeps the key of a page it no longer has would offer a
+ * navigation entry that leads nowhere, so the key is cleaned per locale.
+ *
+ * @param {string} rootDir
+ * @param {string[]} locales Locales whose dictionary is cleaned.
+ * @returns {boolean} Whether a dictionary was changed.
+ */
+function cleanNavKey(rootDir, locales) {
+  const navKey = `nav_${pageKey}`;
+  const messagesDir = path.join(rootDir, 'messages');
+  if (!fs.existsSync(messagesDir)) return false;
+
+  let modified = false;
+  for (const locale of locales) {
+    const filePath = path.join(messagesDir, `${locale}.json`);
+    if (!fs.existsSync(filePath)) continue;
+    try {
+      const dict = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      if (dict[navKey]) {
+        delete dict[navKey];
+        fs.writeFileSync(filePath, JSON.stringify(dict, null, 2) + '\n', 'utf-8');
+        modified = true;
+      }
+    } catch {
+      // A dictionary that cannot be parsed is reported by the audit, not here.
+    }
+  }
+  return modified;
+}
+
 if (!pageKey) {
   console.error('Usage: pnpm run remove:page <page-key> [--locale=<locale>] [--no-clean-nav] [--force]');
   process.exit(1);
@@ -68,6 +101,14 @@ if (targetLocale) {
     console.error(`❌ File for locale "${targetLocale}" not found in ${targetGroupDir}`);
     process.exit(1);
   }
+
+  // The navigation key stays in every dictionary: the dictionaries always
+  // carry the same key set, and the navigation itself skips a page whose
+  // locale has no entry.
+  console.log(
+    `ℹ️ The group has no "${targetLocale}" entry any more. The i18n audit reports that as a warning, not an error.`
+  );
+  console.log(`ℹ️ The key "nav_${pageKey}" stays in the dictionaries, so every locale keeps the same key set.`);
 } else {
   // The group's artwork lives inside the group folder, so it is removed with it.
   fs.rmSync(targetGroupDir, { recursive: true, force: true });
@@ -75,35 +116,22 @@ if (targetLocale) {
 
   // Clean nav translation key if present
   if (cleanNav) {
-    const navKey = `nav_${pageKey}`;
     const messagesDir = path.join(rootDir, 'messages');
-    if (fs.existsSync(messagesDir)) {
-      const files = fs.readdirSync(messagesDir).filter((f) => f.endsWith('.json'));
-      let modified = false;
+    const files = fs.existsSync(messagesDir)
+      ? fs
+          .readdirSync(messagesDir)
+          .filter((f) => f.endsWith('.json'))
+          .map((f) => f.replace(/\.json$/, ''))
+      : [];
 
-      for (const file of files) {
-        const filePath = path.join(messagesDir, file);
-        try {
-          const dict = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-          if (dict[navKey]) {
-            delete dict[navKey];
-            fs.writeFileSync(filePath, JSON.stringify(dict, null, 2) + '\n', 'utf-8');
-            modified = true;
-          }
-        } catch {
-          // ignore parse errors
-        }
-      }
-
-      if (modified) {
-        console.log(`🧹 Cleaned translation key "${navKey}" from dictionaries.`);
-        console.log('🔄 Recompiling Paraglide messages...');
-        try {
-          execSync('pnpm run messages:compile', { stdio: 'inherit' });
-          console.log('🎉 Paraglide recompiled successfully.');
-        } catch (e) {
-          console.warn('⚠️ Warning: Failed to recompile Paraglide messages:', e.message);
-        }
+    if (cleanNavKey(rootDir, files)) {
+      console.log(`🧹 Cleaned translation key "nav_${pageKey}" from dictionaries.`);
+      console.log('🔄 Recompiling Paraglide messages...');
+      try {
+        execSync('pnpm run messages:compile', { stdio: 'inherit' });
+        console.log('🎉 Paraglide recompiled successfully.');
+      } catch (e) {
+        console.warn('⚠️ Warning: Failed to recompile Paraglide messages:', e.message);
       }
     }
   }

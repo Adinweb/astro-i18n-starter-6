@@ -55,8 +55,8 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ├── messages/                  # Dictionaries (en.json, de.json, fr.json, fa.json, ar.json)
 ├── project.inlang/            # Paraglide compiler configuration (settings.json)
 ├── public/                    # Static assets that need a stable, unprocessed URL (favicons, manifest icons, default OG card)
-├── scripts/                   # Developer CLI automation suite (13 scripts + lib/)
-│   └── lib/                   # Shared prompt, frontmatter, content-stub, and artwork helpers
+├── scripts/                   # Developer CLI automation suite (14 scripts + lib/)
+│   └── lib/                   # Shared prompt, frontmatter, content-stub, slug, and artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph (no page image of its own)
 │   ├── components/            # Reusable Astro components (Icon, IconButton, LanguageSwitcher, PageHero, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, Seo, TopLoadingBar)
@@ -102,6 +102,7 @@ Always use these exact pnpm scripts:
 | `pnpm run lint` | Messages compile + `astro check` + `tsc --noEmit` | After any code changes |
 | `pnpm test` | Vitest unit tests (paths, ICU plurals/ordinals, routes, CLI helpers) | After routing or logic changes |
 | `pnpm run audit:i18n` | Locale-config parity, dictionary/placeholder parity, content parity, used keys, slug & route collisions | Before commits & builds |
+| `pnpm run verify:cli` | End-to-end check of every documented CLI workflow (43 claims, runs in a temp copy) | After changing anything under `scripts/` |
 | `pnpm run build` | `messages:compile` + audit + `astro build` + `pagefind` | After major changes |
 | `pnpm run smoke` | HTML, SEO, feed, asset & H1 assertions on `dist/` | After every production build |
 | `pnpm run knip` | Dead files, exports, and dependencies | Before releases |
@@ -113,6 +114,10 @@ In this environment, start the server using background mode:
 astro dev --background
 ```
 Manage the server using `astro dev status`, `astro dev logs`, and `astro dev stop`.
+
+After `pnpm install` (or any change to `node_modules`), **restart the dev server**: a
+server that was started before the install keeps its stale module graph and fails
+with `Unknown file extension ".astro"`.
 
 ---
 
@@ -128,7 +133,9 @@ Agents should execute these scripts instead of performing brittle manual file ma
   pnpm run new:page <page-key> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"]
   ```
   *Example:* `pnpm run new:page contact --title="Contact Us" --from=en`  
-  *Actions performed:* Creates or updates `src/content/pages/contact/{en,de,fr,fa,ar}.mdx`, generates localized slugs, preserves body copy, registers the `nav_contact` key across all dictionaries, and points every locale's `image` frontmatter at the page's hero background. Without `--image`, the page uses the generated `./<page-key>.png` (next to the entries) and `assets:generate` is run to create it. With `--image`, the file is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file.
+  *Actions performed:* Creates or updates `src/content/pages/contact/{en,de,fr,fa,ar}.mdx`, generates localized slugs, preserves body copy, registers the `nav_contact` key across all dictionaries, and points every locale's `image` frontmatter at the page's hero background. Without `--image`, the page uses the generated `./<page-key>.png` (next to the entries) and `assets:generate` is run to create it. With `--image`, the file is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file. A named image that does not exist is a **warning**, not a failure: the group artwork is used instead.  
+  *Publication:* Without a draft flag only the **source locale** is published (`draft: false`); every other locale stays `draft: true` until it is translated. `--publish` / `--draft=false` publishes all locales, `--draft` / `--draft=true` drafts all of them.  
+  *Slugs:* The source and default locale use the group key (`contact`); the other locales get a placeholder (`contact-fa`) until a native slug is set with `--slug:<locale>="…"`.
 
 * **Create or update a blog article across all locales:**
   ```bash
@@ -137,14 +144,15 @@ Agents should execute these scripts instead of performing brittle manual file ma
   pnpm run new:post <group-slug> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"]
   ```
   *Example:* `pnpm run new:post ai-agents --from=en --title="AI Coding Agents" --category=engineering --tags="astro,i18n" --image=cover.png --publish`  
-  *Actions performed:* Creates or updates `src/content/blog/ai-agents/{en,de,fr,fa,ar}.mdx` with synchronized frontmatter, including `categories`, `tags`, and the featured `image` (the group cover `./<group>.png` by default, or the shared artwork with `--image=none`).
+  *Actions performed:* Creates or updates `src/content/blog/ai-agents/{en,de,fr,fa,ar}.mdx` with synchronized frontmatter, including `categories`, `tags`, and the featured `image` (the group cover `./<group>.png` by default, or the shared artwork with `--image=none`).  
+  *Note:* `--from` selects the **source locale**, it does not copy the body of another article; use `--clone-from=<group>` for that. Publication and slug rules are identical to `new:page`.
 
 ### 4.2 Content Removal
 * **Remove an entire page or a single locale:**
   ```bash
   pnpm run remove:page <page-key> [--locale=<locale>] [--force]
   ```
-  *Actions performed:* Deletes content folder, cleans `nav_<key>` from dictionaries, and recompiles Paraglide.
+  *Actions performed:* Deletes content folder, cleans `nav_<key>` from dictionaries, and recompiles Paraglide. With `--locale`, only that locale's file is deleted and the `nav_<key>` key **stays** in every dictionary: the dictionaries always carry the same key set, and a missing locale is reported by the audit as a warning, not an error.
 * **Remove a blog article:**
   ```bash
   pnpm run remove:post <group-slug> [--locale=<locale>] [--force]

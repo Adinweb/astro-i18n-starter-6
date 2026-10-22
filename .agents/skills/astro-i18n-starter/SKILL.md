@@ -35,18 +35,26 @@ Always run scripts from the project root using `npm run <command>`.
 ### Scaffolding Content
 * **Add a new static page:**
   ```bash
-  npm run new:page <page-key> -- --title="<Title>" [--from=<locale>] [--publish]
+  npm run new:page <page-key> -- --title="<Title>" [--from=<locale>] [--publish] [--slug:<locale>="<native-slug>"]
   ```
 * **Add a new blog post:**
   ```bash
-  npm run new:post <post-slug> -- [--title="<Title>"] [--from=<locale>] [--publish]
+  npm run new:post <post-slug> -- [--title="<Title>"] [--from=<locale>] [--publish] [--slug:<locale>="<native-slug>"]
   ```
+  * Only the **source locale** is published by default; the other locales are written
+    as `draft: true` until they are translated. `--publish` publishes all of them,
+    `--draft` drafts all of them.
+  * `--from` selects the source locale, it does not copy another article's body
+    (use `--clone-from=<group>` for that).
 
 ### Removing Content
 * **Delete a page and clean its navigation dictionary key:**
   ```bash
   npm run remove:page <page-key> -- --force
   ```
+  * With `--locale=<locale>` only that locale's file is deleted; the navigation key
+    stays in every dictionary (the dictionaries always carry the same key set) and the
+    i18n audit reports the missing locale as a warning.
 * **Delete an entire blog article across all languages:**
   ```bash
   npm run remove:post <post-slug> -- --force
@@ -114,6 +122,12 @@ npm run build
 
 # 5. End-to-end Smoke Test on dist/
 npm run smoke
+
+# 6. Dead Code / Dependency Check
+npm run knip
+
+# 7. End-to-end check of every documented CLI workflow (43 claims, temp copy)
+npm run verify:cli
 ```
 
-All 5 commands must pass with 0 exit codes.
+All 7 commands must pass with 0 exit codes.

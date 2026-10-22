@@ -19,7 +19,6 @@ if (!LOCALES.includes(BASE_LOCALE)) {
 }
 
 const args = process.argv.slice(2);
-const warnContent = args.includes('--warn-content') || args.includes('--lenient');
 
 let hasFatal = false;
 let warningCount = 0;
@@ -252,6 +251,7 @@ function localeFile(groupDir, locale) {
 }
 
 const groups = [];
+let missingLocales = 0;
 if (!fs.existsSync(contentDir)) {
   console.log('⚠️ No content directory found.');
 } else {
@@ -269,13 +269,14 @@ if (!fs.existsSync(contentDir)) {
 
       for (const locale of LOCALES) {
         if (!localeFile(groupDir, locale)) {
+          // A group may exist in fewer languages than the site has: a blog
+          // post that was only written in English is a normal case, and the
+          // route builder, the navigation and the language switcher all cope
+          // with it. It is reported, but it must not break the build.
           const message = `Missing ${locale}.mdx for src/content/${collection}/${group.name}`;
-          if (warnContent) {
-            console.warn(`⚠️ [WARN] ${message}`);
-            warningCount += 1;
-          } else {
-            fatal(message);
-          }
+          console.warn(`⚠️ [WARN] ${message}`);
+          warningCount += 1;
+          missingLocales += 1;
         }
       }
 
@@ -290,8 +291,12 @@ if (!fs.existsSync(contentDir)) {
     }
   }
 
-  if (!hasFatal) {
+  if (missingLocales === 0) {
     console.log(`✅ All ${groups.length} content groups have a file for every locale.`);
+  } else {
+    console.log(
+      `ℹ️ ${missingLocales} of ${groups.length * LOCALES.length} group/locale combinations have no entry (see the warnings above).`
+    );
   }
 }
 

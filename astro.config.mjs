@@ -1,8 +1,35 @@
 // @ts-check
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
+
+const require = createRequire(import.meta.url);
+
+/**
+ * The `components` directory of the installed `astro` package.
+ *
+ * `astro:transitions` is a *virtual* module, so the import it carries —
+ * `astro/components/ClientRouter.astro` — is resolved with a virtual importer
+ * that has no directory of its own. Vite then has to look up the `astro`
+ * package to apply its `exports` map (`"./components/*"`) before it can reach
+ * the file. When that package lookup comes up empty, the bare specifier
+ * survives the SSR import analysis, the module runner hands the `.astro` file
+ * to Node's native ESM loader, and the dev server dies with
+ * `TypeError [ERR_UNKNOWN_FILE_EXTENSION]: Unknown file extension ".astro"`.
+ *
+ * Aliasing the prefix to the installed package turns the package lookup into a
+ * plain file resolution, which cannot come up empty. The target is the very
+ * path the `exports` map resolves to, so nothing else about the import
+ * changes. `astro/package.json` is published by the package's `exports` map,
+ * so resolving it is a supported lookup.
+ */
+const astroComponentsDir = path.join(
+  path.dirname(require.resolve('astro/package.json')),
+  'components',
+);
 
 const isBuild = process.env.npm_lifecycle_event === 'build' || process.argv.includes('build');
 const mode = isBuild ? 'production' : 'development';
@@ -130,6 +157,11 @@ export default defineConfig({
   integrations: [mdx()],
   vite: {
     plugins: [tailwindcss()],
+    resolve: {
+      alias: {
+        'astro/components': astroComponentsDir,
+      },
+    },
   },
   server: {
     host: serverHost,

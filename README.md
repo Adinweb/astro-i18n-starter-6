@@ -156,6 +156,7 @@ All automation scripts run from the terminal using `pnpm run <command>`:
 | `pnpm run smoke` | Runs HTML, SEO, feed, manifest and H1 assertions on `dist/` | `pnpm run smoke` |
 | `pnpm run knip` | Finds dead files, exports and dependencies | `pnpm run knip` |
 | `pnpm run assets:generate` | Regenerates PNG icons, the OG image, and all hero/cover artwork next to the content groups | `pnpm run assets:generate` |
+| `pnpm run verify:cli` | Runs every documented CLI workflow in a throwaway copy and prints a PASS/FAIL line per claim | `pnpm run verify:cli` |
 
 ---
 
@@ -173,7 +174,12 @@ This will:
 4. Point every locale's `image` frontmatter at `./team.png` — the artwork sits next to the entries — and generate that artwork.
 5. Recompile Paraglide messages automatically.
 
-Pass `--image=cover.png` to use a different file: the path is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file. Pass `--image=none` to leave the page without artwork of its own.
+Only the **source locale** is published by default (`draft: false`); every other locale
+is written as `draft: true` so an untranslated page never goes live. Pass
+`--publish` (or `--draft=false`) to publish all locales, `--draft` to keep them all
+as drafts, and `--slug:fa="تیم-ما"` to set a native slug per language.
+
+Pass `--image=cover.png` to use a different file: the path is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file. Pass `--image=none` to leave the page without artwork of its own. A named image that does not exist is reported as a warning and the group artwork is used instead, so the build never breaks.
 
 To display the new page in the navigation bar, register it once in the navigation single source of truth — the header, mobile drawer, and footer all consume `getNavigation()`:
 ```ts
@@ -195,7 +201,11 @@ pnpm run new:post modern-web -- \
   --image=cover.png \
   --publish
 ```
-This generates synchronized files in `src/content/blog/modern-web/` across all supported languages. You can customize the localized `slug` in each file's frontmatter (e.g. `slug: "توسعه-وب-مدرن"` in `fa.mdx`).
+This generates synchronized files in `src/content/blog/modern-web/` across all supported languages. You can customize the localized `slug` in each file's frontmatter (e.g. `slug: "توسعه-وب-مدرن"` in `fa.mdx`), or let the scaffolder do it with `--slug:fa="توسعه-وب-مدرن"`.
+
+`--from` picks the source locale; it does not copy the body of another article. Use
+`--clone-from=<group>` to start from the body of an existing one. Like `new:page`,
+only the source locale is published unless you pass `--publish`.
 
 Without `--image`, the post points at its group cover `./<group>.png` — next to the entries — and that artwork is generated for you. Pass `--image=none` to use the shared hero artwork instead.
 
@@ -344,6 +354,9 @@ pnpm run smoke
 
 # 6. Dead Code / Dependency Check
 pnpm run knip
+
+# 7. End-to-end check of every documented CLI workflow (43 claims)
+pnpm run verify:cli
 
 # Regenerate icons, the Open Graph image, and all hero/cover artwork
 pnpm run assets:generate

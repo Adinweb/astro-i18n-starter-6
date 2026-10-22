@@ -128,6 +128,8 @@ pnpm run new:post -- tech-trends --update --sync-frontmatter --title="Modern Tec
   To prevent unreviewed placeholder translations (`[TODO: ...]`) from appearing publicly on the live blog index (`/fa/blog`, `/de/blog`, etc.), `new:post` sets `draft: true` on non-source locales by default.
   * To show a post on a specific language's blog listing, set `draft: false` in its frontmatter.
   * To publish all languages immediately upon creation, pass `--publish` or `--draft=false`.
+  * `--draft` / `--draft=true` keeps **every** locale (including the source) as a draft.
+* **Slugs:** The source and default locale use the group key (`tech-trends`); the other locales get a placeholder (`tech-trends-fa`) until a native slug is set with `--slug:fa="روندهای-فناوری"`. `--from` selects the source locale only — use `--clone-from=<group>` to copy the body of an existing article.
 * **Blog taxonomy and covers:** Pass `--category=engineering`, `--tags="astro,performance"`, and `--image=cover.png` when scaffolding (the file is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file) so cards, filters, and the article hero are populated from the start. The same flags work with `--update`, and inline YAML arrays are preserved when frontmatter is rewritten.
   * Category and tag keys stay language-neutral (`engineering`, `i18n`); visible labels are message keys (`blog_category_engineering`, `blog_tag_i18n`). Unknown keys fall back to a humanized label, so a new tag never blocks a build.
   * Run `pnpm run assets:generate` after adding a post group to produce `src/content/blog/<group>/<group>.png` (1200×675).
@@ -145,6 +147,7 @@ pnpm run new:page -- contact --update --sync-frontmatter --title:fa="تماس ب
 * Auto-creates localized page entries across all active locales.
 * Automatically registers navigation key `nav_<key>` in all dictionaries and recompiles Paraglide.
 * Use `--update` / `--sync-frontmatter` to update existing pages without manual file rewrites.
+* Only the source locale is published by default; the other locales stay `draft: true` until translated. Use `--publish`, `--draft`, and `--slug:<locale>="…"` to control that explicitly.
 
 ### 4. Batch Adding Translations (`pnpm run i18n:add-batch`)
 ```bash
@@ -199,7 +202,7 @@ pnpm run remove:page -- pricing --force
 # Delete only a specific language's page file:
 pnpm run remove:page -- pricing --locale=de --force
 ```
-* Automatically cleans up `nav_<page-key>` from all dictionary files (`messages/*.json`) and recompiles Paraglide messages.
+* Automatically cleans up `nav_<page-key>` from all dictionary files (`messages/*.json`) and recompiles Paraglide messages. With `--locale` only that locale's file is deleted and the navigation key stays in every dictionary, because the dictionaries always carry the same key set; the missing locale is reported by `pnpm run audit:i18n` as a warning, not an error.
 * Guards the critical `home` page from deletion without `--force`.
 
 ---

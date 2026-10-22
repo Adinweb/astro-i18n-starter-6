@@ -70,8 +70,8 @@
 | **جستجو** | Pagefind در پروداکشن + فهرست توسعه به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K، بدون رفت‌وبرگشت شبکه |
 | **SEO** | canonical، hreflang چندزبانه + `x-default`، Open Graph، Twitter Card، JSON-LD، sitemap، `robots.txt`، RSS/Atom، webmanifest |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک «نسخهٔ انگلیسی» |
-| **ابزار CLI** | ۱۳ اسکریپت برای ساخت/حذف صفحه و مقاله، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، تولید تصاویر |
-| **کیفیت** | TypeScript strict، `astro check`، ۹۸ تست Vitest، ممیزی i18n پنج‌مرحله‌ای، تست دود ۹۶ assertion، Knip، CI آمادهٔ GitHub Actions |
+| **ابزار CLI** | ۱۴ اسکریپت برای ساخت/حذف صفحه و مقاله، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، تولید تصاویر |
+| **کیفیت** | TypeScript strict، `astro check`، ۹۸ تست Vitest، ۴۳ تست سرتاسری CLI، ممیزی i18n پنج‌مرحله‌ای، تست دود ۹۶ assertion، Knip، CI آمادهٔ GitHub Actions |
 | **کارایی** | خروجی کاملاً استایک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، `prefers-reduced-motion` |
 
@@ -168,6 +168,7 @@ pnpm exec astro dev stop           # توقف سرور
 | `pnpm run i18n:extract` | استخراج متن سخت‌کد از قالب |
 | `pnpm run block:adapt` | تبدیل بلوک Tailwind به خواص منطقی |
 | `pnpm run audit:i18n` | ممیزی چندزبانه (۵ مرحله) |
+| `pnpm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۴۳ ادعا) |
 
 ### ساخت برای انتشار
 
@@ -197,10 +198,10 @@ SITE_URL=https://example.com pnpm run build
 ├── messages/                # فرهنگ لغت‌ها: en.json, de.json, fr.json, fa.json, ar.json
 ├── project.inlang/          # پیکربندی کامپایلر Paraglide (settings.json)
 ├── public/                  # favicon، آیکون‌ها، کارت OG پیش‌فرض
-├── scripts/                 # ۱۳ اسکریپت CLI
+├── scripts/                 # ۱۴ اسکریپت CLI
 │   └── lib/                 # کتابخانهٔ مشترک: locales, frontmatter, image-reference,
-│                            # content-stub, prompt
-├── .github/workflows/ci.yml # CI: lint → test → audit → build → smoke → knip
+│                            # content-stub, slug, prompt
+├── .github/workflows/ci.yml # CI: lint → test → audit → build → smoke → knip → verify:cli
 ├── .agents/skills/         # مهارت عملیاتی برای عامل‌های AI
 │   └── astro-i18n-starter/SKILL.md
 ├── docs/                   # GUIDE-FA.md (این راهنما)، PRD.md، PLAYBOOKS.md،
@@ -610,6 +611,7 @@ pnpm run new:page contact --title="Contact Us" --from=en
 | `--no-draft` | معادل `--draft=false` |
 | `--image=cover.png` | تصویر هیرو (نسبت به فایل محتوا) |
 | `--image=none` | استفاده از artwork مشترک |
+| `--slug:<locale>="…"` | اسلاگ بومی یک زبان |
 | `--title:fa="…"` | عنوان مخصوص یک زبان |
 | `--desc:fa="…"` | توضیح مخصوص یک زبان |
 | `--data='{"fa":{"title":"…"}}'` | دادهٔ JSON برای چند زبان |
@@ -619,6 +621,36 @@ pnpm run new:page contact --title="Contact Us" --from=en
 | `--update` | به‌روزرسانی گروه موجود بدون بازنویسی بدنه |
 | `--sync-frontmatter` | هم‌تراز کردن فرانت‌متر همهٔ فایل‌های زبانی |
 | `--sync-all` | راندن عنوان/توضیح مبدأ به‌عنوان الگو به همهٔ زبان‌ها |
+
+#### وضعیت انتشار پیش‌فرض
+
+پیش‌فرض، **فقط زبان مبدأ منتشر می‌شود** و بقیهٔ زبان‌ها `draft: true` می‌مانند
+تا وقتی ترجمه شوند:
+
+| حالت | زبان مبدأ | بقیهٔ زبان‌ها |
+| --- | --- | --- |
+| بدون پرچم (پیش‌فرض) | منتشر | پیش‌نویس |
+| `--publish` / `--draft=false` | منتشر | منتشر |
+| `--draft` / `--draft=true` | پیش‌نویس | پیش‌نویس |
+
+این رفتار مانع انتشار متن انگلیسی در زبان‌های دیگر می‌شود؛ هر زبان با
+`--publish` یا ویرایش `draft` در فرانت‌متر منتشر می‌شود.
+
+#### اسلاگ هر زبان
+
+- زبان مبدأ و زبان پیش‌فرض: نام گروه (`contact`).
+- بقیهٔ زبان‌ها: یک اسلاگ موقت (`contact-fa`) تا وقتی اسلاگ بومی را با
+  `--slug:fa="تماس-با ما"` تعیین کنید — چون یک اسلاگ ترجمه‌شده را نمی‌شود از
+  عنوان `[TODO: fa]` حدس زد.
+
+> اسلاگ در هر زبان یکتا است و پیشوند زبان URLها را از هم جدا می‌کند؛
+> بنابراین یک اسلاگ یکسان در چند زبان مجاز است.
+
+#### تصویر هیرو
+
+اگر `--image` فایلی را بدهد که پیدا نشود، اسکریپت **هشدار می‌دهد** و به
+artwork خود گروه (`./<page-key>.png`) برمی‌گردد؛ بیلد نمی‌شکند و هیرو بدون
+تصویر نمی‌ماند.
 
 ### ۷.۲ ساخت مقالهٔ وبلاگ — `new:post`
 
@@ -636,15 +668,24 @@ pnpm run new:post ai-agents \
 | --- | --- |
 | `--collection=<name>` | نام کالکشن (پیش‌فرض `blog`) |
 | `--title="…"` / `--desc="…"` | عنوان و توضیح (زبان مبدأ) |
-| `--from=<locale>` / `--source=<locale>` | زبان مبدأ |
+| `--from=<locale>` / `--source=<locale>` | زبان مبدأ (پیش‌فرض: زبان پایه) |
+| `--clone-from=<group>` | برداشتن بدنه از گروه مقالهٔ موجود |
 | `--category="a,b"` / `--categories="a,b"` | دسته‌ها (قابل تکرار) |
 | `--tags="x,y"` / `--tag="x,y"` | برچسب‌ها (قابل تکرار) |
 | `--date="YYYY-MM-DD"` / `--publishedAt="…"` | تاریخ انتشار |
 | `--image=cover.png` / `--image=none` | کاور |
 | `--publish` / `--draft` / `--no-draft` | وضعیت انتشار |
+| `--slug:<locale>="…"` | اسلاگ بومی یک زبان |
 | `--update` / `--sync-frontmatter` / `--sync-all` | همانند `new:page` |
 | `--title:fa="…"` / `--desc:fa="…"` / `--data='…'` | دادهٔ مخصوص هر زبان |
 | `--no-update-heading` | دست‌نخورده گذاشتن عنوان داخل بدنه |
+
+وضعیت انتشار، اسلاگ و رفتار تصویر دقیقاً مثل `new:page` است (بخش ۷.۱):
+پیش‌فرض فقط زبان مبدأ منتشر می‌شود، بقیهٔ زبان‌ها پیش‌نویس می‌مانند، و یک
+`--image` ناموجود به‌جای شکستن، هشدار می‌دهد و به کاور گروه برمی‌گردد.
+
+> `--from` **زبان مبدأ** را مشخص می‌کند، نه اینکه بدنهٔ مقالهٔ دیگری را کپی
+> کند. برای کپی‌کردن بدنه از مقاله‌ای موجود، `--clone-from=<group>` بزنید.
 
 ### ۷.۳ ویرایش بدون بازنویسی متن
 
@@ -671,6 +712,12 @@ pnpm run remove:post ai-agents --locale=fa --force
 | `--locale=<loc>` | فقط همان زبان را حذف کن (کل گروه دست‌نخورده) |
 | `--clean-nav` / `--no-clean-nav` | پاک‌سازی / نگه‌داشتن کلید `nav_<page>` در فرهنگ‌ها (پیش‌فرض: پاک‌سازی) |
 | `--force` / `-y` / `--yes` | بدون پرسش تعاملی |
+
+> با `--locale` فقط **فایل همان زبان** حذف می‌شود و کلید `nav_<page>` در همهٔ
+> فرهنگ‌ها می‌ماند: مجموعهٔ کلیدهای فرهنگ‌ها یک invariant است و نباید بین
+> زبان‌ها فرق کند. ناوبری و تعویض زبان خودشان زبانی را که ورودی ندارد
+> نادیده می‌گیرند، و ممیزی i18n نبودِ آن زبان را به‌عنوان **هشدار** گزارش
+> می‌کند، نه خطا.
 
 | گزینهٔ `remove:post` | کار |
 | --- | --- |
@@ -777,6 +824,11 @@ pnpm run assets:generate
 
 پالت نرمال‌شده به روشنایی است، بنابراین هر رنگ با یک روشنایی ادراک‌شده دیده می‌شود.
 
+رنگ هر گروه از **جایگاه آن در فهرست مرتب‌شدهٔ گروه‌ها** گرفته می‌شود، پس با
+افزودن یک گروه تازه، رنگ گروه‌های دیگر هم جابه‌جا می‌شود. این رفتار قطعی و
+تکرارپذیر است: اجرای دوبارهٔ `assets:generate` بدون تغییر محتوا هیچ فایلی را
+عوض نمی‌کند.
+
 دو چیز **تولید نمی‌شود**:
 
 - عکس مشترک هیرو (`src/assets/hero/hero-0.jpg`) — یک عکس واقعی است، نه artwork کدنویسی‌شده؛
@@ -791,7 +843,18 @@ pnpm run assets:generate
 pnpm run audit:i18n    # ۵ بخش: پیکربندی زبان، فرهنگ‌ها، محتوا، مسیرها، متن هاردکد
 pnpm run smoke         # ۹۶ assertion روی خروجی بیلدشده
 pnpm run knip          # فایل/اکسپورت/وابستگی مرده
+pnpm run verify:cli    # ۴۳ ادعا دربارهٔ گردش‌کارهای CLI
 ```
+
+`verify:cli` پروژه را در یک پوشهٔ موقت کپی می‌کند، همهٔ فرمان‌های CLI را دقیقاً
+همان‌طور که در این راهنما آمده اجرا می‌کند و برای هر ادعا یک خط PASS/FAIL
+چاپ می‌کند. این اسکریپت هیچ فایلی از نسخهٔ کاری شما را تغییر نمی‌دهد و
+حتی `node_modules` را دست نمی‌زند (برای همین `pnpm` داخل پوشهٔ موقت اجرا
+نمی‌شود).
+
+> در بخش ۳ ممیزی، **نبودِ فایل یک زبان برای یک گروه هشدار است، نه خطا**:
+> نوشتن یک مقاله فقط به انگلیسی حالت عادی است و سایت، ناوبری و تعویض زبان
+> هر سه با آن کنار می‌آیند.
 
 ### ۷.۱۰ کتابخانهٔ مشترک `scripts/lib/`
 
@@ -800,7 +863,8 @@ pnpm run knip          # فایل/اکسپورت/وابستگی مرده
 | `locales.mjs` | خواندن `src/i18n/locales.ts` به‌عنوان منبع حقیقت: `parseLocaleConfig(source)` و `readLocaleConfig()` — ممیزی i18n و تست دود هر دو از همین پارسر استفاده می‌کنند، پس فهرست زبان‌ها و جهت آن‌ها هرگز دو بار تعریف نمی‌شود |
 | `frontmatter.mjs` | `parseFrontmatter` / `stringifyFrontmatter` (بدون وابستگی) |
 | `image-reference.mjs` | تبدیل `--image` به ارجاع نسبی به فایل محتوا و کپی artwork به پوشهٔ گروه |
-| `content-stub.mjs` | متن جانشین هر زبان برای محتوای تولیدشده |
+| `content-stub.mjs` | متن جانشین هر زبان برای محتوای تولیدشده (صفحه و مقاله) |
+| `slug.mjs` | `resolveSlug` — اسلاگ هر زبان در محتوای تازه‌ساخته (نام گروه برای زبان مبدأ، `<گروه>-<locale>` برای بقیه) |
 | `prompt.mjs` | `askYesNo` / `confirmDeletion` — تأیید یکسان برای اسکریپت‌های مخرب |
 
 ---
@@ -1312,6 +1376,7 @@ pnpm run audit:i18n
 SITE_URL=https://example.com pnpm run build
 pnpm run smoke    # ۹۶ assertion روی dist/
 pnpm run knip
+pnpm run verify:cli  # ۴۳ ادعا دربارهٔ گردش‌کارهای CLI
 ```
 
 ### چه چیزی تست می‌شود
@@ -1337,7 +1402,7 @@ pnpm run knip
 | --- | --- |
 | ۱. پیکربندی زبان | تطابق `locales.ts` و `project.inlang/settings.json`، وجود `dir` برای هر زبان |
 | ۲. فرهنگ‌ها | کلیدها و placeholderهای ICU در همهٔ زبان‌ها، وجود همهٔ کلیدهای استفاده‌شده |
-| ۳. کالکشن محتوا | وجود فایل هر زبان برای هر گروه |
+| ۳. کالکشن محتوا | وجود فایل هر زبان برای هر گروه (نبودِ یک زبان = هشدار) |
 | ۴. نگهبان slug و مسیر | فرانت‌متر معتبر، اسلاگ‌های یکتا، نبود برخورد مسیر |
 | ۵. اسکنر متن هاردکد | هشدار دربارهٔ رشته‌های ترجمه‌نشده در قالب‌ها (هشدار، نه خطا) |
 
@@ -1373,7 +1438,7 @@ pnpm run knip
 - Node 22 با cache pnpm، `pnpm install --frozen-lockfile`
 - `SITE_URL: https://example.com` به‌عنوان env
 - `timeout-minutes: 15`
-- ترتیب: lint → test → audit → build → smoke → knip
+- ترتیب: lint → test → audit → build → smoke → knip → verify:cli
 
 ---
 
@@ -1463,6 +1528,8 @@ dist/
 | نوار پیشرفت دیده نمی‌شود | فقط روی ناوبری سمت کاربر اجرا می‌شود | با کلیک بین صفحه‌ها تست کنید؛ در بارگذاری کامل صفحه اجرا نمی‌شود |
 | جستجو نتیجه نمی‌دهد | ایندکس Pagefind ساخته نشده | `pnpm run build` (مرحلهٔ `pagefind`) و منتشر کردن `dist/pagefind/` |
 | `SITE_URL is not a valid absolute URL` | مقدار ناقص در `.env` | مقدار کامل با `https://` بدهید |
+| `Unknown file extension ".astro"` در سرور توسعه | سرور توسعه قبل از `pnpm install` بالا آمده و `node_modules` عوض شده است | سرور را ری‌استارت کنید: `pnpm exec astro dev stop` و بعد `pnpm exec astro dev --background` |
+| `Missing <locale>.mdx` در خروجی ممیزی | گروه محتوا در همهٔ زبان‌ها ترجمه نشده | هشدار است و بیلد را نمی‌شکند؛ با `pnpm run new:page <key> --update` یا `--slug:<locale>=…` تکمیلش کنید |
 
 ---
 
@@ -1534,6 +1601,7 @@ dist/
 | `pnpm run i18n:extract` | استخراج متن سخت‌کد |
 | `pnpm run block:adapt` | تبدیل به خواص منطقی |
 | `pnpm run audit:i18n` | ممیزی چندزبانه |
+| `pnpm run verify:cli` | تست سرتاسری گردش‌کارهای CLI |
 | `pnpm exec astro dev --background` | اجرای سرور توسعه در پس‌زمینه |
 | `pnpm exec astro dev status` | وضعیت سرور توسعه |
 | `pnpm exec astro dev logs --follow` | دنبال کردن لاگ سرور |

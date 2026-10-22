@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
 import { contentStub } from './lib/content-stub.mjs';
+import { resolveSlug } from './lib/slug.mjs';
 import {
   escapeRegex,
   parseFrontmatter,
@@ -26,7 +27,7 @@ export function runCli() {
   let customDesc = '';
   let hasCustomDesc = false;
   let fromLocale = '';
-  let isDraft = false;
+  let publishAll = false;
   let hasDraftArg = false;
   let isUpdate = false;
   let isSyncFrontmatter = false;
@@ -37,6 +38,7 @@ export function runCli() {
   let noImage = false;
   const titlesByLocale = {};
   const descriptionsByLocale = {};
+  const slugsByLocale = {};
   let jsonData = null;
 
   for (const arg of args) {
@@ -65,6 +67,12 @@ export function runCli() {
         const loc = arg.slice(prefixLen, eqIdx);
         descriptionsByLocale[loc] = arg.slice(eqIdx + 1);
       }
+    } else if (arg.startsWith('--slug:')) {
+      const eqIdx = arg.indexOf('=');
+      if (eqIdx !== -1) {
+        const loc = arg.slice(7, eqIdx);
+        slugsByLocale[loc] = arg.slice(eqIdx + 1);
+      }
     } else if (arg.startsWith('--data=')) {
       try {
         jsonData = JSON.parse(arg.slice(7));
@@ -82,10 +90,10 @@ export function runCli() {
     } else if (arg.startsWith('--from=') || arg.startsWith('--source=')) {
       fromLocale = arg.slice(arg.indexOf('=') + 1);
     } else if (arg === '--draft=true' || arg === '--draft') {
-      isDraft = true;
+      publishAll = false;
       hasDraftArg = true;
     } else if (arg === '--draft=false' || arg === '--no-draft' || arg === '--publish') {
-      isDraft = false;
+      publishAll = true;
       hasDraftArg = true;
     } else if (arg === '--no-update-heading') {
       updateHeading = false;
@@ -118,8 +126,10 @@ Creation Options:
   --desc="<desc>"              Description for the page
   --from=<locale>              Source locale to branch from (default: baseLocale / en)
   --publish / --draft=false    Publish immediately across all locales
+  --draft / --draft=true       Create every locale as a draft
   --image=cover.png            Hero background, referenced relative to the content file
   --image=none                 Use the shared hero artwork instead of a page-specific one
+  --slug:<locale>="<slug>"     Native slug of one language (default: <page-key> for the source locale)
 
 Update / Sync Options:
   --update                     Update an existing page group without rewriting markdown body
@@ -171,19 +181,19 @@ Update / Sync Options:
         group: pageKey,
       });
       if (!placed) {
-        console.error(
-          `❌ Artwork not found: "${customImage}". It was looked up next to the content (${path.relative(rootDir, targetDir)}) and in the project root.`
+        console.warn(
+          `⚠️ Artwork "${customImage}" was not found next to the content (${path.relative(rootDir, targetDir)}) or in the project root.`
         );
-        console.error('   Pass a path to an existing image file, or "none" to use the shared hero artwork.');
-        process.exit(1);
+        console.warn(`   The group artwork "./${pageKey}.png" is used instead.`);
+        customImage = '';
+      } else {
+        customImage = placed;
       }
-      customImage = placed;
     }
 
     for (const loc of LOCALES) {
       const filePath = path.join(targetDir, `${loc}.mdx`);
       const isSource = loc === sourceLocale;
-      const isDefault = loc === defaultLocale;
 
       let fmData = {};
       let body = '';
@@ -194,14 +204,14 @@ Update / Sync Options:
         body = parsed.body;
       } else {
         // Missing locale file - create symmetrical fallback
-        const slug = isDefault ? pageKey : `${pageKey}-${loc}`;
+        const slug = resolveSlug(loc, pageKey, sourceLocale, defaultLocale, slugsByLocale);
         fmData = {
           title: `[TODO: ${loc}] ${title}`,
           slug,
           description: `[TODO: ${loc}] Description for ${title}`,
-          draft: isDraft,
+          draft: hasDraftArg ? !publishAll : !isSource,
         };
-        body = `\n# ${fmData.title}\n\n${contentStub(loc)}\n`;
+        body = `\n# ${fmData.title}\n\n${contentStub(loc)}`;
       }
 
       const oldTitle = fmData.title || '';
@@ -230,7 +240,12 @@ Update / Sync Options:
 
       // Draft resolution
       if (hasDraftArg) {
-        fmData.draft = isDraft;
+        fmData.draft = !publishAll;
+      }
+
+      // Slug resolution
+      if (slugsByLocale[loc]) {
+        fmData.slug = slugsByLocale[loc];
       }
 
       // Hero background resolution
@@ -295,13 +310,14 @@ Update / Sync Options:
       group: pageKey,
     });
     if (!placed) {
-      console.error(
-        `❌ Artwork not found: "${customImage}". It was looked up next to the content (${path.relative(rootDir, targetDir)}) and in the project root.`
+      console.warn(
+        `⚠️ Artwork "${customImage}" was not found next to the content (${path.relative(rootDir, targetDir)}) or in the project root.`
       );
-      console.error('   Pass a path to an existing image file, or "none" to use the shared hero artwork.');
-      process.exit(1);
+      console.warn(`   The group artwork "./${pageKey}.png" is used instead.`);
+      customImage = '';
+    } else {
+      customImage = placed;
     }
-    customImage = placed;
   }
 
   fs.mkdirSync(targetDir, { recursive: true });
@@ -314,8 +330,10 @@ Update / Sync Options:
 
   for (const loc of LOCALES) {
     const isSource = loc === sourceLocale;
-    const isDefault = loc === defaultLocale;
-    const slug = isDefault ? pageKey : `${pageKey}-${loc}`;
+    const slug = resolveSlug(loc, pageKey, sourceLocale, defaultLocale, slugsByLocale);
+    // The source locale is published, every other locale waits for its
+    // translation. `--publish` publishes every locale at once.
+    const isDraft = hasDraftArg ? !publishAll : !isSource;
 
     let pageTitle;
     if (titlesByLocale[loc]) {
@@ -356,6 +374,16 @@ ${stubBody}
       ? `ℹ️ Hero background: "${pageImage}"`
       : 'ℹ️ Hero background: shared artwork (--image=none)'
   );
+
+  if (hasDraftArg && !publishAll) {
+    console.log('📝 Note: Every locale is marked as "draft: true" and stays unpublished until you publish it.');
+  } else if (!hasDraftArg) {
+    const draftedLocales = LOCALES.filter((l) => l !== sourceLocale);
+    console.log(
+      `📝 Note: Non-source locales (${draftedLocales.join(', ')}) are marked as "draft: true" until they are translated.`
+    );
+    console.log('   (To publish every locale immediately, pass --publish or --draft=false).');
+  }
 
   // Draw the artwork for the new page, so its hero background is never broken.
   try {

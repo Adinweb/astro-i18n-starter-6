@@ -4,6 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
+import { postStub } from './lib/content-stub.mjs';
+import { resolveSlug } from './lib/slug.mjs';
 import {
   escapeRegex,
   parseFrontmatter,
@@ -11,6 +13,16 @@ import {
 } from './lib/frontmatter.mjs';
 
 export { parseFrontmatter, stringifyFrontmatter };
+
+/**
+ * Replaces the first markdown heading of a body with a new title.
+ *
+ * The heading of a scaffolded entry always mirrors its frontmatter title, so
+ * the `--update` flow and the clone flow can keep the two in sync.
+ */
+export function replaceLeadingHeading(body, title) {
+  return body.replace(/^\s*#\s+.*$/m, `# ${title}`);
+}
 
 /**
  * The post's cover is referenced relative to the entry file, so Astro resolves
@@ -36,8 +48,10 @@ export function runCli() {
   let noImage = false;
   let customCategories = null;
   let customTags = null;
+  let cloneFrom = '';
   const titlesByLocale = {};
   const descriptionsByLocale = {};
+  const slugsByLocale = {};
   let jsonData = null;
 
   for (const arg of args) {
@@ -53,6 +67,14 @@ export function runCli() {
       fromLocale = arg.slice(7);
     } else if (arg.startsWith('--source=')) {
       fromLocale = arg.slice(9);
+    } else if (arg.startsWith('--clone-from=')) {
+      cloneFrom = arg.slice(13);
+    } else if (arg.startsWith('--slug:')) {
+      const eqIdx = arg.indexOf('=');
+      if (eqIdx !== -1) {
+        const loc = arg.slice(7, eqIdx);
+        slugsByLocale[loc] = arg.slice(eqIdx + 1);
+      }
     } else if (arg.startsWith('--title=')) {
       customTitle = arg.slice(8);
     } else if (arg.startsWith('--desc=') || arg.startsWith('--description=')) {
@@ -135,12 +157,14 @@ Creation Options:
   --collection=<name>          Content collection name (default: "blog")
   --title="<title>"            Title for the post (source locale)
   --desc="<description>"       Description for the post
-  --from=<locale>              Source locale to branch or clone body from
+  --from=<locale>              Source locale of the article (default: the base locale)
+  --clone-from=<group>         Reuse the body of an existing article group
   --publish / --draft=false    Publish immediately across all locales (default marks non-source as draft)
   --category="a,b"             Blog category keys (repeatable, comma-separated)
   --tags="x,y"                 Blog tag keys (repeatable, comma-separated)
   --image=cover.png            Featured image, referenced relative to the content file
   --image=none                 Use the shared hero artwork instead of a group-specific cover
+  --slug:<locale>="<slug>"     Native slug of one language (default: <group> for the source locale)
 
 Update / Sync Options:
   --update                     Update an existing article group without rewriting markdown body
@@ -199,20 +223,20 @@ Update / Sync Options:
         group: groupSlug,
       });
       if (!placed) {
-        console.error(
-          `❌ Artwork not found: "${customImage}". It was looked up next to the content (${path.relative(rootDir, targetDir)}) and in the project root.`
+        console.warn(
+          `⚠️ Artwork "${customImage}" was not found next to the content (${path.relative(rootDir, targetDir)}) or in the project root.`
         );
-        console.error('   Pass a path to an existing image file, or "none" to use the shared hero artwork.');
-        process.exit(1);
+        console.warn(`   The group artwork "./${groupSlug}.png" is used instead.`);
+        customImage = '';
+      } else {
+        customImage = placed;
       }
-      customImage = placed;
     }
     const sourceTitle = customTitle || groupSlug.replace(/-/g, ' ');
 
     for (const loc of LOCALES) {
       const filePath = path.join(targetDir, `${loc}.mdx`);
       const isSource = loc === sourceLocale;
-      const isDefault = loc === defaultLocale;
 
       let fmData = {};
       let body = '';
@@ -222,7 +246,7 @@ Update / Sync Options:
         fmData = parsed.data;
         body = parsed.body;
       } else {
-        const slug = isDefault ? groupSlug : `${groupSlug}-${loc}`;
+        const slug = resolveSlug(loc, groupSlug, sourceLocale, defaultLocale, slugsByLocale);
         fmData = {
           title: `[TODO: ${loc}] ${sourceTitle}`,
           slug,
@@ -230,7 +254,7 @@ Update / Sync Options:
           publishedAt: customDate || today,
           draft: !isSource,
         };
-        body = `\n# ${fmData.title}\n\nArticle content goes here...\n`;
+        body = `\n# ${fmData.title}\n\n${postStub(loc)}`;
       }
 
       const oldTitle = fmData.title || '';
@@ -280,6 +304,11 @@ Update / Sync Options:
         fmData.draft = !publishAll;
       }
 
+      // Slug resolution
+      if (slugsByLocale[loc]) {
+        fmData.slug = slugsByLocale[loc];
+      }
+
       // Heading update in markdown body if requested
       if (updateHeading && fmData.title && oldTitle && oldTitle !== fmData.title) {
         const headingRegex = new RegExp(`^(\\s*#\\s*)${escapeRegex(oldTitle)}(\\s*)$`, 'm');
@@ -320,46 +349,41 @@ Update / Sync Options:
       group: groupSlug,
     });
     if (!placed) {
-      console.error(
-        `❌ Artwork not found: "${customImage}". It was looked up next to the content (${path.relative(rootDir, targetDir)}) and in the project root.`
+      console.warn(
+        `⚠️ Artwork "${customImage}" was not found next to the content (${path.relative(rootDir, targetDir)}) or in the project root.`
       );
-      console.error('   Pass a path to an existing image file, or "none" to use the shared hero artwork.');
-      process.exit(1);
+      console.warn(`   The group artwork "./${groupSlug}.png" is used instead.`);
+      customImage = '';
+    } else {
+      customImage = placed;
     }
-    customImage = placed;
   }
 
   fs.mkdirSync(targetDir, { recursive: true });
 
-  let baseBody = `\n# Article Header\n\nArticle content goes here...\n`;
-
-  if (fromLocale) {
-    let sourceFile = null;
-    if (fromLocale.includes('/')) {
-      const candidate = path.join(colDir, fromLocale.endsWith('.mdx') ? fromLocale : `${fromLocale}.mdx`);
-      if (fs.existsSync(candidate)) sourceFile = candidate;
-    } else if (fs.existsSync(path.join(colDir, fromLocale, `${fromLocale}.mdx`))) {
-      sourceFile = path.join(colDir, fromLocale, `${fromLocale}.mdx`);
-    } else if (fs.existsSync(path.join(colDir, fromLocale, 'en.mdx'))) {
-      sourceFile = path.join(colDir, fromLocale, 'en.mdx');
-    } else {
-      const existingGroups = fs.readdirSync(colDir, { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== groupSlug);
-      for (const eg of existingGroups) {
-        const candidate = path.join(colDir, eg.name, `${fromLocale}.mdx`);
-        if (fs.existsSync(candidate)) {
-          sourceFile = candidate;
-          break;
-        }
-      }
-    }
-
-    if (sourceFile && fs.existsSync(sourceFile)) {
-      const fromContent = fs.readFileSync(sourceFile, 'utf-8');
-      baseBody = fromContent.replace(/^---[\s\S]*?---/, '');
-    }
-  }
-
   const sourceTitle = customTitle || groupSlug.replace(/-/g, ' ');
+
+  // `--clone-from` reuses the body of an existing article. Only the source
+  // locale gets that copy; every other language starts from its own stub.
+  let clonedBody = '';
+  if (cloneFrom) {
+    const cloneDir = path.join(colDir, cloneFrom);
+    const cloneFile = ['.mdx', '.md']
+      .map((extension) => path.join(cloneDir, `${sourceLocale}${extension}`))
+      .find((candidate) => fs.existsSync(candidate));
+
+    if (!cloneFile) {
+      console.error(
+        `❌ No article group "${cloneFrom}" with a "${sourceLocale}" entry in ${path.relative(rootDir, colDir)}.`
+      );
+      process.exit(1);
+    }
+
+    clonedBody = fs
+      .readFileSync(cloneFile, 'utf-8')
+      .replace(/^---[\s\S]*?---/, '')
+      .trim();
+  }
 
   // Every group owns its cover. The artwork is drawn from code by
   // `assets:generate`, so the referenced file always exists once it is run.
@@ -371,9 +395,8 @@ Update / Sync Options:
 
   for (const loc of LOCALES) {
     const isSource = loc === sourceLocale;
-    const isDraft = publishAll ? false : !isSource;
-    const isDefault = loc === defaultLocale;
-    const slug = isDefault ? groupSlug : `${groupSlug}-${loc}`;
+    const isDraft = hasDraftArg ? !publishAll : !isSource;
+    const slug = resolveSlug(loc, groupSlug, sourceLocale, defaultLocale, slugsByLocale);
 
     let title;
     if (titlesByLocale[loc]) {
@@ -393,6 +416,12 @@ Update / Sync Options:
 
     const dateValue = customDate || today;
 
+    // Every entry starts with a body in its own language, and the heading of
+    // the body always mirrors the frontmatter title.
+    const body = isSource && clonedBody
+      ? replaceLeadingHeading(clonedBody, title)
+      : `\n# ${title}\n\n${postStub(loc)}`;
+
     const taxonomyLines = [
       groupImage ? `image: "${groupImage}"` : '',
       customCategories?.length
@@ -410,7 +439,7 @@ description: "${description}"
 ${taxonomyLines ? `${taxonomyLines}\n` : ''}publishedAt: ${dateValue}
 draft: ${isDraft}
 ---
-${baseBody}
+${body}
 `;
 
     fs.writeFileSync(path.join(targetDir, `${loc}.mdx`), content, 'utf-8');

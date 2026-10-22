@@ -29,7 +29,8 @@
     "remove:post": "node scripts/remove-post.mjs",
     "i18n:add-lang": "node scripts/add-language.mjs",
     "i18n:remove-lang": "node scripts/remove-language.mjs",
-    "audit:i18n": "node scripts/audit-i18n.mjs"
+    "audit:i18n": "node scripts/audit-i18n.mjs",
+    "verify:cli": "node scripts/verify-cli.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^8.0.3",
