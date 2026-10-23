@@ -37,7 +37,7 @@ export const GET: APIRoute = async () => {
         .map((term) => `    <category term="${escapeXml(term)}" />`)
         .join('\n');
 
-      return `  <entry>
+      return `  <entry xml:lang="${locale}">
     <title>${escapeXml(post.data.title)}</title>
     <link rel="alternate" type="text/html" hreflang="${locale}" href="${escapeXml(url)}" />
     <id>${escapeXml(url)}</id>
@@ -48,7 +48,11 @@ export const GET: APIRoute = async () => {
     })
     .join('\n');
 
-  const latest = posts[0]?.data.publishedAt.toISOString() ?? new Date(0).toISOString();
+  const latestTimestamp = posts.reduce((latest, post) => {
+    const updated = (post.data.updatedAt ?? post.data.publishedAt).getTime();
+    return Math.max(latest, updated);
+  }, 0);
+  const latest = new Date(latestTimestamp).toISOString();
   const siteUrl = absoluteUrl('/');
 
   const xml = `<?xml version="1.0" encoding="utf-8"?>

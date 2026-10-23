@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
-import { postStub } from './lib/content-stub.mjs';
+import { postStub, stripLeadingHeading } from './lib/content-stub.mjs';
 import { resolveSlug } from './lib/slug.mjs';
 import {
   escapeRegex,
@@ -13,16 +13,6 @@ import {
 } from './lib/frontmatter.mjs';
 
 export { parseFrontmatter, stringifyFrontmatter };
-
-/**
- * Replaces the first markdown heading of a body with a new title.
- *
- * The heading of a scaffolded entry always mirrors its frontmatter title, so
- * the `--update` flow and the clone flow can keep the two in sync.
- */
-export function replaceLeadingHeading(body, title) {
-  return body.replace(/^\s*#\s+.*$/m, `# ${title}`);
-}
 
 /**
  * The post's cover is referenced relative to the entry file, so Astro resolves
@@ -159,7 +149,7 @@ Creation Options:
   --desc="<description>"       Description for the post
   --from=<locale>              Source locale of the article (default: the base locale)
   --clone-from=<group>         Reuse the body of an existing article group
-  --publish / --draft=false    Publish immediately across all locales (default marks non-source as draft)
+  --publish / --draft=false    Publish the source and locales with real titles/descriptions
   --category="a,b"             Blog category keys (repeatable, comma-separated)
   --tags="x,y"                 Blog tag keys (repeatable, comma-separated)
   --image=cover.png            Featured image, referenced relative to the content file
@@ -205,6 +195,8 @@ Update / Sync Options:
   const defaultLocale = inlangSettings.baseLocale || 'en';
   const sourceLocale = fromLocale || defaultLocale;
   const today = new Date().toISOString().split('T')[0];
+  const publishedLocales = [];
+  const draftLocales = [];
 
   // -------------------------------------------------------------
   // UPDATE / SYNC-FRONTMATTER MODE
@@ -301,7 +293,10 @@ Update / Sync Options:
 
       // Draft resolution
       if (hasDraftArg) {
-        fmData.draft = !publishAll;
+        const hasPlaceholder = [fmData.title, fmData.description].some(
+          (value) => typeof value === 'string' && value.includes('[TODO')
+        );
+        fmData.draft = !publishAll || hasPlaceholder;
       }
 
       // Slug resolution
@@ -395,7 +390,6 @@ Update / Sync Options:
 
   for (const loc of LOCALES) {
     const isSource = loc === sourceLocale;
-    const isDraft = hasDraftArg ? !publishAll : !isSource;
     const slug = resolveSlug(loc, groupSlug, sourceLocale, defaultLocale, slugsByLocale);
 
     let title;
@@ -411,16 +405,19 @@ Update / Sync Options:
     } else if (hasCustomDesc) {
       description = isSource ? customDesc : `[TODO: ${loc}] ${customDesc}`;
     } else {
-      description = `[TODO: ${loc}] Description for ${groupSlug}`;
+      description = isSource ? `Description for ${groupSlug}` : `[TODO: ${loc}] Description for ${groupSlug}`;
     }
 
     const dateValue = customDate || today;
+    const hasPlaceholder = [title, description].some((value) => value.includes('[TODO'));
+    const isDraft = hasDraftArg ? !publishAll || hasPlaceholder : !isSource;
+    (isDraft ? draftLocales : publishedLocales).push(loc);
 
     // Every entry starts with a body in its own language, and the heading of
     // the body always mirrors the frontmatter title.
     const body = isSource && clonedBody
-      ? replaceLeadingHeading(clonedBody, title)
-      : `\n# ${title}\n\n${postStub(loc)}`;
+      ? `\n${stripLeadingHeading(clonedBody).trimStart()}`
+      : `\n${postStub(loc)}`;
 
     const taxonomyLines = [
       groupImage ? `image: "${groupImage}"` : '',
@@ -466,9 +463,14 @@ ${body}
   if (!publishAll) {
     const draftedLocales = LOCALES.filter((l) => l !== sourceLocale);
     console.log(`📝 Note: Non-source locales (${draftedLocales.join(', ')}) are marked as "draft: true" so they won't appear on blog index until translated.`);
-    console.log(`   (To publish all locales immediately next time, pass --publish or --draft=false).`);
+    console.log(`   (To publish every translated locale next time, pass --publish or --draft=false).`);
   } else {
-    console.log(`🚀 All locales published immediately with "draft: false".`);
+    console.log(`🚀 Published locales: ${publishedLocales.join(', ') || 'none'}.`);
+    if (draftLocales.length) {
+      console.log(
+        `📝 Locales with placeholder copy stay drafts: ${draftLocales.join(', ')}. Provide --title:<locale> and --desc:<locale> to publish them.`
+      );
+    }
   }
 }
 

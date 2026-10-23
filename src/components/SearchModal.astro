@@ -44,7 +44,13 @@ const { locale } = Astro.props;
       />
     </div>
 
-    <div id="search-results" class="flex min-h-30 flex-col gap-2 overflow-y-auto p-4">
+    <div
+      id="search-results"
+      class="flex min-h-30 flex-col gap-2 overflow-y-auto p-4"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       <p class="py-6 text-center text-sm text-muted" id="search-placeholder-msg">
         {m.common_type_to_search({}, { locale })}
       </p>

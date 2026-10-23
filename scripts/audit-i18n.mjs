@@ -368,6 +368,14 @@ for (const { collection, group, groupDir } of groups) {
       slugFatal = true;
     }
 
+    if (frontmatter.draft !== 'true') {
+      const source = fs.readFileSync(file, 'utf-8');
+      if (source.includes('[TODO')) {
+        console.warn(`⚠️ [WARN] ${relative} is published but still contains "[TODO" placeholders`);
+        warningCount += 1;
+      }
+    }
+
     const slug = frontmatter.slug;
     if (slug === undefined || slug === '') {
       if (collection === 'pages' && group === 'home') continue;

@@ -89,6 +89,7 @@ const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` :
           <section
             class="space-y-4 rounded-2xl border border-border bg-surface/70 p-4 sm:p-5"
             data-blog-filter
+            hidden
             data-base-href={url}
             data-showing-template={m.blog_filter_showing_page(
               { visible: '{visible}', total: '{total}' },
@@ -163,7 +164,7 @@ const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` :
             {m.blog_filter_empty({}, { locale })}
           </p>
 
-          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-pagefind-ignore>
             {
               pagePosts.map((post, index) => (
                 <PostCard
@@ -277,6 +278,7 @@ const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` :
     const root = document.querySelector<HTMLElement>('[data-blog-filter]');
     if (!root || root.dataset.bound === 'true') return;
     root.dataset.bound = 'true';
+    root.hidden = false;
 
     const cards = [...document.querySelectorAll<HTMLElement>('[data-post-card]')].map((element) => ({
       element,

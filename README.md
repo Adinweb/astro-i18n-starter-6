@@ -176,8 +176,10 @@ This will:
 
 Only the **source locale** is published by default (`draft: false`); every other locale
 is written as `draft: true` so an untranslated page never goes live. Pass
-`--publish` (or `--draft=false`) to publish all locales, `--draft` to keep them all
-as drafts, and `--slug:fa="تیم-ما"` to set a native slug per language.
+`--publish` (or `--draft=false`) to publish the source and every locale with real
+`--title:<locale>` / `--desc:<locale>` copy; locales that still contain `[TODO: ...]`
+placeholders stay drafts. `--draft` keeps every locale as a draft, and
+`--slug:fa="تیم-ما"` sets a native slug per language.
 
 Pass `--image=cover.png` to use a different file: the path is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file. Pass `--image=none` to leave the page without artwork of its own. A named image that does not exist is reported as a warning and the group artwork is used instead, so the build never breaks.
 
@@ -267,7 +269,7 @@ The script automatically:
 * Registers `es` in `project.inlang/settings.json`.
 * Creates `messages/es.json`.
 * Updates `LOCALES` and metadata in `src/i18n/locales.ts`.
-* Generates `es.mdx` files for all existing pages and blog posts.
+* Generates `es.mdx` files for all existing pages and blog posts as drafts (`draft: true`); `--publish` does not override a `[TODO: ...]` placeholder title, so translate each file and flip its `draft` flag when it is ready.
 * Recompiles Paraglide messages.
 
 ### 4. Swapping the Default Language
@@ -355,7 +357,7 @@ pnpm run smoke
 # 6. Dead Code / Dependency Check
 pnpm run knip
 
-# 7. End-to-end check of every documented CLI workflow (43 claims)
+# 7. End-to-end check of every documented CLI workflow (45 claims)
 pnpm run verify:cli
 
 # Regenerate icons, the Open Graph image, and all hero/cover artwork

@@ -22,7 +22,7 @@ export const GET: APIRoute = async () => {
   return new Response(svgContent, {
     headers: {
       'Content-Type': 'image/svg+xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
     },
   });
 };

@@ -261,7 +261,7 @@ if (sitemap) {
 assert(fs.existsSync(path.join(distDir, 'rss.xml')), 'dist/rss.xml exists');
 const rss = readHtml('rss.xml');
 if (rss) {
-  assert(rss.includes('<feed') && rss.includes('<entry>'), 'RSS feed contains entries');
+  assert(rss.includes('<feed') && rss.includes('<entry'), 'RSS feed contains entries');
 }
 
 assert(fs.existsSync(path.join(distDir, 'site.webmanifest')), 'dist/site.webmanifest exists');
@@ -386,7 +386,44 @@ if (searchIndex) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. Blog pagination: generated page routes, pager markup and rel=prev/next
+// 6. Every page has one H1 and no placeholder copy leaked into the build
+// ---------------------------------------------------------------------------
+function collectHtmlFiles(dir) {
+  const files = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === '_astro' || entry.name === 'pagefind') continue;
+      files.push(...collectHtmlFiles(fullPath));
+    } else if (entry.name.endsWith('.html')) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+const builtHtmlFiles = collectHtmlFiles(distDir);
+const duplicateHeadingPages = [];
+const placeholderPages = [];
+
+for (const file of builtHtmlFiles) {
+  const html = fs.readFileSync(file, 'utf-8');
+  const relative = path.relative(distDir, file);
+  if (count(html, /<h1[\s>]/g) !== 1) duplicateHeadingPages.push(relative);
+  if (html.includes('[TODO')) placeholderPages.push(relative);
+}
+
+assert(
+  duplicateHeadingPages.length === 0,
+  `Every built page has exactly one <h1>${duplicateHeadingPages.length ? ` (offenders: ${duplicateHeadingPages.join(', ')})` : ''}`
+);
+assert(
+  placeholderPages.length === 0,
+  `No placeholder copy is published${placeholderPages.length ? ` (offenders: ${placeholderPages.join(', ')})` : ''}`
+);
+
+// ---------------------------------------------------------------------------
+// 7. Blog pagination: generated page routes, pager markup and rel=prev/next
 // ---------------------------------------------------------------------------
 const postsPerPage = appConfig.blog.postsPerPage;
 

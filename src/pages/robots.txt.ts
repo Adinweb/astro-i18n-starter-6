@@ -6,6 +6,7 @@ export const GET: APIRoute = async () => {
 
   const text = `User-agent: *
 Allow: /
+Disallow: /api/
 
 Sitemap: ${sitemapUrl}
 `;

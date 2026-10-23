@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { execSync } from 'node:child_process';
-import { contentStub } from './lib/content-stub.mjs';
+import { contentStub, stripLeadingHeading } from './lib/content-stub.mjs';
 
 const args = process.argv.slice(2);
 const langCode = args.find((a) => !a.startsWith('--'));
@@ -11,7 +11,7 @@ let langName = '';
 let dir = 'ltr';
 let contentOption = null; // null: prompt user, true: create content, false: skip content
 let fromLocale = '';
-let isDraft = false;
+let isDraft = true;
 
 for (const arg of args) {
   if (arg.startsWith('--name=')) langName = arg.slice(7);
@@ -271,25 +271,29 @@ if (shouldPopulateContent) {
 
             const bodyStripped = rawContent.replace(/^---[\s\S]*?---/, '').trim();
             if (bodyStripped) {
-              body = bodyStripped;
+              body = stripLeadingHeading(bodyStripped).trim() || contentStub(langCode);
             }
           }
 
           const pageTitle = langCode === 'fr'
             ? (group === 'home' ? 'Bienvenue sur Astro i18n' : group === 'about' ? 'À propos de nous' : title)
             : `[TODO: ${langCode}] ${title}`;
+          const entryIsDraft = isDraft || pageTitle.includes('[TODO');
 
           const mdxContent = `---
 title: "${pageTitle}"
 slug: "${slug}"
 description: "${description}"
 ${image ? `image: "${image}"\n` : ''}${collection === 'blog' ? 'publishedAt: ' + new Date().toISOString().split('T')[0] : ''}
-draft: ${isDraft}
+draft: ${entryIsDraft}
 ---
 
-${body.startsWith('#') ? body : `# ${pageTitle}\n\n${body}`}
+${body.startsWith('#') ? stripLeadingHeading(body) : body}
 `;
           fs.writeFileSync(targetFile, mdxContent, 'utf-8');
+          if (!isDraft && entryIsDraft) {
+            console.warn(`  ⚠️ src/content/${collection}/${group}/${langCode}.mdx stays a draft: its title still contains a placeholder.`);
+          }
           console.log(`  + Created content: src/content/${collection}/${group}/${langCode}.mdx (from "${sourceCandidate ? path.basename(sourceCandidate, '.mdx') : 'default'}")`);
         }
       }

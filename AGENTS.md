@@ -102,7 +102,7 @@ Always use these exact pnpm scripts:
 | `pnpm run lint` | Messages compile + `astro check` + `tsc --noEmit` | After any code changes |
 | `pnpm test` | Vitest unit tests (paths, ICU plurals/ordinals, routes, CLI helpers) | After routing or logic changes |
 | `pnpm run audit:i18n` | Locale-config parity, dictionary/placeholder parity, content parity, used keys, slug & route collisions | Before commits & builds |
-| `pnpm run verify:cli` | End-to-end check of every documented CLI workflow (43 claims, runs in a temp copy) | After changing anything under `scripts/` |
+| `pnpm run verify:cli` | End-to-end check of every documented CLI workflow (45 claims, runs in a temp copy) | After changing anything under `scripts/` |
 | `pnpm run build` | `messages:compile` + audit + `astro build` + `pagefind` | After major changes |
 | `pnpm run smoke` | HTML, SEO, feed, asset & H1 assertions on `dist/` | After every production build |
 | `pnpm run knip` | Dead files, exports, and dependencies | Before releases |
@@ -134,7 +134,7 @@ Agents should execute these scripts instead of performing brittle manual file ma
   ```
   *Example:* `pnpm run new:page contact --title="Contact Us" --from=en`  
   *Actions performed:* Creates or updates `src/content/pages/contact/{en,de,fr,fa,ar}.mdx`, generates localized slugs, preserves body copy, registers the `nav_contact` key across all dictionaries, and points every locale's `image` frontmatter at the page's hero background. Without `--image`, the page uses the generated `./<page-key>.png` (next to the entries) and `assets:generate` is run to create it. With `--image`, the file is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file. A named image that does not exist is a **warning**, not a failure: the group artwork is used instead.  
-  *Publication:* Without a draft flag only the **source locale** is published (`draft: false`); every other locale stays `draft: true` until it is translated. `--publish` / `--draft=false` publishes all locales, `--draft` / `--draft=true` drafts all of them.  
+  *Publication:* Without a draft flag only the **source locale** is published (`draft: false`); every other locale stays `draft: true` until it is translated. `--publish` / `--draft=false` publishes the source and every locale that has a real `--title:<locale>` / `--desc:<locale>`; locales that still contain `[TODO: ...]` placeholders stay drafts. `--draft` / `--draft=true` drafts all of them.  
   *Slugs:* The source and default locale use the group key (`contact`); the other locales get a placeholder (`contact-fa`) until a native slug is set with `--slug:<locale>="…"`.
 
 * **Create or update a blog article across all locales:**
@@ -164,7 +164,7 @@ Agents should execute these scripts instead of performing brittle manual file ma
   pnpm run i18n:add-lang -- <locale-code> [--name="<Name>"] [--dir="ltr|rtl"] --with-content --from=en
   ```
   *Example:* `pnpm run i18n:add-lang -- es --name="Español" --dir="ltr" --with-content --from=en`  
-  *Actions performed:* Updates `project.inlang/settings.json`, creates `messages/<locale>.json`, updates `src/i18n/locales.ts`, generates `<locale>.mdx` files across all existing pages and posts, and recompiles Paraglide.
+  *Actions performed:* Updates `project.inlang/settings.json`, creates `messages/<locale>.json`, updates `src/i18n/locales.ts`, generates `<locale>.mdx` files across all existing pages and posts, and recompiles Paraglide. Generated entries stay `draft: true`, because their copy is still placeholder text. `--publish` cannot override a `[TODO: ...]` title: translate the entry and flip its `draft` flag when it is ready.
 
 * **Remove a language:**
   ```bash

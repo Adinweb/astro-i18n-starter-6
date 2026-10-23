@@ -153,12 +153,12 @@ try {
     read('src/content/pages/contact/fa.mdx').match(/slug: "[^"]*"/)?.[0] ?? 'none'
   );
   record(
-    read('src/content/pages/contact/en.mdx').includes('# Contact Us'),
-    'new:page body heading matches the title'
+    !read('src/content/pages/contact/en.mdx').includes('# Contact Us'),
+    'new:page does not duplicate the frontmatter title in the body'
   );
   record(
-    read('src/content/pages/contact/fa.mdx').includes('# [TODO: fa] Contact Us'),
-    'new:page body heading matches the localized title'
+    !read('src/content/pages/contact/fa.mdx').includes('# [TODO: fa] Contact Us'),
+    'new:page does not duplicate the localized title in the body'
   );
   record(
     read('src/content/pages/contact/en.mdx').includes('image: "./contact.png"'),
@@ -190,8 +190,8 @@ try {
     'new:post writes one file per locale'
   );
   record(
-    read('src/content/blog/ai-agents/en.mdx').includes('# AI Coding Agents'),
-    'new:post body heading matches the title',
+    !read('src/content/blog/ai-agents/en.mdx').includes('# AI Coding Agents'),
+    'new:post does not duplicate the frontmatter title in the body',
     read('src/content/blog/ai-agents/en.mdx')
       .split('---')
       .pop()
@@ -199,8 +199,12 @@ try {
       .split('\n')[0]
   );
   record(
-    read('src/content/blog/ai-agents/de.mdx').includes('# [TODO: de] AI Coding Agents'),
-    'new:post body heading matches the localized title'
+    !read('src/content/blog/ai-agents/de.mdx').includes('# [TODO: de] AI Coding Agents'),
+    'new:post does not duplicate the localized title in the body'
+  );
+  record(
+    !read('src/content/blog/ai-agents/en.mdx').includes('[TODO: en] Description'),
+    'new:post does not leave a placeholder description in the source locale'
   );
   record(
     !read('src/content/blog/ai-agents/de.mdx').includes('An introduction to our multi-lingual'),
@@ -217,10 +221,11 @@ try {
     'new:post falls back to the group artwork when the named one is missing'
   );
   record(
-    ['en', 'de', 'fr', 'fa', 'ar'].every((loc) =>
-      /draft: false/.test(read(`src/content/blog/ai-agents/${loc}.mdx`))
-    ),
-    'new:post --publish publishes every locale'
+    /draft: false/.test(read('src/content/blog/ai-agents/en.mdx')) &&
+      ['de', 'fr', 'fa', 'ar'].every((loc) =>
+        /draft: true/.test(read(`src/content/blog/ai-agents/${loc}.mdx`))
+      ),
+    'new:post --publish keeps placeholder locales as drafts'
   );
 
   // A post created without --publish must not leak into the other locales.
@@ -229,6 +234,28 @@ try {
     /draft: false/.test(read('src/content/blog/draft-post/en.mdx')) &&
       /draft: true/.test(read('src/content/blog/draft-post/fa.mdx')),
     'new:post drafts the non-source locales by default'
+  );
+
+  run(sandbox, 'node', [
+    'scripts/new-post.mjs',
+    'publish-ready',
+    '--from=en',
+    '--title=Publish Ready',
+    '--publish',
+    '--title:de=Publish Ready DE',
+    '--desc:de=Beschreibung',
+    '--title:fr=Publish Ready FR',
+    '--desc:fr=Description',
+    '--title:fa=آماده انتشار',
+    '--desc:fa=توضیحات',
+    '--title:ar=جاهز للنشر',
+    '--desc:ar=الوصف',
+  ]);
+  record(
+    ['en', 'de', 'fr', 'fa', 'ar'].every((loc) =>
+      /draft: false/.test(read(`src/content/blog/publish-ready/${loc}.mdx`))
+    ),
+    'new:post --publish publishes locales that have translations'
   );
 
   // ---------------------------------------------------------------------

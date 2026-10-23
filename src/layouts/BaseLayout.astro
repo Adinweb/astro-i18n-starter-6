@@ -62,7 +62,8 @@ const {
 const meta = getLocaleMeta(locale);
 const siteName = siteConfig.name;
 const navItems = await getNavigation(locale, url);
-const homeHref = navItems.find((item) => item.key === 'home')?.href ?? localizeHref('/', locale);
+const homeHref =
+  navItems.find((item) => item.key === 'home')?.href ?? localizeHref('/', locale);
 const pricingHref = navItems.find((item) => item.key === 'pricing')?.href;
 const currentYear = new Date().getFullYear();
 
@@ -276,7 +277,8 @@ const structuredData = schema ?? {
     <footer class="border-t border-border bg-surface mt-auto py-8">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
         <div id="footer-rights">
-          © <span data-current-year>{currentYear}</span> {siteName}. {m.common_all_rights_reserved({}, { locale })}
+          © <span data-current-year>{currentYear}</span> {siteName}.
+          <span data-footer-rights>{m.common_all_rights_reserved({}, { locale })}</span>
         </div>
         <nav class="flex flex-wrap items-center gap-4" aria-label={m.common_menu({}, { locale })}>
           {

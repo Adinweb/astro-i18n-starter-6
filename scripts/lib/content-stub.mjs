@@ -28,3 +28,13 @@ export function contentStub(locale) {
 export function postStub(locale) {
   return POST_STUBS[locale] ?? 'Article content goes here...';
 }
+
+/**
+ * Removes a leading markdown heading from copied body copy.
+ *
+ * The hero renders the frontmatter title as the page's only `<h1>`, so a copied
+ * body that still carries its source heading would produce a duplicate.
+ */
+export function stripLeadingHeading(body) {
+  return body.replace(/^\s*#\s+.*(?:\r?\n)*/, '');
+}

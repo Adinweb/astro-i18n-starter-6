@@ -125,7 +125,7 @@ Creation Options:
   --title="<title>"            Title for the page (source locale)
   --desc="<desc>"              Description for the page
   --from=<locale>              Source locale to branch from (default: baseLocale / en)
-  --publish / --draft=false    Publish immediately across all locales
+  --publish / --draft=false    Publish the source and locales with real titles/descriptions
   --draft / --draft=true       Create every locale as a draft
   --image=cover.png            Hero background, referenced relative to the content file
   --image=none                 Use the shared hero artwork instead of a page-specific one
@@ -163,6 +163,9 @@ Update / Sync Options:
   const LOCALES = inlangSettings.locales;
   const defaultLocale = inlangSettings.baseLocale || 'en';
   const sourceLocale = fromLocale || defaultLocale;
+
+  const publishedLocales = [];
+  const draftLocales = [];
 
   // -------------------------------------------------------------
   // UPDATE / SYNC-FRONTMATTER MODE
@@ -211,7 +214,7 @@ Update / Sync Options:
           description: `[TODO: ${loc}] Description for ${title}`,
           draft: hasDraftArg ? !publishAll : !isSource,
         };
-        body = `\n# ${fmData.title}\n\n${contentStub(loc)}`;
+        body = `\n${contentStub(loc)}`;
       }
 
       const oldTitle = fmData.title || '';
@@ -240,7 +243,10 @@ Update / Sync Options:
 
       // Draft resolution
       if (hasDraftArg) {
-        fmData.draft = !publishAll;
+        const hasPlaceholder = [fmData.title, fmData.description].some(
+          (value) => typeof value === 'string' && value.includes('[TODO')
+        );
+        fmData.draft = !publishAll || hasPlaceholder;
       }
 
       // Slug resolution
@@ -331,9 +337,6 @@ Update / Sync Options:
   for (const loc of LOCALES) {
     const isSource = loc === sourceLocale;
     const slug = resolveSlug(loc, pageKey, sourceLocale, defaultLocale, slugsByLocale);
-    // The source locale is published, every other locale waits for its
-    // translation. `--publish` publishes every locale at once.
-    const isDraft = hasDraftArg ? !publishAll : !isSource;
 
     let pageTitle;
     if (titlesByLocale[loc]) {
@@ -351,6 +354,12 @@ Update / Sync Options:
       pageDesc = isSource ? `Description for ${title}` : `[TODO: ${loc}] Description for ${title}`;
     }
 
+    // A locale with placeholder copy stays a draft even under `--publish`, so
+    // untranslated text never reaches the public site.
+    const hasPlaceholder = [pageTitle, pageDesc].some((value) => value.includes('[TODO'));
+    const isDraft = hasDraftArg ? !publishAll || hasPlaceholder : !isSource;
+    (isDraft ? draftLocales : publishedLocales).push(loc);
+
     const stubBody = contentStub(loc);
 
     const content = `---
@@ -359,8 +368,6 @@ slug: "${slug}"
 description: "${pageDesc}"
 ${imageLine}draft: ${isDraft}
 ---
-
-# ${pageTitle}
 
 ${stubBody}
 `;
@@ -383,6 +390,13 @@ ${stubBody}
       `📝 Note: Non-source locales (${draftedLocales.join(', ')}) are marked as "draft: true" until they are translated.`
     );
     console.log('   (To publish every locale immediately, pass --publish or --draft=false).');
+  } else {
+    console.log(`🚀 Published locales: ${publishedLocales.join(', ') || 'none'}.`);
+    if (draftLocales.length) {
+      console.log(
+        `📝 Locales with placeholder copy stay drafts: ${draftLocales.join(', ')}. Provide --title:<locale> and --desc:<locale> to publish them.`
+      );
+    }
   }
 
   // Draw the artwork for the new page, so its hero background is never broken.

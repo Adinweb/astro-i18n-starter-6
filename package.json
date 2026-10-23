@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro dev",
     "messages:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide",
-    "check": "astro check",
+    "check": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro check",
     "lint": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro check && tsc --noEmit",
     "test": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && vitest run",
     "build": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && node scripts/audit-i18n.mjs && astro build && pagefind --site dist",

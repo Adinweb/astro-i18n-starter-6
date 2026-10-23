@@ -36,6 +36,10 @@ const i18nData = Object.fromEntries(
           backHome: m.common_back_home({}, { locale: loc }),
           goEnglish: m.common_go_english_version({}, { locale: loc }),
           englishHint: m.common_english_version_hint({}, { locale: loc }),
+          cta: m.common_get_started({}, { locale: loc }),
+          rights: m.common_all_rights_reserved({}, { locale: loc }),
+          search: m.common_search_placeholder({}, { locale: loc }),
+          changeLanguage: m.common_change_language({}, { locale: loc }),
           homeHref: nav.find((item) => item.key === 'home')?.href ?? localizeHref('/', loc),
           nav: nav.map(({ key, label, href }) => ({ key, label, href })),
           dir: LOCALE_METADATA[loc].dir,
@@ -119,6 +123,37 @@ const i18nData = Object.fromEntries(
         homeLink.href = data.homeHref;
         homeLink.textContent = data.backHome;
       }
+
+      // Shared header/footer controls are server-rendered for the default
+      // locale, so re-label them for the locale detected in the URL.
+      document.querySelectorAll('[data-cta-link="get-started"]').forEach((el) => {
+        el.textContent = data.cta;
+      });
+      const rights = document.querySelector('[data-footer-rights]');
+      if (rights) rights.textContent = data.rights;
+      const searchButton = document.querySelector('[data-open-search]');
+      if (searchButton) {
+        searchButton.setAttribute('aria-label', data.search);
+        searchButton.setAttribute('title', data.search);
+      }
+      const switcherButton = document.querySelector('[data-switcher-button]');
+      if (switcherButton) {
+        switcherButton.setAttribute('aria-label', data.changeLanguage);
+        switcherButton.setAttribute('title', data.changeLanguage);
+      }
+      const activeLocale = document.querySelector('[data-switcher-active]');
+      if (activeLocale) activeLocale.textContent = detectedLocale;
+      document.querySelectorAll('[data-switcher-link]').forEach((link) => {
+        const isCurrent = link.getAttribute('data-target') === data.homeHref;
+        if (isCurrent) link.setAttribute('aria-current', 'true');
+        else link.removeAttribute('aria-current');
+        link.classList.toggle('bg-primary/10', isCurrent);
+        link.classList.toggle('font-medium', isCurrent);
+        link.classList.toggle('text-primary', isCurrent);
+        link.classList.toggle('text-fg', !isCurrent);
+        const check = link.querySelector('[data-switcher-check]');
+        if (check) check.classList.toggle('hidden', !isCurrent);
+      });
 
       // Update navigation links on 404 from the shared navigation payload.
       document.querySelectorAll('[data-brand-link]').forEach((el) => {

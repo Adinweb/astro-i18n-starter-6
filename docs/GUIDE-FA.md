@@ -168,7 +168,7 @@ pnpm exec astro dev stop           # توقف سرور
 | `pnpm run i18n:extract` | استخراج متن سخت‌کد از قالب |
 | `pnpm run block:adapt` | تبدیل بلوک Tailwind به خواص منطقی |
 | `pnpm run audit:i18n` | ممیزی چندزبانه (۵ مرحله) |
-| `pnpm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۴۳ ادعا) |
+| `pnpm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۴۵ ادعا) |
 
 ### ساخت برای انتشار
 
@@ -606,7 +606,7 @@ pnpm run new:page contact --title="Contact Us" --from=en
 | `--title="…"` | عنوان صفحه (در زبان مبدأ) |
 | `--desc="…"` / `--description="…"` | توضیح صفحه |
 | `--from=<locale>` / `--source=<locale>` | زبان مبدأ (پیش‌فرض: زبان پایه) |
-| `--publish` / `--draft=false` | انتشار فوری در همهٔ زبان‌ها |
+| `--publish` / `--draft=false` | انتشار زبان مبدأ و زبان‌هایی که عنوان/توضیح واقعی دارند (زبان‌های دارای `[TODO: …]` پیش‌نویس می‌مانند) |
 | `--draft` / `--draft=true` | ساخت به‌صورت پیش‌نویس |
 | `--no-draft` | معادل `--draft=false` |
 | `--image=cover.png` | تصویر هیرو (نسبت به فایل محتوا) |
@@ -630,11 +630,13 @@ pnpm run new:page contact --title="Contact Us" --from=en
 | حالت | زبان مبدأ | بقیهٔ زبان‌ها |
 | --- | --- | --- |
 | بدون پرچم (پیش‌فرض) | منتشر | پیش‌نویس |
-| `--publish` / `--draft=false` | منتشر | منتشر |
+| `--publish` / `--draft=false` | منتشر | منتشر — فقط اگر عنوان/توضیح واقعی داشته باشند |
 | `--draft` / `--draft=true` | پیش‌نویس | پیش‌نویس |
 
-این رفتار مانع انتشار متن انگلیسی در زبان‌های دیگر می‌شود؛ هر زبان با
-`--publish` یا ویرایش `draft` در فرانت‌متر منتشر می‌شود.
+این رفتار مانع انتشار متن انگلیسی در زبان‌های دیگر می‌شود. هر زبانی که هنوز
+`[TODO: …]` در عنوان یا توضیحش دارد، حتی با `--publish` هم پیش‌نویس می‌ماند؛
+برای انتشارش با `--title:<locale>` و `--desc:<locale>` متن واقعی بدهید یا
+`draft` را در فرانت‌متر دستی بردارید.
 
 #### اسلاگ هر زبان
 
@@ -843,7 +845,7 @@ pnpm run assets:generate
 pnpm run audit:i18n    # ۵ بخش: پیکربندی زبان، فرهنگ‌ها، محتوا، مسیرها، متن هاردکد
 pnpm run smoke         # ۹۶ assertion روی خروجی بیلدشده
 pnpm run knip          # فایل/اکسپورت/وابستگی مرده
-pnpm run verify:cli    # ۴۳ ادعا دربارهٔ گردش‌کارهای CLI
+pnpm run verify:cli    # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
 ```
 
 `verify:cli` پروژه را در یک پوشهٔ موقت کپی می‌کند، همهٔ فرمان‌های CLI را دقیقاً
@@ -884,7 +886,7 @@ pnpm run i18n:add-lang -- es --name="Español" --dir="ltr" --with-content --from
 | `--from=<locale>` / `--source=<locale>` / `--source-lang=<locale>` | زبانی که فرهنگ و محتوا از آن کپی می‌شود |
 | `--with-content` / `--create-content` / `--content=yes` | ساخت فایل‌های محتوا برای زبان جدید |
 | `--no-content` / `--without-content` / `--content=no` | ساخت‌نکردن فایل‌های محتوا |
-| `--publish` / `--draft` | وضعیت انتشار محتوای تولیدشده |
+| `--publish` / `--draft` | وضعیت انتشار محتوای تولیدشده؛ محتوای کپی‌شده عنوان `[TODO: …]` دارد، پس حتی با `--publish` هم پیش‌نویس می‌ماند. هر فایل را ترجمه کنید و `draft` را دستی بردارید |
 
 این اسکریپت به‌صورت خودکار:
 
@@ -1376,7 +1378,7 @@ pnpm run audit:i18n
 SITE_URL=https://example.com pnpm run build
 pnpm run smoke    # ۹۶ assertion روی dist/
 pnpm run knip
-pnpm run verify:cli  # ۴۳ ادعا دربارهٔ گردش‌کارهای CLI
+pnpm run verify:cli  # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
 ```
 
 ### چه چیزی تست می‌شود

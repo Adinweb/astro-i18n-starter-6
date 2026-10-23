@@ -46,6 +46,7 @@ const formattedDate = publishedAt.toLocaleDateString(locale, {
   year: 'numeric',
   month: 'long',
   day: 'numeric',
+  timeZone: 'UTC',
 });
 const readingTime = getReadingTime(body);
 ---

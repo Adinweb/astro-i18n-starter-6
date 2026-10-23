@@ -111,14 +111,14 @@ pnpm run i18n:add-lang -- it --no-content
 * **Flags:**
   * `--with-content` / `--no-content`: Chooses whether to auto-generate markdown files for all existing pages and posts in the new language.
   * `--from=<locale>`: Selects which existing language to clone titles, descriptions, and markdown body from (defaults to `DEFAULT_LOCALE` / `en`).
-  * `--publish` / `--draft=false`: Marks auto-generated content as published (default `draft: false`).
+  * `--publish` / `--draft=false`: Requests published output, but entries whose title still contains a `[TODO: ...]` placeholder always stay `draft: true`. Generated content copies the source language, so translate each file and flip its `draft` flag instead of forcing it.
 
 ### 2. Scaffolding New Articles (`pnpm run new:post`)
 ```bash
 # Create post with default source language (en) and draft non-source translations:
 pnpm run new:post -- tech-trends
 
-# Create post from Persian and publish all locales immediately:
+# Create post from Persian and publish the locales that have translations:
 pnpm run new:post -- ai-features --from=fa --title="قابلیت‌های هوش مصنوعی" --publish
 
 # Non-interactive frontmatter sync across all 5 language files without overwriting markdown body:
@@ -127,7 +127,7 @@ pnpm run new:post -- tech-trends --update --sync-frontmatter --title="Modern Tec
 * **Why non-source locales default to `draft: true`:**
   To prevent unreviewed placeholder translations (`[TODO: ...]`) from appearing publicly on the live blog index (`/fa/blog`, `/de/blog`, etc.), `new:post` sets `draft: true` on non-source locales by default.
   * To show a post on a specific language's blog listing, set `draft: false` in its frontmatter.
-  * To publish all languages immediately upon creation, pass `--publish` or `--draft=false`.
+  * To publish every ready language at creation, pass `--publish` or `--draft=false`. Locales that still contain `[TODO: ...]` placeholders stay drafts; supply `--title:<locale>` / `--desc:<locale>` for each one you want to publish.
   * `--draft` / `--draft=true` keeps **every** locale (including the source) as a draft.
 * **Slugs:** The source and default locale use the group key (`tech-trends`); the other locales get a placeholder (`tech-trends-fa`) until a native slug is set with `--slug:fa="روندهای-فناوری"`. `--from` selects the source locale only — use `--clone-from=<group>` to copy the body of an existing article.
 * **Blog taxonomy and covers:** Pass `--category=engineering`, `--tags="astro,performance"`, and `--image=cover.png` when scaffolding (the file is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file) so cards, filters, and the article hero are populated from the start. The same flags work with `--update`, and inline YAML arrays are preserved when frontmatter is rewritten.
