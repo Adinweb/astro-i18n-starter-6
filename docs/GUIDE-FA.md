@@ -2,7 +2,7 @@
 
 > استارتر چندزبانهٔ تولیدی بر پایهٔ **Astro v7** با پشتیبانی بومی **RTL/LTR**،
 > مسیریاب ایستا (SSG)، چندزبانه‌سازی کامل، دسته‌بندی و صفحه‌بندی وبلاگ،
-> جستجوی Pagefind، و مجموعه‌ای از ۱۳ ابزار خط فرمان برای مدیریت محتوا.
+> جستجوی Pagefind، و مجموعه‌ای از ۱۴ ابزار خط فرمان برای مدیریت محتوا.
 
 نسخهٔ ۵٫۰ — مرجع فنی کامل و راهنمای عملیاتی.
 
@@ -66,13 +66,13 @@
 | **مسیریابی** | دیسپچر تک‌فایلی `[...path].astro` — بدون هیچ فایل مسیر پویا در `src/pages/` |
 | **محتوا** | دو کالکشن `pages` و `blog` با قرارداد `گروه/زبان.mdx`، فیلتر پیش‌نویس، اسلاگ بومی هر زبان، تشخیص برخورد مسیر |
 | **RTL** | خواص منطقی CSS (`ms-`, `pe-`, `start-`), فونت جداگانه برای فارسی/عربی، جداسازی `pre/code` به LTR، چرخاندن آیکون پیجر |
-| **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی سمت کاربر، صفحه‌بندی استایک، زمان مطالعه، خرده‌مسیر، JSON-LD مقاله |
-| **جستجو** | Pagefind در پروداکشن + فهرست توسعه به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K، بدون رفت‌وبرگشت شبکه |
+| **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی سمت کاربر، صفحه‌بندی استاتیک، زمان مطالعه، خرده‌مسیر، JSON-LD مقاله |
+| **جستجو** | Pagefind در پروداکشن + فهرست `/api/search-dev.json` به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K، بدون بارگذاری مجدد صفحه |
 | **SEO** | canonical، hreflang چندزبانه + `x-default`، Open Graph، Twitter Card، JSON-LD، sitemap، `robots.txt`، RSS/Atom، webmanifest |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک «نسخهٔ انگلیسی» |
 | **ابزار CLI** | ۱۴ اسکریپت برای ساخت/حذف صفحه و مقاله، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، تولید تصاویر |
-| **کیفیت** | TypeScript strict، `astro check`، ۹۸ تست Vitest، ۴۳ تست سرتاسری CLI، ممیزی i18n پنج‌مرحله‌ای، تست دود ۹۶ assertion، Knip، CI آمادهٔ GitHub Actions |
-| **کارایی** | خروجی کاملاً استایک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
+| **کیفیت** | TypeScript strict، `astro check`، ۱۰۱ تست Vitest، ۴۵ تست سرتاسری CLI، ممیزی i18n پنج‌مرحله‌ای، تست دود ۹۸ assertion، Knip، CI آمادهٔ GitHub Actions |
+| **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، `prefers-reduced-motion` |
 
 ---
@@ -148,12 +148,12 @@ pnpm exec astro dev stop           # توقف سرور
 | --- | --- |
 | `pnpm dev` | کامپایل پیام‌ها + `astro dev` |
 | `pnpm run messages:compile` | کامپایل دستی `messages/*.json` به `src/paraglide/` |
-| `pnpm run check` | فقط `astro check` |
+| `pnpm run check` | کامپایل پیام‌ها + `astro check` |
 | `pnpm run lint` | کامپایل پیام‌ها + `astro check` + `tsc --noEmit` |
 | `pnpm test` | کامپایل پیام‌ها + `vitest run` |
 | `pnpm run build` | کامپایل پیام‌ها + ممیزی i18n + `astro build` + `pagefind --site dist` |
 | `pnpm preview` | `astro preview` روی خروجی `dist/` |
-| `pnpm run smoke` | تست دود روی `dist/` (۹۶ assertion) |
+| `pnpm run smoke` | تست دود روی `dist/` (۹۸ assertion) |
 | `pnpm run knip` | فایل/اکسپورت/وابستگی مرده |
 | `pnpm run assets:generate` | بازتولید آیکون‌ها، کارت OG و artwork هیرو/کاور |
 | `pnpm run clean` | حذف `dist/`، `.astro/` و `src/paraglide/` |
@@ -205,7 +205,7 @@ SITE_URL=https://example.com pnpm run build
 ├── .agents/skills/         # مهارت عملیاتی برای عامل‌های AI
 │   └── astro-i18n-starter/SKILL.md
 ├── docs/                   # GUIDE-FA.md (این راهنما)، PRD.md، PLAYBOOKS.md،
-│                         # SPIKE_RESULTS.md
+│                            # SPIKE_RESULTS.md
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
     ├── components/          # Icon, IconButton, LanguageSwitcher, PageHero, HeroCopy,
@@ -216,13 +216,12 @@ SITE_URL=https://example.com pnpm run build
     ├── content.config.ts    # شمای Zod هر دو کالکشن
     ├── i18n/
     │   ├── locales.ts       # SSOT زبان‌ها: LOCALES, DEFAULT_LOCALE, LOCALE_METADATA
-    │   ├── config.ts        # barrel ساده: همهٔ ثابت‌های locales.ts
     │   └── paths.ts         # localizeHref, localeHref, stripLocale, getPathname
     ├── layouts/BaseLayout.astro
     ├── libs/
     │   ├── config/
     │   │   ├── app.ts       # خواندن و اعتبارسنجی app.config.json
-    │   │   └── navigation.ts# ساخت ناوبری هدر/منوی موبایل/فوتر
+    │   │   └── navigation.ts # ساخت ناوبری هدر/منوی موبایل/فوتر
     │   └── content/         # entries, service, pagination, blog, taxonomy, social
     ├── pages/               # فقط فایل‌های فیزیکی
     │   ├── [...path].astro  # دیسپچر مسیریاب (۳۹ خط)
@@ -598,8 +597,9 @@ draft: false
 pnpm run new:page contact --title="Contact Us" --from=en
 ```
 
-خروجی: `src/content/pages/contact/{en,de,fr,fa,ar}.mdx` با اسلاگ بومی هر زبان،
-ثبت کلید `nav_contact` در همهٔ فرهنگ‌ها و اشارهٔ `image` به `./contact.png`.
+خروجی: `src/content/pages/contact/{en,de,fr,fa,ar}.mdx` با اسلاگ هر زبان (زبان مبدأ
+نام گروه؛ بقیه جای‌نگهدار تا اسلاگ بومی تعیین شود)، ثبت کلید `nav_contact` در همهٔ
+فرهنگ‌ها و اشارهٔ `image` به `./contact.png`.
 
 | گزینه | کار |
 | --- | --- |
@@ -843,7 +843,7 @@ pnpm run assets:generate
 
 ```bash
 pnpm run audit:i18n    # ۵ بخش: پیکربندی زبان، فرهنگ‌ها، محتوا، مسیرها، متن هاردکد
-pnpm run smoke         # ۹۶ assertion روی خروجی بیلدشده
+pnpm run smoke         # ۹۸ assertion روی خروجی بیلدشده
 pnpm run knip          # فایل/اکسپورت/وابستگی مرده
 pnpm run verify:cli    # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
 ```
@@ -1177,9 +1177,11 @@ const props = Astro.props;
 
 ```ts
 const PAGE_ITEMS = [
-  { group: 'home', label: (locale) => m.nav_home({}, { locale }) },
-  { group: 'about', label: (locale) => m.nav_about({}, { locale }) },
-  { group: 'contact', label: (locale) => m.nav_contact({}, { locale }) },  // ← جدید
+  { group: 'home', label: (locale: Locale) => m.nav_home({}, { locale }) },
+  { group: 'about', label: (locale: Locale) => m.nav_about({}, { locale }) },
+  { group: 'features', label: (locale: Locale) => m.nav_features({}, { locale }) },
+  { group: 'pricing', label: (locale: Locale) => m.nav_pricing({}, { locale }) },
+  { group: 'contact', label: (locale: Locale) => m.nav_contact({}, { locale }) },  // ← جدید
 ] as const;
 ```
 
@@ -1284,9 +1286,9 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 | --- | --- |
 | باز کردن | کلیک روی دکمهٔ جستجو (هر جای صفحه) یا میان‌بر `⌘K` / `Ctrl+K` |
 | بستن | `ESC`، کلیک روی پس‌زمینه، دکمهٔ بستن، یا کلیک روی یک نتیجه |
-| پروداکشن | Pagefind از `/pagefind/pagefind.js` (ایندکس ساخته‌شده در بیلد) |
-| توسعه | fallback به `/api/search-dev.json` وقتی Pagefind در دسترس نباشد |
-| فیلتر زبان | نتایج dev فقط برای `locale` جاری نمایش داده می‌شوند |
+| پروداکشن | ابتدا Pagefind از `/pagefind/pagefind.js` (ایندکس ساخته‌شده در بیلد) |
+| نبود Pagefind | fallback به `/api/search-dev.json` — هم در توسعه و هم در بیلد تولیدی |
+| فیلتر زبان | نتایج فهرست fallback فقط برای `locale` جاری نمایش داده می‌شوند |
 | debounce | ۱۵۰ میلی‌ثانیه |
 | سقف نتیجه | ۶ نتیجه |
 | محافظت از رقابت | هر درخواست یک `requestId` دارد؛ نتیجهٔ قدیمی نوشته نمی‌شود |
@@ -1336,7 +1338,7 @@ const card = await getSocialCard(entry.data.image);
 | --- | --- | --- |
 | `/sitemap.xml` | XML | همهٔ مسیرها + `xhtml:link` برای هر زبان + `x-default` + `lastmod` + `changefreq` |
 | `/rss.xml` | Atom | همهٔ مقالات منتشرشدهٔ همهٔ زبان‌ها با `category` |
-| `/robots.txt` | متن | `User-agent: *` / `Allow: /` / `Sitemap: <مطلق>` |
+| `/robots.txt` | متن | `User-agent: *` / `Allow: /` / `Disallow: /api/` / `Sitemap: <مطلق>` |
 | `/site.webmanifest` | JSON | از `app.config.json` ساخته می‌شود: نام، `short_name`، رنگ‌ها، آیکون‌ها، `display: standalone` |
 | `/icons.svg` | SVG | اسپرایت نمادها؛ هر نماد یک `<symbol id="name">` |
 | `/api/search-dev.json` | JSON | فهرست fallback جستجو (عنوان، توضیح، URL، زبان) |
@@ -1344,8 +1346,9 @@ const card = await getSocialCard(entry.data.image);
 ### صفحهٔ ۴۰۴
 
 `src/pages/404.astro` زبان را از پیشوند URL تشخیص می‌دهد و `lang`، `dir`،
-فونت، عنوان، توضیح، ناوبری و لینک «نسخهٔ انگلیسی» را در سمت کاربر بازنویسی می‌کند.
-canonical آن به صفحهٔ خانهٔ همان زبان اشاره می‌کند (نه به `/404` که وجود ندارد)
+فونت، عنوان، توضیح، ناوبری، برچسب‌های هدر/فوتر/جستجو/تعویض زبان و لینک «نسخهٔ انگلیسی» را
+در سمت کاربر بازنویسی می‌کند. چون یک سند ایستای مشترک برای همهٔ مسیرهای ناموجود است،
+canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مانند — نه `/404` که وجود ندارد —
 و صفحه `noindex, nofollow` است.
 
 ---
@@ -1373,10 +1376,10 @@ canonical آن به صفحهٔ خانهٔ همان زبان اشاره می‌ک
 
 ```bash
 pnpm run lint     # کامپایل پیام‌ها + astro check + tsc --noEmit
-pnpm test         # ۹۸ تست Vitest
+pnpm test         # ۱۰۱ تست Vitest
 pnpm run audit:i18n
 SITE_URL=https://example.com pnpm run build
-pnpm run smoke    # ۹۶ assertion روی dist/
+pnpm run smoke    # ۹۸ assertion روی dist/
 pnpm run knip
 pnpm run verify:cli  # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
 ```
@@ -1393,8 +1396,9 @@ pnpm run verify:cli  # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
 | `src/libs/content/blog.test.ts` | فیلترها، زمان مطالعه، `humanizeKey` |
 | `src/libs/content/taxonomy.test.ts` | برچسب دسته/برچسب و fallback |
 | `src/libs/content/scripts.test.ts` | توابع فرانت‌متر، CLI helperها، پارسر زبان |
+| `src/libs/config/astro-config.test.ts` | alias `astro/components` در `astro.config.mjs` (رفع `Unknown file extension ".astro"`) |
 
-> **۸ فایل تست، ۹۸ تست.** ماژول `astro:content` در Vitest با
+> **۹ فایل تست، ۱۰۱ تست.** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -1412,7 +1416,7 @@ pnpm run verify:cli  # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
 یکسان، ۴۱ کلید استفاده‌شدهٔ ایستا، ۷ گروه محتوا، بدون برخورد مسیر و بدون
 هشدار متن هاردکد.
 
-### تست دود — ۶ بخش روی `dist/`
+### تست دود — ۷ بخش روی `dist/`
 
 | بخش | چه چیزی را بررسی می‌کند |
 | --- | --- |
@@ -1421,7 +1425,8 @@ pnpm run verify:cli  # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
 | ۳. اسلاگ مقاله | اسلاگ‌های محلی‌شده به صفحهٔ ساخته‌شدهٔ واقعی می‌رسند |
 | ۴. hreflang | پوشش کامل روی صفحهٔ خانه + `x-default` |
 | ۵. endpointها | `sitemap.xml`، `rss.xml`، `robots.txt`، `site.webmanifest`، `icons.svg`، کارت OG |
-| ۶. صفحه‌بندی وبلاگ | مسیر صفحه‌ها، نشانه‌گذاری پیجر، `rel=prev/next`، نبود صفحهٔ اضافی |
+| ۶. یک `h1` و متن بدون placeholder | هر صفحهٔ بیلدشده دقیقاً یک `<h1>` دارد و هیچ `[TODO` منتشر نشده |
+| ۷. صفحه‌بندی وبلاگ | مسیر صفحه‌ها، نشانه‌گذاری پیجر، `rel=prev/next`، نبود صفحهٔ اضافی |
 
 نکته‌های دقت تست دود:
 
@@ -1482,7 +1487,7 @@ pnpm run build && pnpm run smoke
 
 ### ۴. خروجی
 
-پوشهٔ `dist/` یک سایت کاملاً استایک است و روی هر میزبانی سرو می‌شود
+پوشهٔ `dist/` یک سایت کاملاً استاتیک است و روی هر میزبانی سرو می‌شود
 (Cloudflare Pages، Netlify، Vercel، S3، nginx).
 
 به‌خاطر `trailingSlash: 'always'` و `build.format: 'directory'` هر صفحه
@@ -1672,9 +1677,6 @@ JSON Schema است):
 | `LOCALE_METADATA` | نگاشت زبان → `{ dir, htmlLang, name, fontFamily }` |
 | `getLocaleMeta(locale)` | متادیتای یک زبان |
 | `getOgLocale(locale)` | `language_TERRITORY` برای Open Graph |
-
-> `src/i18n/config.ts` یک barrel ساده است که همه‌چیزِ `src/i18n/locales.ts` را
-> دوباره صادر می‌کند؛ برای وارد کردن یک‌جای همهٔ ثابت‌های زبان استفاده می‌شود.
 
 ### `src/i18n/paths.ts`
 
