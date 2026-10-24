@@ -25,6 +25,7 @@ interface Props {
   /** Raw markdown body, used to derive the reading time. */
   body?: string;
   publishedAt: Date;
+  updatedAt?: Date;
   breadcrumbs: BreadcrumbItem[];
 }
 
@@ -36,6 +37,7 @@ const {
   author,
   body,
   publishedAt,
+  updatedAt,
   breadcrumbs,
 } = Astro.props;
 
@@ -44,6 +46,8 @@ const categoryHref = (category: string) =>
   `${blogIndexHref}${buildBlogFilterQuery({ category, tags: [] })}`;
 
 const formattedDate = formatDate(publishedAt, locale, 'long');
+const hasUpdate = Boolean(updatedAt && updatedAt.getTime() > publishedAt.getTime());
+const formattedUpdatedDate = hasUpdate && updatedAt ? formatDate(updatedAt, locale, 'long') : null;
 const readingTime = getReadingTime(body);
 ---
 
@@ -89,6 +93,15 @@ const readingTime = getReadingTime(body);
   <div slot="default" class="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/90 drop-shadow-[0_1px_8px_rgb(0_0_0/0.5)]">
     <span>{m.common_published_on({}, { locale })}</span>
     <time datetime={publishedAt.toISOString()}>{formattedDate}</time>
+    {
+      formattedUpdatedDate && updatedAt && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{m.common_updated_on({}, { locale })}</span>
+          <time datetime={updatedAt.toISOString()}>{formattedUpdatedDate}</time>
+        </>
+      )
+    }
     <span aria-hidden="true">·</span>
     <span>{m.blog_read_time({ count: formatNumber(readingTime, locale) }, { locale })}</span>
     {

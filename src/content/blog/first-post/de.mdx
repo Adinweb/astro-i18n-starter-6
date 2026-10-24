@@ -3,15 +3,34 @@ title: "Erster Blogbeitrag"
 slug: "erste-post"
 description: "Eine Einführung in unsere mehrsprachige Content-Architektur."
 publishedAt: 2026-10-01
+updatedAt: 2026-10-12
 image: "./first-post.png"
 categories: ["guides"]
 tags: ["architecture", "i18n"]
 draft: false
 ---
 
-Willkommen zu unserem ersten Artikel! Dies demonstriert übersetzte Slugs und symmetrische Content Collections.
+Willkommen zu unserem ersten Artikel! Dieser Beitrag zeigt übersetzte Slugs, symmetrische Content Collections und RTL-sicheres technisches Publizieren.
 
-In diesem Starter:
-- Artikel sind nach Gruppenordnern organisiert: `src/content/blog/<group>/<locale>.mdx`.
-- Slugs sind pro Sprache vollständig übersetzt.
-- Hreflang-Tags und Sprachumschalter werden automatisch aufgelöst.
+## Symmetrische Content Collections
+
+Jede Artikelgruppe liegt in einem eigenen Ordner, in dem jede Sprache eine eigene MDX-Datei neben dem gemeinsamen Titelbild besitzt:
+
+```text
+src/content/blog/first-post/
+├── first-post.png
+├── en.mdx
+├── de.mdx
+├── fr.mdx
+├── fa.mdx
+└── ar.mdx
+```
+
+## Lokalisiertes Routing und Hreflang
+
+- Slugs werden pro Sprache nativ übersetzt (`first-post`, `erste-post`, `اولین-پست`).
+- Hreflang-Verweise und der Sprachumschalter werden automatisch aus derselben Gruppe erzeugt.
+
+## RTL-sichere Typografie
+
+Codeblöcke bleiben zuverlässig in `ltr`-Richtung isoliert, während Fließtext, Zitate und Tabellen über logische CSS-Eigenschaften gespiegelt werden.

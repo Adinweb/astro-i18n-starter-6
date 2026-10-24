@@ -249,6 +249,22 @@ if (blogArticleHtml) {
       blogArticleHtml.includes('"@type": "BreadcrumbList"'),
     'Article emits BreadcrumbList JSON-LD'
   );
+  assert(
+    blogArticleHtml.includes('property="article:modified_time"'),
+    'Article emits OpenGraph article:modified_time'
+  );
+  assert(
+    blogArticleHtml.includes('data-post-nav'),
+    'Article renders chronological newer/older post navigation'
+  );
+  assert(
+    blogArticleHtml.includes('data-related-posts'),
+    'Article renders related articles section'
+  );
+  assert(
+    blogArticleHtml.includes('data-toc'),
+    'Structured article renders Table of Contents'
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -286,6 +302,10 @@ if (sitemap) {
     );
   }
   assert(sitemap.includes('<lastmod>'), 'Sitemap includes lastmod timestamps');
+  assert(
+    /<loc>[^<]*\/blog\/<\/loc>[\s\S]*?<lastmod>[^<]+<\/lastmod>[\s\S]*?<\/url>/.test(sitemap),
+    'Sitemap emits lastmod timestamps for blog index routes'
+  );
 }
 
 assert(fs.existsSync(path.join(distDir, 'rss.xml')), 'dist/rss.xml exists');
@@ -338,6 +358,11 @@ if (manifest) {
     assert(
       data.background_color === appConfig.brand.backgroundColor,
       'Manifest background_color matches app.config.json'
+    );
+    assert(
+      data.lang === (LOCALE_METADATA[DEFAULT_LOCALE]?.htmlLang ?? DEFAULT_LOCALE) &&
+        data.dir === dirFor(DEFAULT_LOCALE),
+      `Manifest declares default locale lang="${DEFAULT_LOCALE}" and dir="${dirFor(DEFAULT_LOCALE)}"`
     );
     assert(
       Array.isArray(data.icons) && data.icons.length === appConfig.brand.icons.length,
@@ -416,8 +441,9 @@ if (iconsSvg) {
     iconsSvg.includes('<symbol id="search"') &&
       iconsSvg.includes('<symbol id="globe"') &&
       iconsSvg.includes('<symbol id="sun"') &&
-      iconsSvg.includes('<symbol id="moon"'),
-    'icons.svg contains compiled symbols (including sun and moon)'
+      iconsSvg.includes('<symbol id="moon"') &&
+      iconsSvg.includes('<symbol id="copy"'),
+    'icons.svg contains compiled symbols (including sun, moon, and copy)'
   );
 }
 

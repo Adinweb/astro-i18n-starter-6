@@ -3,15 +3,34 @@ title: "First Blog Post"
 slug: "first-post"
 description: "An introduction to our multi-lingual content architecture."
 publishedAt: 2026-10-01
+updatedAt: 2026-10-12
 image: "./first-post.png"
 categories: ["guides"]
 tags: ["architecture", "i18n"]
 draft: false
 ---
 
-Welcome to our first article! This demonstrates localized slugs and symmetrical content collections.
+Welcome to our first article! This walkthrough demonstrates localized slugs, symmetrical content collections, and RTL-safe technical publishing.
 
-In this starter:
-- Articles are organized by group folders: `src/content/blog/<group>/<locale>.mdx`.
-- Slugs are fully translated per language.
-- Alternate language links are resolved automatically for hreflang tags and the language switcher.
+## Symmetrical Content Collections
+
+Every page and article group lives inside a single folder where each locale owns a sibling MDX file alongside shared artwork:
+
+```text
+src/content/blog/first-post/
+├── first-post.png
+├── en.mdx
+├── de.mdx
+├── fr.mdx
+├── fa.mdx
+└── ar.mdx
+```
+
+## Localized Routing and Hreflang
+
+- Slugs are translated natively per language (`first-post`, `erste-post`, `اولین-پست`).
+- Alternate language URLs are wired automatically into `<link rel="alternate" hreflang="...">` and the header switcher.
+
+## RTL-Safe Technical Prose
+
+Code blocks and mathematical expressions remain isolated in `ltr` directionality even inside Persian and Arabic layouts, while tables and blockquotes mirror cleanly via CSS logical properties.

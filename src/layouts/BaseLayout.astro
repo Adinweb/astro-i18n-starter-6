@@ -35,6 +35,7 @@ interface Props {
   image?: ImageMetadata;
   type?: 'website' | 'article';
   publishedTime?: string;
+  modifiedTime?: string;
   schema?: Record<string, unknown> | Record<string, unknown>[];
   /** URL of the previous page of a paginated listing. */
   prevUrl?: string;
@@ -56,6 +57,7 @@ const {
   image,
   type = 'website',
   publishedTime,
+  modifiedTime,
   schema,
   prevUrl,
   nextUrl,
@@ -139,13 +141,18 @@ const structuredData = schema ?? {
       image={image}
       type={type}
       publishedTime={publishedTime}
+      modifiedTime={modifiedTime}
       schema={structuredData}
       noindex={noindex}
       prevUrl={prevUrl}
       nextUrl={nextUrl}
     />
   </head>
-  <body class="bg-bg text-fg min-h-screen flex flex-col antialiased selection:bg-primary/20">
+  <body
+    data-copy-label={m.common_copy_code({}, { locale })}
+    data-copied-label={m.common_copied({}, { locale })}
+    class="bg-bg text-fg min-h-screen flex flex-col antialiased selection:bg-primary/20"
+  >
     <a
       href="#main-content"
       class="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-fg"
@@ -400,11 +407,68 @@ const structuredData = schema ?? {
         });
       }
 
+      function setupCodeCopyButtons() {
+        const copyLabel = document.body.dataset.copyLabel || 'Copy code';
+        const copiedLabel = document.body.dataset.copiedLabel || 'Copied!';
+        const svgNs = 'http://www.w3.org/2000/svg';
+
+        document.querySelectorAll<HTMLPreElement>('.prose pre').forEach((pre) => {
+          if (pre.dataset.copyBound === 'true') return;
+          pre.dataset.copyBound = 'true';
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'code-block-wrapper';
+          pre.parentNode?.insertBefore(wrapper, pre);
+          wrapper.appendChild(pre);
+
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'code-copy-btn';
+          btn.setAttribute('data-pagefind-ignore', 'true');
+          btn.setAttribute('aria-label', copyLabel);
+          btn.title = copyLabel;
+
+          const svg = document.createElementNS(svgNs, 'svg');
+          svg.setAttribute('width', '14');
+          svg.setAttribute('height', '14');
+          svg.setAttribute('viewBox', '0 0 24 24');
+          svg.setAttribute('aria-hidden', 'true');
+          const useEl = document.createElementNS(svgNs, 'use');
+          useEl.setAttribute('href', '/icons.svg#copy');
+          svg.appendChild(useEl);
+          btn.appendChild(svg);
+
+          let resetTimer = 0;
+          btn.addEventListener('click', async () => {
+            const source = (pre.querySelector('code') ?? pre).textContent ?? '';
+            try {
+              await navigator.clipboard.writeText(source);
+              window.clearTimeout(resetTimer);
+              btn.dataset.copied = 'true';
+              btn.setAttribute('aria-label', copiedLabel);
+              btn.title = copiedLabel;
+              useEl.setAttribute('href', '/icons.svg#check');
+              resetTimer = window.setTimeout(() => {
+                delete btn.dataset.copied;
+                btn.setAttribute('aria-label', copyLabel);
+                btn.title = copyLabel;
+                useEl.setAttribute('href', '/icons.svg#copy');
+              }, 1800);
+            } catch {
+              // Clipboard API may be unavailable in non-secure contexts; fail silently.
+            }
+          });
+
+          wrapper.appendChild(btn);
+        });
+      }
+
       if (document.documentElement.dataset.baseLayoutBound !== 'true') {
         document.documentElement.dataset.baseLayoutBound = 'true';
         document.addEventListener('astro:page-load', () => {
           updateYear();
           setupMobileMenu();
+          setupCodeCopyButtons();
         });
         document.addEventListener('astro:before-preparation', () => {
           const dialog = document.querySelector<HTMLDialogElement>('[data-mobile-menu]');
@@ -414,6 +478,7 @@ const structuredData = schema ?? {
 
       updateYear();
       setupMobileMenu();
+      setupCodeCopyButtons();
     </script>
   </body>
 </html>

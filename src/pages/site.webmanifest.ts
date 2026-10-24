@@ -1,16 +1,20 @@
 import type { APIRoute } from 'astro';
 import { siteConfig } from '@/libs/config/app';
+import { DEFAULT_LOCALE, getLocaleMeta } from '@/i18n/locales';
 
 /**
- * The web app manifest is generated from `app.config.json`, so the app name,
- * colours, and icons are defined once and cannot drift from the metadata the
- * page emits.
+ * The web app manifest is generated from `app.config.json` and `DEFAULT_LOCALE`,
+ * so the app name, language, direction, colours, and icons are defined once and
+ * cannot drift from the metadata the page emits.
  */
 export const GET: APIRoute = async () => {
+  const meta = getLocaleMeta(DEFAULT_LOCALE);
   const manifest = {
     name: siteConfig.name,
     short_name: siteConfig.shortName,
     description: siteConfig.description,
+    lang: meta.htmlLang,
+    dir: meta.dir,
     start_url: '/',
     scope: '/',
     display: 'standalone',

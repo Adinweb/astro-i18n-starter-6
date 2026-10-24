@@ -4,7 +4,10 @@ import {
   buildBlogFilterQuery,
   collectTaxonomyKeys,
   filterBlogPosts,
+  filterTocHeadings,
+  getAdjacentPosts,
   getReadingTime,
+  getRelatedPosts,
   hasActiveFilters,
   humanizeKey,
   matchesBlogFilters,
@@ -116,6 +119,54 @@ describe('src/libs/content/blog.ts', () => {
         'i18n',
         'rtl',
       ]);
+    });
+  });
+
+  describe('editorial article helpers', () => {
+    it('filters TOC headings to h2/h3 and requires at least two entries', () => {
+      expect(
+        filterTocHeadings([{ depth: 2, slug: 'only-one', text: 'Only One' }])
+      ).toEqual([]);
+
+      expect(
+        filterTocHeadings([
+          { depth: 1, slug: 'h1', text: 'Title' },
+          { depth: 2, slug: 'intro', text: 'Introduction' },
+          { depth: 3, slug: 'details', text: 'Details' },
+          { depth: 4, slug: 'deep', text: 'Deep Note' },
+        ])
+      ).toEqual([
+        { depth: 2, slug: 'intro', text: 'Introduction' },
+        { depth: 3, slug: 'details', text: 'Details' },
+      ]);
+    });
+
+    it('resolves newer and older neighbours in a newest-first list', () => {
+      const entries = [{ id: 'newest/en' }, { id: 'middle/en' }, { id: 'oldest/en' }];
+      expect(getAdjacentPosts(entries, 'newest/en')).toEqual({
+        newer: null,
+        older: entries[1],
+      });
+      expect(getAdjacentPosts(entries, 'middle/en')).toEqual({
+        newer: entries[0],
+        older: entries[2],
+      });
+      expect(getAdjacentPosts(entries, 'oldest/en')).toEqual({
+        newer: entries[1],
+        older: null,
+      });
+    });
+
+    it('scores related posts by shared categories and tags with recency tie-break', () => {
+      const catalog = [
+        { id: 'p1/en', data: { categories: ['announcements'], tags: ['release'] } },
+        { id: 'p2/en', data: { categories: ['engineering'], tags: ['astro', 'rtl'] } },
+        { id: 'p3/en', data: { categories: ['guides'], tags: ['astro'] } },
+        { id: 'p4/en', data: { categories: ['engineering'], tags: ['performance'] } },
+      ];
+      const current = catalog[1];
+      const related = getRelatedPosts(catalog, current, 2);
+      expect(related.map((item) => item.id)).toEqual(['p4/en', 'p3/en']);
     });
   });
 });

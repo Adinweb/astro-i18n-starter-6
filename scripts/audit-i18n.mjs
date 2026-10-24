@@ -210,6 +210,21 @@ if (baseDictionary) {
   } else {
     console.log(`✅ All ${usedKeys.size} statically referenced message keys exist.`);
   }
+
+  // Dynamic prefix families (`nav_<group>`, `blog_category_<key>`, `blog_tag_<key>`)
+  // are resolved via computed lookups in navigation.ts and taxonomy.ts.
+  const dynamicPrefixPattern = /^(?:nav_|blog_category_|blog_tag_)/;
+  const unusedKeys = baseKeys.filter(
+    (key) => !usedKeys.has(key) && !dynamicPrefixPattern.test(key)
+  );
+  if (unusedKeys.length > 0) {
+    for (const key of unusedKeys) {
+      console.warn(`⚠️ [WARN] Unused dictionary key "${key}" (no static m.${key}(...) call in src/)`);
+      warningCount += 1;
+    }
+  } else {
+    console.log('✅ No orphaned dictionary keys detected.');
+  }
 }
 
 // ---------------------------------------------------------------------------

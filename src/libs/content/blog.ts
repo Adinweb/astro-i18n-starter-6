@@ -105,6 +105,12 @@ export function getReadingTime(body: string | undefined): number {
   return Math.max(1, Math.ceil(words / WORDS_PER_MINUTE));
 }
 
+export interface TocHeadingLike {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
 /** Distinct taxonomy keys in first-seen order, optionally filtered by usage. */
 export function collectTaxonomyKeys(posts: readonly BlogTaxonomy[], field: keyof BlogTaxonomy): string[] {
   const seen = new Set<string>();
@@ -112,4 +118,64 @@ export function collectTaxonomyKeys(posts: readonly BlogTaxonomy[], field: keyof
     for (const key of post[field]) seen.add(key);
   }
   return [...seen];
+}
+
+/**
+ * Keeps `h2` and `h3` headings for the article Table of Contents. Returns an
+ * empty list when fewer than two headings exist so short notes stay uncluttered.
+ */
+export function filterTocHeadings<T extends TocHeadingLike>(headings: readonly T[]): T[] {
+  const eligible = headings.filter(
+    (heading) =>
+      (heading.depth === 2 || heading.depth === 3) &&
+      heading.slug.trim().length > 0 &&
+      heading.text.trim().length > 0
+  );
+  return eligible.length >= 2 ? eligible : [];
+}
+
+/**
+ * Finds the newer and older neighbours of `currentId` inside a newest-first
+ * locale post list.
+ */
+export function getAdjacentPosts<T extends { id: string }>(
+  sortedPosts: readonly T[],
+  currentId: string
+): { newer: T | null; older: T | null } {
+  const index = sortedPosts.findIndex((post) => post.id === currentId);
+  if (index === -1) return { newer: null, older: null };
+  return {
+    newer: index > 0 ? sortedPosts[index - 1] : null,
+    older: index < sortedPosts.length - 1 ? sortedPosts[index + 1] : null,
+  };
+}
+
+/**
+ * Ranks sibling articles by shared categories (+2) and shared tags (+1),
+ * falling back to recency order in `sortedPosts` on ties.
+ */
+export function getRelatedPosts<T extends { id: string; data: BlogTaxonomy }>(
+  sortedPosts: readonly T[],
+  current: { id: string; data: BlogTaxonomy },
+  limit = 2
+): T[] {
+  if (limit <= 0) return [];
+  const currentCategories = new Set(current.data.categories);
+  const currentTags = new Set(current.data.tags);
+
+  return sortedPosts
+    .filter((post) => post.id !== current.id)
+    .map((post, index) => {
+      let score = 0;
+      for (const category of post.data.categories) {
+        if (currentCategories.has(category)) score += 2;
+      }
+      for (const tag of post.data.tags) {
+        if (currentTags.has(tag)) score += 1;
+      }
+      return { post, score, index };
+    })
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .slice(0, limit)
+    .map((item) => item.post);
 }

@@ -17,6 +17,7 @@ interface Props {
   image?: ImageMetadata;
   type?: 'website' | 'article';
   publishedTime?: string;
+  modifiedTime?: string;
   schema?: Record<string, unknown> | Record<string, unknown>[];
   noindex?: boolean;
   /** URL of the previous page of a paginated listing. */
@@ -35,6 +36,7 @@ const {
   image,
   type = 'website',
   publishedTime,
+  modifiedTime,
   schema,
   noindex = false,
   prevUrl,
@@ -100,6 +102,9 @@ const jsonLd = schema
 <meta property="og:image:alt" content={title} />
 {type === 'article' && publishedTime && (
   <meta property="article:published_time" content={publishedTime} />
+)}
+{type === 'article' && modifiedTime && (
+  <meta property="article:modified_time" content={modifiedTime} />
 )}
 
 <meta name="twitter:card" content="summary_large_image" />

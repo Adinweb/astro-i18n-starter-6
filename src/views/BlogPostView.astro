@@ -1,10 +1,23 @@
 ---
-import { render, type CollectionEntry } from 'astro:content';
+import { getCollection, render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageHero from '@/components/PageHero.astro';
 import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
-import { buildBreadcrumbSchema, getBreadcrumbs, getBlogIndexHref } from '@/libs/content/service';
-import { buildBlogFilterQuery } from '@/libs/content/blog';
+import PostCard from '@/components/PostCard.astro';
+import Icon from '@/components/Icon.astro';
+import {
+  buildBreadcrumbSchema,
+  getBreadcrumbs,
+  getBlogIndexHref,
+  getBlogPostHref,
+} from '@/libs/content/service';
+import {
+  buildBlogFilterQuery,
+  filterTocHeadings,
+  getAdjacentPosts,
+  getRelatedPosts,
+} from '@/libs/content/blog';
+import { getSortedLocaleEntries } from '@/libs/content/entries';
 import { getSocialCard } from '@/libs/content/social';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
@@ -19,8 +32,14 @@ interface Props {
 }
 
 const { entry, locale, alternates, url } = Astro.props;
-const { Content } = await render(entry);
+const { Content, headings } = await render(entry);
 const { title, description, image, categories, tags, author, publishedAt, updatedAt } = entry.data;
+
+const tocHeadings = filterTocHeadings(headings);
+const allPosts = await getCollection('blog');
+const localePosts = getSortedLocaleEntries(allPosts, locale);
+const { newer: newerPost, older: olderPost } = getAdjacentPosts(localePosts, entry.id);
+const relatedPosts = getRelatedPosts(localePosts, entry, 2);
 
 const breadcrumbs = getBreadcrumbs(url, locale, {
   home: m.nav_home({}, { locale }),
@@ -36,6 +55,7 @@ const socialImage = await getSocialCard(image);
 const imageUrl = socialImage.url;
 
 const meta = getLocaleMeta(locale);
+const modifiedIso = (updatedAt ?? publishedAt).toISOString();
 const schema = [
   {
     '@context': 'https://schema.org',
@@ -44,7 +64,7 @@ const schema = [
     description: description ?? m.site_description({}, { locale }),
     image: imageUrl,
     datePublished: publishedAt.toISOString(),
-    dateModified: (updatedAt ?? publishedAt).toISOString(),
+    dateModified: modifiedIso,
     inLanguage: meta.htmlLang,
     articleSection: categories.map((category) => getCategoryLabel(category, locale)),
     keywords: tags.map((tag) => getTagLabel(tag, locale)),
@@ -69,6 +89,7 @@ const schema = [
   image={image}
   type="article"
   publishedTime={publishedAt.toISOString()}
+  modifiedTime={modifiedIso}
   schema={schema}
   locale={locale}
   url={url}
@@ -84,43 +105,247 @@ const schema = [
       author={author}
       body={entry.body}
       publishedAt={publishedAt}
+      updatedAt={updatedAt}
       breadcrumbs={breadcrumbs}
     />
   </PageHero>
 
-  <article class="max-w-3xl">
-    <div class="prose">
-      <Content />
+  <div
+    class:list={[
+      tocHeadings.length > 0 &&
+        'lg:grid lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-start lg:gap-12',
+    ]}
+  >
+    <div class="min-w-0">
+      {
+        tocHeadings.length > 0 && (
+          <details
+            data-toc-mobile
+            data-pagefind-ignore
+            class="group mb-8 rounded-xl border border-border bg-surface px-4 py-3 lg:hidden"
+          >
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold text-fg">
+              <span>{m.blog_toc_title({}, { locale })}</span>
+              <Icon
+                name="chevron-left"
+                size={16}
+                class="-rotate-90 text-muted transition-transform duration-150 group-open:rotate-90"
+              />
+            </summary>
+            <nav aria-label={m.blog_toc_title({}, { locale })} class="mt-3 border-t border-border pt-3">
+              <ol class="space-y-2 text-sm">
+                {tocHeadings.map((heading) => (
+                  <li class:list={[heading.depth === 3 && 'ps-3']}>
+                    <a
+                      href={`#${heading.slug}`}
+                      class="block text-muted transition-colors hover:text-primary"
+                    >
+                      {heading.text}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </details>
+        )
+      }
+
+      <article class="max-w-3xl">
+        <div class="prose">
+          <Content />
+        </div>
+
+        {
+          tags.length > 0 && (
+            <div class="mt-10 flex flex-wrap items-center gap-2 border-t border-border pt-5">
+              <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                {m.blog_tags({}, { locale })}
+              </span>
+              {tags.map((tag) => (
+                <a
+                  href={tagHref(tag)}
+                  class="chip px-3 py-1 text-xs"
+                >
+                  <span class="me-1 text-muted/70" aria-hidden="true" dir="ltr">
+                    #
+                  </span>
+                  {getTagLabel(tag, locale)}
+                </a>
+              ))}
+            </div>
+          )
+        }
+
+        {
+          (newerPost || olderPost) && (
+            <nav
+              data-post-nav
+              data-pagefind-ignore
+              aria-label={m.nav_blog({}, { locale })}
+              class="mt-10 grid gap-4 border-t border-border pt-6 sm:grid-cols-2"
+            >
+              {newerPost ? (
+                <a
+                  href={getBlogPostHref(newerPost.data.slug, locale)}
+                  class="group flex flex-col gap-1 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-primary/50 hover:bg-surface-hover"
+                >
+                  <span class="inline-flex items-center gap-1 text-xs text-muted">
+                    <Icon name="chevron-left" size={14} class="rtl:rotate-180" />
+                    {m.blog_newer_post({}, { locale })}
+                  </span>
+                  <span class="line-clamp-2 text-sm font-semibold text-fg transition-colors group-hover:text-primary">
+                    {newerPost.data.title}
+                  </span>
+                </a>
+              ) : (
+                <div class="hidden sm:block" aria-hidden="true" />
+              )}
+
+              {olderPost && (
+                <a
+                  href={getBlogPostHref(olderPost.data.slug, locale)}
+                  class="group flex flex-col gap-1 rounded-xl border border-border bg-surface p-4 text-end transition-colors hover:border-primary/50 hover:bg-surface-hover"
+                >
+                  <span class="inline-flex items-center justify-end gap-1 text-xs text-muted">
+                    {m.blog_older_post({}, { locale })}
+                    <Icon name="chevron-left" size={14} class="rotate-180 rtl:rotate-0" />
+                  </span>
+                  <span class="line-clamp-2 text-sm font-semibold text-fg transition-colors group-hover:text-primary">
+                    {olderPost.data.title}
+                  </span>
+                </a>
+              )}
+            </nav>
+          )
+        }
+
+        <footer class="mt-8 border-t border-border pt-6">
+          <a
+            href={blogIndexHref}
+            class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          >
+            <span class="inline-block rtl:rotate-180">←</span> {m.common_back_to_blog({}, { locale })}
+          </a>
+        </footer>
+      </article>
     </div>
 
     {
-      tags.length > 0 && (
-        <div class="mt-10 flex flex-wrap items-center gap-2 border-t border-border pt-5">
-          <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
-            {m.blog_tags({}, { locale })}
-          </span>
-          {tags.map((tag) => (
-            <a
-              href={tagHref(tag)}
-              class="chip px-3 py-1 text-xs"
-            >
-              <span class="me-1 text-muted/70" aria-hidden="true" dir="ltr">
-                #
-              </span>
-              {getTagLabel(tag, locale)}
-            </a>
-          ))}
-        </div>
+      tocHeadings.length > 0 && (
+        <aside
+          data-toc
+          data-pagefind-ignore
+          aria-label={m.blog_toc_title({}, { locale })}
+          class="hidden lg:sticky lg:top-24 lg:block"
+        >
+          <div class="border-s border-border ps-4">
+            <p class="text-xs font-semibold tracking-wide text-fg">
+              {m.blog_toc_title({}, { locale })}
+            </p>
+            <ol class="mt-3 space-y-2 text-xs leading-relaxed">
+              {tocHeadings.map((heading) => (
+                <li class:list={[heading.depth === 3 && 'ps-3']}>
+                  <a
+                    href={`#${heading.slug}`}
+                    data-toc-link={heading.slug}
+                    class="block text-muted transition-colors hover:text-fg data-[active=true]:font-semibold data-[active=true]:text-primary"
+                  >
+                    {heading.text}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </aside>
       )
     }
+  </div>
 
-    <footer class="mt-10 border-t border-border pt-6">
-      <a
-        href={blogIndexHref}
-        class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+  {
+    relatedPosts.length > 0 && (
+      <section
+        data-related-posts
+        data-pagefind-ignore
+        aria-labelledby="related-posts-heading"
+        class="mt-14 border-t border-border pt-10"
       >
-        <span class="inline-block rtl:rotate-180">←</span> {m.common_back_to_blog({}, { locale })}
-      </a>
-    </footer>
-  </article>
+        <h2 id="related-posts-heading" class="text-xl font-bold tracking-tight text-fg">
+          {m.blog_related_posts({}, { locale })}
+        </h2>
+        <div class="mt-6 grid gap-6 sm:grid-cols-2">
+          {relatedPosts.map((related) => (
+            <PostCard
+              post={related}
+              locale={locale}
+              href={getBlogPostHref(related.data.slug, locale)}
+            />
+          ))}
+        </div>
+      </section>
+    )
+  }
 </BaseLayout>
+
+<script>
+  let activeTocObserver: IntersectionObserver | null = null;
+
+  function setupTocHighlight() {
+    activeTocObserver?.disconnect();
+    activeTocObserver = null;
+
+    const tocContainer = document.querySelector<HTMLElement>('[data-toc]');
+    if (!tocContainer) return;
+
+    const links = Array.from(tocContainer.querySelectorAll<HTMLAnchorElement>('[data-toc-link]'));
+    if (links.length === 0) return;
+
+    const linkBySlug = new Map<string, HTMLAnchorElement>();
+    const targets: HTMLElement[] = [];
+
+    for (const link of links) {
+      const slug = link.dataset.tocLink;
+      if (!slug) continue;
+      const headingEl = document.getElementById(slug);
+      if (!headingEl) continue;
+      linkBySlug.set(slug, link);
+      targets.push(headingEl);
+    }
+
+    if (targets.length === 0) return;
+
+    const setActive = (activeSlug: string) => {
+      for (const [slug, link] of linkBySlug) {
+        if (slug === activeSlug) {
+          link.dataset.active = 'true';
+        } else {
+          delete link.dataset.active;
+        }
+      }
+    };
+
+    setActive(targets[0].id);
+
+    activeTocObserver = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length > 0) {
+          setActive(visible[0].target.id);
+        }
+      },
+      { rootMargin: '-96px 0px -65% 0px', threshold: [0, 1] }
+    );
+
+    for (const target of targets) {
+      activeTocObserver.observe(target);
+    }
+  }
+
+  if (document.documentElement.dataset.blogTocBound !== 'true') {
+    document.documentElement.dataset.blogTocBound = 'true';
+    document.addEventListener('astro:page-load', setupTocHighlight);
+  }
+
+  setupTocHighlight();
+</script>

@@ -15,6 +15,16 @@ function escapeXml(value: string): string {
 export const GET: APIRoute = async () => {
   const routes = await getSiteRoutes();
 
+  const latestBlogModified = new Map<string, Date>();
+  for (const route of routes) {
+    if (route.props.routeType !== 'blog-entry') continue;
+    const candidate = route.props.entry.data.updatedAt ?? route.props.entry.data.publishedAt;
+    const previous = latestBlogModified.get(route.props.locale);
+    if (!previous || candidate.getTime() > previous.getTime()) {
+      latestBlogModified.set(route.props.locale, candidate);
+    }
+  }
+
   const urlEntries = routes
     .map((route) => {
       const locUrl = escapeXml(absoluteUrl(route.props.url));
@@ -30,7 +40,12 @@ export const GET: APIRoute = async () => {
         .join('\n');
 
       const entryData = route.props.entry?.data;
-      const modified = entryData?.updatedAt ?? entryData?.publishedAt;
+      const modified =
+        entryData?.updatedAt ??
+        entryData?.publishedAt ??
+        (route.props.routeType === 'blog-index'
+          ? latestBlogModified.get(route.props.locale)
+          : undefined);
       const lastmod = modified ? `\n    <lastmod>${modified.toISOString()}</lastmod>` : '';
       const changefreq = route.props.routeType === 'page' ? 'monthly' : 'weekly';
 
