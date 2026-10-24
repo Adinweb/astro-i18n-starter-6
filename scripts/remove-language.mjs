@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
 import { askYesNo, confirmDeletion } from './lib/prompt.mjs';
+import { compileMessages } from './lib/compile-messages.mjs';
 
 const args = process.argv.slice(2);
 const langCode = args.find((a) => !a.startsWith('--'));
@@ -151,7 +151,7 @@ if (deleteContent) {
 // 5. Recompile Paraglide messages
 console.log('\n🔄 Recompiling Paraglide messages...');
 try {
-  execSync('pnpm run messages:compile', { stdio: 'inherit' });
+  compileMessages(rootDir);
   console.log(`🎉 Language "${langCode}" successfully removed!`);
 } catch (e) {
   console.error('❌ Failed to recompile messages:', e.message);

@@ -2,8 +2,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
-import { execSync } from 'node:child_process';
 import { contentStub, stripLeadingHeading } from './lib/content-stub.mjs';
+import { compileMessages } from './lib/compile-messages.mjs';
 
 const args = process.argv.slice(2);
 const langCode = args.find((a) => !a.startsWith('--'));
@@ -154,10 +154,16 @@ for (const [key, val] of Object.entries(sourceDict)) {
       {
         declarations: ['input count', 'local countPlural = count: plural'],
         selectors: ['countPlural'],
-        match: {
-          'countPlural=one': '{count} élément',
-          'countPlural=*': '{count} éléments',
-        },
+        match:
+          langCode === 'fr'
+            ? {
+                'countPlural=one': '{count} élément',
+                'countPlural=*': '{count} éléments',
+              }
+            : {
+                'countPlural=one': `[TODO: ${langCode}] {count} item`,
+                'countPlural=*': `[TODO: ${langCode}] {count} items`,
+              },
       },
     ];
   } else if (key === 'position_ordinal') {
@@ -165,10 +171,15 @@ for (const [key, val] of Object.entries(sourceDict)) {
       {
         declarations: ['input pos', 'local posOrdinal = pos: plural type=ordinal'],
         selectors: ['posOrdinal'],
-        match: {
-          'posOrdinal=one': '{pos}er',
-          'posOrdinal=*': '{pos}e',
-        },
+        match:
+          langCode === 'fr'
+            ? {
+                'posOrdinal=one': '{pos}er',
+                'posOrdinal=*': '{pos}e',
+              }
+            : {
+                'posOrdinal=*': `[TODO: ${langCode}] #{pos}`,
+              },
       },
     ];
   } else if (langCode === 'fr' && frTranslations[key]) {
@@ -307,7 +318,7 @@ ${body.startsWith('#') ? stripLeadingHeading(body) : body}
 // 5. Compile Paraglide
 console.log('\n🔄 Compiling Paraglide messages...');
 try {
-  execSync('pnpm run messages:compile', { stdio: 'inherit' });
+  compileMessages(rootDir);
   console.log(`🎉 Language "${langCode}" added successfully!`);
 } catch (e) {
   console.error('❌ Failed to compile messages:', e.message);

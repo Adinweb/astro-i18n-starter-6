@@ -370,6 +370,21 @@ if (fs.existsSync(pagefindDir)) {
   );
 }
 
+const astroAssetsDir = path.join(distDir, '_astro');
+const clientBundles = fs.existsSync(astroAssetsDir)
+  ? fs
+      .readdirSync(astroAssetsDir)
+      .filter((name) => name.endsWith('.js'))
+      .map((name) => fs.readFileSync(path.join(astroAssetsDir, name), 'utf-8'))
+  : [];
+const pagefindReferenced =
+  Boolean(rootHtml && rootHtml.includes('/pagefind/pagefind.js')) ||
+  clientBundles.some((code) => code.includes('/pagefind/pagefind.js'));
+assert(
+  pagefindReferenced,
+  'Client search script retains /pagefind/pagefind.js in production build'
+);
+
 const searchIndex = readHtml(path.join('api', 'search-dev.json'));
 assert(searchIndex !== null, 'Fallback search index exists');
 if (searchIndex) {
@@ -405,12 +420,24 @@ function collectHtmlFiles(dir) {
 const builtHtmlFiles = collectHtmlFiles(distDir);
 const duplicateHeadingPages = [];
 const placeholderPages = [];
+const untranspiledInlineScriptPages = [];
+const inlineTsGenericPattern =
+  /\.\s*(?:querySelector|querySelectorAll|getElementById|closest)\s*<\s*[A-Z]\w*\s*>\s*\(/;
 
 for (const file of builtHtmlFiles) {
   const html = fs.readFileSync(file, 'utf-8');
   const relative = path.relative(distDir, file);
   if (count(html, /<h1[\s>]/g) !== 1) duplicateHeadingPages.push(relative);
   if (html.includes('[TODO')) placeholderPages.push(relative);
+
+  for (const scriptMatch of html.matchAll(
+    /<script\b(?![^>]*\btype=["']application\/ld\+json["'])[^>]*>([\s\S]*?)<\/script>/gi
+  )) {
+    if (inlineTsGenericPattern.test(scriptMatch[1])) {
+      untranspiledInlineScriptPages.push(relative);
+      break;
+    }
+  }
 }
 
 assert(
@@ -420,6 +447,10 @@ assert(
 assert(
   placeholderPages.length === 0,
   `No placeholder copy is published${placeholderPages.length ? ` (offenders: ${placeholderPages.join(', ')})` : ''}`
+);
+assert(
+  untranspiledInlineScriptPages.length === 0,
+  `No built page contains untranspiled TypeScript generics in inline <script> tags${untranspiledInlineScriptPages.length ? ` (offenders: ${untranspiledInlineScriptPages.join(', ')})` : ''}`
 );
 
 // ---------------------------------------------------------------------------

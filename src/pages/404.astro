@@ -144,8 +144,8 @@ const i18nData = Object.fromEntries(
       // empty state and the locale the fallback index filters on all have to
       // follow the language of the requested URL. Otherwise a Persian 404
       // would search the English index.
-      const searchModal = document.querySelector<HTMLDialogElement>('[data-search-modal]');
-      if (searchModal) {
+      const searchModal = document.querySelector('[data-search-modal]');
+      if (searchModal instanceof HTMLElement) {
         searchModal.dataset.locale = detectedLocale;
         searchModal.dataset.placeholder = data.searchHint;
         searchModal.dataset.noResults = data.searchEmpty;
@@ -223,6 +223,9 @@ const i18nData = Object.fromEntries(
     }
 
     updateNotFoundPage();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', updateNotFoundPage, { once: true });
+    }
     if (document.documentElement.dataset.notFoundBound !== 'true') {
       document.documentElement.dataset.notFoundBound = 'true';
       document.addEventListener('astro:page-load', updateNotFoundPage);

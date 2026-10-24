@@ -18,8 +18,6 @@ if (!LOCALES.includes(BASE_LOCALE)) {
   process.exit(1);
 }
 
-const args = process.argv.slice(2);
-
 let hasFatal = false;
 let warningCount = 0;
 
@@ -312,8 +310,8 @@ console.log('\n--- 4. Slug & Route Guard ---');
  */
 function deriveReservedRouteBases() {
   const pagesDir = path.join(rootDir, 'src', 'pages');
-  // The blog index is generated rather than a file in src/pages.
-  const reserved = new Set(['blog']);
+  // The blog index and non-default locale prefixes must never be shadowed by a page slug.
+  const reserved = new Set(['blog', ...LOCALES.filter((locale) => locale !== BASE_LOCALE)]);
   if (!fs.existsSync(pagesDir)) return reserved;
 
   for (const entry of fs.readdirSync(pagesDir, { withFileTypes: true })) {
@@ -420,9 +418,9 @@ for (const { collection, group, groupDir } of groups) {
   }
 }
 
-for (const locale of LOCALES) {
-  const seen = new Map();
+const seen = new Map();
 
+for (const locale of LOCALES) {
   const addRoute = (routePath, source) => {
     const key = `/${locale === BASE_LOCALE ? '' : `${locale}/`}${routePath}`;
     if (seen.has(key)) {

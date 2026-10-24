@@ -119,6 +119,58 @@ describe('src/libs/content/service.ts', () => {
       expect(crumbs[1].href).toBe(getBlogIndexHref(testLocale));
       expect(crumbs[2].href).toBe(url);
     });
+
+    it('does not duplicate the home or blog index crumb in non-default locales', () => {
+      const localizedHome = localizeHref('/', testLocale);
+      expect(
+        getBreadcrumbs(localizedHome, testLocale, {
+          home: m.nav_home({}, { locale: testLocale }),
+          blog: m.nav_blog({}, { locale: testLocale }),
+          current: m.nav_home({}, { locale: testLocale }),
+        })
+      ).toEqual([
+        {
+          label: m.nav_home({}, { locale: testLocale }),
+          href: localizedHome,
+        },
+      ]);
+
+      const localizedBlog = getBlogIndexHref(testLocale);
+      expect(
+        getBreadcrumbs(localizedBlog, testLocale, {
+          home: m.nav_home({}, { locale: testLocale }),
+          blog: m.nav_blog({}, { locale: testLocale }),
+          current: m.nav_blog({}, { locale: testLocale }),
+        })
+      ).toEqual([
+        {
+          label: m.nav_home({}, { locale: testLocale }),
+          href: localizedHome,
+        },
+        {
+          label: m.nav_blog({}, { locale: testLocale }),
+          href: localizedBlog,
+        },
+      ]);
+
+      const localizedAbout = localizeHref(`/about-${testLocale}`, testLocale);
+      expect(
+        getBreadcrumbs(localizedAbout, testLocale, {
+          home: m.nav_home({}, { locale: testLocale }),
+          blog: m.nav_blog({}, { locale: testLocale }),
+          current: 'About',
+        })
+      ).toEqual([
+        {
+          label: m.nav_home({}, { locale: testLocale }),
+          href: localizedHome,
+        },
+        {
+          label: 'About',
+          href: localizedAbout,
+        },
+      ]);
+    });
   });
 
   describe('buildSiteRoutes', () => {

@@ -3,20 +3,29 @@ import { getSiteRoutes } from '@/libs/content/service';
 import { absoluteUrl } from '@/libs/config/app';
 import { DEFAULT_LOCALE } from '@/i18n/locales';
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 export const GET: APIRoute = async () => {
   const routes = await getSiteRoutes();
 
   const urlEntries = routes
     .map((route) => {
-      const locUrl = absoluteUrl(route.props.url);
-      const xDefaultUrl = absoluteUrl(
-        route.props.alternates[DEFAULT_LOCALE] ?? route.props.url
+      const locUrl = escapeXml(absoluteUrl(route.props.url));
+      const xDefaultUrl = escapeXml(
+        absoluteUrl(route.props.alternates[DEFAULT_LOCALE] ?? route.props.url)
       );
 
       const alternateTags = Object.entries(route.props.alternates)
         .map(([locale, altPath]) => {
-          const altHref = absoluteUrl(altPath);
-          return `    <xhtml:link rel="alternate" hreflang="${locale}" href="${altHref}" />`;
+          const altHref = escapeXml(absoluteUrl(altPath));
+          return `    <xhtml:link rel="alternate" hreflang="${escapeXml(locale)}" href="${altHref}" />`;
         })
         .join('\n');
 

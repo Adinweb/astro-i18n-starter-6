@@ -52,7 +52,8 @@ export const GET: APIRoute = async () => {
     const updated = (post.data.updatedAt ?? post.data.publishedAt).getTime();
     return Math.max(latest, updated);
   }, 0);
-  const latest = new Date(latestTimestamp).toISOString();
+  const latest =
+    posts.length > 0 ? new Date(latestTimestamp).toISOString() : new Date().toISOString();
   const siteUrl = absoluteUrl('/');
 
   const xml = `<?xml version="1.0" encoding="utf-8"?>

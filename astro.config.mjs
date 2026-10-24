@@ -32,6 +32,9 @@ const astroComponentsDir = path.join(
 );
 
 const isBuild = process.env.npm_lifecycle_event === 'build' || process.argv.includes('build');
+if (isBuild) {
+  process.env.NODE_ENV = 'production';
+}
 const mode = isBuild ? 'production' : 'development';
 
 // Application-level values live in one file (see src/libs/config/app.ts).
@@ -110,7 +113,7 @@ function readEnvValue(key) {
   return value;
 }
 
-const siteUrl = process.env.SITE_URL ?? readEnvValue('SITE_URL');
+const siteUrl = process.env.SITE_URL ?? readEnvValue('SITE_URL') ?? process.env.APP_URL;
 
 /**
  * A build that will be **deployed** must know its public origin: the
@@ -149,7 +152,11 @@ try {
 // https://astro.build/config
 export default defineConfig({
   site,
-  trailingSlash: 'always',
+  // Canonical trailing slashes are enforced on all generated URLs by `localizeHref`
+  // (`src/i18n/paths.ts`). Keeping `trailingSlash: 'ignore'` (per PRD §4) ensures
+  // slash-less URLs (e.g. `/unknown`, `/fa/unknown`, `/404`) render the custom
+  // `src/pages/404.astro` page instead of Astro's built-in trailing-slash 404 screen.
+  trailingSlash: 'ignore',
   build: {
     format: 'directory',
   },
@@ -161,6 +168,9 @@ export default defineConfig({
       alias: {
         'astro/components': astroComponentsDir,
       },
+    },
+    server: {
+      allowedHosts: true,
     },
   },
   server: {

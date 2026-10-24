@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { compileMessages } from './lib/compile-messages.mjs';
 
 const rootDir = process.cwd();
 
@@ -279,7 +279,7 @@ export function runCli() {
   if (!skipCompile) {
     console.log('🔄 Recompiling Paraglide messages...');
     try {
-      execSync('pnpm run messages:compile', { stdio: 'inherit' });
+      compileMessages(rootDir);
       console.log('🎉 Paraglide recompiled successfully.');
     } catch (e) {
       console.error('❌ Failed to recompile messages:', e.message);

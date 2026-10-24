@@ -20,6 +20,10 @@ import {
   stringifyFrontmatter as stringifyPostFm,
 } from '../../../scripts/new-post.mjs';
 import { parseLocaleConfig, readLocaleConfig } from '../../../scripts/lib/locales.mjs';
+import {
+  compileMessages,
+  findParaglideBin,
+} from '../../../scripts/lib/compile-messages.mjs';
 
 describe('scripts/i18n-add-batch.mjs normalizeBatchData', () => {
   const activeLocales = ['en', 'de', 'fr', 'fa', 'ar'];
@@ -399,4 +403,36 @@ export const LOCALE_METADATA = {
       expect(['ltr', 'rtl']).toContain(config.metadata[locale].dir);
     }
   });
+});
+
+describe('Paraglide CLI helper (scripts/lib/compile-messages.mjs)', () => {
+  it(
+    'compiles messages directly under Node without requiring pnpm on PATH',
+    () => {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astro-paraglide-compile-'));
+      try {
+        fs.cpSync(path.join(process.cwd(), 'project.inlang'), path.join(tempDir, 'project.inlang'), {
+          recursive: true,
+        });
+        fs.cpSync(path.join(process.cwd(), 'messages'), path.join(tempDir, 'messages'), {
+          recursive: true,
+        });
+        const bin = findParaglideBin(process.cwd());
+        expect(bin).toBeTruthy();
+        const prevBin = process.env.PARAGLIDE_BIN;
+        process.env.PARAGLIDE_BIN = bin!;
+        try {
+          compileMessages(tempDir);
+        } finally {
+          if (prevBin === undefined) delete process.env.PARAGLIDE_BIN;
+          else process.env.PARAGLIDE_BIN = prevBin;
+        }
+
+        expect(fs.existsSync(path.join(tempDir, 'src', 'paraglide', 'messages.js'))).toBe(true);
+      } finally {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    },
+    20_000
+  );
 });

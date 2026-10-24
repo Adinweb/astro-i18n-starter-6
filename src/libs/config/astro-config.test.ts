@@ -45,4 +45,8 @@ describe('astro.config.mjs — the astro/components alias', () => {
       require.resolve('astro/components/ClientRouter.astro')
     );
   });
+
+  it('uses trailingSlash: "ignore" so slash-less unknown URLs render custom 404.astro', () => {
+    expect((astroConfig as { trailingSlash?: string }).trailingSlash).toBe('ignore');
+  });
 });

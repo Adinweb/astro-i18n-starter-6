@@ -258,11 +258,11 @@ export function getBreadcrumbs(
 
   const crumbs: BreadcrumbItem[] = [{ label: labels.home, href: homeHref }];
 
-  if (pathname === homeHref) return crumbs;
+  if (pathname === '/') return crumbs;
 
   if (firstSegment === BLOG_BASE) {
     crumbs.push({ label: labels.blog, href: blogHref });
-    if (pathname !== blogHref && labels.current) {
+    if (pathname !== `/${BLOG_BASE}/` && labels.current) {
       crumbs.push({ label: labels.current, href: url });
     }
   } else if (labels.current) {

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
 import { confirmDeletion } from './lib/prompt.mjs';
+import { compileMessages } from './lib/compile-messages.mjs';
 
 const args = process.argv.slice(2);
 const pageKey = args.find((a) => !a.startsWith('--'));
@@ -128,7 +128,7 @@ if (targetLocale) {
       console.log(`🧹 Cleaned translation key "nav_${pageKey}" from dictionaries.`);
       console.log('🔄 Recompiling Paraglide messages...');
       try {
-        execSync('pnpm run messages:compile', { stdio: 'inherit' });
+        compileMessages(rootDir);
         console.log('🎉 Paraglide recompiled successfully.');
       } catch (e) {
         console.warn('⚠️ Warning: Failed to recompile Paraglide messages:', e.message);

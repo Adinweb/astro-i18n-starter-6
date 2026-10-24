@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
 import MagicString from 'magic-string';
+import { compileMessages } from './lib/compile-messages.mjs';
 
 const args = process.argv.slice(2);
 let targetPath = '';
@@ -87,12 +87,21 @@ for (const file of filesToProcess) {
 
   const templateContent = content.slice(templateStart);
 
+  // Exclude <script> and <style> blocks so JS/CSS comparisons (`>` / `<`) are never rewritten.
+  const excludedRanges = [];
+  for (const blockMatch of templateContent.matchAll(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi)) {
+    excludedRanges.push([blockMatch.index, blockMatch.index + blockMatch[0].length]);
+  }
+
   // Match text nodes: >text<
   const textNodeRegex = />([^<>{}\r\n]+)</g;
   let mNode;
   const replacements = [];
 
   while ((mNode = textNodeRegex.exec(templateContent)) !== null) {
+    if (excludedRanges.some(([start, end]) => mNode.index >= start && mNode.index < end)) {
+      continue;
+    }
     const rawText = mNode[1].trim();
     if (rawText.length < 3) continue;
     if (rawText.startsWith('//') || rawText.startsWith('/*')) continue;
@@ -179,7 +188,7 @@ if (autoAdd && !dryRun && extractedCount > 0) {
     fs.writeFileSync(locPath, JSON.stringify(sortKeys(dictsByLocale[loc]), null, 2) + '\n', 'utf-8');
   }
   console.log(`✅ Saved new dictionary keys across active messages/*.json files`);
-  execSync('pnpm run messages:compile', { stdio: 'inherit' });
+  compileMessages(rootDir);
 }
 
 console.log(`\n🎉 Extracted a total of ${extractedCount} item(s).`);
