@@ -39,6 +39,10 @@ const i18nData = Object.fromEntries(
           cta: m.common_get_started({}, { locale: loc }),
           rights: m.common_all_rights_reserved({}, { locale: loc }),
           search: m.common_search_placeholder({}, { locale: loc }),
+          searchHint: m.common_type_to_search({}, { locale: loc }),
+          searchEmpty: m.common_no_results({}, { locale: loc }),
+          close: m.common_close({}, { locale: loc }),
+          pressEsc: m.common_press_esc({}, { locale: loc }),
           changeLanguage: m.common_change_language({}, { locale: loc }),
           homeHref: nav.find((item) => item.key === 'home')?.href ?? localizeHref('/', loc),
           nav: nav.map(({ key, label, href }) => ({ key, label, href })),
@@ -136,6 +140,34 @@ const i18nData = Object.fromEntries(
         searchButton.setAttribute('aria-label', data.search);
         searchButton.setAttribute('title', data.search);
       }
+      // The modal itself is rendered for the default locale: its placeholder,
+      // empty state and the locale the fallback index filters on all have to
+      // follow the language of the requested URL. Otherwise a Persian 404
+      // would search the English index.
+      const searchModal = document.querySelector<HTMLDialogElement>('[data-search-modal]');
+      if (searchModal) {
+        searchModal.dataset.locale = detectedLocale;
+        searchModal.dataset.placeholder = data.searchHint;
+        searchModal.dataset.noResults = data.searchEmpty;
+      }
+      const searchTitle = document.getElementById('search-modal-title');
+      if (searchTitle) searchTitle.textContent = data.search;
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        searchInput.placeholder = data.search;
+        searchInput.setAttribute('aria-label', data.search);
+      }
+      const searchHintMessage = document.getElementById('search-placeholder-msg');
+      if (searchHintMessage && searchInput && !(searchInput.value)) {
+        searchHintMessage.textContent = data.searchHint;
+      }
+      const searchClose = document.getElementById('search-close-btn');
+      if (searchClose) {
+        searchClose.setAttribute('aria-label', data.close);
+        searchClose.setAttribute('title', data.close);
+      }
+      const searchEscHint = document.getElementById('search-esc-hint');
+      if (searchEscHint) searchEscHint.textContent = data.pressEsc;
       const switcherButton = document.querySelector('[data-switcher-button]');
       if (switcherButton) {
         switcherButton.setAttribute('aria-label', data.changeLanguage);
