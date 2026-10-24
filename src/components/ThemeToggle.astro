@@ -1,0 +1,115 @@
+---
+/**
+ * Accessible light/dark theme toggle.
+ *
+ * Composes `IconButton` so it shares the exact glass geometry of the header
+ * controls (`AGENTS.md` Rule 9). Initial paint state is set synchronously in
+ * `BaseLayout.astro` before first paint to prevent FOUC; this script syncs the
+ * icon symbol (`sun`/`moon`), ARIA attributes, `localStorage`, and OS
+ * `prefers-color-scheme` changes.
+ */
+import IconButton from '@/components/IconButton.astro';
+import type { Locale } from '@/i18n/locales';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<IconButton
+  icon="moon"
+  size={16}
+  label={m.common_theme_toggle({}, { locale })}
+  data-theme-toggle
+  data-label-light={m.common_theme_light({}, { locale })}
+  data-label-dark={m.common_theme_dark({}, { locale })}
+  aria-pressed="false"
+/>
+
+<script>
+  type Theme = 'light' | 'dark';
+
+  function getActiveTheme(): Theme {
+    return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+  }
+
+  function hasStoredPreference(): boolean {
+    try {
+      const value = window.localStorage.getItem('theme');
+      return value === 'light' || value === 'dark';
+    } catch {
+      return false;
+    }
+  }
+
+  function syncThemeColorMeta(theme: Theme) {
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!meta) return;
+    const nextColor =
+      theme === 'dark' ? meta.dataset.darkColor : meta.dataset.lightColor;
+    if (nextColor) meta.setAttribute('content', nextColor);
+  }
+
+  function syncToggleButtons(theme: Theme) {
+    const isDark = theme === 'dark';
+    document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]').forEach((btn) => {
+      btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+      const label = isDark ? btn.dataset.labelLight : btn.dataset.labelDark;
+      if (label) {
+        btn.setAttribute('aria-label', label);
+        btn.setAttribute('title', label);
+      }
+      const useEl = btn.querySelector('use');
+      if (useEl) {
+        useEl.setAttribute('href', isDark ? '/icons.svg#sun' : '/icons.svg#moon');
+      }
+    });
+  }
+
+  function applyTheme(theme: Theme, persist: boolean) {
+    document.documentElement.dataset.theme = theme;
+    if (persist) {
+      try {
+        window.localStorage.setItem('theme', theme);
+      } catch {
+        // Ignore storage write errors in private or sandboxed contexts.
+      }
+    }
+    syncThemeColorMeta(theme);
+    syncToggleButtons(theme);
+  }
+
+  function setupThemeToggle() {
+    syncToggleButtons(getActiveTheme());
+    syncThemeColorMeta(getActiveTheme());
+
+    if (document.documentElement.dataset.themeToggleBound === 'true') return;
+    document.documentElement.dataset.themeToggleBound = 'true';
+
+    document.addEventListener('click', (event) => {
+      const target = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>(
+        '[data-theme-toggle]'
+      );
+      if (!target) return;
+      const next: Theme = getActiveTheme() === 'dark' ? 'light' : 'dark';
+      applyTheme(next, true);
+    });
+
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    media.addEventListener('change', (event) => {
+      if (!hasStoredPreference()) {
+        applyTheme(event.matches ? 'dark' : 'light', false);
+      }
+    });
+
+    document.addEventListener('astro:page-load', () => {
+      syncToggleButtons(getActiveTheme());
+      syncThemeColorMeta(getActiveTheme());
+    });
+  }
+
+  setupThemeToggle();
+</script>

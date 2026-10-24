@@ -45,6 +45,9 @@
   "common_published_on": "منتشر شده در",
   "common_search_placeholder": "جستجوی مقالات و صفحات...",
   "common_skip_to_content": "پرش به محتوا",
+  "common_theme_dark": "تغییر به حالت تیره",
+  "common_theme_light": "تغییر به حالت روشن",
+  "common_theme_toggle": "تغییر حالت نمایش",
   "common_type_to_search": "برای جستجو تایپ کنید...",
   "items_count": [
     {

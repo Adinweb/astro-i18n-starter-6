@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { getImage } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import { LOCALES } from '@/i18n/locales';
+import { formatDate, formatNumber } from '@/i18n/format';
 import { getReadingTime, type SerializedBlogPost } from '@/libs/content/blog';
 import { getSortedLocaleEntries } from '@/libs/content/entries';
 import { getBlogPostHref } from '@/libs/content/service';
@@ -58,13 +59,11 @@ export const GET: APIRoute = async () => {
         tagLabels: visibleTags.map((tag) => getTagLabel(tag, locale)),
         hiddenTagCount: Math.max(0, tags.length - visibleTags.length),
         publishedIso: publishedAt.toISOString(),
-        formattedDate: publishedAt.toLocaleDateString(locale, {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          timeZone: 'UTC',
-        }),
-        readingTimeLabel: m.blog_read_time({ count: readingTime }, { locale }),
+        formattedDate: formatDate(publishedAt, locale, 'short'),
+        readingTimeLabel: m.blog_read_time(
+          { count: formatNumber(readingTime, locale) },
+          { locale }
+        ),
         categories: [...categories],
         tags: [...tags],
       });

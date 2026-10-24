@@ -39,6 +39,7 @@ const appConfigSchema = z.object({
   }),
   brand: z.object({
     themeColor: hexColor,
+    darkThemeColor: hexColor.optional(),
     backgroundColor: hexColor,
     appleTouchIcon: z.object({
       file: z.string().min(1),
@@ -63,6 +64,7 @@ const siteConfigSchema = z.object({
   shortName: z.string().min(1),
   description: z.string().min(1),
   themeColor: hexColor,
+  darkThemeColor: hexColor,
   backgroundColor: hexColor,
   ogImage: z.string().startsWith('/'),
   ogImageWidth: z.number().int().positive(),
@@ -81,6 +83,8 @@ export const siteConfig = siteConfigSchema.parse({
   description: appConfig.site.description,
   /** Browser chrome colour; mirrors `--color-primary` in `src/styles/global.css`. */
   themeColor: appConfig.brand.themeColor,
+  /** Browser chrome colour in dark mode; mirrors dark `--color-bg`. */
+  darkThemeColor: appConfig.brand.darkThemeColor ?? '#0f172a',
   /** Splash/background colour of an installed app; mirrors `--color-bg`. */
   backgroundColor: appConfig.brand.backgroundColor,
   ogImage: appConfig.site.socialImage.path,

@@ -62,7 +62,7 @@ const widths = [
 <section
   aria-labelledby={HERO_TITLE_ID}
   data-page-hero
-  class="relative isolate w-full overflow-hidden bg-fg"
+  class="relative isolate w-full overflow-hidden bg-hero-base"
 >
   <!-- The page image *is* the background of this section. -->
   <div class="absolute inset-0" data-hero-background aria-hidden="true">
@@ -81,14 +81,14 @@ const widths = [
       class="absolute inset-0 h-full w-full scale-105 object-cover blur-md"
     />
     <!-- Tonal wash: ties the picture to the theme's dark base. -->
-    <div class="absolute inset-0 bg-fg/35"></div>
+    <div class="absolute inset-0 bg-hero-base/35"></div>
     <!-- Scrim: keeps the copy legible and deepens towards the bottom. -->
     <div
-      class="absolute inset-0 bg-linear-to-t from-fg/95 from-8% via-fg/70 via-48% to-transparent to-90%"
+      class="absolute inset-0 bg-linear-to-t from-hero-base/95 from-8% via-hero-base/70 via-48% to-transparent to-90%"
     >
     </div>
     <!-- Wash under the fixed header, so the navigation keeps its contrast. -->
-    <div class="absolute inset-x-0 top-0 h-36 bg-linear-to-b from-fg/75 to-transparent"></div>
+    <div class="absolute inset-x-0 top-0 h-36 bg-linear-to-b from-hero-base/75 to-transparent"></div>
   </div>
 
   <div

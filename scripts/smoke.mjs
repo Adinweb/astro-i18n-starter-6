@@ -139,6 +139,11 @@ if (rootHtml) {
     rootHtml.includes('application/rss+xml'),
     'Root advertises the RSS feed'
   );
+  assert(
+    rootHtml.includes('name="color-scheme" content="light dark"') &&
+      rootHtml.includes('data-theme-toggle'),
+    'Root declares light/dark color-scheme and renders the theme toggle control'
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -175,6 +180,12 @@ if (testLocale) {
         blogIndex.includes('"@type": "BreadcrumbList"'),
       `/${testLocale}/blog/ emits BreadcrumbList JSON-LD`
     );
+    if (testLocale === 'fa') {
+      assert(
+        /[۰-۹]/.test(blogIndex),
+        '/fa/blog/ renders native Persian numerals in dates and counters'
+      );
+    }
   }
 }
 
@@ -402,8 +413,11 @@ const iconsSvg = readHtml('icons.svg');
 assert(iconsSvg !== null, 'dist/icons.svg exists');
 if (iconsSvg) {
   assert(
-    iconsSvg.includes('<symbol id="search"') && iconsSvg.includes('<symbol id="globe"'),
-    'icons.svg contains compiled symbols'
+    iconsSvg.includes('<symbol id="search"') &&
+      iconsSvg.includes('<symbol id="globe"') &&
+      iconsSvg.includes('<symbol id="sun"') &&
+      iconsSvg.includes('<symbol id="moon"'),
+    'icons.svg contains compiled symbols (including sun and moon)'
   );
 }
 

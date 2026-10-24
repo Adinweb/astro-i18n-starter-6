@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import type { ImageMetadata } from 'astro';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
+import { formatNumber } from '@/i18n/format';
 import { localizeHref } from '@/i18n/paths';
 import { getNavigation } from '@/libs/config/navigation';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
@@ -9,6 +10,7 @@ import * as m from '@/paraglide/messages';
 import Seo from '@/components/Seo.astro';
 import TopLoadingBar from '@/components/TopLoadingBar.astro';
 import LanguageSwitcher from '@/components/LanguageSwitcher.astro';
+import ThemeToggle from '@/components/ThemeToggle.astro';
 import SearchModal from '@/components/SearchModal.astro';
 import IconButton from '@/components/IconButton.astro';
 import '@/styles/global.css';
@@ -87,9 +89,41 @@ const structuredData = schema ?? {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content={siteConfig.themeColor} />
-    <meta name="color-scheme" content="light" />
+    <meta
+      name="theme-color"
+      content={siteConfig.themeColor}
+      data-light-color={siteConfig.themeColor}
+      data-dark-color={siteConfig.darkThemeColor}
+    />
+    <meta name="color-scheme" content="light dark" />
     <meta name="generator" content={Astro.generator} />
+    <script is:inline>
+      (function () {
+        function resolveTheme() {
+          try {
+            var stored = window.localStorage.getItem('theme');
+            if (stored === 'dark' || stored === 'light') return stored;
+          } catch (_) {}
+          return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        function applyToDocument(doc, theme) {
+          doc.documentElement.dataset.theme = theme;
+          var meta = doc.querySelector('meta[name="theme-color"]');
+          if (meta) {
+            var next = theme === 'dark' ? meta.dataset.darkColor : meta.dataset.lightColor;
+            if (next) meta.setAttribute('content', next);
+          }
+        }
+        applyToDocument(document, resolveTheme());
+        if (document.documentElement.dataset.themeSwapBound !== 'true') {
+          document.documentElement.dataset.themeSwapBound = 'true';
+          document.addEventListener('astro:before-swap', function (event) {
+            var current = document.documentElement.dataset.theme || resolveTheme();
+            applyToDocument(event.newDocument, current);
+          });
+        }
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
     <link rel="manifest" href="/site.webmanifest" />
@@ -167,6 +201,8 @@ const structuredData = schema ?? {
                 />
               )
             }
+
+            <ThemeToggle locale={locale} />
 
             <LanguageSwitcher
               currentLocale={locale}
@@ -277,7 +313,7 @@ const structuredData = schema ?? {
     <footer class="border-t border-border bg-surface mt-auto py-8">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
         <div id="footer-rights">
-          © <span data-current-year>{currentYear}</span> {siteName}.
+          © <span data-current-year data-locale={locale}>{formatNumber(currentYear, locale)}</span> {siteName}.
           <span data-footer-rights>{m.common_all_rights_reserved({}, { locale })}</span>
         </div>
         <nav class="flex flex-wrap items-center gap-4" aria-label={m.common_menu({}, { locale })}>
@@ -328,9 +364,13 @@ const structuredData = schema ?? {
     </style>
 
     <script>
+      import { formatNumber } from '@/i18n/format';
+
       function updateYear() {
+        const year = new Date().getFullYear();
         document.querySelectorAll<HTMLElement>('[data-current-year]').forEach((el) => {
-          el.textContent = String(new Date().getFullYear());
+          const activeLocale = el.dataset.locale || document.documentElement.lang || 'en';
+          el.textContent = formatNumber(year, activeLocale);
         });
       }
 

@@ -12,9 +12,10 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 
 1. **One Source of Truth (SSOT)**:
    - Locales & directions: `src/i18n/locales.ts` and `project.inlang/settings.json`.
+   - Locale-native numbers & dates: `src/i18n/format.ts` (`formatNumber`, `formatDate`).
    - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
    - Content schemas: `src/content.config.ts`.
-   - Slugs & alternates: `src/libs/content/service.ts`.
+   - Slugs, feeds & alternates: `src/libs/content/service.ts` and `src/libs/content/feed.ts`.
    - Content entry invariants (IDs, drafts, locale selection, sorting): `src/libs/content/entries.ts`.
    - Blog filters & reading time: `src/libs/content/blog.ts`; taxonomy labels: `src/libs/content/taxonomy.ts`.
    - Application config: `app.config.json`, validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, brand assets, dev server).
@@ -59,7 +60,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   └── lib/                   # Shared prompt, frontmatter, content-stub, slug, and artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph (no page image of its own)
-│   ├── components/            # Reusable Astro components (Icon, IconButton, LanguageSwitcher, PageHero, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, Seo, TopLoadingBar)
+│   ├── components/            # Reusable Astro components (Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHero, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, Seo, TopLoadingBar)
 │   ├── content/               # Symmetrical content collections:
 │   │   ├── pages/<group>/     # Static pages (en.mdx, de.mdx, fr.mdx, fa.mdx, ar.mdx)
 │   │   │   └── <group>.png    # Hero artwork of the group, next to the entries
@@ -67,13 +68,15 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │       └── <group>.png    # Cover artwork of the group, next to the entries
 │   ├── i18n/                  # Core i18n engine:
 │   │   ├── locales.ts         # SSOT for LOCALES, DEFAULT_LOCALE, metadata (dir, font, name)
+│   │   ├── format.ts          # Locale-native Intl number & date formatters (Solar Hijri for fa)
 │   │   └── paths.ts           # Pure URL utilities (localizeHref, localeHref, stripLocale, getPathname)
-│   ├── layouts/               # BaseLayout.astro (HTML head, lang/dir, header, mobile drawer, footer)
+│   ├── layouts/               # BaseLayout.astro (HTML head, lang/dir, theme init, header, mobile drawer, footer)
 │   ├── libs/                  # Core services:
 │   │   ├── config/app.ts      # Validates app.config.json; typed site/brand/blog values & hero defaults
 │   │   ├── config/navigation.ts # Header/drawer/footer navigation builder
 │   │   ├── content/entries.ts # Entry ID parsing, draft filtering, locale selection, sorting
-│   │   ├── content/service.ts # getSiteRoutes(), getPageUrl(), getBreadcrumbs()
+│   │   ├── content/service.ts # getSiteRoutes(), getPageUrl(), getBreadcrumbs(), getRssFeedHref()
+│   │   ├── content/feed.ts    # Per-locale Atom 1.0 feed builder
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
 │   │   └── content/social.ts  # Builds the optimized og:image card
 │   ├── pages/                 # Minimal physical pages:
@@ -81,12 +84,14 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
 │   │   ├── icons.svg.ts       # SVG sprite endpoint
 │   │   ├── site.webmanifest.ts # Web app manifest generated from app.config.json
-│   │   ├── rss.xml.ts         # Atom feed for all published articles
+│   │   ├── rss.xml.ts         # Default-locale Atom feed
+│   │   ├── rss/[locale].xml.ts # Non-default locale Atom feeds (/rss/<locale>.xml)
 │   │   ├── sitemap.xml.ts     # Multi-lingual sitemap with x-default + lastmod
 │   │   ├── robots.txt.ts      # Robots.txt pointing to sitemap
+│   │   ├── api/blog-posts.json.ts # Static blog catalog for cross-page filtering
 │   │   └── api/search-dev.json.ts # Locale-aware search fallback index
 │   ├── paraglide/             # AUTO-GENERATED compiled messages (DO NOT EDIT)
-│   ├── styles/                # global.css (Tailwind v4 @theme inline + glass system + fonts), prose.css
+│   ├── styles/                # global.css (Tailwind v4 @theme inline + light/dark glass system + fonts), prose.css
 │   └── views/                 # Presentation views (PageView, BlogIndexView, BlogPostView)
 ```
 

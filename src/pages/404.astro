@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_METADATA, type Locale } from '@/i18n/locales';
+import { formatNumber } from '@/i18n/format';
 import { localizeHref } from '@/i18n/paths';
 import { getNavigation } from '@/libs/config/navigation';
 import { siteConfig } from '@/libs/config/app';
@@ -44,6 +45,9 @@ const i18nData = Object.fromEntries(
           close: m.common_close({}, { locale: loc }),
           pressEsc: m.common_press_esc({}, { locale: loc }),
           changeLanguage: m.common_change_language({}, { locale: loc }),
+          themeLight: m.common_theme_light({}, { locale: loc }),
+          themeDark: m.common_theme_dark({}, { locale: loc }),
+          year: formatNumber(new Date().getFullYear(), loc),
           homeHref: nav.find((item) => item.key === 'home')?.href ?? localizeHref('/', loc),
           nav: nav.map(({ key, label, href }) => ({ key, label, href })),
           dir: LOCALE_METADATA[loc].dir,
@@ -135,6 +139,20 @@ const i18nData = Object.fromEntries(
       });
       const rights = document.querySelector('[data-footer-rights]');
       if (rights) rights.textContent = data.rights;
+      document.querySelectorAll('[data-current-year]').forEach((el) => {
+        if (el instanceof HTMLElement) el.dataset.locale = detectedLocale;
+        el.textContent = data.year;
+      });
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
+        if (btn instanceof HTMLElement) {
+          btn.dataset.labelLight = data.themeLight;
+          btn.dataset.labelDark = data.themeDark;
+        }
+        const label = isDark ? data.themeLight : data.themeDark;
+        btn.setAttribute('aria-label', label);
+        btn.setAttribute('title', label);
+      });
       const searchButton = document.querySelector('[data-open-search]');
       if (searchButton) {
         searchButton.setAttribute('aria-label', data.search);

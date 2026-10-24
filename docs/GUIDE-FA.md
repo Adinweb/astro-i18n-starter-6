@@ -66,12 +66,14 @@
 | **مسیریابی** | دیسپچر تک‌فایلی `[...path].astro` — بدون هیچ فایل مسیر پویا در `src/pages/` |
 | **محتوا** | دو کالکشن `pages` و `blog` با قرارداد `گروه/زبان.mdx`، فیلتر پیش‌نویس، اسلاگ بومی هر زبان، تشخیص برخورد مسیر |
 | **RTL** | خواص منطقی CSS (`ms-`, `pe-`, `start-`), فونت جداگانه برای فارسی/عربی، جداسازی `pre/code` به LTR، چرخاندن آیکون پیجر |
-| **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی سمت کاربر، صفحه‌بندی استاتیک، زمان مطالعه، خرده‌مسیر، JSON-LD مقاله |
-| **جستجو** | Pagefind در پروداکشن + فهرست `/api/search-dev.json` به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K، بدون بارگذاری مجدد صفحه |
-| **SEO** | canonical، hreflang چندزبانه + `x-default`، Open Graph، Twitter Card، JSON-LD، sitemap، `robots.txt`، RSS/Atom، webmanifest |
+| **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی در کل مجموعهٔ مقالات، صفحه‌بندی استاتیک، زمان مطالعه، خرده‌مسیر، JSON-LD غنی |
+| **حالت نمایش** | حالت روشن و تیره (Dark Mode) بدون پرش (FOUC-free) با توکن‌های معنایی `oklch` و هماهنگ با View Transitions |
+| **فرمت بومی** | تقویم هجری شمسی برای فارسی (`fa-IR-u-ca-persian`) و ارقام بومی فارسی/عربی (`۰-۹` / `٠-٩`) از طریق `src/i18n/format.ts` |
+| **جستجو** | Pagefind در پروداکشن + فهرست `/api/search-dev.json` به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K و ناوبری صفحه‌کلید (`↑`/`↓`/`Enter`) |
+| **SEO** | canonical، hreflang چندزبانه + `x-default`، Open Graph، Twitter Card، JSON-LD (`WebSite`, `WebPage`, `CollectionPage`, `BlogPosting`, `BreadcrumbList`)، sitemap، فیدهای Atom مجزا به ازای هر زبان (`/rss.xml` و `/rss/<locale>.xml`)، webmanifest |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک «نسخهٔ انگلیسی» |
 | **ابزار CLI** | ۱۴ اسکریپت برای ساخت/حذف صفحه و مقاله، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، تولید تصاویر |
-| **کیفیت** | TypeScript strict، `astro check`، ۱۰۱ تست Vitest، ۴۵ تست سرتاسری CLI، ممیزی i18n پنج‌مرحله‌ای، تست دود ۹۸ assertion، Knip، CI آمادهٔ GitHub Actions |
+| **کیفیت** | TypeScript strict، `astro check`، تست‌های واحد Vitest، ۴۵ تست سرتاسری CLI، ممیزی i18n پنج‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
 | **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، `prefers-reduced-motion` |
 
@@ -89,12 +91,12 @@
 ```bash
 pnpm install
 
-pnpm dev          # کامپایل پیام‌ها + سرور توسعه روی http://localhost:4321
+pnpm dev          # کامپایل پیام‌ها + سرور توسعه روی http://localhost:3000
 pnpm build        # کامپایل پیام‌ها + ممیزی i18n + بیلد Astro + ایندکس Pagefind
-pnpm preview      # پیش‌مایش خروجی بیلدشده
+pnpm preview      # پیش‌نمایش خروجی بیلدشده
 ```
 
-> سرور توسعه روی `0.0.0.0:4321` گوش می‌دهد؛ هر دو مقدار از `app.config.json`
+> سرور توسعه روی `0.0.0.0:3000` گوش می‌دهد؛ هر دو مقدار از `app.config.json`
 > خوانده می‌شوند، پس سرور و اپ همیشه روی یک پورت هستند.
 
 ### وابستگی‌ها
@@ -208,32 +210,35 @@ SITE_URL=https://example.com pnpm run build
 │                            # SPIKE_RESULTS.md
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
-    ├── components/          # Icon, IconButton, LanguageSwitcher, PageHero, HeroCopy,
-    │                        # BlogPostHeroContent, PostCard, SearchModal, Seo, TopLoadingBar
+    ├── components/          # Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHero,
+    │                        # HeroCopy, BlogPostHeroContent, PostCard, SearchModal, Seo, TopLoadingBar
     ├── content/
     │   ├── pages/<گروه>/    # صفحات ایستا: en.mdx, de.mdx, fa.mdx, … + <گروه>.png
     │   └── blog/<گروه>/     # مقالات: en.mdx, fa.mdx, … + <گروه>.png
     ├── content.config.ts    # شمای Zod هر دو کالکشن
     ├── i18n/
     │   ├── locales.ts       # SSOT زبان‌ها: LOCALES, DEFAULT_LOCALE, LOCALE_METADATA
+    │   ├── format.ts        # فرمت بومی تاریخ (هجری شمسی برای fa) و اعداد (Intl)
     │   └── paths.ts         # localizeHref, localeHref, stripLocale, getPathname
     ├── layouts/BaseLayout.astro
     ├── libs/
     │   ├── config/
     │   │   ├── app.ts       # خواندن و اعتبارسنجی app.config.json
     │   │   └── navigation.ts # ساخت ناوبری هدر/منوی موبایل/فوتر
-    │   └── content/         # entries, service, pagination, blog, taxonomy, social
+    │   └── content/         # entries, service, feed, pagination, blog, taxonomy, social
     ├── pages/               # فقط فایل‌های فیزیکی
-    │   ├── [...path].astro  # دیسپچر مسیریاب (۳۹ خط)
+    │   ├── [...path].astro  # دیسپچر مسیریاب
     │   ├── 404.astro        # صفحهٔ ۴۰۴ locale-aware
     │   ├── icons.svg.ts     # اسپرایت SVG
     │   ├── site.webmanifest.ts
-    │   ├── rss.xml.ts       # فید Atom
+    │   ├── rss.xml.ts       # فید Atom زبان پیش‌فرض
+    │   ├── rss/[locale].xml.ts # فیدهای Atom سایر زبان‌ها
     │   ├── sitemap.xml.ts   # نقشهٔ سایت چندزبانه
     │   ├── robots.txt.ts
+    │   ├── api/blog-posts.json.ts # کاتالوگ استاتیک وبلاگ برای فیلتر بین‌صفحه‌ای
     │   └── api/search-dev.json.ts
     ├── paraglide/           # ⚠️ تولیدشده — هرگز دستی ویرایش نشود
-    ├── styles/              # global.css (توکن‌ها + سیستم شیشه‌ای)، prose.css
+    ├── styles/              # global.css (توکن‌های روشن/تیره + سیستم شیشه‌ای)، prose.css
     ├── test/                # mock ماژول astro:content برای Vitest
     └── views/               # PageView, BlogIndexView, BlogPostView
 ```

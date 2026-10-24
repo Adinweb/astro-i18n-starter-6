@@ -89,7 +89,10 @@ const { locale } = Astro.props;
     return document.getElementById('search-results');
   }
 
+  let activeIndex = -1;
+
   function setMessage(text: string) {
+    activeIndex = -1;
     const container = getResults();
     if (!container) return;
     container.replaceChildren();
@@ -99,9 +102,35 @@ const { locale } = Astro.props;
     container.append(message);
   }
 
-  function createResultLink(href: string, title: string, excerpt: string) {
+  function getResultLinks(): HTMLAnchorElement[] {
+    const container = getResults();
+    return container
+      ? [...container.querySelectorAll<HTMLAnchorElement>('a[data-search-result]')]
+      : [];
+  }
+
+  function highlightResult(index: number) {
+    const links = getResultLinks();
+    if (links.length === 0) {
+      activeIndex = -1;
+      return;
+    }
+    const clamped = ((index % links.length) + links.length) % links.length;
+    activeIndex = clamped;
+    links.forEach((link, idx) => {
+      const active = idx === clamped;
+      link.dataset.active = active ? 'true' : 'false';
+      link.classList.toggle('border-primary/50', active);
+      link.classList.toggle('bg-surface-hover', active);
+      link.classList.toggle('border-transparent', !active);
+      if (active) link.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
+  function createResultLink(href: string, title: string, excerpt: string, index: number) {
     const link = document.createElement('a');
     link.href = href;
+    link.dataset.searchResult = String(index);
     link.className =
       'block rounded-lg border border-transparent p-3 transition-colors hover:border-border hover:bg-surface-hover';
 
@@ -116,6 +145,10 @@ const { locale } = Astro.props;
       description.textContent = excerpt;
       link.append(description);
     }
+
+    link.addEventListener('mouseenter', () => {
+      highlightResult(index);
+    });
 
     return link;
   }
@@ -200,14 +233,16 @@ const { locale } = Astro.props;
           }
 
           resultsEl.replaceChildren(
-            ...pagefindResults.map((result: any) =>
+            ...pagefindResults.map((result: any, idx: number) =>
               createResultLink(
                 result.url,
                 result.meta?.title || result.url,
-                plainText(result.excerpt || '')
+                plainText(result.excerpt || ''),
+                idx
               )
             )
           );
+          highlightResult(0);
           return;
         } catch {
           // Pagefind is unavailable (for example on an unindexed preview); use
@@ -246,14 +281,35 @@ const { locale } = Astro.props;
       }
 
       resultsEl.replaceChildren(
-        ...filtered.map((item) => createResultLink(item.url, item.title, item.description))
+        ...filtered.map((item, idx) =>
+          createResultLink(item.url, item.title, item.description, idx)
+        )
       );
+      highlightResult(0);
     }
 
     searchInput.addEventListener('input', () => {
       const value = searchInput.value;
       if (searchTimeout) clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => performSearch(value), 150);
+    });
+
+    searchInput.addEventListener('keydown', (event) => {
+      const links = getResultLinks();
+      if (links.length === 0) return;
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        highlightResult(activeIndex + 1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        highlightResult(activeIndex <= 0 ? links.length - 1 : activeIndex - 1);
+      } else if (event.key === 'Enter' && activeIndex >= 0 && links[activeIndex]) {
+        event.preventDefault();
+        const targetLink = links[activeIndex];
+        modal.close();
+        targetLink.click();
+      }
     });
 
     if (document.documentElement.dataset.searchShortcutsBound !== 'true') {

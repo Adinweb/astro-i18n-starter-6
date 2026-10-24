@@ -22,6 +22,7 @@ import { buildPageWindow, PAGE_GAP, paginate } from '@/libs/content/pagination';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
+import { formatNumber } from '@/i18n/format';
 import * as m from '@/paraglide/messages';
 
 interface Props {
@@ -52,8 +53,9 @@ const blogHref = getBlogIndexHref(locale);
 const { items: pagePosts } = paginate(posts, page, perPage);
 
 const filterHref = (filters: BlogFilters) => `${blogHref}${buildBlogFilterQuery(filters)}`;
+const formattedPageCount = formatNumber(pagePosts.length, locale);
 const totalLabel = m.blog_filter_showing_page(
-  { visible: String(pagePosts.length), total: String(pagePosts.length) },
+  { visible: formattedPageCount, total: formattedPageCount },
   { locale }
 );
 
@@ -63,7 +65,7 @@ const nextHref = page < totalPages ? pageHref(page + 1) : undefined;
 const pageWindow = buildPageWindow(page, totalPages);
 
 const pageStatus = m.blog_pagination_status(
-  { page: String(page), totalPages: String(totalPages) },
+  { page: formatNumber(page, locale), totalPages: formatNumber(totalPages, locale) },
   { locale }
 );
 // Only the deeper pages need a distinct document title; page one keeps the
@@ -247,14 +249,14 @@ const indexSchema = [
                         href={pageHref(entry)}
                         data-page-link="page"
                         data-page-href={pageHref(entry)}
-                        aria-label={m.blog_pagination_page({ page: String(entry) }, { locale })}
+                        aria-label={m.blog_pagination_page({ page: formatNumber(entry, locale) }, { locale })}
                         aria-current={entry === page ? 'page' : undefined}
                         class:list={[
                           'chip h-9 min-w-9 justify-center px-3 text-xs',
                           entry === page && 'border-primary bg-primary text-primary-fg',
                         ]}
                       >
-                        {entry}
+                        {formatNumber(entry, locale)}
                       </a>
                     )
                   )}
@@ -299,6 +301,7 @@ const indexSchema = [
 </style>
 
 <script>
+  import { formatNumber } from '@/i18n/format';
   import {
     NO_FILTERS,
     buildBlogFilterQuery,
@@ -404,7 +407,7 @@ const indexSchema = [
       if (post.hiddenTagCount > 0) {
         const more = document.createElement('li');
         more.className = 'chip px-2 py-0.5 text-[11px]';
-        more.textContent = `+${post.hiddenTagCount}`;
+        more.textContent = `+${formatNumber(post.hiddenTagCount, post.locale)}`;
         tagList.append(more);
       }
       content.append(tagList);
@@ -517,8 +520,8 @@ const indexSchema = [
 
           if (status) {
             status.textContent = allTemplate
-              .replace('{visible}', String(matching.length))
-              .replace('{total}', String(localePosts.length));
+              .replace('{visible}', formatNumber(matching.length, locale))
+              .replace('{total}', formatNumber(localePosts.length, locale));
           }
           if (empty) empty.hidden = matching.length !== 0;
           return;
@@ -541,8 +544,8 @@ const indexSchema = [
       const statusTemplate = active ? allTemplate : pageTemplate;
       if (status) {
         status.textContent = statusTemplate
-          .replace('{visible}', String(visible))
-          .replace('{total}', String(cards.length));
+          .replace('{visible}', formatNumber(visible, locale))
+          .replace('{total}', formatNumber(cards.length, locale));
       }
       if (empty) empty.hidden = visible !== 0;
     };

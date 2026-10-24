@@ -45,6 +45,9 @@
   "common_published_on": "Veröffentlicht am",
   "common_search_placeholder": "Artikel und Seiten durchsuchen...",
   "common_skip_to_content": "Zum Inhalt springen",
+  "common_theme_dark": "Zum dunklen Modus wechseln",
+  "common_theme_light": "Zum hellen Modus wechseln",
+  "common_theme_toggle": "Farbschema wechseln",
   "common_type_to_search": "Tippen zum Suchen...",
   "items_count": [
     {

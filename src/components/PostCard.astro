@@ -3,6 +3,7 @@ import type { CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
 import Icon from '@/components/Icon.astro';
 import type { Locale } from '@/i18n/locales';
+import { formatDate, formatNumber } from '@/i18n/format';
 import { getReadingTime } from '@/libs/content/blog';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import * as m from '@/paraglide/messages';
@@ -32,12 +33,7 @@ const coverWidths = cover
       .sort((a, b) => a - b)
   : [];
 const category = categories[0];
-const formattedDate = publishedAt.toLocaleDateString(locale, {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-  timeZone: 'UTC',
-});
+const formattedDate = formatDate(publishedAt, locale, 'short');
 const readingTime = getReadingTime(post.body);
 const visibleTags = tags.slice(0, 2);
 const hiddenTagCount = tags.length - visibleTags.length;
@@ -100,7 +96,7 @@ const hiddenTagCount = tags.length - visibleTags.length;
           ))}
           {hiddenTagCount > 0 && (
             <li class="chip px-2 py-0.5 text-[11px]">
-              +{hiddenTagCount}
+              +{formatNumber(hiddenTagCount, locale)}
             </li>
           )}
         </ul>
@@ -110,7 +106,7 @@ const hiddenTagCount = tags.length - visibleTags.length;
     <div class="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2 text-xs text-muted">
       <time datetime={publishedAt.toISOString()}>{formattedDate}</time>
       <span aria-hidden="true">·</span>
-      <span>{m.blog_read_time({ count: readingTime }, { locale })}</span>
+      <span>{m.blog_read_time({ count: formatNumber(readingTime, locale) }, { locale })}</span>
     </div>
   </div>
 </article>

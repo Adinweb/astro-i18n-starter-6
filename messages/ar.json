@@ -45,6 +45,9 @@
   "common_published_on": "نُشر في",
   "common_search_placeholder": "ابحث في المقالات والصفحات...",
   "common_skip_to_content": "تخطَّ إلى المحتوى",
+  "common_theme_dark": "التبديل إلى الوضع الداكن",
+  "common_theme_light": "التبديل إلى الوضع الفاتح",
+  "common_theme_toggle": "تبديل المظهر اللوني",
   "common_type_to_search": "اكتب للبحث...",
   "items_count": [
     {

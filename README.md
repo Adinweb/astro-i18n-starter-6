@@ -18,8 +18,10 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Symmetrical Content Collections**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs and cross-language alternate linking.
 * **Paginated Blog Index**: The listing is a static, paginated route set — one URL per page per locale (`/blog/`, `/blog/page/2/`, `/de/blog/page/2/`) — with a localized pager, `rel="prev"` / `rel="next"` head links, and no client-side pagination.
 * **Search Built-In**: Production indexing with **Pagefind** over static output, plus a locale-aware JSON fallback when Pagefind is unavailable.
-* **SEO & Social Metadata**: Canonical URLs, hreflang plus `x-default`, Open Graph/Twitter cards, `WebSite`/`BlogPosting` JSON-LD, a multilingual sitemap with `lastmod`, and an Atom feed at `/rss.xml`.
-* **Accessible by Default**: Native `<dialog>` mobile menu and search, exactly one `<h1>` per page, skip link, visible focus rings, and reduced-motion support.
+* **SEO & Social Metadata**: Canonical URLs, hreflang plus `x-default`, Open Graph/Twitter cards, `WebSite`/`WebPage`/`CollectionPage`/`BlogPosting` + `BreadcrumbList` JSON-LD, a multilingual sitemap with `lastmod`, and per-locale Atom feeds (`/rss.xml` and `/rss/<locale>.xml`).
+* **Native Light & Dark Mode**: FOUC-free theme initialization with `prefers-color-scheme` detection, `localStorage` persistence, View Transition swap continuity, and oklch semantic tokens in `src/styles/global.css`.
+* **Locale-Native Dates & Numerals**: Centralized `Intl` formatting (`src/i18n/format.ts`) with Solar Hijri (Jalali) dates and Persian numerals (`۰-۹`) for `fa`, Eastern Arabic numerals (`٠-٩`) for `ar`, and standard localized formatting for LTR locales.
+* **Accessible by Default**: Native `<dialog>` mobile menu and keyboard-navigable search (`⌘K`, `↑`/`↓`/`Enter`), exactly one `<h1>` per page, skip link, visible focus rings, and reduced-motion support.
 * **Image-Backed Hero Bands**: Every page and post opens with a full-bleed hero whose background *is* the entry's artwork — one image layer, never a card beside the copy and never a duplicated layer. The picture is defocused into atmosphere and shaped by vertical scrims, so the band reads identically in LTR and RTL.
 * **Optimized Image Pipeline**: Every picture is served through Astro's image pipeline — WebP output, a responsive `srcset` with the right `sizes`, and an `og:image` cropped to the social ratio. A 263 KB hero PNG becomes a 7 KB WebP on a phone.
 * **Frosted-Glass Design System**: The header, its icon controls, the calls to action and every chip are defined once in `src/styles/global.css` and composed everywhere else, so the whole site speaks one visual language.
@@ -46,7 +48,7 @@ pnpm install
 ```bash
 pnpm run dev
 ```
-Open the URL printed by Astro — by default [http://localhost:4321](http://localhost:4321), using the port from `app.config.json`.
+Open the URL printed by Astro — by default [http://localhost:3000](http://localhost:3000), using the port from `app.config.json`.
 
 > **Background Mode**: If running in an agentic or background environment:
 > ```bash
@@ -60,7 +62,7 @@ pnpm run build
 ```
 This compiles Paraglide messages, builds all static HTML pages into `dist/`, and indexes the site with Pagefind.
 
-> Canonical URLs always end in `/` (Astro `trailingSlash: 'always'`). Most static hosts redirect `/about` to `/about/` automatically; if yours does not, enable that redirect so every page resolves to its canonical form.
+> Canonical URLs and internal links always end in `/` (`withTrailingSlash`), while Astro runs with `trailingSlash: 'ignore'` so slash-less unknown URLs render the custom localized `404.astro` instead of a framework error screen.
 
 ---
 
@@ -79,10 +81,12 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   ├── components/            # Reusable UI components
 │   │   ├── Icon.astro         # SVG sprite icon renderer (<Icon name="..." />)
 │   │   ├── IconButton.astro   # Icon-only button (glass or ghost variant)
+│   │   ├── ThemeToggle.astro  # Accessible light/dark mode toggle
 │   │   ├── LanguageSwitcher.astro # Dropdown with translated alternate links
 │   │   ├── PageHero.astro     # Hero shell: full-bleed background + light-shaping scrims
 │   │   ├── HeroCopy.astro     # Shared hero copy (heading, description, slots)
 │   │   ├── BlogPostHeroContent.astro # Hero copy for articles (breadcrumbs, meta)
+│   │   ├── PostCard.astro     # Blog listing card
 │   │   ├── SearchModal.astro  # Accessible search modal (Pagefind + Dev fallback)
 │   │   ├── Seo.astro          # Canonical links & hreflang tags (locales + 1)
 │   │   └── TopLoadingBar.astro # Page transition progress bar (reduced-motion aware)
@@ -93,6 +97,7 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │       └── <group>/       # The group folder also holds its cover artwork
 │   ├── i18n/                  # Core i18n Single Source of Truth (SSOT)
 │   │   ├── locales.ts         # LOCALES array, DEFAULT_LOCALE, metadata (dir, fonts)
+│   │   ├── format.ts          # Locale-native Intl number & date formatters (Jalali for fa)
 │   │   └── paths.ts           # Pure path functions (localizeHref, localeHref, stripLocale, getPathname)
 │   ├── layouts/
 │   │   └── BaseLayout.astro   # Main layout: header, mobile menu drawer, main, footer
@@ -100,7 +105,8 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── config/app.ts      # Validates app.config.json; typed site/brand/blog values
 │   │   ├── config/navigation.ts # Locale-aware navigation builder
 │   │   ├── content/entries.ts # Entry IDs, draft filtering, locale selection & sorting
-│   │   ├── content/service.ts # Route resolution, slug alternates & breadcrumbs
+│   │   ├── content/service.ts # Route resolution, slug alternates, feeds & breadcrumbs
+│   │   ├── content/feed.ts    # Per-locale Atom 1.0 feed builder
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
 │   │   └── content/social.ts  # Optimized og:image card
 │   ├── pages/
@@ -108,13 +114,15 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
 │   │   ├── icons.svg.ts       # SVG sprite endpoint
 │   │   ├── site.webmanifest.ts # Web app manifest generated from app.config.json
-│   │   ├── rss.xml.ts         # Atom feed for all published articles
+│   │   ├── rss.xml.ts         # Default-locale Atom feed
+│   │   ├── rss/[locale].xml.ts # Non-default locale Atom feeds (/rss/fa.xml, etc.)
 │   │   ├── sitemap.xml.ts     # Multi-lingual sitemap with x-default + lastmod
 │   │   ├── robots.txt.ts      # Robots.txt pointing to sitemap
+│   │   ├── api/blog-posts.json.ts # Static blog catalog for cross-page filtering
 │   │   └── api/search-dev.json.ts # Locale-aware search fallback index
 │   ├── paraglide/             # Generated Paraglide code (gitignored, do not edit)
 │   ├── styles/
-│   │   ├── global.css         # Tailwind v4 @theme inline + glass design system + font stacks
+│   │   ├── global.css         # Tailwind v4 @theme inline + light/dark glass tokens + font stacks
 │   │   └── prose.css          # Article formatting with RTL isolation for code blocks
 │   └── views/
 │       ├── PageView.astro     # Static page renderer
