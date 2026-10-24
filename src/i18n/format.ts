@@ -5,6 +5,7 @@
  */
 
 const numberFormatters = new Map<string, Intl.NumberFormat>();
+const yearFormatters = new Map<string, Intl.NumberFormat>();
 const dateFormatters = new Map<string, Intl.DateTimeFormat>();
 
 function resolveNumberLocale(locale: string): string {
@@ -37,6 +38,25 @@ export function formatNumber(value: number, locale: string): string {
     numberFormatters.set(resolved, formatter);
   }
   return formatter.format(value);
+}
+
+/**
+ * Formats a calendar year without a thousands separator, in the numeral system
+ * of `locale`: `2026` in English, `۲۰۲۶` in Persian. `formatNumber` groups
+ * digits and would render a year as `2,026`.
+ */
+export function formatYear(year: number, locale: string): string {
+  const resolved = resolveNumberLocale(locale);
+  let formatter = yearFormatters.get(resolved);
+  if (!formatter) {
+    try {
+      formatter = new Intl.NumberFormat(resolved, { useGrouping: false });
+    } catch {
+      formatter = new Intl.NumberFormat('en', { useGrouping: false });
+    }
+    yearFormatters.set(resolved, formatter);
+  }
+  return formatter.format(year);
 }
 
 /**

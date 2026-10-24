@@ -137,8 +137,8 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 
 All application-level values that must stay in sync across the app and the CLI scripts live in [`app.config.json`](app.config.json):
 
-* **`site`** — name, short name, description, default social card path and size.
-* **`brand`** — browser theme/background colours, Apple touch icon, manifest icons.
+* **`site`** — name, short name, description (used by the web manifest; page/SEO descriptions come from the localized `site_description` message), default social card path and size.
+* **`brand`** — browser theme colours (`themeColor` and `darkThemeColor`), background colour, Apple touch icon, manifest icons.
 * **`blog.postsPerPage`** — how many posts one index page holds.
 * **`server`** — dev host/port, also used as the local fallback site origin.
 

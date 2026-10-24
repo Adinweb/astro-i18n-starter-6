@@ -12,7 +12,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 
 1. **One Source of Truth (SSOT)**:
    - Locales & directions: `src/i18n/locales.ts` and `project.inlang/settings.json`.
-   - Locale-native numbers & dates: `src/i18n/format.ts` (`formatNumber`, `formatDate`).
+   - Locale-native numbers & dates: `src/i18n/format.ts` (`formatNumber`, `formatYear`, `formatDate`).
    - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
    - Content schemas: `src/content.config.ts`.
    - Slugs, feeds & alternates: `src/libs/content/service.ts` and `src/libs/content/feed.ts`.
@@ -44,6 +44,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Frosted surfaces, buttons and chips are defined **once** in `src/styles/global.css` (`.glass-surface`, `.glass-control`, `.ghost-control`, `.cta`, `.btn-secondary`, `.chip`). Never re-declare those treatments in a component; compose the class instead.
    - Icon-only controls are rendered by `src/components/IconButton.astro`. Do not hand-roll a `<button>` with an `<Icon>` inside.
    - Shared hero copy (heading, description, slots) lives in `src/components/HeroCopy.astro`. Pages, the blog index and blog posts all compose it, so the typography cannot drift.
+   - Article chrome (Table of Contents, related posts, newer/older links, code-copy buttons) and the `@media print` flattening are defined once in `BlogPostView.astro` / `BaseLayout.astro` and `src/styles/global.css`. Do not re-implement them per page.
 
 ---
 

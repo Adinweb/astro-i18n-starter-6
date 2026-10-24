@@ -2,7 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import type { ImageMetadata } from 'astro';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
-import { formatNumber } from '@/i18n/format';
+import { formatYear } from '@/i18n/format';
 import { localizeHref } from '@/i18n/paths';
 import { getNavigation } from '@/libs/config/navigation';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
@@ -320,7 +320,7 @@ const structuredData = schema ?? {
     <footer class="border-t border-border bg-surface mt-auto py-8">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
         <div id="footer-rights">
-          © <span data-current-year data-locale={locale}>{formatNumber(currentYear, locale)}</span> {siteName}.
+          © <span data-current-year data-locale={locale}>{formatYear(currentYear, locale)}</span> {siteName}.
           <span data-footer-rights>{m.common_all_rights_reserved({}, { locale })}</span>
         </div>
         <nav class="flex flex-wrap items-center gap-4" aria-label={m.common_menu({}, { locale })}>
@@ -371,13 +371,13 @@ const structuredData = schema ?? {
     </style>
 
     <script>
-      import { formatNumber } from '@/i18n/format';
+      import { formatYear } from '@/i18n/format';
 
       function updateYear() {
         const year = new Date().getFullYear();
         document.querySelectorAll<HTMLElement>('[data-current-year]').forEach((el) => {
           const activeLocale = el.dataset.locale || document.documentElement.lang || 'en';
-          el.textContent = formatNumber(year, activeLocale);
+          el.textContent = formatYear(year, activeLocale);
         });
       }
 

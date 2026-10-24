@@ -2,7 +2,7 @@
   "site": {
     "name": "Astro i18n Starter",
     "shortName": "Astro i18n",
-    "description": "Production-grade, multi-lingual Astro v7 starter template with RTL support.",
+    "description": "Production-grade, multi-lingual Astro v7 starter template with native RTL and LTR support.",
     "socialImage": {
       "path": "/og-default.png",
       "width": 1200,

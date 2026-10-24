@@ -162,8 +162,10 @@ body {
   #top-loading-bar,
   [data-mobile-menu],
   [data-search-modal],
-  [data-blog-filters],
+  [data-blog-filter],
   [data-blog-pagination],
+  [data-blog-pager-wrap],
+  [data-blog-empty],
   [data-toc],
   [data-toc-mobile],
   [data-post-nav],
@@ -179,6 +181,36 @@ body {
 
   main {
     padding-block-start: 0 !important;
+  }
+
+  /*
+   * The hero is a picture with white copy over it, and the scrims that keep
+   * that copy legible are background paints, which browsers may drop when
+   * printing. The band is therefore flattened into plain dark text on paper so
+   * the article title never prints as white on a pale photograph.
+   */
+  [data-page-hero] {
+    background: #ffffff !important;
+  }
+
+  [data-page-hero] [data-hero-background] {
+    display: none !important;
+  }
+
+  [data-page-hero] h1,
+  [data-page-hero] h2,
+  [data-page-hero] p,
+  [data-page-hero] a,
+  [data-page-hero] time,
+  [data-page-hero] span,
+  [data-page-hero] li {
+    color: #111111 !important;
+    text-shadow: none !important;
+  }
+
+  [data-page-hero] > div:last-child {
+    min-height: 0 !important;
+    padding-block: 0 2rem !important;
   }
 
   h1,

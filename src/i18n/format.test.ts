@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDate, formatNumber } from './format';
+import { formatDate, formatNumber, formatYear } from './format';
 
 describe('src/i18n/format.ts', () => {
   describe('formatNumber', () => {
@@ -18,6 +18,15 @@ describe('src/i18n/format.ts', () => {
     it('renders Eastern Arabic digits for ar', () => {
       expect(formatNumber(3, 'ar')).toBe('٣');
       expect(formatNumber(15, 'ar')).toBe('١٥');
+    });
+  });
+
+  describe('formatYear', () => {
+    it('renders a year without a thousands separator', () => {
+      expect(formatYear(2026, 'en')).toBe('2026');
+      expect(formatYear(2026, 'de')).toBe('2026');
+      expect(formatYear(2026, 'fa')).toBe('۲۰۲۶');
+      expect(formatYear(2026, 'ar')).toBe('٢٠٢٦');
     });
   });
 

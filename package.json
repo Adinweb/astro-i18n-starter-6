@@ -8,13 +8,13 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro dev --host 0.0.0.0 --port 3000",
+    "dev": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro dev",
     "messages:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide",
     "check": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro check",
     "lint": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro check && tsc --noEmit",
     "test": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && vitest run",
     "build": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && node scripts/audit-i18n.mjs && astro build && pagefind --site dist",
-    "preview": "astro preview --host 0.0.0.0 --port 3000",
+    "preview": "astro preview",
     "smoke": "node scripts/smoke.mjs",
     "knip": "knip",
     "assets:generate": "node scripts/generate-assets.mjs",

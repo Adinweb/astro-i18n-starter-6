@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_METADATA, type Locale } from '@/i18n/locales';
-import { formatNumber } from '@/i18n/format';
+import { formatYear } from '@/i18n/format';
 import { localizeHref } from '@/i18n/paths';
 import { getNavigation } from '@/libs/config/navigation';
 import { siteConfig } from '@/libs/config/app';
@@ -47,7 +47,7 @@ const i18nData = Object.fromEntries(
           changeLanguage: m.common_change_language({}, { locale: loc }),
           themeLight: m.common_theme_light({}, { locale: loc }),
           themeDark: m.common_theme_dark({}, { locale: loc }),
-          year: formatNumber(new Date().getFullYear(), loc),
+          year: formatYear(new Date().getFullYear(), loc),
           homeHref: nav.find((item) => item.key === 'home')?.href ?? localizeHref('/', loc),
           nav: nav.map(({ key, label, href }) => ({ key, label, href })),
           dir: LOCALE_METADATA[loc].dir,

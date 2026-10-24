@@ -1111,7 +1111,7 @@ const icons: Record<string, string> = {
 
 | پراپ | نوع | کار |
 | --- | --- | --- |
-| `title` / `description` | string | عنوان و توضیح (description پیش‌فرض: `siteConfig.description`) |
+| `title` / `description` | string | عنوان و توضیح (description پیش‌فرض: `m.site_description` هم‌زبان صفحه) |
 | `locale` | `Locale` | زبان صفحه؛ `lang`، `dir` و فونت از آن می‌آید |
 | `url` | string | مسیر نسبی صفحه برای canonical |
 | `alternates` | `Partial<Record<Locale, string>>` | نگاشت ترجمه‌ها (hreflang) |
@@ -1123,6 +1123,7 @@ const icons: Record<string, string> = {
 | `image?` | `ImageMetadata` | artwork برای کارت اجتماعی |
 | `type?` | `'website' \| 'article'` | نوع Open Graph |
 | `publishedTime?` | string | `article:published_time` |
+| `modifiedTime?` | string | `article:modified_time` (از `updatedAt`) |
 | `schema?` | object \| object[] | JSON-LD؛ پیش‌فرض `WebSite` |
 | `prevUrl?` / `nextUrl?` | string | `rel="prev"` / `rel="next"` برای صفحه‌بندی |
 
@@ -1255,6 +1256,14 @@ collectTaxonomyKeys(posts, 'categories');
 - با `popstate` فیلترها دوباره از URL خوانده و بازسازی می‌شوند؛
 - دکمهٔ «پاک کردن فیلتر» فقط وقتی فیلتر فعالی هست دیده می‌شود.
 
+وقتی وبلاگ بیش از یک صفحه دارد و فیلتری فعال است، کارت‌های همان صفحه کافی
+نیستند: `BlogIndexView` کاتالوگ استاتیک `/api/blog-posts.json` را یک بار
+(`catalogPromise`) می‌گیرد و همهٔ مقالات آن زبان را که با فیلتر می‌خوانند
+به‌صورت کارت‌های پویا رندر می‌کند؛ در این حالت پیجر پنهان می‌شود، چون نتیجه
+دیگر به یک صفحه محدود نیست. اگر این درخواست شکست بخورد، فیلتر به کارت‌های
+همان صفحه برمی‌گردد (fallback بی‌صدا). لینک‌های پیجر همیشه کوئری فیلتر فعال
+را حمل می‌کنند.
+
 ### زمان مطالعه
 
 ```ts
@@ -1268,6 +1277,21 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 - برچسب‌های انتهای مقاله هم به فهرست فیلترشده لینک می‌شوند
 - لینک «بازگشت به وبلاگ» با فلش `rtl:rotate-180`
 
+### تجربهٔ خواندن مقاله
+
+| ویژگی | رفتار |
+| --- | --- |
+| فهرست مطالب | از `headings` خود Astro؛ فقط `h2`/`h3` و تنها وقتی حداقل دو سرتیتر وجود دارد. در دسکتاپ `lg:sticky` و در موبایل `<details>` جمع‌شو |
+| هایلایت TOC | `IntersectionObserver` با `rootMargin` منفی زیر هدر؛ لینک فعال `data-active="true"` می‌گیرد |
+| مقالات مرتبط | دو مقالهٔ اول بر اساس امتیاز دستهٔ مشترک (+۲) و برچسب مشترک (+۱)؛ در تساوی، ترتیب تازگی |
+| ناوبری جدیدتر/قدیمی‌تر | بر پایهٔ فهرست مرتب‌شدهٔ همان زبان (`getAdjacentPosts`) |
+| تاریخ به‌روزرسانی | فقط وقتی `updatedAt` از `publishedAt` جدیدتر باشد، هم در هیرو و هم در `article:modified_time` |
+| کپی کد | اسکریپت `BaseLayout` برای هر `pre` یک دکمه تزریق می‌کند؛ برچسب‌ها از دیکشنری، آیکن `copy` → `check` و بازگشت پس از ۱٫۸ ثانیه |
+| چاپ | `@media print` در `global.css`: حذف هدر/فوتر-ناوبری/جستجو/فیلتر/پیجر/TOC/مقاله‌های مرتبط/دکمهٔ کپی، هیرو مسطح با متن تیره، و `break-inside: avoid` برای کد و تصویر |
+
+همهٔ این ویجت‌ها (`[data-toc]`, `[data-related-posts]`, `[data-post-nav]`, `.code-copy-btn`)
+با `data-pagefind-ignore` از ایندکس جستجو بیرون می‌مانند.
+
 ### JSON-LD مقاله
 
 `BlogPostView` یک شیء `BlogPosting` می‌سازد: `headline`، `description`، `image`،
@@ -1276,10 +1300,21 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 
 ### آرشیو (RSS/Atom)
 
-`src/pages/rss.xml.ts` یک فید Atom شامل همهٔ مقالات منتشرشدهٔ همهٔ زبان‌ها
-می‌سازد (با `hreflang` روی هر `link` و دسته/برچسب به‌عنوان `category`).
+`src/libs/content/feed.ts` سازندهٔ فید Atom تک‌زبانه است و هر زبان فقط
+مقالات منتشرشدهٔ خودش را منتشر می‌کند (با `xml:lang` روی فید و هر `entry`،
+`hreflang` روی هر `link` و دسته/برچسب بومی‌شده به‌عنوان `category`):
+
+| مسیر | زبان |
+| --- | --- |
+| `/rss.xml` | زبان پیش‌فرض (`DEFAULT_LOCALE`) |
+| `/rss/<locale>.xml` | هر زبان غیرپیش‌فرض (`/rss/fa.xml`, `/rss/de.xml`, …) |
+
+هر صفحه لینک `rel="alternate" type="application/rss+xml"` را به فید زبان
+خودش می‌دهد (`getRssFeedHref(locale)`)، پس خوانندهٔ فید فقط مقالات زبان
+خودش را می‌گیرد.
 `src/pages/sitemap.xml.ts` نقشهٔ سایت چندزبانه با `x-default`، `lastmod` و
-`changefreq` تولید می‌کند.
+`changefreq` تولید می‌کند (صفحهٔ فهرست وبلاگ `lastmod` را از آخرین مقالهٔ
+منتشرشدهٔ همان زبان می‌گیرد).
 
 ---
 
@@ -1312,12 +1347,12 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 
 - `<title>`، `description`، `canonical`
 - `rel="prev"` / `rel="next"` برای صفحات صفحه‌بندی‌شده
-- `rel="alternate" type="application/rss+xml"` برای فید
+- `rel="alternate" type="application/rss+xml"` برای فید همان زبان (با عنوان زبان)
 - `noindex, nofollow` برای صفحهٔ ۴۰۴
 - `hreflang` برای هر ترجمه + `x-default`
 - Open Graph کامل: `og:site_name`, `og:title`, `og:description`, `og:url`, `og:type`,
   `og:locale`, `og:locale:alternate`, `og:image`, `og:image:width`, `og:image:height`, `og:image:alt`
-  و `article:published_time` برای مقاله‌ها
+  و `article:published_time` / `article:modified_time` برای مقاله‌ها
 - Twitter Card: `summary_large_image`, `twitter:title`, `twitter:description`, `twitter:image`
 - JSON-LD با escape کردن `<` به‌صورت `\u003c` (امن در برابر XSS)
 
@@ -1342,11 +1377,13 @@ const card = await getSocialCard(entry.data.image);
 | مسیر | نوع | محتوا |
 | --- | --- | --- |
 | `/sitemap.xml` | XML | همهٔ مسیرها + `xhtml:link` برای هر زبان + `x-default` + `lastmod` + `changefreq` |
-| `/rss.xml` | Atom | همهٔ مقالات منتشرشدهٔ همهٔ زبان‌ها با `category` |
+| `/rss.xml` | Atom | مقالات منتشرشدهٔ زبان پیش‌فرض با `category` |
+| `/rss/<locale>.xml` | Atom | مقالات منتشرشدهٔ همان زبان (غیرپیش‌فرض) |
 | `/robots.txt` | متن | `User-agent: *` / `Allow: /` / `Disallow: /api/` / `Sitemap: <مطلق>` |
-| `/site.webmanifest` | JSON | از `app.config.json` ساخته می‌شود: نام، `short_name`، رنگ‌ها، آیکون‌ها، `display: standalone` |
+| `/site.webmanifest` | JSON | از `app.config.json` + زبان پیش‌فرض ساخته می‌شود: نام، `short_name`، `lang`/`dir`، رنگ‌ها، آیکون‌ها، `display: standalone` |
 | `/icons.svg` | SVG | اسپرایت نمادها؛ هر نماد یک `<symbol id="name">` |
 | `/api/search-dev.json` | JSON | فهرست fallback جستجو (عنوان، توضیح، URL، زبان) |
+| `/api/blog-posts.json` | JSON | کاتالوگ استاتیک مقالات منتشرشدهٔ همهٔ زبان‌ها برای فیلتر فراصفحه‌ای |
 
 ### صفحهٔ ۴۰۴
 

@@ -30,16 +30,16 @@ Physical route handling is centralized in `src/pages/[...path].astro`.
 
 ## 2. Operating the CLI Automation Suite
 
-Always run scripts from the project root using `npm run <command>`.
+Always run scripts from the project root using `pnpm run <command>`.
 
 ### Scaffolding Content
 * **Add a new static page:**
   ```bash
-  npm run new:page <page-key> -- --title="<Title>" [--from=<locale>] [--publish] [--slug:<locale>="<native-slug>"]
+  pnpm run new:page <page-key> -- --title="<Title>" [--from=<locale>] [--publish] [--slug:<locale>="<native-slug>"]
   ```
 * **Add a new blog post:**
   ```bash
-  npm run new:post <post-slug> -- [--title="<Title>"] [--from=<locale>] [--publish] [--slug:<locale>="<native-slug>"]
+  pnpm run new:post <post-slug> -- [--title="<Title>"] [--from=<locale>] [--publish] [--slug:<locale>="<native-slug>"]
   ```
   * Only the **source locale** is published by default; the other locales are written
     as `draft: true` until they are translated. `--publish` publishes all of them,
@@ -50,38 +50,38 @@ Always run scripts from the project root using `npm run <command>`.
 ### Removing Content
 * **Delete a page and clean its navigation dictionary key:**
   ```bash
-  npm run remove:page <page-key> -- --force
+  pnpm run remove:page <page-key> -- --force
   ```
   * With `--locale=<locale>` only that locale's file is deleted; the navigation key
     stays in every dictionary (the dictionaries always carry the same key set) and the
     i18n audit reports the missing locale as a warning.
 * **Delete an entire blog article across all languages:**
   ```bash
-  npm run remove:post <post-slug> -- --force
+  pnpm run remove:post <post-slug> -- --force
   ```
 
 ### Language Operations
 * **Add a new language:**
   ```bash
-  npm run i18n:add-lang -- <locale> --name="<Display Name>" [--dir="ltr|rtl"] --with-content --from=en
+  pnpm run i18n:add-lang -- <locale> --name="<Display Name>" [--dir="ltr|rtl"] --with-content --from=en
   ```
 * **Remove a language:**
   ```bash
-  npm run i18n:remove-lang -- <locale> --with-content --force
+  pnpm run i18n:remove-lang -- <locale> --with-content --force
   ```
 
 ### Translation & UI Automation
 * **Adapt external Tailwind components to logical properties and semantic tokens:**
   ```bash
-  npm run block:adapt -- --file=src/components/MyComponent.astro
+  pnpm run block:adapt -- --file=src/components/MyComponent.astro
   ```
 * **Extract user-visible copy to Paraglide:**
   ```bash
-  npm run i18n:extract -- --target=src/components/MyComponent.astro --key=mycomp --auto-add --replace
+  pnpm run i18n:extract -- --target=src/components/MyComponent.astro --key=mycomp --auto-add --replace
   ```
 * **Add a translation key manually:**
   ```bash
-  npm run i18n:add -- --category=<category> --key=<key> --en="..." --fa="..." --ar="..." --de="..." --fr="..."
+  pnpm run i18n:add -- --category=<category> --key=<key> --en="..." --fa="..." --ar="..." --de="..." --fr="..."
   ```
 
 ---
@@ -109,25 +109,25 @@ Run the full verification suite after making structural changes:
 
 ```bash
 # 1. Typecheck
-npm run lint
+pnpm run lint
 
 # 2. Unit tests (Vitest)
-npm test
+pnpm test
 
 # 3. i18n Dictionary and Content Parity Audit
-npm run audit:i18n
+pnpm run audit:i18n
 
 # 4. Production Static Build
-npm run build
+pnpm run build
 
 # 5. End-to-end Smoke Test on dist/
-npm run smoke
+pnpm run smoke
 
 # 6. Dead Code / Dependency Check
-npm run knip
+pnpm run knip
 
-# 7. End-to-end check of every documented CLI workflow (43 claims, temp copy)
-npm run verify:cli
+# 7. End-to-end check of every documented CLI workflow (45 claims, temp copy)
+pnpm run verify:cli
 ```
 
-All 7 commands must pass with 0 exit codes.
+All 7 commands must exit with code 0.
