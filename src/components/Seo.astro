@@ -1,8 +1,10 @@
 ---
 import type { ImageMetadata } from 'astro';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
+import { getRssFeedHref } from '@/libs/content/service';
 import { getSocialCard } from '@/libs/content/social';
-import { DEFAULT_LOCALE, LOCALES, getOgLocale, type Locale } from '@/i18n/locales';
+import { DEFAULT_LOCALE, LOCALES, getLocaleMeta, getOgLocale, type Locale } from '@/i18n/locales';
+import * as m from '@/paraglide/messages';
 
 interface Props {
   title: string;
@@ -25,7 +27,7 @@ interface Props {
 
 const {
   title,
-  description = siteConfig.description,
+  description,
   locale,
   url,
   alternates,
@@ -39,6 +41,9 @@ const {
   nextUrl,
 } = Astro.props;
 
+const resolvedDescription = description || m.site_description({}, { locale });
+const localeMeta = getLocaleMeta(locale);
+const feedUrl = absoluteUrl(getRssFeedHref(locale));
 const canonicalUrl = absoluteUrl(url);
 const defaultAlternate = alternates[DEFAULT_LOCALE];
 const xDefaultUrl = absoluteUrl(defaultAlternate ?? url);
@@ -62,11 +67,16 @@ const jsonLd = schema
 ---
 
 <title>{title} | {siteName}</title>
-<meta name="description" content={description} />
+<meta name="description" content={resolvedDescription} />
 <link rel="canonical" href={canonicalUrl} />
 {prevUrl && <link rel="prev" href={absoluteUrl(prevUrl)} />}
 {nextUrl && <link rel="next" href={absoluteUrl(nextUrl)} />}
-<link rel="alternate" type="application/rss+xml" title={`${siteName} RSS`} href={absoluteUrl('/rss.xml')} />
+<link
+  rel="alternate"
+  type="application/rss+xml"
+  title={`${siteName} — ${localeMeta.name}`}
+  href={feedUrl}
+/>
 {noindex && <meta name="robots" content="noindex, nofollow" />}
 
 {/* Hreflang: one entry per available translation + x-default. */}
@@ -79,7 +89,7 @@ const jsonLd = schema
 
 <meta property="og:site_name" content={siteName} />
 <meta property="og:title" content={title} />
-<meta property="og:description" content={description} />
+<meta property="og:description" content={resolvedDescription} />
 <meta property="og:url" content={canonicalUrl} />
 <meta property="og:type" content={type} />
 <meta property="og:locale" content={getOgLocale(locale)} />
@@ -94,7 +104,7 @@ const jsonLd = schema
 
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={title} />
-<meta name="twitter:description" content={description} />
+<meta name="twitter:description" content={resolvedDescription} />
 <meta name="twitter:image" content={imageUrl} />
 
 {jsonLd && <script type="application/ld+json" set:html={jsonLd} is:inline />}

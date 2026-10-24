@@ -5,7 +5,13 @@ import PageHero from '@/components/PageHero.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import PostCard from '@/components/PostCard.astro';
 import Icon from '@/components/Icon.astro';
-import { getBlogIndexHref, getBlogPageHref, getBlogPostHref } from '@/libs/content/service';
+import {
+  buildBreadcrumbSchema,
+  getBreadcrumbs,
+  getBlogIndexHref,
+  getBlogPageHref,
+  getBlogPostHref,
+} from '@/libs/content/service';
 import {
   buildBlogFilterQuery,
   collectTaxonomyKeys,
@@ -14,7 +20,8 @@ import {
 import { getSortedLocaleEntries } from '@/libs/content/entries';
 import { buildPageWindow, PAGE_GAP, paginate } from '@/libs/content/pagination';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
-import type { Locale } from '@/i18n/locales';
+import { absoluteUrl, siteConfig } from '@/libs/config/app';
+import { getLocaleMeta, type Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
 
 interface Props {
@@ -62,11 +69,34 @@ const pageStatus = m.blog_pagination_status(
 // Only the deeper pages need a distinct document title; page one keeps the
 // plain name of the blog.
 const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` : m.nav_blog({}, { locale });
+const indexDescription = m.blog_index_description({}, { locale });
+const breadcrumbs = getBreadcrumbs(blogHref, locale, {
+  home: m.nav_home({}, { locale }),
+  blog: m.nav_blog({}, { locale }),
+});
+const meta = getLocaleMeta(locale);
+const indexSchema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: pageTitle,
+    description: indexDescription,
+    url: absoluteUrl(url),
+    inLanguage: meta.htmlLang,
+    isPartOf: {
+      '@type': 'WebSite',
+      name: siteConfig.name,
+      url: absoluteUrl(breadcrumbs[0].href),
+    },
+  },
+  buildBreadcrumbSchema(breadcrumbs, absoluteUrl),
+];
 ---
 
 <BaseLayout
   title={pageTitle}
-  description={m.blog_index_description({}, { locale })}
+  description={indexDescription}
+  schema={indexSchema}
   locale={locale}
   url={url}
   alternates={alternates}
@@ -90,8 +120,14 @@ const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` :
             class="space-y-4 rounded-2xl border border-border bg-surface/70 p-4 sm:p-5"
             data-blog-filter
             hidden
+            data-locale={locale}
+            data-total-pages={String(totalPages)}
             data-base-href={url}
             data-showing-template={m.blog_filter_showing_page(
+              { visible: '{visible}', total: '{total}' },
+              { locale }
+            )}
+            data-showing-all-template={m.blog_filter_showing_all(
               { visible: '{visible}', total: '{total}' },
               { locale }
             )}
@@ -164,7 +200,7 @@ const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` :
             {m.blog_filter_empty({}, { locale })}
           </p>
 
-          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-pagefind-ignore>
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-blog-grid data-pagefind-ignore>
             {
               pagePosts.map((post, index) => (
                 <PostCard
@@ -179,7 +215,7 @@ const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` :
 
           {
             totalPages > 1 && (
-              <div class="mt-10 space-y-3">
+              <div class="mt-10 space-y-3" data-blog-pager-wrap>
                 <p class="text-center text-xs text-muted" data-blog-page-status>
                   {pageStatus}
                 </p>
@@ -272,7 +308,124 @@ const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` :
     toggleBlogTag,
     type BlogFilters,
     type BlogTaxonomy,
+    type SerializedBlogPost,
   } from '@/libs/content/blog';
+
+  let catalogPromise: Promise<SerializedBlogPost[]> | null = null;
+
+  function fetchBlogCatalog(): Promise<SerializedBlogPost[]> {
+    if (!catalogPromise) {
+      catalogPromise = fetch('/api/blog-posts.json')
+        .then((res) => {
+          if (!res.ok) throw new Error(`Catalog HTTP ${res.status}`);
+          return res.json() as Promise<SerializedBlogPost[]>;
+        })
+        .catch((error) => {
+          catalogPromise = null;
+          throw error;
+        });
+    }
+    return catalogPromise;
+  }
+
+  function createDynamicPostCard(post: SerializedBlogPost): HTMLElement {
+    const article = document.createElement('article');
+    article.className =
+      'group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30';
+    article.dataset.dynamicPostCard = 'true';
+
+    const media = document.createElement('div');
+    media.className =
+      'relative aspect-[16/9] overflow-hidden bg-linear-to-br from-primary/20 via-surface-hover to-accent/15';
+
+    if (post.coverSrc) {
+      const img = document.createElement('img');
+      img.src = post.coverSrc;
+      img.alt = '';
+      if (post.coverWidth) img.width = post.coverWidth;
+      if (post.coverHeight) img.height = post.coverHeight;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.className =
+        'h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]';
+      media.append(img);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'flex h-full items-center justify-center text-primary/40';
+      const svgNs = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNs, 'svg');
+      svg.setAttribute('width', '44');
+      svg.setAttribute('height', '44');
+      svg.setAttribute('aria-hidden', 'true');
+      const use = document.createElementNS(svgNs, 'use');
+      use.setAttribute('href', '/icons.svg#globe');
+      svg.append(use);
+      placeholder.append(svg);
+      media.append(placeholder);
+    }
+
+    if (post.categoryLabel) {
+      const badge = document.createElement('span');
+      badge.className =
+        'absolute bottom-3 start-3 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm';
+      badge.textContent = post.categoryLabel;
+      media.append(badge);
+    }
+
+    const content = document.createElement('div');
+    content.className = 'flex flex-1 flex-col gap-2.5 p-5';
+
+    const heading = document.createElement('h2');
+    heading.className = 'line-clamp-2 text-lg font-bold leading-snug tracking-tight text-fg';
+    const link = document.createElement('a');
+    link.href = post.href;
+    link.className =
+      'transition-colors after:absolute after:inset-0 hover:text-primary focus-visible:outline-none';
+    link.textContent = post.title;
+    heading.append(link);
+    content.append(heading);
+
+    if (post.description) {
+      const desc = document.createElement('p');
+      desc.className = 'line-clamp-2 text-sm leading-relaxed text-muted';
+      desc.textContent = post.description;
+      content.append(desc);
+    }
+
+    if (post.tagLabels.length > 0) {
+      const tagList = document.createElement('ul');
+      tagList.className = 'flex flex-wrap items-center gap-1.5 text-[11px] text-muted';
+      for (const label of post.tagLabels) {
+        const li = document.createElement('li');
+        li.className = 'chip px-2 py-0.5 text-[11px]';
+        li.textContent = label;
+        tagList.append(li);
+      }
+      if (post.hiddenTagCount > 0) {
+        const more = document.createElement('li');
+        more.className = 'chip px-2 py-0.5 text-[11px]';
+        more.textContent = `+${post.hiddenTagCount}`;
+        tagList.append(more);
+      }
+      content.append(tagList);
+    }
+
+    const footer = document.createElement('div');
+    footer.className = 'mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2 text-xs text-muted';
+    const time = document.createElement('time');
+    time.dateTime = post.publishedIso;
+    time.textContent = post.formattedDate;
+    const dot = document.createElement('span');
+    dot.setAttribute('aria-hidden', 'true');
+    dot.textContent = '·';
+    const readTime = document.createElement('span');
+    readTime.textContent = post.readingTimeLabel;
+    footer.append(time, dot, readTime);
+    content.append(footer);
+
+    article.append(media, content);
+    return article;
+  }
 
   function setupBlogFilters() {
     const root = document.querySelector<HTMLElement>('[data-blog-filter]');
@@ -288,50 +441,48 @@ const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` :
       } satisfies BlogTaxonomy,
     }));
 
+    const grid = document.querySelector<HTMLElement>('[data-blog-grid]');
+    const pagerWrap = document.querySelector<HTMLElement>('[data-blog-pager-wrap]');
     const status = root.querySelector<HTMLElement>('[data-blog-status]');
     const empty = document.querySelector<HTMLElement>('[data-blog-empty]');
     const clear = root.querySelector<HTMLAnchorElement>('[data-blog-clear]');
     const categoryChips = [...root.querySelectorAll<HTMLAnchorElement>('[data-filter-category]')];
     const tagChips = [...root.querySelectorAll<HTMLAnchorElement>('[data-filter-tag]')];
-    // The pager links to the other pages of the index. They carry the active
-    // filter, so walking through the pages keeps the selection.
     const pageLinks = [...document.querySelectorAll<HTMLAnchorElement>('[data-page-link]')];
-    const template = root.dataset.showingTemplate ?? '';
+    const pageTemplate = root.dataset.showingTemplate ?? '';
+    const allTemplate = root.dataset.showingAllTemplate ?? pageTemplate;
     const baseHref = root.dataset.baseHref ?? window.location.pathname;
+    const locale = root.dataset.locale ?? 'en';
+    const totalPages = Number(root.dataset.totalPages ?? '1');
 
     let filters: BlogFilters = parseBlogFilters(window.location.search);
+    let renderToken = 0;
 
     const setActive = (element: HTMLElement, active: boolean) => {
       if (active) element.setAttribute('aria-current', 'true');
       else element.removeAttribute('aria-current');
     };
 
-    const render = (updateUrl = true) => {
-      let visible = 0;
-      for (const card of cards) {
-        const matches = matchesBlogFilters(card.taxonomy, filters);
-        card.element.hidden = !matches;
-        if (matches) visible += 1;
-      }
+    const clearDynamicCards = () => {
+      grid?.querySelectorAll('[data-dynamic-post-card]').forEach((el) => el.remove());
+    };
+
+    const render = async (updateUrl = true) => {
+      const token = ++renderToken;
+      const active = hasActiveFilters(filters);
 
       for (const chip of categoryChips) {
         const isAllChip = chip.dataset.filterCategory === '';
         setActive(
           chip,
-          isAllChip ? !hasActiveFilters(filters) : chip.dataset.filterCategory === filters.category
+          isAllChip ? !active : chip.dataset.filterCategory === filters.category
         );
       }
       for (const chip of tagChips) {
         setActive(chip, filters.tags.includes(chip.dataset.filterTag ?? ''));
       }
 
-      if (status) {
-        status.textContent = template
-          .replace('{visible}', String(visible))
-          .replace('{total}', String(cards.length));
-      }
-      if (empty) empty.hidden = visible !== 0;
-      if (clear) clear.hidden = !hasActiveFilters(filters);
+      if (clear) clear.hidden = !active;
 
       const query = buildBlogFilterQuery(filters);
       for (const link of pageLinks) {
@@ -348,6 +499,52 @@ const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` :
           `${baseHref}${query}`
         );
       }
+
+      // Multi-page blog with active filters: search the full collection across all pages.
+      if (active && totalPages > 1 && grid) {
+        try {
+          const catalog = await fetchBlogCatalog();
+          if (token !== renderToken) return;
+
+          const localePosts = catalog.filter((post) => post.locale === locale);
+          const matching = localePosts.filter((post) => matchesBlogFilters(post, filters));
+
+          for (const card of cards) card.element.hidden = true;
+          if (pagerWrap) pagerWrap.hidden = true;
+
+          clearDynamicCards();
+          grid.append(...matching.map((post) => createDynamicPostCard(post)));
+
+          if (status) {
+            status.textContent = allTemplate
+              .replace('{visible}', String(matching.length))
+              .replace('{total}', String(localePosts.length));
+          }
+          if (empty) empty.hidden = matching.length !== 0;
+          return;
+        } catch {
+          // Graceful fallback: filter the server-rendered cards on the current page.
+          if (token !== renderToken) return;
+        }
+      }
+
+      clearDynamicCards();
+      if (pagerWrap) pagerWrap.hidden = false;
+
+      let visible = 0;
+      for (const card of cards) {
+        const matches = matchesBlogFilters(card.taxonomy, filters);
+        card.element.hidden = !matches;
+        if (matches) visible += 1;
+      }
+
+      const statusTemplate = active ? allTemplate : pageTemplate;
+      if (status) {
+        status.textContent = statusTemplate
+          .replace('{visible}', String(visible))
+          .replace('{total}', String(cards.length));
+      }
+      if (empty) empty.hidden = visible !== 0;
     };
 
     root.addEventListener('click', (event) => {
@@ -367,15 +564,15 @@ const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` :
         filters = toggleBlogTag(filters, target.dataset.filterTag);
       }
 
-      render();
+      void render();
     });
 
     document.addEventListener('blog:filters-restore', () => {
       filters = parseBlogFilters(window.location.search);
-      render(false);
+      void render(false);
     });
 
-    render(false);
+    void render(false);
   }
 
   if (document.documentElement.dataset.blogFilterHistoryBound !== 'true') {

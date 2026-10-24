@@ -12,6 +12,7 @@
   "blog_filter_by_tag": "Filtrer par étiquette",
   "blog_filter_clear": "Réinitialiser les filtres",
   "blog_filter_empty": "Aucun article ne correspond à ces filtres sur cette page.",
+  "blog_filter_showing_all": "Affichage de {visible} sur {total} articles",
   "blog_filter_showing_page": "Affichage de {visible} sur {total} articles sur cette page",
   "blog_index_description": "Nos derniers articles, réflexions et actualités.",
   "blog_pagination_label": "Pagination du blog",
@@ -79,5 +80,6 @@
         "posOrdinal=*": "{pos}e"
       }
     }
-  ]
+  ],
+  "site_description": "Modèle de démarrage Astro v7 multilingue prêt pour la production avec prise en charge native RTL et LTR."
 }

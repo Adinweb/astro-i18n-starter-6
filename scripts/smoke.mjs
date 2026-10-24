@@ -158,10 +158,24 @@ if (testLocale) {
       `/${testLocale}/ renders <html lang="${testLocale}" dir="${dirFor(testLocale)}">`
     );
     assert(count(html, /<h1[\s>]/g) === 1, `/${testLocale}/ has exactly one <h1>`);
+    const rssLink = html.match(
+      /<link[^>]+type="application\/rss\+xml"[^>]*href="([^"]+)"/i
+    );
+    assert(
+      Boolean(rssLink && rssLink[1].endsWith(`/rss/${testLocale}.xml`)),
+      `/${testLocale}/ advertises its localized Atom feed (/rss/${testLocale}.xml)`
+    );
   }
 
   const blogIndex = readHtml(path.join(testLocale, 'blog', 'index.html'));
   assert(blogIndex !== null, `/${testLocale}/blog/index.html exists`);
+  if (blogIndex) {
+    assert(
+      blogIndex.includes('"@type":"BreadcrumbList"') ||
+        blogIndex.includes('"@type": "BreadcrumbList"'),
+      `/${testLocale}/blog/ emits BreadcrumbList JSON-LD`
+    );
+  }
 }
 
 if (LOCALES.includes('ar')) {
@@ -219,6 +233,11 @@ if (blogArticleHtml) {
       blogArticleHtml.includes('"@type": "BlogPosting"'),
     'Article emits BlogPosting JSON-LD'
   );
+  assert(
+    blogArticleHtml.includes('"@type":"BreadcrumbList"') ||
+      blogArticleHtml.includes('"@type": "BreadcrumbList"'),
+    'Article emits BreadcrumbList JSON-LD'
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -262,6 +281,33 @@ assert(fs.existsSync(path.join(distDir, 'rss.xml')), 'dist/rss.xml exists');
 const rss = readHtml('rss.xml');
 if (rss) {
   assert(rss.includes('<feed') && rss.includes('<entry'), 'RSS feed contains entries');
+  assert(
+    rss.includes(`xml:lang="${DEFAULT_LOCALE}"`),
+    `Default RSS feed declares xml:lang="${DEFAULT_LOCALE}"`
+  );
+  assert(
+    nonDefaultLocales.every((loc) => !rss.includes(`/${loc}/blog/`)),
+    'Default RSS feed contains only default-locale entries'
+  );
+}
+
+for (const locale of nonDefaultLocales) {
+  const localeFeedPath = path.join('rss', `${locale}.xml`);
+  assert(
+    fs.existsSync(path.join(distDir, localeFeedPath)),
+    `dist/rss/${locale}.xml exists`
+  );
+  const localeRss = readHtml(localeFeedPath);
+  if (localeRss) {
+    assert(
+      localeRss.includes('<feed') && localeRss.includes(`xml:lang="${locale}"`),
+      `dist/rss/${locale}.xml declares xml:lang="${locale}"`
+    );
+    assert(
+      !localeRss.includes(`hreflang="${DEFAULT_LOCALE}"`),
+      `dist/rss/${locale}.xml contains only "${locale}" entries`
+    );
+  }
 }
 
 assert(fs.existsSync(path.join(distDir, 'site.webmanifest')), 'dist/site.webmanifest exists');
@@ -397,6 +443,29 @@ if (searchIndex) {
     );
   } catch {
     assert(false, 'Fallback search index is valid JSON');
+  }
+}
+
+const blogCatalog = readHtml(path.join('api', 'blog-posts.json'));
+assert(blogCatalog !== null, 'Static blog catalog (dist/api/blog-posts.json) exists');
+if (blogCatalog) {
+  try {
+    const items = JSON.parse(blogCatalog);
+    assert(
+      Array.isArray(items) && items.length > 0,
+      'Static blog catalog contains published post entries'
+    );
+    assert(
+      items.every(
+        (item) =>
+          LOCALES.includes(item.locale) &&
+          typeof item.href === 'string' &&
+          item.href.endsWith('/')
+      ),
+      'Static blog catalog entries have valid locales and canonical trailing slashes'
+    );
+  } catch {
+    assert(false, 'Static blog catalog is valid JSON');
   }
 }
 

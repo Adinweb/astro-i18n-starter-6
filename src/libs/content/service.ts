@@ -83,6 +83,15 @@ export function getBlogPostHref(slug: string, locale: Locale): string {
   return localizeHref(`/${BLOG_BASE}/${slug}`, locale);
 }
 
+/**
+ * Public URL of one locale's Atom feed. The default locale lives at `/rss.xml`;
+ * non-default locales live under `/rss/<locale>.xml` so readers only receive
+ * articles in the language they subscribed to.
+ */
+export function getRssFeedHref(locale: Locale): string {
+  return locale === DEFAULT_LOCALE ? '/rss.xml' : `/rss/${locale}.xml`;
+}
+
 function resolvePageUrl(
   pages: EntryLike<'pages'>[],
   group: string,
@@ -270,4 +279,23 @@ export function getBreadcrumbs(
   }
 
   return crumbs;
+}
+
+/**
+ * Builds a Schema.org `BreadcrumbList` object from localized breadcrumb items.
+ */
+export function buildBreadcrumbSchema(
+  breadcrumbs: readonly BreadcrumbItem[],
+  toAbsoluteUrl: (pathname: string) => string
+): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumbs.map((crumb, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: crumb.label,
+      item: toAbsoluteUrl(crumb.href),
+    })),
+  };
 }

@@ -12,6 +12,7 @@
   "blog_filter_by_tag": "تصفية حسب الوسم",
   "blog_filter_clear": "مسح عوامل التصفية",
   "blog_filter_empty": "لا توجد مقالات تطابق عوامل التصفية هذه في هذه الصفحة.",
+  "blog_filter_showing_all": "عرض {visible} من {total} مقالة",
   "blog_filter_showing_page": "عرض {visible} من {total} مقالة في هذه الصفحة",
   "blog_index_description": "أحدث المقالات والأفكار والتحديثات لدينا.",
   "blog_pagination_label": "ترقيم صفحات المدونة",
@@ -79,5 +80,6 @@
         "posOrdinal=*": "المركز {pos}"
       }
     }
-  ]
+  ],
+  "site_description": "قالب بداية متعدد اللغات وجاهز للإنتاج مبني على Astro v7 مع دعم أصلي للاتجاهين من اليمين إلى اليسار ومن اليسار إلى اليمين."
 }

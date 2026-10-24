@@ -12,6 +12,7 @@
   "blog_filter_by_tag": "Nach Schlagwort filtern",
   "blog_filter_clear": "Filter zurücksetzen",
   "blog_filter_empty": "Keine Artikel entsprechen diesen Filtern auf dieser Seite.",
+  "blog_filter_showing_all": "Zeige {visible} von {total} Artikeln",
   "blog_filter_showing_page": "Zeige {visible} von {total} Artikeln auf dieser Seite",
   "blog_index_description": "Unsere neuesten Artikel, Gedanken und Updates.",
   "blog_pagination_label": "Blog-Paginierung",
@@ -78,5 +79,6 @@
         "posOrdinal=*": "{pos}."
       }
     }
-  ]
+  ],
+  "site_description": "Produktionsreifes, mehrsprachiges Astro-v7-Starter-Template mit nativer RTL- und LTR-Unterstützung."
 }

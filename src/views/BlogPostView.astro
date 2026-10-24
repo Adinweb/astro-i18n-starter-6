@@ -3,12 +3,12 @@ import { render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageHero from '@/components/PageHero.astro';
 import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
-import { getBreadcrumbs, getBlogIndexHref } from '@/libs/content/service';
+import { buildBreadcrumbSchema, getBreadcrumbs, getBlogIndexHref } from '@/libs/content/service';
 import { buildBlogFilterQuery } from '@/libs/content/blog';
 import { getSocialCard } from '@/libs/content/social';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
-import type { Locale } from '@/i18n/locales';
+import { getLocaleMeta, type Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
 
 interface Props {
@@ -35,28 +35,32 @@ const canonicalUrl = absoluteUrl(url);
 const socialImage = await getSocialCard(image);
 const imageUrl = socialImage.url;
 
-const schema = {
-  '@context': 'https://schema.org',
-  '@type': 'BlogPosting',
-  headline: title,
-  description,
-  image: imageUrl,
-  datePublished: publishedAt.toISOString(),
-  dateModified: (updatedAt ?? publishedAt).toISOString(),
-  inLanguage: locale,
-  articleSection: categories.map((category) => getCategoryLabel(category, locale)),
-  keywords: tags.map((tag) => getTagLabel(tag, locale)),
-  mainEntityOfPage: canonicalUrl,
-  author: {
-    '@type': author ? 'Person' : 'Organization',
-    name: author ?? siteConfig.name,
+const meta = getLocaleMeta(locale);
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: title,
+    description: description ?? m.site_description({}, { locale }),
+    image: imageUrl,
+    datePublished: publishedAt.toISOString(),
+    dateModified: (updatedAt ?? publishedAt).toISOString(),
+    inLanguage: meta.htmlLang,
+    articleSection: categories.map((category) => getCategoryLabel(category, locale)),
+    keywords: tags.map((tag) => getTagLabel(tag, locale)),
+    mainEntityOfPage: canonicalUrl,
+    author: {
+      '@type': author ? 'Person' : 'Organization',
+      name: author ?? siteConfig.name,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: siteConfig.name,
+      url: absoluteUrl(breadcrumbs[0].href),
+    },
   },
-  publisher: {
-    '@type': 'Organization',
-    name: siteConfig.name,
-    url: siteConfig.url,
-  },
-};
+  buildBreadcrumbSchema(breadcrumbs, absoluteUrl),
+];
 ---
 
 <BaseLayout

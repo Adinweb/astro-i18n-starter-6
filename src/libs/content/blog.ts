@@ -14,6 +14,24 @@ export interface BlogFilters {
   tags: string[];
 }
 
+export interface SerializedBlogPost {
+  locale: string;
+  href: string;
+  title: string;
+  description: string;
+  coverSrc: string | null;
+  coverWidth: number | null;
+  coverHeight: number | null;
+  categoryLabel: string | null;
+  tagLabels: string[];
+  hiddenTagCount: number;
+  publishedIso: string;
+  formattedDate: string;
+  readingTimeLabel: string;
+  categories: string[];
+  tags: string[];
+}
+
 export const NO_FILTERS: BlogFilters = { category: null, tags: [] };
 
 const WORDS_PER_MINUTE = 200;

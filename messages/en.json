@@ -12,6 +12,7 @@
   "blog_filter_by_tag": "Filter by tag",
   "blog_filter_clear": "Clear filters",
   "blog_filter_empty": "No articles match these filters on this page.",
+  "blog_filter_showing_all": "Showing {visible} of {total} articles",
   "blog_filter_showing_page": "Showing {visible} of {total} articles on this page",
   "blog_index_description": "Our latest articles, thoughts, and updates.",
   "blog_pagination_label": "Blog pagination",
@@ -81,5 +82,6 @@
         "posOrdinal=*": "{pos}th"
       }
     }
-  ]
+  ],
+  "site_description": "Production-grade, multi-lingual Astro v7 starter template with native RTL and LTR support."
 }

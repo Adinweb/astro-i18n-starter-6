@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
+  buildBreadcrumbSchema,
   buildSiteRoutes,
   getBreadcrumbs,
   getBlogIndexHref,
   getBlogPageHref,
   getBlogPostHref,
+  getRssFeedHref,
   type SiteRoute,
   type SiteRouteProps,
 } from './service';
@@ -316,6 +318,49 @@ describe('src/libs/content/service.ts', () => {
       );
       expect(indexRoutes).toHaveLength(1);
       expect(indexRoutes[0].props.url).toBe('/blog/');
+    });
+  });
+
+  describe('getRssFeedHref and buildBreadcrumbSchema', () => {
+    it('returns /rss.xml for DEFAULT_LOCALE and /rss/<locale>.xml for non-default locales', () => {
+      expect(getRssFeedHref(DEFAULT_LOCALE)).toBe('/rss.xml');
+      for (const locale of nonDefaultLocales) {
+        expect(getRssFeedHref(locale)).toBe(`/rss/${locale}.xml`);
+      }
+    });
+
+    it('builds valid Schema.org BreadcrumbList JSON-LD with 1-based positions', () => {
+      const crumbs = getBreadcrumbs(getBlogPostHref('first-post', testLocale), testLocale, {
+        home: 'Home',
+        blog: 'Blog',
+        current: 'First Post',
+      });
+      const schema = buildBreadcrumbSchema(crumbs, (pathname) => `https://example.com${pathname}`);
+
+      expect(schema).toEqual({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: `https://example.com${localizeHref('/', testLocale)}`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Blog',
+            item: `https://example.com${getBlogIndexHref(testLocale)}`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: 'First Post',
+            item: `https://example.com${getBlogPostHref('first-post', testLocale)}`,
+          },
+        ],
+      });
     });
   });
 });
