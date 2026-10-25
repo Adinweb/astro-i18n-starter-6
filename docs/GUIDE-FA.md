@@ -309,8 +309,8 @@ SITE_URL=https://example.com pnpm run build
   "baseLocale": "en",
   "locales": ["en", "de", "fr", "fa", "ar"],
   "modules": [
-    "https://cdn.jsdelivr.net/npm/@inlang/plugin-message-format@4.4.0/dist/index.js",
-    "https://cdn.jsdelivr.net/npm/@inlang/plugin-m-function-matcher@2.2.6/dist/index.js"
+    "./node_modules/@inlang/plugin-message-format/dist/index.js",
+    "./node_modules/@inlang/plugin-m-function-matcher/dist/index.js"
   ],
   "plugin.inlang.messageFormat": { "pathPattern": "./messages/{locale}.json" }
 }
@@ -318,6 +318,9 @@ SITE_URL=https://example.com pnpm run build
 
 `baseLocale` باید با `DEFAULT_LOCALE` در `src/i18n/locales.ts` یکی باشد؛ ممیزی i18n
 این تطابق را بررسی می‌کند.
+
+افزونه‌های درون‌یابی از `node_modules` خوانده می‌شوند (نه از CDN)، پس نسخهٔ آن‌ها با
+`pnpm-lock.yaml` قفل است و بیلد به شبکه نیاز ندارد.
 
 ### تغییر رنگ برند
 

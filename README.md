@@ -151,6 +151,8 @@ All application-level values that must stay in sync across the app and the CLI s
 
 [`src/libs/config/app.ts`](src/libs/config/app.ts) validates that file with Zod and exposes typed values (`siteConfig`, `POSTS_PER_PAGE`, hero defaults, `absoluteUrl`). The asset generator, web manifest, and smoke tests read the same file. Framework-only settings remain in `astro.config.mjs`, and locale configuration in `src/i18n/locales.ts` + `project.inlang/settings.json`.
 
+The two Paraglide plugins are declared in `project.inlang/settings.json` as paths into `node_modules`, so message compilation resolves them from the lockfile instead of fetching them from a CDN; a cold CI build needs no network access and cannot pick up a changed plugin under the same version.
+
 ---
 
 ## 🛠️ Developer CLI Suite
