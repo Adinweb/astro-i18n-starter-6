@@ -67,17 +67,8 @@ const { locale } = Astro.props;
 </dialog>
 
 <script>
-  interface SearchItem {
-    title: string;
-    description: string;
-    url: string;
-    locale: string;
-  }
+  import { executeSearch } from '@/libs/search/client';
 
-  let searchData: SearchItem[] = [];
-  let isFetchingDevIndex = false;
-  let pagefindPromise: Promise<any> | null = null;
-  let pagefindUnavailable = false;
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
   let searchRequestId = 0;
 
@@ -153,29 +144,6 @@ const { locale } = Astro.props;
     return link;
   }
 
-  /** Pagefind excerpts contain markup; keep only the text for safe DOM rendering. */
-  function plainText(html: string) {
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    return container.textContent ?? '';
-  }
-
-  async function getPagefindInstance() {
-    if (!pagefindPromise) {
-      const pagefindUrl = '/pagefind/pagefind.js';
-      pagefindPromise = (async () => {
-        const mod = await import(/* @vite-ignore */ pagefindUrl);
-        await mod.init();
-        return mod;
-      })().catch((error) => {
-        pagefindPromise = null;
-        pagefindUnavailable = true;
-        throw error;
-      });
-    }
-    return pagefindPromise;
-  }
-
   function resetSearch(dialog: HTMLDialogElement) {
     const input = document.getElementById('search-input') as HTMLInputElement | null;
     if (input) input.value = '';
@@ -217,72 +185,17 @@ const { locale } = Astro.props;
         return;
       }
 
-      if ((import.meta.env.PROD || !import.meta.hot) && !pagefindUnavailable) {
-        try {
-          const pagefind = await getPagefindInstance();
-          const search = await pagefind.search(query);
-          const pagefindResults = await Promise.all(
-            search.results.slice(0, 6).map((result: any) => result.data())
-          );
-
-          if (requestId !== searchRequestId) return;
-
-          if (pagefindResults.length === 0) {
-            setMessage(modal.dataset.noResults || 'No results');
-            return;
-          }
-
-          resultsEl.replaceChildren(
-            ...pagefindResults.map((result: any, idx: number) =>
-              createResultLink(
-                result.url,
-                result.meta?.title || result.url,
-                plainText(result.excerpt || ''),
-                idx
-              )
-            )
-          );
-          highlightResult(0);
-          return;
-        } catch {
-          // Pagefind is unavailable (for example on an unindexed preview); use
-          // the dev index below as a graceful fallback.
-        }
-      }
-
-      if (searchData.length === 0 && !isFetchingDevIndex) {
-        isFetchingDevIndex = true;
-        try {
-          const response = await fetch('/api/search-dev.json');
-          if (!response.ok) throw new Error(`Search index responded ${response.status}`);
-          searchData = await response.json();
-        } catch {
-          searchData = [];
-        } finally {
-          isFetchingDevIndex = false;
-        }
-      }
-
+      const results = await executeSearch(query, activeLocale);
       if (requestId !== searchRequestId) return;
 
-      const normalized = query.trim().toLowerCase();
-      const filtered = searchData
-        .filter((item) => item.locale === activeLocale)
-        .filter(
-          (item) =>
-            item.title.toLowerCase().includes(normalized) ||
-            item.description.toLowerCase().includes(normalized)
-        )
-        .slice(0, 6);
-
-      if (filtered.length === 0) {
+      if (results.length === 0) {
         setMessage(modal.dataset.noResults || 'No results');
         return;
       }
 
       resultsEl.replaceChildren(
-        ...filtered.map((item, idx) =>
-          createResultLink(item.url, item.title, item.description, idx)
+        ...results.slice(0, 6).map((result, idx) =>
+          createResultLink(result.url, result.title, result.excerpt, idx)
         )
       );
       highlightResult(0);

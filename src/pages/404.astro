@@ -49,7 +49,7 @@ const i18nData = Object.fromEntries(
           themeDark: m.common_theme_dark({}, { locale: loc }),
           year: formatYear(new Date().getFullYear(), loc),
           homeHref: nav.find((item) => item.key === 'home')?.href ?? localizeHref('/', loc),
-          nav: nav.map(({ key, label, href }) => ({ key, label, href })),
+          nav: nav.map(({ key, label, href }) => ({ key, label, href: href ?? '' })),
           dir: LOCALE_METADATA[loc].dir,
           lang: LOCALE_METADATA[loc].htmlLang,
           fontFamily: LOCALE_METADATA[loc].fontFamily,
@@ -211,7 +211,7 @@ const i18nData = Object.fromEntries(
       });
       for (const item of data.nav) {
         document.querySelectorAll(`[data-nav-link="${item.key}"]`).forEach((el) => {
-          el.setAttribute('href', item.href);
+          if (item.href) el.setAttribute('href', item.href);
           el.textContent = item.label;
         });
       }

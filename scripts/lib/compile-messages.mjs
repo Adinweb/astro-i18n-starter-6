@@ -51,5 +51,5 @@ export function compileMessages(rootDir = process.cwd()) {
     return;
   }
 
-  execSync('pnpm run messages:compile', { cwd: rootDir, stdio: 'inherit' });
+  execSync('npm run messages:compile', { cwd: rootDir, stdio: 'inherit' });
 }

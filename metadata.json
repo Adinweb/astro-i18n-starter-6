@@ -2,5 +2,7 @@
   "name": "Astro i18n Starter",
   "description": "Production-grade multilingual Astro v7 starter with native RTL/LTR support, dark mode, static feeds and Pagefind search.",
   "permissions": [],
-  "capabilities": []
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

@@ -56,6 +56,8 @@
   "common_theme_toggle": "تبديل المظهر اللوني",
   "common_type_to_search": "اكتب للبحث...",
   "common_updated_on": "حُدِّث في",
+  "drawer_tab_nav": "التنقل",
+  "drawer_tab_search": "البحث",
   "items_count": [
     {
       "declarations": [
@@ -74,9 +76,14 @@
   ],
   "nav_about": "من نحن",
   "nav_blog": "المدونة",
+  "nav_design_system": "نظام التصميم",
+  "nav_explore": "استكشف المزيد",
   "nav_features": "المميزات",
   "nav_home": "الرئيسية",
+  "nav_overview": "نظرة عامة",
   "nav_pricing": "الأسعار",
+  "nav_resources": "الموارد",
+  "nav_rtl_support": "دعم RTL والتعريب",
   "position_ordinal": [
     {
       "declarations": [

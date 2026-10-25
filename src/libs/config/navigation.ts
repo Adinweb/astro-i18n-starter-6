@@ -6,8 +6,9 @@ import { getBlogIndexHref, getPageUrl } from '@/libs/content/service';
 export interface NavItem {
   key: string;
   label: string;
-  href: string;
+  href?: string;
   active: boolean;
+  children?: NavItem[];
 }
 
 /**
@@ -27,7 +28,8 @@ const BLOG_ITEM = {
   label: (locale: Locale) => m.nav_blog({}, { locale }),
 } as const;
 
-function isActive(href: string, currentUrl: string): boolean {
+function isActive(href: string | undefined, currentUrl: string): boolean {
+  if (!href || !currentUrl) return false;
   const hrefPath = withTrailingSlash(getPathname(stripLocale(href).pathname));
   const currentPath = withTrailingSlash(getPathname(stripLocale(currentUrl).pathname));
 
@@ -55,6 +57,46 @@ export async function getNavigation(locale: Locale, currentUrl = ''): Promise<Na
     label: BLOG_ITEM.label(locale),
     href: blogHref,
     active: isActive(blogHref, currentUrl),
+  });
+
+  const featuresHref = (await getPageUrl('features', locale)) ?? blogHref;
+
+  // Sample nested dropdown with multi-level sub-items
+  const exploreChildren: NavItem[] = [
+    {
+      key: 'rtl_support',
+      label: m.nav_rtl_support({}, { locale }),
+      href: `${featuresHref}#rtl`,
+      active: false,
+    },
+    {
+      key: 'design_system',
+      label: m.nav_design_system({}, { locale }),
+      href: `${featuresHref}#design`,
+      active: false,
+    },
+  ];
+
+  const resourcesChildren: NavItem[] = [
+    {
+      key: 'overview',
+      label: m.nav_overview({}, { locale }),
+      href: featuresHref,
+      active: isActive(featuresHref, currentUrl),
+    },
+    {
+      key: 'explore',
+      label: m.nav_explore({}, { locale }),
+      active: exploreChildren.some((child) => child.active),
+      children: exploreChildren,
+    },
+  ];
+
+  items.push({
+    key: 'resources',
+    label: m.nav_resources({}, { locale }),
+    active: resourcesChildren.some((child) => child.active),
+    children: resourcesChildren,
   });
 
   return items;

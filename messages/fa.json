@@ -56,6 +56,8 @@
   "common_theme_toggle": "تغییر حالت نمایش",
   "common_type_to_search": "برای جستجو تایپ کنید...",
   "common_updated_on": "به‌روزرسانی در",
+  "drawer_tab_nav": "ناوبری",
+  "drawer_tab_search": "جستجو",
   "items_count": [
     {
       "declarations": [
@@ -73,9 +75,14 @@
   ],
   "nav_about": "درباره ما",
   "nav_blog": "وبلاگ",
+  "nav_design_system": "سیستم طراحی",
+  "nav_explore": "کاوش بیشتر",
   "nav_features": "ویژگی‌ها",
   "nav_home": "خانه",
+  "nav_overview": "نمای کلی",
   "nav_pricing": "قیمت‌گذاری",
+  "nav_resources": "منابع",
+  "nav_rtl_support": "پشتیبانی RTL و بومی‌سازی",
   "position_ordinal": [
     {
       "declarations": [

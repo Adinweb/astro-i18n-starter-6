@@ -1,0 +1,147 @@
+---
+import * as m from '@/paraglide/messages';
+import Icon from '@/components/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<div
+  class="flex h-full flex-col overflow-hidden text-start"
+  data-drawer-search
+  data-locale={locale}
+  data-no-results={m.common_no_results({}, { locale })}
+  data-placeholder={m.common_type_to_search({}, { locale })}
+>
+  <div class="relative shrink-0 p-3 pb-2">
+    <Icon
+      name="search"
+      size={16}
+      class="pointer-events-none absolute start-6 top-1/2 -translate-y-1/2 text-muted"
+    />
+    <input
+      type="search"
+      data-drawer-search-input
+      placeholder={m.common_search_placeholder({}, { locale })}
+      aria-label={m.common_search_placeholder({}, { locale })}
+      class="w-full rounded-xl border border-border bg-bg/90 py-2.5 pe-9 ps-10 text-sm text-fg placeholder:text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+      autocomplete="off"
+    />
+    <button
+      type="button"
+      data-drawer-search-clear
+      class="absolute end-5 top-1/2 hidden -translate-y-1/2 rounded-full p-1 text-muted transition-colors hover:text-fg"
+      aria-label={m.common_close({}, { locale })}
+    >
+      <Icon name="close" size={14} />
+    </button>
+  </div>
+
+  <div
+    data-drawer-search-results
+    class="flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-3 py-2"
+    role="status"
+    aria-live="polite"
+  >
+    <p class="py-8 text-center text-xs text-muted" data-drawer-search-msg>
+      {m.common_type_to_search({}, { locale })}
+    </p>
+  </div>
+</div>
+
+<script>
+  import { executeSearch } from '@/libs/search/client';
+
+  function setupDrawerSearch() {
+    const root = document.querySelector<HTMLElement>('[data-drawer-search]');
+    const input = document.querySelector<HTMLInputElement>('[data-drawer-search-input]');
+    const clearBtn = document.querySelector<HTMLButtonElement>('[data-drawer-search-clear]');
+    const resultsContainer = document.querySelector<HTMLElement>('[data-drawer-search-results]');
+
+    if (!root || !input || !resultsContainer) return;
+    if (root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+    let requestId = 0;
+
+    function setMessage(text: string) {
+      if (!resultsContainer) return;
+      resultsContainer.replaceChildren();
+      const p = document.createElement('p');
+      p.className = 'py-8 text-center text-xs text-muted';
+      p.textContent = text;
+      resultsContainer.append(p);
+    }
+
+    function createResultLink(href: string, title: string, excerpt: string) {
+      const link = document.createElement('a');
+      link.href = href;
+      link.className =
+        'block rounded-lg border border-transparent p-2.5 transition-colors hover:border-border hover:bg-surface-hover';
+
+      const h = document.createElement('div');
+      h.className = 'text-sm font-medium text-fg';
+      h.textContent = title;
+      link.append(h);
+
+      if (excerpt) {
+        const desc = document.createElement('p');
+        desc.className = 'mt-0.5 line-clamp-2 text-xs text-muted';
+        desc.textContent = excerpt;
+        link.append(desc);
+      }
+
+      link.addEventListener('click', () => {
+        // Dispatch custom close-drawer event
+        document.dispatchEvent(new CustomEvent('app:close-drawer'));
+      });
+
+      return link;
+    }
+
+    async function handleSearch(query: string) {
+      const currentReq = ++requestId;
+      const locale = root?.dataset.locale || document.documentElement.lang || 'en';
+
+      if (!query.trim()) {
+        clearBtn?.classList.add('hidden');
+        setMessage(root?.dataset.placeholder || 'Type to search...');
+        return;
+      }
+
+      clearBtn?.classList.remove('hidden');
+
+      const results = await executeSearch(query, locale);
+      if (currentReq !== requestId) return;
+
+      if (results.length === 0) {
+        setMessage(root?.dataset.noResults || 'No results found.');
+        return;
+      }
+
+      resultsContainer?.replaceChildren(
+        ...results.map((item) => createResultLink(item.url, item.title, item.excerpt))
+      );
+    }
+
+    input.addEventListener('input', () => {
+      const val = input.value;
+      if (searchTimeout) clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => handleSearch(val), 150);
+    });
+
+    clearBtn?.addEventListener('click', () => {
+      input.value = '';
+      input.focus();
+      handleSearch('');
+    });
+  }
+
+  setupDrawerSearch();
+  document.addEventListener('astro:page-load', setupDrawerSearch);
+</script>

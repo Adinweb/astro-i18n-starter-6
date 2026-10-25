@@ -56,6 +56,8 @@
   "common_theme_toggle": "Farbschema wechseln",
   "common_type_to_search": "Tippen zum Suchen...",
   "common_updated_on": "Aktualisiert am",
+  "drawer_tab_nav": "Navigation",
+  "drawer_tab_search": "Suche",
   "items_count": [
     {
       "declarations": [
@@ -73,9 +75,14 @@
   ],
   "nav_about": "Über uns",
   "nav_blog": "Blog",
+  "nav_design_system": "Design-System",
+  "nav_explore": "Mehr entdecken",
   "nav_features": "Funktionen",
   "nav_home": "Startseite",
+  "nav_overview": "Übersicht",
   "nav_pricing": "Preise",
+  "nav_resources": "Ressourcen",
+  "nav_rtl_support": "RTL & Lokalisierung",
   "position_ordinal": [
     {
       "declarations": [

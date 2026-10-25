@@ -4,12 +4,11 @@
   "version": "1.0.0",
   "private": true,
   "license": "MIT",
-  "packageManager": "pnpm@10.6.5",
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro dev",
+    "dev": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro dev --host 0.0.0.0 --port 3000",
     "messages:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide",
     "check": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro check",
     "lint": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro check && tsc --noEmit",

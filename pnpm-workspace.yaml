@@ -1,5 +1,0 @@
-# pnpm 10 blocks dependency build scripts unless they are explicitly allowed.
-# esbuild ships a platform binary and its install script validates it; every
-# other dependency installs from prebuilt packages without running code.
-onlyBuiltDependencies:
-  - esbuild
