@@ -65,6 +65,13 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 
 > Canonical URLs and internal links always end in `/` (`withTrailingSlash`), while Astro runs with `trailingSlash: 'ignore'` so slash-less unknown URLs render the custom localized `404.astro` instead of a framework error screen.
 
+### 4. Deploying
+`dist/` is fully static — HTML, CSS, JS, optimized images, the Atom feeds (`/rss.xml`, `/rss/<locale>.xml`), `sitemap.xml`, `robots.txt`, `site.webmanifest` and the Pagefind index. Upload it to any static host or CDN; no Node runtime is needed at serve time.
+
+* Set `SITE_URL` to the public origin for the build that ships. It is baked into canonicals, `hreflang`, Open Graph URLs, feeds and the sitemap, so a redeploy after a domain change is required.
+* Commit `pnpm-lock.yaml` and let CI install with `--frozen-lockfile`; the pinned `sharp` build is what produces the social cards and hero variants.
+* Serve `trailingSlash`-less URLs by redirecting to the trailing-slash form, and point the host's 404 handler at `dist/404.html`.
+
 ---
 
 ## 📁 Project Structure
@@ -391,4 +398,4 @@ The same pipeline runs on every push and pull request in [`.github/workflows/ci.
 
 ## 📄 License
 
-MIT
+Released under the [MIT License](LICENSE). Use it as the base for commercial and private projects; keep the copyright notice.

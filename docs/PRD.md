@@ -65,33 +65,33 @@ You are a senior Astro v7 and TypeScript systems engineer building a production-
 | Tool | Choice | Notes |
 | :--- | :--- | :--- |
 | **Runtime & PM** | Node ≥ 22.12, `pnpm` (lockfile committed) | Enforced via `package.json` `engines` and `packageManager`. |
-| **Framework** | **Astro 7.x (SSG)** | `site` from env (fail-loud guard), `build.format: 'directory'`, `trailingSlash: 'ignore'`, `compressHTML: 'jsx'`. |
+| **Framework** | **Astro 7.x (SSG)** | `site` from env (fail-loud guard), `build.format: 'directory'`, `trailingSlash: 'ignore'`, `compressHTML: true`. |
 | **Language** | TypeScript Strict | `astro/tsconfigs/strict`, `@/*` → `src/*` path alias. |
 | **i18n Engine** | **`@inlang/paraglide-js`** | Compile-time ICU MessageFormat (`plural` + `selectordinal`). Native namespace imports: `import * as m from '@/paraglide/messages'`. |
-| **Styling** | **Tailwind CSS v4** | Via `@tailwindcss/vite`. `@theme inline` required. CSS logical properties throughout. |
+| **Styling** | **Tailwind CSS v4** | Via `@tailwindcss/vite`. `@theme static inline` required. CSS logical properties throughout. |
 | **Content** | Astro Content Layer (`glob` loader + Zod) | Symmetrical `<group>/{locale}.mdx` convention for both `pages` and `blog`. |
-| **Search** | **Pagefind** + Dev JSON Index | Pagefind indexes `dist/` post-build. Dev mode uses a generated JSON index fallback. |
+| **Search** | **Pagefind** + static JSON fallback | Pagefind indexes `dist/` post-build; `/api/search-dev.json` is a generated fallback for any environment where Pagefind is unavailable. |
 | **Icons** | Build-Time SVG Sprite Endpoint | `src/pages/icons.svg.ts` endpoint + `<Icon name="..." />` component. Zero inline `<path>` bloat. |
 | **Auditing & Tests** | `vitest`, `knip`, custom smoke suite | Automated contract enforcement in CI. |
 
 ### Commands (Strict Naming)
 ```bash
 # Core Lifecycle
-pnpm dev               # messages:compile -> astro dev --background :4321
+pnpm dev               # messages:compile -> astro dev (host/port from app.config.json)
 pnpm messages:compile  # paraglide-js compile -> src/paraglide/
-pnpm lint              # tsc --noEmit
+pnpm lint              # messages:compile -> astro check -> tsc --noEmit
 pnpm test              # vitest run (unit tests for paths, ICU plurals/ordinals, resolvers)
-pnpm build             # messages:compile -> astro build -> pagefind --site dist
+pnpm build             # messages:compile -> audit:i18n -> astro build -> pagefind --site dist
 pnpm smoke             # node scripts/smoke.mjs (asserts raw dist/ HTML output)
-pnpm clean             # rm -rf dist .astro src/paraglide
+pnpm clean             # remove dist, .astro and src/paraglide
 
 # Developer Automation & Management CLI Suite (§8)
-npm run block:adapt -- --file=<path-to-component-or-view>
-npm run i18n:extract -- --target=<file-or-dir> --key=<namespace> --auto-add --replace
-npm run i18n:add -- --category=<category> --key=<key> --fa="متن فارسی"
-npm run new:page <page-key>
-npm run new:post <group-slug>
-npm run audit:i18n
+pnpm run block:adapt -- --file=<path-to-component-or-view>
+pnpm run i18n:extract -- --target=<file-or-dir> --key=<namespace> --auto-add --replace
+pnpm run i18n:add -- --category=<category> --key=<key> --fa="متن فارسی"
+pnpm run new:page <page-key>
+pnpm run new:post <group-slug>
+pnpm run audit:i18n
 ```
 
 ---
@@ -124,7 +124,7 @@ npm run audit:i18n
 | **Entry Invariants** | `src/libs/content/entries.ts` | Entry-ID parsing, draft filtering, locale selection, and sorting, shared by routes, views, and the feed. |
 | **Content Schemas** | `src/content.config.ts` | Collection loaders (`pages`, `blog`), frontmatter validation, group mapping. |
 | **Route & Slug Mapping** | `src/libs/content/service.ts` | Resolves cross-locale slug alternates, breadcrumbs, and `getSiteRoutes()`. |
-| **Theme Tokens** | `src/styles/global.css` | Tailwind `@theme inline` block (oklch semantic variables). |
+| **Theme Tokens** | `src/styles/global.css` | `--theme-*` role variables plus a Tailwind `@theme static inline` block (oklch semantic palette, light/dark). |
 | **Application Config** | `app.config.json` → `src/libs/config/app.ts` | Site metadata, brand colours/icons, social card, blog page size, dev server; validated with Zod and shared with the CLI scripts. |
 | **Site Origin** | `astro.config.mjs` (`SITE_URL`) | Injected as `import.meta.env.SITE`; `absoluteUrl()` resolves canonical, sitemap, feed, and OG URLs. |
 
@@ -178,7 +178,7 @@ const { routeType, entry, locale } = Astro.props;
 ## 7. CROSS-CUTTING SPECIFICATIONS
 
 ### 7.1 Styling, Theme & RTL Contract
-* **Tailwind CSS v4:** `@theme inline` required. Colors mapped via oklch semantic tokens (`bg-bg`, `bg-surface`, `text-fg`, `text-muted`, `border-border`, `primary`, etc.).
+* **Tailwind CSS v4:** `@theme static inline` required. Colors mapped via oklch semantic tokens (`bg-bg`, `bg-surface`, `text-fg`, `text-muted`, `border-border`, `primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, `error`).
 * **Logical Properties:** Standardize exclusively on `ms-`, `me-`, `ps-`, `pe-`, `start-*`, `end-*`.
 * **RTL Mirroring Protection:** In `src/styles/prose.css`, code blocks (`pre`, `code`, `.math`) must be forced to LTR:
   ```css
@@ -442,7 +442,7 @@ For operations that modify business logic, the agent refers to written playbooks
 7. **Client Runtime Locale Leak:** Client scripts importing Paraglide runtime instead of reading `document.documentElement.lang`.
 8. **Module-Scope Translation Calls:** Calling `m.*()` outside of the component render cycle.
 9. **Fake SEO / Fallback Data:** Inventing placeholder URLs or silently falling back to English copy when a translation is missing.
-10. **Missing `@theme inline`:** Using Tailwind v4 `@theme` without the `inline` directive.
+10. **Missing `inline` in the theme block:** Using `@theme static` without `inline` freezes the resolved colour, so utilities stop following `data-theme`.
 
 ---
 

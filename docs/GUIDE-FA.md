@@ -283,7 +283,7 @@ SITE_URL=https://example.com pnpm run build
     ]
   },
   "blog": { "postsPerPage": 9 },
-  "server": { "host": "0.0.0.0", "port": 4321 }
+  "server": { "host": "0.0.0.0", "port": 3000 }
 }
 ```
 

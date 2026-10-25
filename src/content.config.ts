@@ -70,6 +70,12 @@ export const collections = {
       base: './src/content/blog',
       generateId: ({ entry }) => entry.replace(/\.(md|mdx)$/, ''),
     }),
-    schema: ({ image }) => baseSchema({ image }).extend({ publishedAt: z.coerce.date() }),
+    schema: ({ image }) =>
+      baseSchema({ image }).extend({
+        // A blog post owns the `/blog/<slug>/` route, so an empty slug would
+        // collide with the blog index itself.
+        slug: slugSchema.min(1, 'Blog posts need a non-empty slug.'),
+        publishedAt: z.coerce.date(),
+      }),
   }),
 };

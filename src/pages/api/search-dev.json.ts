@@ -2,8 +2,10 @@ import type { APIRoute } from 'astro';
 import { getSiteRoutes } from '@/libs/content/service';
 
 /**
- * Development-only fallback for the search modal. It reuses the route builder
- * so URLs, localized slugs, and draft filtering always match the built site.
+ * Static fallback index for the search modal, emitted in every build (including
+ * production) so search still works when Pagefind is unavailable. It reuses the
+ * route builder, so URLs, localized slugs and draft filtering always match the
+ * built site.
  */
 export const GET: APIRoute = async () => {
   const routes = await getSiteRoutes();
