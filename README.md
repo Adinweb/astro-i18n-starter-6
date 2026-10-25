@@ -25,7 +25,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Accessible by Default**: Native `<dialog>` mobile menu and keyboard-navigable search (`⌘K`, `↑`/`↓`/`Enter`), exactly one `<h1>` per page, skip link, visible focus rings, and reduced-motion support.
 * **Image-Backed Hero Bands**: Every page and post opens with a full-bleed hero whose background *is* the entry's artwork — one image layer, never a card beside the copy and never a duplicated layer. The picture is defocused into atmosphere and shaped by vertical scrims, so the band reads identically in LTR and RTL.
 * **Optimized Image Pipeline**: Every picture is served through Astro's image pipeline — WebP output, a responsive `srcset` with the right `sizes`, and an `og:image` cropped to the social ratio. A 263 KB hero PNG becomes a 7 KB WebP on a phone.
-* **Frosted-Glass Design System**: The header, its icon controls, the calls to action and every chip are defined once in `src/styles/global.css` and composed everywhere else, so the whole site speaks one visual language.
+* **Frosted-Glass Design System**: The header, its icon controls, the calls to action and every chip are defined once in `src/styles/global.css` and composed everywhere else, so the whole site speaks one visual language. The same file defines a DaisyUI-inspired semantic palette — `primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning` and `error`, each with an AA-contrast `-fg` partner — available as Tailwind utilities in both light and dark mode.
 * **Raster Brand Assets From Code**: `scripts/generate-assets.mjs` deterministically produces the app icons, the Open Graph image, and all hero/cover artwork with no image-editing dependency.
 * **SVG Sprite Endpoint**: Zero-JS, cacheable build-time SVG sprite (`/icons.svg`) with an `<Icon name="..." />` component.
 * **Turnkey Developer CLI Suite**: Automation scripts to scaffold pages/posts, add/remove languages, adapt Tailwind blocks, extract translations, audit dictionary parity, and detect dead code.
@@ -123,7 +123,7 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   └── api/search-dev.json.ts # Locale-aware search fallback index
 │   ├── paraglide/             # Generated Paraglide code (gitignored, do not edit)
 │   ├── styles/
-│   │   ├── global.css         # Tailwind v4 @theme inline + light/dark glass tokens + font stacks
+│   │   ├── global.css         # Tailwind v4 @theme static inline + semantic light/dark palette + glass + fonts
 │   │   └── prose.css          # Article formatting with RTL isolation for code blocks
 │   └── views/
 │       ├── PageView.astro     # Static page renderer

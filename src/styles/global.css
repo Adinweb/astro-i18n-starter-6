@@ -2,18 +2,52 @@
 @import '@fontsource-variable/noto-sans-arabic';
 @import 'tailwindcss';
 
+/*
+ * Theme tokens.
+ *
+ * One palette, two modes. Every role is a plain `--theme-*` custom property so
+ * a theme can be retuned by editing this file only; `@theme static inline`
+ * below emits every role as a `--color-*` variable and maps it to a Tailwind
+ * utility (`bg-secondary`, `text-success-fg`, …).
+ *
+ * The role names follow DaisyUI's semantic palette — primary, secondary,
+ * accent, neutral, info, success, warning, error, each with a foreground —
+ * but this project uses the `-fg` suffix where DaisyUI writes `-content`.
+ * Every `-fg` pair is chosen to clear WCAG AA (4.5:1) on its own role.
+ */
 :root {
   color-scheme: light;
 
+  /* Base roles: page, card/panel, raised state, copy, and hairlines. */
   --theme-bg: oklch(98% 0.005 240);
   --theme-surface: oklch(100% 0 0);
   --theme-surface-hover: oklch(95% 0.01 240);
   --theme-fg: oklch(20% 0.015 240);
   --theme-muted: oklch(52% 0.02 240);
   --theme-border: oklch(88% 0.01 240);
+
+  /* Brand roles. `accent` is the decorative cyan; the rest are ready for
+     badges, callouts, charts and status surfaces. */
   --theme-primary: oklch(50% 0.2 260);
   --theme-primary-fg: oklch(98% 0 0);
+  --theme-secondary: oklch(53% 0.17 320);
+  --theme-secondary-fg: oklch(98% 0 0);
   --theme-accent: oklch(65% 0.18 190);
+  --theme-accent-fg: oklch(18% 0.02 200);
+  --theme-neutral: oklch(32% 0.02 250);
+  --theme-neutral-fg: oklch(96% 0.005 240);
+
+  /* Status roles: informational, confirming, cautionary and destructive. */
+  --theme-info: oklch(52% 0.14 235);
+  --theme-info-fg: oklch(98% 0 0);
+  --theme-success: oklch(50% 0.14 150);
+  --theme-success-fg: oklch(98% 0 0);
+  --theme-warning: oklch(79% 0.15 80);
+  --theme-warning-fg: oklch(22% 0.02 70);
+  --theme-error: oklch(52% 0.2 25);
+  --theme-error-fg: oklch(98% 0 0);
+
+  /* The band behind the hero copy; deliberately mode-independent darkness. */
   --theme-hero-base: oklch(18% 0.018 245);
 
   /* Frosted-glass palette. Alpha lives in the token so every glass surface
@@ -38,9 +72,27 @@
   --theme-fg: oklch(95% 0.008 240);
   --theme-muted: oklch(72% 0.018 245);
   --theme-border: oklch(29% 0.02 250);
+
+  /* Dark mode keeps the same hue per role and raises its lightness, so the
+     foreground flips to an ink tone instead of white. */
   --theme-primary: oklch(68% 0.17 260);
   --theme-primary-fg: oklch(14% 0.018 255);
+  --theme-secondary: oklch(74% 0.14 320);
+  --theme-secondary-fg: oklch(15% 0.02 320);
   --theme-accent: oklch(74% 0.16 190);
+  --theme-accent-fg: oklch(14% 0.02 200);
+  --theme-neutral: oklch(38% 0.02 250);
+  --theme-neutral-fg: oklch(96% 0.005 240);
+
+  --theme-info: oklch(75% 0.12 235);
+  --theme-info-fg: oklch(15% 0.02 240);
+  --theme-success: oklch(75% 0.14 150);
+  --theme-success-fg: oklch(15% 0.02 150);
+  --theme-warning: oklch(83% 0.14 80);
+  --theme-warning-fg: oklch(25% 0.02 80);
+  --theme-error: oklch(71% 0.17 25);
+  --theme-error-fg: oklch(15% 0.02 25);
+
   --theme-hero-base: oklch(13% 0.018 250);
 
   --theme-glass: oklch(17% 0.02 250 / 0.76);
@@ -50,16 +102,32 @@
   --theme-shadow-glass: 0 18px 44px -18px oklch(0% 0 0 / 0.72);
 }
 
-@theme inline {
+@theme static inline {
   --color-bg: var(--theme-bg);
   --color-surface: var(--theme-surface);
   --color-surface-hover: var(--theme-surface-hover);
   --color-fg: var(--theme-fg);
   --color-muted: var(--theme-muted);
   --color-border: var(--theme-border);
+
   --color-primary: var(--theme-primary);
   --color-primary-fg: var(--theme-primary-fg);
+  --color-secondary: var(--theme-secondary);
+  --color-secondary-fg: var(--theme-secondary-fg);
   --color-accent: var(--theme-accent);
+  --color-accent-fg: var(--theme-accent-fg);
+  --color-neutral: var(--theme-neutral);
+  --color-neutral-fg: var(--theme-neutral-fg);
+
+  --color-info: var(--theme-info);
+  --color-info-fg: var(--theme-info-fg);
+  --color-success: var(--theme-success);
+  --color-success-fg: var(--theme-success-fg);
+  --color-warning: var(--theme-warning);
+  --color-warning-fg: var(--theme-warning-fg);
+  --color-error: var(--theme-error);
+  --color-error-fg: var(--theme-error-fg);
+
   --color-hero-base: var(--theme-hero-base);
 
   --color-glass: var(--theme-glass);
@@ -155,6 +223,21 @@ body {
     --theme-muted: #4b5563;
     --theme-border: #d1d5db;
     --theme-primary: #1d4ed8;
+    --theme-primary-fg: #ffffff;
+    --theme-secondary: #6d28d9;
+    --theme-secondary-fg: #ffffff;
+    --theme-accent: #0f766e;
+    --theme-accent-fg: #ffffff;
+    --theme-neutral: #1f2937;
+    --theme-neutral-fg: #ffffff;
+    --theme-info: #1d4ed8;
+    --theme-info-fg: #ffffff;
+    --theme-success: #15803d;
+    --theme-success-fg: #ffffff;
+    --theme-warning: #b45309;
+    --theme-warning-fg: #ffffff;
+    --theme-error: #b91c1c;
+    --theme-error-fg: #ffffff;
   }
 
   header,

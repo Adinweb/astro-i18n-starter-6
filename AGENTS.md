@@ -41,6 +41,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 8. **Render-Time Message Invocation**:
    - Call `m.<key>({}, { locale })` inside component render cycles or templates. Never call message functions at module evaluation scope.
 9. **Shared Visual Language**:
+   - Semantic colour roles (`primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, `error` and their `-fg` partners) live **only** in `src/styles/global.css` and are exposed as Tailwind utilities (`bg-info`, `text-success-fg`, …). Never hardcode a hex value in a component; compose the role instead.
    - Frosted surfaces, buttons and chips are defined **once** in `src/styles/global.css` (`.glass-surface`, `.glass-control`, `.ghost-control`, `.cta`, `.btn-secondary`, `.chip`). Never re-declare those treatments in a component; compose the class instead.
    - Icon-only controls are rendered by `src/components/IconButton.astro`. Do not hand-roll a `<button>` with an `<Icon>` inside.
    - Shared hero copy (heading, description, slots) lives in `src/components/HeroCopy.astro`. Pages, the blog index and blog posts all compose it, so the typography cannot drift.
@@ -92,7 +93,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── api/blog-posts.json.ts # Static blog catalog for cross-page filtering
 │   │   └── api/search-dev.json.ts # Locale-aware search fallback index
 │   ├── paraglide/             # AUTO-GENERATED compiled messages (DO NOT EDIT)
-│   ├── styles/                # global.css (Tailwind v4 @theme inline + light/dark glass system + fonts), prose.css
+│   ├── styles/                # global.css (Tailwind v4 @theme static inline + semantic palette + glass system + fonts), prose.css
 │   └── views/                 # Presentation views (PageView, BlogIndexView, BlogPostView)
 ```
 

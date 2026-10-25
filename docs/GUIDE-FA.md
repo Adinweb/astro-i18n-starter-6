@@ -322,14 +322,21 @@ SITE_URL=https://example.com pnpm run build
 ### تغییر رنگ برند
 
 دو رنگ `themeColor` و `backgroundColor` در `app.config.json` هستند، ولی رنگ اصلی
-UI از توکن `--color-primary` در `src/styles/global.css` می‌آید. برای هماهنگی کامل
-این دو را با هم تغییر دهید:
+UI از توکن خام `--theme-primary` در `src/styles/global.css` می‌آید (لایهٔ
+`@theme static inline` آن را به `--color-primary` و کلاس‌هایی مثل `bg-primary`
+نگاشت می‌کند). برای هماهنگی کامل این دو را با هم تغییر دهید:
 
 ```css
-@theme inline {
-  --color-primary: oklch(50% 0.2 260);   /* ← رنگ اصلی */
+:root {
+  --theme-primary: oklch(50% 0.2 260);   /* ← رنگ اصلی */
+}
+
+:root[data-theme='dark'] {
+  --theme-primary: oklch(68% 0.17 260);
 }
 ```
+
+و `brand.themeColor` / `brand.darkThemeColor` را در `app.config.json` هم‌رنگ کنید.
 
 ### `tsconfig.json` و `vitest.config.ts`
 
@@ -1012,10 +1019,29 @@ pre, code, .math {
 | `--color-fg` | متن اصلی |
 | `--color-muted` | متن ثانویه |
 | `--color-border` | خط جداکننده |
-| `--color-primary` / `--color-primary-fg` | رنگ اصلی و متن روی آن |
-| `--color-accent` | خط تزئینی زیر عنوان هیرو |
+| `--color-primary` / `--color-primary-fg` | رنگ اصلی و متن روی آن (CTA، لینک) |
+| `--color-secondary` / `--color-secondary-fg` | نقش مکمل (بنفش) برای برجسته‌سازی دوم |
+| `--color-accent` / `--color-accent-fg` | تأکید فیروزه‌ای؛ امروز نوار تزئینی هیرو |
+| `--color-neutral` / `--color-neutral-fg` | سطح خنثی تیره (نوارها، برچسب‌های خنثی) |
+| `--color-info` / `--color-info-fg` | اطلاع‌رسانی |
+| `--color-success` / `--color-success-fg` | موفقیت |
+| `--color-warning` / `--color-warning-fg` | هشدار |
+| `--color-error` / `--color-error-fg` | خطا / اقدام مخرب |
 | `--color-glass` / `--color-glass-hover` / `--color-glass-border` / `--color-glass-control` | پالت شیشه‌ای |
 | `--shadow-glass` | سایهٔ سطوح شیشه‌ای |
+
+پالت معنایی از **DaisyUI** الهام گرفته است — `primary`، `secondary`، `accent`،
+`neutral`، `info`، `success`، `warning`، `error` — با این تفاوت که پسوند متن
+هر نقش `-fg` است (به‌جای `-content` در DaisyUI). هر جفت `-fg` در هر دو حالت
+روشن و تیره حداقل کنتراست **WCAG AA** (۴٫۵:۱) را دارد.
+
+- لایهٔ خام تم `--theme-*` است و بازتنظیم کل سایت فقط با ویرایش `:root` و
+  `:root[data-theme='dark']` در `src/styles/global.css` انجام می‌شود.
+- `@theme static inline` همهٔ نقش‌ها را به‌صورت متغیر `--color-*` در خروجی
+  نگه می‌دارد و هم‌زمان آن‌ها را به کلاس‌های Tailwind نگاشت می‌کند؛ مثلاً
+  `bg-info`، `text-success-fg`، `border-error`، `bg-secondary text-secondary-fg`.
+- نقش‌های وضعیت (info/success/warning/error) هنوز در هیچ کامپوننتی استفاده
+  نشده‌اند و برای اعلان‌ها، برچسب‌ها و سطح‌های وضعیت آماده‌اند.
 
 ### کلاس‌های مشترک
 
@@ -1076,7 +1102,7 @@ pre, code, .math {
 
 ### افزودن آیکون
 
-نمادهای موجود: `search`، `globe`، `close`، `check`، `menu`، `chevron-left`.
+نمادهای موجود: `search`، `globe`، `close`، `check`، `menu`، `chevron-left`، `sun`، `moon`، `copy`.
 
 ```ts
 // src/pages/icons.svg.ts

@@ -98,7 +98,9 @@ Always run scripts from the project root using `pnpm run <command>`.
   * Backgrounds: `bg-bg`, `bg-surface`, `bg-surface-hover`
   * Text: `text-fg`, `text-muted`
   * Borders: `border-border`
-  * Primary: `bg-primary`, `text-primary-fg`, `hover:border-primary/50`
+  * Brand roles: `primary`, `secondary`, `accent`, `neutral` — each with an `-fg` partner (`bg-primary text-primary-fg`)
+  * Status roles: `info`, `success`, `warning`, `error` — each with an `-fg` partner (`bg-success text-success-fg`)
+  * Never hardcode hex colours; all roles live in `src/styles/global.css`
 * **Font Stacks**: Handled in `src/styles/global.css` via `:lang(fa)` and `:lang(ar)`.
 
 ---
