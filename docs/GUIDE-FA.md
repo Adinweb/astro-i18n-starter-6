@@ -20,7 +20,7 @@
 8. [مدیریت زبان](#۸-مدیریت-زبان)
 9. [RTL و ویژگی‌های منطقی](#۹-rtl-و-ویژگیهای-منطقی)
 10. [سیستم طراحی](#۱۰-سیستم-طراحی)
-11. [چیدمان صفحه: BaseLayout](#۱۱-چیدمان-صفحه-baselayout)
+11. [چیدمان صفحه: BaseLayout و معماری ناوبری چندمنویی](#۱۱-چیدمان-صفحه-baselayout-و-معماری-ناوبری-چندمنویی)
 12. [صفحات، نماها و مسیریاب](#۱۲-صفحات-نماها-و-مسیریاب)
 13. [وبلاگ](#۱۳-وبلاگ)
 14. [جستجو](#۱۴-جستجو)
@@ -1122,47 +1122,79 @@ const icons: Record<string, string> = {
 
 ---
 
-## ۱۱. چیدمان صفحه: BaseLayout
+## ۱۱. چیدمان صفحه: BaseLayout و معماری ناوبری چندمنویی
 
-`src/layouts/BaseLayout.astro` پوستهٔ مشترک همهٔ صفحه‌هاست:
+`src/layouts/BaseLayout.astro` پوستهٔ مشترک و هستهٔ رابط کاربری همهٔ صفحه‌هاست. این کامپوننت با هماهنگی `src/libs/config/navigation.ts` یک **سیستم ناوبری چندمنویی تفکیک‌شده و نوع‌امن (Typed Multi-Menu Navigation)** را پیاده‌سازی می‌کند.
 
-| بخش | توضیح |
+### اجزای اصلی چیدمان
+
+| بخش | توضیح فنی |
 | --- | --- |
-| `<head>` | charset، viewport، `theme-color`، `manifest`، `apple-touch-icon`، `favicon`، `<ClientRouter />` |
-| لینک پرش | `href="#main-content"` با کلاس `sr-only focus:not-sr-only` — اولین عنصر قابل فوکوس صفحه |
-| هدر شیشه‌ای | `fixed inset-x-0 top-0` + `.glass-surface`؛ برند، ناوبری دسکتاپ، جستجو، تعویض زبان، دکمهٔ CTA |
-| منوی موبایل | `<dialog id="mobile-nav-menu">` با `showModal()`؛ بسته‌شدن با کلیک بیرون، کلیک روی لینک، یا `astro:before-preparation` |
-| `<main id="main-content" tabindex="-1">` | محتوا؛ اسلات `hero` تمام‌عرض بیرون از ستون محتوا رندر می‌شود |
-| فوتر | کپی‌رایت با **سال خودکار** (`data-current-year`) + همان ناوبری |
-| نوار پیشرفت | `TopLoadingBar` با `transition:persist` |
+| `<head>` | charset، viewport، `theme-color`، `manifest`، `apple-touch-icon`، `favicon`، `<ClientRouter />` و متادیتای SEO |
+| لینک پرش | `href="#main-content"` با کلاس `sr-only focus:not-sr-only` — اولین عنصر قابل فوکوس صفحه برای دسترس‌پذیری |
+| هدر شیشه‌ای | `fixed inset-x-0 top-0` + `.glass-surface`؛ برند، ناوبری دسکتاپ چندسطحی، جستجو، تغییر تم، تعویض زبان، دکمهٔ CTA |
+| کشوی موبایل | کشوی اسلایدی واکنشی با تب‌بندی دوگانه (تب ناوبری + تب جستجوی یکپارچه)، بخش اختصاصی زبان‌ها و تغییر تم |
+| `<main id="main-content">` | محتوای صفحه؛ اسلات `hero` تمام‌عرض بیرون از ستون محتوا رندر می‌شود |
+| فوتر چندستونه | شبکهٔ معنایی ۴ ستونه (برند، محصول، منابع، شرکت) + نوار پایین با سال بومی خودکار و لینک‌های حقوقی |
+| نوار پیشرفت | `TopLoadingBar` با `transition:persist` و هماهنگ با انتقال‌های View Transitions |
 
-### پراپ‌های `BaseLayout`
+---
 
-| پراپ | نوع | کار |
-| --- | --- | --- |
-| `title` / `description` | string | عنوان و توضیح (description پیش‌فرض: `m.site_description` هم‌زبان صفحه) |
-| `locale` | `Locale` | زبان صفحه؛ `lang`، `dir` و فونت از آن می‌آید |
-| `url` | string | مسیر نسبی صفحه برای canonical |
-| `alternates` | `Partial<Record<Locale, string>>` | نگاشت ترجمه‌ها (hreflang) |
-| `switcherAlternates?` | همان | نگاشت جدا برای تعویض زبان، وقتی فرق دارد |
-| `noindex?` | boolean | افزودن `noindex, nofollow` |
-| `noPagefind?` | boolean | حذف صفحه از ایندکس Pagefind (`data-pagefind-ignore`) |
-| `showSearch?` | boolean (پیش‌فرض `true`) | نمایش دکمه و مودال جستجو |
-| `hero?` | boolean | حذف فاصلهٔ بالای محتوا (هیرو خودش فضا دارد) |
-| `image?` | `ImageMetadata` | artwork برای کارت اجتماعی |
-| `type?` | `'website' \| 'article'` | نوع Open Graph |
-| `publishedTime?` | string | `article:published_time` |
-| `modifiedTime?` | string | `article:modified_time` (از `updatedAt`) |
-| `schema?` | object \| object[] | JSON-LD؛ پیش‌فرض `WebSite` |
-| `prevUrl?` / `nextUrl?` | string | `rel="prev"` / `rel="next"` برای صفحه‌بندی |
+### معماری ناوبری چندمنویی (`src/libs/config/navigation.ts`)
 
-### نکات رفتاری
+در معماری جدید، هدر دسکتاپ، منوی موبایل و فوتر دیگر یک لیست مسطح مشترک را به اشتراک نمی‌گذارند؛ بلکه هر بخش دارای ساختار، اولویت و سلسله‌مراتب اختصاصی است که توسط تابع مرکزی `getNavigationSlots(locale, currentUrl)` ساخته و توزیع می‌شود:
 
-- `<html>` دارای `lang`، `dir`، `class="scroll-smooth scroll-pt-24"` و
-  `style="font-family: …"` است — فونت زبان روی `<html>` اعمال می‌شود.
-- تمام اسکریپت‌های سمت کاربر با `dataset.bound` محافظت می‌شوند تا در
-  ناوبری‌های مکرر دوباره bind نشوند.
-- `prefers-reduced-motion: reduce` اسکرول نرم و انیمیشن نوار پیشرفت را خاموش می‌کند.
+```ts
+export interface NavItem {
+  key: string;
+  label: string;
+  href?: string;
+  active: boolean;
+  external?: boolean;
+  children?: NavItem[];
+}
+
+export interface FooterColumn {
+  key: string;
+  title: string;
+  items: NavItem[];
+}
+
+export interface NavigationSlots {
+  header: NavItem[];
+  drawer: NavItem[];
+  footer: FooterColumn[];
+  legal: NavItem[];
+}
+```
+
+#### ۱. ناوبری هدر دسکتاپ (`headerNav`)
+- از تابع `getHeaderNavigation(locale, currentUrl)` تأمین می‌شود.
+- **منوهای آبشاری چندسطحی (Dropdowns)**: از فیلد `children` در `NavItem` پشتیبانی می‌کند. روی دسکتاپ با هاور و فوکوس کیبورد (`group-hover` و `group-focus-within`) باز می‌شود. زیرمنوهای تو در تو نیز با آیکون `chevron-right` (با چرخش خودکار `rtl:rotate-180` در زبان‌های راست‌به‌چپ) به سمت جهت خواندن هدایت می‌شوند.
+- **تشخیص خودکار صفحهٔ فعال**: تابع `isActive(href, currentUrl)` مسیر جاری را با لینک‌ها مقایسه کرده و کلاس `text-primary font-medium` و نشانگر `aria-current="page"` را اعمال می‌کند.
+- **دکمهٔ CTA مستقیم**: دکمهٔ شروع سریع (`common_get_started`) به صفحهٔ قیمت‌گذاری هدایت می‌کند.
+
+#### ۲. کشوی کشویی موبایل (`drawerNav` و پنل اختصاصی)
+- از تابع `getDrawerNavigation(locale, currentUrl)` تأمین می‌شود و با دکمهٔ همبرگری `data-mobile-menu-btn` باز می‌شود.
+- **طراحی دوتبی (Two-Tab Interface)**:
+  - **تب ناوبری (`drawer_tab_nav`)**: شامل سلسله‌مراتب کامل صفحات سایت با زیرمنوهای تو در توی درون‌خطی (Inline Nested Lists با حاشیهٔ منطقی `border-s-2 border-primary/30 ps-3`) بدون پاپ‌آپ‌های آزاردهنده.
+  - **بخش اختصاصی زبان‌ها**: یک گرید دو ستونه از همهٔ زبان‌های فعال (`data-drawer-language-section`) با نمایش نام بومی، کد زبان و آیکون تیک برای زبان جاری، همراه با ناوبری استاتیک امن (`window.location.assign`).
+  - **بخش اختصاصی تغییر تم**: کنترلگر تغییر حالت روشن/تیره درون کشو.
+  - **تب جستجو (`drawer_tab_search`)**: کامپوننت `DrawerSearch.astro` مستقیماً درون کشو تعبیه شده و با انتخاب تب، فوکوس خودکار روی اینپوت جستجو قرار می‌گیرد.
+- **مدیریت فوکوس و دسترس‌پذیری**: استفاده از خصوصیت `inert` روی پنل در حالت بسته، گوش دادن به کلید `Escape`، کلیک روی پس‌زمینه (Backdrop) و رویداد `app:close-drawer`.
+
+#### ۳. فوتر چندستونهٔ پیشرفته (`footerNav` و `legalNav`)
+- از توابع `getFooterNavigation(locale, currentUrl)` و `getLegalNavigation(locale)` تأمین می‌شود و فوتر قدیمی تک‌خطی را به یک شبکهٔ واکنشی استاندارد تبدیل می‌کند:
+  - **ستون ۱ (برند و مأموریت)**: نام برند، توضیح بومی سایت (`site_description`).
+  - **ستون ۲ (محصول / Product)**: خانه، امکانات، قیمت‌گذاری و ارجاع به بخش سیستم طراحی.
+  - **ستون ۳ (منابع / Resources)**: وبلاگ، راهنمای پشتیبانی RTL، نمای کلی، و پیوند مستندات خارجی (همراه با آیکون `external-link` و `rel="noopener noreferrer"`).
+  - **ستون ۴ (شرکت / Company)**: درباره ما و پیوند مخزن گیت‌هاب (در صورت تنظیم در `socialConfig`).
+- **نوار پایین فوتر (Bottom Bar)**:
+  - درج سال کپی‌رایت خودکار با تقویم هجری شمسی برای فارسی (`formatYear(currentYear, locale)`) و متن همه‌حقوق محفوظ است (`common_all_rights_reserved`).
+  - پیوندهای حقوقی ثانویه (`legalNav`) شامل حریم خصوصی (`footer_legal_privacy`) و شرایط استفاده (`footer_legal_terms`).
+
+#### ۴. لایهٔ سازگاری با گذشته (Backward Compatibility)
+تابع قدیمی `getNavigation(locale, currentUrl)` همچنان در `src/libs/config/navigation.ts` وجود دارد و به عنوان مستعار (alias) برای `getDrawerNavigation` عمل می‌کند تا هیچ اسکریپت یا تستی دچار شکست نشود.
 
 ---
 
@@ -1689,25 +1721,28 @@ dist/
 
 ## پیوست B — کلیدهای ترجمه
 
-۵۲ کلید ترجمه در `messages/en.json` (و یک کلید `$schema` که فقط متادیتای
-JSON Schema است):
+۷۸ کلید ترجمه در `messages/en.json` (و یک کلید `$schema` که فقط متادیتای JSON Schema است):
 
-### `common_*` (۱۸ کلید)
+### `common_*` (۲۴ کلید)
 
 `common_all_rights_reserved` · `common_back_home` · `common_back_to_blog` ·
 `common_breadcrumbs` · `common_change_language` · `common_close` ·
-`common_english_version_hint` · `common_get_started` · `common_go_english_version` ·
-`common_menu` · `common_no_results` · `common_not_found_desc` ·
-`common_not_found_title` · `common_press_esc` · `common_published_on` ·
-`common_search_placeholder` · `common_skip_to_content` · `common_type_to_search`
+`common_copied` · `common_copy_code` · `common_english_version_hint` ·
+`common_get_started` · `common_go_english_version` · `common_menu` ·
+`common_no_results` · `common_not_found_desc` · `common_not_found_title` ·
+`common_press_esc` · `common_published_on` · `common_search_placeholder` ·
+`common_skip_to_content` · `common_theme_dark` · `common_theme_light` ·
+`common_theme_toggle` · `common_type_to_search` · `common_updated_on`
 
-### `blog_*` (۲۷ کلید)
+### `blog_*` (۳۰ کلید)
 
 عمومی: `blog_all_posts` · `blog_categories` · `blog_empty` ·
 `blog_filter_by_category` · `blog_filter_by_tag` · `blog_filter_clear` ·
-`blog_filter_empty` · `blog_filter_showing_page` · `blog_index_description` ·
+`blog_filter_empty` · `blog_filter_showing_all` · `blog_filter_showing_page` ·
+`blog_index_description` · `blog_newer_post` · `blog_older_post` ·
 `blog_pagination_label` · `blog_pagination_next` · `blog_pagination_page` ·
-`blog_pagination_previous` · `blog_pagination_status` · `blog_read_time` · `blog_tags`
+`blog_pagination_previous` · `blog_pagination_status` · `blog_read_time` ·
+`blog_related_posts` · `blog_tags` · `blog_toc_title`
 
 دسته‌ها: `blog_category_announcements` · `blog_category_design` ·
 `blog_category_engineering` · `blog_category_guides` · `blog_category_product`
@@ -1715,16 +1750,29 @@ JSON Schema است):
 برچسب‌ها: `blog_tag_architecture` · `blog_tag_astro` · `blog_tag_i18n` ·
 `blog_tag_performance` · `blog_tag_release` · `blog_tag_rtl`
 
-### `nav_*` (۵ کلید)
+### `drawer_*` (۲ کلید)
 
-`nav_about` · `nav_blog` · `nav_features` · `nav_home` · `nav_pricing`
+`drawer_tab_nav` (ناوبری در تب کشوی موبایل) · `drawer_tab_search` (جستجو در تب کشوی موبایل)
 
-### کلیدهای ICU
+### `footer_*` (۶ کلید)
 
-| کلید | placeholder |
+`footer_col_product` · `footer_col_resources` · `footer_col_company` ·
+`footer_col_legal` · `footer_legal_privacy` · `footer_legal_terms`
+
+### `nav_*` (۱۱ کلید)
+
+`nav_about` · `nav_blog` · `nav_design_system` · `nav_documentation` ·
+`nav_explore` · `nav_features` · `nav_home` · `nav_overview` ·
+`nav_pricing` · `nav_resources` · `nav_rtl_support`
+
+### کلیدهای متفرقه و ICU
+
+| کلید | نوع / placeholder |
 | --- | --- |
+| `site_description` | شرح اصلی وب‌سایت در هدر، فوتر و متادیتا |
 | `blog_read_time` | `{count}` — زمان مطالعه (ICU plural) |
-| `blog_filter_showing_page` | `{visible}` و `{total}` — «نمایش X از Y» |
+| `blog_filter_showing_page` | `{visible}` و `{total}` — «نمایش X از Y مقاله در این صفحه» |
+| `blog_filter_showing_all` | `{visible}` و `{total}` — «نمایش X از Y مقاله» |
 | `blog_pagination_page` | `{page}` — برچسب شمارهٔ صفحه |
 | `blog_pagination_status` | `{page}` و `{totalPages}` — «صفحهٔ ۲ از ۳» |
 | `items_count` | ICU plural/select |
@@ -1755,11 +1803,19 @@ JSON Schema است):
 
 ### `src/libs/config/app.ts`
 
-`siteConfig` · `POSTS_PER_PAGE` · `HERO_TITLE_ID` · `DEFAULT_HERO_IMAGE` · `absoluteUrl`
+`siteConfig` · `POSTS_PER_PAGE` · `HERO_TITLE_ID` · `DEFAULT_HERO_IMAGE` · `absoluteUrl` · `UI_CONFIG` · `BLOG_CONFIG` · `SOCIAL_CONFIG`
 
 ### `src/libs/config/navigation.ts`
 
-`NavItem` · `getNavigation(locale, currentUrl?)`
+| خروجی | نوع / کاربرد |
+| --- | --- |
+| `getNavigationSlots(locale, currentUrl?)` | خروجی تفکیک‌شدهٔ اسلات‌ها `{ header, drawer, footer, legal }` |
+| `getHeaderNavigation(locale, currentUrl?)` | لیست اقلام هدر دسکتاپ با پشتیبانی زیرمنوهای آبشاری |
+| `getDrawerNavigation(locale, currentUrl?)` | لیست اقلام کشوی موبایل با زیرمنوهای درون‌خطی |
+| `getFooterNavigation(locale, currentUrl?)` | لیست ستون‌های معنایی فوتر چندستونه (`FooterColumn[]`) |
+| `getLegalNavigation(locale, currentUrl?)` | لینک‌های حقوقی نوار پایین فوتر |
+| `isActive(href, currentUrl)` | اعتبارسنجی وضعیت فعال صفحه نسبت به URL جاری |
+| `getNavigation(locale, currentUrl?)` | تابع سازگار با گذشته (alias به `getDrawerNavigation`) |
 
 ### `src/libs/content/*`
 
@@ -1785,7 +1841,7 @@ JSON Schema است):
 | نوع | محل |
 | --- | --- |
 | `Locale` · `LocaleMeta` | `src/i18n/locales.ts` |
-| `NavItem` | `src/libs/config/navigation.ts` |
+| `NavItem` · `FooterColumn` · `NavigationSlots` | `src/libs/config/navigation.ts` |
 | `SiteRoute` · `SiteRouteProps` · `BreadcrumbItem` · `BreadcrumbLabels` | `src/libs/content/service.ts` |
 | `ContentEntryId` · `ContentEntryLike` · `DatedContentEntry` | `src/libs/content/entries.ts` |
 | `PageSlice` · `PageWindowEntry` | `src/libs/content/pagination.ts` |
