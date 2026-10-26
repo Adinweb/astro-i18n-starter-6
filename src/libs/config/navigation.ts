@@ -27,6 +27,17 @@ export interface NavigationSlots {
 }
 
 /**
+ * Declarative configuration item for extending or customizing navigation items.
+ */
+export interface NavItemConfig {
+  key: string;
+  label: (locale: Locale) => string;
+  href?: string | ((locale: Locale) => Promise<string | null | undefined>);
+  external?: boolean;
+  children?: NavItemConfig[];
+}
+
+/**
  * Pages shown in the default navigation lists. A page's navigation key is
  * its content group, which is also the `nav_<key>` message key that
  * `new:page` registers.

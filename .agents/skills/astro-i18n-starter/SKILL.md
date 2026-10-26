@@ -1,135 +1,58 @@
 ---
 name: "astro-i18n-starter"
-description: "Workflows, architecture, CLI automation commands, and RTL/LTR rules for developing, maintaining, and extending the Astro v7 i18n SSG starter template."
+description: "Workflows, architecture, multi-menu navigation, CLI automation commands, and RTL/LTR rules for developing, maintaining, and extending the Astro v7 i18n SSG starter template."
 ---
 
 # Astro i18n Starter Skill Guide
 
-This skill provides step-by-step procedures for AI agents to interact with this Astro v7 multilingual static site generator (SSG) template.
+This skill coordinates workflows for developing, maintaining, and extending this production-grade Astro v7 multilingual static site generator (SSG) template with native RTL/LTR support.
+
+## Core Directives & Prime Invariants
+
+1. **One Source of Truth (SSOT)**:
+   - Locales & directions: `src/i18n/locales.ts` and `project.inlang/settings.json`.
+   - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
+   - Content schemas: `src/content.config.ts`.
+   - Navigation slots: `src/libs/config/navigation.ts` (`getNavigationSlots`).
+   - Application & brand config: `app.config.json` -> `src/libs/config/app.ts`.
+   - Semantic tokens: `src/styles/global.css`.
+   - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
+2. **Lean Router Dispatcher**:
+   - Centralized exclusively in `src/pages/[...path].astro` -> `src/views/`. Never create dynamic route files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
+3. **Prefix-less Default Locale**:
+   - Default locale (`en`) has NO prefix (`/`, `/about`, `/blog/first-post`). Non-default locales (`de`, `fr`, `fa`, `ar`) have prefixes (`/fa/درباره-ما`).
+4. **RTL-Native Discipline**:
+   - Always use CSS logical properties (`ms-`, `me-`, `ps-`, `pe-`, `start-*`, `end-*`, `text-start`, `text-end`, `border-s-*`, `border-e-*`). Never use physical directions.
+5. **Idempotent Client Scripts**:
+   - Guard DOM listeners in Astro components with `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';`.
+6. **Static Language Switching**:
+   - Use `window.location.assign(target)` rather than client-side SPA view transitions so `<html lang dir>` and font stacks are fully applied.
 
 ---
 
-## 1. Core Architecture & Rules
+## Domain Routing Table
 
-### Symmetrical Content Layout
-Every content entry lives in a group folder containing synchronized `<locale>.mdx` files:
-```text
-src/content/{collection}/{group}/{locale}.mdx
-```
-* **Identity**: The directory name `{group}` is the universal entity identity.
-* **Slug**: Specified in frontmatter `slug: "..."` (localized per language).
-* **Drafts**: Excluded from production routing when `draft: true`.
+To perform work in this repository, identify your specific task and read the indicated reference file:
 
-### Routing Dispatcher
-Physical route handling is centralized in `src/pages/[...path].astro`.
-* `getStaticPaths()` calls `getSiteRoutes()` in `src/libs/content/service.ts`.
-* Dispatches to `PageView.astro`, `BlogPostView.astro`, or `BlogIndexView.astro`.
-* **Rule**: Never create competing dynamic files (e.g. `src/pages/[locale].astro` or `src/pages/blog/[slug].astro`).
+| Task / Domain | Action / Reference File |
+| :--- | :--- |
+| **Content Pipeline & Routing**<br>Collections schemas, pure URL paths, lean router dispatcher, blog engine, pagination, Atom feeds, and sitemaps | ➡️ Read `references/content-and-routing.md` |
+| **Multi-Menu Navigation**<br>Header dropdowns, mobile drawer tabs, 4-column footer, active states, slot resolvers | ➡️ Read `references/navigation.md` |
+| **CLI Automation Suite**<br>Scaffolding pages/posts, deleting content, language lifecycle, batch translations, asset generation | ➡️ Read `references/cli-automation.md` |
+| **RTL, Typography & Styling**<br>CSS logical properties, font stacks, LTR code block isolation, OKLCH tokens, SVG icon catalog | ➡️ Read `references/rtl-styling.md` |
+| **Testing, Linting & QA**<br>Paraglide compile, Vitest unit tests, i18n parity audit, production build, smoke tests, Knip | ➡️ Read `references/verification.md` |
 
 ---
 
-## 2. Operating the CLI Automation Suite
+## Quick Command Reference
 
-Always run scripts from the project root using `pnpm run <command>`.
-
-### Scaffolding Content
-* **Add a new static page:**
-  ```bash
-  pnpm run new:page <page-key> -- --title="<Title>" [--from=<locale>] [--publish] [--slug:<locale>="<native-slug>"]
-  ```
-* **Add a new blog post:**
-  ```bash
-  pnpm run new:post <post-slug> -- [--title="<Title>"] [--from=<locale>] [--publish] [--slug:<locale>="<native-slug>"]
-  ```
-  * Only the **source locale** is published by default; the other locales are written
-    as `draft: true` until they are translated. `--publish` publishes all of them,
-    `--draft` drafts all of them.
-  * `--from` selects the source locale, it does not copy another article's body
-    (use `--clone-from=<group>` for that).
-
-### Removing Content
-* **Delete a page and clean its navigation dictionary key:**
-  ```bash
-  pnpm run remove:page <page-key> -- --force
-  ```
-  * With `--locale=<locale>` only that locale's file is deleted; the navigation key
-    stays in every dictionary (the dictionaries always carry the same key set) and the
-    i18n audit reports the missing locale as a warning.
-* **Delete an entire blog article across all languages:**
-  ```bash
-  pnpm run remove:post <post-slug> -- --force
-  ```
-
-### Language Operations
-* **Add a new language:**
-  ```bash
-  pnpm run i18n:add-lang -- <locale> --name="<Display Name>" [--dir="ltr|rtl"] --with-content --from=en
-  ```
-* **Remove a language:**
-  ```bash
-  pnpm run i18n:remove-lang -- <locale> --with-content --force
-  ```
-
-### Translation & UI Automation
-* **Adapt external Tailwind components to logical properties and semantic tokens:**
-  ```bash
-  pnpm run block:adapt -- --file=src/components/MyComponent.astro
-  ```
-* **Extract user-visible copy to Paraglide:**
-  ```bash
-  pnpm run i18n:extract -- --target=src/components/MyComponent.astro --key=mycomp --auto-add --replace
-  ```
-* **Add a translation key manually:**
-  ```bash
-  pnpm run i18n:add -- --category=<category> --key=<key> --en="..." --fa="..." --ar="..." --de="..." --fr="..."
-  ```
-
----
-
-## 3. RTL & Styling Guidelines
-
-* **Logical Properties Mandatory**:
-  * Margin/Padding: `ms-*` (start), `me-*` (end), `ps-*`, `pe-*`
-  * Position: `start-*`, `end-*`
-  * Alignment: `text-start`, `text-end`
-  * Border/Radius: `border-s-*`, `border-e-*`, `rounded-s-*`, `rounded-e-*`
-  * Mirroring: `<span class="inline-block rtl:rotate-180">→</span>`
-* **Semantic Theme Tokens**:
-  * Backgrounds: `bg-bg`, `bg-surface`, `bg-surface-hover`
-  * Text: `text-fg`, `text-muted`
-  * Borders: `border-border`
-  * Brand roles: `primary`, `secondary`, `accent`, `neutral` — each with an `-fg` partner (`bg-primary text-primary-fg`)
-  * Status roles: `info`, `success`, `warning`, `error` — each with an `-fg` partner (`bg-success text-success-fg`)
-  * Never hardcode hex colours; all roles live in `src/styles/global.css`
-* **Font Stacks**: Handled in `src/styles/global.css` via `:lang(fa)` and `:lang(ar)`.
-
----
-
-## 4. Verification & QA Protocol
-
-Run the full verification suite after making structural changes:
+All scripts support both `npm run` and `pnpm run`:
 
 ```bash
-# 1. Typecheck
-pnpm run lint
-
-# 2. Unit tests (Vitest)
-pnpm test
-
-# 3. i18n Dictionary and Content Parity Audit
-pnpm run audit:i18n
-
-# 4. Production Static Build
-pnpm run build
-
-# 5. End-to-end Smoke Test on dist/
-pnpm run smoke
-
-# 6. Dead Code / Dependency Check
-pnpm run knip
-
-# 7. End-to-end check of every documented CLI workflow (45 claims, temp copy)
-pnpm run verify:cli
+npm run lint          # paraglide compile + astro check + tsc --noEmit
+npm test              # Vitest test suite (12 suites, 137 unit tests)
+npm run audit:i18n    # 5-stage i18n completeness and parity audit
+npm run build         # Production SSG build + Pagefind indexing
+npm run smoke         # Post-build HTML validation over dist/
+npm run verify:cli    # 45 end-to-end CLI workflow assertions
 ```
-
-All 7 commands must exit with code 0.

@@ -270,20 +270,57 @@ SITE_URL=https://example.com pnpm run build
   "site": {
     "name": "Astro i18n Starter",
     "shortName": "Astro i18n",
-    "description": "Production-grade, multi-lingual Astro v7 starter template with RTL support.",
-    "socialImage": { "path": "/og-default.png", "width": 1200, "height": 630 }
+    "description": "Production-grade, multi-lingual Astro v7 starter template with native RTL and LTR support.",
+    "author": "Astro Starter Team",
+    "socialImage": {
+      "path": "/og-default.png",
+      "width": 1200,
+      "height": 630
+    }
   },
   "brand": {
+    "defaultTheme": "system",
     "themeColor": "#4338ca",
+    "darkThemeColor": "#0f172a",
     "backgroundColor": "#f8fafc",
-    "appleTouchIcon": { "file": "apple-touch-icon.png", "size": 180 },
+    "appleTouchIcon": {
+      "file": "apple-touch-icon.png",
+      "size": 180
+    },
     "icons": [
-      { "file": "icon-192.png", "size": 192, "purpose": "any" },
-      { "file": "icon-512.png", "size": 512, "purpose": "any" }
+      {
+        "file": "icon-192.png",
+        "size": 192,
+        "purpose": "any"
+      },
+      {
+        "file": "icon-512.png",
+        "size": 512,
+        "purpose": "any"
+      }
     ]
   },
-  "blog": { "postsPerPage": 9 },
-  "server": { "host": "0.0.0.0", "port": 3000 }
+  "ui": {
+    "showSearch": true,
+    "showThemeToggle": true,
+    "showLanguageSwitcher": true,
+    "showTopLoadingBar": true,
+    "stickyHeader": true
+  },
+  "blog": {
+    "postsPerPage": 9,
+    "showReadingTime": true,
+    "showTableOfContents": true,
+    "showRelatedPosts": true
+  },
+  "social": {
+    "github": "https://github.com",
+    "twitter": ""
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 3000
+  }
 }
 ```
 
@@ -293,13 +330,19 @@ SITE_URL=https://example.com pnpm run build
 | فیلد | قاعده |
 | --- | --- |
 | `site.name` / `shortName` / `description` | رشتهٔ غیرخالی |
+| `site.author` | رشتهٔ اختیاری (پیش‌فرض: `'Astro Starter Team'`) |
 | `site.socialImage.path` | باید با `/` شروع شود |
 | `site.socialImage.width` / `height` | عدد صحیح مثبت |
+| `brand.defaultTheme` | یکی از `'system'`، `'light'` یا `'dark'` (پیش‌فرض: `'system'`) |
 | `brand.themeColor` / `backgroundColor` | hex شش‌رقمی (`#4338ca`) |
+| `brand.darkThemeColor` | hex شش‌رقمی اختیاری برای تم تیره |
 | `brand.icons` | آرایهٔ غیرخالی از `{ file, size, purpose }` |
+| `ui` | پرچم‌های بولین (`showSearch`, `showThemeToggle`, `showLanguageSwitcher`, `showTopLoadingBar`, `stickyHeader`) |
 | `blog.postsPerPage` | عدد صحیح مثبت |
+| `blog` | پرچم‌های بولین نمایش (`showReadingTime`, `showTableOfContents`, `showRelatedPosts`) |
+| `social.github` / `twitter` | رشته‌های اختیاری آدرس شبکه‌های اجتماعی |
 | `server.port` | عدد صحیح بین ۱ و ۶۵۵۳۵ |
-| `server.host` | رشتهٔ غیرخالی |
+| `server.host` | رشتهٔ غیرخالی (`0.0.0.0`) |
 
 ### `project.inlang/settings.json`
 
@@ -1031,6 +1074,7 @@ pre, code, .math {
 | `--color-warning` / `--color-warning-fg` | هشدار |
 | `--color-error` / `--color-error-fg` | خطا / اقدام مخرب |
 | `--color-glass` / `--color-glass-hover` / `--color-glass-border` / `--color-glass-control` | پالت شیشه‌ای |
+| `--color-hero-base` | پایهٔ تیره و مستقل از تم در پشت بخش هیرو |
 | `--shadow-glass` | سایهٔ سطوح شیشه‌ای |
 
 پالت معنایی از **DaisyUI** الهام گرفته است — `primary`، `secondary`، `accent`،
@@ -1075,7 +1119,8 @@ pre, code, .math {
 | `BlogPostHeroContent.astro` | `title`, `description?`, `locale`, `categories`, `author?`, `body?`, `publishedAt`, `breadcrumbs` | محتوای هیروی مقاله (از `HeroCopy` استفاده می‌کند) |
 | `PostCard.astro` | `post`, `locale`, `href`, `priority?` | کارت مقاله در فهرست |
 | `LanguageSwitcher.astro` | `currentLocale`, `alternates` | تعویض زبان با بارگذاری کامل |
-| `SearchModal.astro` | `locale` | جستجو (Pagefind در پروداکشن) |
+| `SearchModal.astro` | `locale` | مودال جستجوی دسکتاپ (Pagefind در پروداکشن / fallback استاتیک) |
+| `DrawerSearch.astro` | `locale` | جستجوی درون کشوی موبایل هماهنگ با تب‌بندی کشو |
 | `Seo.astro` | `title`, `description?`, `locale`, `url`, `alternates`, `siteName?`, `image?`, `type?`, `publishedTime?`, `schema?`, `noindex?`, `prevUrl?`, `nextUrl?` | همهٔ متادیتای SEO |
 | `TopLoadingBar.astro` | — | نوار پیشرفت ناوبری |
 
@@ -1105,7 +1150,8 @@ pre, code, .math {
 
 ### افزودن آیکون
 
-نمادهای موجود: `search`، `globe`، `close`، `check`، `menu`، `chevron-left`، `sun`، `moon`، `copy`.
+نمادهای موجود در اسپرایت SVG (`src/pages/icons.svg.ts`):
+`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link`.
 
 ```ts
 // src/pages/icons.svg.ts
@@ -1381,19 +1427,21 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 
 ## ۱۴. جستجو
 
-`src/components/SearchModal.astro`:
+سیستم جستجو در کل سایت از طریق یک کتابخانهٔ مشترک سمت کلاینت (`src/libs/search/client.ts`) پیاده‌سازی شده و در دو کامپوننت ارائه می‌شود:
+۱. **مودال دسکتاپ (`SearchModal.astro`)**: با کلیک روی آیکون جستجو یا کلید میان‌بر `⌘K` / `Ctrl+K`.
+۲. **تب جستجوی کشوی موبایل (`DrawerSearch.astro`)**: مستقیماً درون تب جستجوی کشوی موبایل تعبیه شده و بدون نیاز به باز کردن دیالوگ جداگانه، تجربهٔ جستجوی بومی موبایل را فراهم می‌کند.
 
-| رفتار | جزئیات |
+| رفتار | جزئیات فنی |
 | --- | --- |
-| باز کردن | کلیک روی دکمهٔ جستجو (هر جای صفحه) یا میان‌بر `⌘K` / `Ctrl+K` |
-| بستن | `ESC`، کلیک روی پس‌زمینه، دکمهٔ بستن، یا کلیک روی یک نتیجه |
-| پروداکشن | ابتدا Pagefind از `/pagefind/pagefind.js` (ایندکس ساخته‌شده در بیلد) |
-| نبود Pagefind | fallback به `/api/search-dev.json` — هم در توسعه و هم در بیلد تولیدی |
-| فیلتر زبان | نتایج فهرست fallback فقط برای `locale` جاری نمایش داده می‌شوند |
-| debounce | ۱۵۰ میلی‌ثانیه |
-| سقف نتیجه | ۶ نتیجه |
-| محافظت از رقابت | هر درخواست یک `requestId` دارد؛ نتیجهٔ قدیمی نوشته نمی‌شود |
-| ایمنی | `excerpt` صفحه‌کلید به متن ساده تبدیل می‌شود، سپس با `textContent` درج می‌گردد |
+| دسترسی | کلیک روی دکمهٔ جستجو، باز کردن تب جستجوی کشو در موبایل، یا میان‌بر `⌘K` / `Ctrl+K` |
+| بستن | کلید `ESC`، کلیک روی پس‌زمینه (Backdrop)، دکمهٔ بستن، یا کلیک روی هر نتیجهٔ جستجو |
+| موتور پروداکشن | لود تنبل (Lazy-load) ماژول Pagefind از `/pagefind/pagefind.js` که در زمان بیلد ایندکس می‌شود |
+| حالت بدون Pagefind (توسعه/فالبک) | فالبک آنی به `/api/search-dev.json` — هم در محیط توسعه و هم در صورت در دسترس نبودن ایندکس Pagefind |
+| فیلتر زبان | نتایج فالبک فقط برای زبان (`locale`) جاری صفحه فیلتر و رندر می‌شوند |
+| کنترل زمان (Debounce) | ۱۵۰ میلی‌ثانیه برای جلوگیری از ارسال درخواست‌های پیاپی |
+| سقف تعداد نتایج | ۸ نتیجهٔ برتر (`slice(0, 8)`) |
+| محافظت از رقابت (Race-Condition) | شناسهٔ فزایندهٔ `requestId`؛ پاسخ‌های دیررس جستجوهای قبلی نادیده گرفته می‌شوند |
+| امنیت در برابر XSS | تبدیل مارک‌آپ خلاصه‌های Pagefind به متن ساده توسط `plainText()` و درج امن با `textContent` |
 
 > `/api/search-dev.json` از همان `getSiteRoutes()` ساخته می‌شود، پس URLها،
 > اسلاگ‌های محلی‌شده و فیلتر پیش‌نویس همیشه با سایت بیلدشده یکی هستند.
