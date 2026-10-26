@@ -352,7 +352,7 @@ const structuredData = schema ?? {
     <div
       id="mobile-nav-menu"
       data-mobile-menu
-      class="fixed inset-0 z-50 pointer-events-none invisible transition-[visibility] duration-300 lg:hidden"
+      class="fixed inset-0 z-50 overflow-hidden pointer-events-none lg:hidden"
       role="dialog"
       aria-modal="true"
       aria-label={m.common_menu({}, { locale })}
@@ -360,14 +360,15 @@ const structuredData = schema ?? {
       <!-- Backdrop with blur -->
       <div
         data-mobile-backdrop
-        class="absolute inset-0 bg-black/60 backdrop-blur-xs opacity-0 transition-opacity duration-300 ease-out"
+        class="fixed inset-0 bg-black/60 backdrop-blur-xs"
         aria-hidden="true"
       ></div>
 
       <!-- Drawer Panel with independent scrolling -->
       <aside
         data-mobile-panel
-        class="relative flex h-full w-84 max-w-[85vw] flex-col bg-surface text-fg shadow-2xl transition-transform duration-300 ease-out -translate-x-full rtl:translate-x-full pointer-events-auto sm:w-96"
+        inert
+        class="fixed inset-y-0 start-0 flex h-full w-84 max-w-[85vw] flex-col bg-surface text-fg shadow-2xl pointer-events-auto sm:w-96"
       >
         <!-- Drawer Header -->
         <div class="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border px-4 bg-surface">
@@ -694,17 +695,6 @@ const structuredData = schema ?? {
         outline: 2px solid var(--color-primary);
         outline-offset: 2px;
       }
-
-      @media (prefers-reduced-motion: reduce) {
-        html {
-          scroll-behavior: auto;
-        }
-        [data-mobile-menu],
-        [data-mobile-backdrop],
-        [data-mobile-panel] {
-          transition-duration: 0.01ms !important;
-        }
-      }
     </style>
 
     <script>
@@ -728,9 +718,6 @@ const structuredData = schema ?? {
         const backdrop = drawer.querySelector<HTMLElement>('[data-mobile-backdrop]');
         const panel = drawer.querySelector<HTMLElement>('[data-mobile-panel]');
         const closeBtn = drawer.querySelector<HTMLButtonElement>('[data-close-menu]');
-
-        let isOpen = false;
-        let closeTimer: number | undefined;
 
         function switchTab(targetTab: 'nav' | 'search') {
           const tabNav = drawer?.querySelector<HTMLButtonElement>('[data-drawer-tab="nav"]');
@@ -759,49 +746,31 @@ const structuredData = schema ?? {
 
             if (!isNav) {
               const searchInput = panelSearch.querySelector<HTMLInputElement>('[data-drawer-search-input]');
-              requestAnimationFrame(() => searchInput?.focus());
+              setTimeout(() => searchInput?.focus(), 320);
             }
           }
         }
 
         const open = (tab: 'nav' | 'search' = 'nav') => {
-          if (isOpen) {
+          if (drawer.classList.contains('is-open')) {
             switchTab(tab);
             return;
           }
-          if (closeTimer) clearTimeout(closeTimer);
-          isOpen = true;
 
           switchTab(tab);
           menuBtn?.setAttribute('aria-expanded', 'true');
           document.body.style.overflow = 'hidden';
-
-          drawer.classList.remove('invisible', 'pointer-events-none');
-
-          requestAnimationFrame(() => {
-            backdrop?.classList.remove('opacity-0');
-            backdrop?.classList.add('opacity-100');
-            panel?.classList.remove('-translate-x-full', 'rtl:translate-x-full');
-            panel?.classList.add('translate-x-0');
-          });
+          if (panel) panel.inert = false;
+          drawer.classList.add('is-open');
         };
 
         const close = () => {
-          if (!isOpen) return;
-          isOpen = false;
+          if (!drawer.classList.contains('is-open')) return;
+
           menuBtn?.setAttribute('aria-expanded', 'false');
           document.body.style.overflow = '';
-
-          backdrop?.classList.remove('opacity-100');
-          backdrop?.classList.add('opacity-0');
-          panel?.classList.remove('translate-x-0');
-          panel?.classList.add('-translate-x-full', 'rtl:translate-x-full');
-
-          closeTimer = window.setTimeout(() => {
-            if (!isOpen) {
-              drawer.classList.add('invisible', 'pointer-events-none');
-            }
-          }, 300);
+          if (panel) panel.inert = true;
+          drawer.classList.remove('is-open');
         };
 
         menuBtn?.addEventListener('click', () => open('nav'));
@@ -810,7 +779,7 @@ const structuredData = schema ?? {
         backdrop?.addEventListener('click', close);
 
         document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape' && isOpen) {
+          if (event.key === 'Escape' && drawer.classList.contains('is-open')) {
             close();
           }
         });
