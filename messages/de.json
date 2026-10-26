@@ -58,6 +58,12 @@
   "common_updated_on": "Aktualisiert am",
   "drawer_tab_nav": "Navigation",
   "drawer_tab_search": "Suche",
+  "footer_col_company": "Unternehmen",
+  "footer_col_legal": "Rechtliches",
+  "footer_col_product": "Produkt",
+  "footer_col_resources": "Ressourcen",
+  "footer_legal_privacy": "Datenschutzerklärung",
+  "footer_legal_terms": "Nutzungsbedingungen",
   "items_count": [
     {
       "declarations": [
@@ -76,6 +82,7 @@
   "nav_about": "Über uns",
   "nav_blog": "Blog",
   "nav_design_system": "Design-System",
+  "nav_documentation": "Dokumentation",
   "nav_explore": "Mehr entdecken",
   "nav_features": "Funktionen",
   "nav_home": "Startseite",

@@ -26,11 +26,51 @@ const brandIconSchema = z.object({
   purpose: z.string().min(1),
 });
 
-const appConfigSchema = z.object({
+export const themeModeSchema = z.enum(['system', 'light', 'dark']);
+export type ThemeMode = z.infer<typeof themeModeSchema>;
+
+export const uiConfigSchema = z.object({
+  showSearch: z.boolean().default(true),
+  showThemeToggle: z.boolean().default(true),
+  showLanguageSwitcher: z.boolean().default(true),
+  showTopLoadingBar: z.boolean().default(true),
+  stickyHeader: z.boolean().default(true),
+});
+export type UiConfig = z.infer<typeof uiConfigSchema>;
+
+export const blogConfigSchema = z.object({
+  postsPerPage: z.number().int().positive(),
+  showReadingTime: z.boolean().default(true),
+  showTableOfContents: z.boolean().default(true),
+  showRelatedPosts: z.boolean().default(true),
+});
+export type BlogConfig = z.infer<typeof blogConfigSchema>;
+
+export const socialConfigSchema = z.object({
+  github: z.string().optional().default(''),
+  twitter: z.string().optional().default(''),
+});
+export type SocialConfig = z.infer<typeof socialConfigSchema>;
+
+export const defaultUiConfig: UiConfig = {
+  showSearch: true,
+  showThemeToggle: true,
+  showLanguageSwitcher: true,
+  showTopLoadingBar: true,
+  stickyHeader: true,
+};
+
+export const defaultSocialConfig: SocialConfig = {
+  github: '',
+  twitter: '',
+};
+
+export const appConfigSchema = z.object({
   site: z.object({
     name: z.string().min(1),
     shortName: z.string().min(1),
     description: z.string().min(1),
+    author: z.string().optional().default('Astro Starter Team'),
     socialImage: z.object({
       path: z.string().startsWith('/'),
       width: z.number().int().positive(),
@@ -38,6 +78,7 @@ const appConfigSchema = z.object({
     }),
   }),
   brand: z.object({
+    defaultTheme: themeModeSchema.default('system'),
     themeColor: hexColor,
     darkThemeColor: hexColor.optional(),
     backgroundColor: hexColor,
@@ -47,22 +88,24 @@ const appConfigSchema = z.object({
     }),
     icons: z.array(brandIconSchema).min(1),
   }),
-  blog: z.object({
-    postsPerPage: z.number().int().positive(),
-  }),
+  ui: uiConfigSchema.default(defaultUiConfig),
+  blog: blogConfigSchema,
+  social: socialConfigSchema.default(defaultSocialConfig),
   server: z.object({
     host: z.string().min(1),
     port: z.number().int().min(1).max(65535),
   }),
 });
 
-const appConfig = appConfigSchema.parse(rawConfig);
+export const appConfig = appConfigSchema.parse(rawConfig);
 
 const siteConfigSchema = z.object({
   url: z.url(),
   name: z.string().min(1),
   shortName: z.string().min(1),
   description: z.string().min(1),
+  author: z.string(),
+  defaultTheme: themeModeSchema,
   themeColor: hexColor,
   darkThemeColor: hexColor,
   backgroundColor: hexColor,
@@ -71,6 +114,9 @@ const siteConfigSchema = z.object({
   ogImageHeight: z.number().int().positive(),
   appleTouchIcon: z.string().min(1),
   icons: z.array(brandIconSchema).min(1),
+  ui: uiConfigSchema,
+  blog: blogConfigSchema,
+  social: socialConfigSchema,
 });
 
 export const siteConfig = siteConfigSchema.parse({
@@ -81,6 +127,8 @@ export const siteConfig = siteConfigSchema.parse({
   name: appConfig.site.name,
   shortName: appConfig.site.shortName,
   description: appConfig.site.description,
+  author: appConfig.site.author,
+  defaultTheme: appConfig.brand.defaultTheme,
   /** Browser chrome colour; mirrors `--color-primary` in `src/styles/global.css`. */
   themeColor: appConfig.brand.themeColor,
   /** Browser chrome colour in dark mode; mirrors dark `--color-bg`. */
@@ -92,10 +140,22 @@ export const siteConfig = siteConfigSchema.parse({
   ogImageHeight: appConfig.site.socialImage.height,
   appleTouchIcon: appConfig.brand.appleTouchIcon.file,
   icons: appConfig.brand.icons,
+  ui: appConfig.ui,
+  blog: appConfig.blog,
+  social: appConfig.social,
 });
 
 /** How many posts one blog index page holds. */
 export const POSTS_PER_PAGE = appConfig.blog.postsPerPage;
+
+/** Direct export for UI feature toggles. */
+export const UI_CONFIG = siteConfig.ui;
+
+/** Direct export for blog presentation toggles. */
+export const BLOG_CONFIG = siteConfig.blog;
+
+/** Direct export for external social links. */
+export const SOCIAL_CONFIG = siteConfig.social;
 
 /** Id of the hero's `<h1>`, used by `aria-labelledby` on the hero region. */
 export const HERO_TITLE_ID = 'page-hero-title';

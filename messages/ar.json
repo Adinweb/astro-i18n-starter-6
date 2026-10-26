@@ -58,6 +58,12 @@
   "common_updated_on": "حُدِّث في",
   "drawer_tab_nav": "التنقل",
   "drawer_tab_search": "البحث",
+  "footer_col_company": "الشركة",
+  "footer_col_legal": "الشروط القانونية",
+  "footer_col_product": "المنتجات",
+  "footer_col_resources": "المصادر",
+  "footer_legal_privacy": "سياسة الخصوصية",
+  "footer_legal_terms": "شروط الخدمة",
   "items_count": [
     {
       "declarations": [
@@ -77,6 +83,7 @@
   "nav_about": "من نحن",
   "nav_blog": "المدونة",
   "nav_design_system": "نظام التصميم",
+  "nav_documentation": "التوثيق",
   "nav_explore": "استكشف المزيد",
   "nav_features": "المميزات",
   "nav_home": "الرئيسية",

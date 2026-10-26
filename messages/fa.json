@@ -58,6 +58,12 @@
   "common_updated_on": "به‌روزرسانی در",
   "drawer_tab_nav": "ناوبری",
   "drawer_tab_search": "جستجو",
+  "footer_col_company": "سازمان",
+  "footer_col_legal": "قوانین و حقوقی",
+  "footer_col_product": "محصولات",
+  "footer_col_resources": "منابع",
+  "footer_legal_privacy": "حریم خصوصی",
+  "footer_legal_terms": "شرایط استفاده",
   "items_count": [
     {
       "declarations": [
@@ -76,6 +82,7 @@
   "nav_about": "درباره ما",
   "nav_blog": "وبلاگ",
   "nav_design_system": "سیستم طراحی",
+  "nav_documentation": "مستندات",
   "nav_explore": "کاوش بیشتر",
   "nav_features": "ویژگی‌ها",
   "nav_home": "خانه",

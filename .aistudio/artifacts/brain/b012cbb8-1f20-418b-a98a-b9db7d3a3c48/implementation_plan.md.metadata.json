@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan for introducing a typed multi-menu navigation architecture in the Astro v7 SSG starter, providing distinct menu definitions and layout assignments for the desktop header, mobile drawer, and multi-column footer while maintaining full i18n, RTL/LTR discipline, and backward compatibility.",
+  "updatedAt":  "2026-10-26T04:14:21.940330843Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

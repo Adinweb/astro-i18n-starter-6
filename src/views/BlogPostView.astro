@@ -35,11 +35,11 @@ const { entry, locale, alternates, url } = Astro.props;
 const { Content, headings } = await render(entry);
 const { title, description, image, categories, tags, author, publishedAt, updatedAt } = entry.data;
 
-const tocHeadings = filterTocHeadings(headings);
+const tocHeadings = siteConfig.blog.showTableOfContents ? filterTocHeadings(headings) : [];
 const allPosts = await getCollection('blog');
 const localePosts = getSortedLocaleEntries(allPosts, locale);
 const { newer: newerPost, older: olderPost } = getAdjacentPosts(localePosts, entry.id);
-const relatedPosts = getRelatedPosts(localePosts, entry, 2);
+const relatedPosts = siteConfig.blog.showRelatedPosts ? getRelatedPosts(localePosts, entry, 2) : [];
 
 const breadcrumbs = getBreadcrumbs(url, locale, {
   home: m.nav_home({}, { locale }),
