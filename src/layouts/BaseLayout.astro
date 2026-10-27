@@ -17,6 +17,7 @@ import Icon from '@/components/Icon.astro';
 import DrawerSearch from '@/components/DrawerSearch.astro';
 import '@/styles/global.css';
 import '@/styles/prose.css';
+import '@/styles/reveal.css';
 
 interface Props {
   title: string;
@@ -90,7 +91,7 @@ const structuredData = schema ?? {
   lang={meta.htmlLang}
   dir={meta.dir}
   data-default-theme={siteConfig.defaultTheme}
-  class="scroll-smooth scroll-pt-24"
+  class="scroll-pt-24"
   style={`font-family: ${meta.fontFamily};`}
 >
   <head>
@@ -106,6 +107,12 @@ const structuredData = schema ?? {
     <meta name="generator" content={Astro.generator} />
     <script is:inline>
       (function () {
+        document.documentElement.classList.add('js');
+        if (typeof window !== 'undefined' && 'onscrollend' in window) {
+          try {
+            delete window.onscrollend;
+          } catch (_) {}
+        }
         function resolveTheme() {
           try {
             var stored = window.localStorage.getItem('theme');
@@ -116,6 +123,7 @@ const structuredData = schema ?? {
           return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
         function applyToDocument(doc, theme) {
+          doc.documentElement.classList.add('js');
           doc.documentElement.dataset.theme = theme;
           var meta = doc.querySelector('meta[name="theme-color"]');
           if (meta) {
@@ -374,13 +382,14 @@ const structuredData = schema ?? {
       <!-- Backdrop with blur -->
       <div
         data-mobile-backdrop
-        class="fixed inset-0 bg-black/60 backdrop-blur-xs"
+        class="fixed inset-0 bg-scrim backdrop-blur-xs"
         aria-hidden="true"
       ></div>
 
       <!-- Drawer Panel with independent scrolling -->
       <aside
         data-mobile-panel
+        data-lenis-prevent
         inert
         class="fixed inset-y-0 start-0 flex h-full w-84 max-w-[85vw] flex-col bg-surface text-fg shadow-2xl pointer-events-auto sm:w-96"
       >
@@ -534,7 +543,7 @@ const structuredData = schema ?? {
                           return (
                             <span class="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2 text-xs text-muted opacity-40 cursor-not-allowed">
                               <span>{meta.name}</span>
-                              <span class="text-[10px] uppercase">{loc}</span>
+                              <span lang="en" dir="ltr" class="text-[10px] uppercase">{loc}</span>
                             </span>
                           );
                         }
@@ -553,7 +562,7 @@ const structuredData = schema ?? {
                           >
                             <span class="truncate">{meta.name}</span>
                             <div class="flex items-center gap-1">
-                              <span class:list={['text-[10px] uppercase', isCurrent ? 'opacity-90' : 'opacity-60']}>{loc}</span>
+                              <span lang="en" dir="ltr" class:list={['text-[10px] uppercase', isCurrent ? 'opacity-90' : 'opacity-60']}>{loc}</span>
                               {isCurrent && <Icon name="check" size={12} class="shrink-0" />}
                             </div>
                           </a>
@@ -716,6 +725,8 @@ const structuredData = schema ?? {
 
     <script>
       import { formatYear } from '@/i18n/format';
+      import '@/scripts/lenis';
+      import '@/scripts/reveal';
 
       function updateYear() {
         const year = new Date().getFullYear();
@@ -776,6 +787,7 @@ const structuredData = schema ?? {
 
           switchTab(tab);
           menuBtn?.setAttribute('aria-expanded', 'true');
+          document.documentElement.style.overflow = 'hidden';
           document.body.style.overflow = 'hidden';
           if (panel) panel.inert = false;
           drawer.classList.add('is-open');
@@ -785,6 +797,7 @@ const structuredData = schema ?? {
           if (!drawer.classList.contains('is-open')) return;
 
           menuBtn?.setAttribute('aria-expanded', 'false');
+          document.documentElement.style.overflow = '';
           document.body.style.overflow = '';
           if (panel) panel.inert = true;
           drawer.classList.remove('is-open');

@@ -46,6 +46,7 @@
 | زبان جدید اضافه یا حذف کنم | [۸. مدیریت زبان](#۸-مدیریت-زبان) |
 | مشکل RTL یا فونت دارم | [۹. RTL](#۹-rtl-و-ویژگیهای-منطقی) |
 | توکن‌ها و استایل‌ها را تغییر دهم | [۱۰. سیستم طراحی](#۱۰-سیستم-طراحی) |
+| به عناصر صفحه انیمیشن اسکرول (Scroll Reveal) بدهم | [۱۰. سیستم طراحی — انیمیشن‌های اسکرول](#انیمیشنهای-اسکرول-scroll-reveal-و-اسکرول-نرم-lenis) |
 | صفحه‌بندی، فیلتر یا JSON-LD وبلاگ را تغییر دهم | [۱۳. وبلاگ](#۱۳-وبلاگ) |
 | جستجو را تنظیم کنم | [۱۴. جستجو](#۱۴-جستجو) |
 | متادیتای SEO و endpointها را تغییر دهم | [۱۵. SEO](#۱۵-seo-متادیتا-و-endpointها) |
@@ -75,7 +76,8 @@
 | **ابزار CLI** | ۱۴ اسکریپت برای ساخت/حذف صفحه و مقاله، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، تولید تصاویر |
 | **کیفیت** | TypeScript strict، `astro check`، تست‌های واحد Vitest، ۴۵ تست سرتاسری CLI، ممیزی i18n پنج‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
 | **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
-| **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، `prefers-reduced-motion` |
+| **حرکت و اسکرول** | اسکرول نرم با **Lenis** + سیستم **Scroll Reveal** پیش‌رونده (`<Reveal>` و `.reveal`) با پشتیبانی خودکار RTL (`start`/`end`)، پلکانی‌سازی گروهی (`.reveal-stagger`) و سازگاری کامل با View Transitions |
+| **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، کنترل حرکت (`data-motion="reduced"`) |
 
 ---
 
@@ -110,6 +112,7 @@ pnpm preview      # پیش‌نمایش خروجی بیلدشده
 | `@fontsource-variable/vazirmatn` | فونت variable فارسی |
 | `@fontsource-variable/noto-sans-arabic` | فونت variable عربی |
 | `pagefind` | ساخت ایندکس جستجوی ایستا در مرحلهٔ بیلد |
+| `lenis` | اسکرول نرم (Smooth Scroll) با اینرسی طبیعی و هماهنگ با View Transitions |
 | `magic-string` | ویرایش امن کلاس‌های Tailwind در `block:adapt` |
 | `sharp` (dev) | برش و رمزنگاری تصویر کارت اجتماعی |
 | `vitest` (dev) | اجرای تست‌های واحد |
@@ -205,13 +208,13 @@ SITE_URL=https://example.com pnpm run build
 │                            # content-stub, slug, prompt
 ├── .github/workflows/ci.yml # CI: lint → test → audit → build → smoke → knip → verify:cli
 ├── .agents/skills/         # مهارت عملیاتی برای عامل‌های AI
-│   └── astro-i18n-starter/SKILL.md
+│   └── astro-i18n-starter/  # SKILL.md + references/ (از جمله scroll-and-motion.md)
 ├── docs/                   # GUIDE-FA.md (این راهنما)، PRD.md، PLAYBOOKS.md،
 │                            # SPIKE_RESULTS.md
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
     ├── components/          # Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHero,
-    │                        # HeroCopy, BlogPostHeroContent, PostCard, SearchModal, Seo, TopLoadingBar
+    │                        # HeroCopy, BlogPostHeroContent, PostCard, Reveal, SearchModal, Seo, TopLoadingBar
     ├── content/
     │   ├── pages/<گروه>/    # صفحات ایستا: en.mdx, de.mdx, fa.mdx, … + <گروه>.png
     │   └── blog/<گروه>/     # مقالات: en.mdx, fa.mdx, … + <گروه>.png
@@ -238,7 +241,8 @@ SITE_URL=https://example.com pnpm run build
     │   ├── api/blog-posts.json.ts # کاتالوگ استاتیک وبلاگ برای فیلتر بین‌صفحه‌ای
     │   └── api/search-dev.json.ts
     ├── paraglide/           # ⚠️ تولیدشده — هرگز دستی ویرایش نشود
-    ├── styles/              # global.css (توکن‌های روشن/تیره + سیستم شیشه‌ای)، prose.css
+    ├── scripts/             # lenis.ts (اسکرول نرم)، reveal.ts (انیمیشن اسکرول)
+    ├── styles/              # global.css، prose.css، reveal.css (انیمیشن ورود عناصر)
     ├── test/                # mock ماژول astro:content برای Vitest
     └── views/               # PageView, BlogIndexView, BlogPostView
 ```
@@ -1031,6 +1035,9 @@ pre, code, .math {
 }
 ```
 
+- همچنین در `src/styles/global.css`، ویژگی `letter-spacing` برای `:lang(fa)` و `:lang(ar)` به‌طور خودکار `0` نگه داشته می‌شود تا کلاس‌هایی مانند `tracking-wider` باعث جداشدن حروف پیوستهٔ فارسی و عربی نشوند (جزایر صریح `dir="ltr"` و `lang="en"` حفظ می‌شوند).
+- برای فیلدهای فرم دارای مقدار لاتین (`email`، `tel`، `datetime-local`) از ترکیب `dir="ltr"` همراه با `text-start rtl:text-end` استفاده کنید تا ضمن حفظ ترتیب کاراکترهای LTR، متن در فرم‌های فارسی/عربی به لبهٔ راست (inline-start) تراز شود.
+
 ### چرخاندن آیکون‌ها
 
 آیکون «قبلی/بعدی» پیجر در RTL باید بچرخد:
@@ -1074,7 +1081,8 @@ pre, code, .math {
 | `--color-warning` / `--color-warning-fg` | هشدار |
 | `--color-error` / `--color-error-fg` | خطا / اقدام مخرب |
 | `--color-glass` / `--color-glass-hover` / `--color-glass-border` / `--color-glass-control` | پالت شیشه‌ای |
-| `--color-hero-base` | پایهٔ تیره و مستقل از تم در پشت بخش هیرو |
+| `--color-hero-base` / `--color-hero-fg` | پایهٔ تیرهٔ پشت هیرو و رنگ متن روی پردهٔ هیرو |
+| `--color-scrim` | پردهٔ نیمه‌شفاف تیره برای پس‌زمینهٔ مودال‌ها و نشان‌های روی تصویر |
 | `--shadow-glass` | سایهٔ سطوح شیشه‌ای |
 
 پالت معنایی از **DaisyUI** الهام گرفته است — `primary`، `secondary`، `accent`،
@@ -1087,12 +1095,11 @@ pre, code, .math {
 - `@theme static inline` همهٔ نقش‌ها را به‌صورت متغیر `--color-*` در خروجی
   نگه می‌دارد و هم‌زمان آن‌ها را به کلاس‌های Tailwind نگاشت می‌کند؛ مثلاً
   `bg-info`، `text-success-fg`، `border-error`، `bg-secondary text-secondary-fg`.
-- نقش‌های وضعیت (info/success/warning/error) هنوز در هیچ کامپوننتی استفاده
-  نشده‌اند و برای اعلان‌ها، برچسب‌ها و سطح‌های وضعیت آماده‌اند.
+- هرگز از رنگ‌های خام مثل `text-white`، `bg-black` یا `gray-*` در کامپوننت‌ها استفاده نکنید؛ همیشه نقش‌های معنایی بالا را به کار ببرید.
 
 ### کلاس‌های مشترک
 
-همهٔ سطوح شیشه‌ای **یک بار** در `src/styles/global.css` تعریف شده‌اند.
+همهٔ سطوح شیشه‌ای، دکمه‌ها و نشان‌ها **یک بار** در `src/styles/global.css` تعریف شده‌اند.
 کامپوننت‌ها فقط این کلاس‌ها را ترکیب می‌کنند:
 
 | کلاس | کاربرد |
@@ -1101,8 +1108,11 @@ pre, code, .math {
 | `.glass-control` | کنترل داخل سطح شیشه‌ای |
 | `.ghost-control` | کنترل روی سطح مات |
 | `.cta` | دکمهٔ اصلی |
-| `.btn-secondary` | دکمهٔ ثانویه |
-| `.chip` | چیپ دسته/برچسب/فیلتر |
+| `.btn-secondary` | دکمهٔ ثانویه روی سطح مات |
+| `.btn-hero-secondary` | دکمهٔ ثانویهٔ شیشه‌ای روی بخش هیرو |
+| `.chip` | چیپ دسته/برچسب/فیلتر/تب (حالت فعال خودکار با `aria-selected="true"` یا `aria-current`) |
+| `.hero-badge` | نشان کپسولی نیمه‌شفاف روی تصویر هیرو یا کارت مقاله |
+| `.section-kicker` | سوتیتر (Eyebrow) بالای تیتر بخش‌ها با ایمنی خودکار RTL |
 
 ```astro
 <a href={pricingHref} class="cta hidden h-9 text-xs lg:inline-flex">شروع کنید</a>
@@ -1122,7 +1132,160 @@ pre, code, .math {
 | `SearchModal.astro` | `locale` | مودال جستجوی دسکتاپ (Pagefind در پروداکشن / fallback استاتیک) |
 | `DrawerSearch.astro` | `locale` | جستجوی درون کشوی موبایل هماهنگ با تب‌بندی کشو |
 | `Seo.astro` | `title`, `description?`, `locale`, `url`, `alternates`, `siteName?`, `image?`, `type?`, `publishedTime?`, `schema?`, `noindex?`, `prevUrl?`, `nextUrl?` | همهٔ متادیتای SEO |
+| `Reveal.astro` | `as?` (`'div'`), `direction?` (`'up'\|'down'\|'start'\|'end'\|'scale'`), `delay?` (`50..500`), `class?` + هر `data-*`/`aria-*` | پوشش‌دهندهٔ نوع‌امن انیمیشن اسکرول (Scroll Reveal) با جهت‌های منطقی RTL |
 | `TopLoadingBar.astro` | — | نوار پیشرفت ناوبری |
+
+### انیمیشن‌های اسکرول (Scroll Reveal) و اسکرول نرم Lenis
+
+پروژه به‌صورت توکار به یک سیستم **Progressive Scroll Reveal** (`src/styles/reveal.css` + `src/scripts/reveal.ts` + `src/components/Reveal.astro`) و موتور اسکرول نرم **Lenis** (`src/scripts/lenis.ts`) مجهز است که در `BaseLayout.astro` بارگذاری می‌شوند و با ناوبری `<ClientRouter />` (View Transitions) و جهت‌های **RTL/LTR** کاملاً هماهنگ هستند.
+
+#### ۱. اصل ارتقای پیش‌رونده (Progressive Enhancement)
+
+هیچ عنصری در CSS سراسری به‌صورت پیش‌فرض مخفی نمی‌شود:
+
+1. در `<head>` فایل `BaseLayout.astro`، اسکریپت خطی همگام `document.documentElement.classList.add('js')` پیش از اولین رندر اجرا می‌شود.
+2. قواعد مخفی‌سازی اولیه در `src/styles/reveal.css` منحصراً زیر انتخابگر `.js .reveal` تعریف شده‌اند. اگر جاوااسکریپت در مرورگر کاربر غیرفعال باشد یا صفحه چاپ شود (`@media print`)، همهٔ عناصر بدون هیچ تاخیری کاملاً مرئی هستند.
+3. هنگام اجرای انیمیشن ورود، کلاس `.js .reveal:not(.reveal-complete)` منحنی حرکتی `0.8s cubic-bezier(0.16, 1, 0.3, 1)` را قفل می‌کند تا کلاس‌های Tailwind مثل `transition-colors` یا `duration-200` روی کارت‌ها نتوانند انیمیشن ورود را کوتاه کنند. به‌محض پایان انیمیشن یک‌باره، کلاس `.reveal-complete` اضافه می‌شود تا افکت‌های `hover` کارت با سرعت طبیعی خودشان کار کنند.
+
+#### ۲. روش اول (پیشنهادی): کامپوننت `<Reveal>` در فایل‌های `.astro` و `.mdx`
+
+کامپوننت `src/components/Reveal.astro` یک پوشش‌دهندهٔ چندریختی (Polymorphic) و نوع‌امن است که هر تگ معنایی HTML را با پراپ `as` می‌سازد:
+
+```astro
+---
+import Reveal from '@/components/Reveal.astro';
+---
+
+<Reveal as="section" direction="up" class="py-16">
+  <h2 class="text-3xl font-bold text-fg">خدمات تخصصی ما</h2>
+</Reveal>
+
+<Reveal as="article" direction="start" delay={150} class="glass-surface rounded-2xl p-6">
+  <p class="text-muted">این کارت در فارسی از راست و در انگلیسی از چپ وارد می‌شود.</p>
+</Reveal>
+```
+
+| پراپ | مقادیر مجاز | پیش‌فرض | توضیح |
+| --- | --- | --- | --- |
+| `as` | هر تگ معتبر HTML (`'div'`, `'section'`, `'article'`, `'li'`, `'header'`, …) | `'div'` | تگ خروجی HTML (بدون ایجاد `<div>` اضافی) |
+| `direction` | `'up'` · `'down'` · `'start'` · `'end'` · `'scale'` | `'up'` | جهت منطقی ورود عنصر (`'start'` و `'end'` در RTL خودکار قرینه می‌شوند) |
+| `delay` | `50` · `100` · `150` · `200` · `250` · `300` · `400` · `500` | `undefined` | تاخیر دستی شروع انیمیشن بر حسب میلی‌ثانیه |
+| `class` | `string` | `''` | کلاس‌های استایل که با کلاس `reveal` ترکیب می‌شوند |
+| سایر صفات | `id`, `aria-*`, `data-*`, … | — | مستقیماً روی تگ خروجی قرار می‌گیرند |
+
+#### ۳. روش دوم: استفادهٔ مستقیم با کلاس و صفات HTML (بدون کامپوننت)
+
+هرگاه نخواهید کامپوننت وارد کنید یا بخواهید مستقیم به یک تگ HTML موجود انیمیشن بدهید، کافی است کلاس `reveal` و صفت‌های `data-reveal` / `data-delay` را اضافه کنید:
+
+```html
+<header class="reveal space-y-3" data-reveal="up">
+  <h2>تیتر بخش</h2>
+  <p class="reveal" data-reveal="up" data-delay="100">توضیح تکمیلی با تاخیر کوتاه.</p>
+</header>
+```
+
+#### ۴. جهت‌های منطقی آگاه از RTL (`start` و `end`)
+
+بر اساس قاعدهٔ سخت‌گیرانهٔ RTL، جهت‌های فیزیکی `left` و `right` حذف شده‌اند و تمام حرکت‌های افقی با جهت‌های منطقی تعریف می‌شوند که بر پایهٔ `dir="rtl"` روی `<html>` به‌طور خودکار قرینه می‌گردند:
+
+| مقدار `direction` / `data-reveal` | رفتار در LTR (`en`, `de`, `fr`) | رفتار در RTL (`fa`, `ar`) | کاربرد پیشنهادی |
+| --- | --- | --- | --- |
+| `up` *(پیش‌فرض)* | حرکت نرم از پایین (`+2.25rem`) به بالا | حرکت نرم از پایین (`+2.25rem`) به بالا | تیترها، پاراگراف‌ها، کارت‌ها و بخش‌های عمومی |
+| `down` | حرکت از بالا (`-2.25rem`) به پایین | حرکت از بالا (`-2.25rem`) به پایین | بج‌های بالای صفحه و نوارهای اعلان |
+| `start` ✅ | ورود از سمت چپ (`-2.25rem`) | ورود از سمت راست (`+2.25rem`) | ستون اول (شروع خط خواندن) در چیدمان‌های دوستونه |
+| `end` ✅ | ورود از سمت راست (`+2.25rem`) | ورود از سمت چپ (`-2.25rem`) | ستون دوم / تصویر مقابل در چیدمان‌های دوستونه |
+| `scale` | بزرگ‌نمایی ظریف (`0.95 → 1`) همراه با حرکت عمودی | بزرگ‌نمایی ظریف (`0.95 → 1`) همراه با حرکت عمودی | کارت‌های شاخص، تصاویر هیرو و بنرهای فراخوان (CTA) |
+
+نمونهٔ چیدمان دوستونهٔ کاملاً سازگار با RTL:
+
+```astro
+<div class="grid gap-10 lg:grid-cols-2 lg:items-center">
+  <Reveal direction="start" class="space-y-4">
+    <h2 class="text-3xl font-bold">{heading}</h2>
+    <p class="text-muted">{description}</p>
+  </Reveal>
+
+  <Reveal direction="end" delay={150} class="glass-surface rounded-3xl p-8">
+    <slot name="visual" />
+  </Reveal>
+</div>
+```
+
+#### ۵. انیمیشن پلکانی خودکار برای شبکه‌ها و فهرست‌ها (`.reveal-stagger`)
+
+برای کارت‌های کنار هم یا آیتم‌های لیست، به‌جای دادن `data-delay` دستی به تک‌تک آیتم‌ها، کلاس `reveal-stagger` را به ظرف والد بدهید. اسکریپت `reveal.ts` به همهٔ فرزندان مستقیم (`:scope > .reveal`) متغیر `--stagger-index` (`0, 1, 2, ...`) می‌دهد و هر آیتم با گام `0.09s` پس از قبلی وارد می‌شود:
+
+```astro
+<ul class="reveal-stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  {cards.map((card) => (
+    <Reveal
+      as="li"
+      direction="up"
+      class="glass-surface rounded-2xl p-6 transition-transform duration-200 hover:-translate-y-1"
+    >
+      <h3 class="font-semibold text-fg">{card.title}</h3>
+      <p class="mt-2 text-sm text-muted">{card.summary}</p>
+    </Reveal>
+  ))}
+</ul>
+```
+
+> **نکتهٔ مهم (فرزند مستقیم)**: انتخابگر پلکانی `:scope > .reveal` فقط فرزندان **مستقیم** ظرف `.reveal-stagger` را شماره‌گذاری می‌کند. بنابراین اگر والد `<ul>` است، خود آیتم را با `<Reveal as="li">` بسازید و آن را داخل یک `<li>` جداگانه نپیچید.
+
+#### ۶. استفاده در فایل‌های محتوای `.mdx`
+
+در فایل‌های `src/content/pages/<group>/<locale>.mdx` و مقالات وبلاگ می‌توانید هم از کلاس‌های HTML و هم از کامپوننت `<Reveal>` استفاده کنید:
+
+```mdx
+---
+title: "امکانات پلتفرم"
+description: "معرفی قابلیت‌های کلیدی"
+slug: "امکانات"
+publishedAt: 2026-01-15
+draft: false
+---
+import Reveal from '@/components/Reveal.astro';
+
+<Reveal direction="up">
+
+## طراحی‌شده برای تیم‌های چندزبانه
+
+متن‌های مارک‌داون داخل `<Reveal>` هنگام رسیدن کاربر به هر بخش با انیمیشن نرم ظاهر می‌شوند.
+
+</Reveal>
+
+<div class="reveal-stagger not-prose my-8 grid gap-4 sm:grid-cols-2">
+  <Reveal direction="start" class="glass-surface rounded-2xl p-5">
+    <strong>پشتیبانی بومی RTL</strong> — جهت حرکت به‌طور خودکار قرینه می‌شود.
+  </Reveal>
+  <Reveal direction="end" class="glass-surface rounded-2xl p-5">
+    <strong>بدون وابستگی شکننده</strong> — بدون جاوااسکریپت هم تمام محتوا خواناست.
+  </Reveal>
+</div>
+```
+
+> هنگام قرار دادن سینتکس مارک‌داون (`##`، لیست‌ها و غیره) داخل تگ `<Reveal>` در فایل `.mdx`، حتماً یک خط خالی بعد از تگ باز و یک خط خالی قبل از `</Reveal>` بگذارید تا مفسر MDX مارک‌داون درونی را رندر کند.
+
+#### ۷. قواعد هماهنگی با اسکرول نرم Lenis
+
+1. **اسکرول مستقل داخل مودال‌ها و پنل‌ها (`data-lenis-prevent`)**: هر المانی که اسکرول داخلی دارد (`overflow-y-auto`، مثل مودال، دراپ‌داون بلند یا جدول اسکرول‌پذیر) باید صفت `data-lenis-prevent` بگیرد تا چرخ ماوس محتوای داخل همان پنل را اسکرول کند، نه کل صفحه را (مودال جستجو و کشوی موبایل به‌صورت پیش‌فرض ایزوله شده‌اند):
+   ```html
+   <div class="max-h-72 overflow-y-auto" data-lenis-prevent>
+     <!-- محتوای قابل اسکرول مستقل -->
+   </div>
+   ```
+2. **لینک‌های لنگری هم‌صفحه (`#anchor`)**: لینک‌های معمولی مثل `<a href="#features">` در فاز capture توسط `lenis.ts` رهگیری می‌شوند (پیش از آن‌که `<ClientRouter />` پرش آنی انجام دهد) و با احتساب آفست هدر ثابت (`-96px`) به‌نرمی به بخش هدف اسکرول می‌کنند.
+3. **اسکرول برنامه‌نویسی‌شده (`getLenis()`)**: هرگز `scroll-behavior: smooth` را روی `html` نگذارید (با اینرسی Lenis تداخل دارد). در اسکریپت‌های کلاینت از `getLenis()` استفاده کنید:
+   ```ts
+   import { getLenis } from '@/scripts/lenis';
+
+   const lenis = getLenis();
+   if (lenis) {
+     lenis.scrollTo('#contact-form', { offset: -96, duration: 1.15 });
+   }
+   ```
+4. **غیرفعال‌سازی صریح حرکت (`data-motion="reduced"`)**: اگر قرار دادن کلید کاهش حرکت در رابط کاربری مدنظر باشد، کافی است صفت `data-motion="reduced"` را روی `<html>` ست کنید؛ هم Lenis متوقف می‌شود و هم تمام بلوک‌های `.reveal` بلافاصله و بدون ترنزیشن نمایش داده می‌شوند.
+5. **افزودن پویا به DOM**: اگر در اسکریپتی بعد از بارگذاری صفحه عناصر `.reveal` جدیدی به صفحه تزریق کردید، تابع `initReveals()` را از `@/scripts/reveal` صدا بزنید تا عناصر جدید پایش شوند.
 
 ### استایل متن محتوا — `src/styles/prose.css`
 
@@ -1151,7 +1314,7 @@ pre, code, .math {
 ### افزودن آیکون
 
 نمادهای موجود در اسپرایت SVG (`src/pages/icons.svg.ts`):
-`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link`.
+`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link` · `arrow-right`.
 
 ```ts
 // src/pages/icons.svg.ts
@@ -1688,6 +1851,9 @@ dist/
 | `SITE_URL is not a valid absolute URL` | مقدار ناقص در `.env` | مقدار کامل با `https://` بدهید |
 | `Unknown file extension ".astro"` در سرور توسعه | سرور توسعه قبل از `pnpm install` بالا آمده و `node_modules` عوض شده است | سرور را ری‌استارت کنید: `pnpm exec astro dev stop` و بعد `pnpm exec astro dev --background` |
 | `Missing <locale>.mdx` در خروجی ممیزی | گروه محتوا در همهٔ زبان‌ها ترجمه نشده | هشدار است و بیلد را نمی‌شکند؛ با `pnpm run new:page <key> --update` یا `--slug:<locale>=…` تکمیلش کنید |
+| اسکرول چرخ ماوس داخل مودال یا پنل کار نمی‌کند | Lenis رویداد چرخ ماوس را برای کل صفحه می‌گیرد | صفت `data-lenis-prevent` را به ظرف دارای `overflow-y-auto` اضافه کنید |
+| آیتم‌های داخل `.reveal-stagger` هم‌زمان باز می‌شوند | عناصر `.reveal` فرزند مستقیم ظرف نیستند | `.reveal` / `<Reveal as="li">` را فرزند مستقیم (`:scope > .reveal`) ظرف `.reveal-stagger` قرار دهید |
+| انیمیشن افقی در فارسی از جهت برعکس می‌آید | استفاده از `data-reveal="left"` یا `"right"` | از جهت‌های منطقی `direction="start"` و `direction="end"` استفاده کنید |
 
 ---
 
@@ -1730,6 +1896,9 @@ dist/
 | نوار پیشرفت بدون `dataset.bound` | `if (el.dataset.bound === 'true') return;` |
 | تعریف دوبارهٔ `.cta` در کامپوننت | ترکیب کلاس از `src/styles/global.css` |
 | `<button>` دستی با `<Icon>` | `IconButton` |
+| `opacity-0` مستقیم برای انیمیشن اسکرول | `<Reveal>` یا کلاس `.reveal` (محصور در `.js`) |
+| `direction="left"` / `"right"` در ستون‌های متقارن | `direction="start"` / `"end"` برای قرینه‌شدن خودکار در RTL |
+| پنل اسکرول‌پذیر بدون `data-lenis-prevent` | افزودن `data-lenis-prevent` روی ظرف‌های `overflow-y-auto` |
 
 ---
 
@@ -1845,6 +2014,10 @@ dist/
 | `getLocaleMeta(locale)` | متادیتای یک زبان |
 | `getOgLocale(locale)` | `language_TERRITORY` برای Open Graph |
 
+### `src/i18n/format.ts`
+
+`formatNumber` · `formatYear` · `formatDate` · `formatDateTime`
+
 ### `src/i18n/paths.ts`
 
 `getPathname` · `withTrailingSlash` · `stripLocale` · `localizeHref` · `localeHref`
@@ -1875,6 +2048,13 @@ dist/
 | `blog.ts` | `parseBlogFilters` · `buildBlogFilterQuery` · `matchesBlogFilters` · `filterBlogPosts` · `hasActiveFilters` · `toggleBlogTag` · `getReadingTime` · `collectTaxonomyKeys` · `humanizeKey` · `NO_FILTERS` |
 | `taxonomy.ts` | `getCategoryLabel` · `getTagLabel` |
 | `social.ts` | `getSocialCard` · `SocialImage` |
+
+### `src/scripts/*` (اسکرول نرم و انیمیشن‌های اسکرول)
+
+| فایل | خروجی‌ها | کاربرد |
+| --- | --- | --- |
+| `lenis.ts` | `initLenis()` · `destroyLenis()` · `getLenis()` | راه‌اندازی، پاک‌سازی در View Transitions و دسترسی به نمونهٔ فعال `Lenis` |
+| `reveal.ts` | `initReveals()` · `cleanupReveals()` | شماره‌گذاری `.reveal-stagger`، پایش ورود عناصر `.reveal` به دید و آزادسازی قفل ترنزیشن پس از نمایش |
 
 ### `scripts/lib/locales.mjs`
 

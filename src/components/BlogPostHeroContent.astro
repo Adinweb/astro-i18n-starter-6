@@ -54,16 +54,16 @@ const readingTime = getReadingTime(body);
 
 <HeroCopy title={title} description={description} size="post">
   <Fragment slot="prelude">
-    <nav aria-label={m.common_breadcrumbs({}, { locale })}>
-      <ol class="flex flex-wrap items-center gap-2 text-xs text-white/90 drop-shadow-[0_1px_8px_rgb(0_0_0/0.5)]">
+    <nav class="reveal" data-reveal="up" aria-label={m.common_breadcrumbs({}, { locale })}>
+      <ol class="flex flex-wrap items-center gap-2 text-xs text-hero-fg/90">
         {
           breadcrumbs.map((crumb, index) => (
             <li class="flex items-center gap-2">
               {index > 0 && <span aria-hidden="true">/</span>}
               {index === breadcrumbs.length - 1 ? (
-                <span class="max-w-xs truncate font-medium text-white">{crumb.label}</span>
+                <span class="max-w-xs truncate font-medium text-hero-fg">{crumb.label}</span>
               ) : (
-                <a href={crumb.href} class="transition-colors hover:text-white">
+                <a href={crumb.href} class="transition-colors hover:text-hero-fg">
                   {crumb.label}
                 </a>
               )}
@@ -75,12 +75,12 @@ const readingTime = getReadingTime(body);
 
     {
       categories.length > 0 && (
-        <ul class="mt-4 flex flex-wrap items-center gap-2">
+        <ul class="reveal mt-4 flex flex-wrap items-center gap-2" data-reveal="up" data-delay="50">
           {categories.map((category) => (
             <li>
               <a
                 href={categoryHref(category)}
-                class="inline-flex items-center rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+                class="hero-badge transition-colors hover:bg-hero-fg/20"
               >
                 {getCategoryLabel(category, locale)}
               </a>
@@ -91,7 +91,7 @@ const readingTime = getReadingTime(body);
     }
   </Fragment>
 
-  <div slot="default" class="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/90 drop-shadow-[0_1px_8px_rgb(0_0_0/0.5)]">
+  <div slot="default" class="reveal mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-hero-fg/90" data-reveal="up" data-delay="200">
     <span>{m.common_published_on({}, { locale })}</span>
     <time datetime={publishedAt.toISOString()}>{formattedDate}</time>
     {

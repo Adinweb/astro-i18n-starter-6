@@ -42,9 +42,9 @@ Never hardcode paths with locale prefixes in templates or logic. Always use pure
 Physical dynamic routes are consolidated into a single dispatcher file (`src/pages/[...path].astro`):
 * `getStaticPaths()` calls `getSiteRoutes()` from `src/libs/content/service.ts`.
 * Delegates rendering to dedicated views based on `routeType`:
-  - `routeType === 'page'` → `<PageView entry={entry} locale={locale} />`
-  - `routeType === 'blog-entry'` → `<BlogPostView entry={entry} locale={locale} />`
-  - `routeType === 'blog-index'` → `<BlogIndexView locale={locale} />`
+  - `routeType === 'page'` → `<PageView entry={entry} locale={locale} ... />`
+  - `routeType === 'blog-entry'` → `<BlogPostView entry={entry} locale={locale} ... />`
+  - `routeType === 'blog-index'` → `<BlogIndexView locale={locale} ... />`
 * **Route Collision Guard**: `buildSiteRoutes()` detects and throws fatal build errors on duplicate canonical URLs.
 * **Language Switcher Safety**: Locales with fewer posts fall back to their last available paginated page in the `alternates` map, preventing 404 links during language switching.
 

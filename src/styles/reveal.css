@@ -1,0 +1,107 @@
+/* =========================================
+   Progressive Reveal System
+   Only active when .js is present on <html>
+   ========================================= */
+
+.js .reveal {
+  opacity: 0;
+  transform: translate3d(0, 2.25rem, 0);
+}
+
+/* Enforce entrance transition while revealing so utility classes like
+   Tailwind's `transition-colors` or `duration-200` never override it */
+.js .reveal:not(.reveal-complete) {
+  transition-property: opacity, transform !important;
+  transition-duration: 0.8s !important;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+  will-change: opacity, transform;
+}
+
+/* Logical direction variants (`start`/`end` mirror automatically in RTL).
+   `:where([dir='rtl'])` keeps zero extra specificity and `:not(.is-visible)`
+   ensures `.is-visible` / `.reveal-complete` cleanly reset transforms to 0. */
+.js .reveal[data-reveal='up']:not(.is-visible) {
+  transform: translate3d(0, 2.25rem, 0);
+}
+.js .reveal[data-reveal='down']:not(.is-visible) {
+  transform: translate3d(0, -2.25rem, 0);
+}
+.js .reveal[data-reveal='start']:not(.is-visible) {
+  transform: translate3d(-2.25rem, 0, 0);
+}
+.js .reveal[data-reveal='end']:not(.is-visible) {
+  transform: translate3d(2.25rem, 0, 0);
+}
+:where([dir='rtl']).js .reveal[data-reveal='start']:not(.is-visible),
+.js :where([dir='rtl']) .reveal[data-reveal='start']:not(.is-visible) {
+  transform: translate3d(2.25rem, 0, 0);
+}
+:where([dir='rtl']).js .reveal[data-reveal='end']:not(.is-visible),
+.js :where([dir='rtl']) .reveal[data-reveal='end']:not(.is-visible) {
+  transform: translate3d(-2.25rem, 0, 0);
+}
+.js .reveal[data-reveal='scale']:not(.is-visible) {
+  transform: translate3d(0, 1.25rem, 0) scale(0.95);
+}
+
+/* Visible state */
+.js .reveal.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+/* Automatic stagger for children */
+.js .reveal-stagger > .reveal:not(.reveal-complete) {
+  transition-delay: calc(var(--stagger-index, 0) * 0.09s) !important;
+}
+
+/* Manual delays */
+.js .reveal[data-delay='50']:not(.reveal-complete) {
+  transition-delay: 0.05s !important;
+}
+.js .reveal[data-delay='100']:not(.reveal-complete) {
+  transition-delay: 0.1s !important;
+}
+.js .reveal[data-delay='150']:not(.reveal-complete) {
+  transition-delay: 0.15s !important;
+}
+.js .reveal[data-delay='200']:not(.reveal-complete) {
+  transition-delay: 0.2s !important;
+}
+.js .reveal[data-delay='250']:not(.reveal-complete) {
+  transition-delay: 0.25s !important;
+}
+.js .reveal[data-delay='300']:not(.reveal-complete) {
+  transition-delay: 0.3s !important;
+}
+.js .reveal[data-delay='400']:not(.reveal-complete) {
+  transition-delay: 0.4s !important;
+}
+.js .reveal[data-delay='500']:not(.reveal-complete) {
+  transition-delay: 0.5s !important;
+}
+
+/* Release reveal lock after one-shot entrance completes so interactive
+   card hover transitions run at their native speed */
+.js .reveal.reveal-complete {
+  transform: none;
+  transition-delay: 0s;
+  will-change: auto;
+}
+
+/* Explicit reduced-motion opt-out & print media */
+html[data-motion='reduced'].js .reveal {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  will-change: auto !important;
+}
+
+@media print {
+  .js .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto !important;
+  }
+}

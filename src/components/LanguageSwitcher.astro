@@ -21,7 +21,7 @@ const { currentLocale, alternates } = Astro.props;
     title={m.common_change_language({}, { locale: currentLocale })}
   >
     <Icon name="globe" size={15} class="shrink-0" />
-    <span data-switcher-active class="text-xs font-semibold tracking-wide uppercase">{currentLocale}</span>
+    <span data-switcher-active lang="en" dir="ltr" class="text-xs font-semibold tracking-wide uppercase">{currentLocale}</span>
   </button>
 
   <div
@@ -40,7 +40,7 @@ const { currentLocale, alternates } = Astro.props;
               aria-disabled="true"
             >
               <span class="truncate">{meta.name}</span>
-              <span class="text-[11px] font-semibold uppercase tracking-wide">{loc}</span>
+              <span lang="en" dir="ltr" class="text-[11px] font-semibold uppercase tracking-wide">{loc}</span>
             </span>
           );
         }
@@ -57,7 +57,7 @@ const { currentLocale, alternates } = Astro.props;
           >
             <span class="truncate">{meta.name}</span>
             <span class="flex items-center gap-1.5">
-              <span class="text-[11px] font-semibold uppercase tracking-wide opacity-60">{loc}</span>
+              <span lang="en" dir="ltr" class="text-[11px] font-semibold uppercase tracking-wide opacity-60">{loc}</span>
               <span data-switcher-check class:list={['shrink-0', !isCurrent && 'hidden']}>
                 <Icon name="check" size={14} />
               </span>

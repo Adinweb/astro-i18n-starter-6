@@ -5,6 +5,7 @@ import PageHero from '@/components/PageHero.astro';
 import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
 import PostCard from '@/components/PostCard.astro';
 import Icon from '@/components/Icon.astro';
+import Reveal from '@/components/Reveal.astro';
 import {
   buildBreadcrumbSchema,
   getBreadcrumbs,
@@ -151,9 +152,9 @@ const schema = [
       }
 
       <article class="max-w-3xl">
-        <div class="prose">
+        <Reveal direction="up" delay={100} class="prose">
           <Content />
-        </div>
+        </Reveal>
 
         {
           tags.length > 0 && (
@@ -178,7 +179,9 @@ const schema = [
 
         {
           (newerPost || olderPost) && (
-            <nav
+            <Reveal
+              as="nav"
+              direction="up"
               data-post-nav
               data-pagefind-ignore
               aria-label={m.nav_blog({}, { locale })}
@@ -215,7 +218,7 @@ const schema = [
                   </span>
                 </a>
               )}
-            </nav>
+            </Reveal>
           )
         }
 
@@ -224,7 +227,8 @@ const schema = [
             href={blogIndexHref}
             class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
           >
-            <span class="inline-block rtl:rotate-180">←</span> {m.common_back_to_blog({}, { locale })}
+            <Icon name="arrow-right" size={15} class="rotate-180 rtl:rotate-0" />
+            <span>{m.common_back_to_blog({}, { locale })}</span>
           </a>
         </footer>
       </article>
@@ -232,7 +236,10 @@ const schema = [
 
     {
       tocHeadings.length > 0 && (
-        <aside
+        <Reveal
+          as="aside"
+          direction="end"
+          delay={150}
           data-toc
           data-pagefind-ignore
           aria-label={m.blog_toc_title({}, { locale })}
@@ -256,14 +263,16 @@ const schema = [
               ))}
             </ol>
           </div>
-        </aside>
+        </Reveal>
       )
     }
   </div>
 
   {
     relatedPosts.length > 0 && (
-      <section
+      <Reveal
+        as="section"
+        direction="up"
         data-related-posts
         data-pagefind-ignore
         aria-labelledby="related-posts-heading"
@@ -272,7 +281,7 @@ const schema = [
         <h2 id="related-posts-heading" class="text-xl font-bold tracking-tight text-fg">
           {m.blog_related_posts({}, { locale })}
         </h2>
-        <div class="mt-6 grid gap-6 sm:grid-cols-2">
+        <div class="reveal-stagger mt-6 grid gap-6 sm:grid-cols-2">
           {relatedPosts.map((related) => (
             <PostCard
               post={related}
@@ -281,7 +290,7 @@ const schema = [
             />
           ))}
         </div>
-      </section>
+      </Reveal>
     )
   }
 </BaseLayout>

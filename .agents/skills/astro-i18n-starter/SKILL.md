@@ -27,6 +27,8 @@ This skill coordinates workflows for developing, maintaining, and extending this
    - Guard DOM listeners in Astro components with `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';`.
 6. **Static Language Switching**:
    - Use `window.location.assign(target)` rather than client-side SPA view transitions so `<html lang dir>` and font stacks are fully applied.
+7. **Progressive Scroll Reveal & Lenis Discipline**:
+   - Animate page/view elements exclusively via `<Reveal />` (`src/components/Reveal.astro`) or `.reveal` (`data-reveal`, `data-delay`, `.reveal-stagger`) scoped under `.js`. Use logical `'start'` / `'end'` directions for RTL parity, and add `data-lenis-prevent` on nested scrollable overlays.
 
 ---
 
@@ -40,6 +42,7 @@ To perform work in this repository, identify your specific task and read the ind
 | **Multi-Menu Navigation**<br>Header dropdowns, mobile drawer tabs, 4-column footer, active states, slot resolvers | ➡️ Read `references/navigation.md` |
 | **CLI Automation Suite**<br>Scaffolding pages/posts, deleting content, language lifecycle, batch translations, asset generation | ➡️ Read `references/cli-automation.md` |
 | **RTL, Typography & Styling**<br>CSS logical properties, font stacks, LTR code block isolation, OKLCH tokens, SVG icon catalog | ➡️ Read `references/rtl-styling.md` |
+| **Smooth Scroll & Reveal Animations**<br>Adding scroll-reveal animations (`<Reveal>`, `.reveal`, `.reveal-stagger`), RTL `start`/`end` vectors, MDX usage, and Lenis smooth-scroll rules | ➡️ Read `references/scroll-and-motion.md` |
 | **Testing, Linting & QA**<br>Paraglide compile, Vitest unit tests, i18n parity audit, production build, smoke tests, Knip | ➡️ Read `references/verification.md` |
 
 ---
@@ -50,7 +53,7 @@ All scripts support both `npm run` and `pnpm run`:
 
 ```bash
 npm run lint          # paraglide compile + astro check + tsc --noEmit
-npm test              # Vitest test suite (12 suites, 137 unit tests)
+npm test              # Vitest test suite (13 suites, 142 unit tests)
 npm run audit:i18n    # 5-stage i18n completeness and parity audit
 npm run build         # Production SSG build + Pagefind indexing
 npm run smoke         # Post-build HTML validation over dist/

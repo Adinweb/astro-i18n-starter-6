@@ -40,14 +40,20 @@ const hasPrelude = Astro.slots.has('prelude');
 ---
 
 <div class="max-w-3xl">
-  <span class="mb-5 block h-1 w-12 rounded-full bg-accent" aria-hidden="true"></span>
+  <span
+    class="reveal mb-5 block h-1 w-12 rounded-full bg-accent"
+    data-reveal="scale"
+    aria-hidden="true"
+  ></span>
 
   <slot name="prelude" />
 
   <h1
     id={HERO_TITLE_ID}
+    data-reveal="up"
+    data-delay="50"
     class:list={[
-      'text-balance font-extrabold leading-[1.1] tracking-tight text-white drop-shadow-[0_2px_18px_rgb(0_0_0/0.5)]',
+      'reveal text-balance font-extrabold leading-[1.1] tracking-tight text-hero-fg',
       scale.title,
       hasPrelude && 'mt-5',
     ]}
@@ -58,8 +64,10 @@ const hasPrelude = Astro.slots.has('prelude');
   {
     description && (
       <p
+        data-reveal="up"
+        data-delay="150"
         class:list={[
-          'mt-5 text-pretty text-base leading-relaxed text-white/90 drop-shadow-[0_1px_12px_rgb(0_0_0/0.5)] sm:text-lg',
+          'reveal mt-5 text-pretty text-base leading-relaxed text-hero-fg/90 sm:text-lg',
           scale.description,
         ]}
       >

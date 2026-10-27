@@ -1,6 +1,7 @@
 ---
 import * as m from '@/paraglide/messages';
 import Icon from '@/components/Icon.astro';
+import IconButton from '@/components/IconButton.astro';
 import type { Locale } from '@/i18n/locales';
 
 interface Props {
@@ -31,18 +32,19 @@ const { locale } = Astro.props;
       class="w-full rounded-xl border border-border bg-bg/90 py-2.5 pe-9 ps-10 text-sm text-fg placeholder:text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
       autocomplete="off"
     />
-    <button
-      type="button"
+    <IconButton
+      icon="close"
+      size={14}
+      variant="ghost"
+      label={m.common_close({}, { locale })}
       data-drawer-search-clear
-      class="absolute end-5 top-1/2 hidden -translate-y-1/2 rounded-full p-1 text-muted transition-colors hover:text-fg"
-      aria-label={m.common_close({}, { locale })}
-    >
-      <Icon name="close" size={14} />
-    </button>
+      class="absolute end-4 top-1/2 hidden h-7 w-7 -translate-y-1/2"
+    />
   </div>
 
   <div
     data-drawer-search-results
+    data-lenis-prevent
     class="flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-3 py-2"
     role="status"
     aria-live="polite"

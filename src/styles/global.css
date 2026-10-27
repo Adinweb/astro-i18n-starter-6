@@ -1,5 +1,6 @@
 @import '@fontsource-variable/vazirmatn';
 @import '@fontsource-variable/noto-sans-arabic';
+@import 'lenis/dist/lenis.css';
 @import 'tailwindcss';
 
 /*
@@ -49,6 +50,8 @@
 
   /* The band behind the hero copy; deliberately mode-independent darkness. */
   --theme-hero-base: oklch(18% 0.018 245);
+  --theme-hero-fg: oklch(99% 0 0);
+  --theme-scrim: oklch(0% 0 0 / 0.58);
 
   /* Frosted-glass palette. Alpha lives in the token so every glass surface
      shares the same translucency and the header stays consistent. */
@@ -94,6 +97,8 @@
   --theme-error-fg: oklch(15% 0.02 25);
 
   --theme-hero-base: oklch(13% 0.018 250);
+  --theme-hero-fg: oklch(99% 0 0);
+  --theme-scrim: oklch(0% 0 0 / 0.62);
 
   --theme-glass: oklch(17% 0.02 250 / 0.76);
   --theme-glass-hover: oklch(24% 0.022 250 / 0.92);
@@ -129,6 +134,8 @@
   --color-error-fg: var(--theme-error-fg);
 
   --color-hero-base: var(--theme-hero-base);
+  --color-hero-fg: var(--theme-hero-fg);
+  --color-scrim: var(--theme-scrim);
 
   --color-glass: var(--theme-glass);
   --color-glass-hover: var(--theme-glass-hover);
@@ -136,6 +143,10 @@
   --color-glass-control: var(--theme-glass-control);
 
   --shadow-glass: var(--theme-shadow-glass);
+}
+
+html {
+  scroll-behavior: auto; /* Prevent conflict with Lenis */
 }
 
 body {
@@ -163,6 +174,21 @@ body {
 
 :lang(ar) {
   font-family: var(--font-ar);
+}
+
+/*
+ * Cursive RTL script protection.
+ * Non-zero letter-spacing disconnects joined Persian and Arabic glyphs.
+ * Force zero tracking across `fa`/`ar` trees while preserving explicit
+ * Latin islands (`[dir='ltr']`, `:lang(en)`).
+ */
+:where(:lang(fa), :lang(ar)),
+:where(:lang(fa), :lang(ar)) :not([dir='ltr']):not(:lang(en)) {
+  letter-spacing: 0 !important;
+}
+
+summary::-webkit-details-marker {
+  display: none;
 }
 
 /*
@@ -199,9 +225,30 @@ body {
     @apply inline-flex items-center justify-center rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-medium text-fg transition-colors hover:bg-surface-hover;
   }
 
-  /* Pill-shaped chip used by blog filters, taxonomy tags and card tags. */
+  /* Frosted secondary call to action sitting over hero artwork scrims. */
+  .btn-hero-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-hero-fg/30 bg-hero-fg/10 px-6 text-sm font-semibold text-hero-fg backdrop-blur-md transition-colors hover:bg-hero-fg/20;
+  }
+
+  /* Pill-shaped chip used by blog filters, taxonomy tags, tabs and card tags. */
   .chip {
     @apply inline-flex items-center rounded-full border border-border bg-surface font-medium text-muted transition-colors hover:border-primary/50 hover:text-fg;
+  }
+
+  .chip[aria-selected='true'],
+  .chip[aria-current='true'],
+  .chip[aria-current='page'] {
+    @apply border-primary bg-primary text-primary-fg shadow-xs hover:border-primary hover:bg-primary/90 hover:text-primary-fg;
+  }
+
+  /* Translucent pill badge sitting over hero or card media scrims. */
+  .hero-badge {
+    @apply inline-flex items-center rounded-full border border-hero-fg/20 bg-scrim px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-hero-fg backdrop-blur-sm;
+  }
+
+  /* Editorial eyebrow label shared across section headers. */
+  .section-kicker {
+    @apply text-xs font-semibold uppercase tracking-[0.14em] text-primary rtl:tracking-normal;
   }
 }
 
@@ -226,7 +273,7 @@ body {
 [data-mobile-backdrop] {
   position: fixed !important;
   inset: 0 !important;
-  background-color: rgb(0 0 0 / 0.6) !important;
+  background-color: var(--color-scrim) !important;
   opacity: 0 !important;
   pointer-events: none !important;
   transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
@@ -298,6 +345,8 @@ html[dir='rtl'] [data-mobile-menu].is-open [data-mobile-panel] {
     --theme-warning-fg: #ffffff;
     --theme-error: #b91c1c;
     --theme-error-fg: #ffffff;
+    --theme-hero-fg: #111111;
+    --theme-scrim: transparent;
   }
 
   header,
@@ -313,6 +362,7 @@ html[dir='rtl'] [data-mobile-menu].is-open [data-mobile-panel] {
   [data-toc-mobile],
   [data-post-nav],
   [data-related-posts],
+  [data-booking-form],
   .code-copy-btn {
     display: none !important;
   }

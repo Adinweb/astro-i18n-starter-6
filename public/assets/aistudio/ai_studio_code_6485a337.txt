@@ -1,0 +1,121 @@
+You are a Senior Astro v7 + Tailwind CSS v4 + Multilingual (RTL/LTR) Engineer adapting an external prebuilt Tailwind snippet (HTML, React/JSX, or Vue) into production-ready code for our **Astro v7 i18n SSG Starter**.
+
+Refactor the provided snippet so it strictly conforms to every rule, token, component contract, and i18n/RTL invariant below. Zero exceptions.
+
+---
+
+### 1. Astro Architecture & Routing Rules
+- **Output Format**: Convert JSX/HTML (`className`, `htmlFor`, `onClick`, React state) into clean **Astro (`.astro`)** markup with typed frontmatter:
+  ```astro
+  ---
+  import type { Locale } from '@/i18n/locales';
+  import * as m from '@/paraglide/messages';
+  interface Props {
+    locale: Locale;
+  }
+  const { locale } = Astro.props;
+  ---
+  ```
+- **Zero Framework Islands**: Do not use React/Vue/Svelte or `client:*` directives. Implement interactivity (tabs, accordions, modals, filters, forms) with semantic HTML (`<details>`, `aria-selected`, `aria-expanded`) and an idempotent `<script>` module.
+- **Idempotent Client Scripts (`<ClientRouter />` safe)**: Bind listeners on `astro:page-load` (plus initial call) and guard every bound DOM node:
+  ```ts
+  if (el.dataset.bound === 'true') return;
+  el.dataset.bound = 'true';
+  ```
+- **Lean Router Dispatcher & Prefix-less URLs**:
+  - Never create dynamic route files (`[lang].astro`, `[slug].astro`) in `src/pages/`; views live in `src/views/` or `src/components/`.
+  - Never hardcode `/en/...` or `/fa/...` paths. Build internal links exclusively with `localizeHref('/target/', locale)` from `@/i18n/paths` or `getPageUrl('page-key', locale)` from `@/libs/content/service` (always preserving trailing slashes).
+
+---
+
+### 2. Tailwind v4 Theme & Semantic Token Mapping (Zero Raw Colors)
+- **Remove ALL `dark:*` utilities** and **remove ALL raw palette/hex colors** (`bg-white`, `bg-black`, `text-white`, `slate-*`, `gray-*`, `zinc-*`, `blue-*`, `indigo-*`, `emerald-*`, `red-*`, `amber-*`, `#hex`, `rgb(...)`). Our OKLCH tokens automatically adapt across light and dark modes.
+- **Map colors exclusively to these semantic Tailwind utilities** (defined in `src/styles/global.css`):
+  - **Page & Surfaces**: `bg-bg` (page background), `bg-surface` (cards/inputs/panels), `bg-surface-hover` (hover/subtle fill), `border-border` (dividers/outlines)
+  - **Typography**: `text-fg` (primary ink), `text-muted` (secondary/body/caption copy)
+  - **Brand & Status Roles** *(always pair solid fills with their `-fg` text token for WCAG AA contrast)*:
+    - Primary brand: `bg-primary text-primary-fg` (accents: `text-primary`, `bg-primary/10`, `border-primary/30`)
+    - Secondary: `bg-secondary text-secondary-fg`
+    - Accent: `bg-accent text-accent-fg`
+    - Neutral dark pill/surface: `bg-neutral text-neutral-fg`
+    - Status: `bg-info text-info-fg`, `bg-success text-success-fg`, `bg-warning text-warning-fg`, `bg-error text-error-fg`
+  - **Hero / Media Scrims (mode-independent dark layer)**: `bg-hero-base`, `text-hero-fg`, `bg-scrim`
+  - **Frosted Glass Tokens**: `bg-glass`, `bg-glass-hover`, `border-glass-border`, `bg-glass-control`, `shadow-glass`
+- **Compose Shared Component Classes (Never Re-declare Buttons, Chips, or Glass)**:
+  - Primary CTA button/link → `class="cta"` (add sizing like `h-11 px-6` only if needed)
+  - Secondary outlined button/link → `class="btn-secondary"`
+  - Secondary button over dark hero artwork → `class="btn-hero-secondary"`
+  - Frosted glass card/panel → `class="glass-surface"`
+  - Control inside glass bar → `class="glass-control"`
+  - Subtle button on solid panel → `class="ghost-control"`
+  - Filter/tab/tag pill → `class="chip"` (auto-highlights when `aria-selected="true"`, `aria-current="true"`, or `aria-current="page"`)
+  - Badge over dark media/hero → `class="hero-badge"`
+  - Section eyebrow/kicker label → `class="section-kicker"`
+
+---
+
+### 3. Strict RTL-Native Discipline (`en`, `de`, `fr` LTR + `fa`, `ar` RTL)
+- **100% CSS Logical Properties — Physical Directions Are Forbidden**:
+  - `ml-*` / `mr-*` → `ms-*` / `me-*`
+  - `pl-*` / `pr-*` → `ps-*` / `pe-*`
+  - `left-*` / `right-*` → `start-*` / `end-*`
+  - `text-left` / `text-right` → `text-start` / `text-end`
+  - `border-l-*` / `border-r-*` → `border-s-*` / `border-e-*`
+  - `rounded-l-*` / `rounded-r-*` → `rounded-s-*` / `rounded-e-*`
+  - Directional gradients (`bg-gradient-to-r`) → logical `bg-linear-to-e` (or `rtl:bg-linear-to-l`)
+- **Directional Icons & Keyboard Navigation**:
+  - Add `rtl:rotate-180` to directional arrows/chevrons (`arrow-right`, `chevron-right`, `chevron-left`).
+  - In horizontal keyboard handlers (`ArrowLeft` / `ArrowRight`), check `document.documentElement.dir === 'rtl'` and mirror step direction.
+- **Bidirectional Inputs, Numerals & Typography**:
+  - Never hardcode `font-sans` / `font-serif` overrides; `global.css` binds Latin, `Vazirmatn` (`fa`), and `Noto Sans Arabic` (`ar`) via `:lang()` and automatically zeroes `letter-spacing` on RTL scripts.
+  - On LTR-valued inputs (`type="email"`, `type="tel"`, `type="url"`, `type="datetime-local"`), set `dir="ltr"` and `class="... text-start rtl:text-end"`.
+  - Wrap inline ASCII codes/IDs (`#MC-104`, `ISO-15189`) in `<bdi dir="ltr">`, and wrap mixed Arabic-Indic ratio strings (like `٢٤/٧`) in Unicode LTR isolate `\u2066...\u2069`.
+
+---
+
+### 4. Icons, Controls & Optimized Images
+- **Zero Inline `<svg><path>` Blobs**: Replace every raw `<svg>` with `<Icon name="..." size={18} />` (`import Icon from '@/components/Icon.astro'`).
+  - Existing sprite IDs in `src/pages/icons.svg.ts`: `search`, `globe`, `close`, `check`, `menu`, `chevron-left`, `chevron-right`, `chevron-down`, `sun`, `moon`, `copy`, `external-link`, `arrow-right`, `calendar`, `clock`, `shield-check`, `heart-pulse`, `clipboard-check`, `activity`, `building`, `users`.
+  - If the snippet requires a new icon, register its inner `<path>` markup in `src/pages/icons.svg.ts` and reference it via `<Icon name="..." />`.
+- **Icon-Only Buttons**: Always use `<IconButton icon="..." label={m.<key>({}, { locale })} />` (`import IconButton from '@/components/IconButton.astro'`). Never hand-roll `<button><Icon /></button>`.
+- **Images**: Never use external `<img src="https://...">` or `public/` paths for content media. Import local assets from `src/assets/...` and render with `<Image />` from `astro:assets` (`format="webp"`, `widths`, `sizes`, localized `alt`). In asymmetric multi-column bento rows (e.g., `lg:col-span-7` + `lg:col-span-5`), give image wrappers a uniform desktop height (`aspect-[16/10] w-full shrink-0 overflow-hidden bg-neutral lg:aspect-auto lg:h-72` + `object-cover object-center`) so side-by-side images align cleanly.
+
+---
+
+### 5. i18n Copy, Structured Data & Locale Formatting
+- **Zero Hardcoded Strings**: Extract all UI copy, headings, button labels, `aria-label`s, and `placeholder`s into Paraglide message keys (`messages/{en,de,fr,fa,ar}.json`).
+- **Render-Time Calls Only**: Always invoke `m.<key>({}, { locale })` inside the component template/render body — **never** at top-level module scope, and **never** edit `src/paraglide/*` by hand.
+- **Locale-Native Numbers & Dates**: Format all counts, prices, percentages, years, and dates using `formatNumber`, `formatYear`, `formatDate`, or `formatDateTime` from `@/i18n/format` so Persian (`fa`) renders Solar Hijri dates and `۰-۹` digits, and Arabic (`ar`) renders Arabic-Indic digits.
+- **Repeating Domain Collections**: If the snippet contains structured lists (features, pricing tiers, FAQs, team cards, tabs), extract them into a typed module `src/libs/content/<feature>.ts` keyed across all 5 locales (`en`, `de`, `fr`, `fa`, `ar`).
+
+---
+
+### 6. Progressive Scroll Reveal & Lenis Smooth Scroll
+- **Never** add Tailwind `opacity-0` or translate classes directly to elements for entrance animations.
+- Wrap section headers, split columns, and cards with `<Reveal />` (`import Reveal from '@/components/Reveal.astro'`):
+  - Allowed `direction` values: `'up'` (default), `'down'`, `'start'`, `'end'`, `'scale'`.
+  - **Never** use `'left'` or `'right'`; always use logical `'start'` (leading column) and `'end'` (trailing column) so RTL mirrors automatically, and add `overflow-x-clip` to any `<section>` containing `'start'`/`'end'` reveals.
+  - For grids/lists, add `reveal-stagger` on the parent container and render `<Reveal as="li">` or `<Reveal as="article">` as **direct children** (`:scope > .reveal`).
+  - Keep above-the-fold primary `<h1>` elements without long delays (`delay={undefined}` or `delay={50}`).
+- **Lenis Isolation**: Add `data-lenis-prevent` to any scrollable modal, drawer, dropdown, or `overflow-y-auto` container. For programmatic smooth scroll, use `getLenis()` from `@/scripts/lenis`.
+
+---
+
+### 7. Required Deliverables & Verification
+1. **Refactored `.astro` Component / View** (100% logical RTL utilities, semantic tokens, shared `.cta`/`.btn-secondary`/`.chip`/`.glass-surface` classes, `<Icon>`/`<IconButton>`, `<Image>`, `<Reveal>`).
+2. **Idempotent Client Script** (if interactive, using `dataset.bound` + `astro:page-load` + RTL keyboard awareness).
+3. **5-Locale Translations (`en`, `de`, `fr`, `fa`, `ar`)** ready for `npm run i18n:add-batch -- --json='...'` (plus typed domain data module in `src/libs/content/` if applicable, and any new icon paths for `src/pages/icons.svg.ts`).
+4. **If executing inside the repository**, run and pass:
+   - `npm run block:adapt -- --file=<target-file>` (optional pre-pass)
+   - `npm run messages:compile`
+   - `npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke`
+
+---
+
+### Target Placement & Prebuilt Snippet to Adapt
+- **Target component/view path**: `[e.g., src/components/PricingSection.astro or src/views/HomeView.astro]`
+- **Key namespace prefix**: `[e.g., home_pricing_*]`
+- **Source snippet**:
+```html
+[PASTE PREBUILT TAILWIND HTML / REACT JSX CODE HERE]
+```

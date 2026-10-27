@@ -17,6 +17,7 @@ Never use physical directional utilities. Always use logical properties:
 | `border-l-*`, `border-r-*` | `border-s-*`, `border-e-*` | `border-inline-start`, `border-inline-end` |
 | `rounded-l-*`, `rounded-r-*` | `rounded-s-*`, `rounded-e-*` | `border-start-*-radius`, `border-end-*-radius` |
 | Directional arrows | `rtl:rotate-180` / `rotate-180 rtl:rotate-0` | Mirrors icon based on `dir="rtl"` |
+| `data-reveal="left"`, `data-reveal="right"` | `data-reveal="start"`, `data-reveal="end"` | Mirrors horizontal scroll-reveal entrance in RTL (`reveal.css`) |
 
 ---
 
@@ -36,9 +37,12 @@ In `src/styles/global.css`, font stacks are bound by language pseudo-class:
 ```
 This guarantees bidirectional purity: Latin snippets inside a Persian article (`<span lang="en">`) keep Latin typography, while Persian quotes inside an English post keep Vazirmatn.
 
+### Cursive RTL Letter-Spacing Protection
+Positive or negative `letter-spacing` (`tracking-*`) disconnects joined Persian and Arabic glyphs. `src/styles/global.css` automatically zeroes `letter-spacing` inside `:lang(fa)` and `:lang(ar)` while preserving explicit Latin islands (`[dir='ltr']`, `:lang(en)`).
+
 ---
 
-## 3. LTR Code Block Isolation
+## 3. LTR Code Block & Form Input Isolation
 
 In `src/styles/prose.css`, code elements and equations are strictly isolated to `ltr` regardless of document direction:
 ```css
@@ -48,6 +52,8 @@ pre, code, .math {
   unicode-bidi: isolate;
 }
 ```
+
+For LTR-valued form fields (`type="email"`, `type="tel"`, `type="datetime-local"`), apply `dir="ltr"` with `text-start rtl:text-end` so characters keep LTR bidi order while aligning flush to the inline-start (right) edge in RTL forms. Wrap inline ASCII codes (`ID-1024`) inside `<bdi dir="ltr">`.
 
 ---
 
@@ -68,8 +74,16 @@ All colors are defined once in `src/styles/global.css` using OKLCH and exposed v
 | `--color-accent` / `--color-accent-fg` | Decorative highlight (cyan) |
 | `--color-neutral` / `--color-neutral-fg` | Dark neutral surface (badges, dark pill tags) |
 | `--color-info`, `--color-success`, `--color-warning`, `--color-error` | Status roles with corresponding `-fg` text partners |
-| `--color-hero-base` | Dark mode-independent base behind hero artwork |
+| `--color-hero-base` / `--color-hero-fg` | Mode-independent dark hero base & foreground text over hero artwork |
+| `--color-scrim` | Translucent dark backdrop/media scrim |
 | `--color-glass`, `--color-glass-border`, `--shadow-glass` | Translucent frosted-glass system |
+
+### Shared Semantic Component Classes (`@layer components` in `global.css`)
+Never re-declare buttons, chips, kickers, or raw `text-white`/`bg-black` utilities in components. Compose:
+- `.glass-surface`, `.glass-control`, `.ghost-control`
+- `.cta`, `.btn-secondary`, `.btn-hero-secondary`
+- `.chip` (automatically styled when `[aria-selected='true']`, `[aria-current='true']`, or `[aria-current='page']`)
+- `.hero-badge`, `.section-kicker`
 
 ### Two-Mode Contrast
 Every role clears **WCAG AA (4.5:1)** contrast against its respective `-fg` counterpart in both light and dark mode.
@@ -93,3 +107,4 @@ Never embed raw `<svg><path ...></svg>` in templates. Use `<Icon name="..." />` 
 10. `moon` — dark theme indicator
 11. `copy` — clipboard copy action icon for code blocks
 12. `external-link` — outbound link indicator for docs and external URLs
+13. `arrow-right` — call-to-action directional arrow (pair with `rtl:rotate-180`)

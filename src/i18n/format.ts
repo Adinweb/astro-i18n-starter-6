@@ -7,6 +7,7 @@
 const numberFormatters = new Map<string, Intl.NumberFormat>();
 const yearFormatters = new Map<string, Intl.NumberFormat>();
 const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
 
 function resolveNumberLocale(locale: string): string {
   const primary = locale.split(/[-_]/)[0]?.toLowerCase() ?? 'en';
@@ -86,6 +87,29 @@ export function formatDate(
       formatter = new Intl.DateTimeFormat('en', options);
     }
     dateFormatters.set(cacheKey, formatter);
+  }
+  return formatter.format(date);
+}
+
+/**
+ * Formats a local date-time (e.g. an appointment slot) in the calendar and
+ * numeral system of `locale` (Solar Hijri for `fa`, Eastern Arabic numerals
+ * for `ar`).
+ */
+export function formatDateTime(date: Date, locale: string): string {
+  const resolved = resolveDateLocale(locale);
+  let formatter = dateTimeFormatters.get(resolved);
+  if (!formatter) {
+    const options: Intl.DateTimeFormatOptions = {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    };
+    try {
+      formatter = new Intl.DateTimeFormat(resolved, options);
+    } catch {
+      formatter = new Intl.DateTimeFormat('en', options);
+    }
+    dateTimeFormatters.set(resolved, formatter);
   }
   return formatter.format(date);
 }

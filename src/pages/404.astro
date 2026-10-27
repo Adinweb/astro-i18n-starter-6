@@ -1,7 +1,8 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import Reveal from '@/components/Reveal.astro';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_METADATA, type Locale } from '@/i18n/locales';
-import { formatYear } from '@/i18n/format';
+import { formatNumber, formatYear } from '@/i18n/format';
 import { localizeHref } from '@/i18n/paths';
 import { getNavigation } from '@/libs/config/navigation';
 import { siteConfig } from '@/libs/config/app';
@@ -47,6 +48,7 @@ const i18nData = Object.fromEntries(
           changeLanguage: m.common_change_language({}, { locale: loc }),
           themeLight: m.common_theme_light({}, { locale: loc }),
           themeDark: m.common_theme_dark({}, { locale: loc }),
+          code: formatNumber(404, loc),
           year: formatYear(new Date().getFullYear(), loc),
           homeHref: nav.find((item) => item.key === 'home')?.href ?? localizeHref('/', loc),
           nav: nav.map(({ key, label, href }) => ({ key, label, href: href ?? '' })),
@@ -69,8 +71,10 @@ const i18nData = Object.fromEntries(
   noindex
   noPagefind
 >
-  <div class="text-center py-20 px-4 max-w-xl mx-auto">
-    <p class="text-7xl font-extrabold text-primary mb-4 tracking-tight">404</p>
+  <Reveal direction="scale" class="text-center py-20 px-4 max-w-xl mx-auto">
+    <p id="not-found-code" class="text-7xl font-extrabold text-primary mb-4 tracking-tight tabular-nums">
+      {formatNumber(404, locale)}
+    </p>
     <h1 class="text-3xl font-bold text-fg mb-4" id="not-found-title">
       {m.common_not_found_title({}, { locale })}
     </h1>
@@ -99,7 +103,7 @@ const i18nData = Object.fromEntries(
     <p id="not-found-english-hint" class="hidden text-xs text-muted mt-4">
       {m.common_english_version_hint({}, { locale })}
     </p>
-  </div>
+  </Reveal>
 
   <script define:vars={{ LOCALES, DEFAULT_LOCALE, i18nData, siteName }}>
     function updateNotFoundPage() {
@@ -119,6 +123,9 @@ const i18nData = Object.fromEntries(
       document.title = `${data.title} | ${siteName}`;
 
       // Update text nodes
+      const codeEl = document.getElementById('not-found-code');
+      if (codeEl) codeEl.textContent = data.code;
+
       const titleEl = document.getElementById('not-found-title');
       if (titleEl) titleEl.textContent = data.title;
 

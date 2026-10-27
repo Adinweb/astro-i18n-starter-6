@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDate, formatNumber, formatYear } from './format';
+import { formatDate, formatDateTime, formatNumber, formatYear } from './format';
 
 describe('src/i18n/format.ts', () => {
   describe('formatNumber', () => {
@@ -52,6 +52,16 @@ describe('src/i18n/format.ts', () => {
       const arDate = formatDate(sample, 'ar', 'long');
       expect(arDate).toContain('٢٠٢٦');
       expect(arDate).toContain('١٥');
+    });
+  });
+
+  describe('formatDateTime', () => {
+    const slot = new Date(2026, 0, 15, 10, 30);
+
+    it('formats local date-time in Latin, Solar Hijri (fa), and Eastern Arabic (ar)', () => {
+      expect(formatDateTime(slot, 'en')).toContain('2026');
+      expect(formatDateTime(slot, 'fa')).toContain('۱۴۰۴');
+      expect(formatDateTime(slot, 'ar')).toContain('٢٠٢٦');
     });
   });
 });
