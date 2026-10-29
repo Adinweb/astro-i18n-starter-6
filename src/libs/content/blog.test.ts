@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   NO_FILTERS,
+  areBlogFiltersEqual,
   buildBlogFilterQuery,
   collectTaxonomyKeys,
   filterBlogPosts,
@@ -88,11 +89,33 @@ describe('src/libs/content/blog.ts', () => {
     });
   });
 
-  describe('hasActiveFilters', () => {
+  describe('hasActiveFilters & areBlogFiltersEqual', () => {
     it('detects category and tag selections', () => {
       expect(hasActiveFilters(NO_FILTERS)).toBe(false);
       expect(hasActiveFilters({ category: 'guides', tags: [] })).toBe(true);
       expect(hasActiveFilters({ category: null, tags: ['rtl'] })).toBe(true);
+    });
+
+    it('compares filter states regardless of tag order', () => {
+      expect(areBlogFiltersEqual(NO_FILTERS, { category: null, tags: [] })).toBe(true);
+      expect(
+        areBlogFiltersEqual(
+          { category: 'engineering', tags: ['astro', 'rtl'] },
+          { category: 'engineering', tags: ['rtl', 'astro'] }
+        )
+      ).toBe(true);
+      expect(
+        areBlogFiltersEqual(
+          { category: 'engineering', tags: ['astro'] },
+          { category: 'guides', tags: ['astro'] }
+        )
+      ).toBe(false);
+      expect(
+        areBlogFiltersEqual(
+          { category: 'engineering', tags: ['astro'] },
+          { category: 'engineering', tags: ['astro', 'rtl'] }
+        )
+      ).toBe(false);
     });
   });
 

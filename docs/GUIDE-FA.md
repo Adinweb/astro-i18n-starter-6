@@ -1135,21 +1135,35 @@ pre, code, .math {
 | `Reveal.astro` | `as?` (`'div'`), `direction?` (`'up'\|'down'\|'start'\|'end'\|'scale'`), `delay?` (`50..500`), `class?` + هر `data-*`/`aria-*` | پوشش‌دهندهٔ نوع‌امن انیمیشن اسکرول (Scroll Reveal) با جهت‌های منطقی RTL |
 | `TopLoadingBar.astro` | — | نوار پیشرفت ناوبری |
 
-### انیمیشن‌های اسکرول (Scroll Reveal) و اسکرول نرم Lenis
+### انیمیشن‌های اسکرول (Scroll Reveal)، چیدمان پلکانی (`.reveal-stagger`) و اسکرول نرم Lenis
 
-پروژه به‌صورت توکار به یک سیستم **Progressive Scroll Reveal** (`src/styles/reveal.css` + `src/scripts/reveal.ts` + `src/components/Reveal.astro`) و موتور اسکرول نرم **Lenis** (`src/scripts/lenis.ts`) مجهز است که در `BaseLayout.astro` بارگذاری می‌شوند و با ناوبری `<ClientRouter />` (View Transitions) و جهت‌های **RTL/LTR** کاملاً هماهنگ هستند.
+پروژه به‌صورت توکار به سیستم **Progressive Scroll Reveal** (`src/styles/reveal.css` + `src/scripts/reveal.ts` + `src/components/Reveal.astro`) و موتور اسکرول نرم **Lenis** (`src/scripts/lenis.ts`) مجهز است که در `BaseLayout.astro` بارگذاری می‌شوند و با ناوبری `<ClientRouter />` (View Transitions) و جهت‌های **RTL/LTR** کاملاً هماهنگ هستند.
 
-#### ۱. اصل ارتقای پیش‌رونده (Progressive Enhancement)
+#### ۱. معماری `.js` و چرخهٔ ۴ مرحله‌ای `.reveal` (چرا از `hidden` / `display: none` استفاده نمی‌شود؟)
 
-هیچ عنصری در CSS سراسری به‌صورت پیش‌فرض مخفی نمی‌شود:
+هرگز برای انیمیشن اسکرول از `hidden` (`display: none`) یا `opacity-0` بدون پیشوند استفاده نکنید؛ زیرا `display: none` ابعاد المان را صفر می‌کند، تشخیص ورود به دید در `IntersectionObserver` را از کار می‌اندازد، پرش چیدمان (`CLS`) ایجاد می‌کند و ترنزیشن CSS را می‌شکند. در عوض، این پروژه جای واقعی هر المان را در صفحه حفظ کرده و فقط ویژگی‌های سبک کارت گرافیک (`opacity` و `transform: translate3d`) را در **۴ مرحلهٔ قطعی** مدیریت می‌کند:
 
-1. در `<head>` فایل `BaseLayout.astro`، اسکریپت خطی همگام `document.documentElement.classList.add('js')` پیش از اولین رندر اجرا می‌شود.
-2. قواعد مخفی‌سازی اولیه در `src/styles/reveal.css` منحصراً زیر انتخابگر `.js .reveal` تعریف شده‌اند. اگر جاوااسکریپت در مرورگر کاربر غیرفعال باشد یا صفحه چاپ شود (`@media print`)، همهٔ عناصر بدون هیچ تاخیری کاملاً مرئی هستند.
-3. هنگام اجرای انیمیشن ورود، کلاس `.js .reveal:not(.reveal-complete)` منحنی حرکتی `0.8s cubic-bezier(0.16, 1, 0.3, 1)` را قفل می‌کند تا کلاس‌های Tailwind مثل `transition-colors` یا `duration-200` روی کارت‌ها نتوانند انیمیشن ورود را کوتاه کنند. به‌محض پایان انیمیشن یک‌باره، کلاس `.reveal-complete` اضافه می‌شود تا افکت‌های `hover` کارت با سرعت طبیعی خودشان کار کنند.
+```text
+مرحله ۱ (<head> همگام) : درج کلاس `js` روی `<html class="js">` پیش از اولین رسم صفحه (بدون چشمک زدن / FOUC)
+         │               (اگر جاوااسکریپت مرورگر خاموش باشد یا صفحه پرینت شود، `.js` بی‌اثر بوده و همه چیز ۱۰۰٪ مرئی است)
+         ▼
+مرحله ۲ (.reveal)      : استایل `opacity: 0` و `translate3d(...)` روی GPU اعمال می‌شود؛ فضای المان حفظ است (CLS = 0)
+         │               انتخابگر `.js .reveal:not(.reveal-complete)` منحنی ورود `0.8s` را با `!important` قفل می‌کند
+         ▼
+مرحله ۳ (.is-visible)  : با ورود لبهٔ بالایی المان به ۹۰٪ بالایی ویوپرت، کلاس `.is-visible` اضافه می‌شود
+         │               المان نرم به `opacity: 1` و `transform: 0` می‌رود و بلافاصله `unobserve` می‌شود
+         ▼
+مرحله ۴ (.reveal-complete): پس از پایان ترنزیشن `opacity` (یا سقف `1500ms`) اضافه می‌شود تا قفل `!important`
+                            و تاخیر پلکانی برداشته شود و افکت‌های سریع `hover:` کارت با سرعت طبیعی کار کنند
+```
 
-#### ۲. روش اول (پیشنهادی): کامپوننت `<Reveal>` در فایل‌های `.astro` و `.mdx`
+> **ترکیب امن با کلاس‌های هاور Tailwind**: به لطف آزادسازی قفل در مرحلهٔ ۴ (`.reveal-complete`)، می‌توانید کلاس‌های تعاملی مثل `transition duration-200 hover:-translate-y-0.5 hover:shadow-lg` را **مستقیماً روی همان تگ `<Reveal>` یا `.reveal`** قرار دهید و نیازی به ساخت `<div>` اضافی دور کارت نیست.
 
-کامپوننت `src/components/Reveal.astro` یک پوشش‌دهندهٔ چندریختی (Polymorphic) و نوع‌امن است که هر تگ معنایی HTML را با پراپ `as` می‌سازد:
+#### ۲. پیاده‌سازی المان‌های تکی: کامپوننت `<Reveal>` یا صفات مستقیم HTML
+
+دو روش کاملاً معادل برای انیمیشن‌دار کردن المان‌ها وجود دارد:
+
+**روش اول (پیشنهادی در `.astro` و `.mdx` — کامپوننت نوع‌امن `<Reveal>`):**
 
 ```astro
 ---
@@ -1160,7 +1174,12 @@ import Reveal from '@/components/Reveal.astro';
   <h2 class="text-3xl font-bold text-fg">خدمات تخصصی ما</h2>
 </Reveal>
 
-<Reveal as="article" direction="start" delay={150} class="glass-surface rounded-2xl p-6">
+<Reveal
+  as="article"
+  direction="start"
+  delay={150}
+  class="glass-surface rounded-2xl p-6 transition duration-200 hover:-translate-y-0.5"
+>
   <p class="text-muted">این کارت در فارسی از راست و در انگلیسی از چپ وارد می‌شود.</p>
 </Reveal>
 ```
@@ -1169,13 +1188,12 @@ import Reveal from '@/components/Reveal.astro';
 | --- | --- | --- | --- |
 | `as` | هر تگ معتبر HTML (`'div'`, `'section'`, `'article'`, `'li'`, `'header'`, …) | `'div'` | تگ خروجی HTML (بدون ایجاد `<div>` اضافی) |
 | `direction` | `'up'` · `'down'` · `'start'` · `'end'` · `'scale'` | `'up'` | جهت منطقی ورود عنصر (`'start'` و `'end'` در RTL خودکار قرینه می‌شوند) |
-| `delay` | `50` · `100` · `150` · `200` · `250` · `300` · `400` · `500` | `undefined` | تاخیر دستی شروع انیمیشن بر حسب میلی‌ثانیه |
+| `delay` | `50` · `100` · `150` · `200` · `250` · `300` · `400` · `500` | `undefined` | تاخیر دستی شروع به میلی‌ثانیه (مخصوص تک‌المان‌ها؛ برای لیست و گرید از `.reveal-stagger` استفاده کنید) |
 | `class` | `string` | `''` | کلاس‌های استایل که با کلاس `reveal` ترکیب می‌شوند |
 | سایر صفات | `id`, `aria-*`, `data-*`, … | — | مستقیماً روی تگ خروجی قرار می‌گیرند |
 
-#### ۳. روش دوم: استفادهٔ مستقیم با کلاس و صفات HTML (بدون کامپوننت)
-
-هرگاه نخواهید کامپوننت وارد کنید یا بخواهید مستقیم به یک تگ HTML موجود انیمیشن بدهید، کافی است کلاس `reveal` و صفت‌های `data-reveal` / `data-delay` را اضافه کنید:
+**روش دوم (استفادهٔ مستقیم از کلاس و `data-*` بدون ایمپورت کامپوننت):**
+مناسب برای ریشهٔ کامپوننت‌های قابل‌استفاده مجدد (مثل `PostCard.astro`) یا المان‌هایی که در اسکریپت کلاینت با `document.createElement` ساخته می‌شوند:
 
 ```html
 <header class="reveal space-y-3" data-reveal="up">
@@ -1184,9 +1202,9 @@ import Reveal from '@/components/Reveal.astro';
 </header>
 ```
 
-#### ۴. جهت‌های منطقی آگاه از RTL (`start` و `end`)
+#### ۳. جهت‌های منطقی آگاه از RTL (`start` و `end`)
 
-بر اساس قاعدهٔ سخت‌گیرانهٔ RTL، جهت‌های فیزیکی `left` و `right` حذف شده‌اند و تمام حرکت‌های افقی با جهت‌های منطقی تعریف می‌شوند که بر پایهٔ `dir="rtl"` روی `<html>` به‌طور خودکار قرینه می‌گردند:
+بر اساس قاعدهٔ سخت‌گیرانهٔ RTL، جهت‌های فیزیکی `left` و `right` حذف شده‌اند و تمام حرکت‌های افقی با جهت‌های منطقی تعریف می‌شوند (با انتخابگر بدون وزن `:where([dir='rtl'])` و `:not(.is-visible)` تا کلاس `.is-visible` همیشه جابه‌جایی را دقیق صفر کند):
 
 | مقدار `direction` / `data-reveal` | رفتار در LTR (`en`, `de`, `fr`) | رفتار در RTL (`fa`, `ar`) | کاربرد پیشنهادی |
 | --- | --- | --- | --- |
@@ -1211,26 +1229,114 @@ import Reveal from '@/components/Reveal.astro';
 </div>
 ```
 
-#### ۵. انیمیشن پلکانی خودکار برای شبکه‌ها و فهرست‌ها (`.reveal-stagger`)
+#### ۴. پیاده‌سازی دقیق چیدمان‌های پلکانی (`.reveal-stagger`)
 
-برای کارت‌های کنار هم یا آیتم‌های لیست، به‌جای دادن `data-delay` دستی به تک‌تک آیتم‌ها، کلاس `reveal-stagger` را به ظرف والد بدهید. اسکریپت `reveal.ts` به همهٔ فرزندان مستقیم (`:scope > .reveal`) متغیر `--stagger-index` (`0, 1, 2, ...`) می‌دهد و هر آیتم با گام `0.09s` پس از قبلی وارد می‌شود:
+در شبکه‌های کارت (Grid) و لیست‌ها هرگز `delay={50}`، `delay={100}`، `delay={150}` را دستی روی آیتم‌ها تکرار نکنید. کافی است کلاس `reveal-stagger` را به **ظرف والد** بدهید و هر آیتم را **فرزند مستقیم** آن قرار دهید.
+
+**قوانین داخلی `.reveal-stagger` که باید بدانید:**
+1. **شرط فرزند مستقیم (`:scope > .reveal`)**: هم در جاوااسکریپت و هم در CSS (`.js .reveal-stagger > .reveal:not(.reveal-complete)`) فقط فرزندان بلافصل ظرف شماره‌گذاری می‌شوند.
+2. **نادیده گرفتن خودکار آیتم‌های مخفی (`:not([hidden])`)**: اگر تعدادی از کارت‌ها با صفت `hidden` مخفی شده باشند، از شمارش کنار گذاشته می‌شوند و متغیر `--stagger-index` آن‌ها پاک می‌شود؛ در نتیجه اولین کارت قابل‌نمایش همیشه با اندیس `0` (بدون مکث کاذب) شروع می‌شود.
+3. **سقف هوشمند تاخیر (`MAX_STAGGER_INDEX = 8`)**: اندیس پلکانی روی بازهٔ `0..8` سقف می‌خورد تا در گریدهای طولانی (مثلاً ۲۰ کارت)، کارت‌های انتهایی چندین ثانیه معطل نمانند.
+4. **دو ریتم سرعت**:
+   - **ورود اولیه با اسکرول (پیش‌فرض)**: زمان ترنزیشن `0.8s` و گام پلکانی `0.09s` (`90ms` بین هر کارت).
+   - **بازپخش سریع تعاملی (`data-reveal-replay="fast"`)**: زمان ترنزیشن `0.6s` و گام پلکانی `0.045s` (`45ms` بین هر کارت).
+
+**الگوی اول — لیست معنایی `<ul>` با `<Reveal as="li">`:**
 
 ```astro
+<!-- ✅ درست: خود <li> دارای کلاس reveal و فرزند مستقیم .reveal-stagger است -->
 <ul class="reveal-stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
   {cards.map((card) => (
     <Reveal
       as="li"
       direction="up"
-      class="glass-surface rounded-2xl p-6 transition-transform duration-200 hover:-translate-y-1"
+      class="glass-surface rounded-2xl p-6 transition duration-200 hover:-translate-y-1"
     >
       <h3 class="font-semibold text-fg">{card.title}</h3>
       <p class="mt-2 text-sm text-muted">{card.summary}</p>
     </Reveal>
   ))}
 </ul>
+
+<!-- ❌ اشتباه: قرار دادن <Reveal> داخل یک <li> معمولی باعث شکسته شدن `:scope > .reveal` می‌شود -->
+<ul class="reveal-stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  {cards.map((card) => (
+    <li>
+      <Reveal direction="up">{card.title}</Reveal>
+    </li>
+  ))}
+</ul>
 ```
 
-> **نکتهٔ مهم (فرزند مستقیم)**: انتخابگر پلکانی `:scope > .reveal` فقط فرزندان **مستقیم** ظرف `.reveal-stagger` را شماره‌گذاری می‌کند. بنابراین اگر والد `<ul>` است، خود آیتم را با `<Reveal as="li">` بسازید و آن را داخل یک `<li>` جداگانه نپیچید.
+**الگوی دوم — استفاده از کامپوننت کارت مستقل داخل گرید (مثل `PostCard.astro`):**
+وقتی درون `<div class="reveal-stagger grid ...">` یک کامپوننت فرزند رندر می‌کنید، کلاس `reveal` و `data-reveal="up"` باید روی **بیرونی‌ترین تگ ریشهٔ داخل همان کامپوننت کارت** قرار بگیرد:
+
+```astro
+<!-- در فایل نمای والد (مثلاً BlogIndexView.astro) -->
+<div class="reveal-stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-blog-grid>
+  {posts.map((post, index) => (
+    <PostCard post={post} locale={locale} href={...} priority={index === 0} />
+  ))}
+</div>
+
+<!-- در تگ ریشهٔ کامپوننت فرزند (PostCard.astro) -->
+<article class="reveal group flex flex-col rounded-2xl border border-border bg-surface ..." data-reveal="up">
+  ...
+</article>
+```
+
+#### ۵. فیلتر کردن، تب‌بندی و تزریق پویا در سمت کلاینت (`initReveals` در برابر `replayReveals`)
+
+از آنجا که انیمیشن اسکرول به‌صورت پیش‌فرض **یک‌بارمصرف** است (المان پس از نمایش کلاس `.is-visible` و `.reveal-complete` می‌گیرد)، هنگام تغییر DOM با جاوااسکریپت یکی از دو تابع زیر را از `@/scripts/reveal` فراخوانی کنید:
+
+| سناریو | تابع مناسب | عملکرد دقیق |
+| --- | --- | --- |
+| افزودن کارت‌های **جدید** به انتهای لیست (مثل دکمهٔ «نمایش بیشتر») بدون دست زدن به کارت‌های قبلی | `initReveals()` | کارت‌های قبلیِ دارای `.is-visible` را نادیده می‌گیرد و فقط کارت‌های جدید را وارد چرخهٔ مشاهده‌گر می‌کند. |
+| **فیلتر کردن یا تعویض تب** با تغییر `card.hidden = !matches` یا بازسازی گرید با کلیک کاربر / `popstate` | `replayReveals(grid, { fast: true })` | با کلاس موقت `.is-resetting` مانع انیمیشن معکوس می‌شود، `.is-visible` و `.reveal-complete` را از کارت‌های مرئی پاک می‌کند، Reflow همگام می‌گیرد، اندیس پلکانی را از `0` فقط روی کارت‌های غیرمخفی می‌چیند و با گام سریع `45ms` انیمیشن ورود را بازپخش می‌کند. |
+
+**الگوی مرجع برای پیاده‌سازی فیلتر یا تب جدید در صفحات:**
+
+```ts
+import { replayReveals } from '@/scripts/reveal';
+
+function setupPortfolioFilter() {
+  const root = document.querySelector<HTMLElement>('[data-portfolio-filter]');
+  if (!root || root.dataset.bound === 'true') return;
+  root.dataset.bound = 'true';
+
+  const grid = document.querySelector<HTMLElement>('[data-portfolio-grid]');
+  const cards = [...document.querySelectorAll<HTMLElement>('[data-portfolio-card]')];
+  let activeTab = 'all';
+
+  const render = (animate = false) => {
+    for (const card of cards) {
+      const matches = activeTab === 'all' || card.dataset.tab === activeTab;
+      card.hidden = !matches;
+    }
+
+    // بازپخش فقط هنگام تعامل کاربر (`animate = true`) — هرگز در بارگذاری اولیه صفحه صدا نزنید
+    if (animate && grid) {
+      replayReveals(grid, { fast: true });
+    }
+  };
+
+  root.addEventListener('click', (event) => {
+    const btn = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>('[data-tab-btn]');
+    if (!btn) return;
+    const nextTab = btn.dataset.tabBtn ?? 'all';
+    const changed = nextTab !== activeTab;
+    activeTab = nextTab;
+    render(changed); // اگر روی تبِ از قبل فعال کلیک شد، بازپخش غیرضروری انجام نشود
+  });
+
+  render(false);
+}
+
+setupPortfolioFilter();
+document.addEventListener('astro:page-load', setupPortfolioFilter);
+```
+
+> **نکتهٔ مهم CSS برای `hidden` روی کارت‌های `flex` / `grid`**: کلاس‌های `flex` یا `grid` در Tailwind استایل پیش‌فرض مرورگر برای `[hidden]` را خنثی می‌کنند. هرگاه کارتی را با `card.hidden = true` فیلتر می‌کنید، حتماً استایل `[data-your-card][hidden] { display: none !important; }` را برای آن قرار دهید (مانند `BlogIndexView.astro`).
 
 #### ۶. استفاده در فایل‌های محتوای `.mdx`
 
@@ -1284,8 +1390,7 @@ import Reveal from '@/components/Reveal.astro';
      lenis.scrollTo('#contact-form', { offset: -96, duration: 1.15 });
    }
    ```
-4. **غیرفعال‌سازی صریح حرکت (`data-motion="reduced"`)**: اگر قرار دادن کلید کاهش حرکت در رابط کاربری مدنظر باشد، کافی است صفت `data-motion="reduced"` را روی `<html>` ست کنید؛ هم Lenis متوقف می‌شود و هم تمام بلوک‌های `.reveal` بلافاصله و بدون ترنزیشن نمایش داده می‌شوند.
-5. **افزودن پویا به DOM**: اگر در اسکریپتی بعد از بارگذاری صفحه عناصر `.reveal` جدیدی به صفحه تزریق کردید، تابع `initReveals()` را از `@/scripts/reveal` صدا بزنید تا عناصر جدید پایش شوند.
+4. **غیرفعال‌سازی صریح حرکت (`data-motion="reduced"`)**: اگر قرار دادن کلید کاهش حرکت در رابط کاربری مدنظر باشد، کافی است صفت `data-motion="reduced"` را روی `<html>` ست کنید؛ هم Lenis متوقف می‌شود و هم `initReveals` و `replayReveals` تمام بلوک‌های `.reveal` را بلافاصله و بدون ترنزیشن نمایش می‌دهند.
 
 ### استایل متن محتوا — `src/styles/prose.css`
 
@@ -1524,7 +1629,8 @@ collectTaxonomyKeys(posts, 'categories');
 - URL با `history.replaceState` همگام می‌شود (به‌جای `pushState`، تا
   تاریخچهٔ ClientRouter نشکند)؛
 - با `popstate` فیلترها دوباره از URL خوانده و بازسازی می‌شوند؛
-- دکمهٔ «پاک کردن فیلتر» فقط وقتی فیلتر فعالی هست دیده می‌شود.
+- دکمهٔ «پاک کردن فیلتر» فقط وقتی فیلتر فعالی هست دیده می‌شود؛
+- در هر تغییر واقعی وضعیت فیلتر (`!areBlogFiltersEqual(prev, next)` شامل انتخاب دسته/برچسب، پاک کردن فیلتر و `popstate`)، تابع `replayReveals(grid, { fast: true })` کارت‌های منطبق را با گام پلکانی سریع (`45ms`) دوباره با انیمیشن وارد تصویر می‌کند.
 
 وقتی وبلاگ بیش از یک صفحه دارد و فیلتری فعال است، کارت‌های همان صفحه کافی
 نیستند: `BlogIndexView` کاتالوگ استاتیک `/api/blog-posts.json` را یک بار
@@ -1690,10 +1796,10 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 
 ```bash
 pnpm run lint     # کامپایل پیام‌ها + astro check + tsc --noEmit
-pnpm test         # ۱۰۱ تست Vitest
+pnpm test         # ۱۴۵ تست واحد Vitest (در ۱۳ مجموعه تست)
 pnpm run audit:i18n
 SITE_URL=https://example.com pnpm run build
-pnpm run smoke    # ۹۸ assertion روی dist/
+pnpm run smoke    # ۱۲۸ assertion روی dist/
 pnpm run knip
 pnpm run verify:cli  # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
 ```
@@ -1704,15 +1810,19 @@ pnpm run verify:cli  # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
 | --- | --- |
 | `src/i18n/paths.test.ts` | `localizeHref`، `stripLocale`، نرمال‌سازی مسیر، اسلش انتهایی |
 | `src/i18n/icu.test.ts` | ICU جمع/ordinal برای همهٔ زبان‌ها |
+| `src/i18n/format.test.ts` | قالب‌بندی بومی اعداد و تاریخ‌ها (شمسی برای فارسی، ارقام عربی شرقی و غیره) |
 | `src/libs/content/entries.test.ts` | تجزیهٔ ID، فیلتر پیش‌نویس، گروه‌بندی، مرتب‌سازی |
 | `src/libs/content/service.test.ts` | ساخت مسیرها، تشخیص برخورد، صفحه‌بندی هر زبان |
 | `src/libs/content/pagination.test.ts` | `paginate`، `clampPage`، `buildPageWindow` |
-| `src/libs/content/blog.test.ts` | فیلترها، زمان مطالعه، `humanizeKey` |
+| `src/libs/content/blog.test.ts` | فیلترها، مقایسهٔ وضعیت فیلتر (`areBlogFiltersEqual`)، زمان مطالعه، TOC و مقالات مرتبط |
 | `src/libs/content/taxonomy.test.ts` | برچسب دسته/برچسب و fallback |
 | `src/libs/content/scripts.test.ts` | توابع فرانت‌متر، CLI helperها، پارسر زبان |
+| `src/libs/config/app.test.ts` | اعتبارسنجی `app.config.json` و تنظیمات برند/وبلاگ |
+| `src/libs/config/navigation.test.ts` | اسلات‌های ناوبری چندمنویی هدر، کشوی موبایل و فوتر |
 | `src/libs/config/astro-config.test.ts` | alias `astro/components` در `astro.config.mjs` (رفع `Unknown file extension ".astro"`) |
+| `src/scripts/reveal.test.ts` | چرخهٔ `.js` + `.reveal`، شماره‌گذاری مرئی `.reveal-stagger` با سقف تاخیر، `replayReveals` و سازگاری Lenis |
 
-> **۹ فایل تست، ۱۰۱ تست.** ماژول `astro:content` در Vitest با
+> **۱۳ فایل تست، ۱۴۵ تست.** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -1853,6 +1963,7 @@ dist/
 | `Missing <locale>.mdx` در خروجی ممیزی | گروه محتوا در همهٔ زبان‌ها ترجمه نشده | هشدار است و بیلد را نمی‌شکند؛ با `pnpm run new:page <key> --update` یا `--slug:<locale>=…` تکمیلش کنید |
 | اسکرول چرخ ماوس داخل مودال یا پنل کار نمی‌کند | Lenis رویداد چرخ ماوس را برای کل صفحه می‌گیرد | صفت `data-lenis-prevent` را به ظرف دارای `overflow-y-auto` اضافه کنید |
 | آیتم‌های داخل `.reveal-stagger` هم‌زمان باز می‌شوند | عناصر `.reveal` فرزند مستقیم ظرف نیستند | `.reveal` / `<Reveal as="li">` را فرزند مستقیم (`:scope > .reveal`) ظرف `.reveal-stagger` قرار دهید |
+| کارت‌ها پس از فیلتر شدن یا تعویض تب بدون انیمیشن ظاهر می‌شوند | کارت‌ها قبلاً `.is-visible` گرفته‌اند و `initReveals()` آن‌ها را رد می‌کند | در تغییر وضعیت فیلتر/تب، `replayReveals(grid, { fast: true })` را صدا بزنید |
 | انیمیشن افقی در فارسی از جهت برعکس می‌آید | استفاده از `data-reveal="left"` یا `"right"` | از جهت‌های منطقی `direction="start"` و `direction="end"` استفاده کنید |
 
 ---
@@ -1876,7 +1987,7 @@ dist/
 
 - **قواعد قراردادی** (SSOT، دیسپچر مسیریاب، RTL، کد تولیدشده‌نشدنی)
 - **نقشهٔ معماری** و مجموعهٔ فرمان‌های اعتبارسنجی
-- **پلی‌بوک‌ها** برای کارهای پرتکرار (لینک ناوبری، تعویض زبان پیش‌فرض، هیرو، آیکون، صفحه‌بندی)
+- **پلی‌بوک‌ها** برای کارهای پرتکرار (لینک ناوبری، تعویض زبان پیش‌فرض، هیرو، آیکون، صفحه‌بندی، انیمیشن‌های اسکرول و چیدمان پلکانی)
 - **جدول ضدالگوهای ممنوع** — الگوهایی که هرگز نباید در کد ظاهر شوند
 
 پیش از هر تغییری `AGENTS.md` را بخوانید؛ پس از هر تغییری
@@ -1896,7 +2007,9 @@ dist/
 | نوار پیشرفت بدون `dataset.bound` | `if (el.dataset.bound === 'true') return;` |
 | تعریف دوبارهٔ `.cta` در کامپوننت | ترکیب کلاس از `src/styles/global.css` |
 | `<button>` دستی با `<Icon>` | `IconButton` |
-| `opacity-0` مستقیم برای انیمیشن اسکرول | `<Reveal>` یا کلاس `.reveal` (محصور در `.js`) |
+| `hidden` / `display: none` یا `opacity-0` مستقیم برای انیمیشن اسکرول | `<Reveal>` یا کلاس `.reveal` (محصور در `.js` روی GPU) |
+| قرار دادن `<Reveal>` داخل یک `<li>` معمولی در `.reveal-stagger` | فرزند مستقیم کردن با `<Reveal as="li">` (`:scope > .reveal`) |
+| حذف دستی `.is-visible` در فیلترها/تب‌ها | فراخوانی `replayReveals(container, { fast: true })` |
 | `direction="left"` / `"right"` در ستون‌های متقارن | `direction="start"` / `"end"` برای قرینه‌شدن خودکار در RTL |
 | پنل اسکرول‌پذیر بدون `data-lenis-prevent` | افزودن `data-lenis-prevent` روی ظرف‌های `overflow-y-auto` |
 
@@ -2045,7 +2158,7 @@ dist/
 | `entries.ts` | `parseContentEntryId` · `isPublished` · `sortByPublishedAtDesc` · `groupPublishedEntries` · `getPublishedLocaleEntries` · `getSortedLocaleEntries` |
 | `service.ts` | `getBlogIndexHref` · `getBlogPageHref` · `getBlogPostHref` · `getPageUrl` · `getSiteRoutes` · `buildSiteRoutes` · `getBreadcrumbs` |
 | `pagination.ts` | `getPageCount` · `clampPage` · `paginate` · `buildPageWindow` · `PAGE_GAP` · `PageSlice` |
-| `blog.ts` | `parseBlogFilters` · `buildBlogFilterQuery` · `matchesBlogFilters` · `filterBlogPosts` · `hasActiveFilters` · `toggleBlogTag` · `getReadingTime` · `collectTaxonomyKeys` · `humanizeKey` · `NO_FILTERS` |
+| `blog.ts` | `parseBlogFilters` · `buildBlogFilterQuery` · `matchesBlogFilters` · `filterBlogPosts` · `hasActiveFilters` · `areBlogFiltersEqual` · `toggleBlogTag` · `getReadingTime` · `collectTaxonomyKeys` · `humanizeKey` · `NO_FILTERS` |
 | `taxonomy.ts` | `getCategoryLabel` · `getTagLabel` |
 | `social.ts` | `getSocialCard` · `SocialImage` |
 
@@ -2054,7 +2167,7 @@ dist/
 | فایل | خروجی‌ها | کاربرد |
 | --- | --- | --- |
 | `lenis.ts` | `initLenis()` · `destroyLenis()` · `getLenis()` | راه‌اندازی، پاک‌سازی در View Transitions و دسترسی به نمونهٔ فعال `Lenis` |
-| `reveal.ts` | `initReveals()` · `cleanupReveals()` | شماره‌گذاری `.reveal-stagger`، پایش ورود عناصر `.reveal` به دید و آزادسازی قفل ترنزیشن پس از نمایش |
+| `reveal.ts` | `initReveals()` · `replayReveals()` · `cleanupReveals()` | شماره‌گذاری عناصر مرئی `.reveal-stagger`، پایش ورود عناصر `.reveal` به دید، بازپخش بدون پرش برای فیلترها و آزادسازی قفل ترنزیشن |
 
 ### `scripts/lib/locales.mjs`
 

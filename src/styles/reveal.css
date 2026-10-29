@@ -12,9 +12,21 @@
    Tailwind's `transition-colors` or `duration-200` never override it */
 .js .reveal:not(.reveal-complete) {
   transition-property: opacity, transform !important;
-  transition-duration: 0.8s !important;
+  transition-duration: var(--reveal-duration, 0.8s) !important;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
   will-change: opacity, transform;
+}
+
+/* Suppress transitions synchronously while resetting .is-visible/.reveal-complete
+   so already-visible cards snap to their initial pose without reverse-animating */
+.js .reveal.is-resetting {
+  transition: none !important;
+}
+
+/* Snappier rhythm when replaying reveals on interactive filter/tab transitions */
+.js [data-reveal-replay='fast'] {
+  --reveal-duration: 0.6s;
+  --stagger-step: 0.045s;
 }
 
 /* Logical direction variants (`start`/`end` mirror automatically in RTL).
@@ -52,7 +64,7 @@
 
 /* Automatic stagger for children */
 .js .reveal-stagger > .reveal:not(.reveal-complete) {
-  transition-delay: calc(var(--stagger-index, 0) * 0.09s) !important;
+  transition-delay: calc(var(--stagger-index, 0) * var(--stagger-step, 0.09s)) !important;
 }
 
 /* Manual delays */

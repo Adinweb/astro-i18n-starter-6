@@ -295,9 +295,10 @@ const indexSchema = [
 
 <script>
   import { formatNumber } from '@/i18n/format';
-  import { initReveals } from '@/scripts/reveal';
+  import { initReveals, replayReveals } from '@/scripts/reveal';
   import {
     NO_FILTERS,
+    areBlogFiltersEqual,
     buildBlogFilterQuery,
     hasActiveFilters,
     matchesBlogFilters,
@@ -465,7 +466,10 @@ const indexSchema = [
       grid?.querySelectorAll('[data-dynamic-post-card]').forEach((el) => el.remove());
     };
 
-    const render = async (updateUrl = true) => {
+    const render = async (
+      options: { updateUrl?: boolean; animate?: boolean } = {}
+    ) => {
+      const { updateUrl = true, animate = false } = options;
       const token = ++renderToken;
       const active = hasActiveFilters(filters);
 
@@ -512,7 +516,11 @@ const indexSchema = [
 
           clearDynamicCards();
           grid.append(...matching.map((post) => createDynamicPostCard(post)));
-          initReveals();
+          if (animate) {
+            replayReveals(grid, { fast: true });
+          } else {
+            initReveals();
+          }
 
           if (status) {
             status.textContent = allTemplate
@@ -537,6 +545,10 @@ const indexSchema = [
         if (matches) visible += 1;
       }
 
+      if (animate && grid) {
+        replayReveals(grid, { fast: true });
+      }
+
       const statusTemplate = active ? allTemplate : pageTemplate;
       if (status) {
         status.textContent = statusTemplate
@@ -554,24 +566,29 @@ const indexSchema = [
 
       event.preventDefault();
 
+      let nextFilters = filters;
       if (target.hasAttribute('data-blog-clear')) {
-        filters = NO_FILTERS;
+        nextFilters = NO_FILTERS;
       } else if (target.dataset.filterCategory !== undefined) {
         const category = target.dataset.filterCategory || null;
-        filters = category === null ? NO_FILTERS : { category, tags: filters.tags };
+        nextFilters = category === null ? NO_FILTERS : { category, tags: filters.tags };
       } else if (target.dataset.filterTag) {
-        filters = toggleBlogTag(filters, target.dataset.filterTag);
+        nextFilters = toggleBlogTag(filters, target.dataset.filterTag);
       }
 
-      void render();
+      const changed = !areBlogFiltersEqual(filters, nextFilters);
+      filters = nextFilters;
+      void render({ updateUrl: true, animate: changed });
     });
 
     document.addEventListener('blog:filters-restore', () => {
-      filters = parseBlogFilters(window.location.search);
-      void render(false);
+      const nextFilters = parseBlogFilters(window.location.search);
+      const changed = !areBlogFiltersEqual(filters, nextFilters);
+      filters = nextFilters;
+      void render({ updateUrl: false, animate: changed });
     });
 
-    void render(false);
+    void render({ updateUrl: false, animate: false });
   }
 
   if (document.documentElement.dataset.blogFilterHistoryBound !== 'true') {

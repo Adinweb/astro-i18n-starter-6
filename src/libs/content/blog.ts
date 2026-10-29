@@ -90,6 +90,14 @@ export function hasActiveFilters(filters: BlogFilters): boolean {
   return filters.category !== null || filters.tags.length > 0;
 }
 
+/** Compares two normalized filter states regardless of tag order. */
+export function areBlogFiltersEqual(a: BlogFilters, b: BlogFilters): boolean {
+  if (a.category !== b.category) return false;
+  if (a.tags.length !== b.tags.length) return false;
+  const bTags = new Set(b.tags);
+  return a.tags.every((tag) => bTags.has(tag));
+}
+
 /** Toggles a tag in the current filter state without mutating the input. */
 export function toggleBlogTag(filters: BlogFilters, tag: string): BlogFilters {
   const active = filters.tags.includes(tag);
