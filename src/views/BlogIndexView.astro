@@ -5,7 +5,6 @@ import PageHero from '@/components/PageHero.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import PostCard from '@/components/PostCard.astro';
 import Icon from '@/components/Icon.astro';
-import Reveal from '@/components/Reveal.astro';
 import {
   buildBreadcrumbSchema,
   getBreadcrumbs,
@@ -123,8 +122,7 @@ const indexSchema = [
       ) : (
         <div class="space-y-8">
           <section
-            class="reveal space-y-4 rounded-2xl border border-border bg-surface/70 p-4 sm:p-5"
-            data-reveal="up"
+            class="space-y-4 rounded-2xl border border-border bg-surface/70 p-4 sm:p-5"
             data-blog-filter
             hidden
             data-locale={locale}
@@ -221,7 +219,7 @@ const indexSchema = [
             {m.blog_filter_empty({}, { locale })}
           </p>
 
-          <div class="reveal-stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-blog-grid data-pagefind-ignore>
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-blog-grid data-pagefind-ignore>
             {
               pagePosts.map((post, index) => (
                 <PostCard
@@ -236,7 +234,7 @@ const indexSchema = [
 
           {
             totalPages > 1 && (
-              <Reveal direction="up" class="mt-10 space-y-3" data-blog-pager-wrap>
+              <div class="mt-10 space-y-3" data-blog-pager-wrap>
                 <p class="text-center text-xs text-muted" data-blog-page-status>
                   {pageStatus}
                 </p>
@@ -294,7 +292,7 @@ const indexSchema = [
                     </a>
                   )}
                 </nav>
-              </Reveal>
+              </div>
             )
           }
         </div>
@@ -313,7 +311,6 @@ const indexSchema = [
 <script>
   import { formatNumber } from '@/i18n/format';
   import { getLenis } from '@/scripts/lenis';
-  import { initReveals, replayReveals } from '@/scripts/reveal';
   import { buildPageWindow, PAGE_GAP, paginate } from '@/libs/content/pagination';
   import {
     NO_FILTERS,
@@ -374,8 +371,7 @@ const indexSchema = [
   ): HTMLElement {
     const article = document.createElement('article');
     article.className =
-      'reveal group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30';
-    article.dataset.reveal = 'up';
+      'group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30';
     article.dataset.dynamicPostCard = 'true';
 
     const media = document.createElement('div');
@@ -483,7 +479,6 @@ const indexSchema = [
     if (!root || root.dataset.bound === 'true') return;
     root.dataset.bound = 'true';
     root.hidden = false;
-    initReveals();
 
     const abortController = new AbortController();
     document.addEventListener(
@@ -666,12 +661,6 @@ const indexSchema = [
           );
           renderFilteredPager(slice.page, slice.totalPages);
 
-          if (animate) {
-            replayReveals(grid, { fast: true });
-          } else {
-            initReveals();
-          }
-
           if (status) {
             status.textContent = allTemplate
               .replace('{visible}', formatNumber(matching.length, locale))
@@ -706,10 +695,6 @@ const indexSchema = [
         const matches = matchesBlogFilters(card.taxonomy, filters);
         card.element.hidden = !matches;
         if (matches) visible += 1;
-      }
-
-      if (animate && grid) {
-        replayReveals(grid, { fast: true });
       }
 
       const statusTemplate = active ? allTemplate : pageTemplate;

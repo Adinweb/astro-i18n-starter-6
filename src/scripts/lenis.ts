@@ -114,9 +114,8 @@ export function initLenis(): void {
     return;
   }
 
-  // Respect <html data-motion="reduced"> or OS prefers-reduced-motion: reduce
-  // (unless explicitly overridden via <html data-motion="full">).
-  if (prefersReducedMotion()) {
+  // Abort Lenis only if explicitly configured for reduced motion via data-motion="reduced"
+  if (typeof document !== 'undefined' && document.documentElement.dataset.motion === 'reduced') {
     return;
   }
 

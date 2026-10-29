@@ -8,8 +8,8 @@ draft: false
 
 صُمِّم هذا القالب المبني على <span lang="en" dir="ltr">Astro v7</span> وفق مبدأ «المصدر الواحد للحقيقة» للمواقع الثابتة متعددة اللغات، مما يلغي عبء الترجمة وقت التشغيل وتكرار مسارات الصفحات وأخطاء التنسيق الاتجاهي التقليدية.
 
-<div class="reveal-stagger not-prose my-10 grid gap-5 sm:grid-cols-2">
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+<div class="not-prose my-10 grid gap-5 sm:grid-cols-2">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">٠١ · التوجيه</p>
     <h3 class="mt-2 text-lg font-bold text-fg">موزّع مسارات موحّد ولغة افتراضية بلا بادئة</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -17,7 +17,7 @@ draft: false
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">٠٢ · الترجمة المترجَمة مسبقاً</p>
     <h3 class="mt-2 text-lg font-bold text-fg">رسائل Paraglide آمنة الأنواع وصيغ جمع ICU</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -25,7 +25,7 @@ draft: false
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">٠٣ · الأرشفة والبحث</p>
     <h3 class="mt-2 text-lg font-bold text-fg">روابط hreflang متبادلة وخلاصات Atom وبحث Pagefind</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -33,7 +33,7 @@ draft: false
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">٠٤ · الخصوصية وواجهات API</p>
     <h3 class="mt-2 text-lg font-bold text-fg">إدارة موافقة الخصوصية وعميل API خارجي</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -42,11 +42,11 @@ draft: false
   </div>
 </div>
 
-<section id="rtl" data-reveal="up" class="reveal scroll-mt-28">
+<section id="rtl" class="scroll-mt-28">
 
 ## دعم أصلي للاتجاه من اليمين إلى اليسار (RTL) والتعريب ثنائي الاتجاه
 
-إن دعم العربية (`ar`) والفارسية (`fa`) جنباً إلى جنب مع الإنجليزية والألمانية والفرنسية يتطلب أكثر من مجرّد إضافة `dir="rtl"`. لذلك كُتبت جميع الهوامش والحواف والمحاذاة ومتجهات الحركة باستخدام **الخصائص المنطقية في CSS** (`ms-*` و`me-*` و`ps-*` و`pe-*` و`start-*` و`end-*` و`text-start`).
+إن دعم العربية (`ar`) والفارسية (`fa`) جنباً إلى جنب مع الإنجليزية والألمانية والفرنسية يتطلب أكثر من مجرّد إضافة `dir="rtl"`. لذلك كُتبت جميع الهوامش والحواف والمحاذاة وعناصر التصميم باستخدام **الخصائص المنطقية في CSS** (`ms-*` و`me-*` و`ps-*` و`pe-*` و`start-*` و`end-*` و`text-start`).
 
 - **خطوط مخصصة وحماية اتصال الحروف:** تُفعَّل خطوط `Noto Sans Arabic` للعربية و`Vazirmatn` للفارسية تلقائياً عبر محدّدات `:lang()` مع تصفير تباعد الأحرف لحماية اتصال الحروف العربية.
 - **تنسيق محلي للتواريخ والأرقام:** تُنسَّق التواريخ وأرقام الصفحات عبر واجهات `Intl` القياسية بما يلائم قواعد كل لغة وتقويمها المحلي دون مكتبات خارجية ثقيلة.
@@ -54,14 +54,13 @@ draft: false
 
 </section>
 
-<section id="design" data-reveal="up" class="reveal scroll-mt-28">
+<section id="design" class="scroll-mt-28">
 
 ## نظام تصميم دلالي بفضاء OKLCH وحركة تدريجية متوافقة
 
 تُعرَّف جميع الأدوار اللونية — `primary` و`secondary` و`accent` و`neutral` و`info` و`success` و`warning` و`error` — مرة واحدة في فضاء الألوان الإدراكي **OKLCH** داخل `src/styles/global.css`، مما يضمن تبايناً يتجاوز معيار **WCAG AA (٤٫٥:١)** في الوضعين الفاتح والداكن.
 
 - **أسطح زجاجية قابلة للتركيب:** يشترك شريط التنقل والقائمة الجانبية والأزرار وشارات التصفية في الفئات الموحّدة `.glass-surface` و`.glass-control` و`.cta` و`.chip`.
-- **ظهور تدريجي دون إزاحة تخطيطية:** تعمل حركات الظهور حصرياً تحت النطاق `.js .reveal` لضمان ظهور المحتوى بنسبة ١٠٠٪ عند تعطيل JavaScript أو أثناء الطباعة.
 - **تمرير سلس يحترم إمكانية الوصول:** يتكامل محرك Lenis بسلاسة مع `<ClientRouter />` والنوافذ القابلة للتمرير (`data-lenis-prevent`) وتفضيل تقليل الحركة في نظام التشغيل (`prefers-reduced-motion`).
 
 </section>

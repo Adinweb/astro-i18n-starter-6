@@ -8,8 +8,8 @@ draft: false
 
 Built as a strict single-source-of-truth foundation for multilingual static sites, this Astro v7 starter eliminates runtime translation overhead, duplicate route trees, and fragile physical CSS overrides.
 
-<div class="reveal-stagger not-prose my-10 grid gap-5 sm:grid-cols-2">
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+<div class="not-prose my-10 grid gap-5 sm:grid-cols-2">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">01 · Routing</p>
     <h3 class="mt-2 text-lg font-bold text-fg">Lean Dispatcher & Prefix-less Default Locale</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -17,7 +17,7 @@ Built as a strict single-source-of-truth foundation for multilingual static site
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">02 · Compilation</p>
     <h3 class="mt-2 text-lg font-bold text-fg">Type-Safe Paraglide Messages & ICU Plurals</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -25,7 +25,7 @@ Built as a strict single-source-of-truth foundation for multilingual static site
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">03 · Discovery</p>
     <h3 class="mt-2 text-lg font-bold text-fg">Reciprocal SEO, Atom Feeds & Pagefind Search</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -33,7 +33,7 @@ Built as a strict single-source-of-truth foundation for multilingual static site
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">04 · Governance</p>
     <h3 class="mt-2 text-lg font-bold text-fg">TDDDG § 25 Privacy & Headless API Client</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -42,11 +42,11 @@ Built as a strict single-source-of-truth foundation for multilingual static site
   </div>
 </div>
 
-<section id="rtl" data-reveal="up" class="reveal scroll-mt-28">
+<section id="rtl" class="scroll-mt-28">
 
 ## Native RTL & Bidirectional Localization
 
-Supporting Persian (`fa`) and Arabic (`ar`) alongside English, German, and French requires more than flipping `dir="rtl"` on the document root. Every layout primitive, spacing utility, border, and scroll-reveal vector in this repository is authored exclusively with **CSS logical properties** (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`, `text-start`).
+Supporting Persian (`fa`) and Arabic (`ar`) alongside English, German, and French requires more than flipping `dir="rtl"` on the document root. Every layout primitive, spacing utility, border, and design element in this repository is authored exclusively with **CSS logical properties** (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`, `text-start`).
 
 - **Script-Aware Typography & Cursive Protection:** Dedicated variable font stacks (`Vazirmatn` for Persian, `Noto Sans Arabic` for Arabic) activate automatically via `:lang()` selectors while enforcing zero letter-spacing on cursive glyphs so joined characters never fracture.
 - **Locale-Native Calendars & Numerals:** Dates and pagination counters format through `Intl.DateTimeFormat` and `Intl.NumberFormat`, rendering Solar Hijri (`persian`) dates and Eastern/Persian numerals natively without external date libraries.
@@ -54,14 +54,13 @@ Supporting Persian (`fa`) and Arabic (`ar`) alongside English, German, and Frenc
 
 </section>
 
-<section id="design" data-reveal="up" class="reveal scroll-mt-28">
+<section id="design" class="scroll-mt-28">
 
 ## OKLCH Semantic Design System & Progressive Motion
 
 Every colour role—`primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, and `error`—is defined once in perceptually uniform **OKLCH** colour space in `src/styles/global.css`. Switching between light and dark themes preserves hue identity while guaranteeing **WCAG AA (4.5:1)** contrast across surfaces and foreground pairs.
 
 - **Composable Frosted Surfaces:** Navigation chrome, drawers, and interactive chips share unified `.glass-surface`, `.glass-control`, `.cta`, and `.chip` primitives so visual elevation never drifts across templates.
-- **Zero-CLS Progressive Scroll Reveal:** Entrance animations scope strictly under `.js .reveal` using GPU-composited `opacity` and logical `translate3d` transforms, guaranteeing 100% content visibility when JavaScript is disabled or printed.
 - **Accessible Smooth Scrolling:** Lenis smooth scrolling coordinates seamlessly with Astro `<ClientRouter />`, nested scrollable drawers (`data-lenis-prevent`), and operating-system `prefers-reduced-motion: reduce` preferences.
 
 </section>

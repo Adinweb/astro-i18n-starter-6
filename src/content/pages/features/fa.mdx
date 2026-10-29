@@ -8,8 +8,8 @@ draft: false
 
 این استارتر بر پایه اصل «منبع واحد حقیقت» (<span lang="en" dir="ltr">Single Source of Truth</span>) برای وب‌سایت‌های تمام‌استاتیک چندزبانه در <span lang="en" dir="ltr">Astro v7</span> طراحی شده است تا سربار ترجمه در زمان اجرا، تکرار فایل‌های مسیریابی و باگ‌های چیدمان راست‌به‌چپ را به‌طور کامل حذف کند.
 
-<div class="reveal-stagger not-prose my-10 grid gap-5 sm:grid-cols-2">
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+<div class="not-prose my-10 grid gap-5 sm:grid-cols-2">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">۰۱ · مسیریابی</p>
     <h3 class="mt-2 text-lg font-bold text-fg">توزیع‌کننده یکپارچه و زبان پیش‌فرض بدون پیشوند</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -17,7 +17,7 @@ draft: false
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">۰۲ · ترجمه زمان ساخت</p>
     <h3 class="mt-2 text-lg font-bold text-fg">لغت‌نامه‌های تایپ‌امن Paraglide و قواعد جمع ICU</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -25,7 +25,7 @@ draft: false
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">۰۳ · سئو و جستجو</p>
     <h3 class="mt-2 text-lg font-bold text-fg">سئوی متقابل، خوراک Atom و جستجوی استاتیک Pagefind</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -33,7 +33,7 @@ draft: false
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">۰۴ · حریم خصوصی و API</p>
     <h3 class="mt-2 text-lg font-bold text-fg">مدیریت رضایت کوکی و کلاینت API مستقل</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -42,11 +42,11 @@ draft: false
   </div>
 </div>
 
-<section id="rtl" data-reveal="up" class="reveal scroll-mt-28">
+<section id="rtl" class="scroll-mt-28">
 
 ## پشتیبانی بومی راست‌به‌چپ (RTL) و بومی‌سازی دوجهته
 
-پشتیبانی هم‌زمان و بی‌نقص از زبان‌های فارسی (`fa`) و عربی (`ar`) در کنار انگلیسی، آلمانی و فرانسوی فراتر از افزودن صفت `dir="rtl"` است. تمامی فاصله‌گذاری‌ها، کادرها، ترازها و بردارهای انیمیشن در این پروژه صرفاً با **ویژگی‌های منطقی CSS** (`ms-*`، `me-*`، `ps-*`، `pe-*`، `start-*`، `end-*` و `text-start`) نوشته شده‌اند.
+پشتیبانی هم‌زمان و بی‌نقص از زبان‌های فارسی (`fa`) و عربی (`ar`) در کنار انگلیسی، آلمانی و فرانسوی فراتر از افزودن صفت `dir="rtl"` است. تمامی فاصله‌گذاری‌ها، کادرها، ترازها و عناصر طراحی در این پروژه صرفاً با **ویژگی‌های منطقی CSS** (`ms-*`، `me-*`، `ps-*`، `pe-*`، `start-*`، `end-*` و `text-start`) نوشته شده‌اند.
 
 - **تایپوگرافی اختصاصی و محافظت از اتصال حروف:** فونت متغیر `Vazirmatn` برای فارسی و `Noto Sans Arabic` برای عربی به‌صورت خودکار با انتخابگرهای `:lang()` فعال می‌شوند و فاصله بین حروف (`letter-spacing`) صفر نگه داشته می‌شود تا پیوستگی حروف فارسی و عربی هرگز گسسته نشود.
 - **تقویم هجری شمسی و ارقام بومی:** تاریخ انتشار مقالات و شمارنده‌های صفحه‌بندی با تکیه بر `Intl.DateTimeFormat` و `Intl.NumberFormat` برای زبان فارسی به‌طور خودکار با تقویم هجری شمسی و ارقام فارسی نمایش می‌یابند.
@@ -54,14 +54,13 @@ draft: false
 
 </section>
 
-<section id="design" data-reveal="up" class="reveal scroll-mt-28">
+<section id="design" class="scroll-mt-28">
 
 ## سیستم طراحی معنایی OKLCH و پویانمایی پیش‌رونده
 
 تمامی نقش‌های رنگی — از `primary` و `secondary` تا وضعیت‌های `info`، `success`، `warning` و `error` — تنها یک‌بار در فضای رنگی یکنواخت **OKLCH** درون `src/styles/global.css` تعریف شده‌اند و در هر دو پوسته روشن و تیره، استاندارد کنتراست **WCAG AA (۴.۵:۱)** را تضمین می‌کنند.
 
-- **سطوح شیشه‌ای یکپارچه:** نوار ناوبری شناور، منوی کشویی موبایل، دکمه‌های فراخوان و برچسب‌های فیلتر همگی از کلاس‌های مشترک `.glass-surface`، `.glass-control`، `.cta` و `.chip` بهره می‌برند.
-- **پدیدار شدن تدریجی بدون پرش چیدمان (Zero CLS):** انیمیشن‌های اسکرول صرفاً زیر دامنه `.js .reveal` تعریف شده‌اند تا در صورت غیرفعال بودن جاوااسکریپت یا هنگام چاپ صفحه، ۱۰۰٪ محتوا بلافاصله قابل مشاهده باشد.
+- **سطوح شیشه‌ای یکپارچه:** نوار ناوبری شناور، منوی کشویی موبایل، دکمه‌های فراخوان و برچسب‌های فیلتر همگی از کلاس‌های مشترک `.glass-surface`، `.glass-control`, `.cta` و `.chip` بهره می‌برند.
 - **اسکرول نرم سازگار با دسترس‌پذیری:** موتور اسکرول Lenis به‌طور کامل با مسیریاب کلاینت Astro، پنل‌های اسکرول‌پذیر داخلی (`data-lenis-prevent`) و تنظیمات کاهش حرکت سیستم‌عامل (`prefers-reduced-motion`) هماهنگ است.
 
 </section>

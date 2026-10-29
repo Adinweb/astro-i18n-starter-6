@@ -54,7 +54,7 @@ const readingTime = getReadingTime(body);
 
 <HeroCopy title={title} description={description} size="post">
   <Fragment slot="prelude">
-    <nav class="reveal" data-reveal="up" aria-label={m.common_breadcrumbs({}, { locale })}>
+    <nav aria-label={m.common_breadcrumbs({}, { locale })}>
       <ol class="flex flex-wrap items-center gap-2 text-xs text-hero-fg/90">
         {
           breadcrumbs.map((crumb, index) => (
@@ -75,7 +75,7 @@ const readingTime = getReadingTime(body);
 
     {
       categories.length > 0 && (
-        <ul class="reveal mt-4 flex flex-wrap items-center gap-2" data-reveal="up" data-delay="50">
+        <ul class="mt-4 flex flex-wrap items-center gap-2">
           {categories.map((category) => (
             <li>
               <a
@@ -91,7 +91,7 @@ const readingTime = getReadingTime(body);
     }
   </Fragment>
 
-  <div slot="default" class="reveal mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-hero-fg/90" data-reveal="up" data-delay="200">
+  <div slot="default" class="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-hero-fg/90">
     <span>{m.common_published_on({}, { locale })}</span>
     <time datetime={publishedAt.toISOString()}>{formattedDate}</time>
     {

@@ -1,0 +1,6 @@
+{
+  "summary":  "Revised implementation plan focusing on the clean removal of the custom scroll reveal animation system (scripts, CSS, layout hooks, view wrappers, and test assertions) while keeping Lenis smooth scroll and all layout/RTL structures fully functional and ready for trig.js integration.",
+  "updatedAt":  "2026-10-29T22:40:09.785722778Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

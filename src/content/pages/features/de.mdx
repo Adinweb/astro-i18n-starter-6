@@ -8,8 +8,8 @@ draft: false
 
 Als strikte Single-Source-of-Truth-Architektur für mehrsprachige statische Websites vermeidet dieses Astro-v7-Starter-Template Laufzeit-Overhead bei Übersetzungen, doppelte Routenbäume und fehleranfällige physische CSS-Richtungsangaben.
 
-<div class="reveal-stagger not-prose my-10 grid gap-5 sm:grid-cols-2">
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+<div class="not-prose my-10 grid gap-5 sm:grid-cols-2">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">01 · Routing</p>
     <h3 class="mt-2 text-lg font-bold text-fg">Schlanker Dispatcher & präfixlose Standardsprache</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -17,7 +17,7 @@ Als strikte Single-Source-of-Truth-Architektur für mehrsprachige statische Webs
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">02 · Kompilierung</p>
     <h3 class="mt-2 text-lg font-bold text-fg">Typsichere Paraglide-Übersetzungen & ICU-Pluralregeln</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -25,7 +25,7 @@ Als strikte Single-Source-of-Truth-Architektur für mehrsprachige statische Webs
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">03 · Auffindbarkeit</p>
     <h3 class="mt-2 text-lg font-bold text-fg">Reziprokes SEO, Atom-Feeds & Pagefind-Suche</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -33,7 +33,7 @@ Als strikte Single-Source-of-Truth-Architektur für mehrsprachige statische Webs
     </p>
   </div>
 
-  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+  <div class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
     <p class="section-kicker tabular-nums">04 · Datenschutz & API</p>
     <h3 class="mt-2 text-lg font-bold text-fg">TDDDG-§-25-Einwilligung & externer API-Client</h3>
     <p class="mt-2 text-sm leading-relaxed text-muted">
@@ -42,11 +42,11 @@ Als strikte Single-Source-of-Truth-Architektur für mehrsprachige statische Webs
   </div>
 </div>
 
-<section id="rtl" data-reveal="up" class="reveal scroll-mt-28">
+<section id="rtl" class="scroll-mt-28">
 
 ## Native RTL-Architektur & bidirektionale Lokalisierung
 
-Die gleichwertige Unterstützung von Persisch (`fa`) und Arabisch (`ar`) neben Englisch, Deutsch und Französisch erfordert mehr als ein einfaches `dir="rtl"`. Sämtliche Abstände, Rahmen, Positionierungen und Animationen nutzen ausschließlich **logische CSS-Eigenschaften** (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`, `text-start`).
+Die gleichwertige Unterstützung von Persisch (`fa`) und Arabisch (`ar`) neben Englisch, Deutsch und Französisch erfordert mehr als ein einfaches `dir="rtl"`. Sämtliche Abstände, Rahmen, Positionierungen und Designelemente nutzen ausschließlich **logische CSS-Eigenschaften** (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`, `text-start`).
 
 - **Schriftspezifische Typografie:** Variable Schriftfamilien (`Vazirmatn` für Persisch, `Noto Sans Arabic` für Arabisch) greifen automatisch über `:lang()`-Regeln und schützen verbundene Buchstaben vor ungewolltem Buchstabenabstand.
 - **Natives Datums- und Zahlenformat:** Kalenderdaten und Seitenzahlen werden über `Intl.DateTimeFormat` und `Intl.NumberFormat` sprachgerecht formatiert – einschließlich des persischen Sonnenkalenders für `fa`.
@@ -54,14 +54,13 @@ Die gleichwertige Unterstützung von Persisch (`fa`) und Arabisch (`ar`) neben E
 
 </section>
 
-<section id="design" data-reveal="up" class="reveal scroll-mt-28">
+<section id="design" class="scroll-mt-28">
 
 ## Semantisches OKLCH-Design-System & progressive Bewegung
 
 Alle semantischen Farbfunktionen – `primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning` und `error` – sind zentral im wahrnehmungsgleichmäßigen **OKLCH**-Farbraum in `src/styles/global.css` definiert und erfüllen im hellen wie dunklen Modus zuverlässig **WCAG AA (4,5:1)**.
 
 - **Wiederverwendbare Glas-Oberflächen:** Kopfzeile, mobiles Menü, Schaltflächen und Filter-Chips teilen sich `.glass-surface`, `.glass-control`, `.cta` und `.chip` als einheitliche Gestaltungssprache.
-- **Scroll-Reveal ohne Layout-Shift:** Eingangsanimationen sind strikt unter `.js .reveal` gekapselt, sodass alle Inhalte ohne JavaScript sowie im Drucklayout sofort vollständig sichtbar sind.
 - **Barrierefreies Smooth-Scrolling:** Lenis harmoniert nahtlos mit dem Astro `<ClientRouter />`, verschachtelten Dialogen (`data-lenis-prevent`) und der Systemeinstellung `prefers-reduced-motion: reduce`.
 
 </section>
