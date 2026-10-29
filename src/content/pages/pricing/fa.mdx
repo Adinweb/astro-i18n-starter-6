@@ -1,9 +1,75 @@
 ---
 title: "قیمت‌گذاری"
 slug: "قیمت‌گذاری"
-description: "تعرفه‌ها و پلن‌های قیمت‌گذاری شفاف و متناسب."
+description: "پلن‌های شفاف مجوز و همراهی معماری — از هسته متن‌باز رایگان تا پشتیبانی اختصاصی سازمانی."
 image: "./pricing.png"
 draft: false
 ---
 
-تعرفه‌ها و پلن‌های قیمت‌گذاری شفاف و متناسب.
+import ContactForm from '@/components/ContactForm.astro';
+
+مدل همکاری متناسب با تیم مهندسی خود را انتخاب کنید. هسته اصلی این استارتر چندزبانه <span lang="en" dir="ltr">Astro v7</span> به‌صورت کاملاً رایگان و متن‌باز تحت مجوز <span lang="en" dir="ltr">MIT</span> عرضه می‌شود و برای تیم‌هایی که در مقیاس بین‌المللی توسعه می‌دهند، بسته‌های ممیزی معماری و یکپارچه‌سازی اختصاصی فراهم شده است.
+
+<div class="reveal-stagger not-prose my-10 grid gap-6 lg:grid-cols-3">
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker tabular-nums">۰۱ · استارتر</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">هسته متن‌باز</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">رایگان <span class="text-sm font-normal text-muted">· مجوز MIT</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        دسترسی کامل به مخزن کد برای تیم‌های فنی مستقلی که وب‌سایت‌های تمام‌استاتیک سریع و چندزبانه می‌سازند.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>پشتیبانی آماده از ۵ زبان چپ‌به‌راست و راست‌به‌چپ</li>
+        <li>ترجمه زمان ساخت Paraglide و مجموعه ابزار CLI</li>
+        <li>جستجوی Pagefind، خوراک Atom و سئوی ساختاریافته</li>
+        <li>مدیریت رضایت کوکی و حریم خصوصی</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="btn-secondary mt-8 w-full text-center">
+      ثبت پرسش فنی
+    </a>
+  </div>
+
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-primary/50 bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker tabular-nums">۰۲ · استودیو</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">ممیزی و بازبینی معماری</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">۱٬۴۰۰ $ <span class="text-sm font-normal text-muted">· یک‌بار پرداخت</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        بازبینی تخصصی بومی‌سازی، تنظیم توکن‌های رنگی برند و اتصال فرم‌ها به سرویس‌های API مستقل برای تیم‌های محصول.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>سفارشی‌سازی پالت رنگی OKLCH و تایپوگرافی</li>
+        <li>ممیزی کامل چیدمان RTL و تگ‌های متقابل سئو</li>
+        <li>اتصال فرم‌ها و کلاینت به API مستقل شما</li>
+        <li>راه‌اندازی خط لوله CI/CD و تست‌های خودکار</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="cta mt-8 h-11 w-full">
+      درخواست بررسی استودیو
+    </a>
+  </div>
+
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker tabular-nums">۰۳ · سازمانی</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">همراهی اختصاصی</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">سفارشی <span class="text-sm font-normal text-muted">· توافق‌نامه SLA</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        مهاجرت کامل سامانه محتوا، معماری توزیع چندمنطقه‌ای و پشتیبانی مستمر مهندسی برای پلتفرم‌های بزرگ.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>آداپتورهای اختصاصی Content Collection و CMS</li>
+        <li>ممیزی دسترس‌پذیری WCAG و سیستم طراحی چندبرندی</li>
+        <li>کانال ارتباطی مستقیم و بازبینی اولویت‌دار کد</li>
+        <li>کارگاه‌های آموزشی معماری RTL و Astro v7</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="btn-secondary mt-8 w-full text-center">
+      تماس با تیم معماری
+    </a>
+  </div>
+</div>
+
+<ContactForm locale="fa" />

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync, execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 /**
  * Resolves the installed `@inlang/paraglide-js` CLI entry point by walking up
@@ -32,8 +32,8 @@ export function findParaglideBin(startDir = process.cwd()) {
  * Runs the installed `@inlang/paraglide-js` CLI entry point directly under the
  * active Node.js binary when `node_modules` is present, avoiding a hard runtime
  * dependency on `pnpm` (so `npm`, `pnpm`, or bare `node` invocations all work).
- * Falls back to `pnpm run messages:compile` when running inside a dependency-less
- * sandbox such as `scripts/verify-cli.mjs`.
+ * Falls back to `pnpm run messages:compile` (or `npm`) when running inside a
+ * dependency-less sandbox such as `scripts/verify-cli.mjs`.
  *
  * @param {string} [rootDir=process.cwd()]
  */
@@ -51,5 +51,16 @@ export function compileMessages(rootDir = process.cwd()) {
     return;
   }
 
-  execSync('npm run messages:compile', { cwd: rootDir, stdio: 'inherit' });
+  const pnpmCmd = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+
+  try {
+    execFileSync(pnpmCmd, ['run', 'messages:compile'], { cwd: rootDir, stdio: 'inherit' });
+  } catch (err) {
+    if (err && err.code === 'ENOENT') {
+      execFileSync(npmCmd, ['run', 'messages:compile'], { cwd: rootDir, stdio: 'inherit' });
+      return;
+    }
+    throw err;
+  }
 }

@@ -136,8 +136,8 @@ if (rootHtml) {
     'Root emits JSON-LD structured data'
   );
   assert(
-    rootHtml.includes('application/rss+xml'),
-    'Root advertises the RSS feed'
+    rootHtml.includes('application/atom+xml'),
+    'Root advertises the Atom feed'
   );
   assert(
     rootHtml.includes('name="color-scheme" content="light dark"') &&
@@ -163,11 +163,11 @@ if (testLocale) {
       `/${testLocale}/ renders <html lang="${testLocale}" dir="${dirFor(testLocale)}">`
     );
     assert(count(html, /<h1[\s>]/g) === 1, `/${testLocale}/ has exactly one <h1>`);
-    const rssLink = html.match(
-      /<link[^>]+type="application\/rss\+xml"[^>]*href="([^"]+)"/i
+    const atomLink = html.match(
+      /<link[^>]+type="application\/atom\+xml"[^>]*href="([^"]+)"/i
     );
     assert(
-      Boolean(rssLink && rssLink[1].endsWith(`/rss/${testLocale}.xml`)),
+      Boolean(atomLink && atomLink[1].endsWith(`/rss/${testLocale}.xml`)),
       `/${testLocale}/ advertises its localized Atom feed (/rss/${testLocale}.xml)`
     );
   }
@@ -442,8 +442,10 @@ if (iconsSvg) {
       iconsSvg.includes('<symbol id="globe"') &&
       iconsSvg.includes('<symbol id="sun"') &&
       iconsSvg.includes('<symbol id="moon"') &&
-      iconsSvg.includes('<symbol id="copy"'),
-    'icons.svg contains compiled symbols (including sun, moon, and copy)'
+      iconsSvg.includes('<symbol id="copy"') &&
+      iconsSvg.includes('<symbol id="shield"') &&
+      iconsSvg.includes('<symbol id="mail"'),
+    'icons.svg contains compiled symbols (including sun, moon, copy, shield, and mail)'
   );
 }
 
@@ -507,6 +509,63 @@ if (blogCatalog) {
   } catch {
     assert(false, 'Static blog catalog is valid JSON');
   }
+}
+
+for (const locale of LOCALES) {
+  const localeCatalogRaw = readHtml(path.join('api', 'blog-posts', `${locale}.json`));
+  assert(
+    localeCatalogRaw !== null,
+    `Per-locale blog catalog (dist/api/blog-posts/${locale}.json) exists`
+  );
+  if (localeCatalogRaw) {
+    try {
+      const items = JSON.parse(localeCatalogRaw);
+      assert(
+        Array.isArray(items) &&
+          items.every(
+            (item) =>
+              item.locale === locale &&
+              typeof item.href === 'string' &&
+              item.href.endsWith('/')
+          ),
+        `Per-locale blog catalog (${locale}.json) contains only "${locale}" canonical entries`
+      );
+    } catch {
+      assert(false, `Per-locale blog catalog (${locale}.json) is valid JSON`);
+    }
+  }
+}
+
+const pagesRoot = path.join(rootDir, 'src', 'content', 'pages');
+function readDefaultLocalePageHtml(groupName) {
+  const mdxPath = path.join(pagesRoot, groupName, `${DEFAULT_LOCALE}.mdx`);
+  const slug = readFrontmatterSlug(mdxPath);
+  if (!slug) return null;
+  return readHtml(path.join(slug, 'index.html'));
+}
+
+const featuresHtml = readDefaultLocalePageHtml('features');
+if (featuresHtml) {
+  assert(
+    featuresHtml.includes('id="rtl"') && featuresHtml.includes('id="design"'),
+    'Features page renders #rtl and #design section anchors for footer navigation'
+  );
+}
+
+const aboutHtml = readDefaultLocalePageHtml('about');
+if (aboutHtml) {
+  assert(
+    aboutHtml.includes('id="privacy"') && aboutHtml.includes('id="terms"'),
+    'About page renders #privacy and #terms legal anchors'
+  );
+}
+
+const pricingHtml = readDefaultLocalePageHtml('pricing');
+if (pricingHtml) {
+  assert(
+    pricingHtml.includes('id="contact-inquiry"') && pricingHtml.includes('data-contact-form'),
+    'Pricing page renders #contact-inquiry external API form section'
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -650,6 +709,32 @@ if (postsPerPage > 0) {
       assert(
         cards <= postsPerPage,
         `Blog page ${page} of "${locale}" renders at most ${postsPerPage} cards (${cards})`
+      );
+
+      // Verify reciprocal hreflang on every paginated blog index page.
+      const selfCanonical = html.match(/<link[^>]+rel="canonical"[^>]*href="([^"]+)"/i)?.[1];
+      const altTags = [
+        ...html.matchAll(
+          /<link[^>]+rel="alternate"[^>]+hreflang="([^"]+)"[^>]+href="([^"]+)"/gi
+        ),
+      ];
+      let reciprocalOk = Boolean(selfCanonical);
+      for (const [, altLang, altHref] of altTags) {
+        if (altLang === 'x-default') continue;
+        const targetPath = new URL(altHref).pathname.replace(/^\/+|\/+$/g, '');
+        const targetHtml = readHtml(path.join(targetPath, 'index.html'));
+        if (
+          !targetHtml ||
+          !selfCanonical ||
+          !targetHtml.includes(`hreflang="${locale}" href="${selfCanonical}"`)
+        ) {
+          reciprocalOk = false;
+          break;
+        }
+      }
+      assert(
+        reciprocalOk,
+        `Blog page ${page} of "${locale}" emits strictly reciprocal hreflang links`
       );
     }
 

@@ -64,12 +64,14 @@ export function isPublished(entry: ContentEntryLike): boolean {
   return !entry.data.draft;
 }
 
-/** Newest first, without mutating the collection Astro handed us. */
+/** Newest first, with deterministic ID tie-breaking across OS filesystems. */
 export function sortByPublishedAtDesc<T extends DatedContentEntry>(
   entries: readonly T[]
 ): T[] {
   return [...entries].sort(
-    (a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime()
+    (a, b) =>
+      b.data.publishedAt.getTime() - a.data.publishedAt.getTime() ||
+      a.id.localeCompare(b.id)
   );
 }
 

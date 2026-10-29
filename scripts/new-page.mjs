@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
 import { contentStub } from './lib/content-stub.mjs';
 import { resolveSlug } from './lib/slug.mjs';
@@ -281,9 +281,15 @@ Update / Sync Options:
       try {
         const navText = titlesByLocale[sourceLocale] || title;
         console.log(`🔄 Updating nav_${pageKey} translation key...`);
-        execSync(
-          `node scripts/i18n-add.mjs --category=nav --key=${pageKey} --${sourceLocale}="${navText}"`,
-          { stdio: 'inherit' }
+        execFileSync(
+          process.execPath,
+          [
+            path.join(rootDir, 'scripts', 'i18n-add.mjs'),
+            '--category=nav',
+            `--key=${pageKey}`,
+            `--${sourceLocale}=${navText}`,
+          ],
+          { cwd: rootDir, stdio: 'inherit' }
         );
       } catch (e) {
         console.warn('⚠️ Warning: Failed to update nav key:', e.message);
@@ -332,7 +338,6 @@ Update / Sync Options:
   // `assets:generate`, so the referenced file always exists once it is run.
   // `--image=none` opts out, and the page falls back to the shared artwork.
   const pageImage = noImage ? '' : customImage || `./${pageKey}.png`;
-  const imageLine = pageImage ? `image: "${pageImage}"\n` : '';
 
   for (const loc of LOCALES) {
     const isSource = loc === sourceLocale;
@@ -361,16 +366,15 @@ Update / Sync Options:
     (isDraft ? draftLocales : publishedLocales).push(loc);
 
     const stubBody = contentStub(loc);
+    const fmRecord = {
+      title: pageTitle,
+      slug,
+      description: pageDesc,
+      ...(pageImage ? { image: pageImage } : {}),
+      draft: isDraft,
+    };
 
-    const content = `---
-title: "${pageTitle}"
-slug: "${slug}"
-description: "${pageDesc}"
-${imageLine}draft: ${isDraft}
----
-
-${stubBody}
-`;
+    const content = stringifyFrontmatter(fmRecord, `\n${stubBody}\n`);
     fs.writeFileSync(path.join(targetDir, `${loc}.mdx`), content, 'utf-8');
   }
 
@@ -401,7 +405,10 @@ ${stubBody}
 
   // Draw the artwork for the new page, so its hero background is never broken.
   try {
-    execSync('node scripts/generate-assets.mjs', { stdio: 'inherit' });
+    execFileSync(process.execPath, [path.join(rootDir, 'scripts', 'generate-assets.mjs')], {
+      cwd: rootDir,
+      stdio: 'inherit',
+    });
   } catch (e) {
     console.warn('⚠️ Warning: Failed to generate the hero artwork:', e.message);
     console.warn(`   Run "pnpm run assets:generate" to create "${pageImage}".`);
@@ -412,9 +419,15 @@ ${stubBody}
     try {
       const navText = titlesByLocale[sourceLocale] || title;
       console.log(`🔄 Registering nav_${pageKey} translation key...`);
-      execSync(
-        `node scripts/i18n-add.mjs --category=nav --key=${pageKey} --${sourceLocale}="${navText}"`,
-        { stdio: 'inherit' }
+      execFileSync(
+        process.execPath,
+        [
+          path.join(rootDir, 'scripts', 'i18n-add.mjs'),
+          '--category=nav',
+          `--key=${pageKey}`,
+          `--${sourceLocale}=${navText}`,
+        ],
+        { cwd: rootDir, stdio: 'inherit' }
       );
     } catch (e) {
       console.warn('⚠️ Warning: Failed to auto-register nav key:', e.message);

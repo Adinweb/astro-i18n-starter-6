@@ -14,6 +14,18 @@ function getHeaderOffset(): number {
   return document.querySelector('header.fixed') ? -96 : 0;
 }
 
+function prefersReducedMotion(): boolean {
+  if (typeof document === 'undefined') return false;
+  const explicit = document.documentElement.dataset.motion;
+  if (explicit === 'reduced') return true;
+  if (explicit === 'full') return false;
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
 export function getLenis(): Lenis | null {
   return lenis;
 }
@@ -87,7 +99,10 @@ function handleSamePageAnchorClick(event: MouseEvent): void {
       duration: 1.15,
     });
   } else {
-    destination.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    destination.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'start',
+    });
   }
 }
 
@@ -99,11 +114,9 @@ export function initLenis(): void {
     return;
   }
 
-  // Only skip when explicitly opted out via <html data-motion="reduced">.
-  // Many Windows/RDP environments set OS-level prefers-reduced-motion when
-  // desktop window animations are disabled, which otherwise silently disables
-  // Lenis wheel smoothing across the entire site.
-  if (document.documentElement.dataset.motion === 'reduced') {
+  // Respect <html data-motion="reduced"> or OS prefers-reduced-motion: reduce
+  // (unless explicitly overridden via <html data-motion="full">).
+  if (prefersReducedMotion()) {
     return;
   }
 

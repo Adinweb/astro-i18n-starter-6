@@ -48,7 +48,7 @@ const localeMeta = getLocaleMeta(locale);
 const feedUrl = absoluteUrl(getRssFeedHref(locale));
 const canonicalUrl = absoluteUrl(url);
 const defaultAlternate = alternates[DEFAULT_LOCALE];
-const xDefaultUrl = absoluteUrl(defaultAlternate ?? url);
+const xDefaultUrl = defaultAlternate ? absoluteUrl(defaultAlternate) : undefined;
 
 // The page's own artwork becomes a social card, cropped and encoded by
 // Astro's image pipeline. Pages without artwork get the site card.
@@ -75,19 +75,19 @@ const jsonLd = schema
 {nextUrl && <link rel="next" href={absoluteUrl(nextUrl)} />}
 <link
   rel="alternate"
-  type="application/rss+xml"
+  type="application/atom+xml"
   title={`${siteName} — ${localeMeta.name}`}
   href={feedUrl}
 />
 {noindex && <meta name="robots" content="noindex, nofollow" />}
 
-{/* Hreflang: one entry per available translation + x-default. */}
+{/* Hreflang: one entry per available reciprocal translation + x-default when default locale exists. */}
 {
   alternateHrefs.map(([loc, href]) => (
     <link rel="alternate" hreflang={loc} href={href} />
   ))
 }
-<link rel="alternate" hreflang="x-default" href={xDefaultUrl} />
+{xDefaultUrl && <link rel="alternate" hreflang="x-default" href={xDefaultUrl} />}
 
 <meta property="og:site_name" content={siteName} />
 <meta property="og:title" content={title} />

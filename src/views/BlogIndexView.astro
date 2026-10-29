@@ -29,6 +29,7 @@ import * as m from '@/paraglide/messages';
 interface Props {
   locale: Locale;
   alternates: Partial<Record<Locale, string>>;
+  switcherAlternates?: Partial<Record<Locale, string>>;
   url: string;
   /** 1-based number of the page this route serves. */
   page: number;
@@ -38,7 +39,7 @@ interface Props {
   perPage: number;
 }
 
-const { locale, alternates, url, page, totalPages, perPage } = Astro.props;
+const { locale, alternates, switcherAlternates, url, page, totalPages, perPage } = Astro.props;
 
 const posts = getSortedLocaleEntries(await getCollection('blog'), locale);
 
@@ -73,9 +74,10 @@ const pageStatus = m.blog_pagination_status(
 // plain name of the blog.
 const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` : m.nav_blog({}, { locale });
 const indexDescription = m.blog_index_description({}, { locale });
-const breadcrumbs = getBreadcrumbs(blogHref, locale, {
+const breadcrumbs = getBreadcrumbs(url, locale, {
   home: m.nav_home({}, { locale }),
   blog: m.nav_blog({}, { locale }),
+  current: page > 1 ? pageStatus : undefined,
 });
 const meta = getLocaleMeta(locale);
 const indexSchema = [
@@ -103,6 +105,7 @@ const indexSchema = [
   locale={locale}
   url={url}
   alternates={alternates}
+  switcherAlternates={switcherAlternates}
   prevUrl={previousHref}
   nextUrl={nextHref}
   hero
@@ -126,7 +129,10 @@ const indexSchema = [
             hidden
             data-locale={locale}
             data-total-pages={String(totalPages)}
-            data-base-href={url}
+            data-per-page={String(perPage)}
+            data-base-href={blogHref}
+            data-current-url={url}
+            data-show-reading-time={String(siteConfig.blog.showReadingTime)}
             data-showing-template={m.blog_filter_showing_page(
               { visible: '{visible}', total: '{total}' },
               { locale }
@@ -135,6 +141,17 @@ const indexSchema = [
               { visible: '{visible}', total: '{total}' },
               { locale }
             )}
+            data-page-status-template={m.blog_pagination_status(
+              { page: '{page}', totalPages: '{totalPages}' },
+              { locale }
+            )}
+            data-page-label-template={m.blog_pagination_page(
+              { page: '{page}' },
+              { locale }
+            )}
+            data-prev-label={m.blog_pagination_previous({}, { locale })}
+            data-next-label={m.blog_pagination_next({}, { locale })}
+            data-pager-aria-label={m.blog_pagination_label({}, { locale })}
           >
             <nav class="flex flex-wrap items-center gap-2" aria-label={m.blog_filter_by_category({}, { locale })}>
               <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
@@ -295,13 +312,16 @@ const indexSchema = [
 
 <script>
   import { formatNumber } from '@/i18n/format';
+  import { getLenis } from '@/scripts/lenis';
   import { initReveals, replayReveals } from '@/scripts/reveal';
+  import { buildPageWindow, PAGE_GAP, paginate } from '@/libs/content/pagination';
   import {
     NO_FILTERS,
     areBlogFiltersEqual,
     buildBlogFilterQuery,
     hasActiveFilters,
     matchesBlogFilters,
+    parseBlogFilterPage,
     parseBlogFilters,
     toggleBlogTag,
     type BlogFilters,
@@ -309,24 +329,49 @@ const indexSchema = [
     type SerializedBlogPost,
   } from '@/libs/content/blog';
 
-  let catalogPromise: Promise<SerializedBlogPost[]> | null = null;
+  const catalogCache = new Map<string, Promise<SerializedBlogPost[]>>();
 
-  function fetchBlogCatalog(): Promise<SerializedBlogPost[]> {
-    if (!catalogPromise) {
-      catalogPromise = fetch('/api/blog-posts.json')
-        .then((res) => {
-          if (!res.ok) throw new Error(`Catalog HTTP ${res.status}`);
-          return res.json() as Promise<SerializedBlogPost[]>;
-        })
-        .catch((error) => {
-          catalogPromise = null;
-          throw error;
-        });
-    }
-    return catalogPromise;
+  function fetchBlogCatalog(locale: string): Promise<SerializedBlogPost[]> {
+    const existing = catalogCache.get(locale);
+    if (existing) return existing;
+
+    const request = (async () => {
+      const res = await fetch(`/api/blog-posts/${encodeURIComponent(locale)}.json`);
+      if (res.ok) {
+        return (await res.json()) as SerializedBlogPost[];
+      }
+      const fallbackRes = await fetch('/api/blog-posts.json');
+      if (!fallbackRes.ok) {
+        throw new Error(`Catalog HTTP ${fallbackRes.status}`);
+      }
+      const all = (await fallbackRes.json()) as SerializedBlogPost[];
+      return all.filter((post) => post.locale === locale);
+    })().catch((error) => {
+      catalogCache.delete(locale);
+      throw error;
+    });
+
+    catalogCache.set(locale, request);
+    return request;
   }
 
-  function createDynamicPostCard(post: SerializedBlogPost): HTMLElement {
+  function createSvgIcon(name: string, size: number, extraClass = ''): SVGSVGElement {
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('width', String(size));
+    svg.setAttribute('height', String(size));
+    svg.setAttribute('aria-hidden', 'true');
+    if (extraClass) svg.setAttribute('class', extraClass);
+    const use = document.createElementNS(svgNs, 'use');
+    use.setAttribute('href', `/icons.svg#${name}`);
+    svg.append(use);
+    return svg;
+  }
+
+  function createDynamicPostCard(
+    post: SerializedBlogPost,
+    showReadingTime: boolean
+  ): HTMLElement {
     const article = document.createElement('article');
     article.className =
       'reveal group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30';
@@ -337,6 +382,13 @@ const indexSchema = [
     media.className =
       'relative aspect-[16/9] overflow-hidden bg-linear-to-br from-primary/20 via-surface-hover to-accent/15';
 
+    const createCoverPlaceholder = () => {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'flex h-full items-center justify-center text-primary/40';
+      placeholder.append(createSvgIcon('globe', 44));
+      return placeholder;
+    };
+
     if (post.coverSrc) {
       const img = document.createElement('img');
       img.src = post.coverSrc;
@@ -345,22 +397,19 @@ const indexSchema = [
       if (post.coverHeight) img.height = post.coverHeight;
       img.loading = 'lazy';
       img.decoding = 'async';
+      img.referrerPolicy = 'no-referrer';
       img.className =
         'h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]';
+      img.addEventListener(
+        'error',
+        () => {
+          img.replaceWith(createCoverPlaceholder());
+        },
+        { once: true }
+      );
       media.append(img);
     } else {
-      const placeholder = document.createElement('div');
-      placeholder.className = 'flex h-full items-center justify-center text-primary/40';
-      const svgNs = 'http://www.w3.org/2000/svg';
-      const svg = document.createElementNS(svgNs, 'svg');
-      svg.setAttribute('width', '44');
-      svg.setAttribute('height', '44');
-      svg.setAttribute('aria-hidden', 'true');
-      const use = document.createElementNS(svgNs, 'use');
-      use.setAttribute('href', '/icons.svg#globe');
-      svg.append(use);
-      placeholder.append(svg);
-      media.append(placeholder);
+      media.append(createCoverPlaceholder());
     }
 
     if (post.categoryLabel) {
@@ -413,14 +462,18 @@ const indexSchema = [
     const time = document.createElement('time');
     time.dateTime = post.publishedIso;
     time.textContent = post.formattedDate;
-    const dot = document.createElement('span');
-    dot.setAttribute('aria-hidden', 'true');
-    dot.textContent = '·';
-    const readTime = document.createElement('span');
-    readTime.textContent = post.readingTimeLabel;
-    footer.append(time, dot, readTime);
-    content.append(footer);
+    footer.append(time);
 
+    if (showReadingTime) {
+      const dot = document.createElement('span');
+      dot.setAttribute('aria-hidden', 'true');
+      dot.textContent = '·';
+      const readTime = document.createElement('span');
+      readTime.textContent = post.readingTimeLabel;
+      footer.append(dot, readTime);
+    }
+
+    content.append(footer);
     article.append(media, content);
     return article;
   }
@@ -432,6 +485,13 @@ const indexSchema = [
     root.hidden = false;
     initReveals();
 
+    const abortController = new AbortController();
+    document.addEventListener(
+      'astro:before-swap',
+      () => abortController.abort(),
+      { once: true }
+    );
+
     const cards = [...document.querySelectorAll<HTMLElement>('[data-post-card]')].map((element) => ({
       element,
       taxonomy: {
@@ -442,19 +502,30 @@ const indexSchema = [
 
     const grid = document.querySelector<HTMLElement>('[data-blog-grid]');
     const pagerWrap = document.querySelector<HTMLElement>('[data-blog-pager-wrap]');
+    const serverPagerHtml = pagerWrap?.innerHTML ?? '';
+    let usingDynamicPager = false;
+
     const status = root.querySelector<HTMLElement>('[data-blog-status]');
     const empty = document.querySelector<HTMLElement>('[data-blog-empty]');
     const clear = root.querySelector<HTMLAnchorElement>('[data-blog-clear]');
     const categoryChips = [...root.querySelectorAll<HTMLAnchorElement>('[data-filter-category]')];
     const tagChips = [...root.querySelectorAll<HTMLAnchorElement>('[data-filter-tag]')];
-    const pageLinks = [...document.querySelectorAll<HTMLAnchorElement>('[data-page-link]')];
     const pageTemplate = root.dataset.showingTemplate ?? '';
     const allTemplate = root.dataset.showingAllTemplate ?? pageTemplate;
+    const pageStatusTemplate = root.dataset.pageStatusTemplate ?? '';
+    const pageLabelTemplate = root.dataset.pageLabelTemplate ?? '';
+    const prevLabel = root.dataset.prevLabel ?? 'Previous';
+    const nextLabel = root.dataset.nextLabel ?? 'Next';
+    const pagerAriaLabel = root.dataset.pagerAriaLabel ?? 'Pagination';
     const baseHref = root.dataset.baseHref ?? window.location.pathname;
+    const currentUrl = root.dataset.currentUrl ?? window.location.pathname;
     const locale = root.dataset.locale ?? 'en';
     const totalPages = Number(root.dataset.totalPages ?? '1');
+    const perPage = Math.max(1, Number(root.dataset.perPage ?? '6'));
+    const showReadingTime = root.dataset.showReadingTime !== 'false';
 
     let filters: BlogFilters = parseBlogFilters(window.location.search);
+    let filterPage = parseBlogFilterPage(window.location.search);
     let renderToken = 0;
 
     const setActive = (element: HTMLElement, active: boolean) => {
@@ -464,6 +535,90 @@ const indexSchema = [
 
     const clearDynamicCards = () => {
       grid?.querySelectorAll('[data-dynamic-post-card]').forEach((el) => el.remove());
+    };
+
+    const restoreServerPager = () => {
+      if (!pagerWrap) return;
+      if (usingDynamicPager) {
+        pagerWrap.innerHTML = serverPagerHtml;
+        usingDynamicPager = false;
+      }
+      pagerWrap.hidden = totalPages <= 1;
+    };
+
+    const renderFilteredPager = (currentPage: number, filteredTotalPages: number) => {
+      if (!pagerWrap) return;
+      if (filteredTotalPages <= 1) {
+        pagerWrap.hidden = true;
+        return;
+      }
+
+      usingDynamicPager = true;
+      pagerWrap.hidden = false;
+      pagerWrap.replaceChildren();
+
+      const statusEl = document.createElement('p');
+      statusEl.className = 'text-center text-xs text-muted';
+      statusEl.dataset.blogPageStatus = '';
+      statusEl.textContent = pageStatusTemplate
+        .replace('{page}', formatNumber(currentPage, locale))
+        .replace('{totalPages}', formatNumber(filteredTotalPages, locale));
+
+      const nav = document.createElement('nav');
+      nav.className = 'flex flex-wrap items-center justify-center gap-1.5';
+      nav.setAttribute('aria-label', pagerAriaLabel);
+      nav.dataset.blogPagination = '';
+
+      const makePageHref = (targetPage: number) =>
+        `${baseHref}${buildBlogFilterQuery(filters, targetPage)}`;
+
+      if (currentPage > 1) {
+        const prev = document.createElement('a');
+        prev.href = makePageHref(currentPage - 1);
+        prev.dataset.dynamicPage = String(currentPage - 1);
+        prev.className = 'btn-secondary gap-1.5 px-4 py-2 text-xs';
+        prev.append(
+          createSvgIcon('chevron-left', 16, 'shrink-0 rtl:rotate-180'),
+          document.createTextNode(prevLabel)
+        );
+        nav.append(prev);
+      }
+
+      for (const entry of buildPageWindow(currentPage, filteredTotalPages)) {
+        if (entry === PAGE_GAP) {
+          const gap = document.createElement('span');
+          gap.className = 'px-1 text-xs text-muted';
+          gap.setAttribute('aria-hidden', 'true');
+          gap.textContent = '…';
+          nav.append(gap);
+        } else {
+          const link = document.createElement('a');
+          link.href = makePageHref(entry);
+          link.dataset.dynamicPage = String(entry);
+          link.setAttribute(
+            'aria-label',
+            pageLabelTemplate.replace('{page}', formatNumber(entry, locale))
+          );
+          if (entry === currentPage) link.setAttribute('aria-current', 'page');
+          link.className = 'chip h-9 min-w-9 justify-center px-3 text-xs';
+          link.textContent = formatNumber(entry, locale);
+          nav.append(link);
+        }
+      }
+
+      if (currentPage < filteredTotalPages) {
+        const next = document.createElement('a');
+        next.href = makePageHref(currentPage + 1);
+        next.dataset.dynamicPage = String(currentPage + 1);
+        next.className = 'btn-secondary gap-1.5 px-4 py-2 text-xs';
+        next.append(
+          document.createTextNode(nextLabel),
+          createSvgIcon('chevron-left', 16, 'shrink-0 rotate-180 rtl:rotate-0')
+        );
+        nav.append(next);
+      }
+
+      pagerWrap.append(statusEl, nav);
     };
 
     const render = async (
@@ -486,36 +641,31 @@ const indexSchema = [
 
       if (clear) clear.hidden = !active;
 
-      const query = buildBlogFilterQuery(filters);
-      for (const link of pageLinks) {
-        const pageBase = link.dataset.pageHref;
-        if (pageBase) link.setAttribute('href', `${pageBase}${query}`);
-      }
-
-      if (updateUrl) {
-        // Preserve Astro's router state: replacing it with `null` breaks the
-        // ClientRouter's history handling when navigating back to this page.
-        window.history.replaceState(
-          window.history.state,
-          '',
-          `${baseHref}${query}`
-        );
-      }
-
-      // Multi-page blog with active filters: search the full collection across all pages.
+      // Multi-page blog with active filters: search & paginate the full locale collection.
       if (active && totalPages > 1 && grid) {
         try {
-          const catalog = await fetchBlogCatalog();
+          const localePosts = await fetchBlogCatalog(locale);
           if (token !== renderToken) return;
 
-          const localePosts = catalog.filter((post) => post.locale === locale);
           const matching = localePosts.filter((post) => matchesBlogFilters(post, filters));
+          const slice = paginate(matching, filterPage, perPage);
+          filterPage = slice.page;
+
+          if (updateUrl) {
+            window.history.replaceState(
+              window.history.state,
+              '',
+              `${baseHref}${buildBlogFilterQuery(filters, filterPage)}`
+            );
+          }
 
           for (const card of cards) card.element.hidden = true;
-          if (pagerWrap) pagerWrap.hidden = true;
-
           clearDynamicCards();
-          grid.append(...matching.map((post) => createDynamicPostCard(post)));
+          grid.append(
+            ...slice.items.map((post) => createDynamicPostCard(post, showReadingTime))
+          );
+          renderFilteredPager(slice.page, slice.totalPages);
+
           if (animate) {
             replayReveals(grid, { fast: true });
           } else {
@@ -536,7 +686,20 @@ const indexSchema = [
       }
 
       clearDynamicCards();
-      if (pagerWrap) pagerWrap.hidden = false;
+      restoreServerPager();
+
+      const query = buildBlogFilterQuery(filters);
+      document.querySelectorAll<HTMLAnchorElement>('[data-page-link]').forEach((link) => {
+        const pageBase = link.dataset.pageHref;
+        if (pageBase) link.setAttribute('href', `${pageBase}${query}`);
+      });
+
+      if (updateUrl) {
+        // Preserve Astro's router state: replacing it with `null` breaks the
+        // ClientRouter's history handling when navigating back to this page.
+        const targetPath = active ? `${baseHref}${query}` : currentUrl;
+        window.history.replaceState(window.history.state, '', targetPath);
+      }
 
       let visible = 0;
       for (const card of cards) {
@@ -558,35 +721,78 @@ const indexSchema = [
       if (empty) empty.hidden = visible !== 0;
     };
 
-    root.addEventListener('click', (event) => {
-      const target = (event.target as HTMLElement | null)?.closest<HTMLAnchorElement>(
-        '[data-filter-chip], [data-blog-clear]'
-      );
-      if (!target) return;
+    root.addEventListener(
+      'click',
+      (event) => {
+        const target = (event.target as HTMLElement | null)?.closest<HTMLAnchorElement>(
+          '[data-filter-chip], [data-blog-clear]'
+        );
+        if (!target) return;
 
-      event.preventDefault();
+        event.preventDefault();
 
-      let nextFilters = filters;
-      if (target.hasAttribute('data-blog-clear')) {
-        nextFilters = NO_FILTERS;
-      } else if (target.dataset.filterCategory !== undefined) {
-        const category = target.dataset.filterCategory || null;
-        nextFilters = category === null ? NO_FILTERS : { category, tags: filters.tags };
-      } else if (target.dataset.filterTag) {
-        nextFilters = toggleBlogTag(filters, target.dataset.filterTag);
-      }
+        let nextFilters = filters;
+        if (target.hasAttribute('data-blog-clear')) {
+          nextFilters = NO_FILTERS;
+        } else if (target.dataset.filterCategory !== undefined) {
+          const category = target.dataset.filterCategory || null;
+          nextFilters = category === null ? NO_FILTERS : { category, tags: filters.tags };
+        } else if (target.dataset.filterTag) {
+          nextFilters = toggleBlogTag(filters, target.dataset.filterTag);
+        }
 
-      const changed = !areBlogFiltersEqual(filters, nextFilters);
-      filters = nextFilters;
-      void render({ updateUrl: true, animate: changed });
-    });
+        const changed = !areBlogFiltersEqual(filters, nextFilters);
+        filters = nextFilters;
+        if (changed) filterPage = 1;
+        void render({ updateUrl: true, animate: changed });
+      },
+      { signal: abortController.signal }
+    );
 
-    document.addEventListener('blog:filters-restore', () => {
-      const nextFilters = parseBlogFilters(window.location.search);
-      const changed = !areBlogFiltersEqual(filters, nextFilters);
-      filters = nextFilters;
-      void render({ updateUrl: false, animate: changed });
-    });
+    pagerWrap?.addEventListener(
+      'click',
+      (event) => {
+        const target = (event.target as HTMLElement | null)?.closest<HTMLAnchorElement>(
+          '[data-dynamic-page]'
+        );
+        if (!target) return;
+
+        event.preventDefault();
+        const nextPage = Number(target.dataset.dynamicPage);
+        if (!Number.isInteger(nextPage) || nextPage < 1 || nextPage === filterPage) return;
+
+        filterPage = nextPage;
+        void render({ updateUrl: true, animate: true });
+        if (grid) {
+          const headerOffset = document.querySelector('header.fixed') ? -96 : 0;
+          const lenis = getLenis();
+          if (lenis) {
+            lenis.scrollTo(grid, { offset: headerOffset, duration: 0.9 });
+          } else {
+            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const top = grid.getBoundingClientRect().top + window.scrollY + headerOffset;
+            window.scrollTo({
+              top: Math.max(0, top),
+              behavior: reducedMotion ? 'auto' : 'smooth',
+            });
+          }
+        }
+      },
+      { signal: abortController.signal }
+    );
+
+    document.addEventListener(
+      'blog:filters-restore',
+      () => {
+        const nextFilters = parseBlogFilters(window.location.search);
+        const nextPage = parseBlogFilterPage(window.location.search);
+        const changed = !areBlogFiltersEqual(filters, nextFilters) || filterPage !== nextPage;
+        filters = nextFilters;
+        filterPage = nextPage;
+        void render({ updateUrl: false, animate: changed });
+      },
+      { signal: abortController.signal }
+    );
 
     void render({ updateUrl: false, animate: false });
   }

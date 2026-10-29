@@ -6,6 +6,7 @@ import {
   getBlogIndexHref,
   getBlogPageHref,
   getBlogPostHref,
+  getCollectionPageHref,
   getRssFeedHref,
   type SiteRoute,
   type SiteRouteProps,
@@ -245,6 +246,15 @@ describe('src/libs/content/service.ts', () => {
       ).toThrow(/Duplicate route collision/);
       expect(routes.length).toBeGreaterThan(0);
     });
+
+    it('rejects a blog post using the reserved pagination slug "page"', () => {
+      expect(() =>
+        buildSiteRoutes(
+          [pageEntry(`home/${DEFAULT_LOCALE}`, { slug: '' })],
+          [postEntry(`bad-post/${DEFAULT_LOCALE}`, { slug: 'page' })]
+        )
+      ).toThrow(/reserved pagination slug "page"/);
+    });
   });
 
   describe('blog index pagination', () => {
@@ -254,10 +264,12 @@ describe('src/libs/content/service.ts', () => {
         return postEntry(`${slug}/${locale}`, { slug, draft: index < drafts });
       });
 
-    it('builds the href of every page', () => {
+    it('builds the href of every page via getBlogPageHref and getCollectionPageHref', () => {
       expect(getBlogPageHref(1, DEFAULT_LOCALE)).toBe(getBlogIndexHref(DEFAULT_LOCALE));
       expect(getBlogPageHref(2, DEFAULT_LOCALE)).toBe('/blog/page/2/');
       expect(getBlogPageHref(3, 'de')).toBe('/de/blog/page/3/');
+      expect(getCollectionPageHref('docs', 1, DEFAULT_LOCALE)).toBe('/docs/');
+      expect(getCollectionPageHref('/docs/', 2, 'de')).toBe('/de/docs/page/2/');
     });
 
     it('registers one route per page of the index', () => {
@@ -293,7 +305,7 @@ describe('src/libs/content/service.ts', () => {
       expect(secondPage!.props.alternates['de']).toBe('/de/blog/page/2/');
     });
 
-    it('falls back to the last page of a locale that has fewer posts', () => {
+    it('keeps SEO alternates strictly reciprocal while clamping switcherAlternates to the last page', () => {
       const routes = buildSiteRoutes(
         [pageEntry(`home/${DEFAULT_LOCALE}`, { slug: '' })],
         manyPosts(POSTS_PER_PAGE * 2 + 1, DEFAULT_LOCALE)
@@ -301,9 +313,11 @@ describe('src/libs/content/service.ts', () => {
 
       const thirdPage = routes.find((route) => route.props.url === '/blog/page/3/');
       expect(thirdPage).toBeDefined();
-      // The other locales only have one page, so their alternate points there
-      // instead of at a URL that does not exist.
-      expect(thirdPage!.props.alternates['de']).toBe('/de/blog/');
+      // Other locales only have 1 page: omit from SEO hreflang alternates so reciprocity holds,
+      // while clamping switcherAlternates so UI language switching lands on /de/blog/.
+      expect(thirdPage!.props.alternates[DEFAULT_LOCALE]).toBe('/blog/page/3/');
+      expect(thirdPage!.props.alternates['de']).toBeUndefined();
+      expect(thirdPage!.props.switcherAlternates?.['de']).toBe('/de/blog/');
     });
 
     it('counts only published posts', () => {

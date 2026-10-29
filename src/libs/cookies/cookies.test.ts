@@ -402,6 +402,17 @@ describe('TDDDG § 25 & DSGVO Cookie Consent System', () => {
         'example.de',
         '.example.de',
       ]);
+      expect(deriveCookieDomains('sub.app.example.co.uk')).toEqual([
+        undefined,
+        'sub.app.example.co.uk',
+        '.sub.app.example.co.uk',
+        'app.example.co.uk',
+        '.app.example.co.uk',
+        'example.co.uk',
+        '.example.co.uk',
+        'co.uk',
+        '.co.uk',
+      ]);
       expect(deriveCookieDomains('localhost')).toEqual([undefined]);
       expect(deriveCookieDomains('127.0.0.1')).toEqual([undefined]);
       expect(deriveCookieDomains('[::1]')).toEqual([undefined]);

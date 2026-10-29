@@ -101,12 +101,21 @@
   will-change: auto;
 }
 
-/* Explicit reduced-motion opt-out & print media */
+/* Explicit reduced-motion opt-out, OS prefers-reduced-motion & print media */
 html[data-motion='reduced'].js .reveal {
   opacity: 1 !important;
   transform: none !important;
   transition: none !important;
   will-change: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion='full']).js .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto !important;
+  }
 }
 
 @media print {

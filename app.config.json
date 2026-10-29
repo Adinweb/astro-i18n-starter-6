@@ -55,6 +55,13 @@
     "github": "https://github.com",
     "twitter": ""
   },
+  "api": {
+    "baseUrl": "",
+    "timeoutMs": 10000,
+    "endpoints": {
+      "contact": "/contact"
+    }
+  },
   "server": {
     "host": "0.0.0.0",
     "port": 3000

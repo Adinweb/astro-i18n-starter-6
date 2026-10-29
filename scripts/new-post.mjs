@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
 import { postStub, stripLeadingHeading } from './lib/content-stub.mjs';
 import { resolveSlug } from './lib/slug.mjs';
@@ -239,14 +239,19 @@ Update / Sync Options:
         body = parsed.body;
       } else {
         const slug = resolveSlug(loc, groupSlug, sourceLocale, defaultLocale, slugsByLocale);
+        const fallbackTitle = isSource ? sourceTitle : `[TODO: ${loc}] ${sourceTitle}`;
+        const fallbackDesc = isSource
+          ? `Description for ${groupSlug}`
+          : `[TODO: ${loc}] Description for ${groupSlug}`;
+        const hasPlaceholder = [fallbackTitle, fallbackDesc].some((v) => v.includes('[TODO'));
         fmData = {
-          title: `[TODO: ${loc}] ${sourceTitle}`,
+          title: fallbackTitle,
           slug,
-          description: `[TODO: ${loc}] Description for ${groupSlug}`,
+          description: fallbackDesc,
           publishedAt: customDate || today,
-          draft: !isSource,
+          draft: hasDraftArg ? !publishAll || hasPlaceholder : !isSource,
         };
-        body = `\n# ${fmData.title}\n\n${postStub(loc)}`;
+        body = `\n${postStub(loc)}\n`;
       }
 
       const oldTitle = fmData.title || '';
@@ -413,31 +418,23 @@ Update / Sync Options:
     const isDraft = hasDraftArg ? !publishAll || hasPlaceholder : !isSource;
     (isDraft ? draftLocales : publishedLocales).push(loc);
 
-    // Every entry starts with a body in its own language, and the heading of
-    // the body always mirrors the frontmatter title.
-    const body = isSource && clonedBody
-      ? `\n${stripLeadingHeading(clonedBody).trimStart()}`
-      : `\n${postStub(loc)}`;
+    // Every entry starts with a body in its own language without duplicating the hero H1.
+    const bodyText = isSource && clonedBody
+      ? stripLeadingHeading(clonedBody).trimStart()
+      : postStub(loc);
 
-    const taxonomyLines = [
-      groupImage ? `image: "${groupImage}"` : '',
-      customCategories?.length
-        ? `categories: [${customCategories.map((item) => `"${item}"`).join(', ')}]`
-        : '',
-      customTags?.length ? `tags: [${customTags.map((item) => `"${item}"`).join(', ')}]` : '',
-    ]
-      .filter(Boolean)
-      .join('\n');
+    const fmRecord = {
+      title,
+      slug,
+      description,
+      ...(groupImage ? { image: groupImage } : {}),
+      ...(customCategories?.length ? { categories: customCategories } : {}),
+      ...(customTags?.length ? { tags: customTags } : {}),
+      publishedAt: dateValue,
+      draft: isDraft,
+    };
 
-    const content = `---
-title: "${title}"
-slug: "${slug}"
-description: "${description}"
-${taxonomyLines ? `${taxonomyLines}\n` : ''}publishedAt: ${dateValue}
-draft: ${isDraft}
----
-${body}
-`;
+    const content = stringifyFrontmatter(fmRecord, `\n${bodyText.trimEnd()}\n`);
 
     fs.writeFileSync(path.join(targetDir, `${loc}.mdx`), content, 'utf-8');
   }
@@ -452,7 +449,10 @@ ${body}
 
   // Draw the artwork for the new group, so its cover is never broken.
   try {
-    execSync('node scripts/generate-assets.mjs', { stdio: 'inherit' });
+    execFileSync(process.execPath, [path.join(rootDir, 'scripts', 'generate-assets.mjs')], {
+      cwd: rootDir,
+      stdio: 'inherit',
+    });
   } catch (e) {
     console.warn('⚠️ Warning: Failed to generate the cover artwork:', e.message);
     if (groupImage) {

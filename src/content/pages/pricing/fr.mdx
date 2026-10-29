@@ -1,9 +1,75 @@
 ---
 title: "Tarifs"
 slug: "tarifs"
-description: "Des tarifs transparents pour chaque taille de projet."
+description: "Des formules claires pour chaque taille de projet, de la base open source MIT à l’accompagnement d’architecture sur mesure."
 image: "./pricing.png"
 draft: false
 ---
 
-Des tarifs transparents pour chaque taille de projet, de la base open source gratuite au projet accompagné sur mesure.
+import ContactForm from '@/components/ContactForm.astro';
+
+Choisissez la formule adaptée à votre rythme d’ingénierie. Le socle multilingue Astro v7 est libre et gratuit sous licence MIT, complété par des revues d’architecture et un accompagnement dédié pour les équipes déployant à l’international.
+
+<div class="reveal-stagger not-prose my-10 grid gap-6 lg:grid-cols-3">
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker">01 · Starter</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">Socle Open Source</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">0 € <span class="text-sm font-normal text-muted">· Licence MIT</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        Accès complet au dépôt pour les équipes techniques autonomes construisant des sites statiques multilingues rapides.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>5 langues LTR &amp; RTL préconfigurées</li>
+        <li>Traductions compilées Paraglide &amp; suite CLI</li>
+        <li>Recherche Pagefind, flux Atom &amp; SEO Schema.org</li>
+        <li>Gestionnaire de consentement RGPD / TDDDG</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="btn-secondary mt-8 w-full text-center">
+      Poser une question
+    </a>
+  </div>
+
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-primary/50 bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker">02 · Studio</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">Audit d’Architecture</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">1 400 € <span class="text-sm font-normal text-muted">· forfait</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        Revue approfondie de localisation, calibrage du système de design OKLCH et connexion à vos API externes.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>Palette de marque OKLCH &amp; typographie sur mesure</li>
+        <li>Vérification complète du rendu RTL &amp; hreflang</li>
+        <li>Intégration de formulaires &amp; microservices externes</li>
+        <li>Pipeline CI/CD avec tests smoke &amp; audit i18n</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="cta mt-8 h-11 w-full">
+      Demander un audit Studio
+    </a>
+  </div>
+
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker">03 · Entreprise</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">Partenariat Dédié</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">Sur devis <span class="text-sm font-normal text-muted">· SLA</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        Migration de bout en bout, architecture CDN multi-régions et accompagnement continu pour les grands catalogues éditoriaux.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>Connecteurs Content Collections &amp; CMS dédiés</li>
+        <li>Audit d’accessibilité WCAG &amp; système multi-marques</li>
+        <li>Canal dédié &amp; revues de code prioritaires</li>
+        <li>Ateliers d’équipe sur le RTL &amp; Astro v7</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="btn-secondary mt-8 w-full text-center">
+      Contacter l’équipe
+    </a>
+  </div>
+</div>
+
+<ContactForm locale="fr" />

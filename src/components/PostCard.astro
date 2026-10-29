@@ -4,6 +4,7 @@ import { Image } from 'astro:assets';
 import Icon from '@/components/Icon.astro';
 import type { Locale } from '@/i18n/locales';
 import { formatDate, formatNumber } from '@/i18n/format';
+import { siteConfig } from '@/libs/config/app';
 import { getReadingTime } from '@/libs/content/blog';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import * as m from '@/paraglide/messages';
@@ -106,8 +107,14 @@ const hiddenTagCount = tags.length - visibleTags.length;
 
     <div class="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2 text-xs text-muted">
       <time datetime={publishedAt.toISOString()}>{formattedDate}</time>
-      <span aria-hidden="true">·</span>
-      <span>{m.blog_read_time({ count: formatNumber(readingTime, locale) }, { locale })}</span>
+      {
+        siteConfig.blog.showReadingTime && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{m.blog_read_time({ count: formatNumber(readingTime, locale) }, { locale })}</span>
+          </>
+        )
+      }
     </div>
   </div>
 </article>

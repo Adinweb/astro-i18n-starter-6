@@ -108,3 +108,5 @@ Never embed raw `<svg><path ...></svg>` in templates. Use `<Icon name="..." />` 
 11. `copy` — clipboard copy action icon for code blocks
 12. `external-link` — outbound link indicator for docs and external URLs
 13. `arrow-right` — call-to-action directional arrow (pair with `rtl:rotate-180`)
+14. `shield` — privacy & cookie consent control icon
+15. `mail` — contact & external API inquiry notice icon

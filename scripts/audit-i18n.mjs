@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LOCALES_SOURCE_PATH, readLocaleConfig } from './lib/locales.mjs';
+import { parseFrontmatter } from './lib/frontmatter.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -235,24 +236,8 @@ const contentDir = path.join(rootDir, 'src', 'content');
 
 function readFrontmatter(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) return null;
-
-  const data = {};
-  for (const line of match[1].split(/\r?\n/)) {
-    const separator = line.indexOf(':');
-    if (separator <= 0) continue;
-    const key = line.slice(0, separator).trim();
-    let value = line.slice(separator + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    data[key] = value;
-  }
-  return data;
+  if (!/^---\r?\n[\s\S]*?\r?\n---/.test(content)) return null;
+  return parseFrontmatter(content).data;
 }
 
 function localeFile(groupDir, locale) {
@@ -325,8 +310,13 @@ console.log('\n--- 4. Slug & Route Guard ---');
  */
 function deriveReservedRouteBases() {
   const pagesDir = path.join(rootDir, 'src', 'pages');
-  // The blog index and non-default locale prefixes must never be shadowed by a page slug.
-  const reserved = new Set(['blog', ...LOCALES.filter((locale) => locale !== BASE_LOCALE)]);
+  // The blog index, static build output folders, and non-default locale prefixes must never be shadowed by a page slug.
+  const reserved = new Set([
+    'blog',
+    'pagefind',
+    '_astro',
+    ...LOCALES.filter((locale) => locale !== BASE_LOCALE),
+  ]);
   if (!fs.existsSync(pagesDir)) return reserved;
 
   for (const entry of fs.readdirSync(pagesDir, { withFileTypes: true })) {
@@ -343,6 +333,7 @@ function deriveReservedRouteBases() {
 
 const RESERVED_ROUTE_BASES = deriveReservedRouteBases();
 const SLUG_PATTERN = /^[\p{L}\p{N}\p{M}]+(?:[\u200C\u200D-][\p{L}\p{N}\p{M}]+)*$/u;
+const TAXONOMY_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // The formats Astro's image pipeline accepts as input.
 const IMAGE_EXTENSIONS = new Set([
   'jpeg',
@@ -371,17 +362,41 @@ for (const { collection, group, groupDir } of groups) {
       continue;
     }
 
-    if (!frontmatter.title?.trim()) {
+    if (!String(frontmatter.title ?? '').trim()) {
       fatal(`${relative} is missing a non-empty "title"`);
       slugFatal = true;
     }
 
-    if (collection === 'blog' && !frontmatter.publishedAt) {
-      fatal(`${relative} is missing "publishedAt"`);
+    if (collection === 'blog') {
+      if (!frontmatter.publishedAt) {
+        fatal(`${relative} is missing "publishedAt"`);
+        slugFatal = true;
+      } else if (Number.isNaN(Date.parse(String(frontmatter.publishedAt)))) {
+        fatal(`${relative} has an invalid "publishedAt" date: "${frontmatter.publishedAt}"`);
+        slugFatal = true;
+      }
+    }
+
+    if (frontmatter.updatedAt && Number.isNaN(Date.parse(String(frontmatter.updatedAt)))) {
+      fatal(`${relative} has an invalid "updatedAt" date: "${frontmatter.updatedAt}"`);
       slugFatal = true;
     }
 
-    if (frontmatter.draft !== 'true') {
+    for (const taxonomyField of ['categories', 'tags']) {
+      const items = frontmatter[taxonomyField];
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          if (!TAXONOMY_KEY_PATTERN.test(String(item))) {
+            fatal(
+              `Invalid ${taxonomyField} key "${item}" in ${relative} (use lowercase ASCII letters, digits, and single hyphens)`
+            );
+            slugFatal = true;
+          }
+        }
+      }
+    }
+
+    if (frontmatter.draft !== true && frontmatter.draft !== 'true') {
       const source = fs.readFileSync(file, 'utf-8');
       if (source.includes('[TODO')) {
         console.warn(`⚠️ [WARN] ${relative} is published but still contains "[TODO" placeholders`);
@@ -397,13 +412,20 @@ for (const { collection, group, groupDir } of groups) {
       continue;
     }
 
-    if (!SLUG_PATTERN.test(slug)) {
+    if (!SLUG_PATTERN.test(String(slug))) {
       fatal(`Invalid slug "${slug}" in ${relative} (use letters, digits, and single hyphens)`);
       slugFatal = true;
     }
 
-    if (collection === 'pages' && RESERVED_ROUTE_BASES.has(slug)) {
+    if (collection === 'pages' && RESERVED_ROUTE_BASES.has(String(slug))) {
       fatal(`Slug "${slug}" in ${relative} collides with a reserved route`);
+      slugFatal = true;
+    }
+
+    if (collection === 'blog' && String(slug) === 'page') {
+      fatal(
+        `Slug "page" in ${relative} collides with reserved blog pagination route (/blog/page/<n>/)`
+      );
       slugFatal = true;
     }
 
@@ -514,6 +536,72 @@ if (warningCount === 0) {
   console.log('✅ Unextracted text scanner clean (0 warnings).');
 } else {
   console.log(`ℹ️ Emitted ${warningCount} warning(s).`);
+}
+
+// ---------------------------------------------------------------------------
+// 6. RTL Logical Property & Reveal Vector Guard (AGENTS.md Rules 4 & 10)
+// ---------------------------------------------------------------------------
+console.log('\n--- 6. RTL Logical Property Guard ---');
+const FORBIDDEN_PHYSICAL_CLASS =
+  /^(?:-?m[lr]-|p[lr]-|-?(?:left|right)-|text-(?:left|right)$|border-[lr](?:$|-)|rounded-(?:[tb])?[lr](?:$|-))/;
+const FORBIDDEN_REVEAL_VECTOR = /\b(?:data-reveal|direction)\s*=\s*["'](?:left|right)["']/;
+
+function scanRtlSources(dir) {
+  const files = [];
+  if (!fs.existsSync(dir)) return files;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === 'paraglide' || entry.name === 'test') continue;
+      files.push(...scanRtlSources(fullPath));
+    } else if (
+      /\.(astro|mdx|ts|tsx)$/.test(entry.name) &&
+      !/\.(?:test|spec)\.[jt]sx?$/.test(entry.name)
+    ) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+let rtlViolations = 0;
+for (const file of scanRtlSources(path.join(rootDir, 'src'))) {
+  const raw = fs.readFileSync(file, 'utf-8');
+  const source = file.endsWith('.mdx') ? raw.replace(/```[\s\S]*?```/g, '') : raw;
+  const relative = path.relative(rootDir, file);
+
+  const revealMatch = source.match(FORBIDDEN_REVEAL_VECTOR);
+  if (revealMatch) {
+    fatal(
+      `Forbidden physical reveal vector (${revealMatch[0]}) in ${relative}; use logical "start" or "end"`
+    );
+    rtlViolations += 1;
+  }
+
+  const classAttrPatterns = [
+    /\bclass(?:Name)?\s*=\s*"([^"]*)"/g,
+    /\bclass(?:Name)?\s*=\s*'([^']*)'/g,
+    /\.className\s*=\s*['"`]([^'"`]*)['"`]/g,
+  ];
+
+  for (const pattern of classAttrPatterns) {
+    for (const match of source.matchAll(pattern)) {
+      const tokens = match[1].split(/\s+/).filter(Boolean);
+      for (const token of tokens) {
+        const utility = token.replace(/^(?:[a-z0-9-[\]=]+:)+/, '');
+        if (FORBIDDEN_PHYSICAL_CLASS.test(utility)) {
+          fatal(
+            `Forbidden physical directional class "${token}" in ${relative}; use CSS logical properties`
+          );
+          rtlViolations += 1;
+        }
+      }
+    }
+  }
+}
+
+if (rtlViolations === 0) {
+  console.log('✅ Zero physical directional CSS classes or reveal vectors detected.');
 }
 
 console.log('\n----------------------------------------');

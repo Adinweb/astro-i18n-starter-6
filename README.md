@@ -16,7 +16,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Zero Route Collisions**: A single Lean Router Dispatcher (`src/pages/[...path].astro`) dynamically handles all localized pages, translated slugs, and index views.
 * **Compile-Time i18n via Paraglide**: Strongly typed translations with native ICU plurals and ordinals, compiled directly to tree-shakeable JS functions without runtime overhead.
 * **Symmetrical Content Collections**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs and cross-language alternate linking.
-* **Paginated Blog Index**: The listing is a static, paginated route set — one URL per page per locale (`/blog/`, `/blog/page/2/`, `/de/blog/page/2/`) — with a localized pager, `rel="prev"` / `rel="next"` head links, and no client-side pagination.
+* **Paginated Blog Index & Cross-Page Filtering**: Static paginated route set — one URL per page per locale (`/blog/`, `/blog/page/2/`, `/de/blog/page/2/`) — with reciprocal `hreflang`, `rel="prev"` / `rel="next"`, and progressive cross-page taxonomy filtering powered by lightweight per-locale static catalogs (`/api/blog-posts/<locale>.json`).
 * **Search Built-In**: Production indexing with **Pagefind** over static output, plus a locale-aware JSON fallback when Pagefind is unavailable.
 * **SEO & Social Metadata**: Canonical URLs, hreflang plus `x-default`, Open Graph/Twitter cards, `WebSite`/`WebPage`/`CollectionPage`/`BlogPosting` + `BreadcrumbList` JSON-LD, a multilingual sitemap with `lastmod`, and per-locale Atom feeds (`/rss.xml` and `/rss/<locale>.xml`).
 * **Native Light & Dark Mode**: FOUC-free theme initialization with `prefers-color-scheme` detection, `localStorage` persistence, View Transition swap continuity, and oklch semantic tokens in `src/styles/global.css`.
@@ -99,7 +99,9 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── Reveal.astro       # Progressive scroll-reveal wrapper (<Reveal direction="start" />)
 │   │   ├── DrawerSearch.astro # Inline mobile drawer search
 │   │   ├── SearchModal.astro  # Accessible search modal (Pagefind + Dev fallback)
-│   │   ├── Seo.astro          # Canonical links & hreflang tags (locales + 1)
+│   │   ├── CookieConsent.astro # TDDDG § 25 / GDPR cookie & script consent modal
+│   │   ├── ContactForm.astro  # Pure-SSG contact inquiry form posting to external APIs
+│   │   ├── Seo.astro          # Canonical links & reciprocal hreflang tags
 │   │   └── TopLoadingBar.astro # Page transition progress bar (reduced-motion aware)
 │   ├── content/               # Multilingual Content Collections
 │   │   ├── pages/             # Static pages: home, about, features, pricing
@@ -113,13 +115,16 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   ├── layouts/
 │   │   └── BaseLayout.astro   # Main layout: header, mobile menu drawer, main, footer
 │   ├── libs/
-│   │   ├── config/app.ts      # Validates app.config.json; typed site/brand/blog values
+│   │   ├── api/client.ts      # Pure client-side HTTP adapter for external APIs
+│   │   ├── config/app.ts      # Validates app.config.json; typed site/brand/blog/api values
 │   │   ├── config/navigation.ts # Locale-aware navigation builder
 │   │   ├── content/entries.ts # Entry IDs, draft filtering, locale selection & sorting
 │   │   ├── content/service.ts # Route resolution, slug alternates, feeds & breadcrumbs
+│   │   ├── content/blog-catalog.ts # Serializer for static blog JSON catalogs
 │   │   ├── content/feed.ts    # Per-locale Atom 1.0 feed builder
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
-│   │   └── content/social.ts  # Optimized og:image card
+│   │   ├── content/social.ts  # Optimized og:image card
+│   │   └── cookies/           # Consent state model & multi-domain cookie/script manager
 │   ├── pages/
 │   │   ├── [...path].astro    # Lean Router Dispatcher (< 30 lines)
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
@@ -129,7 +134,8 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── rss/[locale].xml.ts # Non-default locale Atom feeds (/rss/fa.xml, etc.)
 │   │   ├── sitemap.xml.ts     # Multi-lingual sitemap with x-default + lastmod
 │   │   ├── robots.txt.ts      # Robots.txt pointing to sitemap
-│   │   ├── api/blog-posts.json.ts # Static blog catalog for cross-page filtering
+│   │   ├── api/blog-posts.json.ts # Combined static blog catalog fallback
+│   │   ├── api/blog-posts/[locale].json.ts # Per-locale static blog catalog
 │   │   └── api/search-dev.json.ts # Locale-aware search fallback index
 │   ├── paraglide/             # Generated Paraglide code (gitignored, do not edit)
 │   ├── scripts/
@@ -154,9 +160,10 @@ All application-level values that must stay in sync across the app and the CLI s
 * **`site`** — name, short name, description (used by the web manifest; page/SEO descriptions come from the localized `site_description` message), default social card path and size.
 * **`brand`** — browser theme colours (`themeColor` and `darkThemeColor`), background colour, Apple touch icon, manifest icons.
 * **`blog.postsPerPage`** — how many posts one index page holds.
+* **`api`** — optional `baseUrl`, `timeoutMs`, and `endpoints.contact` for connecting client-side forms (`src/libs/api/client.ts`) to an external/headless backend (overridable via `PUBLIC_API_BASE_URL` and `PUBLIC_CONTACT_API_URL`).
 * **`server`** — dev host/port, also used as the local fallback site origin.
 
-[`src/libs/config/app.ts`](src/libs/config/app.ts) validates that file with Zod and exposes typed values (`siteConfig`, `POSTS_PER_PAGE`, hero defaults, `absoluteUrl`). The asset generator, web manifest, and smoke tests read the same file. Framework-only settings remain in `astro.config.mjs`, and locale configuration in `src/i18n/locales.ts` + `project.inlang/settings.json`.
+[`src/libs/config/app.ts`](src/libs/config/app.ts) validates that file with Zod and exposes typed values (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, hero defaults, `absoluteUrl`). The asset generator, web manifest, and smoke tests read the same file. Framework-only settings remain in `astro.config.mjs`, and locale configuration in `src/i18n/locales.ts` + `project.inlang/settings.json`.
 
 The two Paraglide plugins are declared in `project.inlang/settings.json` as paths into `node_modules`, so message compilation resolves them from the lockfile instead of fetching them from a CDN; a cold CI build needs no network access and cannot pick up a changed plugin under the same version.
 
@@ -276,14 +283,14 @@ Every picture on the site is served through Astro's image pipeline, never as a r
 * Post pages show the featured image, category/tag links back into the filtered index, reading time, and `articleSection`/`keywords` metadata.
 
 #### Blog pagination
-The index is paginated statically — no client-side slicing, no infinite scroll:
+The index is paginated statically at build time, with progressive client-side pagination only when taxonomy filters are active on multi-page catalogs:
 
 * The page size is a single value, `blog.postsPerPage` in `app.config.json` (default `9` — three columns × three rows), exposed as `POSTS_PER_PAGE` by `src/libs/config/app.ts`. The route builder, the view, and the smoke test read the same value, so the number of generated pages and the number of rendered cards can never drift apart.
 * One page is one route, per locale. Page one is the index itself (`/blog/`), every later page lives under `/blog/page/<n>/` and is localized like every other URL (`/de/blog/page/2/`, `/fa/blog/page/2/`).
-* The page count of a locale follows from the number of *published* posts that locale has, so a locale with fewer posts simply has fewer pages. The `alternates` map falls back to the last available page, so the language switcher never leads to a missing URL.
-* The pager is rendered by `src/views/BlogIndexView.astro` only when there is more than one page. Its arrows use the `chevron-left` icon flipped with `rtl:rotate-180` / `rotate-180 rtl:rotate-0`, so they follow the reading direction, and every pager link keeps the active taxonomy filter.
+* The page count of a locale follows from the number of *published* posts that locale has, so a locale with fewer posts simply has fewer pages. Only locales that actually have page `N` appear in SEO `hreflang` alternates (strict reciprocity), while `uiAlternates` maps the language switcher gracefully to the last available page of shorter locales.
+* When a user activates a category or tag filter on a multi-page blog, `BlogIndexView.astro` fetches `/api/blog-posts/<locale>.json`, filters across the entire locale collection, and renders a localized client-side pager (`?category=...&page=2`) with Lenis smooth-scroll coordination.
 * `Seo.astro` and `BaseLayout.astro` accept `prevUrl` / `nextUrl` and emit `<link rel="prev">` / `<link rel="next">`; pages beyond the first get a distinct document title (`Blog — Page 2 of 3`).
-* `pnpm run smoke` derives the expected page count from the content collection and asserts that every page exists, that the `rel="prev"` / `rel="next"` links point at the right neighbours, and that no page beyond the last one was generated.
+* `pnpm run smoke` derives the expected page count from the content collection and asserts that every page exists, that `hreflang` links are strictly reciprocal, that `rel="prev"` / `rel="next"` links point at the right neighbours, and that no page beyond the last one was generated.
 
 ### 3. Adding a New Language
 To add Spanish (`es`), Italian (`it`), or another language:
@@ -391,7 +398,7 @@ pnpm run smoke
 # 6. Dead Code / Dependency Check
 pnpm run knip
 
-# 7. End-to-end check of every documented CLI workflow (45 claims)
+# 7. End-to-end check of every documented CLI workflow (47 claims)
 pnpm run verify:cli
 
 # Regenerate icons, the Open Graph image, and all hero/cover artwork

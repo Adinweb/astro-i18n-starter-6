@@ -73,8 +73,14 @@ export const collections = {
     schema: ({ image }) =>
       baseSchema({ image }).extend({
         // A blog post owns the `/blog/<slug>/` route, so an empty slug would
-        // collide with the blog index itself.
-        slug: slugSchema.min(1, 'Blog posts need a non-empty slug.'),
+        // collide with the blog index itself and `"page"` is reserved for
+        // pagination (`/blog/page/<n>/`).
+        slug: slugSchema
+          .min(1, 'Blog posts need a non-empty slug.')
+          .refine(
+            (value) => value !== 'page',
+            'Slug "page" is reserved for pagination (/blog/page/<n>/).'
+          ),
         publishedAt: z.coerce.date(),
       }),
   }),

@@ -67,6 +67,17 @@ export const socialConfigSchema = z.object({
 });
 export type SocialConfig = z.infer<typeof socialConfigSchema>;
 
+export const apiEndpointsSchema = z.object({
+  contact: z.string().default('/contact'),
+});
+
+export const apiConfigSchema = z.object({
+  baseUrl: z.string().default(''),
+  timeoutMs: z.number().int().min(1000).max(60000).default(10000),
+  endpoints: apiEndpointsSchema.default({ contact: '/contact' }),
+});
+export type ApiConfig = z.infer<typeof apiConfigSchema>;
+
 export const defaultUiConfig: UiConfig = {
   showSearch: true,
   showThemeToggle: true,
@@ -85,6 +96,14 @@ const defaultCookieConfig: CookieConfig = {
 export const defaultSocialConfig: SocialConfig = {
   github: '',
   twitter: '',
+};
+
+export const defaultApiConfig: ApiConfig = {
+  baseUrl: '',
+  timeoutMs: 10000,
+  endpoints: {
+    contact: '/contact',
+  },
 };
 
 export const appConfigSchema = z.object({
@@ -114,6 +133,7 @@ export const appConfigSchema = z.object({
   blog: blogConfigSchema,
   cookies: cookieConfigSchema.default(defaultCookieConfig),
   social: socialConfigSchema.default(defaultSocialConfig),
+  api: apiConfigSchema.default(defaultApiConfig),
   server: z.object({
     host: z.string().min(1),
     port: z.number().int().min(1).max(65535),
@@ -141,7 +161,11 @@ const siteConfigSchema = z.object({
   blog: blogConfigSchema,
   cookies: cookieConfigSchema,
   social: socialConfigSchema,
+  api: apiConfigSchema,
 });
+
+const envApiBaseUrl = (import.meta.env.PUBLIC_API_BASE_URL as string | undefined)?.trim();
+const envContactEndpoint = (import.meta.env.PUBLIC_CONTACT_API_URL as string | undefined)?.trim();
 
 export const siteConfig = siteConfigSchema.parse({
   // Astro injects `site` from astro.config.mjs into import.meta.env.SITE.
@@ -168,6 +192,13 @@ export const siteConfig = siteConfigSchema.parse({
   blog: appConfig.blog,
   cookies: appConfig.cookies,
   social: appConfig.social,
+  api: {
+    baseUrl: envApiBaseUrl || appConfig.api.baseUrl,
+    timeoutMs: appConfig.api.timeoutMs,
+    endpoints: {
+      contact: envContactEndpoint || appConfig.api.endpoints.contact,
+    },
+  },
 });
 
 /** How many posts one blog index page holds. */
@@ -184,6 +215,9 @@ export const COOKIE_CONFIG = siteConfig.cookies;
 
 /** Direct export for external social links. */
 export const SOCIAL_CONFIG = siteConfig.social;
+
+/** Direct export for external headless/microservice API endpoints. */
+export const API_CONFIG = siteConfig.api;
 
 /** Id of the hero's `<h1>`, used by `aria-labelledby` on the hero region. */
 export const HERO_TITLE_ID = 'page-hero-title';

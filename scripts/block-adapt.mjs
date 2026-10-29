@@ -34,16 +34,28 @@ const directionReplacements = [
   [/\bmr-(\S+)\b/g, 'me-$1'],
   [/\bpl-(\S+)\b/g, 'ps-$1'],
   [/\bpr-(\S+)\b/g, 'pe-$1'],
+  [/\bscroll-ml-(\S+)\b/g, 'scroll-ms-$1'],
+  [/\bscroll-mr-(\S+)\b/g, 'scroll-me-$1'],
+  [/\bscroll-pl-(\S+)\b/g, 'scroll-ps-$1'],
+  [/\bscroll-pr-(\S+)\b/g, 'scroll-pe-$1'],
   [/\bleft-(\S+)\b/g, 'start-$1'],
   [/\bright-(\S+)\b/g, 'end-$1'],
   [/\btext-left\b/g, 'text-start'],
   [/\btext-right\b/g, 'text-end'],
   [/\bborder-l-(\S+)\b/g, 'border-s-$1'],
   [/\bborder-r-(\S+)\b/g, 'border-e-$1'],
+  [/\brounded-tl-(\S+)\b/g, 'rounded-ss-$1'],
+  [/\brounded-tr-(\S+)\b/g, 'rounded-se-$1'],
+  [/\brounded-bl-(\S+)\b/g, 'rounded-es-$1'],
+  [/\brounded-br-(\S+)\b/g, 'rounded-ee-$1'],
   [/\brounded-l-(\S+)\b/g, 'rounded-s-$1'],
   [/\brounded-r-(\S+)\b/g, 'rounded-e-$1'],
   [/\bborder-l\b/g, 'border-s'],
   [/\bborder-r\b/g, 'border-e'],
+  [/\brounded-tl\b/g, 'rounded-ss'],
+  [/\brounded-tr\b/g, 'rounded-se'],
+  [/\brounded-bl\b/g, 'rounded-es'],
+  [/\brounded-br\b/g, 'rounded-ee'],
   [/\brounded-l\b/g, 'rounded-s'],
   [/\brounded-r\b/g, 'rounded-e'],
 ];
@@ -64,8 +76,8 @@ const colorReplacements = [
 
 const allReplacements = [...directionReplacements, ...colorReplacements];
 
-// Match class="..." or class='...' or class:list="..."
-const classAttrRegex = /class(?:[:\w-]*)?=(["'])(.*?)\1/g;
+// Match single-line or multiline class="..." or class='...' or class:list="..."
+const classAttrRegex = /class(?:[:\w-]*)?=(["'])([\s\S]*?)\1/g;
 let match;
 let changeCount = 0;
 

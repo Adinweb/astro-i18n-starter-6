@@ -61,11 +61,21 @@ export function parseBlogFilters(search: string): BlogFilters {
   return { category, tags };
 }
 
-/** Serializes a filter state into a canonical query string (empty when unset). */
-export function buildBlogFilterQuery(filters: BlogFilters): string {
+/** Reads `?page=…` into a 1-based positive integer (defaults to 1). */
+export function parseBlogFilterPage(search: string): number {
+  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  const raw = Number(params.get('page'));
+  return Number.isInteger(raw) && raw >= 1 ? raw : 1;
+}
+
+/** Serializes a filter state (and optional page > 1) into a canonical query string. */
+export function buildBlogFilterQuery(filters: BlogFilters, page = 1): string {
   const params = new URLSearchParams();
   if (filters.category) params.set('category', filters.category);
   if (filters.tags.length > 0) params.set('tag', [...new Set(filters.tags)].join(','));
+  if (Number.isInteger(page) && page > 1 && hasActiveFilters(filters)) {
+    params.set('page', String(page));
+  }
   const query = params.toString();
   return query ? `?${query}` : '';
 }
@@ -107,9 +117,21 @@ export function toggleBlogTag(filters: BlogFilters, tag: string): BlogFilters {
   };
 }
 
-/** Rough reading time in minutes, never below one. */
+/**
+ * Rough reading time in minutes, never below one.
+ * Strips fenced code blocks, MDX import/export lines, JSX/HTML tags, and URLs
+ * so code samples and markup do not inflate prose word counts.
+ */
 export function getReadingTime(body: string | undefined): number {
-  const words = (body ?? '').trim().split(/\s+/).filter(Boolean).length;
+  const cleaned = (body ?? '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/~~~[\s\S]*?~~~/g, ' ')
+    .replace(/^\s*(?:import|export)\s+.*$/gm, ' ')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1 ')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1 ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[`#*>`_~|]+/g, ' ');
+  const words = cleaned.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.ceil(words / WORDS_PER_MINUTE));
 }
 

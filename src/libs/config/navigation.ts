@@ -1,6 +1,6 @@
 import * as m from '@/paraglide/messages';
 import type { Locale } from '@/i18n/locales';
-import { getPathname, stripLocale, withTrailingSlash } from '@/i18n/paths';
+import { getPathname, localizeHref, stripLocale, withTrailingSlash } from '@/i18n/paths';
 import { getBlogIndexHref, getPageUrl } from '@/libs/content/service';
 import { siteConfig } from '@/libs/config/app';
 
@@ -143,7 +143,8 @@ export async function getHeaderNavigation(locale: Locale, currentUrl = ''): Prom
       key: 'overview',
       label: m.nav_overview({}, { locale }),
       href: fallbackFeaturesHref,
-      active: isActive(fallbackFeaturesHref, currentUrl),
+      // Avoid highlighting both top-level `Features` and `Resources` simultaneously.
+      active: featuresHref ? false : isActive(fallbackFeaturesHref, currentUrl),
     },
     {
       key: 'explore',
@@ -189,7 +190,8 @@ export async function getDrawerNavigation(locale: Locale, currentUrl = ''): Prom
     active: isActive(blogHref, currentUrl),
   });
 
-  const featuresHref = (await getPageUrl('features', locale)) ?? blogHref;
+  const rawFeaturesHref = await getPageUrl('features', locale);
+  const featuresHref = rawFeaturesHref ?? blogHref;
   const exploreChildren: NavItem[] = [
     {
       key: 'rtl_support',
@@ -210,7 +212,7 @@ export async function getDrawerNavigation(locale: Locale, currentUrl = ''): Prom
       key: 'overview',
       label: m.nav_overview({}, { locale }),
       href: featuresHref,
-      active: isActive(featuresHref, currentUrl),
+      active: rawFeaturesHref ? false : isActive(featuresHref, currentUrl),
     },
     {
       key: 'explore',
@@ -234,7 +236,7 @@ export async function getDrawerNavigation(locale: Locale, currentUrl = ''): Prom
  * Builds the multi-column footer navigation hierarchy.
  */
 export async function getFooterNavigation(locale: Locale, currentUrl = ''): Promise<FooterColumn[]> {
-  const homeHref = (await getPageUrl('home', locale)) ?? '/';
+  const homeHref = (await getPageUrl('home', locale)) ?? localizeHref('/', locale);
   const aboutHref = await getPageUrl('about', locale);
   const featuresHref = await getPageUrl('features', locale);
   const pricingHref = await getPageUrl('pricing', locale);
@@ -257,7 +259,7 @@ export async function getFooterNavigation(locale: Locale, currentUrl = ''): Prom
     items: [
       { key: 'blog', label: m.nav_blog({}, { locale }), href: blogHref, active: isActive(blogHref, currentUrl) },
       ...(featuresHref ? [{ key: 'rtl_support', label: m.nav_rtl_support({}, { locale }), href: `${featuresHref}#rtl`, active: false }] : []),
-      ...(featuresHref ? [{ key: 'overview', label: m.nav_overview({}, { locale }), href: featuresHref, active: isActive(featuresHref, currentUrl) }] : []),
+      ...(featuresHref ? [{ key: 'overview', label: m.nav_overview({}, { locale }), href: featuresHref, active: false }] : []),
       { key: 'documentation', label: m.nav_documentation({}, { locale }), href: 'https://astro.build', external: true, active: false },
     ],
   };

@@ -398,6 +398,7 @@ html[dir='rtl'] [data-mobile-menu].is-open [data-mobile-panel] {
   [data-post-nav],
   [data-related-posts],
   [data-booking-form],
+  [data-contact-form],
   .code-copy-btn {
     display: none !important;
   }

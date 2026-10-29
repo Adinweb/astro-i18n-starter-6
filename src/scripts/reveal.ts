@@ -37,6 +37,18 @@ function isHtmlElement(node: unknown): node is HTMLElement {
   );
 }
 
+function prefersReducedMotion(): boolean {
+  if (typeof document === 'undefined') return false;
+  const explicit = document.documentElement.dataset.motion;
+  if (explicit === 'reduced') return true;
+  if (explicit === 'full') return false;
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
 export function cleanupReveals(): void {
   if (activeObserver) {
     activeObserver.disconnect();
@@ -117,8 +129,8 @@ export function initReveals(): void {
     return;
   }
 
-  // Only bypass animations if explicitly opted out via <html data-motion="reduced">.
-  if (document.documentElement.dataset.motion === 'reduced') {
+  // Bypass entrance motion when <html data-motion="reduced"> or OS prefers-reduced-motion is active.
+  if (prefersReducedMotion()) {
     document.querySelectorAll<HTMLElement>(REVEAL_SELECTOR).forEach((el) => {
       clearElementFinalize(el);
       el.classList.remove(RESETTING_CLASS);
@@ -238,7 +250,7 @@ export function replayReveals(
   }
   const visibleTargets = candidates.filter((el) => !isElementHidden(el));
 
-  if (document.documentElement.dataset.motion === 'reduced') {
+  if (prefersReducedMotion()) {
     for (const el of visibleTargets) {
       clearElementFinalize(el);
       el.classList.remove(RESETTING_CLASS);

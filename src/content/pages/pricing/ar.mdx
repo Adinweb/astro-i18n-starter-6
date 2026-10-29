@@ -1,9 +1,75 @@
 ---
 title: "الأسعار"
 slug: "الأسعار"
-description: "خطط وباقات أسعار واضحة ومناسبة لمختلف الاحتياجات."
+description: "باقات ترخيص ودعم هندسي واضحة — من النواة مفتوحة المصدر المجانية إلى المرافقة المؤسسية المخصصة."
 image: "./pricing.png"
 draft: false
 ---
 
-خطط وباقات أسعار واضحة ومناسبة لمختلف الاحتياجات.
+import ContactForm from '@/components/ContactForm.astro';
+
+اختر نموذج التعاون الذي يلائم سرعة فريقك الهندسي. تتوفر البنية الأساسية متعددة اللغات المبنية على <span lang="en" dir="ltr">Astro v7</span> مجاناً بموجب رخصة <span lang="en" dir="ltr">MIT</span>، مع باقات مراجعة هندسية وتكامل مخصّص للفرق التي تتوسع في الأسواق العالمية.
+
+<div class="reveal-stagger not-prose my-10 grid gap-6 lg:grid-cols-3">
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker tabular-nums">٠١ · البداية</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">النواة مفتوحة المصدر</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">مجاناً <span class="text-sm font-normal text-muted">· رخصة MIT</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        وصول كامل إلى المستودع للفرق الهندسية المستقلة التي تبني مواقع ثابتة سريعة ومتعددة اللغات.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>٥ لغات جاهزة بالاتجاهين LTR وRTL</li>
+        <li>ترجمة وقت البناء عبر Paraglide وأدوات CLI</li>
+        <li>بحث Pagefind وخلاصات Atom وبيانات SEO</li>
+        <li>وحدة إدارة الخصوصية وموافقة ملفات الارتباط</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="btn-secondary mt-8 w-full text-center">
+      اطرح سؤالاً فنياً
+    </a>
+  </div>
+
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-primary/50 bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker tabular-nums">٠٢ · الاستوديو</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">مراجعة البنية الهندسية</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">١٬٤٠٠ $ <span class="text-sm font-normal text-muted">· دفعة واحدة</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        تدقيق عملي للتعريب، وضبط نظام ألوان العلامة التجارية بفضاء OKLCH، وربط النماذج بواجهات API المستقلة.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>تخصيص ألوان OKLCH والخطوط المتغيرة</li>
+        <li>فحص شامل لتخطيط RTL ووسوم hreflang المتبادلة</li>
+        <li>تكامل النماذج والخدمات الخارجية عبر API</li>
+        <li>إعداد خط أنابيب CI/CD واختبارات التحقق الآلي</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="cta mt-8 h-11 w-full">
+      اطلب مراجعة الاستوديو
+    </a>
+  </div>
+
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker tabular-nums">٠٣ · المؤسسات</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">شراكة هندسية مخصّصة</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">مخصّص <span class="text-sm font-normal text-muted">· اتفاقية SLA</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        ترحيل متكامل للمحتوى، وبنية توزيع عالمية عبر CDN، ودعم هندسي مستمر للمنصات التحريرية الكبرى.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>محوّلات مخصّصة لمجموعات المحتوى وأنظمة CMS</li>
+        <li>تدقيق إمكانية الوصول WCAG وتعدد العلامات</li>
+        <li>قناة تواصل مباشرة ومراجعات شيفرة ذات أولوية</li>
+        <li>ورش عمل للفريق حول معمارية RTL وAstro v7</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="btn-secondary mt-8 w-full text-center">
+      تواصل مع فريق البنية
+    </a>
+  </div>
+</div>
+
+<ContactForm locale="ar" />

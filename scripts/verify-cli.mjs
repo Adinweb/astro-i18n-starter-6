@@ -105,6 +105,7 @@ function run(cwd, command, args, { allowFailure = false } = {}) {
       env: {
         ...process.env,
         CI: '1',
+        PARAGLIDE_BIN: path.join(rootDir, 'node_modules', '@inlang', 'paraglide-js', 'bin', 'run.js'),
         // The shim comes first, so the sandbox never starts a real pnpm.
         PATH: `${path.join(SANDBOX_ROOT, 'bin')}${path.delimiter}${process.env.PATH ?? ''}`,
         npm_config_verify_deps_before_run: 'false',
@@ -292,6 +293,26 @@ try {
   record(
     read('src/content/blog/ai-agents/de.mdx').includes('title: "[TODO: de] AI Coding Agents 2"'),
     'new:post --sync-frontmatter propagates the title to every locale'
+  );
+
+  // Quotes and backslashes in --title round-trip without breaking YAML or invoking a shell,
+  // and recreating a missing locale during --update never injects a duplicate `# Title` H1.
+  fs.unlinkSync(path.join(sandbox, 'src', 'content', 'blog', 'ai-agents', 'fr.mdx'));
+  result = run(sandbox, 'node', [
+    'scripts/new-post.mjs',
+    'ai-agents',
+    '--update',
+    '--title=AI "Agents" \\ Guide',
+  ]);
+  record(
+    result.code === 0 &&
+      read('src/content/blog/ai-agents/en.mdx').includes('title: "AI \\"Agents\\" \\\\ Guide"'),
+    'new:post escapes quotes and backslashes in frontmatter safely'
+  );
+  record(
+    exists('src/content/blog/ai-agents/fr.mdx') &&
+      !/^\s*#\s+/m.test(read('src/content/blog/ai-agents/fr.mdx').split('---').slice(2).join('---')),
+    'new:post --update recreates a missing locale without a duplicate # H1 heading'
   );
 
   // ---------------------------------------------------------------------

@@ -11,10 +11,16 @@ export interface SearchResult {
   excerpt: string;
 }
 
-let searchData: SearchItem[] = [];
-let isFetchingDevIndex = false;
+const devIndexPromises = new Map<string, Promise<SearchItem[]>>();
 let pagefindPromise: Promise<any> | null = null;
 let pagefindUnavailable = false;
+
+/** Resets cached search promises between isolated unit tests. */
+export function resetSearchClientForTests(): void {
+  devIndexPromises.clear();
+  pagefindPromise = null;
+  pagefindUnavailable = false;
+}
 
 /** Pagefind excerpts contain markup; keep only the text for safe DOM rendering. */
 export function plainText(html: string): string {
@@ -40,6 +46,32 @@ export async function getPagefindInstance() {
   return pagefindPromise;
 }
 
+function loadDevSearchIndex(activeLocale: string): Promise<SearchItem[]> {
+  const existing = devIndexPromises.get(activeLocale);
+  if (existing) return existing;
+
+  const request = (async () => {
+    const perLocaleRes = await fetch(
+      `/api/search-dev/${encodeURIComponent(activeLocale)}.json`
+    );
+    if (perLocaleRes.ok) {
+      return (await perLocaleRes.json()) as SearchItem[];
+    }
+    const fallbackRes = await fetch('/api/search-dev.json');
+    if (!fallbackRes.ok) {
+      throw new Error(`Search index responded ${fallbackRes.status}`);
+    }
+    const allItems = (await fallbackRes.json()) as SearchItem[];
+    return allItems.filter((item) => item.locale === activeLocale);
+  })().catch((error) => {
+    devIndexPromises.delete(activeLocale);
+    throw error;
+  });
+
+  devIndexPromises.set(activeLocale, request);
+  return request;
+}
+
 export async function executeSearch(query: string, activeLocale: string): Promise<SearchResult[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
@@ -62,21 +94,15 @@ export async function executeSearch(query: string, activeLocale: string): Promis
     }
   }
 
-  if (searchData.length === 0 && !isFetchingDevIndex) {
-    isFetchingDevIndex = true;
-    try {
-      const response = await fetch('/api/search-dev.json');
-      if (!response.ok) throw new Error(`Search index responded ${response.status}`);
-      searchData = await response.json();
-    } catch {
-      searchData = [];
-    } finally {
-      isFetchingDevIndex = false;
-    }
+  let localeItems: SearchItem[] = [];
+  try {
+    localeItems = await loadDevSearchIndex(activeLocale);
+  } catch {
+    return [];
   }
 
   const normalized = trimmed.toLowerCase();
-  const filtered = searchData
+  const filtered = localeItems
     .filter((item) => item.locale === activeLocale)
     .filter(
       (item) =>

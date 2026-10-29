@@ -4,7 +4,7 @@ import Reveal from '@/components/Reveal.astro';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_METADATA, type Locale } from '@/i18n/locales';
 import { formatNumber, formatYear } from '@/i18n/format';
 import { localizeHref } from '@/i18n/paths';
-import { getNavigation } from '@/libs/config/navigation';
+import { getNavigationSlots, type NavItem } from '@/libs/config/navigation';
 import { siteConfig } from '@/libs/config/app';
 import * as m from '@/paraglide/messages';
 
@@ -22,36 +22,71 @@ const alternates = Object.fromEntries(
 
 const homeHref = localizeHref('/', locale);
 
+function flattenNavItems(
+  items: readonly NavItem[],
+  links: Map<string, { key: string; label: string; href: string }>,
+  groups: Map<string, string>
+): void {
+  for (const item of items) {
+    if (item.children && item.children.length > 0) {
+      groups.set(item.key, item.label);
+      flattenNavItems(item.children, links, groups);
+    }
+    if (item.href !== undefined) {
+      links.set(item.key, { key: item.key, label: item.label, href: item.href });
+    }
+  }
+}
+
 // The client needs the complete navigation and locale metadata to re-render
-// the page for the prefix of the requested URL. It is built from the same
-// `getNavigation()` service as the layout, so adding a page never leaves the
-// 404 behind.
+// the page for the prefix of the requested URL. Built from `getNavigationSlots()`
+// so header dropdowns, mobile drawer, and 4-column footer all localize cleanly.
 const i18nData = Object.fromEntries(
   await Promise.all(
     LOCALES.map(async (loc) => {
-      const nav = await getNavigation(loc);
+      const slots = await getNavigationSlots(loc);
+      const linksMap = new Map<string, { key: string; label: string; href: string }>();
+      const groupsMap = new Map<string, string>();
+
+      flattenNavItems(slots.header, linksMap, groupsMap);
+      flattenNavItems(slots.drawer, linksMap, groupsMap);
+      for (const col of slots.footer) {
+        flattenNavItems(col.items, linksMap, groupsMap);
+      }
+      flattenNavItems(slots.legal, linksMap, groupsMap);
+
+      const resolvedHomeHref = linksMap.get('home')?.href ?? localizeHref('/', loc);
+
       return [
         loc,
         {
           title: m.common_not_found_title({}, { locale: loc }),
           desc: m.common_not_found_desc({}, { locale: loc }),
+          siteDesc: m.site_description({}, { locale: loc }),
           backHome: m.common_back_home({}, { locale: loc }),
           goEnglish: m.common_go_english_version({}, { locale: loc }),
           englishHint: m.common_english_version_hint({}, { locale: loc }),
           cta: m.common_get_started({}, { locale: loc }),
           rights: m.common_all_rights_reserved({}, { locale: loc }),
+          menu: m.common_menu({}, { locale: loc }),
+          drawerTabNav: m.drawer_tab_nav({}, { locale: loc }),
+          drawerTabSearch: m.drawer_tab_search({}, { locale: loc }),
           search: m.common_search_placeholder({}, { locale: loc }),
           searchHint: m.common_type_to_search({}, { locale: loc }),
           searchEmpty: m.common_no_results({}, { locale: loc }),
           close: m.common_close({}, { locale: loc }),
           pressEsc: m.common_press_esc({}, { locale: loc }),
           changeLanguage: m.common_change_language({}, { locale: loc }),
+          themeToggle: m.common_theme_toggle({}, { locale: loc }),
           themeLight: m.common_theme_light({}, { locale: loc }),
           themeDark: m.common_theme_dark({}, { locale: loc }),
+          cookieTrigger: m.cookie_settings_trigger({}, { locale: loc }),
           code: formatNumber(404, loc),
           year: formatYear(new Date().getFullYear(), loc),
-          homeHref: nav.find((item) => item.key === 'home')?.href ?? localizeHref('/', loc),
-          nav: nav.map(({ key, label, href }) => ({ key, label, href: href ?? '' })),
+          homeHref: resolvedHomeHref,
+          nav: [...linksMap.values()],
+          dropdownLabels: Object.fromEntries(groupsMap),
+          footerCols: Object.fromEntries(slots.footer.map((col) => [col.key, col.title])),
           dir: LOCALE_METADATA[loc].dir,
           lang: LOCALE_METADATA[loc].htmlLang,
           fontFamily: LOCALE_METADATA[loc].fontFamily,
@@ -107,11 +142,17 @@ const i18nData = Object.fromEntries(
 
   <script define:vars={{ LOCALES, DEFAULT_LOCALE, i18nData, siteName }}>
     function updateNotFoundPage() {
+      // Guard: only execute while the 404 view itself is mounted in the DOM.
+      // Prevents `astro:page-load` from polluting `document.title` or `lang`/`dir`
+      // after the user navigates away from 404 via `<ClientRouter />`.
+      const codeEl = document.getElementById('not-found-code');
+      if (!codeEl) return;
+
       const pathname = window.location.pathname;
       const segments = pathname.split('/').filter(Boolean);
       const firstSegment = segments[0];
       const isKnownLocale = Boolean(
-        firstSegment && LOCALES.some((locale) => locale === firstSegment)
+        firstSegment && LOCALES.some((loc) => loc === firstSegment)
       );
       const detectedLocale = isKnownLocale && firstSegment ? firstSegment : DEFAULT_LOCALE;
       const data = i18nData[detectedLocale] || i18nData[DEFAULT_LOCALE];
@@ -122,9 +163,8 @@ const i18nData = Object.fromEntries(
       document.documentElement.style.fontFamily = data.fontFamily;
       document.title = `${data.title} | ${siteName}`;
 
-      // Update text nodes
-      const codeEl = document.getElementById('not-found-code');
-      if (codeEl) codeEl.textContent = data.code;
+      // Update 404 body text nodes
+      codeEl.textContent = data.code;
 
       const titleEl = document.getElementById('not-found-title');
       if (titleEl) titleEl.textContent = data.title;
@@ -139,17 +179,22 @@ const i18nData = Object.fromEntries(
         homeLink.textContent = data.backHome;
       }
 
-      // Shared header/footer controls are server-rendered for the default
-      // locale, so re-label them for the locale detected in the URL.
+      // Re-label shared header, mobile drawer, and footer controls
       document.querySelectorAll('[data-cta-link="get-started"]').forEach((el) => {
         el.textContent = data.cta;
       });
       const rights = document.querySelector('[data-footer-rights]');
       if (rights) rights.textContent = data.rights;
+      const tagline = document.querySelector('[data-footer-tagline]');
+      if (tagline) tagline.textContent = data.siteDesc;
       document.querySelectorAll('[data-current-year]').forEach((el) => {
         if (el instanceof HTMLElement) el.dataset.locale = detectedLocale;
         el.textContent = data.year;
       });
+      document.querySelectorAll('[data-cookie-trigger-label]').forEach((el) => {
+        el.textContent = data.cookieTrigger;
+      });
+
       const isDark = document.documentElement.dataset.theme === 'dark';
       document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
         if (btn instanceof HTMLElement) {
@@ -160,15 +205,30 @@ const i18nData = Object.fromEntries(
         btn.setAttribute('aria-label', label);
         btn.setAttribute('title', label);
       });
-      const searchButton = document.querySelector('[data-open-search]');
-      if (searchButton) {
-        searchButton.setAttribute('aria-label', data.search);
-        searchButton.setAttribute('title', data.search);
-      }
-      // The modal itself is rendered for the default locale: its placeholder,
-      // empty state and the locale the fallback index filters on all have to
-      // follow the language of the requested URL. Otherwise a Persian 404
-      // would search the English index.
+
+      document.querySelectorAll('[data-open-search], [data-mobile-search-btn]').forEach((btn) => {
+        btn.setAttribute('aria-label', data.search);
+        btn.setAttribute('title', data.search);
+      });
+      document.querySelectorAll('[data-mobile-menu-btn]').forEach((btn) => {
+        btn.setAttribute('aria-label', data.menu);
+        btn.setAttribute('title', data.menu);
+      });
+      document.querySelectorAll('[data-close-menu]').forEach((btn) => {
+        btn.setAttribute('aria-label', data.close);
+        btn.setAttribute('title', data.close);
+      });
+
+      const tabNavLabel = document.querySelector('[data-drawer-tab-label="nav"]');
+      if (tabNavLabel) tabNavLabel.textContent = data.drawerTabNav;
+      const tabSearchLabel = document.querySelector('[data-drawer-tab-label="search"]');
+      if (tabSearchLabel) tabSearchLabel.textContent = data.drawerTabSearch;
+      const drawerLangHeading = document.querySelector('[data-drawer-lang-heading]');
+      if (drawerLangHeading) drawerLangHeading.textContent = data.changeLanguage;
+      const drawerThemeLabel = document.querySelector('[data-drawer-theme-label]');
+      if (drawerThemeLabel) drawerThemeLabel.textContent = data.themeToggle;
+
+      // Search modal & drawer search localization
       const searchModal = document.querySelector('[data-search-modal]');
       if (searchModal instanceof HTMLElement) {
         searchModal.dataset.locale = detectedLocale;
@@ -183,7 +243,7 @@ const i18nData = Object.fromEntries(
         searchInput.setAttribute('aria-label', data.search);
       }
       const searchHintMessage = document.getElementById('search-placeholder-msg');
-      if (searchHintMessage && searchInput && !(searchInput.value)) {
+      if (searchHintMessage && searchInput && !searchInput.value) {
         searchHintMessage.textContent = data.searchHint;
       }
       const searchClose = document.getElementById('search-close-btn');
@@ -193,6 +253,20 @@ const i18nData = Object.fromEntries(
       }
       const searchEscHint = document.getElementById('search-esc-hint');
       if (searchEscHint) searchEscHint.textContent = data.pressEsc;
+
+      const drawerSearch = document.querySelector('[data-drawer-search]');
+      if (drawerSearch instanceof HTMLElement) {
+        drawerSearch.dataset.locale = detectedLocale;
+        drawerSearch.dataset.placeholder = data.searchHint;
+        drawerSearch.dataset.noResults = data.searchEmpty;
+      }
+      const drawerSearchInput = document.querySelector('[data-drawer-search-input]');
+      if (drawerSearchInput instanceof HTMLInputElement) {
+        drawerSearchInput.placeholder = data.search;
+        drawerSearchInput.setAttribute('aria-label', data.search);
+      }
+
+      // Desktop & drawer language switchers
       const switcherButton = document.querySelector('[data-switcher-button]');
       if (switcherButton) {
         switcherButton.setAttribute('aria-label', data.changeLanguage);
@@ -211,27 +285,60 @@ const i18nData = Object.fromEntries(
         const check = link.querySelector('[data-switcher-check]');
         if (check) check.classList.toggle('hidden', !isCurrent);
       });
+      document.querySelectorAll('[data-drawer-lang-link]').forEach((link) => {
+        const isCurrent = link.getAttribute('data-target') === data.homeHref;
+        if (isCurrent) link.setAttribute('aria-current', 'true');
+        else link.removeAttribute('aria-current');
+        link.classList.toggle('border-primary', isCurrent);
+        link.classList.toggle('bg-primary', isCurrent);
+        link.classList.toggle('text-primary-fg', isCurrent);
+        link.classList.toggle('font-semibold', isCurrent);
+        link.classList.toggle('shadow-xs', isCurrent);
+        link.classList.toggle('border-border', !isCurrent);
+        link.classList.toggle('bg-bg/50', !isCurrent);
+        link.classList.toggle('text-fg', !isCurrent);
+        const check = link.querySelector('[data-drawer-lang-check]');
+        if (check) check.classList.toggle('hidden', !isCurrent);
+      });
 
-      // Update navigation links on 404 from the shared navigation payload.
+      // Update navigation links, dropdown headings, and footer column headings
       document.querySelectorAll('[data-brand-link]').forEach((el) => {
         el.setAttribute('href', data.homeHref);
       });
       for (const item of data.nav) {
         document.querySelectorAll(`[data-nav-link="${item.key}"]`).forEach((el) => {
           if (item.href) el.setAttribute('href', item.href);
-          el.textContent = item.label;
+          const textSpan = el.querySelector('span');
+          if (textSpan) textSpan.textContent = item.label;
+          else el.textContent = item.label;
+        });
+      }
+      for (const [key, label] of Object.entries(data.dropdownLabels)) {
+        document.querySelectorAll(`[data-dropdown-label="${key}"]`).forEach((el) => {
+          el.textContent = String(label);
+        });
+      }
+      for (const [key, title] of Object.entries(data.footerCols)) {
+        document.querySelectorAll(`[data-footer-col="${key}"]`).forEach((el) => {
+          el.textContent = String(title);
         });
       }
 
-      // Update "Go to English version of requested page" link
+      // Update default-locale fallback button safely (avoid pointing to a second 404)
       const englishLink = document.getElementById('not-found-english-link');
       const englishHint = document.getElementById('not-found-english-hint');
+      const defaultData = i18nData[DEFAULT_LOCALE];
 
-      if (englishLink) {
+      if (englishLink && defaultData) {
         if (isKnownLocale && detectedLocale !== DEFAULT_LOCALE) {
           const restOfPath = segments.slice(1).join('/');
-          const englishHref = restOfPath ? `/${restOfPath}/` : '/';
-          englishLink.href = englishHref;
+          const candidatePath = restOfPath ? `/${restOfPath}/` : '/';
+          const knownDefaultHrefs = new Set(
+            defaultData.nav.map((item) => item.href.split('#')[0]).filter(Boolean)
+          );
+          englishLink.href = knownDefaultHrefs.has(candidatePath)
+            ? candidatePath
+            : defaultData.homeHref;
           englishLink.textContent = data.goEnglish;
           englishLink.classList.remove('hidden');
 
@@ -244,7 +351,6 @@ const i18nData = Object.fromEntries(
           if (englishHint) englishHint.classList.add('hidden');
         }
       }
-
     }
 
     updateNotFoundPage();

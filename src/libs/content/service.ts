@@ -11,6 +11,7 @@ import { getPageCount } from '@/libs/content/pagination';
 interface RouteBase {
   locale: Locale;
   alternates: Partial<Record<Locale, string>>;
+  switcherAlternates?: Partial<Record<Locale, string>>;
   url: string;
 }
 
@@ -68,6 +69,22 @@ export function getBlogIndexHref(locale: Locale): string {
 }
 
 /**
+ * Generic paginated index URL builder for any content collection (`blog`, `docs`, etc.).
+ *
+ * Page 1 maps to `/<baseSegment>/` (localized) and deeper pages map to
+ * `/<baseSegment>/page/<n>/` (localized).
+ */
+export function getCollectionPageHref(
+  baseSegment: string,
+  page: number,
+  locale: Locale
+): string {
+  const normalizedBase = baseSegment.replace(/^\/+|\/+$/g, '');
+  if (page <= 1) return localizeHref(`/${normalizedBase}`, locale);
+  return localizeHref(`/${normalizedBase}/page/${Math.trunc(page)}`, locale);
+}
+
+/**
  * Href of one page of the blog index.
  *
  * The first page is the index itself (`/blog/`), every later page lives under
@@ -75,8 +92,7 @@ export function getBlogIndexHref(locale: Locale): string {
  * German third page is `/de/blog/page/3/`.
  */
 export function getBlogPageHref(page: number, locale: Locale): string {
-  if (page <= 1) return getBlogIndexHref(locale);
-  return localizeHref(`/${BLOG_BASE}/page/${Math.trunc(page)}`, locale);
+  return getCollectionPageHref(BLOG_BASE, page, locale);
 }
 
 export function getBlogPostHref(slug: string, locale: Locale): string {
@@ -177,25 +193,32 @@ export function buildSiteRoutes(
     pagesPerLocale.set(locale, getPageCount(postsPerLocale.get(locale) ?? 0, POSTS_PER_PAGE));
   }
 
-  // One route per page of the index, per locale. The alternates point at the
-  // same page in the other locales; a locale with fewer pages falls back to
-  // its last page, so the language switcher never leads to a missing URL.
+  // One route per page of the index, per locale.
+  // - `alternates` (SEO hreflang & sitemap) includes ONLY locales that genuinely
+  //   have `page`, preserving strict bidirectional hreflang reciprocity.
+  // - `switcherAlternates` (UI language switcher) clamps to `Math.min(page, otherPages)`
+  //   so switching languages on deep pages never leads to a 404.
   for (const locale of LOCALES) {
     const totalPages = pagesPerLocale.get(locale)!;
 
     for (let page = 1; page <= totalPages; page += 1) {
       const url = getBlogPageHref(page, locale);
       const alternates: Partial<Record<Locale, string>> = {};
+      const switcherAlternates: Partial<Record<Locale, string>> = {};
 
       for (const other of LOCALES) {
         const otherPages = pagesPerLocale.get(other)!;
-        alternates[other] = getBlogPageHref(Math.min(page, otherPages), other);
+        if (otherPages >= page) {
+          alternates[other] = getBlogPageHref(page, other);
+        }
+        switcherAlternates[other] = getBlogPageHref(Math.min(page, otherPages), other);
       }
 
       registerRoute(url, {
         routeType: 'blog-index',
         locale,
         alternates,
+        switcherAlternates,
         url,
         page,
         totalPages,
@@ -212,6 +235,11 @@ export function buildSiteRoutes(
       if (!entry) continue;
       if (!entry.data.slug) {
         throw new Error(`[ContentService] Blog entry "${entry.id}" has an empty slug.`);
+      }
+      if (entry.data.slug === 'page') {
+        throw new Error(
+          `[ContentService] Blog entry "${entry.id}" uses reserved pagination slug "page".`
+        );
       }
       alternates[locale] = getBlogPostHref(entry.data.slug, locale);
     }

@@ -1,9 +1,67 @@
 ---
 title: "Fonctionnalités"
 slug: "fonctionnalites"
-description: "Les fonctionnalités techniques et les capacités de ce modèle multilingue."
+description: "Les fonctionnalités techniques et les capacités de ce modèle Astro v7 multilingue."
 image: "./features.png"
 draft: false
 ---
 
-Toutes les fonctionnalités techniques et les capacités de ce modèle multilingue : traductions à la compilation, URLs propres sans préfixe et prise en charge native du RTL.
+Conçu autour d’une source unique de vérité pour les sites statiques multilingues, ce modèle Astro v7 élimine le surcoût d’exécution i18n, la duplication des routes et les correctifs CSS directionnels fragiles.
+
+<div class="reveal-stagger not-prose my-10 grid gap-5 sm:grid-cols-2">
+  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+    <p class="section-kicker tabular-nums">01 · Routage</p>
+    <h3 class="mt-2 text-lg font-bold text-fg">Répartiteur unifié & langue par défaut sans préfixe</h3>
+    <p class="mt-2 text-sm leading-relaxed text-muted">
+      Chaque page statique, index paginé du blog et article transite par un répartiteur unique offrant des URL épurées sans préfixe pour la langue principale et des slugs traduits pour les autres langues.
+    </p>
+  </div>
+
+  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+    <p class="section-kicker tabular-nums">02 · Compilation</p>
+    <h3 class="mt-2 text-lg font-bold text-fg">Messages Paraglide typés & pluriels ICU</h3>
+    <p class="mt-2 text-sm leading-relaxed text-muted">
+      Les dictionnaires sont compilés en fonctions TypeScript optimisées prenant en charge les pluriels et ordinaux ICU, avec audit automatique de parité des clés et des variables.
+    </p>
+  </div>
+
+  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+    <p class="section-kicker tabular-nums">03 · Découvrabilité</p>
+    <h3 class="mt-2 text-lg font-bold text-fg">SEO réciproque, flux Atom & recherche Pagefind</h3>
+    <p class="mt-2 text-sm leading-relaxed text-muted">
+      Génère des balises hreflang strictement réciproques, des fils d’Ariane JSON-LD Schema.org, des flux Atom 1.0 par langue et une recherche statique instantanée via Pagefind.
+    </p>
+  </div>
+
+  <div data-reveal="up" class="reveal rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+    <p class="section-kicker tabular-nums">04 · Conformité & API</p>
+    <h3 class="mt-2 text-lg font-bold text-fg">Consentement RGPD/TDDDG & client API externe</h3>
+    <p class="mt-2 text-sm leading-relaxed text-muted">
+      Intègre un gestionnaire de consentement avec purge multi-domaines ainsi qu’un adaptateur HTTP léger côté navigateur pour relier vos formulaires à des API externes.
+    </p>
+  </div>
+</div>
+
+<section id="rtl" data-reveal="up" class="reveal scroll-mt-28">
+
+## Support RTL natif & localisation bidirectionnelle
+
+Prendre en charge le persan (`fa`) et l’arabe (`ar`) aux côtés de l’anglais, de l’allemand et du français exige bien plus qu’un attribut `dir="rtl"`. L’ensemble des espacements, bordures, alignements et animations repose exclusivement sur les **propriétés logiques CSS** (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`, `text-start`).
+
+- **Typographie adaptée à chaque écriture :** Les polices variables dédiées (`Vazirmatn` pour le persan, `Noto Sans Arabic` pour l’arabe) s’appliquent automatiquement via `:lang()` tout en préservant les ligatures cursives.
+- **Calendriers et chiffres natifs :** Les dates et compteurs de pagination exploitent `Intl.DateTimeFormat` et `Intl.NumberFormat`, y compris le calendrier solaire persan pour la locale `fa`.
+- **Îlots techniques LTR isolés :** Les blocs de code, formules et champs d’adresse e-mail restent isolés en `dir="ltr"` sans perturber l’alignement logique de la page.
+
+</section>
+
+<section id="design" data-reveal="up" class="reveal scroll-mt-28">
+
+## Système de design sémantique OKLCH & animations progressives
+
+Chaque rôle colorimétrique — `primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning` et `error` — est défini une seule fois dans l’espace perceptuel **OKLCH** au sein de `src/styles/global.css`, garantissant un contraste **WCAG AA (4,5:1)** en mode clair comme en mode sombre.
+
+- **Surfaces dépolies composables :** La barre de navigation, le tiroir mobile, les appels à l’action et les filtres partagent les primitives `.glass-surface`, `.glass-control`, `.cta` et `.chip`.
+- **Révélation au défilement sans décalage de mise en page :** Les animations d’entrée sont strictement isolées sous `.js .reveal`, assurant une visibilité immédiate sans JavaScript et à l’impression.
+- **Défilement fluide respectueux de l’accessibilité :** Lenis s’intègre avec `<ClientRouter />`, isole les panneaux déroulants (`data-lenis-prevent`) et respecte automatiquement `prefers-reduced-motion: reduce`.
+
+</section>

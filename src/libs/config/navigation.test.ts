@@ -8,6 +8,8 @@ import {
   getNavigationSlots,
   getNavigation,
   PAGE_ITEMS,
+  BLOG_ITEM,
+  type NavItemConfig,
 } from './navigation';
 import * as service from '@/libs/content/service';
 
@@ -47,13 +49,20 @@ describe('src/libs/config/navigation.ts', () => {
     });
   });
 
-  describe('PAGE_ITEMS', () => {
-    it('defines expected page groups', () => {
+  describe('PAGE_ITEMS & BLOG_ITEM', () => {
+    it('defines expected page groups and declarative blog config', () => {
       const groups = PAGE_ITEMS.map((item) => item.group);
       expect(groups).toContain('home');
       expect(groups).toContain('about');
       expect(groups).toContain('features');
       expect(groups).toContain('pricing');
+
+      const sampleConfig: NavItemConfig = {
+        key: BLOG_ITEM.key,
+        label: BLOG_ITEM.label,
+      };
+      expect(sampleConfig.key).toBe('blog');
+      expect(sampleConfig.label('en')).toBe('Blog');
     });
   });
 
@@ -90,9 +99,11 @@ describe('src/libs/config/navigation.ts', () => {
       expect(headerKeys).toContain('blog');
       expect(headerKeys).toContain('resources');
 
-      // Check active state
+      // Check active state: only 'features' is active, not 'resources' dropdown
       const featuresItem = slots.header.find((item) => item.key === 'features');
+      const resourcesItem = slots.header.find((item) => item.key === 'resources');
       expect(featuresItem?.active).toBe(true);
+      expect(resourcesItem?.active).toBe(false);
 
       // Drawer slot check
       expect(Array.isArray(slots.drawer)).toBe(true);
@@ -120,12 +131,21 @@ describe('src/libs/config/navigation.ts', () => {
       expect(legalKeys).toContain('terms');
     });
 
-    it('works across different locales (e.g. Persian/fa)', async () => {
+    it('works across different locales (e.g. Persian/fa) and localizes home fallback', async () => {
       const slotsFa = await getNavigationSlots('fa', 'https://example.com/fa/features/');
       expect(slotsFa.footer.length).toBe(3);
       expect(slotsFa.footer[0].title).toBe('محصولات');
       expect(slotsFa.footer[1].title).toBe('منابع');
       expect(slotsFa.footer[2].title).toBe('سازمان');
+
+      vi.spyOn(service, 'getPageUrl').mockImplementationOnce(async (group: string) =>
+        group === 'home' ? null : '/fa/about/'
+      );
+      const fallbackFooter = await getFooterNavigation('fa', '/fa/about/');
+      const productHome = fallbackFooter
+        .find((col) => col.key === 'product')
+        ?.items.find((item) => item.key === 'home');
+      expect(productHome?.href).toBe('/fa/');
     });
   });
 

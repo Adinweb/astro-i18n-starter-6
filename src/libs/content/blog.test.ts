@@ -12,6 +12,7 @@ import {
   hasActiveFilters,
   humanizeKey,
   matchesBlogFilters,
+  parseBlogFilterPage,
   parseBlogFilters,
   toggleBlogTag,
 } from './blog';
@@ -53,11 +54,19 @@ describe('src/libs/content/blog.ts', () => {
       expect(buildBlogFilterQuery(NO_FILTERS)).toBe('');
     });
 
-    it('round-trips through parseBlogFilters', () => {
+    it('round-trips through parseBlogFilters and serializes filtered page > 1', () => {
       const filters = { category: 'engineering', tags: ['astro', 'rtl'] };
       const query = buildBlogFilterQuery(filters);
       expect(query).toBe('?category=engineering&tag=astro%2Crtl');
       expect(parseBlogFilters(query)).toEqual(filters);
+      expect(parseBlogFilterPage(query)).toBe(1);
+
+      const pagedQuery = buildBlogFilterQuery(filters, 3);
+      expect(pagedQuery).toBe('?category=engineering&tag=astro%2Crtl&page=3');
+      expect(parseBlogFilterPage(pagedQuery)).toBe(3);
+      expect(parseBlogFilterPage('?page=0')).toBe(1);
+      expect(parseBlogFilterPage('?page=abc')).toBe(1);
+      expect(buildBlogFilterQuery(NO_FILTERS, 3)).toBe('');
     });
   });
 
@@ -125,6 +134,19 @@ describe('src/libs/content/blog.ts', () => {
       expect(getReadingTime('short body')).toBe(1);
       const longBody = Array.from({ length: 900 }, () => 'word').join(' ');
       expect(getReadingTime(longBody)).toBe(5);
+    });
+
+    it('strips fenced code blocks, MDX imports, and JSX tags before counting words', () => {
+      const codeBlock = '```ts\n' + Array.from({ length: 1200 }, () => 'const x = 1;').join('\n') + '\n```';
+      const mdxBody = [
+        "import ContactForm from '@/components/ContactForm.astro';",
+        'export const meta = { version: 1 };',
+        '<div class="rounded-2xl border border-border p-6">',
+        'Short editorial paragraph with twenty readable prose words right here.',
+        '</div>',
+        codeBlock,
+      ].join('\n\n');
+      expect(getReadingTime(mdxBody)).toBe(1);
     });
   });
 

@@ -19,6 +19,10 @@ import {
   parseFrontmatter as parsePostFm,
   stringifyFrontmatter as stringifyPostFm,
 } from '../../../scripts/new-post.mjs';
+import {
+  escapeYamlString,
+  unescapeYamlDoubleQuoted,
+} from '../../../scripts/lib/frontmatter.mjs';
 import { parseLocaleConfig, readLocaleConfig } from '../../../scripts/lib/locales.mjs';
 import {
   compileMessages,
@@ -201,6 +205,34 @@ Content exploring future AI workflows...
     expect(serialized).toContain('description: "Synchronized new description"');
     expect(serialized).toContain('publishedAt: 2026-05-15');
     expect(serialized).toContain('Content exploring future AI workflows...');
+  });
+
+  it('escapes and unescapes quotes, backslashes, and unquoted updatedAt symmetrically', () => {
+    const tricky = 'Guide to "Astro v7" & C:\\content\\blog';
+    const escaped = escapeYamlString(tricky);
+    expect(unescapeYamlDoubleQuoted(escaped)).toBe(tricky);
+
+    const serialized = stringifyPostFm(
+      {
+        title: tricky,
+        slug: 'astro-guide',
+        description: 'Line with "quoted" segment',
+        publishedAt: '2026-05-15',
+        updatedAt: '2026-06-20',
+        tags: ['tag"one', 'C:\\tag'],
+        draft: false,
+      },
+      '\nBody text.\n'
+    );
+
+    expect(serialized).toContain('updatedAt: 2026-06-20');
+    expect(serialized).not.toContain('updatedAt: "2026-06-20"');
+
+    const reparsed = parsePostFm(serialized) as { data: Record<string, any>; body: string };
+    expect(reparsed.data.title).toBe(tricky);
+    expect(reparsed.data.description).toBe('Line with "quoted" segment');
+    expect(reparsed.data.updatedAt).toBe('2026-06-20');
+    expect(reparsed.data.tags).toEqual(['tag"one', 'C:\\tag']);
   });
 });
 
@@ -387,6 +419,20 @@ export const LOCALE_METADATA = {
   it('reports a locale without a direction instead of guessing one', () => {
     const withoutDirection = source.replace("    dir: 'rtl',\n", '');
     expect(parseLocaleConfig(withoutDirection).metadata.fa.dir).toBeUndefined();
+  });
+
+  it('parses quoted BCP-47 hyphenated locale keys cleanly', () => {
+    const bcpSource = `
+export const LOCALES = ['en', 'pt-br'] as const;
+export const DEFAULT_LOCALE: Locale = 'en';
+export const LOCALE_METADATA = {
+  en: { dir: 'ltr', htmlLang: 'en', name: 'English', fontFamily: 'var(--font-sans)' },
+  'pt-br': { dir: 'ltr', htmlLang: 'pt-BR', name: 'Português', fontFamily: 'var(--font-sans)' },
+} satisfies Record<Locale, LocaleMeta>;
+`;
+    const parsed = parseLocaleConfig(bcpSource);
+    expect(parsed.locales).toEqual(['en', 'pt-br']);
+    expect(parsed.metadata['pt-br']?.dir).toBe('ltr');
   });
 
   it('describes the locales this project actually builds', () => {

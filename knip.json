@@ -2,20 +2,18 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "src/pages/**/*.{astro,ts}",
+    "src/content/**/*.mdx",
     "scripts/**/*.mjs",
     "src/**/*.test.ts"
   ],
   "project": [
-    "src/**/*.{astro,ts,tsx,js}",
+    "src/**/*.{astro,ts,tsx,js,mdx,css}",
     "scripts/**/*.mjs"
   ],
   "ignore": [
     "src/test/**"
   ],
   "ignoreDependencies": [
-    "tailwindcss",
-    "@fontsource-variable/vazirmatn",
-    "@fontsource-variable/noto-sans-arabic",
     "@inlang/plugin-message-format",
     "@inlang/plugin-m-function-matcher"
   ]

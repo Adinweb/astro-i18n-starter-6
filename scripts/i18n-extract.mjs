@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import MagicString from 'magic-string';
@@ -71,12 +72,12 @@ for (const file of filesToProcess) {
   const content = fs.readFileSync(file, 'utf-8');
   const s = new MagicString(content);
 
-  // Split frontmatter and template if .astro
+  // Split frontmatter and template if .astro or .mdx
   let templateStart = 0;
   let hasFrontmatter = false;
   let frontmatterEnd = 0;
 
-  if (file.endsWith('.astro') && content.startsWith('---')) {
+  if ((file.endsWith('.astro') || file.endsWith('.mdx')) && content.startsWith('---')) {
     const secondFmIndex = content.indexOf('---', 3);
     if (secondFmIndex !== -1) {
       hasFrontmatter = true;
@@ -106,13 +107,15 @@ for (const file of filesToProcess) {
     if (rawText.length < 3) continue;
     if (rawText.startsWith('//') || rawText.startsWith('/*')) continue;
 
-    const keySuffix = rawText
+    const latinSuffix = rawText
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '_')
       .slice(0, 30)
       .replace(/^_+|_+$/g, '');
 
-    if (!keySuffix) continue;
+    const keySuffix =
+      latinSuffix ||
+      `text_${crypto.createHash('sha1').update(rawText).digest('hex').slice(0, 8)}`;
     const key = `${namespace}_${keySuffix}`;
 
     const textOffsetInTemplate = mNode.index + mNode[0].indexOf(mNode[1]);
@@ -157,13 +160,21 @@ for (const file of filesToProcess) {
       }
     }
 
-    if (replace && file.endsWith('.astro')) {
+    if (replace) {
       const currentCode = s.toString();
       if (!currentCode.includes("import * as m from '@/paraglide/messages'")) {
-        if (hasFrontmatter) {
-          s.appendRight(3, "\nimport * as m from '@/paraglide/messages';");
-        } else {
-          s.prepend("---\nimport * as m from '@/paraglide/messages';\n---\n\n");
+        if (file.endsWith('.astro')) {
+          if (hasFrontmatter) {
+            s.appendRight(3, "\nimport * as m from '@/paraglide/messages';");
+          } else {
+            s.prepend("---\nimport * as m from '@/paraglide/messages';\n---\n\n");
+          }
+        } else if (file.endsWith('.mdx')) {
+          if (hasFrontmatter) {
+            s.appendRight(frontmatterEnd, "\n\nimport * as m from '@/paraglide/messages';\n");
+          } else {
+            s.prepend("import * as m from '@/paraglide/messages';\n\n");
+          }
         }
       }
     }

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { askYesNo, confirmDeletion } from './lib/prompt.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
+import { escapeRegex } from './lib/frontmatter.mjs';
 
 const args = process.argv.slice(2);
 const langCode = args.find((a) => !a.startsWith('--'));
@@ -103,8 +104,11 @@ if (fs.existsSync(localesPath)) {
     }
   );
 
-  // Remove from LOCALE_METADATA block
-  const metaRegex = new RegExp(`\\s*${langCode}:\\s*\\{[\\s\\S]*?\\},?`, 'm');
+  // Remove from LOCALE_METADATA block (supports bare or quoted BCP-47 keys)
+  const metaRegex = new RegExp(
+    `\\r?\\n  ['"]?${escapeRegex(langCode)}['"]?:\\s*\\{[\\s\\S]*?^  \\},?`,
+    'm'
+  );
   localesCode = localesCode.replace(metaRegex, '');
 
   fs.writeFileSync(localesPath, localesCode, 'utf-8');

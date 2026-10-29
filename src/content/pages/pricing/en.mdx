@@ -1,9 +1,75 @@
 ---
-title: "pricing"
+title: "Pricing"
 slug: "pricing"
-description: "Description for pricing"
+description: "Transparent licensing and architecture support tiers—from the MIT open-source starter to tailored enterprise engagements."
 image: "./pricing.png"
 draft: false
 ---
 
-Content coming soon...
+import ContactForm from '@/components/ContactForm.astro';
+
+Choose the engagement model that matches your engineering velocity. The core Astro v7 multilingual architecture is free and open-source under the MIT license, with optional advisory and custom integration packages for teams scaling across global markets.
+
+<div class="reveal-stagger not-prose my-10 grid gap-6 lg:grid-cols-3">
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker">01 · Starter</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">Open Source Core</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">$0 <span class="text-sm font-normal text-muted">· MIT License</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        Full repository access for self-directed engineering teams building fast multilingual static sites.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>5 pre-configured LTR &amp; RTL locales</li>
+        <li>Paraglide compile-time i18n &amp; CLI suite</li>
+        <li>Pagefind search, Atom feeds &amp; SEO schema</li>
+        <li>TDDDG § 25 / GDPR consent gatekeeper</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="btn-secondary mt-8 w-full text-center">
+      Ask a question
+    </a>
+  </div>
+
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-primary/50 bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker">02 · Studio</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">Architecture Review</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">$1,400 <span class="text-sm font-normal text-muted">· one-time</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        Hands-on localization audit, custom design token tuning, and headless API wiring for growing product teams.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>Custom OKLCH brand palette &amp; typography</li>
+        <li>Bidirectional RTL layout &amp; SEO verification</li>
+        <li>External form &amp; microservice API integration</li>
+        <li>CI/CD build, smoke &amp; i18n audit pipeline</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="cta mt-8 h-11 w-full">
+      Request studio review
+    </a>
+  </div>
+
+  <div data-reveal="up" class="reveal flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md sm:p-7">
+    <div>
+      <p class="section-kicker">03 · Enterprise</p>
+      <h3 class="mt-2 text-xl font-bold text-fg">Dedicated Partnership</h3>
+      <p class="mt-3 text-3xl font-extrabold tracking-tight tabular-nums text-fg">Custom <span class="text-sm font-normal text-muted">· SLA</span></p>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        End-to-end migration, multi-region CDN architecture, and ongoing engineering support for large content catalogs.
+      </p>
+      <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
+        <li>Custom Content Collection adapters &amp; CMS sync</li>
+        <li>Multi-brand design system &amp; accessibility audit</li>
+        <li>Dedicated Slack channel &amp; priority code reviews</li>
+        <li>Team workshops on RTL &amp; Astro v7 patterns</li>
+      </ul>
+    </div>
+    <a href="#contact-inquiry" class="btn-secondary mt-8 w-full text-center">
+      Contact architecture team
+    </a>
+  </div>
+</div>
+
+<ContactForm locale="en" />

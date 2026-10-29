@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { compileMessages } from './lib/compile-messages.mjs';
 
 /**
@@ -35,9 +35,13 @@ export function runCli() {
 
   // Check if user passed batch options (--json, --file, or --batch)
   if (args.some((a) => a.startsWith('--json=') || a.startsWith('--file=') || a === '--batch')) {
-    const batchArgs = args.filter((a) => a !== '--batch').map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ');
+    const batchArgs = args.filter((a) => a !== '--batch');
     try {
-      execSync(`node scripts/i18n-add-batch.mjs ${batchArgs}`, { stdio: 'inherit' });
+      execFileSync(
+        process.execPath,
+        [path.join(process.cwd(), 'scripts', 'i18n-add-batch.mjs'), ...batchArgs],
+        { stdio: 'inherit' }
+      );
       process.exit(0);
     } catch (err) {
       process.exit(err.status || 1);

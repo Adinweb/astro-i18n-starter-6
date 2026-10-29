@@ -8,17 +8,27 @@ import {
   blogConfigSchema,
   cookieConfigSchema,
   socialConfigSchema,
+  apiEndpointsSchema,
+  apiConfigSchema,
+  defaultUiConfig,
+  defaultSocialConfig,
+  defaultApiConfig,
   POSTS_PER_PAGE,
   UI_CONFIG,
   BLOG_CONFIG,
   COOKIE_CONFIG,
   SOCIAL_CONFIG,
+  API_CONFIG,
+  type ApiConfig,
+  type BlogConfig,
+  type ThemeMode,
 } from './app';
 
 describe('src/libs/config/app.ts', () => {
   describe('themeModeSchema', () => {
     it('accepts system, light, and dark modes', () => {
-      expect(themeModeSchema.parse('system')).toBe('system');
+      const mode: ThemeMode = themeModeSchema.parse('system');
+      expect(mode).toBe('system');
       expect(themeModeSchema.parse('light')).toBe('light');
       expect(themeModeSchema.parse('dark')).toBe('dark');
     });
@@ -32,11 +42,7 @@ describe('src/libs/config/app.ts', () => {
   describe('uiConfigSchema', () => {
     it('provides sensible defaults for all UI toggles', () => {
       const parsed = uiConfigSchema.parse({});
-      expect(parsed.showSearch).toBe(true);
-      expect(parsed.showThemeToggle).toBe(true);
-      expect(parsed.showLanguageSwitcher).toBe(true);
-      expect(parsed.showTopLoadingBar).toBe(true);
-      expect(parsed.stickyHeader).toBe(true);
+      expect(parsed).toEqual(defaultUiConfig);
     });
 
     it('allows selectively toggling UI features off', () => {
@@ -52,7 +58,7 @@ describe('src/libs/config/app.ts', () => {
 
   describe('blogConfigSchema', () => {
     it('validates postsPerPage and default presentation flags', () => {
-      const parsed = blogConfigSchema.parse({ postsPerPage: 6 });
+      const parsed: BlogConfig = blogConfigSchema.parse({ postsPerPage: 6 });
       expect(parsed.postsPerPage).toBe(6);
       expect(parsed.showReadingTime).toBe(true);
       expect(parsed.showTableOfContents).toBe(true);
@@ -85,8 +91,17 @@ describe('src/libs/config/app.ts', () => {
   describe('socialConfigSchema', () => {
     it('defaults github and twitter to empty strings if omitted', () => {
       const parsed = socialConfigSchema.parse({});
-      expect(parsed.github).toBe('');
-      expect(parsed.twitter).toBe('');
+      expect(parsed).toEqual(defaultSocialConfig);
+    });
+  });
+
+  describe('apiConfigSchema', () => {
+    it('validates pure SSG external API defaults and timeout bounds', () => {
+      const parsed: ApiConfig = apiConfigSchema.parse({});
+      expect(parsed).toEqual(defaultApiConfig);
+      expect(apiEndpointsSchema.parse({})).toEqual({ contact: '/contact' });
+      expect(() => apiConfigSchema.parse({ timeoutMs: 200 })).toThrow();
+      expect(() => apiConfigSchema.parse({ timeoutMs: 90000 })).toThrow();
     });
   });
 
@@ -98,11 +113,13 @@ describe('src/libs/config/app.ts', () => {
       expect(siteConfig.blog).toBeDefined();
       expect(siteConfig.cookies).toBeDefined();
       expect(siteConfig.social).toBeDefined();
+      expect(siteConfig.api).toBeDefined();
       expect(POSTS_PER_PAGE).toBe(appConfig.blog.postsPerPage);
       expect(UI_CONFIG).toEqual(siteConfig.ui);
       expect(BLOG_CONFIG).toEqual(siteConfig.blog);
       expect(COOKIE_CONFIG).toEqual(siteConfig.cookies);
       expect(SOCIAL_CONFIG).toEqual(siteConfig.social);
+      expect(API_CONFIG).toEqual(siteConfig.api);
     });
   });
 

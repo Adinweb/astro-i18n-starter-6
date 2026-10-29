@@ -59,7 +59,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ```text
 /
 ├── .agents/skills/            # Agent skills (astro-i18n-starter/SKILL.md + references/)
-├── app.config.json            # SSOT for site, brand, blog pagination & dev server values
+├── app.config.json            # SSOT for site, brand, blog pagination, external API & dev server values
 ├── messages/                  # Dictionaries (en.json, de.json, fr.json, fa.json, ar.json)
 ├── project.inlang/            # Paraglide compiler configuration (settings.json)
 ├── public/                    # Static assets needing stable URLs (favicons, manifest icons, default OG card)
@@ -67,7 +67,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   └── lib/                   # Shared prompt, frontmatter, content-stub, slug, and artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph fallback
-│   ├── components/            # Reusable Astro components (Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHero, HeroCopy, BlogPostHeroContent, PostCard, Reveal, SearchModal, DrawerSearch, Seo, TopLoadingBar)
+│   ├── components/            # Reusable Astro components (Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHero, HeroCopy, BlogPostHeroContent, PostCard, Reveal, SearchModal, DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar)
 │   ├── content/               # Symmetrical content collections:
 │   │   ├── pages/<group>/     # Static pages (en.mdx, de.mdx, fr.mdx, fa.mdx, ar.mdx + hero artwork)
 │   │   └── blog/<group>/      # Blog posts with localized slugs (+ cover artwork)
@@ -77,13 +77,16 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   └── paths.ts           # Pure URL utilities (localizeHref, localeHref, stripLocale, getPathname)
 │   ├── layouts/               # BaseLayout.astro (HTML head, .js init, lang/dir, theme, header, drawer, footer)
 │   ├── libs/                  # Core services:
-│   │   ├── config/app.ts      # Validates app.config.json; typed site/brand/blog values & hero defaults
+│   │   ├── api/client.ts      # Pure client-side HTTP adapter for external APIs (contact & microservices)
+│   │   ├── config/app.ts      # Validates app.config.json; typed site/brand/blog/api values & hero defaults
 │   │   ├── config/navigation.ts # Multi-menu header/drawer/footer/legal navigation builder
 │   │   ├── content/entries.ts # Entry ID parsing, draft filtering, locale selection, sorting
 │   │   ├── content/service.ts # getSiteRoutes(), getPageUrl(), getBreadcrumbs(), getRssFeedHref()
+│   │   ├── content/blog-catalog.ts # Shared serializer for static blog JSON catalogs
 │   │   ├── content/feed.ts    # Per-locale Atom 1.0 feed builder
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
-│   │   └── content/social.ts  # Builds the optimized og:image card
+│   │   ├── content/social.ts  # Builds the optimized og:image card
+│   │   └── cookies/           # TDDDG § 25 / GDPR consent model & multi-domain script gatekeeper
 │   ├── pages/                 # Minimal physical pages:
 │   │   ├── [...path].astro    # Lean Router Dispatcher
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
@@ -93,7 +96,8 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── rss/[locale].xml.ts # Non-default locale Atom feeds (/rss/<locale>.xml)
 │   │   ├── sitemap.xml.ts     # Multi-lingual sitemap with x-default + lastmod
 │   │   ├── robots.txt.ts      # Robots.txt pointing to sitemap
-│   │   ├── api/blog-posts.json.ts # Static blog catalog for cross-page filtering
+│   │   ├── api/blog-posts.json.ts # Combined static blog catalog fallback
+│   │   ├── api/blog-posts/[locale].json.ts # Per-locale static blog catalog for filtered pagination
 │   │   └── api/search-dev.json.ts # Locale-aware search fallback index
 │   ├── paraglide/             # AUTO-GENERATED compiled messages (DO NOT EDIT)
 │   ├── scripts/               # Client modules: lenis.ts (smooth scroll), reveal.ts (scroll reveal)
@@ -110,8 +114,8 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 | `pnpm run messages:compile` | Compiles `messages/*.json` into `src/paraglide/` | After modifying dictionary keys |
 | `pnpm run lint` | Messages compile + `astro check` + `tsc --noEmit` | After any code changes |
 | `pnpm test` | Vitest unit tests (paths, ICU, routes, CLI helpers, scroll reveal, interactive views) | After routing, UI, or logic changes |
-| `pnpm run audit:i18n` | Locale-config parity, dictionary/placeholder parity, content parity, used keys, slug & route collisions | Before commits & builds |
-| `pnpm run verify:cli` | End-to-end check of every documented CLI workflow (45 claims in temp sandbox) | After changing anything under `scripts/` |
+| `pnpm run audit:i18n` | Locale-config parity, dictionary/placeholder parity, content parity, used/dead keys, route collisions & RTL logical property guard | Before commits & builds |
+| `pnpm run verify:cli` | End-to-end check of every documented CLI workflow (47 claims in temp sandbox) | After changing anything under `scripts/` |
 | `pnpm run build` | `messages:compile` + audit + `astro build` + `pagefind` | After major changes |
 | `pnpm run smoke` | HTML, SEO, feed, asset & H1 assertions on `dist/` | After every production build |
 | `pnpm run knip` | Dead files, exports, and dependencies | Before releases |

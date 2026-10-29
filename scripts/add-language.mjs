@@ -4,6 +4,11 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { contentStub, stripLeadingHeading } from './lib/content-stub.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
+import {
+  escapeRegex,
+  parseFrontmatter,
+  stringifyFrontmatter,
+} from './lib/frontmatter.mjs';
 
 const args = process.argv.slice(2);
 const langCode = args.find((a) => !a.startsWith('--'));
@@ -186,6 +191,18 @@ for (const [key, val] of Object.entries(sourceDict)) {
     newDict[key] = frTranslations[key];
   } else if (typeof val === 'string') {
     newDict[key] = `[TODO: ${langCode}] ${val}`;
+  } else if (Array.isArray(val)) {
+    newDict[key] = val.map((variant) => ({
+      ...variant,
+      match: Object.fromEntries(
+        Object.entries(variant?.match ?? {}).map(([k, text]) => [
+          k,
+          typeof text === 'string' && !text.startsWith('[TODO:')
+            ? `[TODO: ${langCode}] ${text}`
+            : text,
+        ])
+      ),
+    }));
   } else {
     newDict[key] = val;
   }
@@ -213,17 +230,22 @@ if (!localesCode.includes(`'${langCode}'`)) {
   console.log(`✅ Updated LOCALES in src/i18n/locales.ts with "${langCode}"`);
 }
 
-if (!localesCode.includes(`${langCode}:`)) {
+const metaKeyPattern = new RegExp(`^\\s*['"]?${escapeRegex(langCode)}['"]?:\\s*\\{`, 'm');
+if (!metaKeyPattern.test(localesCode)) {
   const fontVar =
     langCode === 'ar'
       ? 'var(--font-ar)'
       : dir === 'rtl'
         ? 'var(--font-fa)'
         : 'var(--font-sans)';
-  const newMetaBlock = `  ${langCode}: {
+  const formattedKey = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(langCode)
+    ? langCode
+    : `'${langCode}'`;
+  const escapedName = langName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const newMetaBlock = `  ${formattedKey}: {
     dir: '${dir}',
     htmlLang: '${langCode}',
-    name: '${langName}',
+    name: '${escapedName}',
     fontFamily: '${fontVar}',
   },\n} satisfies Record<Locale, LocaleMeta>;`;
 
@@ -264,23 +286,21 @@ if (shouldPopulateContent) {
             : null;
 
           let title = group;
-          let slug = group === 'home' ? '' : `${group}-${langCode}`;
+          const slug = group === 'home' ? '' : `${group}-${langCode}`;
           let description = `Description for ${group}`;
           let body = contentStub(langCode);
-          // The artwork lives in the group folder, so the new locale can
-          // reference the very same file the source locale uses.
-          let image = '';
+          let sourceFm = {};
 
           if (sourceCandidate && fs.existsSync(sourceCandidate)) {
             const rawContent = fs.readFileSync(sourceCandidate, 'utf-8');
-            const tMatch = rawContent.match(/title:\s*"([^"]+)"/);
-            if (tMatch) title = tMatch[1];
-            const dMatch = rawContent.match(/description:\s*"([^"]+)"/);
-            if (dMatch) description = dMatch[1];
-            const iMatch = rawContent.match(/^image:\s*"([^"]+)"/m);
-            if (iMatch) image = iMatch[1];
+            const parsed = parseFrontmatter(rawContent);
+            sourceFm = parsed.data;
+            if (typeof sourceFm.title === 'string' && sourceFm.title) title = sourceFm.title;
+            if (typeof sourceFm.description === 'string' && sourceFm.description) {
+              description = sourceFm.description;
+            }
 
-            const bodyStripped = rawContent.replace(/^---[\s\S]*?---/, '').trim();
+            const bodyStripped = parsed.body.trim();
             if (bodyStripped) {
               body = stripLeadingHeading(bodyStripped).trim() || contentStub(langCode);
             }
@@ -289,21 +309,43 @@ if (shouldPopulateContent) {
           const pageTitle = langCode === 'fr'
             ? (group === 'home' ? 'Bienvenue sur Astro i18n' : group === 'about' ? 'À propos de nous' : title)
             : `[TODO: ${langCode}] ${title}`;
-          const entryIsDraft = isDraft || pageTitle.includes('[TODO');
+          const pageDescription = description.startsWith('[TODO:')
+            ? description
+            : langCode === 'fr' && (group === 'home' || group === 'about')
+              ? description
+              : `[TODO: ${langCode}] ${description}`;
+          const entryIsDraft =
+            isDraft || pageTitle.includes('[TODO') || pageDescription.includes('[TODO');
 
-          const mdxContent = `---
-title: "${pageTitle}"
-slug: "${slug}"
-description: "${description}"
-${image ? `image: "${image}"\n` : ''}${collection === 'blog' ? 'publishedAt: ' + new Date().toISOString().split('T')[0] : ''}
-draft: ${entryIsDraft}
----
+          const fmRecord = {
+            title: pageTitle,
+            slug,
+            description: pageDescription,
+            ...(sourceFm.image ? { image: sourceFm.image } : {}),
+            ...(sourceFm.author ? { author: sourceFm.author } : {}),
+            ...(Array.isArray(sourceFm.categories) && sourceFm.categories.length > 0
+              ? { categories: sourceFm.categories }
+              : {}),
+            ...(Array.isArray(sourceFm.tags) && sourceFm.tags.length > 0
+              ? { tags: sourceFm.tags }
+              : {}),
+            ...(collection === 'blog'
+              ? {
+                  publishedAt:
+                    sourceFm.publishedAt || new Date().toISOString().split('T')[0],
+                }
+              : sourceFm.publishedAt
+                ? { publishedAt: sourceFm.publishedAt }
+                : {}),
+            ...(sourceFm.updatedAt ? { updatedAt: sourceFm.updatedAt } : {}),
+            draft: entryIsDraft,
+          };
 
-${body.startsWith('#') ? stripLeadingHeading(body) : body}
-`;
+          const cleanBody = (body.startsWith('#') ? stripLeadingHeading(body) : body).trim();
+          const mdxContent = stringifyFrontmatter(fmRecord, `\n${cleanBody}\n`);
           fs.writeFileSync(targetFile, mdxContent, 'utf-8');
           if (!isDraft && entryIsDraft) {
-            console.warn(`  ⚠️ src/content/${collection}/${group}/${langCode}.mdx stays a draft: its title still contains a placeholder.`);
+            console.warn(`  ⚠️ src/content/${collection}/${group}/${langCode}.mdx stays a draft: its title or description still contains a placeholder.`);
           }
           console.log(`  + Created content: src/content/${collection}/${group}/${langCode}.mdx (from "${sourceCandidate ? path.basename(sourceCandidate, '.mdx') : 'default'}")`);
         }

@@ -21,8 +21,8 @@ const DEFAULT_LOCALE_PATTERN =
   /export const DEFAULT_LOCALE\s*:\s*Locale\s*=\s*['"]([^'"]+)['"]/;
 const METADATA_PATTERN =
   /export const LOCALE_METADATA\s*=\s*\{([\s\S]*?)\}\s*satisfies\s+Record<Locale,\s*LocaleMeta>/;
-// One locale block: its key, and everything up to the block's own closing brace.
-const METADATA_BLOCK_PATTERN = /^  ([A-Za-z0-9_-]+):\s*\{([\s\S]*?)^  \},?\r?$/gm;
+// One locale block: its key (bare or quoted for BCP-47 tags like 'pt-BR'), and everything up to the block's closing brace.
+const METADATA_BLOCK_PATTERN = /^  ['"]?([A-Za-z0-9_-]+)['"]?:\s*\{([^}]*)\},?\r?$/gm;
 
 export const LOCALES_SOURCE_PATH = path.join(rootDir, 'src', 'i18n', 'locales.ts');
 

@@ -61,6 +61,19 @@ describe('src/libs/content/entries.ts', () => {
       ]);
       expect(entries.map((entry) => entry.id)).toEqual(['a/en', 'b/en', 'c/en']);
     });
+
+    it('breaks ties deterministically by lexical entry ID when timestamps match', () => {
+      const forward = [
+        post('zeta/en', '2026-05-01T00:00:00Z'),
+        post('alpha/en', '2026-05-01T00:00:00Z'),
+        post('middle/en', '2026-05-01T00:00:00Z'),
+      ];
+      const reversed = [...forward].reverse();
+
+      const expected = ['alpha/en', 'middle/en', 'zeta/en'];
+      expect(sortByPublishedAtDesc(forward).map((entry) => entry.id)).toEqual(expected);
+      expect(sortByPublishedAtDesc(reversed).map((entry) => entry.id)).toEqual(expected);
+    });
   });
 
   describe('groupPublishedEntries', () => {

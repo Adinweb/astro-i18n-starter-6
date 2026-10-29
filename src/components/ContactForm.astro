@@ -1,0 +1,327 @@
+---
+import Icon from '@/components/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveApiEndpoint } from '@/libs/api/client';
+import { API_CONFIG } from '@/libs/config/app';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const resolvedEndpoint = resolveApiEndpoint(API_CONFIG.endpoints.contact, API_CONFIG.baseUrl);
+const isConfigured = resolvedEndpoint !== null;
+
+const copy = {
+  kicker: m.contact_kicker({}, { locale }),
+  title: m.contact_title({}, { locale }),
+  subtitle: m.contact_subtitle({}, { locale }),
+  nameLabel: m.contact_name_label({}, { locale }),
+  namePlaceholder: m.contact_name_placeholder({}, { locale }),
+  emailLabel: m.contact_email_label({}, { locale }),
+  emailPlaceholder: m.contact_email_placeholder({}, { locale }),
+  topicLabel: m.contact_topic_label({}, { locale }),
+  topicGeneral: m.contact_topic_general({}, { locale }),
+  topicArchitecture: m.contact_topic_architecture({}, { locale }),
+  topicEnterprise: m.contact_topic_enterprise({}, { locale }),
+  messageLabel: m.contact_message_label({}, { locale }),
+  messagePlaceholder: m.contact_message_placeholder({}, { locale }),
+  submit: m.contact_submit({}, { locale }),
+  submitting: m.contact_submitting({}, { locale }),
+  successTitle: m.contact_success_title({}, { locale }),
+  successDesc: m.contact_success_desc({}, { locale }),
+  errValidation: m.contact_error_validation({}, { locale }),
+  errTimeout: m.contact_error_timeout({}, { locale }),
+  errHttp: m.contact_error_http({}, { locale }),
+  errNetwork: m.contact_error_network({}, { locale }),
+  unconfiguredNotice: m.contact_unconfigured_notice({}, { locale }),
+};
+---
+
+<section
+  id="contact-inquiry"
+  data-contact-form
+  data-reveal="up"
+  class="reveal not-prose mt-14 scroll-mt-28 rounded-2xl border border-border bg-surface p-6 sm:p-8 lg:p-10"
+>
+  <div class="grid gap-8 lg:grid-cols-12 lg:gap-12">
+    <div class="lg:col-span-5">
+      <p class="section-kicker">{copy.kicker}</p>
+      <h2 class="mt-2 text-2xl font-bold tracking-tight text-fg sm:text-3xl">
+        {copy.title}
+      </h2>
+      <p class="mt-3 text-sm leading-relaxed text-muted sm:text-base">
+        {copy.subtitle}
+      </p>
+
+      {
+        !isConfigured && (
+          <div class="mt-6 rounded-xl border border-border bg-bg p-4 text-xs leading-relaxed text-muted">
+            <div class="flex items-start gap-2.5">
+              <Icon name="mail" size={16} class="mt-0.5 shrink-0 text-primary" />
+              <p>{copy.unconfiguredNotice}</p>
+            </div>
+          </div>
+        )
+      }
+    </div>
+
+    <div class="lg:col-span-7">
+      <form
+        data-contact-form-el
+        data-locale={locale}
+        data-base-url={API_CONFIG.baseUrl}
+        data-endpoint={API_CONFIG.endpoints.contact}
+        data-timeout-ms={String(API_CONFIG.timeoutMs)}
+        data-label-submit={copy.submit}
+        data-label-submitting={copy.submitting}
+        data-msg-success-title={copy.successTitle}
+        data-msg-success-desc={copy.successDesc}
+        data-err-validation={copy.errValidation}
+        data-err-unconfigured={copy.unconfiguredNotice}
+        data-err-timeout={copy.errTimeout}
+        data-err-http={copy.errHttp}
+        data-err-network={copy.errNetwork}
+        novalidate
+        class="space-y-5"
+      >
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute -z-10 h-0 w-0 overflow-hidden opacity-0"
+        >
+          <input
+            type="text"
+            name="company_website"
+            tabindex="-1"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label
+              for={`contact-name-${locale}`}
+              class="block text-xs font-semibold text-fg"
+            >
+              {copy.nameLabel}
+            </label>
+            <input
+              id={`contact-name-${locale}`}
+              name="name"
+              type="text"
+              required
+              minlength="2"
+              autocomplete="name"
+              placeholder={copy.namePlaceholder}
+              class="mt-1.5 w-full rounded-xl border border-border bg-bg px-3.5 py-2.5 text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error"
+            />
+          </div>
+
+          <div>
+            <label
+              for={`contact-email-${locale}`}
+              class="block text-xs font-semibold text-fg"
+            >
+              {copy.emailLabel}
+            </label>
+            <input
+              id={`contact-email-${locale}`}
+              name="email"
+              type="email"
+              dir="ltr"
+              required
+              autocomplete="email"
+              placeholder={copy.emailPlaceholder}
+              class="mt-1.5 w-full rounded-xl border border-border bg-bg px-3.5 py-2.5 text-start text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error rtl:text-end"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            for={`contact-topic-${locale}`}
+            class="block text-xs font-semibold text-fg"
+          >
+            {copy.topicLabel}
+          </label>
+          <select
+            id={`contact-topic-${locale}`}
+            name="topic"
+            class="mt-1.5 w-full rounded-xl border border-border bg-bg px-3.5 py-2.5 text-sm text-fg focus:border-primary focus:outline-none aria-[invalid=true]:border-error"
+          >
+            <option value="architecture">{copy.topicArchitecture}</option>
+            <option value="enterprise">{copy.topicEnterprise}</option>
+            <option value="general">{copy.topicGeneral}</option>
+          </select>
+        </div>
+
+        <div>
+          <label
+            for={`contact-message-${locale}`}
+            class="block text-xs font-semibold text-fg"
+          >
+            {copy.messageLabel}
+          </label>
+          <textarea
+            id={`contact-message-${locale}`}
+            name="message"
+            rows="4"
+            required
+            minlength="10"
+            placeholder={copy.messagePlaceholder}
+            class="mt-1.5 w-full rounded-xl border border-border bg-bg px-3.5 py-2.5 text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error"
+          ></textarea>
+        </div>
+
+        <div
+          data-contact-feedback
+          role="status"
+          aria-live="polite"
+          hidden
+          class="rounded-xl border p-4 text-sm"
+        >
+          <p data-contact-feedback-title class="font-semibold"></p>
+          <p data-contact-feedback-body class="mt-0.5 text-xs leading-relaxed"></p>
+        </div>
+
+        <div class="flex items-center justify-end pt-1">
+          <button
+            type="submit"
+            data-contact-submit
+            class="cta h-11 cursor-pointer px-6 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span data-contact-submit-label>{copy.submit}</span>
+            <Icon name="arrow-right" size={16} class="rtl:rotate-180" />
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+  import {
+    getInvalidContactFields,
+    submitContactInquiry,
+    type ContactInquiryPayload,
+    type ContactSubmissionErrorCode,
+  } from '@/libs/api/client';
+
+  function initContactForms() {
+    const forms = document.querySelectorAll<HTMLFormElement>('[data-contact-form-el]');
+
+    forms.forEach((form) => {
+      if (form.dataset.bound === 'true') return;
+      form.dataset.bound = 'true';
+
+      const submitBtn = form.querySelector<HTMLButtonElement>('[data-contact-submit]');
+      const submitLabel = form.querySelector<HTMLElement>('[data-contact-submit-label]');
+      const feedback = form.querySelector<HTMLElement>('[data-contact-feedback]');
+      const feedbackTitle = form.querySelector<HTMLElement>('[data-contact-feedback-title]');
+      const feedbackBody = form.querySelector<HTMLElement>('[data-contact-feedback-body]');
+      const fieldNames = ['name', 'email', 'topic', 'message'] as const;
+
+      const errorMessages: Record<ContactSubmissionErrorCode, string> = {
+        validation: form.dataset.errValidation ?? '',
+        unconfigured: form.dataset.errUnconfigured ?? '',
+        timeout: form.dataset.errTimeout ?? '',
+        http: form.dataset.errHttp ?? '',
+        network: form.dataset.errNetwork ?? '',
+      };
+
+      const clearInvalidState = () => {
+        for (const name of fieldNames) {
+          const el = form.querySelector<HTMLElement>(`[name="${name}"]`);
+          el?.removeAttribute('aria-invalid');
+        }
+      };
+
+      form.addEventListener('input', (event) => {
+        const target = event.target as HTMLElement | null;
+        if (target?.hasAttribute('aria-invalid')) {
+          target.removeAttribute('aria-invalid');
+        }
+      });
+
+      const renderFeedback = (kind: 'success' | 'error', title: string, body: string) => {
+        if (!feedback || !feedbackTitle || !feedbackBody) return;
+        feedback.hidden = false;
+        feedback.className =
+          kind === 'success'
+            ? 'rounded-xl border border-success/30 bg-success/10 p-4 text-sm text-fg'
+            : 'rounded-xl border border-error/30 bg-error/10 p-4 text-sm text-fg';
+        feedbackTitle.textContent = title;
+        feedbackBody.textContent = body;
+      };
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!submitBtn || submitBtn.disabled) return;
+
+        const formData = new FormData(form);
+        const honeypot = String(formData.get('company_website') ?? '');
+        const payload: ContactInquiryPayload = {
+          name: String(formData.get('name') ?? ''),
+          email: String(formData.get('email') ?? ''),
+          topic: String(formData.get('topic') ?? 'general'),
+          message: String(formData.get('message') ?? ''),
+          locale: form.dataset.locale ?? 'en',
+          honeypot,
+        };
+
+        if (!honeypot.trim()) {
+          const invalidFields = getInvalidContactFields(payload);
+          clearInvalidState();
+          if (invalidFields.length > 0) {
+            let firstInvalid: HTMLElement | null = null;
+            for (const fieldName of invalidFields) {
+              const el = form.querySelector<HTMLElement>(`[name="${fieldName}"]`);
+              if (el) {
+                el.setAttribute('aria-invalid', 'true');
+                if (!firstInvalid) firstInvalid = el;
+              }
+            }
+            renderFeedback('error', errorMessages.validation, '');
+            firstInvalid?.focus();
+            return;
+          }
+        }
+
+        submitBtn.disabled = true;
+        if (submitLabel && form.dataset.labelSubmitting) {
+          submitLabel.textContent = form.dataset.labelSubmitting;
+        }
+
+        const timeoutMs = Number.parseInt(form.dataset.timeoutMs ?? '10000', 10);
+        const result = await submitContactInquiry(payload, {
+          baseUrl: form.dataset.baseUrl ?? '',
+          endpoint: form.dataset.endpoint ?? '/contact',
+          timeoutMs: Number.isFinite(timeoutMs) ? timeoutMs : 10000,
+        });
+
+        submitBtn.disabled = false;
+        if (submitLabel && form.dataset.labelSubmit) {
+          submitLabel.textContent = form.dataset.labelSubmit;
+        }
+
+        if (result.ok) {
+          form.reset();
+          clearInvalidState();
+          renderFeedback(
+            'success',
+            form.dataset.msgSuccessTitle ?? '',
+            form.dataset.msgSuccessDesc ?? ''
+          );
+          return;
+        }
+
+        renderFeedback('error', errorMessages[result.errorCode] ?? '', '');
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initContactForms);
+  initContactForms();
+</script>

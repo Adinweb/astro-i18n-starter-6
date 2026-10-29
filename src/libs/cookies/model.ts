@@ -351,8 +351,8 @@ export function deriveCookieDomains(hostname: string | undefined): Array<string 
   add(`.${clean}`);
 
   const parts = clean.split('.').filter(Boolean);
-  if (parts.length > 2) {
-    const parent = parts.slice(-2).join('.');
+  for (let i = 1; i <= parts.length - 2; i += 1) {
+    const parent = parts.slice(i).join('.');
     add(parent);
     add(`.${parent}`);
   }

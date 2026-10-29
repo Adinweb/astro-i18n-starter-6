@@ -28,13 +28,15 @@ export const GET: APIRoute = async () => {
   const urlEntries = routes
     .map((route) => {
       const locUrl = escapeXml(absoluteUrl(route.props.url));
-      const xDefaultUrl = escapeXml(
-        absoluteUrl(route.props.alternates[DEFAULT_LOCALE] ?? route.props.url)
-      );
+      const defaultAlternate = route.props.alternates[DEFAULT_LOCALE];
+      const xDefaultTag = defaultAlternate
+        ? `\n    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(absoluteUrl(defaultAlternate))}" />`
+        : '';
 
       const alternateTags = Object.entries(route.props.alternates)
+        .filter(([, altPath]) => Boolean(altPath))
         .map(([locale, altPath]) => {
-          const altHref = escapeXml(absoluteUrl(altPath));
+          const altHref = escapeXml(absoluteUrl(altPath!));
           return `    <xhtml:link rel="alternate" hreflang="${escapeXml(locale)}" href="${altHref}" />`;
         })
         .join('\n');
@@ -51,8 +53,7 @@ export const GET: APIRoute = async () => {
 
       return `  <url>
     <loc>${locUrl}</loc>
-${alternateTags}
-    <xhtml:link rel="alternate" hreflang="x-default" href="${xDefaultUrl}" />${lastmod}
+${alternateTags}${xDefaultTag}${lastmod}
     <changefreq>${changefreq}</changefreq>
   </url>`;
     })

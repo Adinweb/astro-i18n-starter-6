@@ -257,7 +257,7 @@ const structuredData = schema ?? {
                         aria-haspopup="true"
                         data-dropdown-trigger
                       >
-                        <span>{item.label}</span>
+                        <span data-dropdown-label={item.key}>{item.label}</span>
                         <Icon
                           name="chevron-down"
                           size={13}
@@ -267,7 +267,7 @@ const structuredData = schema ?? {
 
                       <div
                         data-dropdown-menu
-                        class="absolute start-0 top-full pt-1.5 z-50 hidden min-w-48 group-hover:block group-focus-within:block focus-within:block"
+                        class="absolute start-0 top-full pt-1.5 z-50 hidden min-w-48 group-hover:block group-focus-within:block focus-within:block [&[data-force-closed=true]]:!hidden"
                       >
                         <div
                           class="rounded-xl border border-border bg-surface p-1.5 shadow-xl"
@@ -284,12 +284,12 @@ const structuredData = schema ?? {
                                     aria-expanded="false"
                                     data-subdropdown-trigger
                                   >
-                                    <span>{child.label}</span>
+                                    <span data-dropdown-label={child.key}>{child.label}</span>
                                     <Icon name="chevron-right" size={13} class="rtl:rotate-180 opacity-70" />
                                   </button>
                                   <div
                                     data-subdropdown-menu
-                                    class="absolute start-full top-0 ps-1.5 z-50 hidden min-w-44 group-hover/sub:block group-focus-within/sub:block focus-within:block"
+                                    class="absolute start-full top-0 ps-1.5 z-50 hidden min-w-44 group-hover/sub:block group-focus-within/sub:block focus-within:block [&[data-force-closed=true]]:!hidden"
                                   >
                                     <div
                                       class="rounded-xl border border-border bg-surface p-1.5 shadow-xl"
@@ -454,41 +454,45 @@ const structuredData = schema ?? {
           />
         </div>
 
-        <!-- Two Tabs: Navigation & Search -->
-        <div class="flex border-b border-border bg-surface shrink-0" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            id="drawer-tab-btn-nav"
-            data-drawer-tab="nav"
-            aria-selected="true"
-            aria-controls="drawer-panel-nav"
-            class="flex flex-1 items-center justify-center gap-2 border-b-2 border-primary py-3 text-sm font-semibold text-primary transition-colors cursor-pointer"
-          >
-            <Icon name="menu" size={15} />
-            <span>{m.drawer_tab_nav({}, { locale })}</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            id="drawer-tab-btn-search"
-            data-drawer-tab="search"
-            aria-selected="false"
-            aria-controls="drawer-panel-search"
-            class="flex flex-1 items-center justify-center gap-2 border-b-2 border-transparent py-3 text-sm font-medium text-muted hover:text-fg transition-colors cursor-pointer"
-          >
-            <Icon name="search" size={15} />
-            <span>{m.drawer_tab_search({}, { locale })}</span>
-          </button>
-        </div>
+        <!-- Two Tabs: Navigation & Search (only rendered when search is enabled) -->
+        {
+          effectiveShowSearch && (
+            <div class="flex border-b border-border bg-surface shrink-0" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                id="drawer-tab-btn-nav"
+                data-drawer-tab="nav"
+                aria-selected="true"
+                aria-controls="drawer-panel-nav"
+                class="flex flex-1 items-center justify-center gap-2 border-b-2 border-primary py-3 text-sm font-semibold text-primary transition-colors cursor-pointer"
+              >
+                <Icon name="menu" size={15} />
+                <span data-drawer-tab-label="nav">{m.drawer_tab_nav({}, { locale })}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="drawer-tab-btn-search"
+                data-drawer-tab="search"
+                aria-selected="false"
+                aria-controls="drawer-panel-search"
+                class="flex flex-1 items-center justify-center gap-2 border-b-2 border-transparent py-3 text-sm font-medium text-muted hover:text-fg transition-colors cursor-pointer"
+              >
+                <Icon name="search" size={15} />
+                <span data-drawer-tab-label="search">{m.drawer_tab_search({}, { locale })}</span>
+              </button>
+            </div>
+          )
+        }
 
         <!-- Scrollable Content with its own scroll capability -->
         <div class="flex-1 overflow-hidden flex flex-col min-h-0 bg-surface">
           <!-- Panel 1: Navigation with inline nested list, dedicated language section, and controls -->
           <div
             id="drawer-panel-nav"
-            role="tabpanel"
-            aria-labelledby="drawer-tab-btn-nav"
+            role={effectiveShowSearch ? 'tabpanel' : undefined}
+            aria-labelledby={effectiveShowSearch ? 'drawer-tab-btn-nav' : undefined}
             data-drawer-panel="nav"
             class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-6 text-sm"
           >
@@ -500,7 +504,7 @@ const structuredData = schema ?? {
                     return (
                       <div class="rounded-xl border border-border/70 bg-bg/40 p-2 space-y-2">
                         <div class="flex items-center justify-between px-2 pt-1 text-xs font-bold uppercase tracking-wider text-muted">
-                          <span>{item.label}</span>
+                          <span data-dropdown-label={item.key}>{item.label}</span>
                           <Icon name="chevron-down" size={13} class="opacity-70" />
                         </div>
                         {/* Inline nested list for submenu - clean hierarchy, NO popups */}
@@ -509,7 +513,10 @@ const structuredData = schema ?? {
                             if (child.children && child.children.length > 0) {
                               return (
                                 <li class="space-y-1 border-s-2 border-primary/30 ps-3 my-1.5">
-                                  <span class="block px-1 py-1 text-xs font-semibold text-fg/70">
+                                  <span
+                                    data-dropdown-label={child.key}
+                                    class="block px-1 py-1 text-xs font-semibold text-fg/70"
+                                  >
                                     {child.label}
                                   </span>
                                   <ul class="space-y-1 ps-1">
@@ -574,7 +581,7 @@ const structuredData = schema ?? {
                 <div class="pt-4 border-t border-border space-y-2.5">
                   <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
                     <Icon name="globe" size={14} />
-                    <span>{m.common_change_language({}, { locale })}</span>
+                    <span data-drawer-lang-heading>{m.common_change_language({}, { locale })}</span>
                   </div>
                   <div class="grid grid-cols-2 gap-2" data-drawer-language-section>
                     {
@@ -605,8 +612,10 @@ const structuredData = schema ?? {
                           >
                             <span class="truncate">{meta.name}</span>
                             <div class="flex items-center gap-1">
-                              <span lang="en" dir="ltr" class:list={['text-[10px] uppercase', isCurrent ? 'opacity-90' : 'opacity-60']}>{loc}</span>
-                              {isCurrent && <Icon name="check" size={12} class="shrink-0" />}
+                              <span lang="en" dir="ltr" class:list={['text-[10px] uppercase', isCurrent ? 'opacity-90' : 'opacity-60']} data-drawer-lang-code>{loc}</span>
+                              <span data-drawer-lang-check class:list={['shrink-0', !isCurrent && 'hidden']}>
+                                <Icon name="check" size={12} class="shrink-0" />
+                              </span>
                             </div>
                           </a>
                         );
@@ -621,7 +630,7 @@ const structuredData = schema ?? {
             {
               siteConfig.ui.showThemeToggle && (
                 <div class="pt-4 border-t border-border flex items-center justify-between gap-3">
-                  <span class="text-xs font-semibold uppercase tracking-wider text-muted">
+                  <span data-drawer-theme-label class="text-xs font-semibold uppercase tracking-wider text-muted">
                     {m.common_theme_toggle({}, { locale })}
                   </span>
                   <ThemeToggle locale={locale} />
@@ -640,7 +649,7 @@ const structuredData = schema ?? {
                   >
                     <span class="inline-flex items-center gap-2">
                       <Icon name="shield" size={14} />
-                      <span>{m.cookie_settings_trigger({}, { locale })}</span>
+                      <span data-cookie-trigger-label>{m.cookie_settings_trigger({}, { locale })}</span>
                     </span>
                     <Icon name="chevron-right" size={13} class="rtl:rotate-180 opacity-60" />
                   </button>
@@ -665,15 +674,19 @@ const structuredData = schema ?? {
           </div>
 
           <!-- Panel 2: Search Tab Panel with its own scrolling -->
-          <div
-            id="drawer-panel-search"
-            role="tabpanel"
-            aria-labelledby="drawer-tab-btn-search"
-            data-drawer-panel="search"
-            class="hidden flex-1 overflow-hidden"
-          >
-            <DrawerSearch locale={locale} />
-          </div>
+          {
+            effectiveShowSearch && (
+              <div
+                id="drawer-panel-search"
+                role="tabpanel"
+                aria-labelledby="drawer-tab-btn-search"
+                data-drawer-panel="search"
+                class="hidden flex-1 overflow-hidden"
+              >
+                <DrawerSearch locale={locale} />
+              </div>
+            )
+          }
         </div>
       </aside>
     </div>
@@ -714,7 +727,7 @@ const structuredData = schema ?? {
             >
               {siteName}
             </a>
-            <p class="text-xs text-muted leading-relaxed max-w-xs">
+            <p data-footer-tagline class="text-xs text-muted leading-relaxed max-w-xs">
               {m.site_description({}, { locale })}
             </p>
           </div>
@@ -723,7 +736,10 @@ const structuredData = schema ?? {
           {
             footerNav.map((col) => (
               <div class="space-y-3">
-                <span class="block text-xs font-semibold uppercase tracking-wider text-muted">
+                <span
+                  data-footer-col={col.key}
+                  class="block text-xs font-semibold uppercase tracking-wider text-muted"
+                >
                   {col.title}
                 </span>
                 <ul class="space-y-2 text-xs">
@@ -776,7 +792,7 @@ const structuredData = schema ?? {
                     aria-haspopup="dialog"
                     class="hover:underline transition-colors hover:text-fg cursor-pointer"
                   >
-                    {m.cookie_settings_trigger({}, { locale })}
+                    <span data-cookie-trigger-label>{m.cookie_settings_trigger({}, { locale })}</span>
                   </button>
                 )}
               </nav>
@@ -813,12 +829,93 @@ const structuredData = schema ?? {
         });
       }
 
+      function setupDesktopDropdowns() {
+        const bindMenuUnit = (
+          wrapper: HTMLElement,
+          triggerSelector: string,
+          menuSelector: string
+        ) => {
+          if (wrapper.dataset.bound === 'true') return;
+          wrapper.dataset.bound = 'true';
+
+          const trigger = wrapper.querySelector<HTMLButtonElement>(triggerSelector);
+          const menu = wrapper.querySelector<HTMLElement>(menuSelector);
+          if (!trigger || !menu) return;
+
+          const setOpen = (open: boolean) => {
+            trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (open) {
+              delete menu.dataset.forceClosed;
+            }
+          };
+
+          wrapper.addEventListener('mouseenter', () => setOpen(true));
+          wrapper.addEventListener('mouseleave', () => {
+            delete menu.dataset.forceClosed;
+            trigger.setAttribute('aria-expanded', 'false');
+          });
+
+          wrapper.addEventListener('focusin', () => {
+            if (menu.dataset.forceClosed !== 'true') {
+              setOpen(true);
+            }
+          });
+          wrapper.addEventListener('focusout', (event) => {
+            const next = event.relatedTarget as Node | null;
+            if (!next || !wrapper.contains(next)) {
+              delete menu.dataset.forceClosed;
+              trigger.setAttribute('aria-expanded', 'false');
+            }
+          });
+
+          trigger.addEventListener('click', () => {
+            const currentlyClosed =
+              menu.dataset.forceClosed === 'true' ||
+              trigger.getAttribute('aria-expanded') !== 'true';
+            if (currentlyClosed) {
+              setOpen(true);
+            } else {
+              menu.dataset.forceClosed = 'true';
+              trigger.setAttribute('aria-expanded', 'false');
+            }
+          });
+
+          wrapper.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+              event.stopPropagation();
+              menu.dataset.forceClosed = 'true';
+              trigger.setAttribute('aria-expanded', 'false');
+              trigger.focus();
+            } else if (event.key === 'ArrowDown' && document.activeElement === trigger) {
+              event.preventDefault();
+              setOpen(true);
+              const firstItem = menu.querySelector<HTMLElement>('a[href], button');
+              firstItem?.focus();
+            }
+          });
+        };
+
+        document.querySelectorAll<HTMLElement>('[data-dropdown-item]').forEach((item) => {
+          bindMenuUnit(item, '[data-dropdown-trigger]', '[data-dropdown-menu]');
+        });
+        document.querySelectorAll<HTMLElement>('[data-subdropdown-item]').forEach((item) => {
+          bindMenuUnit(item, '[data-subdropdown-trigger]', '[data-subdropdown-menu]');
+        });
+      }
+
       function setupMobileMenu() {
         const menuBtn = document.querySelector<HTMLButtonElement>('[data-mobile-menu-btn]');
         const mobileSearchBtn = document.querySelector<HTMLButtonElement>('[data-mobile-search-btn]');
         const drawer = document.querySelector<HTMLElement>('[data-mobile-menu]');
         if (!drawer || drawer.dataset.bound === 'true') return;
         drawer.dataset.bound = 'true';
+
+        const abortController = new AbortController();
+        document.addEventListener(
+          'astro:before-swap',
+          () => abortController.abort(),
+          { once: true }
+        );
 
         const backdrop = drawer.querySelector<HTMLElement>('[data-mobile-backdrop]');
         const panel = drawer.querySelector<HTMLElement>('[data-mobile-panel]');
@@ -829,7 +926,7 @@ const structuredData = schema ?? {
           const tabSearch = drawer?.querySelector<HTMLButtonElement>('[data-drawer-tab="search"]');
           const panelNav = drawer?.querySelector<HTMLElement>('[data-drawer-panel="nav"]');
           const panelSearch = drawer?.querySelector<HTMLElement>('[data-drawer-panel="search"]');
-          const isNav = targetTab === 'nav';
+          const isNav = targetTab === 'nav' || !tabSearch || !panelSearch;
 
           if (tabNav && tabSearch && panelNav && panelSearch) {
             tabNav.setAttribute('aria-selected', isNav ? 'true' : 'false');
@@ -885,13 +982,19 @@ const structuredData = schema ?? {
         closeBtn?.addEventListener('click', close);
         backdrop?.addEventListener('click', close);
 
-        document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape' && drawer.classList.contains('is-open')) {
-            close();
-          }
-        });
+        document.addEventListener(
+          'keydown',
+          (event) => {
+            if (event.key === 'Escape' && drawer.classList.contains('is-open')) {
+              close();
+            }
+          },
+          { signal: abortController.signal }
+        );
 
-        document.addEventListener('app:close-drawer', close);
+        document.addEventListener('app:close-drawer', close, {
+          signal: abortController.signal,
+        });
 
         drawer.querySelectorAll<HTMLButtonElement>('[data-drawer-tab]').forEach((btn) => {
           btn.addEventListener('click', () => {
@@ -978,6 +1081,7 @@ const structuredData = schema ?? {
         document.documentElement.dataset.baseLayoutBound = 'true';
         document.addEventListener('astro:page-load', () => {
           updateYear();
+          setupDesktopDropdowns();
           setupMobileMenu();
           setupCodeCopyButtons();
         });
@@ -987,6 +1091,7 @@ const structuredData = schema ?? {
       }
 
       updateYear();
+      setupDesktopDropdowns();
       setupMobileMenu();
       setupCodeCopyButtons();
     </script>

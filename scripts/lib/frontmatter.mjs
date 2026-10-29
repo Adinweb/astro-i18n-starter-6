@@ -7,6 +7,27 @@
  * supported: scalars and one-line string arrays.
  */
 
+const UNQUOTED_DATE_KEYS = new Set(['publishedAt', 'updatedAt']);
+
+export function escapeYamlString(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+export function unescapeYamlDoubleQuoted(value) {
+  return String(value).replace(/\\(["\\])/g, '$1');
+}
+
+function parseScalarToken(token) {
+  const trimmed = token.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+    return unescapeYamlDoubleQuoted(trimmed.slice(1, -1));
+  }
+  if (trimmed.startsWith("'") && trimmed.endsWith("'") && trimmed.length >= 2) {
+    return trimmed.slice(1, -1).replace(/''/g, "'");
+  }
+  return trimmed;
+}
+
 export function parseFrontmatter(rawContent) {
   const match = rawContent.match(/^---\r?\n([\s\S]*?)\r?\n---([\s\S]*)$/);
   if (!match) {
@@ -22,27 +43,29 @@ export function parseFrontmatter(rawContent) {
     if (colonIdx === -1) continue;
 
     const key = line.slice(0, colonIdx).trim();
-    let value = line.slice(colonIdx + 1).trim();
+    if (!key) continue;
+    const rawValue = line.slice(colonIdx + 1).trim();
 
-    if (value.startsWith('[') && value.endsWith(']')) {
-      const inner = value.slice(1, -1).trim();
+    if (rawValue.startsWith('[') && rawValue.endsWith(']')) {
+      const inner = rawValue.slice(1, -1).trim();
       data[key] = inner
         ? inner
             .split(',')
-            .map((item) => item.trim().replace(/^(["'])(.*)\1$/, '$2'))
+            .map((item) => parseScalarToken(item))
             .filter(Boolean)
         : [];
       continue;
     }
 
+    let value = rawValue;
     if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
+      (rawValue.startsWith('"') && rawValue.endsWith('"') && rawValue.length >= 2) ||
+      (rawValue.startsWith("'") && rawValue.endsWith("'") && rawValue.length >= 2)
     ) {
-      value = value.slice(1, -1);
-    } else if (value === 'true') {
+      value = parseScalarToken(rawValue);
+    } else if (rawValue === 'true') {
       value = true;
-    } else if (value === 'false') {
+    } else if (rawValue === 'false') {
       value = false;
     }
 
@@ -59,18 +82,17 @@ export function stringifyFrontmatter(data, body) {
     if (value === undefined) continue;
 
     if (Array.isArray(value)) {
-      const items = value.map(
-        (item) => `"${String(item).replace(/"/g, '\\"')}"`
-      );
+      const items = value.map((item) => `"${escapeYamlString(item)}"`);
       lines.push(`${key}: [${items.join(', ')}]`);
     } else if (typeof value === 'boolean' || typeof value === 'number') {
       lines.push(`${key}: ${value}`);
-    } else if (key === 'publishedAt') {
-      // Dates stay unquoted so the content schema can coerce them.
+    } else if (value instanceof Date) {
+      lines.push(`${key}: ${value.toISOString().split('T')[0]}`);
+    } else if (UNQUOTED_DATE_KEYS.has(key)) {
+      // Dates stay unquoted so the content schema can coerce them cleanly.
       lines.push(`${key}: ${value}`);
     } else {
-      const stringValue = String(value).replace(/"/g, '\\"');
-      lines.push(`${key}: "${stringValue}"`);
+      lines.push(`${key}: "${escapeYamlString(value)}"`);
     }
   }
 
