@@ -45,6 +45,12 @@
     "showTableOfContents": true,
     "showRelatedPosts": true
   },
+  "cookies": {
+    "enabled": true,
+    "consentVersion": 1,
+    "storageKey": "cookie_consent",
+    "expirationDays": 180
+  },
   "social": {
     "github": "https://github.com",
     "twitter": ""

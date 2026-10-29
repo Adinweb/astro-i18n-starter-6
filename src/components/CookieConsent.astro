@@ -1,0 +1,728 @@
+---
+/**
+ * Modular Cookie & Device Storage Consent Component (TDDDG § 25 + DSGVO).
+ *
+ * Layer 1: Non-blocking floating banner with equal-prominence "Necessary only"
+ *          and "Accept all" actions plus direct legal links (§ 5 DDG compliant).
+ * Layer 2: Native `<dialog>` granular preferences center with opt-in switches
+ *          (all optional categories unchecked by default per BGH Planet49),
+ *          expandable per-cookie transparency tables (Art. 13 DSGVO), and
+ *          recorded consent proof with 1-click withdrawal (Art. 7 (3) DSGVO).
+ */
+import * as m from '@/paraglide/messages';
+import Icon from '@/components/Icon.astro';
+import IconButton from '@/components/IconButton.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { siteConfig } from '@/libs/config/app';
+import {
+  COOKIE_CATEGORIES,
+  COOKIE_REGISTRY,
+  isOptionalCookieCategory,
+  type CookieCategory,
+  type CookieItemId,
+} from '@/libs/cookies/model';
+
+interface Props {
+  locale: Locale;
+  privacyHref?: string;
+  termsHref?: string;
+}
+
+const { locale, privacyHref, termsHref } = Astro.props;
+
+const bannerRegionLabel = m.cookie_banner_region_label({}, { locale });
+const bannerTitle = m.cookie_banner_title({}, { locale });
+const bannerDesc = m.cookie_banner_desc({}, { locale });
+const modalTitle = m.cookie_modal_title({}, { locale });
+const modalIntro = m.cookie_modal_intro({}, { locale });
+
+const acceptAllLabel = m.cookie_action_accept_all({}, { locale });
+const rejectLabel = m.cookie_action_reject({}, { locale });
+const customizeLabel = m.cookie_action_customize({}, { locale });
+const saveLabel = m.cookie_action_save({}, { locale });
+const withdrawLabel = m.cookie_action_withdraw({}, { locale });
+const alwaysActiveLabel = m.cookie_always_active({}, { locale });
+const closeLabel = m.common_close({}, { locale });
+
+const privacyLabel = m.footer_legal_privacy({}, { locale });
+const termsLabel = m.footer_legal_terms({}, { locale });
+
+const statusHeading = m.cookie_status_heading({}, { locale });
+const statusUpdatedLabel = m.cookie_status_updated({}, { locale });
+const statusIdLabel = m.cookie_status_id({}, { locale });
+
+const colName = m.cookie_col_name({}, { locale });
+const colType = m.cookie_col_type({}, { locale });
+const colDuration = m.cookie_col_duration({}, { locale });
+const colPurpose = m.cookie_col_purpose({}, { locale });
+
+const legalNecessary = m.cookie_legal_necessary({}, { locale });
+const legalOptional = m.cookie_legal_optional({}, { locale });
+
+function getCategoryCopy(category: CookieCategory) {
+  switch (category) {
+    case 'necessary':
+      return {
+        title: m.cookie_cat_necessary_title({}, { locale }),
+        description: m.cookie_cat_necessary_desc({}, { locale }),
+        legal: legalNecessary,
+      };
+    case 'preferences':
+      return {
+        title: m.cookie_cat_preferences_title({}, { locale }),
+        description: m.cookie_cat_preferences_desc({}, { locale }),
+        legal: legalOptional,
+      };
+    case 'analytics':
+      return {
+        title: m.cookie_cat_analytics_title({}, { locale }),
+        description: m.cookie_cat_analytics_desc({}, { locale }),
+        legal: legalOptional,
+      };
+    case 'marketing':
+      return {
+        title: m.cookie_cat_marketing_title({}, { locale }),
+        description: m.cookie_cat_marketing_desc({}, { locale }),
+        legal: legalOptional,
+      };
+  }
+}
+
+function getItemPurpose(id: CookieItemId): string {
+  switch (id) {
+    case 'consent':
+      return m.cookie_item_consent_purpose({}, { locale });
+    case 'theme':
+      return m.cookie_item_theme_purpose({}, { locale });
+    case 'prefs':
+      return m.cookie_item_prefs_purpose({}, { locale });
+    case 'analytics':
+      return m.cookie_item_analytics_purpose({}, { locale });
+    case 'marketing':
+      return m.cookie_item_marketing_purpose({}, { locale });
+  }
+}
+
+function getItemTypeLabel(storageType: 'cookie' | 'localStorage'): string {
+  return storageType === 'cookie'
+    ? m.cookie_type_cookie({}, { locale })
+    : m.cookie_type_local({}, { locale });
+}
+
+function getItemDurationLabel(id: CookieItemId, durationDays: number | null): string {
+  const effectiveDays = id === 'consent' ? siteConfig.cookies.expirationDays : durationDays;
+  if (effectiveDays === null) {
+    return m.cookie_duration_persistent({}, { locale });
+  }
+  return m.cookie_duration_days(
+    { days: formatNumber(effectiveDays, locale) },
+    { locale }
+  );
+}
+
+const categorySections = COOKIE_CATEGORIES.map((category) => {
+  const copy = getCategoryCopy(category);
+  const items = COOKIE_REGISTRY.filter((entry) => entry.category === category).map((entry) => ({
+    ...entry,
+    displayName: entry.id === 'consent' ? siteConfig.cookies.storageKey : entry.namePattern,
+    typeLabel: getItemTypeLabel(entry.storageType),
+    durationLabel: getItemDurationLabel(entry.id, entry.durationDays),
+    purposeLabel: getItemPurpose(entry.id),
+  }));
+
+  return {
+    key: category,
+    optional: isOptionalCookieCategory(category),
+    ...copy,
+    detailsSummary: m.cookie_details_toggle(
+      { count: formatNumber(items.length, locale) },
+      { locale }
+    ),
+    items,
+  };
+});
+---
+
+<!-- Layer 1: Non-blocking Floating Corner Consent Card (TDDDG § 25 / DSGVO) -->
+<aside
+  id="cookie-consent-banner"
+  data-cookie-banner
+  data-pagefind-ignore="true"
+  role="region"
+  aria-label={bannerRegionLabel}
+  hidden
+  class="fixed inset-x-3 bottom-3 z-40 sm:inset-x-auto sm:bottom-6 sm:end-6 sm:w-[27.5rem] sm:max-w-[calc(100vw-3rem)] pointer-events-none"
+>
+  <div class="pointer-events-auto overflow-hidden rounded-2xl border border-primary/25 bg-surface/98 shadow-floating backdrop-blur-2xl">
+    <!-- Top accent bar visually detaching the floating card from page content -->
+    <div class="h-1 w-full bg-primary" aria-hidden="true"></div>
+
+    <div class="p-4 sm:p-5 space-y-3.5">
+      <!-- Header with prominent privacy shield badge -->
+      <div class="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/20"
+        >
+          <Icon name="shield" size={18} class="shrink-0" />
+        </span>
+        <h2
+          id="cookie-banner-title"
+          class="min-w-0 text-sm font-bold tracking-tight text-fg sm:text-[15px] leading-snug"
+        >
+          {bannerTitle}
+        </h2>
+      </div>
+
+      <!-- Concise legal disclosure -->
+      <p class="text-xs leading-relaxed text-muted sm:text-[13px]">
+        {bannerDesc}
+      </p>
+
+      <!-- Equal-prominence primary choices (Gleichwertige Schaltflächen per DSK / TDDDG § 25) -->
+      <div class="grid grid-cols-1 min-[390px]:grid-cols-2 gap-2.5 pt-0.5">
+        <button
+          type="button"
+          data-cookie-reject-banner
+          class="btn-secondary min-h-10 w-full px-3 py-2 text-xs sm:text-[13px] font-semibold border-fg/30 hover:border-fg/50 text-center leading-tight cursor-pointer"
+        >
+          {rejectLabel}
+        </button>
+        <button
+          type="button"
+          data-cookie-accept-banner
+          class="cta min-h-10 w-full px-3 py-2 text-xs sm:text-[13px] font-semibold shadow-xs text-center leading-tight cursor-pointer"
+        >
+          {acceptAllLabel}
+        </button>
+      </div>
+
+      <!-- Secondary footer row: legal links (§ 5 DDG) + granular settings trigger -->
+      <div class="flex flex-wrap items-center justify-between gap-2.5 border-t border-border/80 pt-3">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+          {
+            privacyHref && (
+              <a
+                href={privacyHref}
+                class="font-medium text-fg/85 underline-offset-4 hover:text-primary hover:underline transition-colors whitespace-nowrap shrink-0"
+              >
+                {privacyLabel}
+              </a>
+            )
+          }
+          {
+            privacyHref && termsHref && (
+              <span aria-hidden="true">·</span>
+            )
+          }
+          {
+            termsHref && (
+              <a
+                href={termsHref}
+                class="font-medium text-fg/85 underline-offset-4 hover:text-primary hover:underline transition-colors whitespace-nowrap shrink-0"
+              >
+                {termsLabel}
+              </a>
+            )
+          }
+        </div>
+
+        <button
+          type="button"
+          data-cookie-open-modal
+          aria-haspopup="dialog"
+          class="btn-secondary h-8 px-3.5 py-0 text-xs font-semibold text-fg hover:border-primary/50 hover:text-primary whitespace-nowrap shrink-0 cursor-pointer"
+        >
+          {customizeLabel}
+        </button>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Layer 2: Granular Privacy & Cookie Preferences Modal -->
+<dialog
+  id="cookie-preferences-dialog"
+  data-cookie-modal
+  data-lenis-prevent
+  data-pagefind-ignore="true"
+  data-locale={locale}
+  aria-labelledby="cookie-modal-title"
+  class="m-auto w-[calc(100%-1.5rem)] max-w-2xl overflow-hidden rounded-2xl border border-border bg-surface p-0 text-fg shadow-floating backdrop:bg-scrim backdrop:backdrop-blur-xs"
+>
+  <div class="flex max-h-[85vh] flex-col">
+    <!-- Modal Header -->
+    <div class="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-4">
+      <div class="min-w-0 space-y-1">
+        <h2 id="cookie-modal-title" class="text-base font-bold tracking-tight text-fg sm:text-lg">
+          {modalTitle}
+        </h2>
+        <p class="text-xs leading-relaxed text-muted">
+          {modalIntro}
+        </p>
+      </div>
+      <IconButton
+        icon="close"
+        size={18}
+        variant="ghost"
+        label={closeLabel}
+        data-cookie-modal-close
+      />
+    </div>
+
+    <!-- Scrollable Granular Category Body -->
+    <div
+      data-lenis-prevent
+      class="flex-1 overflow-y-auto overscroll-contain px-5 py-4"
+    >
+      <!-- Recorded Consent Proof Strip (Art. 7 (1) & (3) DSGVO) -->
+      <div
+        data-cookie-audit
+        hidden
+        class="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4 text-xs text-muted"
+      >
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span class="font-semibold text-fg">{statusHeading}</span>
+          <span aria-hidden="true">·</span>
+          <span>
+            {statusUpdatedLabel}: <time data-cookie-audit-time class="tabular-nums"></time>
+          </span>
+          <span aria-hidden="true">·</span>
+          <span>
+            {statusIdLabel}: <bdi dir="ltr" data-cookie-audit-id class="font-mono tabular-nums"></bdi>
+          </span>
+        </div>
+
+        <button
+          type="button"
+          data-cookie-withdraw
+          class="font-semibold text-error hover:underline transition-colors cursor-pointer whitespace-nowrap shrink-0"
+        >
+          {withdrawLabel}
+        </button>
+      </div>
+
+      <!-- Category Rows separated by clean hairlines -->
+      <div class="divide-y divide-border">
+        {
+          categorySections.map((section) => {
+            const titleId = `cookie-cat-title-${section.key}`;
+            const descId = `cookie-cat-desc-${section.key}`;
+            return (
+              <section class="py-4 first:pt-0 last:pb-0" aria-labelledby={titleId}>
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0 flex-1">
+                    <h3 id={titleId} class="text-sm font-semibold text-fg">
+                      {section.title}
+                    </h3>
+                    <p id={descId} class="mt-1 text-xs leading-relaxed text-muted">
+                      {section.description}
+                    </p>
+                    <p class="mt-1.5 text-[11px] text-muted/90">
+                      {section.legal}
+                    </p>
+                  </div>
+
+                  <div class="flex shrink-0 items-center pt-0.5">
+                    {section.optional ? (
+                      <label class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center">
+                        <input
+                          type="checkbox"
+                          class="peer sr-only"
+                          data-cookie-toggle={section.key}
+                          aria-labelledby={titleId}
+                          aria-describedby={descId}
+                        />
+                        <span
+                          aria-hidden="true"
+                          class="h-6 w-11 rounded-full border border-border bg-bg transition-colors duration-150 peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
+                        />
+                        <span
+                          aria-hidden="true"
+                          class="pointer-events-none absolute start-0.5 top-0.5 h-5 w-5 rounded-full bg-fg/70 shadow-xs transition-transform duration-150 peer-checked:translate-x-5 peer-checked:bg-primary-fg rtl:peer-checked:-translate-x-5"
+                        />
+                      </label>
+                    ) : (
+                      <div class="flex items-center gap-2.5">
+                        <span class="text-xs font-medium text-muted whitespace-nowrap shrink-0">
+                          {alwaysActiveLabel}
+                        </span>
+                        <span
+                          class="relative inline-flex h-6 w-11 shrink-0 cursor-not-allowed items-center opacity-70"
+                          aria-hidden="true"
+                        >
+                          <span class="h-6 w-11 rounded-full border border-primary/50 bg-primary/80" />
+                          <span class="absolute start-0.5 top-0.5 h-5 w-5 translate-x-5 rounded-full bg-primary-fg shadow-xs rtl:-translate-x-5" />
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <details class="group mt-2.5">
+                  <summary class="inline-flex cursor-pointer list-none items-center gap-1.5 text-xs font-medium text-primary hover:underline">
+                    <Icon
+                      name="chevron-down"
+                      size={13}
+                      class="shrink-0 transition-transform duration-200 group-open:rotate-180"
+                    />
+                    <span>{section.detailsSummary}</span>
+                  </summary>
+
+                  <div class="mt-2.5 overflow-x-auto">
+                    <table class="w-full border-collapse text-start text-xs">
+                      <thead>
+                        <tr class="border-b border-border text-muted">
+                          <th scope="col" class="py-1.5 pe-3 font-medium text-start whitespace-nowrap">
+                            {colName}
+                          </th>
+                          <th scope="col" class="py-1.5 px-3 font-medium text-start whitespace-nowrap">
+                            {colType}
+                          </th>
+                          <th scope="col" class="py-1.5 px-3 font-medium text-start whitespace-nowrap">
+                            {colDuration}
+                          </th>
+                          <th scope="col" class="py-1.5 ps-3 font-medium text-start">
+                            {colPurpose}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-border/60">
+                        {section.items.map((item) => (
+                          <tr>
+                            <td class="py-2 pe-3 align-top font-mono text-[11px] text-fg whitespace-nowrap">
+                              <bdi dir="ltr">{item.displayName}</bdi>
+                            </td>
+                            <td class="py-2 px-3 align-top text-muted whitespace-nowrap">
+                              {item.typeLabel}
+                            </td>
+                            <td class="py-2 px-3 align-top text-muted tabular-nums whitespace-nowrap">
+                              {item.durationLabel}
+                            </td>
+                            <td class="py-2 ps-3 align-top text-muted leading-relaxed">
+                              {item.purposeLabel}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              </section>
+            );
+          })
+        }
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="flex shrink-0 flex-col gap-3 border-t border-border bg-bg/50 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted">
+        {
+          privacyHref && (
+            <a
+              href={privacyHref}
+              data-cookie-legal-link
+              class="hover:text-fg hover:underline transition-colors whitespace-nowrap shrink-0"
+            >
+              {privacyLabel}
+            </a>
+          )
+        }
+        {privacyHref && termsHref && <span aria-hidden="true">·</span>}
+        {
+          termsHref && (
+            <a
+              href={termsHref}
+              data-cookie-legal-link
+              class="hover:text-fg hover:underline transition-colors whitespace-nowrap shrink-0"
+            >
+              {termsLabel}
+            </a>
+          )
+        }
+      </div>
+
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <button
+          type="button"
+          data-cookie-reject-modal
+          class="btn-secondary h-9 px-4 py-0 text-xs font-semibold border-fg/25 whitespace-nowrap shrink-0 cursor-pointer"
+        >
+          {rejectLabel}
+        </button>
+        <button
+          type="button"
+          data-cookie-save-modal
+          class="btn-secondary h-9 px-4 py-0 text-xs font-semibold border-primary/40 text-fg whitespace-nowrap shrink-0 cursor-pointer"
+        >
+          {saveLabel}
+        </button>
+        <button
+          type="button"
+          data-cookie-accept-modal
+          class="cta h-9 px-4 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer"
+        >
+          {acceptAllLabel}
+        </button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  import { formatDateTime } from '@/i18n/format';
+  import {
+    OPTIONAL_COOKIE_CATEGORIES,
+    getDefaultCategories,
+    type ConsentRecord,
+    type OptionalCookieCategory,
+  } from '@/libs/cookies/model';
+  import {
+    CONSENT_CHANGE_EVENT,
+    acceptAllCookies,
+    bindCrossTabConsentSync,
+    readStoredConsent,
+    rejectOptionalCookies,
+    saveCookiePreferences,
+    syncConsentOnPageLoad,
+    withdrawCookieConsent,
+  } from '@/libs/cookies/manager';
+
+  let lastTriggerEl: HTMLElement | null = null;
+
+  function getBanner() {
+    return document.querySelector<HTMLElement>('[data-cookie-banner]');
+  }
+
+  function getModal() {
+    return document.querySelector<HTMLDialogElement>('[data-cookie-modal]');
+  }
+
+  function syncModalControls(modal: HTMLDialogElement, record: ConsentRecord | null) {
+    const categories = record ? record.categories : getDefaultCategories();
+
+    for (const key of OPTIONAL_COOKIE_CATEGORIES) {
+      const input = modal.querySelector<HTMLInputElement>(`[data-cookie-toggle="${key}"]`);
+      if (input) {
+        input.checked = Boolean(categories[key]);
+      }
+    }
+
+    const auditStrip = modal.querySelector<HTMLElement>('[data-cookie-audit]');
+    const auditTime = modal.querySelector<HTMLTimeElement>('[data-cookie-audit-time]');
+    const auditId = modal.querySelector<HTMLElement>('[data-cookie-audit-id]');
+
+    if (auditStrip) {
+      if (record) {
+        const activeLocale = modal.dataset.locale || document.documentElement.lang || 'en';
+        const date = new Date(record.consentedAt);
+        if (auditTime) {
+          auditTime.dateTime = record.consentedAt;
+          auditTime.textContent = formatDateTime(date, activeLocale);
+        }
+        if (auditId) {
+          auditId.textContent = record.consentId.slice(0, 8);
+        }
+        auditStrip.hidden = false;
+      } else {
+        auditStrip.hidden = true;
+      }
+    }
+  }
+
+  function updateBannerVisibility(record: ConsentRecord | null) {
+    const banner = getBanner();
+    if (!banner) return;
+    banner.hidden = record !== null;
+  }
+
+  function restoreAccessibleFocus(preferBanner = false) {
+    if (preferBanner) {
+      const bannerBtn = getBanner()?.querySelector<HTMLElement>('[data-cookie-open-modal]');
+      if (bannerBtn && !bannerBtn.closest('[hidden]')) {
+        bannerBtn.focus({ preventScroll: true });
+        return;
+      }
+    }
+
+    if (lastTriggerEl && lastTriggerEl.isConnected && !lastTriggerEl.closest('[hidden]')) {
+      lastTriggerEl.focus({ preventScroll: true });
+      lastTriggerEl = null;
+      return;
+    }
+
+    lastTriggerEl = null;
+    document.getElementById('main-content')?.focus({ preventScroll: true });
+  }
+
+  function openPreferencesModal(trigger?: HTMLElement | null) {
+    const modal = getModal();
+    if (!modal) return;
+    lastTriggerEl =
+      trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    const currentRecord = readStoredConsent();
+    syncModalControls(modal, currentRecord);
+    document.dispatchEvent(new CustomEvent('app:close-drawer'));
+    if (!modal.open) {
+      modal.showModal();
+    }
+  }
+
+  function closePreferencesModal(preferBanner = false) {
+    const modal = getModal();
+    if (modal?.open) {
+      modal.close();
+    }
+    restoreAccessibleFocus(preferBanner);
+  }
+
+  function readModalSelection(modal: HTMLDialogElement): Record<OptionalCookieCategory, boolean> {
+    return {
+      preferences: Boolean(
+        modal.querySelector<HTMLInputElement>('[data-cookie-toggle="preferences"]')?.checked
+      ),
+      analytics: Boolean(
+        modal.querySelector<HTMLInputElement>('[data-cookie-toggle="analytics"]')?.checked
+      ),
+      marketing: Boolean(
+        modal.querySelector<HTMLInputElement>('[data-cookie-toggle="marketing"]')?.checked
+      ),
+    };
+  }
+
+  function setupCookieConsent() {
+    bindCrossTabConsentSync();
+    const record = syncConsentOnPageLoad();
+    updateBannerVisibility(record);
+
+    const banner = getBanner();
+    if (banner && banner.dataset.bound !== 'true') {
+      banner.dataset.bound = 'true';
+
+      banner
+        .querySelector<HTMLButtonElement>('[data-cookie-open-modal]')
+        ?.addEventListener('click', (event) => {
+          openPreferencesModal(event.currentTarget as HTMLElement);
+        });
+
+      banner
+        .querySelector<HTMLButtonElement>('[data-cookie-reject-banner]')
+        ?.addEventListener('click', () => {
+          const next = rejectOptionalCookies();
+          updateBannerVisibility(next);
+        });
+
+      banner
+        .querySelector<HTMLButtonElement>('[data-cookie-accept-banner]')
+        ?.addEventListener('click', () => {
+          const next = acceptAllCookies();
+          updateBannerVisibility(next);
+        });
+    }
+
+    const modal = getModal();
+    if (modal && modal.dataset.bound !== 'true') {
+      modal.dataset.bound = 'true';
+      syncModalControls(modal, record);
+
+      modal
+        .querySelector<HTMLButtonElement>('[data-cookie-modal-close]')
+        ?.addEventListener('click', () => closePreferencesModal(false));
+
+      modal.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        closePreferencesModal(false);
+      });
+
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          closePreferencesModal(false);
+        }
+      });
+
+      modal
+        .querySelector<HTMLButtonElement>('[data-cookie-reject-modal]')
+        ?.addEventListener('click', () => {
+          const next = rejectOptionalCookies();
+          updateBannerVisibility(next);
+          closePreferencesModal(false);
+        });
+
+      modal
+        .querySelector<HTMLButtonElement>('[data-cookie-save-modal]')
+        ?.addEventListener('click', () => {
+          const selection = readModalSelection(modal);
+          const next = saveCookiePreferences(selection);
+          updateBannerVisibility(next);
+          closePreferencesModal(false);
+        });
+
+      modal
+        .querySelector<HTMLButtonElement>('[data-cookie-accept-modal]')
+        ?.addEventListener('click', () => {
+          const next = acceptAllCookies();
+          updateBannerVisibility(next);
+          closePreferencesModal(false);
+        });
+
+      modal
+        .querySelector<HTMLButtonElement>('[data-cookie-withdraw]')
+        ?.addEventListener('click', () => {
+          withdrawCookieConsent();
+          updateBannerVisibility(null);
+          closePreferencesModal(true);
+        });
+
+      modal.querySelectorAll<HTMLAnchorElement>('[data-cookie-legal-link]').forEach((link) => {
+        link.addEventListener('click', () => {
+          if (modal.open) modal.close();
+          lastTriggerEl = null;
+        });
+      });
+    }
+
+    if (document.documentElement.dataset.cookieGlobalBound !== 'true') {
+      document.documentElement.dataset.cookieGlobalBound = 'true';
+
+      document.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement | null;
+        if (!target) return;
+
+        const openTrigger = target.closest<HTMLElement>('[data-open-cookie-settings]');
+        if (openTrigger) {
+          event.preventDefault();
+          openPreferencesModal(openTrigger);
+          return;
+        }
+
+        const grantEmbedBtn = target.closest<HTMLElement>('[data-cookie-grant-category]');
+        if (grantEmbedBtn) {
+          const cat = grantEmbedBtn.dataset.cookieGrantCategory;
+          if (cat === 'preferences' || cat === 'analytics' || cat === 'marketing') {
+            const existing = readStoredConsent();
+            const current = existing ? existing.categories : getDefaultCategories();
+            const updated = saveCookiePreferences({
+              ...current,
+              [cat]: true,
+            });
+            updateBannerVisibility(updated);
+          }
+        }
+      });
+
+      document.addEventListener(CONSENT_CHANGE_EVENT, () => {
+        const latest = readStoredConsent();
+        updateBannerVisibility(latest);
+        const currentModal = getModal();
+        if (currentModal) {
+          syncModalControls(currentModal, latest);
+        }
+      });
+    }
+  }
+
+  setupCookieConsent();
+  document.addEventListener('astro:page-load', setupCookieConsent);
+</script>

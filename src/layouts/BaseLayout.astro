@@ -12,6 +12,7 @@ import TopLoadingBar from '@/components/TopLoadingBar.astro';
 import LanguageSwitcher from '@/components/LanguageSwitcher.astro';
 import ThemeToggle from '@/components/ThemeToggle.astro';
 import SearchModal from '@/components/SearchModal.astro';
+import CookieConsent from '@/components/CookieConsent.astro';
 import IconButton from '@/components/IconButton.astro';
 import Icon from '@/components/Icon.astro';
 import DrawerSearch from '@/components/DrawerSearch.astro';
@@ -73,8 +74,11 @@ const { header: headerNav, drawer: drawerNav, footer: footerNav, legal: legalNav
 const homeHref =
   headerNav.find((item) => item.key === 'home')?.href ?? localizeHref('/', locale);
 const pricingHref = headerNav.find((item) => item.key === 'pricing')?.href;
+const privacyHref = legalNav.find((item) => item.key === 'privacy')?.href;
+const termsHref = legalNav.find((item) => item.key === 'terms')?.href;
 const currentYear = new Date().getFullYear();
 const effectiveShowSearch = showSearch && siteConfig.ui.showSearch;
+const effectiveShowCookies = siteConfig.cookies.enabled;
 
 const structuredData = schema ?? {
   '@context': 'https://schema.org',
@@ -91,6 +95,8 @@ const structuredData = schema ?? {
   lang={meta.htmlLang}
   dir={meta.dir}
   data-default-theme={siteConfig.defaultTheme}
+  data-consent-key={siteConfig.cookies.storageKey}
+  data-consent-version={String(siteConfig.cookies.consentVersion)}
   class="scroll-pt-24"
   style={`font-family: ${meta.fontFamily};`}
 >
@@ -122,21 +128,58 @@ const structuredData = schema ?? {
           if (fallback === 'dark' || fallback === 'light') return fallback;
           return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
-        function applyToDocument(doc, theme) {
+        function resolveConsentState() {
+          var key = document.documentElement.dataset.consentKey || 'cookie_consent';
+          var expectedVer = Number(document.documentElement.dataset.consentVersion || '1');
+          function isValidRaw(raw) {
+            if (!raw) return false;
+            try {
+              var parsed = JSON.parse(raw);
+              return Boolean(
+                parsed &&
+                  parsed.version === expectedVer &&
+                  parsed.categories &&
+                  parsed.categories.necessary === true &&
+                  parsed.expiresAt &&
+                  Date.parse(parsed.expiresAt) > Date.now()
+              );
+            } catch (_) {
+              return false;
+            }
+          }
+          try {
+            if (isValidRaw(window.localStorage.getItem(key))) return 'decided';
+          } catch (_) {}
+          try {
+            var pairs = (document.cookie || '').split(';');
+            for (var i = 0; i < pairs.length; i++) {
+              var eq = pairs[i].indexOf('=');
+              if (eq > 0 && pairs[i].slice(0, eq).trim() === key) {
+                var val = decodeURIComponent(pairs[i].slice(eq + 1).trim());
+                if (isValidRaw(val)) return 'decided';
+              }
+            }
+          } catch (_) {}
+          return 'undecided';
+        }
+        function applyToDocument(doc, theme, consentState) {
           doc.documentElement.classList.add('js');
           doc.documentElement.dataset.theme = theme;
+          doc.documentElement.dataset.consentState = consentState;
           var meta = doc.querySelector('meta[name="theme-color"]');
           if (meta) {
             var next = theme === 'dark' ? meta.dataset.darkColor : meta.dataset.lightColor;
             if (next) meta.setAttribute('content', next);
           }
         }
-        applyToDocument(document, resolveTheme());
+        applyToDocument(document, resolveTheme(), resolveConsentState());
         if (document.documentElement.dataset.themeSwapBound !== 'true') {
           document.documentElement.dataset.themeSwapBound = 'true';
           document.addEventListener('astro:before-swap', function (event) {
             var current = document.documentElement.dataset.theme || resolveTheme();
-            applyToDocument(event.newDocument, current);
+            var currentConsent =
+              document.documentElement.dataset.consentState || resolveConsentState();
+            applyToDocument(event.newDocument, current, currentConsent);
           });
         }
       })();
@@ -586,6 +629,25 @@ const structuredData = schema ?? {
               )
             }
 
+            {
+              effectiveShowCookies && (
+                <div class="pt-4 border-t border-border">
+                  <button
+                    type="button"
+                    data-open-cookie-settings
+                    aria-haspopup="dialog"
+                    class="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface-hover hover:text-fg cursor-pointer"
+                  >
+                    <span class="inline-flex items-center gap-2">
+                      <Icon name="shield" size={14} />
+                      <span>{m.cookie_settings_trigger({}, { locale })}</span>
+                    </span>
+                    <Icon name="chevron-right" size={13} class="rtl:rotate-180 opacity-60" />
+                  </button>
+                </div>
+              )
+            }
+
             <!-- Get Started CTA -->
             {
               pricingHref && (
@@ -696,7 +758,7 @@ const structuredData = schema ?? {
           </div>
 
           {
-            legalNav.length > 0 && (
+            (legalNav.length > 0 || effectiveShowCookies) && (
               <nav class="flex flex-wrap items-center gap-4 text-xs" aria-label={m.footer_col_legal({}, { locale })}>
                 {legalNav.map((item) => (
                   <a
@@ -707,6 +769,16 @@ const structuredData = schema ?? {
                     {item.label}
                   </a>
                 ))}
+                {effectiveShowCookies && (
+                  <button
+                    type="button"
+                    data-open-cookie-settings
+                    aria-haspopup="dialog"
+                    class="hover:underline transition-colors hover:text-fg cursor-pointer"
+                  >
+                    {m.cookie_settings_trigger({}, { locale })}
+                  </button>
+                )}
               </nav>
             )
           }
@@ -715,6 +787,11 @@ const structuredData = schema ?? {
     </footer>
 
     {effectiveShowSearch && <SearchModal locale={locale} />}
+    {
+      effectiveShowCookies && (
+        <CookieConsent locale={locale} privacyHref={privacyHref} termsHref={termsHref} />
+      )
+    }
 
     <style>
       :where(a, button, input, select, textarea):focus-visible {

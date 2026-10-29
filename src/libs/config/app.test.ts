@@ -6,10 +6,12 @@ import {
   themeModeSchema,
   uiConfigSchema,
   blogConfigSchema,
+  cookieConfigSchema,
   socialConfigSchema,
   POSTS_PER_PAGE,
   UI_CONFIG,
   BLOG_CONFIG,
+  COOKIE_CONFIG,
   SOCIAL_CONFIG,
 } from './app';
 
@@ -63,6 +65,23 @@ describe('src/libs/config/app.ts', () => {
     });
   });
 
+  describe('cookieConfigSchema', () => {
+    it('provides GDPR/TDDDG compliant defaults', () => {
+      const parsed = cookieConfigSchema.parse({});
+      expect(parsed.enabled).toBe(true);
+      expect(parsed.consentVersion).toBe(1);
+      expect(parsed.storageKey).toBe('cookie_consent');
+      expect(parsed.expirationDays).toBe(180);
+    });
+
+    it('rejects invalid storage keys or expirationDays exceeding 400 days', () => {
+      expect(() => cookieConfigSchema.parse({ storageKey: 'invalid key!' })).toThrow();
+      expect(() => cookieConfigSchema.parse({ expirationDays: 0 })).toThrow();
+      expect(() => cookieConfigSchema.parse({ expirationDays: 401 })).toThrow();
+      expect(() => cookieConfigSchema.parse({ consentVersion: 0 })).toThrow();
+    });
+  });
+
   describe('socialConfigSchema', () => {
     it('defaults github and twitter to empty strings if omitted', () => {
       const parsed = socialConfigSchema.parse({});
@@ -77,10 +96,12 @@ describe('src/libs/config/app.ts', () => {
       expect(siteConfig.defaultTheme).toBe('system');
       expect(siteConfig.ui).toBeDefined();
       expect(siteConfig.blog).toBeDefined();
+      expect(siteConfig.cookies).toBeDefined();
       expect(siteConfig.social).toBeDefined();
       expect(POSTS_PER_PAGE).toBe(appConfig.blog.postsPerPage);
       expect(UI_CONFIG).toEqual(siteConfig.ui);
       expect(BLOG_CONFIG).toEqual(siteConfig.blog);
+      expect(COOKIE_CONFIG).toEqual(siteConfig.cookies);
       expect(SOCIAL_CONFIG).toEqual(siteConfig.social);
     });
   });

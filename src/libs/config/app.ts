@@ -46,6 +46,21 @@ export const blogConfigSchema = z.object({
 });
 export type BlogConfig = z.infer<typeof blogConfigSchema>;
 
+export const cookieConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  consentVersion: z.number().int().positive().default(1),
+  storageKey: z
+    .string()
+    .min(1)
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      'Storage key must contain only ASCII letters, digits, hyphens, or underscores.'
+    )
+    .default('cookie_consent'),
+  expirationDays: z.number().int().positive().max(400).default(180),
+});
+export type CookieConfig = z.infer<typeof cookieConfigSchema>;
+
 export const socialConfigSchema = z.object({
   github: z.string().optional().default(''),
   twitter: z.string().optional().default(''),
@@ -58,6 +73,13 @@ export const defaultUiConfig: UiConfig = {
   showLanguageSwitcher: true,
   showTopLoadingBar: true,
   stickyHeader: true,
+};
+
+const defaultCookieConfig: CookieConfig = {
+  enabled: true,
+  consentVersion: 1,
+  storageKey: 'cookie_consent',
+  expirationDays: 180,
 };
 
 export const defaultSocialConfig: SocialConfig = {
@@ -90,6 +112,7 @@ export const appConfigSchema = z.object({
   }),
   ui: uiConfigSchema.default(defaultUiConfig),
   blog: blogConfigSchema,
+  cookies: cookieConfigSchema.default(defaultCookieConfig),
   social: socialConfigSchema.default(defaultSocialConfig),
   server: z.object({
     host: z.string().min(1),
@@ -116,6 +139,7 @@ const siteConfigSchema = z.object({
   icons: z.array(brandIconSchema).min(1),
   ui: uiConfigSchema,
   blog: blogConfigSchema,
+  cookies: cookieConfigSchema,
   social: socialConfigSchema,
 });
 
@@ -142,6 +166,7 @@ export const siteConfig = siteConfigSchema.parse({
   icons: appConfig.brand.icons,
   ui: appConfig.ui,
   blog: appConfig.blog,
+  cookies: appConfig.cookies,
   social: appConfig.social,
 });
 
@@ -153,6 +178,9 @@ export const UI_CONFIG = siteConfig.ui;
 
 /** Direct export for blog presentation toggles. */
 export const BLOG_CONFIG = siteConfig.blog;
+
+/** Direct export for TDDDG §25 / DSGVO cookie consent configuration. */
+export const COOKIE_CONFIG = siteConfig.cookies;
 
 /** Direct export for external social links. */
 export const SOCIAL_CONFIG = siteConfig.social;
