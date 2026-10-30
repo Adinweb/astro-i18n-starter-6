@@ -188,6 +188,7 @@ const structuredData = schema ?? {
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="apple-touch-icon" href={`/${siteConfig.appleTouchIcon}`} />
     <ClientRouter />
+    <script is:inline src="/chronotrig.min.js"></script>
     <Seo
       title={title}
       description={description}
@@ -818,6 +819,7 @@ const structuredData = schema ?? {
     <script>
       import { formatYear } from '@/i18n/format';
       import '@/scripts/lenis';
+      import '@/scripts/chronotrig';
 
       function updateYear() {
         const year = new Date().getFullYear();

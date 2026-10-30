@@ -2,6 +2,7 @@
 @import '@fontsource-variable/noto-sans-arabic';
 @import 'lenis/dist/lenis.css';
 @import 'tailwindcss';
+@import './chronotrig.css';
 
 /*
  * Theme tokens.

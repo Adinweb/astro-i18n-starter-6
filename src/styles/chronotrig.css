@@ -1,0 +1,122 @@
+/**
+ * ============================================================================
+ * ChronoTrig CSS Scroll Engine & Viewport Reveal System (SSOT)
+ * ============================================================================
+ *
+ * Provides smooth, GPU-accelerated bottom reveals and harmonic stagger cascades
+ * driven by ChronoTrig (public/chronotrig.min.js).
+ *
+ * Invariants:
+ *  1. Zero CLS & Print/No-JS Safe: All entrance states are strictly scoped under
+ *     `.js`. When JavaScript is disabled or during print, elements render with
+ *     `opacity: 1` and `transform: none` immediately.
+ *  2. RTL-Native: Directional entrances use CSS logical properties (`start` and
+ *     `end`), automatically mirroring in Persian (`fa`) and Arabic (`ar`).
+ *  3. Accessibility: Fully honors `prefers-reduced-motion` and explicit
+ *     `data-motion="reduced"` by neutralizing all transforms and transitions.
+ */
+
+/* --------------------------------------------------------------------------
+   1. Standard Viewport Reveal (Smooth Bottom Entrance by Default)
+   -------------------------------------------------------------------------- */
+.js [data-trig] {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+  transition:
+    opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+/* ChronoTrig adds .trig when the element enters the viewport */
+.js [data-trig].trig {
+  opacity: 1;
+  transform: none;
+}
+
+/* --------------------------------------------------------------------------
+   2. RTL-Safe Directional Entrances (Logical Properties)
+   -------------------------------------------------------------------------- */
+/* Inline-start: enters from the reading start (left in LTR, right in RTL) */
+.js [data-trig][data-trig-direction="start"]:not(.trig) {
+  transform: translate3d(-28px, 0, 0);
+}
+:where([dir="rtl"]) .js [data-trig][data-trig-direction="start"]:not(.trig) {
+  transform: translate3d(28px, 0, 0);
+}
+
+/* Inline-end: enters from the reading end (right in LTR, left in RTL) */
+.js [data-trig][data-trig-direction="end"]:not(.trig) {
+  transform: translate3d(28px, 0, 0);
+}
+:where([dir="rtl"]) .js [data-trig][data-trig-direction="end"]:not(.trig) {
+  transform: translate3d(-28px, 0, 0);
+}
+
+/* --------------------------------------------------------------------------
+   3. Harmonic Stagger Grid & List Cascades ([data-trig-stagger])
+   -------------------------------------------------------------------------- */
+.js [data-trig-stagger] > * {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+  transition:
+    opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--stagger-delay, 0s);
+  will-change: transform, opacity;
+}
+
+.js [data-trig-stagger] > *.trig-stagger-active,
+.js [data-trig-stagger].trig-stagger-active > *,
+.js [data-trig-stagger] > *.trig {
+  opacity: 1;
+  transform: none;
+}
+
+/* Stagger delay synchronization if child also has [data-trig] */
+.js [data-trig-stagger] > *[data-trig] {
+  transition-delay: var(--stagger-delay, 0s);
+}
+
+/* Prevent hidden/filtered cards in tabs and pagination from showing */
+[data-trig-stagger] > *[hidden] {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Pinned Container Baseline ([data-trig-pin])
+   -------------------------------------------------------------------------- */
+[data-trig-pin] {
+  position: relative;
+}
+
+[data-trig-pin].trig-pinned-disabled {
+  height: auto !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Accessibility & Print Isolation
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .js [data-trig],
+  .js [data-trig-stagger] > * {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+html[data-motion="reduced"] .js [data-trig],
+html[data-motion="reduced"] .js [data-trig-stagger] > * {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+@media print {
+  [data-trig],
+  [data-trig-stagger] > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

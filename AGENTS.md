@@ -46,10 +46,10 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Icon-only controls are rendered by `src/components/IconButton.astro`. Never hand-roll a `<button>` with an `<Icon>` inside.
    - Shared hero copy lives in `src/components/HeroCopy.astro`, composed inside `src/components/PageHero.astro`.
    - Article chrome (TOC, related posts, newer/older links, code-copy buttons) and `@media print` flattening live once in `BlogPostView.astro` / `BaseLayout.astro` and `src/styles/global.css`.
-10. **Progressive Scroll Reveal, Staggering & Lenis Smooth Scroll**:
-   - Scroll-reveal entrance states live **only** under `.js .reveal` in `src/styles/reveal.css` (`<Reveal />` in `src/components/Reveal.astro`, runtime in `src/scripts/reveal.ts`), animating `opacity` + GPU `translate3d(...)` across `.reveal` -> `.is-visible` -> `.reveal-complete` (never `display: none` / `hidden`), ensuring zero CLS and 100% visibility when JS is disabled or printed.
-   - Always use logical horizontal directions (`direction="start"` / `direction="end"`) rather than physical `left`/`right` so animations mirror automatically in RTL (`fa`, `ar`).
-   - In `.reveal-stagger` containers, keep `.reveal` elements as **direct children** (`:scope > .reveal`); `[hidden]` items are skipped automatically and stagger indices cap at `8`. When client-side filters or tabs toggle `[hidden]` on already-revealed cards, call `replayReveals(container, { fast: true })` (only on state changes, never on initial load).
+10. **ChronoTrig CSS Scroll Engine & Lenis Smooth Scroll**:
+   - Viewport reveals and keyframe animations are powered by ChronoTrig (`public/chronotrig.min.js`, coordinator in `src/scripts/chronotrig.ts`, styles in `src/styles/chronotrig.css`). Elements/titles reveal smoothly from bottom via `data-trig` and staggered card cascades via `data-trig-stagger`. All initial states are scoped under `.js` to guarantee zero CLS and 100% visibility when JS is disabled or printed.
+   - Always use logical horizontal directions (`data-trig-direction="start"` / `data-trig-direction="end"`) rather than physical `left`/`right` so animations mirror automatically in RTL (`fa`, `ar`).
+   - In `[data-trig-stagger]` containers, children automatically receive `--stagger-delay` intervals and activate via `.trig-stagger-active`. When dynamically appending or filtering cards, call `refreshChronoTrig()` from `@/scripts/chronotrig`.
    - Add `data-lenis-prevent` to any nested scrollable overlay/panel (`overflow-y-auto`), and keep `html { scroll-behavior: auto; }` so Lenis (`src/scripts/lenis.ts`) controls smooth scrolling without conflict. See `.agents/skills/astro-i18n-starter/references/scroll-and-motion.md`.
 
 ---
@@ -62,7 +62,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ├── app.config.json            # SSOT for site, brand, blog pagination, external API & dev server values
 ├── messages/                  # Dictionaries (en.json, de.json, fr.json, fa.json, ar.json)
 ├── project.inlang/            # Paraglide compiler configuration (settings.json)
-├── public/                    # Static assets needing stable URLs (favicons, manifest icons, default OG card)
+├── public/                    # Static assets (chronotrig.min.js, favicons, manifest, default OG)
 ├── scripts/                   # Developer CLI automation suite (14 scripts + lib/)
 │   └── lib/                   # Shared prompt, frontmatter, content-stub, slug, and artwork helpers
 ├── src/
@@ -100,8 +100,8 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── api/blog-posts/[locale].json.ts # Per-locale static blog catalog for filtered pagination
 │   │   └── api/search-dev.json.ts # Locale-aware search fallback index
 │   ├── paraglide/             # AUTO-GENERATED compiled messages (DO NOT EDIT)
-│   ├── scripts/               # Client modules: lenis.ts (smooth scroll), reveal.ts (scroll reveal)
-│   ├── styles/                # global.css (OKLCH palette + glass system + print), prose.css, reveal.css
+│   ├── scripts/               # Client modules: chronotrig.ts, lenis.ts (smooth scroll)
+│   ├── styles/                # global.css (OKLCH palette + glass system + print), prose.css, chronotrig.css
 │   └── views/                 # Presentation views (PageView, BlogIndexView, BlogPostView)
 ```
 
@@ -194,11 +194,11 @@ Rendered by `src/components/PageHero.astro` — the entry's `image` (`./<group>.
 2. Build URLs exclusively with `getBlogPageHref(page, locale)` and slice with `paginate()` / `buildPageWindow()` from `src/libs/content/pagination.ts`.
 3. Run `pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke`.
 
-### Playbook F: Adding Scroll Reveal, Staggered Grids & Filtered Replays
-1. Use `<Reveal as="section" direction="up" delay={100}>` (`src/components/Reveal.astro`) or `class="reveal" data-reveal="up"` (never use `hidden` / `display: none` or unscoped `opacity-0` for scroll entrance).
-2. For horizontal entrances, use `direction="start"` / `direction="end"` so RTL locales mirror automatically.
-3. For grids/lists, add `class="reveal-stagger"` on the parent and keep `.reveal` / `<Reveal as="li">` (or a card component whose root tag has `class="reveal"`) as **direct children** (`:scope > .reveal`).
-4. For client-side filtering or tabs that toggle `el.hidden` or swap cards, call `replayReveals(grid, { fast: true })` from `@/scripts/reveal` on interactive filter changes (skip on initial page setup); call `initReveals()` when only appending brand-new `.reveal` nodes.
+### Playbook F: Adding Viewport Reveals, Staggered Grids & ChronoTrig Motion
+1. Use `data-trig` on elements, sections, or cards for a smooth bottom reveal entrance when entering the viewport.
+2. For horizontal entrances, use `data-trig-direction="start"` / `data-trig-direction="end"` so RTL locales mirror automatically.
+3. For grids and lists, add `data-trig-stagger data-trig-stagger-delay="0.08"` on the parent container.
+4. When dynamically appending or filtering cards, call `refreshChronoTrig()` from `@/scripts/chronotrig` to re-scan and observe new elements.
 5. Add `data-lenis-prevent` on any nested `overflow-y-auto` modal/panel. Full details: `.agents/skills/astro-i18n-starter/references/scroll-and-motion.md`.
 
 ---
@@ -220,7 +220,7 @@ Rendered by `src/components/PageHero.astro` — the entry's `image` (`./<group>.
 | Hand-rolling an icon-only `<button>` with an `<Icon>` inside | Use `<IconButton icon="..." label="..." />` |
 | Serving a page image from `public/` or with a raw `<img src>` | Keep it next to the content entry (`./<file>`) and render with `<Image />` |
 | Rendering every blog post on one page, or hardcoding `/blog/page/2` | Slice with `paginate()` and link with `getBlogPageHref(page, locale)` |
-| Hiding scroll-reveal elements with `display: none`, un-scoped `opacity-0`, or physical `left`/`right` | Use `<Reveal>` / `.reveal` (scoped under `.js`) with logical `start`/`end` |
-| Nesting `<Reveal>` inside a plain `<li>` under `.reveal-stagger` | Make `.reveal` a direct child (`:scope > .reveal`), e.g. `<Reveal as="li">` |
-| Manually stripping `.is-visible` on filtered/tabbed grids | Call `replayReveals(container, { fast: true })` from `@/scripts/reveal` |
+| Hiding elements with `display: none`, un-scoped `opacity-0`, or physical `left`/`right` | Use `data-trig` (scoped under `.js`) with logical `data-trig-direction="start|end"` |
+| Hardcoding staggered animation delays across lists | Use `data-trig-stagger` on parent container |
+| Failing to re-observe dynamically appended elements | Call `refreshChronoTrig()` from `@/scripts/chronotrig` |
 | Nested scrollable overlays (`overflow-y-auto`) without Lenis isolation | Add `data-lenis-prevent` on scrollable modals, drawers, and panels |

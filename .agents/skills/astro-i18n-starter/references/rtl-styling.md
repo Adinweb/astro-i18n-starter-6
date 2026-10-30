@@ -17,7 +17,7 @@ Never use physical directional utilities. Always use logical properties:
 | `border-l-*`, `border-r-*` | `border-s-*`, `border-e-*` | `border-inline-start`, `border-inline-end` |
 | `rounded-l-*`, `rounded-r-*` | `rounded-s-*`, `rounded-e-*` | `border-start-*-radius`, `border-end-*-radius` |
 | Directional arrows | `rtl:rotate-180` / `rotate-180 rtl:rotate-0` | Mirrors icon based on `dir="rtl"` |
-| `data-reveal="left"`, `data-reveal="right"` | `data-reveal="start"`, `data-reveal="end"` | Mirrors horizontal scroll-reveal entrance in RTL (`reveal.css`) |
+| `data-trig-direction="left"`, `="right"` | `data-trig-direction="start"`, `="end"` | Mirrors horizontal viewport entrance in RTL (`chronotrig.css`) |
 
 ---
 

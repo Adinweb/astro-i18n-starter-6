@@ -183,6 +183,7 @@ const schema = [
               data-pagefind-ignore
               aria-label={m.nav_blog({}, { locale })}
               class="mt-10 grid gap-4 border-t border-border pt-6 sm:grid-cols-2"
+              data-trig
             >
               {newerPost ? (
                 <a
@@ -270,10 +271,10 @@ const schema = [
         aria-labelledby="related-posts-heading"
         class="mt-14 border-t border-border pt-10"
       >
-        <h2 id="related-posts-heading" class="text-xl font-bold tracking-tight text-fg">
+        <h2 id="related-posts-heading" class="text-xl font-bold tracking-tight text-fg" data-trig>
           {m.blog_related_posts({}, { locale })}
         </h2>
-        <div class="mt-6 grid gap-6 sm:grid-cols-2">
+        <div class="mt-6 grid gap-6 sm:grid-cols-2" data-trig-stagger data-trig-stagger-delay="0.08">
           {relatedPosts.map((related) => (
             <PostCard
               post={related}

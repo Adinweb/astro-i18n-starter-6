@@ -219,7 +219,7 @@ const indexSchema = [
             {m.blog_filter_empty({}, { locale })}
           </p>
 
-          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-blog-grid data-pagefind-ignore>
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-blog-grid data-trig-stagger data-trig-stagger-delay="0.06" data-pagefind-ignore>
             {
               pagePosts.map((post, index) => (
                 <PostCard
@@ -311,6 +311,7 @@ const indexSchema = [
 <script>
   import { formatNumber } from '@/i18n/format';
   import { getLenis } from '@/scripts/lenis';
+  import { refreshChronoTrig } from '@/scripts/chronotrig';
   import { buildPageWindow, PAGE_GAP, paginate } from '@/libs/content/pagination';
   import {
     NO_FILTERS,
@@ -373,6 +374,7 @@ const indexSchema = [
     article.className =
       'group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30';
     article.dataset.dynamicPostCard = 'true';
+    article.setAttribute('data-trig', '');
 
     const media = document.createElement('div');
     media.className =
@@ -617,9 +619,9 @@ const indexSchema = [
     };
 
     const render = async (
-      options: { updateUrl?: boolean; animate?: boolean } = {}
+      options: { updateUrl?: boolean } = {}
     ) => {
-      const { updateUrl = true, animate = false } = options;
+      const { updateUrl = true } = options;
       const token = ++renderToken;
       const active = hasActiveFilters(filters);
 
@@ -660,6 +662,7 @@ const indexSchema = [
             ...slice.items.map((post) => createDynamicPostCard(post, showReadingTime))
           );
           renderFilteredPager(slice.page, slice.totalPages);
+          refreshChronoTrig();
 
           if (status) {
             status.textContent = allTemplate
@@ -696,6 +699,7 @@ const indexSchema = [
         card.element.hidden = !matches;
         if (matches) visible += 1;
       }
+      refreshChronoTrig();
 
       const statusTemplate = active ? allTemplate : pageTemplate;
       if (status) {
@@ -729,7 +733,7 @@ const indexSchema = [
         const changed = !areBlogFiltersEqual(filters, nextFilters);
         filters = nextFilters;
         if (changed) filterPage = 1;
-        void render({ updateUrl: true, animate: changed });
+        void render({ updateUrl: true });
       },
       { signal: abortController.signal }
     );
@@ -747,7 +751,7 @@ const indexSchema = [
         if (!Number.isInteger(nextPage) || nextPage < 1 || nextPage === filterPage) return;
 
         filterPage = nextPage;
-        void render({ updateUrl: true, animate: true });
+        void render({ updateUrl: true });
         if (grid) {
           const headerOffset = document.querySelector('header.fixed') ? -96 : 0;
           const lenis = getLenis();
@@ -769,17 +773,14 @@ const indexSchema = [
     document.addEventListener(
       'blog:filters-restore',
       () => {
-        const nextFilters = parseBlogFilters(window.location.search);
-        const nextPage = parseBlogFilterPage(window.location.search);
-        const changed = !areBlogFiltersEqual(filters, nextFilters) || filterPage !== nextPage;
-        filters = nextFilters;
-        filterPage = nextPage;
-        void render({ updateUrl: false, animate: changed });
+        filters = parseBlogFilters(window.location.search);
+        filterPage = parseBlogFilterPage(window.location.search);
+        void render({ updateUrl: false });
       },
       { signal: abortController.signal }
     );
 
-    void render({ updateUrl: false, animate: false });
+    void render({ updateUrl: false });
   }
 
   if (document.documentElement.dataset.blogFilterHistoryBound !== 'true') {

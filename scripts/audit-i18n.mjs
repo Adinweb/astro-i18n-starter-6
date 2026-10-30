@@ -544,7 +544,8 @@ if (warningCount === 0) {
 console.log('\n--- 6. RTL Logical Property Guard ---');
 const FORBIDDEN_PHYSICAL_CLASS =
   /^(?:-?m[lr]-|p[lr]-|-?(?:left|right)-|text-(?:left|right)$|border-[lr](?:$|-)|rounded-(?:[tb])?[lr](?:$|-))/;
-const FORBIDDEN_REVEAL_VECTOR = /\b(?:data-reveal|direction)\s*=\s*["'](?:left|right)["']/;
+const FORBIDDEN_REVEAL_VECTOR =
+  /\b(?:data-reveal|data-trig-direction|direction)\s*=\s*["'](?:left|right)["']/;
 
 function scanRtlSources(dir) {
   const files = [];

@@ -255,26 +255,23 @@ pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run 
 
 ---
 
-## Playbook 7: Implementing Scroll Reveal, Staggered Grids & Filtered Replays
+## Playbook 7: Implementing Viewport Reveals, Staggered Grids & ChronoTrig Motion
 
-### 1. The 4-Stage `.js` + `.reveal` Contract
+### 1. The ChronoTrig Reveal Contract
 * Never hide elements with `display: none` / `hidden` or unscoped Tailwind `opacity-0` for scroll entrance.
-* `BaseLayout.astro` synchronously adds `.js` on `<html class="js">` inside `<head>`. `src/styles/reveal.css` scopes initial `opacity: 0` and GPU `translate3d(...)` offsets strictly under `.js .reveal` (preserving full layout geometry, zero CLS, and 100% visibility when JS is disabled or printed).
-* Runtime lifecycle (`src/scripts/reveal.ts`): `.reveal` -> `.is-visible` (upon entering upper 90% of viewport) -> `.reveal-complete` (on `transitionend`, releasing the `!important` entrance lock so card `hover:` utilities run at native speed).
+* `BaseLayout.astro` synchronously adds `.js` on `<html class="js">` in `<head>`. `src/styles/chronotrig.css` scopes initial entrance offsets strictly under `.js [data-trig]` (preserving full layout geometry, zero CLS, and 100% visibility when JS is disabled or printed).
+* When an element enters the viewport, ChronoTrig adds `.trig`, animating `opacity: 1` and `transform: none` with a smooth `cubic-bezier(0.16, 1, 0.3, 1)` curve.
 
 ### 2. Single Elements & RTL-Safe Directions
-* Prefer `<Reveal as="section" direction="up">` (`src/components/Reveal.astro`) or raw `class="reveal" data-reveal="up"`.
-* For two-column split layouts, always use logical `direction="start"` and `direction="end"` so horizontal entrances mirror automatically in `fa` and `ar`.
+* Add `data-trig` to any element, title, or card for a smooth bottom reveal.
+* For split columns or directional entrances, use `data-trig-direction="start"` and `data-trig-direction="end"` so horizontal entrances mirror automatically in RTL (`fa` and `ar`).
 
-### 3. Staggered Lists & Card Grids (`.reveal-stagger`)
-* Add `class="reveal-stagger"` to the parent list or grid container, and make every animated item a **direct child** (`:scope > .reveal`):
-  * For `<ul>` / `<ol>`: render items with `<Reveal as="li" direction="up">...</Reveal>` (do not wrap `<Reveal>` inside a plain `<li>`).
-  * For component grids (like `<PostCard />`): put `class="reveal" data-reveal="up"` on the outermost root element inside the card component.
-* `initReveals()` automatically skips `[hidden]` children and caps `--stagger-index` at `8` (`90ms` default step; `45ms` in fast replay mode).
+### 3. Harmonic Stagger Grids (`data-trig-stagger`)
+* Add `data-trig-stagger data-trig-stagger-delay="0.08"` to the parent grid or list container.
+* ChronoTrig automatically computes `--stagger-index`, `--stagger-delay`, and activates child items via `.trig-stagger-active`.
 
-### 4. Client-Side Filtering & Tab Replays (`replayReveals`)
-* When appending brand-new `.reveal` nodes without touching existing ones, call `initReveals()`.
-* When toggling `card.hidden = !matches` or swapping cards in a filtered/tabbed grid (such as `BlogIndexView.astro`), call `replayReveals(grid, { fast: true })` from `@/scripts/reveal` **only when the active filter/tab state changes** (never on initial page load). Add `[data-your-card][hidden] { display: none !important; }` if cards use `flex` or `grid`.
+### 4. Dynamic Filtering & Re-scans (`refreshChronoTrig`)
+* When dynamically appending or filtering cards in client scripts (e.g. `BlogIndexView.astro`), call `refreshChronoTrig()` from `@/scripts/chronotrig` to re-scan and observe new elements.
 
 
 
