@@ -6,11 +6,44 @@ image: "./home.png"
 draft: false
 ---
 
-This is a modern, production-grade multilingual starter with first-class RTL and LTR support.
+This is a modern, production-grade multilingual starter with first-class RTL and LTR support, GPU-accelerated ChronoTrig scroll reveals, and type-safe internationalization.
 
-Key features:
+## Core Architectural Pillars
 
-- Compile-time translations via Paraglide JS
-- Clean prefix-less default locale routing
-- Symmetrical Content Collections with translated slugs
-- Smooth scrolling via Lenis
+Explore the technical innovations powering this starter template:
+
+<div class="not-prose my-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-trig-stagger data-trig-stagger-delay="0.08">
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-primary">01 · Localization</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">Zero-Runtime Paraglide</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        Compiled TypeScript messages with full ICU plural and ordinal support, tree-shaken down to minimal bundles.
+      </p>
+    </div>
+  </div>
+
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-accent">02 · Motion</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">ChronoTrig & Lenis</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        Silky smooth momentum scrolling with hardware-accelerated viewport reveals and harmonic card cascades.
+      </p>
+    </div>
+  </div>
+
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-secondary">03 · RTL Discipline</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">Native Bidirectional</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        Logical CSS property architecture with automatic layout and animation mirroring for Persian and Arabic.
+      </p>
+    </div>
+  </div>
+</div>
+
+## Performance & Progressive Enhancement
+
+Every component renders with zero Cumulative Layout Shift (CLS). When JavaScript is disabled or during print, all content renders with complete visibility and full accessibility.

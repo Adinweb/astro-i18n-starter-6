@@ -1,106 +1,113 @@
-# Astro v7 Starter Architecture Enhancements & Skills Modernization
+# ChronoTrig Scroll Animation Restoration & Architectural Fix
 
-Comprehensive architectural improvements for the Astro v7 SSG Multilingual Starter template to enhance its developer experience (DX), configuration extensibility, and agent skills documentation without altering its proven visual design system.
+A robust, production-grade fix for the ChronoTrig scroll animation system in this Astro v7 SSG starter. This plan addresses the root causes preventing animations from firing on hero titles, subtitles, section headings, and content cards, while honoring the user's explicit preference for cascading staggers on desktop and instant visibility on mobile devices.
 
-## User Review & Critical Decisions
+### User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The user confirmed the following foundational direction:
-> - **Starter Template Focus**: This repository is a developer starter template rather than a bespoke end-user website; all improvements must prioritize architecture, developer ergonomics, maintainability, and clean abstractions over cosmetic changes.
-> - **Zero UI Redesign**: No new visual components or redesigns of the existing design system are needed ("no need" for new UI elements).
-> - **Skills Modernization**: Update `.agents/skills/astro-i18n-starter/SKILL.md` to accurately document the current multi-menu navigation architecture, CLI automation, and development workflows for AI coding agents.
+> The following architectural decisions have been confirmed through Phase 1 clarification:
 
-- **Confirmed Decision 1**: Focus strictly on codebase architecture, configuration extensibility, type safety, and agent operational skills.
-- **Confirmed Decision 2**: Preserve the existing visual styling, OKLCH semantic palette, glass surfaces, and responsive layouts exactly as designed.
-- **Confirmed Decision 3**: Upgrade `.agents/skills/astro-i18n-starter/SKILL.md` to serve as a comprehensive, accurate manual for AI agents working in this repository.
+- **Confirmed Decision 1 (Scope)**: All page heroes, section titles, subtitles, and grid cards participate in scroll reveals.
+- **Confirmed Decision 2 (Entrance Style)**: Smooth bottom reveal with harmonic cascading staggers (`data-trig-stagger`) and RTL-native logical property mirroring (`start`/`end`).
+- **Confirmed Decision 3 (Mobile Experience)**: Instant visibility without scroll animations on mobile and touch devices, avoiding scrolljacking, touch conflicts, or un-revealed element states.
 
 ---
 
-## 1. Overview & Core Concept
+## 1. Overview & Root Cause Analysis
 
-- **What It Does**: Refines the starter template's architectural foundations by:
-  1. Making the navigation configuration declarative and modular so developers can customize header, mobile drawer, and multi-column footer menus from a typed, centralized registry.
-  2. Enhancing content schema types with optional author and metadata extensions in `src/content.config.ts`.
-  3. Streamlining package scripts and build hooks so both `npm` and `pnpm` run cleanly across varied developer environments.
-  4. Fully synchronizing `.agents/skills/astro-i18n-starter/SKILL.md` with the latest multi-menu architecture, CLI suite, and audit procedures.
-- **Target Audience / Persona**: Developers, agencies, and open-source contributors using this repository as the foundation for multilingual, RTL-native SSG websites.
-- **Key Value**: A rock-solid, production-ready starting point that is effortless for developers to customize, strictly typed, and clearly documented for both human engineers and AI coding agents.
+### The Problem
+When trying to implement scroll animations with `public/chronotrig.min.js`, no animations were applied to elements, titles, subtitles, or cards. Investigation of the codebase revealed five intersecting failure points:
 
----
-
-## 2. User Experience & Visual Design
-
-- **Visual Design Continuity**: As confirmed, no visual redesign or UI restyling will be performed. The existing visual language (glass surfaces, semantic OKLCH tokens, logical property RTL discipline) remains unchanged.
-- **Developer Experience (DX)**:
-  - Clear, autocomplete-friendly configuration interfaces for declaring header dropdowns, drawer sections, and footer link columns.
-  - Fail-loud type checks and zero-ambiguity error messages if an administrator references an unmapped navigation route or missing locale file.
-  - Complete, up-to-date agent operational skills enabling AI assistants to scaffold, update, and audit content without manual trial and error.
-
----
-
-## 3. Key Product Decisions & Trade-Offs
-
-- **Decision 1: Declarative Menu Configuration Schema vs. Hardcoded Builders**
-  - *Chosen Approach*: Refactor `src/libs/config/navigation.ts` to use a declarative schema-driven definition (`NavigationMenuConfig`) that maps menu items, dropdowns, and footer columns cleanly while keeping Paraglide localization functions typed.
-  - *Why*: Allows template consumers to add, remove, or reorder menu items in a single typed object without having to manipulate procedural array push/spread operations inside layout or helper files.
-  - *Alternatives Considered*: Storing menus in `app.config.json` was rejected because JSON cannot execute compile-time Paraglide message functions (`m.nav_home({}, { locale })`).
-- **Decision 2: Updating Agent Skills (`SKILL.md`) as First-Class Code**
-  - *Chosen Approach*: Update `.agents/skills/astro-i18n-starter/SKILL.md` with full playbooks for multi-menu navigation, custom brand assets, CLI workflows, and testing.
-  - *Why*: In an AI-assisted development workflow, outdated skill manuals lead to regression bugs when subsequent agents generate code based on deprecated patterns.
-- **Decision 3: Retaining 100% Backward Compatibility**
-  - *Chosen Approach*: Keep all existing function signatures (`getNavigationSlots`, `getNavigation`, `getPageUrl`, etc.) intact.
-  - *Why*: Prevents breaking any of the 45 CLI tests in `scripts/verify-cli.mjs` or existing unit test suites.
-
----
-
-## 4. Technical Architecture & Data Strategy
-
-### System Architecture Diagram
-
-```text
+```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                          Starter Template Core                         │
+│                        FAILURE CHAIN IN CHRONOTRIG                     │
+├────────────────────────────────────────────────────────────────────────┤
+│ 1. Flawed Mobile Detection in chronotrig.min.js                        │
+│    `navigator.maxTouchPoints > 0` triggered mobile mode on modern      │
+│    laptops & monitors, bypassing or stalling observer loops.           │
 │                                                                        │
-│   ┌─────────────────────┐    ┌──────────────────────────────────────┐  │
-│   │   app.config.json   │───▶│       src/libs/config/app.ts         │  │
-│   └─────────────────────┘    │   (Zod Validation, Site/Brand SSOT)  │  │
-│                              └──────────────────────────────────────┘  │
-│                                                  │                     │
-│                                                  ▼                     │
-│   ┌─────────────────────────────────────────────────────────────────┐  │
-│   │                 src/libs/config/navigation.ts                   │  │
-│   │   Declarative Slot Definitions:                                 │  │
-│   │   - Header Menu (Primary + Nested Dropdowns + CTA)              │  │
-│   │   - Drawer Menu (Hierarchical Pages + Languages + Search)       │  │
-│   │   - Footer Columns (Semantic Columns: Product, Resources, ...)  │  │
-│   │   - Legal Bar (Privacy, Terms, Solar Hijri / Gregorian Year)    │  │
-│   └─────────────────────────────────────────────────────────────────┘  │
-│                                                  │                     │
-│                        ┌─────────────────────────┴────────────┐        │
-│                        ▼                                      ▼        │
-│   ┌──────────────────────────────┐       ┌─────────────────────────┐   │
-│   │ src/layouts/BaseLayout.astro │       │ .agents/skills/         │   │
-│   │ (Consumes Slots, Injects Head│       │ astro-i18n-starter/     │   │
-│   │  Header, Drawer & Footer)    │       │ SKILL.md (Agent Manual) │   │
-│   └──────────────────────────────┘       └─────────────────────────┘   │
+│ 2. Heading Selector Hierarchy Disconnect in chronotrig.ts              │
+│    `.prose > h2, .prose > h3` failed because Astro/MDX wraps sections  │
+│    inside `<section id="...">` (grandchildren of `.prose`).            │
+│                                                                        │
+│ 3. Tailwind v4 Utility Conflict                                        │
+│    `transition duration-200` on card classes stomped on                │
+│    ChronoTrig's `transition` timing and `--stagger-delay`.             │
+│                                                                        │
+│ 4. Double-Trigger Stagger Race Condition                               │
+│    Child cards had both `data-trig` and parent `data-trig-stagger`,     │
+│    causing individual observers to fire before stagger calculation.    │
+│                                                                        │
+│ 5. Mobile & View Transition Desynchronization                          │
+│    Elements scoped under `.js [data-trig]` were hidden (`opacity: 0`)  │
+│    but not transitioned when mobile mode disabled ticks.               │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Proposed Execution Phases
+---
 
-1. **Phase 1: Navigation Architecture Modularity**
-   - Cleanly modularize menu item definitions in `src/libs/config/navigation.ts` so developers can easily register custom navigation trees, external links, and badges.
-   - Maintain 100% test passing across `navigation.test.ts`.
+## 2. Technical Architecture & Repair Strategy
 
-2. **Phase 2: Agent Skill Guide Modernization (`SKILL.md`)**
-   - Update `.agents/skills/astro-i18n-starter/SKILL.md` to document:
-     - The multi-menu navigation architecture (`getNavigationSlots`, header dropdowns, mobile drawer tabs, 4-column footer).
-     - Up-to-date CLI commands and options.
-     - Dual-package manager compatibility (`npm` / `pnpm`).
-     - Best practices for adding content groups and translation keys.
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                         RESTORED ARCHITECTURE                          │
+├────────────────────────────────────────────────────────────────────────┤
+│                                                                        │
+│  BaseLayout.astro                                                      │
+│    ├── Synchronous `.js` tag on <html> (No-JS / CLS fallback)         │
+│    ├── Inline <script src="/chronotrig.min.js"> in <head>              │
+│    └── Module scripts: lenis.ts & chronotrig.ts                        │
+│          ├── Lenis: Smooth wheel inertia (desktop only)                │
+│          └── chronotrig.ts: Auto-tagging & View Transition lifecycle    │
+│                                                                        │
+│  src/styles/chronotrig.css                                             │
+│    ├── Desktop (@media min-width: 1024px):                             │
+│    │     .js [data-trig] -> bottom entrance (0, 24px, 0) -> .trig      │
+│    │     .js [data-trig-stagger] > * -> cascading delay -> .trig-active│
+│    │     RTL support via logical properties (start/end mirroring)      │
+│    └── Mobile (@media max-width: 1023px) & Reduced Motion:             │
+│          Instant visibility (opacity: 1, transform: none, no delays)   │
+│                                                                        │
+│  Views & Content Collections                                           │
+│    ├── PageHero / HeroCopy: [data-trig] on hero copy & kicker          │
+│    ├── MDX Content: Deep heading auto-tagging (.prose h2, h3, kickers) │
+│    ├── Blog Index & PostCard: Harmonic [data-trig-stagger] grids       │
+│    └── Features & Pricing: Harmonic [data-trig-stagger] grids          │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
+```
 
-3. **Phase 3: Verification & Auditing**
-   - Run `lint_applet` (`astro check` + `tsc --noEmit`).
-   - Run `npm test` (all 12 test suites, 137 tests).
-   - Run `audit:i18n` (parity across all 5 locales).
-   - Run `compile_applet` (production build verification).
+---
+
+## 3. Key Product & Technical Decisions
+
+### Decision 1: Mobile Detection & Responsive Execution
+- **Chosen Approach**: Decouple mobile behavior from fragile `navigator.maxTouchPoints`. Use pure CSS media queries (`@media (max-width: 1023px)`) for the mobile instant-visibility contract and clean viewport width thresholds (`window.innerWidth < 1024`) in JavaScript.
+- **Why**: Modern desktop touch displays and laptops must not be falsely treated as phones. On phones and tablets ($< 1024\text{px}$), elements render immediately without waiting for scroll events, satisfying the user's explicit preference.
+
+### Decision 2: Deep Heading & Subtitle Auto-Tagging
+- **Chosen Approach**: Update `setupChronoTrig()` in `src/scripts/chronotrig.ts` to use `.prose h2, .prose h3, .prose .section-kicker, [data-prose-reveal]` (descendant selectors instead of direct child `>`).
+- **Why**: MDX pages structure content in semantic `<section>` and `<div>` tags. Descendant selection ensures every heading and section subtitle receives smooth bottom reveal instrumentation automatically.
+
+### Decision 3: Resolving CSS Specificity & Tailwind Transitions
+- **Chosen Approach**: Ensure `.js [data-trig]` and `.js [data-trig-stagger] > *` transition definitions use appropriate specificity or explicit transition properties that override Tailwind's default 200ms utility classes on card components without breaking hover feedback.
+- **Why**: Cards need smooth 650–750ms entrance transitions with cascading delays, while preserving snappy hover lift effects once revealed.
+
+### Decision 4: Coordinating with Lenis & Astro ClientRouter
+- **Chosen Approach**: Re-scan elements on `astro:page-load`, recalculate on `refreshChronoTrig()`, and synchronize the scroll tick with Lenis scroll events and window scroll.
+- **Why**: Guarantees zero stale state or frozen hidden cards when navigating between pages or switching languages statically.
+
+---
+
+## 4. Verification Plan
+
+1. **Automated Verification**:
+   - `npm test`: Verify all 17 test suites (format, ICU, navigation, ChronoTrig, Lenis) pass without regressions.
+   - `npm run check`: Verify TypeScript and Astro types.
+   - `npm run build`: Verify clean production build and Pagefind search indexing.
+2. **Browser & Runtime Verification**:
+   - Verify desktop viewports ($\ge 1024\text{px}$) execute smooth bottom reveal animations on hero titles, section headings, subtitles, and grid cards.
+   - Verify staggered grid cards cascade smoothly with natural delay.
+   - Verify mobile screens ($< 1024\text{px}$) display all elements immediately with `opacity: 1` and zero layout shifts.
+   - Verify RTL locales (`fa` and `ar`) mirror directional entrances seamlessly.
+   - Verify page navigation via `<ClientRouter />` preserves animations on every transition.

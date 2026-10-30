@@ -6,11 +6,44 @@ image: "./home.png"
 draft: false
 ---
 
-این یک قالب آغازین چندزبانه مدرن با پشتیبانی کامل از زبان‌های راست‌به‌چپ (RTL) و چپ‌به‌راست (LTR) است.
+این یک قالب آغازین چندزبانه مدرن با پشتیبانی کامل از زبان‌های راست‌به‌چپ (RTL) و چپ‌به‌راست (LTR)، انیمیشن‌های اسکرول با ChronoTrig و اسکرول نرم با Lenis است.
 
-ویژگی‌های کلیدی:
+## ارکان کلیدی معماری
 
-- ترجمه‌های زمان کامپایل با Paraglide JS
-- مسیریابی تمیز بدون پیشوند برای زبان پیش‌فرض
-- کالکشن‌های محتوای متقارن با اسلاگ‌های بومی‌شده
-- اسکرول نرم با Lenis و انیمیشن‌های ظاهر شدن تدریجی هنگام اسکرول
+نوآوری‌های فنی این قالب را بررسی کنید:
+
+<div class="not-prose my-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-trig-stagger data-trig-stagger-delay="0.08">
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-primary">۰۱ · بومی‌سازی</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">ترجمه زمان کامپایل با Paraglide</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        پیام‌های تایپ‌اسکریپت کامپایل‌شده با پشتیبانی کامل از جمع‌های ICU بدون بار اضافی زمان اجرا.
+      </p>
+    </div>
+  </div>
+
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-accent">۰۲ · پویانمایی</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">موتور اسکرول ChronoTrig و Lenis</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        اسکرول نرم با اینرسی طبیعی همراه با ظاهر شدن متوالی کارت‌ها هنگام ورود به دید.
+      </p>
+    </div>
+  </div>
+
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-secondary">۰۳ · انضباط RTL</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">پشتیبانی بومی دوجهته</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        معماری مبتنی بر ویژگی‌های منطقی CSS با معکوس‌سازی خودکار چیدمان و انیمیشن‌ها برای فارسی و عربی.
+      </p>
+    </div>
+  </div>
+</div>
+
+## عملکرد و بهبود تدریجی
+
+همه مؤلفه‌ها با صفر تغییر ناخواسته چیدمان (CLS) رندر می‌شوند. در صورت غیرفعال بودن جاوااسکریپت یا هنگام چاپ، محتوا با شفافیت کامل نمایش داده می‌شود.

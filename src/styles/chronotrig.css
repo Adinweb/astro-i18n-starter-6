@@ -12,9 +12,68 @@
  *     `opacity: 1` and `transform: none` immediately.
  *  2. RTL-Native: Directional entrances use CSS logical properties (`start` and
  *     `end`), automatically mirroring in Persian (`fa`) and Arabic (`ar`).
- *  3. Accessibility: Fully honors `prefers-reduced-motion` and explicit
- *     `data-motion="reduced"` by neutralizing all transforms and transitions.
+ *  3. Accessibility & Mobile Discipline: Fully honors `prefers-reduced-motion`,
+ *     explicit `data-motion="reduced"`, and compact mobile screens (< 640px) with
+ *     instant visibility so no stuck opacity affects phone devices.
  */
+
+/* --------------------------------------------------------------------------
+   Keyframe Animations for Reliable First-Load and Scroll Viewport Reveals
+   -------------------------------------------------------------------------- */
+@keyframes trig-reveal-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes trig-reveal-start {
+  from {
+    opacity: 0;
+    transform: translate3d(-28px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes trig-reveal-end {
+  from {
+    opacity: 0;
+    transform: translate3d(28px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes trig-reveal-start-rtl {
+  from {
+    opacity: 0;
+    transform: translate3d(28px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes trig-reveal-end-rtl {
+  from {
+    opacity: 0;
+    transform: translate3d(-28px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 
 /* --------------------------------------------------------------------------
    1. Standard Viewport Reveal (Smooth Bottom Entrance by Default)
@@ -32,6 +91,7 @@
 .js [data-trig].trig {
   opacity: 1;
   transform: none;
+  animation: trig-reveal-up 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* --------------------------------------------------------------------------
@@ -41,16 +101,28 @@
 .js [data-trig][data-trig-direction="start"]:not(.trig) {
   transform: translate3d(-28px, 0, 0);
 }
+.js [data-trig][data-trig-direction="start"].trig {
+  animation: trig-reveal-start 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 :where([dir="rtl"]) .js [data-trig][data-trig-direction="start"]:not(.trig) {
   transform: translate3d(28px, 0, 0);
+}
+:where([dir="rtl"]) .js [data-trig][data-trig-direction="start"].trig {
+  animation: trig-reveal-start-rtl 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Inline-end: enters from the reading end (right in LTR, left in RTL) */
 .js [data-trig][data-trig-direction="end"]:not(.trig) {
   transform: translate3d(28px, 0, 0);
 }
+.js [data-trig][data-trig-direction="end"].trig {
+  animation: trig-reveal-end 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 :where([dir="rtl"]) .js [data-trig][data-trig-direction="end"]:not(.trig) {
   transform: translate3d(-28px, 0, 0);
+}
+:where([dir="rtl"]) .js [data-trig][data-trig-direction="end"].trig {
+  animation: trig-reveal-end-rtl 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* --------------------------------------------------------------------------
@@ -71,6 +143,8 @@
 .js [data-trig-stagger] > *.trig {
   opacity: 1;
   transform: none;
+  animation: trig-reveal-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--stagger-delay, 0s);
 }
 
 /* Stagger delay synchronization if child also has [data-trig] */
@@ -95,13 +169,27 @@
 }
 
 /* --------------------------------------------------------------------------
-   5. Accessibility & Print Isolation
+   5. Compact Mobile Instant Visibility (< 640px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 639px) {
+  .js [data-trig],
+  .js [data-trig-stagger] > * {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. Accessibility & Print Isolation
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .js [data-trig],
   .js [data-trig-stagger] > * {
     opacity: 1 !important;
     transform: none !important;
+    animation: none !important;
     transition: none !important;
   }
 }
@@ -110,6 +198,7 @@ html[data-motion="reduced"] .js [data-trig],
 html[data-motion="reduced"] .js [data-trig-stagger] > * {
   opacity: 1 !important;
   transform: none !important;
+  animation: none !important;
   transition: none !important;
 }
 
@@ -118,5 +207,6 @@ html[data-motion="reduced"] .js [data-trig-stagger] > * {
   [data-trig-stagger] > * {
     opacity: 1 !important;
     transform: none !important;
+    animation: none !important;
   }
 }

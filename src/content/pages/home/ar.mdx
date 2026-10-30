@@ -1,16 +1,49 @@
 ---
-title: "مرحباً بكم في قالب Astro i18n"
+title: "مرحبًا بك في بادئ أسترو"
 slug: ""
-description: "قالب بداية متعدد اللغات جاهز للإنتاج مبني على Astro v7."
+description: "قالب بداية متعدد اللغات حديث وجاهز للإنتاج في Astro v7."
 image: "./home.png"
 draft: false
 ---
 
-هذا قالب بداية حديث متعدد اللغات جاهز للإنتاج مع دعم أصيل ومتكامل للغات من اليمين إلى اليسار (RTL) ومن اليسار إلى اليمين (LTR).
+هذا قالب بداية متعدد اللغات حديث وعالي الأداء يدعم الاتجاهين (RTL/LTR) مع محرك التمرير ChronoTrig والتمرير السلس بواسطة Lenis.
 
-المزايا الرئيسية:
+## الركائز المعمارية الأساسية
 
-- ترجمات وقت البناء عبر Paraglide JS
-- توجيه نظيف بدون بادئة للغة الافتراضية
-- مجموعات محتوى متماثلة مع روابط محلية لكل لغة
-- تمرير سلس عبر Lenis وحركات ظهور تدريجية عند التمرير
+استكشف الابتكارات التقنية التي تدعم هذا القالب:
+
+<div class="not-prose my-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-trig-stagger data-trig-stagger-delay="0.08">
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-primary">٠١ · التعريب</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">ترجمات Paraglide في وقت البناء</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        رسائل TypeScript مصنفة مسبقًا مع دعم صيغ الجمع ICU بدون استهلاك وقت التشغيل.
+      </p>
+    </div>
+  </div>
+
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-accent">٠٢ · الحركة</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">محرك ChronoTrig وLenis</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        تمرير سلس مع تأثيرات ظهور البطاقات المتتالية في إطار العرض باستخدام معالج الرسومات.
+      </p>
+    </div>
+  </div>
+
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-secondary">٠٣ · معايير RTL</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">دعم ثنائي الاتجاه أصيل</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        خصائص CSS المنطقية لضمان انعكاس التخطيط والحركات تلقائيًا للغتين العربية والفارسية.
+      </p>
+    </div>
+  </div>
+</div>
+
+## الأداء والتحسين التدريجي
+
+يتم عرض جميع المكونات دون أي تحول غير مرغوب في التخطيط (CLS)، مع الحفاظ على الرؤية الفورية الكاملة عند تعطيل جافاسكريبت.

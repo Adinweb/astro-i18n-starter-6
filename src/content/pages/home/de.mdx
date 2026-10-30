@@ -1,16 +1,49 @@
 ---
 title: "Willkommen beim Astro i18n Starter"
 slug: ""
-description: "Eine produktionsreife, mehrsprachige Astro v7 Starter-Vorlage."
+description: "Ein produktionsreifes, mehrsprachiges Astro v7 Starter-Template."
 image: "./home.png"
 draft: false
 ---
 
-Dies ist eine moderne, produktionsreife mehrsprachige Starter-Vorlage mit erstklassiger RTL- und LTR-Unterstützung.
+Dies ist ein modernes, produktionsreifes mehrsprachiges Starter-Template mit erstklassiger RTL- und LTR-Unterstützung, ChronoTrig-Scrollanimationen und Lenis Smooth Scroll.
 
-Wichtigste Funktionen:
+## Wichtige Architektur-Säulen
 
-- Kompilierzeit-Übersetzungen über Paraglide JS
-- Sauberes Routing ohne Präfix für die Standardsprache
-- Symmetrische Content Collections mit übersetzten Slugs
-- Sanftes Scrollen mit Lenis
+Entdecken Sie die technischen Grundlagen dieses Templates:
+
+<div class="not-prose my-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-trig-stagger data-trig-stagger-delay="0.08">
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-primary">01 · Lokalisierung</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">Zero-Runtime Paraglide</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        Kompilierte TypeScript-Meldungen mit vollständiger ICU-Pluralunterstützung ohne Laufzeit-Overhead.
+      </p>
+    </div>
+  </div>
+
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-accent">02 · Animation</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">ChronoTrig & Lenis</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        Sanftes Scrolling mit flüssigen Viewport-Enthüllungen und harmonisch gestaffelten Kaskaden.
+      </p>
+    </div>
+  </div>
+
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-secondary">03 · RTL-Disziplin</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">Native Bidirektionalität</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        Logische CSS-Eigenschaften mit automatischer Spiegelung von Layouts und Animationen für Persisch und Arabisch.
+      </p>
+    </div>
+  </div>
+</div>
+
+## Leistung & Progressive Verbesserung
+
+Alle Komponenten rendern mit null Layoutverschiebung (CLS). Bei deaktiviertem JavaScript bleiben alle Inhalte sofort vollständig sichtbar.

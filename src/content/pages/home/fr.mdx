@@ -1,16 +1,49 @@
 ---
 title: "Bienvenue sur Astro i18n Starter"
 slug: ""
-description: "Un modèle de démarrage Astro v7 multilingue prêt pour la production."
+description: "Un modèle de démarrage multilingue prêt pour la production sous Astro v7."
 image: "./home.png"
 draft: false
 ---
 
-Il s'agit d'un modèle de démarrage multilingue moderne, prêt pour la production, avec une prise en charge native des directions RTL et LTR.
+Voici un modèle de démarrage multilingue moderne et prêt pour la production avec prise en charge native RTL/LTR, animations de défilement ChronoTrig et défilement fluide Lenis.
 
-Fonctionnalités clés :
+## Piliers architecturaux essentiels
 
-- Traductions compilées via Paraglide JS
-- Routage sans préfixe pour la langue par défaut
-- Collections de contenu symétriques avec slugs localisés
-- Défilement fluide via Lenis et animations d'apparition progressives
+Découvrez les innovations techniques au cœur de ce modèle :
+
+<div class="not-prose my-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-trig-stagger data-trig-stagger-delay="0.08">
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-primary">01 · Localisation</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">Zero-Runtime Paraglide</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        Messages TypeScript compilés avec gestion complète des pluriels ICU sans surcharge à l'exécution.
+      </p>
+    </div>
+  </div>
+
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-accent">02 · Mouvement</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">ChronoTrig et Lenis</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        Défilement fluide avec révélations matérielles à l'entrée dans le champ de vision et cascades harmonieuses.
+      </p>
+    </div>
+  </div>
+
+  <div data-trig class="flex flex-col justify-between rounded-2xl border border-border bg-surface p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+    <div>
+      <span class="text-xs font-bold uppercase tracking-wider text-secondary">03 · Discipline RTL</span>
+      <h3 class="mt-2 text-lg font-bold text-fg">Bidirectionnel natif</h3>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        Architecture de propriétés logiques CSS avec inversion automatique des mises en page pour le persan et l'arabe.
+      </p>
+    </div>
+  </div>
+</div>
+
+## Performance et amélioration progressive
+
+Chaque composant s'affiche avec zéro décalage de mise en page (CLS). Même avec JavaScript désactivé ou à l'impression, tout le contenu reste parfaitement lisible.

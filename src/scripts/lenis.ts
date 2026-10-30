@@ -143,6 +143,12 @@ export function initLenis(): void {
       ) !== null,
   });
 
+  lenis.on('scroll', () => {
+    if (typeof window !== 'undefined' && window.chronoTrig) {
+      window.chronoTrig.onScroll();
+    }
+  });
+
   window.__lenisInstance = lenis;
 }
 
