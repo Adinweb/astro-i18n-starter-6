@@ -8,9 +8,9 @@ This reference documents how to animate elements across Astro views, reusable co
 
 | File | Responsibility |
 | :--- | :--- |
-| `public/chronotrig.min.js` | Zero-dependency FastDOM CSS scroll engine (~4.2 KB). Observes `[data-trig]`, `[data-trig-pin]`, `[data-trig-stagger]`, and `[data-trig-timeline]`. |
+| `public/chronotrig.min.js` | Zero-dependency FastDOM CSS scroll engine. Observes `[data-trig]`, `[data-trig-pin]`, `[data-trig-stagger]`, and `[data-trig-timeline]`, adding `.trig` (plus `trig-up` / `trig-down`) as elements enter the viewport. |
 | `src/layouts/BaseLayout.astro` | Includes `<script is:inline src="/chronotrig.min.js"></script>` in `<head>` and imports `src/scripts/lenis` and `src/scripts/chronotrig`. |
-| `src/styles/chronotrig.css` | Scopes initial hidden entrance states strictly under `.js [data-trig]`. Employs CSS logical directions (`start`/`end`), handles stagger cascades, and flattens for `@media print` and reduced motion. |
+| `src/styles/chronotrig.css` | Scopes initial hidden entrance states strictly under `.js [data-trig]`. Employs CSS logical directions (`start`/`end`), handles stagger cascades, and flattens only for `@media print` and the explicit `html[data-motion="reduced"]` opt-out. |
 | `src/scripts/chronotrig.ts` | Type-safe client coordinator. Automatically tags prose headings (`.prose > h2, h3`), coordinates View Transitions (`astro:page-load`), and exports `refreshChronoTrig()`. |
 | `src/scripts/lenis.ts` | Manages the singleton `Lenis` instance (`lerp: 0.085`), intercepts same-page `#hash` links in the capture phase with sticky-header offset (`-96px`), isolates nested scroll containers, and re-initializes across View Transitions. |
 
@@ -24,9 +24,12 @@ Hiding elements with `display: none` collapses their bounding box to `0×0`, bre
 
 ```text
 1. <head> Script       : Adds <html class="js"> synchronously before first paint (100% visible if JS disabled).
-2. .js [data-trig]     : Initial state in chronotrig.css: opacity: 0; transform: translate3d(0, 24px, 0);
-3. ChronoTrig Observer : Adds .trig when top of element enters upper 90% of viewport.
-4. .js [data-trig].trig: Smoothly transitions to opacity: 1; transform: none; (releasing hover transforms).
+2. .js [data-trig]     : Initial state in chronotrig.css: opacity: 0; transform: translate3d(0, 56px, 0);
+3. ChronoTrig Observer : Adds .trig when the element enters the viewport (rootMargin 0 0 -40px 0).
+4. .js [data-trig].trig: Runs `trig-reveal-up` for 1.2s on cubic-bezier(0.22, 1, 0.36, 1) to opacity: 1; transform: none;
+                         after a deliberate --trig-reveal-delay (180ms) hold, so the entrance is actually noticed.
+5. Failsafe            : If /chronotrig.min.js never loads, setupChronoTrig() removes the `.js` class,
+                         so `.js [data-trig]` never leaves content hidden at opacity: 0.
 ```
 
 ---
@@ -102,15 +105,29 @@ Wrap grids or lists with `data-trig-stagger` to automatically stagger the entran
 ChronoTrig calculates `--stagger-index`, `--stagger-delay`, and toggles `.trig-stagger-active` automatically on each child as the grid enters the viewport.
 
 ### Dynamic Filtering & Pagination:
-When dynamically appending or filtering cards in client-side scripts (e.g. in `src/views/BlogIndexView.astro`), import and call `refreshChronoTrig()`:
+When dynamically appending cards in client-side scripts, import and call `refreshChronoTrig()`:
 
 ```typescript
 import { refreshChronoTrig } from '@/scripts/chronotrig';
 
-// After appending dynamic cards or changing visibility:
+// After appending dynamic cards:
 grid.append(...newCards);
 refreshChronoTrig();
 ```
+
+Filtering is different: toggling `card.hidden` leaves the surviving cards with their `.trig` class, so they would pop in without animating. Reset the grid's reveal classes first, then re-scan (this is what `replayGridReveals()` in `src/views/BlogIndexView.astro` does):
+
+```typescript
+// User-triggered filter/tab change only — never on the initial render.
+grid.classList.remove('trig-stagger-active');
+for (const child of Array.from(grid.children)) {
+  child.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active');
+}
+void grid.offsetHeight; // commit the hidden entrance state before re-observing
+refreshChronoTrig();
+```
+
+Guard the reset with `typeof window.chronoTrig === 'undefined'` so cards can never be left stuck at the hidden state if the engine failed to load.
 
 ---
 
@@ -149,4 +166,4 @@ ChronoTrig supports sticky stage scrollytelling and multi-step keyframes:
 Lenis handles smooth mouse-wheel momentum scrolling, while ChronoTrig synchronizes animations on requestAnimationFrame:
 1. **Lenis Singleton (`src/scripts/lenis.ts`)**: Initializes with `lerp: 0.085`, `smoothWheel: true`, and sticky-header offset (`-96px`).
 2. **Nested Overlays**: Any modal, drawer, or scrollable panel (`overflow-y-auto`) must carry `data-lenis-prevent` so inner scrolling does not bleed into the outer page.
-3. **Reduced Motion**: Setting `document.documentElement.dataset.motion = 'reduced'` or enabling OS `prefers-reduced-motion` immediately disables smooth wheel inertia and renders all `data-trig` elements instantaneously with `transform: none` and `opacity: 1`.
+3. **Reduced Motion**: Setting `document.documentElement.dataset.motion = 'reduced'` disables smooth wheel inertia and renders all `data-trig` elements instantaneously with `transform: none` and `opacity: 1`. The OS `prefers-reduced-motion` setting does **not** gate reveals: entrance animations run for every visitor on every viewport size, and only `data-motion="reduced"` or print flattens them.

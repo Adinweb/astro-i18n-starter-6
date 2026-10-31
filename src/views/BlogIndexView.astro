@@ -534,6 +534,25 @@ const indexSchema = [
       grid?.querySelectorAll('[data-dynamic-post-card]').forEach((el) => el.remove());
     };
 
+    /**
+     * Restarts the ChronoTrig entrance for every card in the grid.
+     *
+     * Filtering only toggles `hidden` on existing cards, so without this they would
+     * keep their `.trig` class and pop in instantly while only freshly appended
+     * cards animated. Clearing the reveal classes re-arms the stagger cascade.
+     */
+    const replayGridReveals = () => {
+      // Never strip the reveal classes without an engine to re-trigger them,
+      // otherwise the cards would stay stuck at the hidden entrance state.
+      if (!grid || typeof window.chronoTrig === 'undefined') return;
+      grid.classList.remove('trig-stagger-active');
+      for (const child of Array.from(grid.children)) {
+        child.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active');
+      }
+      // Flush the hidden entrance state before ChronoTrig re-observes the grid.
+      void grid.offsetHeight;
+    };
+
     const restoreServerPager = () => {
       if (!pagerWrap) return;
       if (usingDynamicPager) {
@@ -619,9 +638,9 @@ const indexSchema = [
     };
 
     const render = async (
-      options: { updateUrl?: boolean } = {}
+      options: { updateUrl?: boolean; replay?: boolean } = {}
     ) => {
-      const { updateUrl = true } = options;
+      const { updateUrl = true, replay = true } = options;
       const token = ++renderToken;
       const active = hasActiveFilters(filters);
 
@@ -662,6 +681,7 @@ const indexSchema = [
             ...slice.items.map((post) => createDynamicPostCard(post, showReadingTime))
           );
           renderFilteredPager(slice.page, slice.totalPages);
+          if (replay) replayGridReveals();
           refreshChronoTrig();
 
           if (status) {
@@ -699,6 +719,7 @@ const indexSchema = [
         card.element.hidden = !matches;
         if (matches) visible += 1;
       }
+      if (replay) replayGridReveals();
       refreshChronoTrig();
 
       const statusTemplate = active ? allTemplate : pageTemplate;
@@ -780,7 +801,9 @@ const indexSchema = [
       { signal: abortController.signal }
     );
 
-    void render({ updateUrl: false });
+    // Initial paint must not replay: the cards are already animating in from the
+    // page entrance, and resetting them here would restart that animation.
+    void render({ updateUrl: false, replay: false });
   }
 
   if (document.documentElement.dataset.blogFilterHistoryBound !== 'true') {

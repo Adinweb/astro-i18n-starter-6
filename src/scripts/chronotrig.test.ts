@@ -22,6 +22,22 @@ describe('ChronoTrig Integration & Lifecycle', () => {
     expect(() => refreshChronoTrig()).not.toThrow();
   });
 
+  it('drops the .js class so content stays visible when the engine failed to load', () => {
+    const remove = vi.fn();
+    const mockDocument = {
+      querySelectorAll: vi.fn().mockReturnValue([]),
+      addEventListener: vi.fn(),
+      readyState: 'complete',
+      documentElement: { classList: { remove } },
+    };
+    (globalThis as Record<string, unknown>).document = mockDocument;
+    (globalThis as Record<string, unknown>).window = {};
+
+    setupChronoTrig();
+
+    expect(remove).toHaveBeenCalledWith('js');
+  });
+
   it('auto-tags prose headings and [data-prose-reveal] with data-trig, invoking scan & onScroll', () => {
     const scanSpy = vi.fn();
     const onScrollSpy = vi.fn();
@@ -79,12 +95,17 @@ describe('ChronoTrig Integration & Lifecycle', () => {
     expect(onScrollSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('configures chronotrig.css with smooth bottom reveal, logical directions, and reduced motion', () => {
+  it('configures chronotrig.css with smooth bottom reveals that are not gated by OS motion preferences', () => {
     const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
 
-    // Bottom entrance state: starts slightly down and transparent
-    expect(css).toContain('translate3d(0, 24px, 0)');
+    // Bottom entrance state: starts well below the resting position and transparent
+    expect(css).toContain('translate3d(0, 56px, 0)');
     expect(css).toContain('opacity: 0');
+    expect(css).toContain('1.2s cubic-bezier(0.22, 1, 0.36, 1)');
+
+    // Scroll reveals pause briefly before starting so they are noticeable
+    expect(css).toContain('--trig-reveal-delay: 180ms');
+    expect(css).toContain('animation-delay: var(--trig-reveal-delay, 0s)');
 
     // Revealed state: transform: none to preserve Tailwind hover transforms on interactive cards
     expect(css).toContain('.js [data-trig].trig');
@@ -95,9 +116,25 @@ describe('ChronoTrig Integration & Lifecycle', () => {
     expect(css).toContain('[data-trig-direction="end"]');
     expect(css).toContain('[dir="rtl"]');
 
-    // Accessibility overrides
-    expect(css).toContain('@media (prefers-reduced-motion: reduce)');
+    // Reveals play for every visitor: no OS-level or mobile-viewport blackout
+    expect(css).not.toContain('@media (prefers-reduced-motion: reduce)');
+    expect(css).not.toContain('@media (max-width: 639px)');
+
+    // Explicit opt-out and print flattening stay intact
+    expect(css).toContain('html[data-motion="reduced"]');
     expect(css).toContain('@media print');
+  });
+
+  it('replays grid reveals on filter changes but never on the initial render', () => {
+    const view = fs.readFileSync(path.join(rootDir, 'src/views/BlogIndexView.astro'), 'utf-8');
+
+    // Guarded helper: never strip reveal classes without an engine to re-trigger them
+    expect(view).toContain('const replayGridReveals = () =>');
+    expect(view).toContain("typeof window.chronoTrig === 'undefined'");
+
+    // Applied in both render paths, but skipped for the first paint
+    expect(view).toContain('if (replay) replayGridReveals();');
+    expect(view).toContain('render({ updateUrl: false, replay: false })');
   });
 
   it('wires BaseLayout.astro with /chronotrig.min.js inline script and module coordinator', () => {

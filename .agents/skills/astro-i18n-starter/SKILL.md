@@ -32,7 +32,7 @@ This skill coordinates workflows for developing, maintaining, and extending this
    - **ChronoTrig Architecture**: Pinned sections (`data-trig-pin`), harmonic staggers (`data-trig-stagger`), and multi-step keyframe timelines (`data-trig-timeline`). Runtime managed in `src/scripts/chronotrig.ts` and styled via `src/styles/chronotrig.css`.
    - **Logical RTL Directions**: Always use `data-trig-direction="start"` / `data-trig-direction="end"` (never physical `left`/`right`) so horizontal entrances mirror automatically in `fa` and `ar`.
    - **Staggered Grids/Lists (`[data-trig-stagger]`)**: Put `data-trig-stagger` on the parent container. Children automatically compute `--stagger-delay` intervals and activate via `.trig-stagger-active`.
-   - **Dynamic DOM Refresh**: Call `refreshChronoTrig()` after dynamically appending cards or filtering.
+   - **Dynamic DOM Refresh**: Call `refreshChronoTrig()` after dynamically appending cards. For filter changes (which only toggle `hidden`), first reset the grid's reveal classes (see `replayGridReveals()` in `BlogIndexView.astro`), then call `refreshChronoTrig()` — never on the initial render.
    - **Lenis Isolation**: Keep `html { scroll-behavior: auto; }` and add `data-lenis-prevent` on nested scrollable overlays (`overflow-y-auto`).
 
 ---
@@ -58,7 +58,7 @@ All scripts support both `npm run` and `pnpm run`:
 
 ```bash
 npm run lint          # paraglide compile + astro check + tsc --noEmit
-npm test              # Vitest test suite (13 suites, 145 unit tests)
+npm test              # Vitest test suite (17 suites, 180 unit tests)
 npm run audit:i18n    # 5-stage i18n completeness and parity audit
 npm run build         # Production SSG build + Pagefind indexing
 npm run smoke         # Post-build HTML validation over dist/

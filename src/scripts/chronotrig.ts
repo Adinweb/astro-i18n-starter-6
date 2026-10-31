@@ -37,6 +37,13 @@ let lifecycleBound = false;
 export function setupChronoTrig(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
+  // Failsafe: if the engine asset failed to load, drop the `.js` class so the
+  // entrance styles never leave content stuck at opacity 0.
+  if (!window.chronoTrig) {
+    document.documentElement?.classList?.remove('js');
+    return;
+  }
+
   // Auto-tag prose headings, subtitles, and kickers for smooth bottom reveal (including nested section headings)
   const headings = document.querySelectorAll<HTMLElement>(
     '.prose h2, .prose h3, .prose h4, .prose .section-kicker, [data-prose-reveal]'

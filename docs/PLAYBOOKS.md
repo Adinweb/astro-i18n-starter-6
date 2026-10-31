@@ -260,7 +260,9 @@ pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run 
 ### 1. The ChronoTrig Reveal Contract
 * Never hide elements with `display: none` / `hidden` or unscoped Tailwind `opacity-0` for scroll entrance.
 * `BaseLayout.astro` synchronously adds `.js` on `<html class="js">` in `<head>`. `src/styles/chronotrig.css` scopes initial entrance offsets strictly under `.js [data-trig]` (preserving full layout geometry, zero CLS, and 100% visibility when JS is disabled or printed).
-* When an element enters the viewport, ChronoTrig adds `.trig`, animating `opacity: 1` and `transform: none` with a smooth `cubic-bezier(0.16, 1, 0.3, 1)` curve.
+* When an element enters the viewport, ChronoTrig adds `.trig`, animating `opacity: 1` and `transform: none` over `1.2s` (`1.1s` for stagger cards) with a `cubic-bezier(0.22, 1, 0.36, 1)` curve and a 56px bottom offset.
+* Reveals hold for `--trig-reveal-delay` (`180ms`, defined once at the top of `chronotrig.css`) before starting, so an entrance is not finished before the element is properly in view.
+* Reveals are **not** gated by the OS `prefers-reduced-motion` setting; `html[data-motion="reduced"]` and `@media print` are the only flattening paths.
 
 ### 2. Single Elements & RTL-Safe Directions
 * Add `data-trig` to any element, title, or card for a smooth bottom reveal.
@@ -270,8 +272,9 @@ pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run 
 * Add `data-trig-stagger data-trig-stagger-delay="0.08"` to the parent grid or list container.
 * ChronoTrig automatically computes `--stagger-index`, `--stagger-delay`, and activates child items via `.trig-stagger-active`.
 
-### 4. Dynamic Filtering & Re-scans (`refreshChronoTrig`)
-* When dynamically appending or filtering cards in client scripts (e.g. `BlogIndexView.astro`), call `refreshChronoTrig()` from `@/scripts/chronotrig` to re-scan and observe new elements.
+### 4. Dynamic Filtering, Re-scans & Filter Replays
+* When dynamically appending cards in client scripts, call `refreshChronoTrig()` from `@/scripts/chronotrig` to re-scan and observe the new elements.
+* A filter change is different: hiding cards leaves the surviving ones with `.trig`, so they would appear without animating. Reset the grid first (`replayGridReveals()` in `BlogIndexView.astro`), force a reflow, then call `refreshChronoTrig()` — and skip that replay on the initial render, otherwise the page entrance restarts.
 
 
 

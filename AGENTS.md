@@ -49,7 +49,8 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 10. **ChronoTrig CSS Scroll Engine & Lenis Smooth Scroll**:
    - Viewport reveals and keyframe animations are powered by ChronoTrig (`public/chronotrig.min.js`, coordinator in `src/scripts/chronotrig.ts`, styles in `src/styles/chronotrig.css`). Elements/titles reveal smoothly from bottom via `data-trig` and staggered card cascades via `data-trig-stagger`. All initial states are scoped under `.js` to guarantee zero CLS and 100% visibility when JS is disabled or printed.
    - Always use logical horizontal directions (`data-trig-direction="start"` / `data-trig-direction="end"`) rather than physical `left`/`right` so animations mirror automatically in RTL (`fa`, `ar`).
-   - In `[data-trig-stagger]` containers, children automatically receive `--stagger-delay` intervals and activate via `.trig-stagger-active`. When dynamically appending or filtering cards, call `refreshChronoTrig()` from `@/scripts/chronotrig`.
+   - In `[data-trig-stagger]` containers, children automatically receive `--stagger-delay` intervals and activate via `.trig-stagger-active`. When dynamically appending cards, call `refreshChronoTrig()` from `@/scripts/chronotrig`. When a client-side filter changes which cards are visible, reset the grid's reveal classes first (`replayGridReveals()` in `BlogIndexView.astro`) and then call `refreshChronoTrig()`, so surviving cards animate too — never replay on the initial render.
+   - Entrance timing lives in `src/styles/chronotrig.css`: 56px travel, `1.2s` (`1.1s` for stagger cards) on `cubic-bezier(0.22, 1, 0.36, 1)`, plus a `--trig-reveal-delay` (180ms) hold. Reveals run for every visitor and are **not** gated by the OS `prefers-reduced-motion` setting; only `html[data-motion="reduced"]` and `@media print` flatten them.
    - Add `data-lenis-prevent` to any nested scrollable overlay/panel (`overflow-y-auto`), and keep `html { scroll-behavior: auto; }` so Lenis (`src/scripts/lenis.ts`) controls smooth scrolling without conflict. See `.agents/skills/astro-i18n-starter/references/scroll-and-motion.md`.
 
 ---
@@ -67,7 +68,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   └── lib/                   # Shared prompt, frontmatter, content-stub, slug, and artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph fallback
-│   ├── components/            # Reusable Astro components (Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHero, HeroCopy, BlogPostHeroContent, PostCard, Reveal, SearchModal, DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar)
+│   ├── components/            # Reusable Astro components (Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHero, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar)
 │   ├── content/               # Symmetrical content collections:
 │   │   ├── pages/<group>/     # Static pages (en.mdx, de.mdx, fr.mdx, fa.mdx, ar.mdx + hero artwork)
 │   │   └── blog/<group>/      # Blog posts with localized slugs (+ cover artwork)
@@ -198,7 +199,7 @@ Rendered by `src/components/PageHero.astro` — the entry's `image` (`./<group>.
 1. Use `data-trig` on elements, sections, or cards for a smooth bottom reveal entrance when entering the viewport.
 2. For horizontal entrances, use `data-trig-direction="start"` / `data-trig-direction="end"` so RTL locales mirror automatically.
 3. For grids and lists, add `data-trig-stagger data-trig-stagger-delay="0.08"` on the parent container.
-4. When dynamically appending or filtering cards, call `refreshChronoTrig()` from `@/scripts/chronotrig` to re-scan and observe new elements.
+4. When dynamically appending cards, call `refreshChronoTrig()` from `@/scripts/chronotrig` to re-scan and observe new elements. For filter changes that only toggle `hidden`, reset the grid's reveal classes first (see `replayGridReveals()` in `BlogIndexView.astro`), then re-scan.
 5. Add `data-lenis-prevent` on any nested `overflow-y-auto` modal/panel. Full details: `.agents/skills/astro-i18n-starter/references/scroll-and-motion.md`.
 
 ---
@@ -223,4 +224,5 @@ Rendered by `src/components/PageHero.astro` — the entry's `image` (`./<group>.
 | Hiding elements with `display: none`, un-scoped `opacity-0`, or physical `left`/`right` | Use `data-trig` (scoped under `.js`) with logical `data-trig-direction="start|end"` |
 | Hardcoding staggered animation delays across lists | Use `data-trig-stagger` on parent container |
 | Failing to re-observe dynamically appended elements | Call `refreshChronoTrig()` from `@/scripts/chronotrig` |
+| Filtering cards that only toggle `hidden` (surviving cards pop in with no animation) | Reset the grid's reveal classes, then call `refreshChronoTrig()` — never on the initial render |
 | Nested scrollable overlays (`overflow-y-auto`) without Lenis isolation | Add `data-lenis-prevent` on scrollable modals, drawers, and panels |

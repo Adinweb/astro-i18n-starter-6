@@ -23,7 +23,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Locale-Native Dates & Numerals**: Centralized `Intl` formatting (`src/i18n/format.ts`) with Solar Hijri (Jalali) dates and Persian numerals (`۰-۹`) for `fa`, Eastern Arabic numerals (`٠-٩`) for `ar`, and standard localized formatting for LTR locales.
 * **Rich Editorial UX & Print Stylesheet**: Automatic sticky/collapsible Table of Contents (`h2`/`h3`), taxonomy-scored Related Articles, chronological Newer/Older article navigation, localized `updatedAt` timestamps, one-click Copy Code buttons on `<pre>` blocks, and a clean `@media print` stylesheet.
 * **Accessible by Default**: Native `<dialog>` mobile menu and keyboard-navigable search (`⌘K`, `↑`/`↓`/`Enter`), exactly one `<h1>` per page, skip link, visible focus rings, and reduced-motion support.
-* **Progressive Scroll Reveal & Smooth Scroll**: GPU-only entrance animations (`<Reveal />` / `.reveal` scoped under `<html class="js">`, never `display: none`), RTL-mirrored logical directions (`start` / `end`), automatic staggered grids (`.reveal-stagger` skipping `[hidden]` items), interactive filter replays (`replayReveals`), and accessible **Lenis** smooth scrolling.
+* **ChronoTrig Scroll Reveals & Smooth Scroll**: GPU-only entrance animations (`data-trig` scoped under `<html class="js">`, never `display: none`), RTL-mirrored logical directions (`data-trig-direction="start"` / `"end"`), harmonic staggered grids (`data-trig-stagger`), interactive filter replays, and accessible **Lenis** smooth scrolling.
 * **Image-Backed Hero Bands**: Every page and post opens with a full-bleed hero whose background *is* the entry's artwork — one image layer, never a card beside the copy and never a duplicated layer. The picture is defocused into atmosphere and shaped by vertical scrims, so the band reads identically in LTR and RTL.
 * **Optimized Image Pipeline**: Every picture is served through Astro's image pipeline — WebP output, a responsive `srcset` with the right `sizes`, and an `og:image` cropped to the social ratio. A 263 KB hero PNG becomes a 7 KB WebP on a phone.
 * **Frosted-Glass Design System**: The header, its icon controls, the calls to action and every chip are defined once in `src/styles/global.css` and composed everywhere else, so the whole site speaks one visual language. The same file defines a DaisyUI-inspired semantic palette — `primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning` and `error`, each with an AA-contrast `-fg` partner — available as Tailwind utilities in both light and dark mode.
@@ -95,8 +95,7 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── PageHero.astro     # Hero shell: full-bleed background + light-shaping scrims
 │   │   ├── HeroCopy.astro     # Shared hero copy (heading, description, slots)
 │   │   ├── BlogPostHeroContent.astro # Hero copy for articles (breadcrumbs, meta)
-│   │   ├── PostCard.astro     # Blog listing card (direct .reveal child inside .reveal-stagger)
-│   │   ├── Reveal.astro       # Progressive scroll-reveal wrapper (<Reveal direction="start" />)
+│   │   ├── PostCard.astro     # Blog listing card (direct child of [data-trig-stagger])
 │   │   ├── DrawerSearch.astro # Inline mobile drawer search
 │   │   ├── SearchModal.astro  # Accessible search modal (Pagefind + Dev fallback)
 │   │   ├── CookieConsent.astro # TDDDG § 25 / GDPR cookie & script consent modal
@@ -140,11 +139,11 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   ├── paraglide/             # Generated Paraglide code (gitignored, do not edit)
 │   ├── scripts/
 │   │   ├── lenis.ts           # Accessible smooth scroll lifecycle (ClientRouter + anchor sync)
-│   │   └── reveal.ts          # IntersectionObserver reveal engine (initReveals + replayReveals)
+│   │   └── chronotrig.ts      # ChronoTrig coordinator (setupChronoTrig + refreshChronoTrig)
 │   ├── styles/
 │   │   ├── global.css         # Tailwind v4 @theme static inline + semantic light/dark palette + glass + fonts
 │   │   ├── prose.css          # Article formatting with RTL isolation for code blocks
-│   │   └── reveal.css         # Progressive .js .reveal entrance vectors, .reveal-stagger & reduced-motion
+│   │   └── chronotrig.css     # .js [data-trig] entrance vectors, staggers, delay token & print/opt-out flattening
 │   └── views/
 │       ├── PageView.astro     # Static page renderer
 │       ├── BlogIndexView.astro # Blog listing page
@@ -362,13 +361,14 @@ Icon-only controls go through one component, so their size, shape and accessible
 
 The glass palette is tokenised (`--color-glass`, `--color-glass-control`, `--color-glass-border`, `--color-glass-hover`), so the translucency of the whole site is tuned from one place.
 
-### 7. Progressive Scroll Reveal, Staggering & Filtered Replays
-Entrance animations are scoped strictly under `<html class="js">` (`src/styles/reveal.css` + `src/scripts/reveal.ts`), never `display: none` or unscoped `opacity-0`, ensuring zero layout shift (CLS = 0) and 100% visibility when JavaScript is disabled or printed:
+### 7. ChronoTrig Scroll Reveals, Staggering & Filtered Replays
+Entrance animations are scoped strictly under `<html class="js">` (`src/styles/chronotrig.css` + `src/scripts/chronotrig.ts`), never `display: none` or unscoped `opacity-0`, ensuring zero layout shift (CLS = 0) and 100% visibility when JavaScript is disabled or printed:
 
-* **Single elements**: Wrap sections or headings with `<Reveal as="section" direction="up" delay={100}>` (`src/components/Reveal.astro`) or add `class="reveal" data-reveal="up"`.
-* **RTL-aware horizontal vectors**: Always use `direction="start"` / `direction="end"` instead of physical `left` / `right` so horizontal motion mirrors automatically in `fa` and `ar`.
-* **Staggered grids & lists (`.reveal-stagger`)**: Put `class="reveal-stagger"` on the parent grid/list and keep `.reveal` (or `<Reveal as="li">`) on its **direct children** (`:scope > .reveal`). Hidden items (`[hidden]`) are skipped when computing `--stagger-index` (capped at `8`, `90ms` step), and Tailwind `hover:` transforms work cleanly on `.reveal` cards once `.reveal-complete` settles.
-* **Dynamic DOM vs. interactive filter/tab replays**: Call `initReveals()` after injecting new `.reveal` nodes, and call `replayReveals(grid, { fast: true })` (`45ms` stagger, `0.6s` duration) after user-triggered category/tag/tab filter changes (not on initial setup or unchanged filter clicks). Add `[data-card][hidden] { display: none !important; }` when toggling `card.hidden` on elements styled with Tailwind `flex` or `grid`.
+* **Single elements**: Add `data-trig` to any section, card or heading. In `.mdx` content, `.prose h2/h3/h4` are tagged automatically. A reveal travels 56px, runs `1.2s` on `cubic-bezier(0.22, 1, 0.36, 1)`, and holds for `--trig-reveal-delay` (`180ms`) first so the entrance is noticeable.
+* **RTL-aware horizontal vectors**: Always use `data-trig-direction="start"` / `"end"` instead of physical `left` / `right` so horizontal motion mirrors automatically in `fa` and `ar`.
+* **Staggered grids (`data-trig-stagger`)**: Put `data-trig-stagger` (optionally `data-trig-stagger-delay="0.08"`) on the parent grid/list and keep every card a **direct child**. ChronoTrig seeds `--stagger-index` / `--stagger-delay` and activates children via `.trig-stagger-active`.
+* **Interactive filter replays**: Filtering only toggles `card.hidden`, so reset the grid's reveal classes first (`replayGridReveals()` in `BlogIndexView.astro`) and then call `refreshChronoTrig()` from `@/scripts/chronotrig`; existing cards then replay alongside newly appended ones. Never replay on the initial render. Add `[data-card][hidden] { display: none !important; }` when toggling `card.hidden` on flex/grid cards.
+* **Motion preference**: Reveals run for every visitor (they are not gated by the OS `prefers-reduced-motion` setting). `data-motion="reduced"` on `<html>` and `@media print` flatten them instantly.
 * **Lenis nested scroll isolation**: Add `data-lenis-prevent` to any scrollable modal, drawer, or overflow panel (`overflow-y-auto`).
 
 ---
@@ -418,7 +418,7 @@ The same pipeline runs on every push and pull request in [`.github/workflows/ci.
 | [AGENTS.md](AGENTS.md) | English | Contract rules and playbooks for AI coding agents |
 | [docs/PRD.md](docs/PRD.md) | English | Master build prompt: goals, architecture, and definition of done |
 | [docs/PLAYBOOKS.md](docs/PLAYBOOKS.md) | English | Step-by-step playbooks for common changes |
-| [.agents/skills/astro-i18n-starter/references/scroll-and-motion.md](.agents/skills/astro-i18n-starter/references/scroll-and-motion.md) | English | Deep-dive reference on `.js .reveal`, `.reveal-stagger`, `replayReveals`, and Lenis |
+| [.agents/skills/astro-i18n-starter/references/scroll-and-motion.md](.agents/skills/astro-i18n-starter/references/scroll-and-motion.md) | English | Deep-dive reference on `data-trig`, `data-trig-stagger`, replaying filtered grids, and Lenis |
 
 ---
 
