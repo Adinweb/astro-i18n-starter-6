@@ -1,6 +1,7 @@
 {
   "name": "astro-i18n-starter",
   "type": "module",
+  "packageManager": "pnpm@12.10.1",
   "version": "1.0.0",
   "private": true,
   "license": "MIT",
