@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import * as m from '@/paraglide/messages';
 import { LOCALES } from './locales';
 
+const hasDe = (LOCALES as readonly string[]).includes('de');
 const hasFa = (LOCALES as readonly string[]).includes('fa');
 const hasAr = (LOCALES as readonly string[]).includes('ar');
 
@@ -13,10 +14,12 @@ describe('ICU Plurals and Selectordinal', () => {
       expect(m.items_count({ count: 0 }, { locale: 'en' })).toBe('0 items');
     });
 
-    it('formats singular and plural in German', () => {
-      expect(m.items_count({ count: 1 }, { locale: 'de' })).toBe('1 Element');
-      expect(m.items_count({ count: 5 }, { locale: 'de' })).toBe('5 Elemente');
-    });
+    if (hasDe) {
+      it('formats singular and plural in German', () => {
+        expect(m.items_count({ count: 1 }, { locale: 'de' as any })).toBe('1 Element');
+        expect(m.items_count({ count: 5 }, { locale: 'de' as any })).toBe('5 Elemente');
+      });
+    }
 
     if (hasFa) {
       it('formats singular and plural in Persian', () => {
@@ -43,10 +46,12 @@ describe('ICU Plurals and Selectordinal', () => {
       expect(m.position_ordinal({ pos: 21 }, { locale: 'en' })).toBe('21st');
     });
 
-    it('formats ordinals in German', () => {
-      expect(m.position_ordinal({ pos: 1 }, { locale: 'de' })).toBe('1.');
-      expect(m.position_ordinal({ pos: 2 }, { locale: 'de' })).toBe('2.');
-    });
+    if (hasDe) {
+      it('formats ordinals in German', () => {
+        expect(m.position_ordinal({ pos: 1 }, { locale: 'de' as any })).toBe('1.');
+        expect(m.position_ordinal({ pos: 2 }, { locale: 'de' as any })).toBe('2.');
+      });
+    }
 
     if (hasFa) {
       it('formats ordinals in Persian', () => {

@@ -14,13 +14,15 @@ This skill coordinates workflows for developing, maintaining, and extending this
    - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
    - Content schemas: `src/content.config.ts`.
    - Navigation slots: `src/libs/config/navigation.ts` (`getNavigationSlots`).
-   - Application & brand config: `app.config.json` -> `src/libs/config/app.ts`.
-   - Semantic tokens: `src/styles/global.css`.
+   - Application, cookie & external API config: `app.config.json` -> `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIES_CONFIG`).
+   - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs`, `src/libs/search/persian.ts`, and `src/libs/search/client.ts`.
+   - Pure SSG External APIs (Zero Backend): `src/libs/api/client.ts` + `src/components/ContactForm.astro`. Never add a backend server or SSR endpoints; `/api/*.json` routes are static build-time catalogs only.
+   - Semantic tokens & `.layout-container` (`1280px`): `src/styles/global.css`.
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
 2. **Lean Router Dispatcher**:
    - Centralized exclusively in `src/pages/[...path].astro` -> `src/views/`. Never create dynamic route files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
 3. **Prefix-less Default Locale**:
-   - Default locale (`en`) has NO prefix (`/`, `/about`, `/blog/first-post`). Non-default locales (`de`, `fr`, `fa`, `ar`) have prefixes (`/fa/درباره-ما`).
+   - Default locale (`en`) has NO prefix (`/`, `/about/`, `/blog/first-post/`). Non-default locales (`fa` out of the box; `ar`, `de`, `fr`, etc. via `i18n:add-lang`) have prefixes (`/fa/درباره-ما/`).
 4. **RTL-Native Discipline**:
    - Always use CSS logical properties (`ms-`, `me-`, `ps-`, `pe-`, `start-*`, `end-*`, `text-start`, `text-end`, `border-s-*`, `border-e-*`). Never use physical directions.
 5. **Idempotent Client Scripts**:
@@ -43,10 +45,10 @@ To perform work in this repository, identify your specific task and read the ind
 
 | Task / Domain | Action / Reference File |
 | :--- | :--- |
-| **Content Pipeline & Routing**<br>Collections schemas, pure URL paths, lean router dispatcher, blog engine, pagination, Atom feeds, and sitemaps | ➡️ Read `references/content-and-routing.md` |
+| **Content Pipeline, Search & Pure SSG APIs**<br>Collections schemas, pure URL paths, lean router dispatcher, blog engine, pagination, Persian-aware Pagefind search, external API client, feeds & sitemaps | ➡️ Read `references/content-and-routing.md` |
 | **Multi-Menu Navigation**<br>Header dropdowns, mobile drawer tabs, 4-column footer, active states, slot resolvers | ➡️ Read `references/navigation.md` |
 | **CLI Automation Suite**<br>Scaffolding pages/posts, deleting content, language lifecycle, batch translations, asset generation | ➡️ Read `references/cli-automation.md` |
-| **RTL, Typography & Styling**<br>CSS logical properties, font stacks, LTR code block isolation, OKLCH tokens, SVG icon catalog | ➡️ Read `references/rtl-styling.md` |
+| **RTL, Typography & Styling**<br>CSS logical properties, `.layout-container`, font stacks, LTR code block isolation, OKLCH tokens, SVG icon catalog | ➡️ Read `references/rtl-styling.md` |
 | **Smooth Scroll, ChronoTrig & Motion**<br>ChronoTrig CSS scroll engine, `data-trig` smooth bottom reveals, `data-trig-stagger` cascades, `data-trig-pin` sticky stages, RTL start/end vectors, and Lenis smooth-scroll rules | ➡️ Read `references/scroll-and-motion.md` |
 | **Testing, Linting & QA**<br>Paraglide compile, Vitest unit tests, i18n parity audit, production build, smoke tests, Knip | ➡️ Read `references/verification.md` |
 
@@ -58,9 +60,9 @@ All scripts support both `npm run` and `pnpm run`:
 
 ```bash
 npm run lint          # paraglide compile + astro check + tsc --noEmit
-npm test              # Vitest test suite (17 suites, 180 unit tests)
-npm run audit:i18n    # 5-stage i18n completeness and parity audit
-npm run build         # Production SSG build + Pagefind indexing
-npm run smoke         # Post-build HTML validation over dist/
-npm run verify:cli    # 45 end-to-end CLI workflow assertions
+npm test              # Vitest test suite (18 suites)
+npm run audit:i18n    # 5-stage i18n completeness, frontmatter & RTL parity audit
+npm run build         # Production SSG build + Persian-aware Pagefind indexing
+npm run smoke         # Post-build HTML, SEO, feed & pagination validation over dist/
+npm run verify:cli    # 47 end-to-end CLI workflow assertions in isolated sandbox
 ```

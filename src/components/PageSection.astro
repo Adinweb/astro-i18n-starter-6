@@ -1,0 +1,66 @@
+---
+/**
+ * Composable full-bleed page band for `container: "canvas"` pages.
+ *
+ * Applies semantic surface backgrounds and vertical rhythm across the full
+ * viewport while aligning inner content to `.layout-container` (`1280px`)
+ * unless `bleed={true}` is set.
+ */
+interface Props {
+  id?: string;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'none' | 'sm' | 'md' | 'lg';
+  bleed?: boolean;
+  borderTop?: boolean;
+  borderBottom?: boolean;
+  class?: string;
+  containerClass?: string;
+}
+
+const {
+  id,
+  surface = 'default',
+  spacing = 'md',
+  bleed = false,
+  borderTop = false,
+  borderBottom = false,
+  class: className,
+  containerClass,
+} = Astro.props;
+
+const SURFACES = {
+  default: 'bg-bg',
+  surface: 'bg-surface',
+  subtle: 'bg-surface/60',
+} as const;
+
+const SPACINGS = {
+  none: 'py-0',
+  sm: 'py-8 sm:py-10',
+  md: 'py-12 sm:py-16',
+  lg: 'py-16 sm:py-24',
+} as const;
+---
+
+<section
+  id={id}
+  class:list={[
+    'w-full',
+    id && 'scroll-mt-28',
+    SURFACES[surface],
+    SPACINGS[spacing],
+    borderTop && 'border-t border-border',
+    borderBottom && 'border-b border-border',
+    className,
+  ]}
+>
+  {
+    bleed ? (
+      <slot />
+    ) : (
+      <div class:list={['layout-container', containerClass]}>
+        <slot />
+      </div>
+    )
+  }
+</section>

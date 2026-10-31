@@ -158,7 +158,7 @@ Creation Options:
 
 Update / Sync Options:
   --update                     Update an existing article group without rewriting markdown body
-  --sync-frontmatter           Synchronize frontmatter fields across all 5 language files
+  --sync-frontmatter           Synchronize frontmatter fields across all configured locale files
   --title:<locale>="<title>"   Specify per-locale title (e.g. --title:fa="عنوان مقاله")
   --desc:<locale>="<desc>"     Specify per-locale description
   --date="YYYY-MM-DD"          Update publication date
@@ -225,6 +225,10 @@ Update / Sync Options:
       }
     }
     const sourceTitle = customTitle || groupSlug.replace(/-/g, ' ');
+    const sourceFilePath = path.join(targetDir, `${sourceLocale}.mdx`);
+    const sourceFmData = fs.existsSync(sourceFilePath)
+      ? parseFrontmatter(fs.readFileSync(sourceFilePath, 'utf-8')).data
+      : null;
 
     for (const loc of LOCALES) {
       const filePath = path.join(targetDir, `${loc}.mdx`);
@@ -239,16 +243,16 @@ Update / Sync Options:
         body = parsed.body;
       } else {
         const slug = resolveSlug(loc, groupSlug, sourceLocale, defaultLocale, slugsByLocale);
-        const fallbackTitle = isSource ? sourceTitle : `[TODO: ${loc}] ${sourceTitle}`;
-        const fallbackDesc = isSource
-          ? `Description for ${groupSlug}`
-          : `[TODO: ${loc}] Description for ${groupSlug}`;
+        const baseTitle = sourceFmData?.title || sourceTitle;
+        const baseDesc = sourceFmData?.description || `Description for ${groupSlug}`;
+        const fallbackTitle = isSource ? baseTitle : `[TODO: ${loc}] ${baseTitle}`;
+        const fallbackDesc = isSource ? baseDesc : `[TODO: ${loc}] ${baseDesc}`;
         const hasPlaceholder = [fallbackTitle, fallbackDesc].some((v) => v.includes('[TODO'));
         fmData = {
           title: fallbackTitle,
           slug,
           description: fallbackDesc,
-          publishedAt: customDate || today,
+          publishedAt: customDate || sourceFmData?.publishedAt || today,
           draft: hasDraftArg ? !publishAll || hasPlaceholder : !isSource,
         };
         body = `\n${postStub(loc)}\n`;
@@ -281,19 +285,38 @@ Update / Sync Options:
       // Date resolution
       if (customDate) {
         fmData.publishedAt = customDate;
+      } else if (isSyncFrontmatter && sourceFmData?.publishedAt && !isSource) {
+        fmData.publishedAt = sourceFmData.publishedAt;
       }
 
-      // Taxonomy and featured image resolution
+      // Taxonomy and featured image resolution (including source-locale sync)
       if (noImage) {
         delete fmData.image;
       } else if (customImage) {
         fmData.image = customImage;
+      } else if (isSyncFrontmatter && sourceFmData && !isSource) {
+        if (sourceFmData.image !== undefined) fmData.image = sourceFmData.image;
+        else delete fmData.image;
       }
+
       if (customCategories && customCategories.length > 0) {
         fmData.categories = customCategories;
+      } else if (isSyncFrontmatter && sourceFmData && !isSource) {
+        if (Array.isArray(sourceFmData.categories) && sourceFmData.categories.length > 0) {
+          fmData.categories = [...sourceFmData.categories];
+        } else {
+          delete fmData.categories;
+        }
       }
+
       if (customTags && customTags.length > 0) {
         fmData.tags = customTags;
+      } else if (isSyncFrontmatter && sourceFmData && !isSource) {
+        if (Array.isArray(sourceFmData.tags) && sourceFmData.tags.length > 0) {
+          fmData.tags = [...sourceFmData.tags];
+        } else {
+          delete fmData.tags;
+        }
       }
 
       // Draft resolution

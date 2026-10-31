@@ -30,7 +30,7 @@ export async function buildSerializedBlogCatalog(
       let coverHeight: number | null = null;
 
       if (image) {
-        const targetWidth = Math.min(640, image.width);
+        const targetWidth = Math.min(800, image.width);
         const optimized = await getImage({
           src: image,
           width: targetWidth,

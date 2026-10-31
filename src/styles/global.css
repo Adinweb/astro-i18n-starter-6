@@ -211,6 +211,11 @@ summary::-webkit-details-marker {
  * action can never drift apart.
  */
 @layer components {
+  /* Standard desktop content container (80rem / 1280px) with logical inline gutters. */
+  .layout-container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
   /* The frosted bar that carries the navigation. */
   .glass-surface {
     @apply rounded-2xl border border-glass-border bg-glass shadow-glass backdrop-blur-2xl backdrop-saturate-150;
@@ -400,6 +405,7 @@ html[dir='rtl'] [data-mobile-menu].is-open [data-mobile-panel] {
   [data-related-posts],
   [data-booking-form],
   [data-contact-form],
+  [data-page-header] nav,
   .code-copy-btn {
     display: none !important;
   }

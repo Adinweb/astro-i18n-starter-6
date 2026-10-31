@@ -125,6 +125,14 @@
   "footer_col_resources": "Resources",
   "footer_legal_privacy": "Privacy Policy",
   "footer_legal_terms": "Terms of Service",
+  "home_hero_kicker": "Astro v7 Multilingual Architecture",
+  "home_spec_heading": "Architectural Blueprint",
+  "home_spec_i18n_desc": "Compile-time TypeScript dictionaries across {count} configured locales with zero client bundle bloat.",
+  "home_spec_i18n_title": "Zero-Runtime Paraglide i18n",
+  "home_spec_pages_desc": "Canvas, contained, and editorial page layouts with optional heroes or bespoke Astro templates.",
+  "home_spec_pages_title": "Unconstrained Page Canvas",
+  "home_spec_rtl_desc": "100% CSS logical property layout with automatic mirroring for Persian and Arabic scripts.",
+  "home_spec_rtl_title": "Native RTL & LTR Symmetry",
   "items_count": [
     {
       "declarations": [

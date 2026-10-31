@@ -1,3 +1,5 @@
+import { buildSearchQueryVariants, matchesFallbackSearch } from './persian';
+
 export interface SearchItem {
   title: string;
   description: string;
@@ -24,10 +26,11 @@ export function resetSearchClientForTests(): void {
 
 /** Pagefind excerpts contain markup; keep only the text for safe DOM rendering. */
 export function plainText(html: string): string {
-  if (typeof document === 'undefined') return html;
+  const cleanHtml = html.replace(/\u200A/g, '');
+  if (typeof document === 'undefined') return cleanHtml;
   const container = document.createElement('div');
-  container.innerHTML = html;
-  return container.textContent ?? '';
+  container.innerHTML = cleanHtml;
+  return (container.textContent ?? '').replace(/\u200A/g, '');
 }
 
 export async function getPagefindInstance() {
@@ -73,22 +76,48 @@ function loadDevSearchIndex(activeLocale: string): Promise<SearchItem[]> {
 }
 
 export async function executeSearch(query: string, activeLocale: string): Promise<SearchResult[]> {
-  const trimmed = query.trim();
-  if (!trimmed) return [];
+  const variants = buildSearchQueryVariants(query, activeLocale);
+  if (variants.length === 0) return [];
 
   if ((import.meta.env.PROD || !import.meta.hot) && !pagefindUnavailable) {
     try {
       const pagefind = await getPagefindInstance();
-      const search = await pagefind.search(trimmed);
-      const pagefindResults = await Promise.all(
-        search.results.slice(0, 8).map((result: any) => result.data())
+      const searchBatches = await Promise.all(
+        variants.map((variant) => pagefind.search(variant))
       );
 
-      return pagefindResults.map((result: any) => ({
-        url: result.url,
-        title: result.meta?.title || result.url,
-        excerpt: plainText(result.excerpt || ''),
-      }));
+      const uniqueHandles: any[] = [];
+      const seenHandleIds = new Set<string>();
+      for (const batch of searchBatches) {
+        for (const handle of batch?.results ?? []) {
+          if (typeof handle?.id === 'string') {
+            if (seenHandleIds.has(handle.id)) continue;
+            seenHandleIds.add(handle.id);
+          }
+          uniqueHandles.push(handle);
+          if (uniqueHandles.length >= 12) break;
+        }
+        if (uniqueHandles.length >= 12) break;
+      }
+
+      const resolvedData = await Promise.all(
+        uniqueHandles.map((result: any) => result.data())
+      );
+
+      const deduplicated: SearchResult[] = [];
+      const seenUrls = new Set<string>();
+      for (const result of resolvedData) {
+        if (!result?.url || seenUrls.has(result.url)) continue;
+        seenUrls.add(result.url);
+        deduplicated.push({
+          url: result.url,
+          title: result.meta?.title || result.url,
+          excerpt: plainText(result.excerpt || ''),
+        });
+        if (deduplicated.length >= 8) break;
+      }
+
+      return deduplicated;
     } catch {
       // Pagefind is unavailable (e.g. dev server); fallback to dev index.
     }
@@ -101,14 +130,9 @@ export async function executeSearch(query: string, activeLocale: string): Promis
     return [];
   }
 
-  const normalized = trimmed.toLowerCase();
   const filtered = localeItems
     .filter((item) => item.locale === activeLocale)
-    .filter(
-      (item) =>
-        item.title.toLowerCase().includes(normalized) ||
-        item.description.toLowerCase().includes(normalized)
-    )
+    .filter((item) => matchesFallbackSearch(item.title, item.description, query))
     .slice(0, 8);
 
   return filtered.map((item) => ({

@@ -322,6 +322,14 @@ if (shouldPopulateContent) {
             slug,
             description: pageDescription,
             ...(sourceFm.image ? { image: sourceFm.image } : {}),
+            ...(collection === 'pages'
+              ? {
+                  ...(sourceFm.template !== undefined ? { template: sourceFm.template } : {}),
+                  ...(sourceFm.hero !== undefined ? { hero: sourceFm.hero } : {}),
+                  ...(sourceFm.container !== undefined ? { container: sourceFm.container } : {}),
+                  ...(sourceFm.flushTop !== undefined ? { flushTop: sourceFm.flushTop } : {}),
+                }
+              : {}),
             ...(sourceFm.author ? { author: sourceFm.author } : {}),
             ...(Array.isArray(sourceFm.categories) && sourceFm.categories.length > 0
               ? { categories: sourceFm.categories }

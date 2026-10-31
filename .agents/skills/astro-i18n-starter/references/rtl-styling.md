@@ -78,12 +78,15 @@ All colors are defined once in `src/styles/global.css` using OKLCH and exposed v
 | `--color-scrim` | Translucent dark backdrop/media scrim |
 | `--color-glass`, `--color-glass-border`, `--shadow-glass` | Translucent frosted-glass system |
 
-### Shared Semantic Component Classes (`@layer components` in `global.css`)
-Never re-declare buttons, chips, kickers, or raw `text-white`/`bg-black` utilities in components. Compose:
+### Shared Layout & Semantic Component Classes (`@layer components` in `global.css`)
+Never re-declare container widths, buttons, chips, kickers, or raw `text-white`/`bg-black` utilities in components. Compose:
+- `.layout-container` — standard desktop width (`max-w-7xl` / `1280px`) with responsive logical inline gutters (`px-4 sm:px-6 lg:px-8`), used across header, footer, blog, and `<PageSection>`
+- `.prose-wide` — full container-width `.prose` variant (`max-w: none`) for `container: 'contained'` pages
 - `.glass-surface`, `.glass-control`, `.ghost-control`
 - `.cta`, `.btn-secondary`, `.btn-hero-secondary`
 - `.chip` (automatically styled when `[aria-selected='true']`, `[aria-current='true']`, or `[aria-current='page']`)
 - `.hero-badge`, `.section-kicker`
+- Reusable page shells: `PageSection.astro` (full-bleed surface bands + `.layout-container`), `PageHeader.astro` (`hero: 'minimal'`), and `PageHero.astro` (`hero: 'default'` & blog)
 
 ### Two-Mode Contrast
 Every role clears **WCAG AA (4.5:1)** contrast against its respective `-fg` counterpart in both light and dark mode.

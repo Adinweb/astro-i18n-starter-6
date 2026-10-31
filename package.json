@@ -13,7 +13,7 @@
     "check": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro check",
     "lint": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && astro check && tsc --noEmit",
     "test": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && vitest run",
-    "build": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && node scripts/audit-i18n.mjs && astro build && pagefind --site dist",
+    "build": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide && node scripts/audit-i18n.mjs && astro build && node scripts/index-pagefind.mjs",
     "preview": "astro preview",
     "smoke": "node scripts/smoke.mjs",
     "knip": "knip",

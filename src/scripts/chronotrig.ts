@@ -5,7 +5,7 @@
  * Astro View Transitions (`astro:page-load`), and dynamic DOM insertions.
  */
 
-export interface ChronoTrigInstance {
+interface ChronoTrigInstance {
   scan: () => void;
   onScroll: () => void;
   onResize: () => void;

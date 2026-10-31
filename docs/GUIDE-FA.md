@@ -1,10 +1,10 @@
 # راهنمای جامع Astro i18n Starter
 
-> استارتر چندزبانهٔ تولیدی بر پایهٔ **Astro v7** با پشتیبانی بومی **RTL/LTR**،
-> مسیریاب ایستا (SSG)، چندزبانه‌سازی کامل، دسته‌بندی و صفحه‌بندی وبلاگ،
-> جستجوی Pagefind، و مجموعه‌ای از ۱۴ ابزار خط فرمان برای مدیریت محتوا.
+> استارتر چندزبانهٔ تولیدی و **۱۰۰٪ استاتیک (Pure SSG بدون نیاز به بک‌اند)** بر پایهٔ **Astro v7**
+> با پشتیبانی بومی **RTL/LTR**، طراحی آزاد صفحات (`pages`)، دسته‌بندی و صفحه‌بندی وبلاگ،
+> جستجوی **Pagefind** بهینه‌شده برای زبان فارسی، آداپتور فرم تماس برای APIهای خارجی، و ۱۵ ابزار خط فرمان.
 
-نسخهٔ ۵٫۰ — مرجع فنی کامل و راهنمای عملیاتی.
+نسخهٔ ۵٫۱ — مرجع فنی کامل و راهنمای عملیاتی.
 
 ---
 
@@ -63,18 +63,19 @@
 
 | حوزه | قابلیت |
 | --- | --- |
-| **زبان‌ها** | ۵ زبان (`en`, `de`, `fr`, `fa`, `ar`)، دو زبان RTL، زبان پیش‌فرض بدون پیشوند، `og:locale` خودکار |
+| **معماری Pure SSG** | خروجی ۱۰۰٪ استاتیک بدون نیاز به سرور بک‌اند؛ فرم تماس (`ContactForm.astro`) مستقیم به API خارجی متصل می‌شود (`src/libs/api/client.ts`) + مدیریت رضایت کوکی (`CookieConsent.astro`) |
+| **زبان‌ها** | انگلیسی (`en`) و فارسی (`fa`) به‌صورت پیش‌فرض فعال + آمادگی کامل فونت/فرمت و افزودن تک‌فرمانی زبان‌های دیگر (`ar`, `de`, `fr`, …) با `i18n:add-lang`، زبان پیش‌فرض بدون پیشوند، `og:locale` خودکار |
 | **مسیریابی** | دیسپچر تک‌فایلی `[...path].astro` — بدون هیچ فایل مسیر پویا در `src/pages/` |
-| **محتوا** | دو کالکشن `pages` و `blog` با قرارداد `گروه/زبان.mdx`، فیلتر پیش‌نویس، اسلاگ بومی هر زبان، تشخیص برخورد مسیر |
+| **محتوا و چیدمان آزاد** | دو کالکشن `pages` و `blog` با قرارداد `گروه/زبان.mdx`؛ مقالات وبلاگ قالب یکپارچه دارند ولی صفحات `pages` کاملاً آزادند (`hero: 'none' | 'minimal' | 'default'`، `container: 'canvas' | 'contained' | 'prose'`، `flushTop`، `template`) در ظرف استاندارد دسکتاپ `1280px` (`.layout-container`) |
 | **RTL** | خواص منطقی CSS (`ms-`, `pe-`, `start-`), فونت جداگانه برای فارسی/عربی، جداسازی `pre/code` به LTR، چرخاندن آیکون پیجر |
-| **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی در کل مجموعهٔ مقالات، صفحه‌بندی استاتیک، فهرست مطالب خودکار (TOC)، مقالات مرتبط و ناوبری مقالهٔ قبلی/بعدی، دکمهٔ کپی کد، زمان مطالعه و تاریخ به‌روزرسانی، استایل چاپ (`@media print`) |
+| **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی در کل مجموعهٔ مقالات (`/api/blog-posts/<locale>.json`)، صفحه‌بندی استاتیک، فهرست مطالب خودکار (TOC)، مقالات مرتبط و ناوبری مقالهٔ قبلی/بعدی، دکمهٔ کپی کد، زمان مطالعه و تاریخ به‌روزرسانی، استایل چاپ (`@media print`) |
 | **حالت نمایش** | حالت روشن و تیره (Dark Mode) بدون پرش (FOUC-free) با توکن‌های معنایی `oklch` و هماهنگ با View Transitions |
 | **فرمت بومی** | تقویم هجری شمسی برای فارسی (`fa-IR-u-ca-persian`) و ارقام بومی فارسی/عربی (`۰-۹` / `٠-٩`) از طریق `src/i18n/format.ts` |
-| **جستجو** | Pagefind در پروداکشن + فهرست `/api/search-dev.json` به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K و ناوبری صفحه‌کلید (`↑`/`↓`/`Enter`) |
+| **جستجوی فارسی بهینه‌شده** | ایندکس Pagefind با نرمال‌سازی حروف و علائم فارسی (`scripts/index-pagefind.mjs`) + بازسازی نیم‌فاصله، همزه و ارقام در سمت کاربر (`src/libs/search/persian.ts`) + فهرست `/api/search-dev/<locale>.json` به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K |
 | **SEO** | canonical، hreflang چندزبانه + `x-default`، Open Graph (`article:modified_time`)، Twitter Card، JSON-LD (`WebSite`, `WebPage`, `CollectionPage`, `BlogPosting`, `BreadcrumbList`)، sitemap با `lastmod` کامل، فیدهای Atom مجزا به ازای هر زبان (`/rss.xml` و `/rss/<locale>.xml`)، webmanifest آگاه از زبان و جهت |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک «نسخهٔ انگلیسی» |
-| **ابزار CLI** | ۱۴ اسکریپت برای ساخت/حذف صفحه و مقاله، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، تولید تصاویر |
-| **کیفیت** | TypeScript strict، `astro check`، تست‌های واحد Vitest، ۴۵ تست سرتاسری CLI، ممیزی i18n پنج‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
+| **ابزار CLI** | ۱۵ اسکریپت برای ساخت/حذف صفحه و مقاله، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، تولید تصاویر و ایندکس Pagefind |
+| **کیفیت** | TypeScript strict، `astro check`، ۱۸ مجموعه تست واحد Vitest، ۴۷ تست سرتاسری CLI، ممیزی i18n پنج‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
 | **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
 | **حرکت و اسکرول** | اسکرول نرم با **Lenis** + موتور **ChronoTrig** (`data-trig`) با پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`)، پلکانی‌سازی گروهی (`data-trig-stagger`) و سازگاری کامل با View Transitions |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، کنترل حرکت (`data-motion="reduced"`) |
@@ -156,9 +157,9 @@ pnpm exec astro dev stop           # توقف سرور
 | `pnpm run check` | کامپایل پیام‌ها + `astro check` |
 | `pnpm run lint` | کامپایل پیام‌ها + `astro check` + `tsc --noEmit` |
 | `pnpm test` | کامپایل پیام‌ها + `vitest run` |
-| `pnpm run build` | کامپایل پیام‌ها + ممیزی i18n + `astro build` + `pagefind --site dist` |
+| `pnpm run build` | کامپایل پیام‌ها + ممیزی i18n + `astro build` + `node scripts/index-pagefind.mjs` |
 | `pnpm preview` | `astro preview` روی خروجی `dist/` |
-| `pnpm run smoke` | تست دود روی `dist/` (۹۸ assertion) |
+| `pnpm run smoke` | تست دود روی `dist/` |
 | `pnpm run knip` | فایل/اکسپورت/وابستگی مرده |
 | `pnpm run assets:generate` | بازتولید آیکون‌ها، کارت OG و artwork هیرو/کاور |
 | `pnpm run clean` | حذف `dist/`، `.astro/` و `src/paraglide/` |
@@ -173,7 +174,7 @@ pnpm exec astro dev stop           # توقف سرور
 | `pnpm run i18n:extract` | استخراج متن سخت‌کد از قالب |
 | `pnpm run block:adapt` | تبدیل بلوک Tailwind به خواص منطقی |
 | `pnpm run audit:i18n` | ممیزی چندزبانه (۵ مرحله) |
-| `pnpm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۴۵ ادعا) |
+| `pnpm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۴۷ ادعا) |
 
 ### ساخت برای انتشار
 
@@ -191,45 +192,46 @@ SITE_URL=https://example.com pnpm run build
 
 ```text
 /
-├── app.config.json          # SSOT: سایت، برند، صفحه‌بندی وبلاگ، سرور توسعه
+├── app.config.json          # SSOT: سایت، برند، صفحه‌بندی وبلاگ، کوکی، API خارجی و سرور توسعه
 ├── astro.config.mjs         # Astro: site، trailingSlash، MDX، Tailwind، سرور
 ├── knip.json                # پیکربندی تشخیص کد مرده
 ├── tsconfig.json            # TypeScript strict + alias `@/*` → `src/*`
 ├── vitest.config.ts         # Vitest: alias `@` و mock ماژول `astro:content`
-├── pnpm-workspace.yaml      # اجازهٔ build برای esbuild در pnpm
-├── pnpm-lock.yaml           # قفل نسخه‌های وابستگی‌ها
 ├── .npmrc                   # تنظیمات npm/pnpm
-├── .env.example             # نمونهٔ متغیر محیطی (SITE_URL)
-├── messages/                # فرهنگ لغت‌ها: en.json, de.json, fr.json, fa.json, ar.json
+├── .env.example             # نمونهٔ متغیر محیطی (SITE_URL, PUBLIC_API_BASE_URL, PUBLIC_CONTACT_API_URL)
+├── messages/                # فرهنگ لغت‌های زبان‌های فعال: en.json, fa.json (قابل گسترش با i18n:add-lang)
 ├── project.inlang/          # پیکربندی کامپایلر Paraglide (settings.json)
-├── public/                  # favicon، آیکون‌ها، کارت OG پیش‌فرض
-├── scripts/                 # ۱۴ اسکریپت CLI
+├── public/                  # chronotrig.min.js، favicon، آیکون‌ها، کارت OG پیش‌فرض
+├── scripts/                 # ۱۵ اسکریپت CLI و ایندکس بهینه‌شدهٔ Pagefind (index-pagefind.mjs)
 │   └── lib/                 # کتابخانهٔ مشترک: locales, frontmatter, image-reference,
-│                            # content-stub, slug, prompt
+│                            # content-stub, slug, prompt, compile-messages
 ├── .github/workflows/ci.yml # CI: lint → test → audit → build → smoke → knip → verify:cli
 ├── .agents/skills/         # مهارت عملیاتی برای عامل‌های AI
-│   └── astro-i18n-starter/  # SKILL.md + references/ (از جمله scroll-and-motion.md)
-├── docs/                   # GUIDE-FA.md (این راهنما)، PRD.md، PLAYBOOKS.md،
-│                            # SPIKE_RESULTS.md
+│   └── astro-i18n-starter/  # SKILL.md + references/
+├── docs/                   # GUIDE-FA.md (این راهنما)، PRD.md، PLAYBOOKS.md، SPIKE_RESULTS.md
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
-    ├── components/          # Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHero,
-    │                        # HeroCopy, BlogPostHeroContent, PostCard, SearchModal, Seo, TopLoadingBar
+    ├── components/          # Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHeader, PageHero,
+    │                        # PageSection, HeroCopy, BlogPostHeroContent, PostCard, SearchModal,
+    │                        # DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar
     ├── content/
-    │   ├── pages/<گروه>/    # صفحات ایستا: en.mdx, de.mdx, fa.mdx, … + <گروه>.png
-    │   └── blog/<گروه>/     # مقالات: en.mdx, fa.mdx, … + <گروه>.png
-    ├── content.config.ts    # شمای Zod هر دو کالکشن
+    │   ├── pages/<گروه>/    # صفحات ایستا: <locale>.mdx + <گروه>.png
+    │   └── blog/<گروه>/     # مقالات: <locale>.mdx + <گروه>.png
+    ├── content.config.ts    # شمای Zod هر دو کالکشن (همراه با گزینه‌های چیدمان pages)
     ├── i18n/
     │   ├── locales.ts       # SSOT زبان‌ها: LOCALES, DEFAULT_LOCALE, LOCALE_METADATA
     │   ├── format.ts        # فرمت بومی تاریخ (هجری شمسی برای fa) و اعداد (Intl)
     │   └── paths.ts         # localizeHref, localeHref, stripLocale, getPathname
     ├── layouts/BaseLayout.astro
     ├── libs/
+    │   ├── api/client.ts    # آداپتور Pure-SSG سمت کلاینت برای ارسال فرم به API خارجی
     │   ├── config/
     │   │   ├── app.ts       # خواندن و اعتبارسنجی app.config.json
-    │   │   └── navigation.ts # ساخت ناوبری هدر/منوی موبایل/فوتر
-    │   └── content/         # entries, service, feed, pagination, blog, taxonomy, social
-    ├── pages/               # فقط فایل‌های فیزیکی
+    │   │   └── navigation.ts # ساخت ناوبری چندمنویی هدر/کشوی موبایل/فوتر
+    │   ├── content/         # entries, service, feed, pagination, blog, blog-catalog, taxonomy, social
+    │   ├── cookies/         # مدل رضایت کوکی و مدیریت اسکریپت‌ها (model.ts, manager.ts)
+    │   └── search/          # client.ts + persian.ts (جستجوی Pagefind و فالبک با نرمال‌سازی فارسی)
+    ├── pages/               # فقط فایل‌های فیزیکی استاتیک
     │   ├── [...path].astro  # دیسپچر مسیریاب
     │   ├── 404.astro        # صفحهٔ ۴۰۴ locale-aware
     │   ├── icons.svg.ts     # اسپرایت SVG
@@ -238,13 +240,15 @@ SITE_URL=https://example.com pnpm run build
     │   ├── rss/[locale].xml.ts # فیدهای Atom سایر زبان‌ها
     │   ├── sitemap.xml.ts   # نقشهٔ سایت چندزبانه
     │   ├── robots.txt.ts
-    │   ├── api/blog-posts.json.ts # کاتالوگ استاتیک وبلاگ برای فیلتر بین‌صفحه‌ای
-    │   └── api/search-dev.json.ts
+    │   ├── api/blog-posts.json.ts # کاتالوگ استاتیک ترکیبی وبلاگ
+    │   ├── api/blog-posts/[locale].json.ts # کاتالوگ استاتیک تفکیک‌شده به ازای هر زبان
+    │   ├── api/search-dev.json.ts # فهرست fallback جستجو (کل زبان‌ها)
+    │   └── api/search-dev/[locale].json.ts # فهرست fallback جستجو به ازای هر زبان
     ├── paraglide/           # ⚠️ تولیدشده — هرگز دستی ویرایش نشود
     ├── scripts/             # lenis.ts (اسکرول نرم)، chronotrig.ts (هماهنگ‌کنندهٔ انیمیشن)
-    ├── styles/              # global.css، prose.css، chronotrig.css (انیمیشن ورود عناصر)
+    ├── styles/              # global.css (.layout-container + پالت معنایی)، prose.css، chronotrig.css
     ├── test/                # mock ماژول astro:content برای Vitest
-    └── views/               # PageView, BlogIndexView, BlogPostView
+    └── views/               # PageView, BlogIndexView, BlogPostView + pages/HomePageTemplate
 ```
 
 ---
@@ -317,9 +321,22 @@ SITE_URL=https://example.com pnpm run build
     "showTableOfContents": true,
     "showRelatedPosts": true
   },
+  "cookies": {
+    "enabled": true,
+    "consentVersion": 1,
+    "storageKey": "cookie_consent",
+    "expirationDays": 180
+  },
   "social": {
     "github": "https://github.com",
     "twitter": ""
+  },
+  "api": {
+    "baseUrl": "",
+    "timeoutMs": 10000,
+    "endpoints": {
+      "contact": "/contact"
+    }
   },
   "server": {
     "host": "0.0.0.0",
@@ -344,7 +361,9 @@ SITE_URL=https://example.com pnpm run build
 | `ui` | پرچم‌های بولین (`showSearch`, `showThemeToggle`, `showLanguageSwitcher`, `showTopLoadingBar`, `stickyHeader`) |
 | `blog.postsPerPage` | عدد صحیح مثبت |
 | `blog` | پرچم‌های بولین نمایش (`showReadingTime`, `showTableOfContents`, `showRelatedPosts`) |
+| `cookies` | تنظیمات رضایت کوکی (`enabled`, `consentVersion`, `storageKey`, `expirationDays`) |
 | `social.github` / `twitter` | رشته‌های اختیاری آدرس شبکه‌های اجتماعی |
+| `api` | تنظیمات اختیاری API خارجی (`baseUrl`, `timeoutMs`, `endpoints.contact`) — قابل بازنویسی با `PUBLIC_API_BASE_URL` و `PUBLIC_CONTACT_API_URL` |
 | `server.port` | عدد صحیح بین ۱ و ۶۵۵۳۵ |
 | `server.host` | رشتهٔ غیرخالی (`0.0.0.0`) |
 
@@ -354,7 +373,7 @@ SITE_URL=https://example.com pnpm run build
 {
   "$schema": "https://inlang.com/schema/project-settings",
   "baseLocale": "en",
-  "locales": ["en", "de", "fr", "fa", "ar"],
+  "locales": ["en", "fa"],
   "modules": [
     "./node_modules/@inlang/plugin-message-format/dist/index.js",
     "./node_modules/@inlang/plugin-m-function-matcher/dist/index.js"
@@ -499,8 +518,8 @@ window.location.assign(target);   // ✅
 
 ```text
 src/content/pages/about/
-├── en.mdx   de.mdx   fr.mdx   fa.mdx   ar.mdx
-└── about.png          ← artwork گروه (پس‌زمینهٔ هیرو)
+├── en.mdx   fa.mdx     ← فایل هر زبان فعال (سایر زبان‌ها با i18n:add-lang اضافه می‌شوند)
+└── about.png           ← artwork گروه (پس‌زمینهٔ اختیاری هیرو و کارت OG)
 ```
 
 شناسهٔ (ID) هر ورودی = `<گروه>/<زبان>` — مثلاً `about/fa`. این ID منبع حقیقت
@@ -508,7 +527,7 @@ src/content/pages/about/
 
 ### شمای Zod (`src/content.config.ts`)
 
-هر دو کالکشن یک شمای پایه دارند؛ `blog` فقط `publishedAt` را اجباری می‌کند.
+برخلاف کالکشن `blog` که قالب یکپارچهٔ مقاله (`BlogPostView.astro`) دارد، کالکشن `pages` برای طراحی کاملاً آزاد و منعطف ساخته شده است:
 
 | فیلد | نوع | اجباری | قاعده |
 | --- | --- | --- | --- |
@@ -522,6 +541,10 @@ src/content/pages/about/
 | `categories` | string[] | — | پیش‌فرض `[]`؛ کلیدها فقط `a-z0-9` با خط تیرهٔ تک |
 | `tags` | string[] | — | همان قاعده |
 | `draft` | boolean | — | پیش‌فرض `false`؛ `true` یعنی منتشر نمی‌شود |
+| `hero` | `'none' \| 'minimal' \| 'default'` | — (فقط `pages`) | پیش‌فرض `'none'` (بدون هیروی تحمیلی)؛ `'minimal'` = هدر تایپوگرافیک `PageHeader.astro`؛ `'default'` = بنر اتمسفریک `PageHero.astro` |
+| `container` | `'canvas' \| 'contained' \| 'prose'` | — (فقط `pages`) | پیش‌فرض `'canvas'` (تمام‌عرض آزاد)؛ `'contained'` = ظرف استاندارد `1280px` (`.layout-container` + `.prose-wide`)؛ `'prose'` = ستون خوانایی `72ch`. از نام `layout` استفاده نمی‌شود چون در `@astrojs/mdx` رزرو شده است |
+| `flushTop` | boolean | — (فقط `pages`) | پیش‌فرض `false`؛ در حالت `hero: 'none'` فاصلهٔ بالای `<main>` را برمی‌دارد تا بخش سفارشی زیر هدر شیشه‌ای قرار گیرد |
+| `template` | `'home'` (اختیاری) | — (فقط `pages`) | واگذاری رندر صفحه به یک نمای اختصاصی `.astro` در `src/views/pages/` |
 
 \* برای صفحهٔ `home` اسلاگ خالی مجاز است.
 
@@ -534,9 +557,11 @@ src/content/pages/about/
 ```mdx
 ---
 title: "درباره ما"
-slug: "darbare-ma"
+slug: "درباره-ما"
 description: "دربارهٔ اهداف و معماری چندزبانهٔ این وب‌سایت بیشتر بدانید."
 image: "./about.png"
+hero: "minimal"
+container: "contained"
 draft: false
 ---
 ```
@@ -606,7 +631,7 @@ draft: false
   نسبت به فایل محتوا تفسیر می‌شود.
 - تصویر **پس‌زمینهٔ تمام‌عرض** بخش هیرو است — نه یک کارت کنار متن.
 - با `<Image />` رندر می‌شود: خروجی WebP، `srcset` واکنش‌گرا، بدون بزرگ‌نمایی.
-- کارت‌های وبلاگ کاور را با `sizes="(min-width: 1024px) 310px, (min-width: 640px) 50vw, 100vw"`
+- کارت‌های وبلاگ کاور را متناسب با ظرف دسکتاپ `1280px` با `sizes="(min-width: 1280px) 390px, (min-width: 1024px) 31vw, (min-width: 640px) 46vw, 94vw"`
   می‌دهند؛ هیرو با `sizes="100vw"`.
 - مقدار `--image` می‌تواند نسبت به پوشهٔ گروه یا نسبت به ریشهٔ پروژه باشد؛
   اسکریپت آن را به ارجاعی نسبت به فایل محتوا تبدیل می‌کند و در صورت نیاز
@@ -656,10 +681,10 @@ draft: false
 ### ۷.۱ ساخت صفحهٔ ایستا — `new:page`
 
 ```bash
-pnpm run new:page contact --title="Contact Us" --from=en
+pnpm run new:page contact --title="Contact Us" --from=en --hero=minimal --container=contained
 ```
 
-خروجی: `src/content/pages/contact/{en,de,fr,fa,ar}.mdx` با اسلاگ هر زبان (زبان مبدأ
+خروجی: `src/content/pages/contact/<locale>.mdx` به ازای همهٔ زبان‌های فعال در `src/i18n/locales.ts` با اسلاگ هر زبان (زبان مبدأ
 نام گروه؛ بقیه جای‌نگهدار تا اسلاگ بومی تعیین شود)، ثبت کلید `nav_contact` در همهٔ
 فرهنگ‌ها و اشارهٔ `image` به `./contact.png`.
 
@@ -668,6 +693,8 @@ pnpm run new:page contact --title="Contact Us" --from=en
 | `--title="…"` | عنوان صفحه (در زبان مبدأ) |
 | `--desc="…"` / `--description="…"` | توضیح صفحه |
 | `--from=<locale>` / `--source=<locale>` | زبان مبدأ (پیش‌فرض: زبان پایه) |
+| `--hero=none\|minimal\|default` | نوع هدر صفحه (پیش‌فرض شِما: `none`) |
+| `--container=canvas\|contained\|prose` | نوع ظرف چیدمان صفحه (پیش‌فرض شِما: `canvas`) |
 | `--publish` / `--draft=false` | انتشار زبان مبدأ و زبان‌هایی که عنوان/توضیح واقعی دارند (زبان‌های دارای `[TODO: …]` پیش‌نویس می‌مانند) |
 | `--draft` / `--draft=true` | ساخت به‌صورت پیش‌نویس |
 | `--no-draft` | معادل `--draft=false` |
@@ -681,7 +708,7 @@ pnpm run new:page contact --title="Contact Us" --from=en
 | `--skip-nav` / `--no-nav` | ثبت نکردن در ناوبری |
 | `--no-update-heading` | دست‌نخورده گذاشتن `# Title` داخل بدنه |
 | `--update` | به‌روزرسانی گروه موجود بدون بازنویسی بدنه |
-| `--sync-frontmatter` | هم‌تراز کردن فرانت‌متر همهٔ فایل‌های زبانی |
+| `--sync-frontmatter` | هم‌تراز کردن فیلدهای ساختاری فرانت‌متر (`image`, `hero`, `container`, `flushTop`, `template`) در همهٔ فایل‌های زبانی |
 | `--sync-all` | راندن عنوان/توضیح مبدأ به‌عنوان الگو به همهٔ زبان‌ها |
 
 #### وضعیت انتشار پیش‌فرض
@@ -905,9 +932,9 @@ pnpm run assets:generate
 
 ```bash
 pnpm run audit:i18n    # ۵ بخش: پیکربندی زبان، فرهنگ‌ها، محتوا، مسیرها، متن هاردکد
-pnpm run smoke         # ۹۸ assertion روی خروجی بیلدشده
+pnpm run smoke         # تست دود روی خروجی بیلدشده
 pnpm run knip          # فایل/اکسپورت/وابستگی مرده
-pnpm run verify:cli    # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
+pnpm run verify:cli    # ۴۷ ادعا دربارهٔ گردش‌کارهای CLI
 ```
 
 `verify:cli` پروژه را در یک پوشهٔ موقت کپی می‌کند، همهٔ فرمان‌های CLI را دقیقاً
@@ -1104,6 +1131,8 @@ pre, code, .math {
 
 | کلاس | کاربرد |
 | --- | --- |
+| `.layout-container` | عرض استاندارد دسکتاپ (`max-w-7xl` / `1280px`) با حاشیه‌های افقی منطقی واکنش‌گرا (`px-4 sm:px-6 lg:px-8`) |
+| `.prose-wide` | نسخهٔ تمام‌عرض `.prose` برای صفحات `container: 'contained'` |
 | `.glass-surface` | سطح شیشه‌ای (هدر، پنل‌ها) |
 | `.glass-control` | کنترل داخل سطح شیشه‌ای |
 | `.ghost-control` | کنترل روی سطح مات |
@@ -1124,6 +1153,8 @@ pre, code, .math {
 | --- | --- | --- |
 | `Icon.astro` | `name`, `size` (پیش‌فرض ۲۰), `class`, `aria-hidden`, `aria-label` | نماد SVG از `/icons.svg#name` |
 | `IconButton.astro` | `icon`, `label`, `size` (۱۸), `variant` (`glass`/`ghost`), `class` + هر `data-*`/`aria-*` | دکمهٔ فقط-آیکون — دستی نسازید |
+| `PageHeader.astro` | `title`, `description?`, `breadcrumbs?`, `locale` | هدر تایپوگرافیک مینیمال برای صفحات `hero: 'minimal'` |
+| `PageSection.astro` | `id?`, `surface?`, `spacing?`, `container?`, `class?` | سکشن تمام‌عرض با ظرف استاندارد `.layout-container` برای صفحات `canvas` |
 | `HeroCopy.astro` | `title`, `description?`, `size?` (`page`/`post`)؛ اسلات `prelude` و پیش‌فرض | تیتر/توضیح/اسلات‌های مشترک هیرو |
 | `PageHero.astro` | `image?` | بخش هیرو؛ خودش هیچ متنی ندارد، فقط پس‌زمینه و اسلات |
 | `BlogPostHeroContent.astro` | `title`, `description?`, `locale`, `categories`, `author?`, `body?`, `publishedAt`, `breadcrumbs` | محتوای هیروی مقاله (از `HeroCopy` استفاده می‌کند) |
@@ -1131,6 +1162,8 @@ pre, code, .math {
 | `LanguageSwitcher.astro` | `currentLocale`, `alternates` | تعویض زبان با بارگذاری کامل |
 | `SearchModal.astro` | `locale` | مودال جستجوی دسکتاپ (Pagefind در پروداکشن / fallback استاتیک) |
 | `DrawerSearch.astro` | `locale` | جستجوی درون کشوی موبایل هماهنگ با تب‌بندی کشو |
+| `ContactForm.astro` | `locale`, `endpoint?`, `class?` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` |
+| `CookieConsent.astro` | `locale` | بنر و مودال مدیریت رضایت کوکی و اسکریپت‌ها (TDDDG § 25 / GDPR) |
 | `Seo.astro` | `title`, `description?`, `locale`, `url`, `alternates`, `siteName?`, `image?`, `type?`, `publishedTime?`, `schema?`, `noindex?`, `prevUrl?`, `nextUrl?` | همهٔ متادیتای SEO |
 | `TopLoadingBar.astro` | — | نوار پیشرفت ناوبری |
 
@@ -1278,17 +1311,17 @@ refreshChronoTrig();
 `knip` فایل‌ها، اکسپورت‌ها و وابستگی‌های بلااستفاده را پیدا می‌کند. نقطه‌های ورود آن:
 
 - `src/pages/**/*.{astro,ts}` (همهٔ صفحه‌ها و endpointها)
+- `src/content/**/*.mdx` (فایل‌های MDX که کامپوننت وارد می‌کنند)
 - `scripts/**/*.mjs` (همهٔ اسکریپت‌های CLI)
 - `src/**/*.test.ts` (فایل‌های تست)
 
-سه وابستگی در `ignoreDependencies` هستند چون فقط از داخل CSS صدا زده می‌شوند
-و Knip آن‌ها را در JS نمی‌بیند: `tailwindcss`، `@fontsource-variable/vazirmatn` و
-`@fontsource-variable/noto-sans-arabic`.
+دو افزونهٔ کامپایلر در `ignoreDependencies` هستند چون فقط از طریق `project.inlang/settings.json` بارگذاری می‌شوند:
+`@inlang/plugin-message-format` و `@inlang/plugin-m-function-matcher`.
 
 ### افزودن آیکون
 
 نمادهای موجود در اسپرایت SVG (`src/pages/icons.svg.ts`):
-`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link` · `arrow-right`.
+`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link` · `arrow-right` · `shield` · `mail`.
 
 ```ts
 // src/pages/icons.svg.ts
@@ -1502,11 +1535,9 @@ collectTaxonomyKeys(posts, 'categories');
 - در هر تغییر واقعی وضعیت فیلتر (`!areBlogFiltersEqual(prev, next)` شامل انتخاب دسته/برچسب، پاک کردن فیلتر و `popstate`)، تابع `replayGridReveals()` کلاس‌های ورود کارت‌ها را پاک می‌کند و سپس `refreshChronoTrig()` همهٔ کارت‌های مرئی را با گام پلکانی دوباره با انیمیشن وارد تصویر می‌کند.
 
 وقتی وبلاگ بیش از یک صفحه دارد و فیلتری فعال است، کارت‌های همان صفحه کافی
-نیستند: `BlogIndexView` کاتالوگ استاتیک `/api/blog-posts.json` را یک بار
-(`catalogPromise`) می‌گیرد و همهٔ مقالات آن زبان را که با فیلتر می‌خوانند
-به‌صورت کارت‌های پویا رندر می‌کند؛ در این حالت پیجر پنهان می‌شود، چون نتیجه
-دیگر به یک صفحه محدود نیست. اگر این درخواست شکست بخورد، فیلتر به کارت‌های
-همان صفحه برمی‌گردد (fallback بی‌صدا). لینک‌های پیجر همیشه کوئری فیلتر فعال
+نیستند: `BlogIndexView` کاتالوگ استاتیک همان زبان (`/api/blog-posts/<locale>.json`) را یک بار
+می‌گیرد و همهٔ مقالات آن زبان را که با فیلتر می‌خوانند فیلتر و صفحه‌بندی پویا می‌کند.
+اگر این درخواست شکست بخورد، فیلتر به کارت‌های همان صفحه برمی‌گردد (fallback بی‌صدا). لینک‌های پیجر همیشه کوئری فیلتر فعال
 را حمل می‌کنند.
 
 ### زمان مطالعه
@@ -1563,28 +1594,37 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 
 ---
 
-## ۱۴. جستجو
+## ۱۴. جستجو (بهینه‌شده برای فارسی) و فرم تماس Pure SSG
 
-سیستم جستجو در کل سایت از طریق یک کتابخانهٔ مشترک سمت کلاینت (`src/libs/search/client.ts`) پیاده‌سازی شده و در دو کامپوننت ارائه می‌شود:
+سیستم جستجو در کل سایت از طریق `src/libs/search/client.ts` و ماژول نرمال‌ساز فارسی `src/libs/search/persian.ts` به همراه ایندکسر مرحلهٔ بیلد `scripts/index-pagefind.mjs` پیاده‌سازی شده و در دو کامپوننت ارائه می‌شود:
 ۱. **مودال دسکتاپ (`SearchModal.astro`)**: با کلیک روی آیکون جستجو یا کلید میان‌بر `⌘K` / `Ctrl+K`.
 ۲. **تب جستجوی کشوی موبایل (`DrawerSearch.astro`)**: مستقیماً درون تب جستجوی کشوی موبایل تعبیه شده و بدون نیاز به باز کردن دیالوگ جداگانه، تجربهٔ جستجوی بومی موبایل را فراهم می‌کند.
+
+### بهبودهای اختصاصی جستجوی فارسی در Pagefind و Fallback
+موتور پیش‌فرض Pagefind فاقد ریشه‌یاب (Stemmer) فارسی است. برای حل چالش‌های واقعی تایپ فارسی، دو لایهٔ مکمل در پروژه تعبیه شده است:
+1. **نرمال‌سازی زمان بیلد (`scripts/index-pagefind.mjs`)**: هنگام اجرای `pnpm run build`، فایل‌های HTML پوشهٔ `dist/` بدون تغییر روی دیسک، در حافظه پردازش و به API رسمی Node در Pagefind داده می‌شوند:
+   - یکسان‌سازی حروف عربی به فارسی (`ي`/`ى` ← `ی`، `ك` ← `ک`) و حذف کشیده/اعراب در متن صفحات `fa`.
+   - جداسازی علائم نگارشی چسبیده (`«»،؛؟٪٬` مثل `«منبع`) با فاصلهٔ مویی یونیکد (`\u200A`) بیرون از تگ‌های `<pre>`/`<code>`/`<script>`/`<style>` تا توکنایزر Rust در Pagefind کلمات فارسی را کاملاً تمیز ایندکس کند و `plainText()` آن را در خلاصه‌ها پاک کند.
+2. **گسترش هوشمند عبارت جستجو در سمت کاربر (`src/libs/search/persian.ts`)**:
+   - تبدیل خودکار فاصلهٔ معمولی به نیم‌فاصله (`ZWNJ`) در پسوندها، پیشوندها و ترکیب‌های رایج فارسی (`صفحه بندی` ← `صفحه‌بندی`، `راست به چپ` ← `راست‌به‌چپ`، `فاصله گذاری ها` ← `فاصله‌گذاری‌ها`) و اجرای موازی دگرسان‌های کوئری در Pagefind با حذف نتایج تکراری.
+   - پوشش تفاوت‌های املایی همزه/یای میانجی (`ارایه` ↔ `ارائه`، `مساله` ↔ `مسئله`) و ارقام فارسی/لاتین/عربی (`۱۴۰۵` ↔ `1405`).
+   - تطبیق بی‌حساسیت به نیم‌فاصله/فاصله در حالت توسعه و فالبک (`/api/search-dev/<locale>.json`).
 
 | رفتار | جزئیات فنی |
 | --- | --- |
 | دسترسی | کلیک روی دکمهٔ جستجو، باز کردن تب جستجوی کشو در موبایل، یا میان‌بر `⌘K` / `Ctrl+K` |
 | بستن | کلید `ESC`، کلیک روی پس‌زمینه (Backdrop)، دکمهٔ بستن، یا کلیک روی هر نتیجهٔ جستجو |
-| موتور پروداکشن | لود تنبل (Lazy-load) ماژول Pagefind از `/pagefind/pagefind.js` که در زمان بیلد ایندکس می‌شود |
-| حالت بدون Pagefind (توسعه/فالبک) | فالبک آنی به `/api/search-dev.json` — هم در محیط توسعه و هم در صورت در دسترس نبودن ایندکس Pagefind |
-| فیلتر زبان | نتایج فالبک فقط برای زبان (`locale`) جاری صفحه فیلتر و رندر می‌شوند |
+| موتور پروداکشن | لود تنبل (Lazy-load) ماژول Pagefind از `/pagefind/pagefind.js` همراه با گسترش کوئری‌های فارسی (`buildSearchQueryVariants`) |
+| حالت بدون Pagefind (توسعه/فالبک) | فالبک آنی به `/api/search-dev/<locale>.json` (و `/api/search-dev.json`) با تطبیق نرمال‌شدهٔ `matchesFallbackSearch` |
 | کنترل زمان (Debounce) | ۱۵۰ میلی‌ثانیه برای جلوگیری از ارسال درخواست‌های پیاپی |
-| سقف تعداد نتایج | ۸ نتیجهٔ برتر (`slice(0, 8)`) |
+| سقف تعداد نتایج | ۸ نتیجهٔ برتر یکتا (`slice(0, 8)`) |
 | محافظت از رقابت (Race-Condition) | شناسهٔ فزایندهٔ `requestId`؛ پاسخ‌های دیررس جستجوهای قبلی نادیده گرفته می‌شوند |
 | امنیت در برابر XSS | تبدیل مارک‌آپ خلاصه‌های Pagefind به متن ساده توسط `plainText()` و درج امن با `textContent` |
 
-> `/api/search-dev.json` از همان `getSiteRoutes()` ساخته می‌شود، پس URLها،
-> اسلاگ‌های محلی‌شده و فیلتر پیش‌نویس همیشه با سایت بیلدشده یکی هستند.
-> این endpoint در پروداکشن هم ساخته می‌شود (fallback عمدی است) و برای هر صفحه
-> فقط عنوان، توضیح، URL و زبان را برمی‌گرداند — نه متن کامل صفحه.
+### فرم تماس و اتصال به API خارجی (معماری Pure SSG بدون بک‌اند)
+این استارتر **۱۰۰٪ استاتیک (SSG)** است و هیچ سرور بک‌اند داخلی ندارد. برای فرم تماس (`src/components/ContactForm.astro`)، داده‌ها مستقیماً از مرورگر از طریق آداپتور نوع‌امن `src/libs/api/client.ts` (`submitContactInquiry` / `postJson`) با محافظت تایم‌اوت (`AbortController`) و فیلتر ضداسپم Honeypot به سرویس یا API خارجی شما ارسال می‌شوند:
+- نشانی API را در متغیر محیطی `PUBLIC_CONTACT_API_URL` (یا `PUBLIC_API_BASE_URL`) و یا در بخش `api` فایل `app.config.json` تنظیم کنید.
+- تا زمانی که نشانی API خارجی تنظیم نشده باشد، فرم به‌طور خودکار پیام راهنما نمایش می‌دهد و دکمهٔ ارسال را ایمن غیرفعال نگه می‌دارد.
 
 ---
 
@@ -1629,8 +1669,8 @@ const card = await getSocialCard(entry.data.image);
 | `/robots.txt` | متن | `User-agent: *` / `Allow: /` / `Disallow: /api/` / `Sitemap: <مطلق>` |
 | `/site.webmanifest` | JSON | از `app.config.json` + زبان پیش‌فرض ساخته می‌شود: نام، `short_name`، `lang`/`dir`، رنگ‌ها، آیکون‌ها، `display: standalone` |
 | `/icons.svg` | SVG | اسپرایت نمادها؛ هر نماد یک `<symbol id="name">` |
-| `/api/search-dev.json` | JSON | فهرست fallback جستجو (عنوان، توضیح، URL، زبان) |
-| `/api/blog-posts.json` | JSON | کاتالوگ استاتیک مقالات منتشرشدهٔ همهٔ زبان‌ها برای فیلتر فراصفحه‌ای |
+| `/api/search-dev/<locale>.json` و `/api/search-dev.json` | JSON | فهرست استاتیک fallback جستجو به تفکیک هر زبان و کل سایت |
+| `/api/blog-posts/<locale>.json` و `/api/blog-posts.json` | JSON | کاتالوگ استاتیک مقالات منتشرشده به تفکیک زبان برای فیلتر فراصفحه‌ای |
 
 ### صفحهٔ ۴۰۴
 
@@ -1665,12 +1705,12 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 
 ```bash
 pnpm run lint     # کامپایل پیام‌ها + astro check + tsc --noEmit
-pnpm test         # ۱۴۵ تست واحد Vitest (در ۱۳ مجموعه تست)
+pnpm test         # ۱۸ مجموعه تست واحد Vitest
 pnpm run audit:i18n
 SITE_URL=https://example.com pnpm run build
-pnpm run smoke    # ۱۲۸ assertion روی dist/
+pnpm run smoke    # تست دود روی dist/
 pnpm run knip
-pnpm run verify:cli  # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
+pnpm run verify:cli  # ۴۷ ادعا دربارهٔ گردش‌کارهای CLI
 ```
 
 ### چه چیزی تست می‌شود
@@ -1678,7 +1718,7 @@ pnpm run verify:cli  # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
 | فایل | پوشش |
 | --- | --- |
 | `src/i18n/paths.test.ts` | `localizeHref`، `stripLocale`، نرمال‌سازی مسیر، اسلش انتهایی |
-| `src/i18n/icu.test.ts` | ICU جمع/ordinal برای همهٔ زبان‌ها |
+| `src/i18n/icu.test.ts` | ICU جمع/ordinal برای زبان‌های فعال |
 | `src/i18n/format.test.ts` | قالب‌بندی بومی اعداد و تاریخ‌ها (شمسی برای فارسی، ارقام عربی شرقی و غیره) |
 | `src/libs/content/entries.test.ts` | تجزیهٔ ID، فیلتر پیش‌نویس، گروه‌بندی، مرتب‌سازی |
 | `src/libs/content/service.test.ts` | ساخت مسیرها، تشخیص برخورد، صفحه‌بندی هر زبان |
@@ -1686,12 +1726,16 @@ pnpm run verify:cli  # ۴۵ ادعا دربارهٔ گردش‌کارهای CLI
 | `src/libs/content/blog.test.ts` | فیلترها، مقایسهٔ وضعیت فیلتر (`areBlogFiltersEqual`)، زمان مطالعه، TOC و مقالات مرتبط |
 | `src/libs/content/taxonomy.test.ts` | برچسب دسته/برچسب و fallback |
 | `src/libs/content/scripts.test.ts` | توابع فرانت‌متر، CLI helperها، پارسر زبان |
-| `src/libs/config/app.test.ts` | اعتبارسنجی `app.config.json` و تنظیمات برند/وبلاگ |
+| `src/libs/config/app.test.ts` | اعتبارسنجی `app.config.json` و تنظیمات برند/وبلاگ/API/کوکی |
 | `src/libs/config/navigation.test.ts` | اسلات‌های ناوبری چندمنویی هدر، کشوی موبایل و فوتر |
 | `src/libs/config/astro-config.test.ts` | alias `astro/components` در `astro.config.mjs` (رفع `Unknown file extension ".astro"`) |
+| `src/libs/api/client.test.ts` | آداپتور Pure-SSG ارسال درخواست به API خارجی، تایم‌اوت و Honeypot |
+| `src/libs/cookies/cookies.test.ts` | مدل رضایت کوکی، انقضا و مدیریت اسکریپت‌ها |
+| `src/libs/search/client.test.ts` | جستجوی کلاینت، نرمال‌سازی حروف/نیم‌فاصله/ارقام فارسی و ایندکسر Pagefind |
+| `src/scripts/lenis.test.ts` | اسکرول نرم، آفست لینک‌های `#hash` و ایزوله‌سازی پنل‌ها |
 | `src/scripts/chronotrig.test.ts` | قرارداد `.js [data-trig]`، جهت‌های منطقی RTL، پلکانی‌سازی، مکث `--trig-reveal-delay` و سازگاری Lenis |
 
-> **۱۷ فایل تست، ۱۸۰ تست.** ماژول `astro:content` در Vitest با
+> **۱۸ مجموعه تست واحد.** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -1771,7 +1815,7 @@ pnpm run build && pnpm run smoke
 | گزینه | مقدار | چرا |
 | --- | --- | --- |
 | `site` | `SITE_URL` یا مبدأ توسعه | canonical، sitemap، RSS، OG |
-| `trailingSlash` | `'always'` | مسیرها با `/` تمام می‌شوند |
+| `trailingSlash` | `'ignore'` | لینک‌های canonical با `withTrailingSlash` به `/` ختم می‌شوند و مسیرهای نامعتبر بدون اسلش صفحهٔ ۴۰۴ بومی را رندر می‌کنند |
 | `build.format` | `'directory'` | هر صفحه یک پوشهٔ `index.html` |
 | `compressHTML` | `true` | فشرده‌سازی HTML خروجی |
 | `integrations` | `[mdx()]` | پشتیبانی MDX |
@@ -1783,7 +1827,7 @@ pnpm run build && pnpm run smoke
 پوشهٔ `dist/` یک سایت کاملاً استاتیک است و روی هر میزبانی سرو می‌شود
 (Cloudflare Pages، Netlify، Vercel، S3، nginx).
 
-به‌خاطر `trailingSlash: 'always'` و `build.format: 'directory'` هر صفحه
+به‌خاطر `build.format: 'directory'` هر صفحه
 به‌شکل یک پوشه با `index.html` ساخته می‌شود:
 
 ```text
@@ -1804,7 +1848,7 @@ dist/
 
 ### ۵. نکات
 
-- `dist/pagefind/` باید همراه سایت منتشر شود (مرحلهٔ `pagefind --site dist`).
+- `dist/pagefind/` باید همراه سایت منتشر شود (مرحلهٔ `node scripts/index-pagefind.mjs`).
 - `robots.txt` و `sitemap.xml` با مبدأ `SITE_URL` ساخته می‌شوند.
 - `.env` در `.gitignore` است؛ `SITE_URL` را در تنظیمات محیطی CI بگذارید، نه در مخزن.
 - خروجی بیلد شامل source map، فایل `.env` یا فایل `.ts`/`.mjs` نیست.
@@ -2006,7 +2050,15 @@ dist/
 
 ### `src/libs/config/app.ts`
 
-`siteConfig` · `POSTS_PER_PAGE` · `HERO_TITLE_ID` · `DEFAULT_HERO_IMAGE` · `absoluteUrl` · `UI_CONFIG` · `BLOG_CONFIG` · `SOCIAL_CONFIG`
+`siteConfig` · `POSTS_PER_PAGE` · `HERO_TITLE_ID` · `DEFAULT_HERO_IMAGE` · `absoluteUrl` · `UI_CONFIG` · `BLOG_CONFIG` · `COOKIES_CONFIG` · `API_CONFIG` · `SOCIAL_CONFIG`
+
+### `src/libs/api/client.ts` و `src/libs/search/*`
+
+| فایل | خروجی‌ها |
+| --- | --- |
+| `api/client.ts` | `resolveApiEndpoint` · `isContactApiConfigured` · `postJson` · `submitContactInquiry` |
+| `search/client.ts` | `executeSearch` · `getPagefindInstance` · `plainText` |
+| `search/persian.ts` | `normalizePersianQuery` · `applyPersianZwnjCompounds` · `buildSearchQueryVariants` · `normalizeForFallbackMatch` · `matchesFallbackSearch` |
 
 ### `src/libs/config/navigation.ts`
 
@@ -2025,7 +2077,7 @@ dist/
 | فایل | خروجی‌ها |
 | --- | --- |
 | `entries.ts` | `parseContentEntryId` · `isPublished` · `sortByPublishedAtDesc` · `groupPublishedEntries` · `getPublishedLocaleEntries` · `getSortedLocaleEntries` |
-| `service.ts` | `getBlogIndexHref` · `getBlogPageHref` · `getBlogPostHref` · `getPageUrl` · `getSiteRoutes` · `buildSiteRoutes` · `getBreadcrumbs` |
+| `service.ts` | `getBlogIndexHref` · `getBlogPageHref` · `getBlogPostHref` · `getPageUrl` · `getSiteRoutes` · `buildSiteRoutes` · `getBreadcrumbs` · `getRssFeedHref` |
 | `pagination.ts` | `getPageCount` · `clampPage` · `paginate` · `buildPageWindow` · `PAGE_GAP` · `PageSlice` |
 | `blog.ts` | `parseBlogFilters` · `buildBlogFilterQuery` · `matchesBlogFilters` · `filterBlogPosts` · `hasActiveFilters` · `areBlogFiltersEqual` · `toggleBlogTag` · `getReadingTime` · `collectTaxonomyKeys` · `humanizeKey` · `NO_FILTERS` |
 | `taxonomy.ts` | `getCategoryLabel` · `getTagLabel` |

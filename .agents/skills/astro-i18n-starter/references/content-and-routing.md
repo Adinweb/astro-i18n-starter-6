@@ -12,10 +12,14 @@ src/content/{collection}/{group}/{locale}.mdx
 ```
 
 ### 1.1 Collections & Schemas
-* **`pages`**: General site pages (`home`, `about`, `features`, `pricing`).
-* **`blog`**: Chronological articles requiring `publishedAt` and a non-empty `slug`.
+* **`pages`**: General site pages (`home`, `about`, `features`, `pricing`) with flexible layout controls:
+  - `hero`: `'none' | 'minimal' | 'default' | boolean` (defaults to `'none'` — no forced hero banner).
+  - `container`: `'canvas' | 'contained' | 'prose'` (defaults to `'canvas'` — unconstrained `<main>` canvas; `'contained'` uses `.layout-container` (`1280px`) + `.prose-wide`; `'prose'` uses a `72ch` editorial column. Named `container` so it never collides with `@astrojs/mdx`'s reserved `layout` import property).
+  - `flushTop`: `boolean` (defaults to `false`; removes header top padding when `hero: 'none'` so custom full-bleed heroes sit under the floating glass header).
+  - `template`: optional key mapped in `src/views/PageView.astro` to a view in `src/views/pages/` (e.g., `'home'`) to render a shared bespoke `.astro` page template across all locales while sourcing localized copy/SEO from MDX.
+* **`blog`**: Chronological articles requiring `publishedAt` and a non-empty `slug`, rendered uniformly through `BlogPostView.astro`.
 * **Group Identity**: The directory name `{group}` is the universal entity identity shared across all locales.
-* **Featured Image**: Specified as a relative path (`./<group>.png`). Astro's `image()` helper resolves the reference at build time, checks file existence, and provides ready-to-use `ImageMetadata`. A broken path fails the build immediately.
+* **Featured Image**: Specified as a relative path (`./<group>.png`). Astro's `image()` helper resolves the reference at build time, checks file existence, and provides ready-to-use `ImageMetadata` (used for `og:image` social cards and optional `hero: 'default'` banners). A broken path fails the build immediately.
 
 ### 1.2 Zod Validation Rules
 * **Slugs (`slugSchema`)**: Supports Unicode letters, digits, combining marks, hyphens, and zero-width joiners (`\u200C`, `\u200D`). Empty slug is permitted **only** for the `home` page.
@@ -79,5 +83,23 @@ Physical dynamic routes are consolidated into a single dispatcher file (`src/pag
   - Computes `lastmod` accurately from the latest modified/published date of each entry.
 * **Web App Manifest (`src/pages/site.webmanifest.ts`)**:
   - Generated dynamically using `app.config.json` brand colors and `DEFAULT_LOCALE` metadata.
-* **Search Fallback Index (`src/pages/api/search-dev.json.ts`)**:
-  - Emits title, description, URL, and locale for every published route as a dev/offline search fallback.
+* **Static Blog & Search Fallback Catalogs (`src/pages/api/*.json.ts`)**:
+  - `/api/blog-posts/[locale].json` (plus combined `/api/blog-posts.json`): Build-time static JSON catalogs powering client-side cross-page taxonomy filtering on multi-page blogs.
+  - `/api/search-dev/[locale].json` (plus combined `/api/search-dev.json`): Emits title, description, URL, and locale for every published route as a dev/offline search fallback.
+
+---
+
+## 6. Search Engine (Persian-Aware Pagefind) & Pure SSG External APIs
+
+### 6.1 Build-Time Pagefind Indexer (`scripts/index-pagefind.mjs`)
+* Invoked automatically at the end of `npm run build`.
+* Scans `dist/**/*.html` in memory via the Pagefind Node API (`createIndex`) **without mutating `dist/*.html` on disk**.
+* For Perso-Arabic pages (`<html lang="fa|ar|...">`), normalizes Arabic character variants (`ي`/`ى` → `ی`, `ك` → `ک`), strips tatweel & optional harakat, and pads Perso-Arabic punctuation (`«`, `»`, `،`, `؛`, `؟`, `٪`, `٬`) with Unicode hair spaces (`\u200A`) outside `<script>/<style>/<pre>/<code>/<svg>` and HTML tags so Pagefind's Rust tokenizer indexes clean word stems without polluting excerpts.
+
+### 6.2 Client Search & Persian Query Expansion (`src/libs/search/`)
+* `src/libs/search/persian.ts` normalizes queries (`normalizePersianQuery`), reconstructs productive Persian ZWNJ (`\u200C`) compounds (`applyPersianZwnjCompounds`: e.g. `صفحه بندی` → `صفحه‌بندی`, `راست به چپ` → `راست‌به‌چپ`), generates up to 4 prioritized query variants (`buildSearchQueryVariants` covering ZWNJ/space forms, `ارایه` ↔ `ارائه` hamza variants, and `۰-۹` ↔ `0-9` numerals), and provides ZWNJ-agnostic fallback matching (`matchesFallbackSearch`).
+* `src/libs/search/client.ts` (`executeSearch`) queries `/pagefind/pagefind.js` in production across all generated query variants concurrently (deduplicating by handle ID and canonical URL), strips `\u200A` from excerpts via `plainText()`, and falls back cleanly to `/api/search-dev/<locale>.json` in development.
+
+### 6.3 Pure SSG External API Adapter (`src/libs/api/client.ts`)
+* This starter is **100% static SSG with zero backend**. Never add SSR routes or backend server directories.
+* Interactive forms (`src/components/ContactForm.astro`) post JSON payloads directly from the browser through `postJson()` / `submitContactInquiry()` in `src/libs/api/client.ts`, resolving endpoints from `PUBLIC_CONTACT_API_URL`, `PUBLIC_API_BASE_URL`, or `app.config.json` (`api.baseUrl` + `api.endpoints.contact`) with `AbortController` timeout protection and honeypot spam filtering.

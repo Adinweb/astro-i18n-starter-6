@@ -125,6 +125,14 @@
   "footer_col_resources": "منابع",
   "footer_legal_privacy": "حریم خصوصی",
   "footer_legal_terms": "شرایط استفاده",
+  "home_hero_kicker": "معماری چندزبانه Astro v7",
+  "home_spec_heading": "طرح معماری سامانه",
+  "home_spec_i18n_desc": "لغت‌نامه‌های تایپ‌اسکریپت کامپایل‌شده برای {count} زبان فعال بدون حجم اضافه در مرورگر.",
+  "home_spec_i18n_title": "ترجمه زمان ساخت Paraglide",
+  "home_spec_pages_desc": "طراحی کاملاً آزاد صفحات در حالت بوم آزاد، کانتینر استاندارد یا متنی همراه با قالب‌های سفارشی.",
+  "home_spec_pages_title": "بوم طراحی منعطف صفحات",
+  "home_spec_rtl_desc": "چیدمان ۱۰۰٪ مبتنی بر ویژگی‌های منطقی CSS با تقارن خودکار برای زبان‌های فارسی و عربی.",
+  "home_spec_rtl_title": "تقارن بومی راست‌به‌چپ و چپ‌به‌راست",
   "items_count": [
     {
       "declarations": [

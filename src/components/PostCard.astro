@@ -23,10 +23,9 @@ const { title, description, image, categories, tags, publishedAt } = post.data;
 // `image` is the metadata Astro resolved from the entry's frontmatter.
 const cover = image;
 /**
- * Renditions offered to the browser. The card is at most ~310px wide, so the
- * list covers 1x and 2x of that. It never asks for more than the source has
- * and always contains the source width itself, so a small cover is served at
- * its native size instead of being scaled up.
+ * Renditions offered to the browser. Inside `.layout-container` (`1280px`),
+ * each 3-column card is ~390px wide, so `[320, 480, 640, 800]` covers 1x and
+ * 2x DPR cleanly without upscaling native sources.
  */
 const coverWidths = cover
   ? [...new Set([320, 480, 640, 800, cover.width])]
@@ -54,7 +53,7 @@ const hiddenTagCount = tags.length - visibleTags.length;
           src={cover}
           alt=""
           widths={coverWidths}
-          sizes="(min-width: 1024px) 310px, (min-width: 640px) 50vw, 100vw"
+          sizes="(min-width: 1280px) 390px, (min-width: 1024px) 31vw, (min-width: 640px) 46vw, 94vw"
           format="webp"
           quality={75}
           layout="constrained"

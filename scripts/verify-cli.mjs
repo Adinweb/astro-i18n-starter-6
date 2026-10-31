@@ -126,48 +126,53 @@ function run(cwd, command, args, { allowFailure = false } = {}) {
 const sandbox = makeSandbox();
 const read = (relative) => fs.readFileSync(path.join(sandbox, relative), 'utf-8');
 const exists = (relative) => fs.existsSync(path.join(sandbox, relative));
+const sandboxSettings = JSON.parse(read('project.inlang/settings.json'));
+const sandboxLocales = sandboxSettings.locales;
+const baseLoc = sandboxSettings.baseLocale || 'en';
+const altLocs = sandboxLocales.filter((loc) => loc !== baseLoc);
+const altLoc = altLocs[0] || baseLoc;
 
 try {
   // ---------------------------------------------------------------------
   // 1. new:page
   // ---------------------------------------------------------------------
   console.log('\n### 1. new:page');
-  let result = run(sandbox, 'node', ['scripts/new-page.mjs', 'contact', '--title=Contact Us', '--from=en']);
+  let result = run(sandbox, 'node', ['scripts/new-page.mjs', 'contact', '--title=Contact Us', `--from=${baseLoc}`]);
   record(result.code === 0, 'new:page creates a page group', result.stdout.trim().split('\n')[0]);
   record(
-    ['en', 'de', 'fr', 'fa', 'ar'].every((loc) => exists(`src/content/pages/contact/${loc}.mdx`)),
+    sandboxLocales.every((loc) => exists(`src/content/pages/contact/${loc}.mdx`)),
     'new:page writes one file per locale'
   );
   record(
-    read('src/content/pages/contact/en.mdx').includes('slug: "contact"'),
+    read(`src/content/pages/contact/${baseLoc}.mdx`).includes('slug: "contact"'),
     'new:page uses the group key as the default-locale slug'
   );
   record(
-    /draft: false/.test(read('src/content/pages/contact/en.mdx')) &&
-      /draft: true/.test(read('src/content/pages/contact/fa.mdx')),
+    /draft: false/.test(read(`src/content/pages/contact/${baseLoc}.mdx`)) &&
+      (altLoc === baseLoc || /draft: true/.test(read(`src/content/pages/contact/${altLoc}.mdx`))),
     'new:page publishes the source locale and drafts the others',
-    'en=false, fa=true'
+    `${baseLoc}=false, ${altLoc}=true`
   );
   record(
-    read('src/content/pages/contact/fa.mdx').includes('slug: "contact-fa"'),
+    altLoc === baseLoc || read(`src/content/pages/contact/${altLoc}.mdx`).includes(`slug: "contact-${altLoc}"`),
     'new:page uses a placeholder slug for an untranslated locale',
-    read('src/content/pages/contact/fa.mdx').match(/slug: "[^"]*"/)?.[0] ?? 'none'
+    read(`src/content/pages/contact/${altLoc}.mdx`).match(/slug: "[^"]*"/)?.[0] ?? 'none'
   );
   record(
-    !read('src/content/pages/contact/en.mdx').includes('# Contact Us'),
+    !read(`src/content/pages/contact/${baseLoc}.mdx`).includes('# Contact Us'),
     'new:page does not duplicate the frontmatter title in the body'
   );
   record(
-    !read('src/content/pages/contact/fa.mdx').includes('# [TODO: fa] Contact Us'),
+    !read(`src/content/pages/contact/${altLoc}.mdx`).includes(`# [TODO: ${altLoc}] Contact Us`),
     'new:page does not duplicate the localized title in the body'
   );
   record(
-    read('src/content/pages/contact/en.mdx').includes('image: "./contact.png"'),
+    read(`src/content/pages/contact/${baseLoc}.mdx`).includes('image: "./contact.png"'),
     'new:page points the hero at the group artwork'
   );
   record(exists('src/content/pages/contact/contact.png'), 'new:page generates the group artwork');
   record(
-    JSON.parse(read('messages/fa.json')).nav_contact !== undefined,
+    JSON.parse(read(`messages/${altLoc}.json`)).nav_contact !== undefined,
     'new:page registers nav_contact in every dictionary'
   );
 
@@ -178,7 +183,7 @@ try {
   result = run(sandbox, 'node', [
     'scripts/new-post.mjs',
     'ai-agents',
-    '--from=en',
+    `--from=${baseLoc}`,
     '--title=AI Coding Agents',
     '--category=engineering',
     '--tags=astro,i18n',
@@ -187,73 +192,69 @@ try {
   ]);
   record(result.code === 0, 'new:post creates an article group', result.stdout.trim().split('\n')[0]);
   record(
-    ['en', 'de', 'fr', 'fa', 'ar'].every((loc) => exists(`src/content/blog/ai-agents/${loc}.mdx`)),
+    sandboxLocales.every((loc) => exists(`src/content/blog/ai-agents/${loc}.mdx`)),
     'new:post writes one file per locale'
   );
   record(
-    !read('src/content/blog/ai-agents/en.mdx').includes('# AI Coding Agents'),
+    !read(`src/content/blog/ai-agents/${baseLoc}.mdx`).includes('# AI Coding Agents'),
     'new:post does not duplicate the frontmatter title in the body',
-    read('src/content/blog/ai-agents/en.mdx')
+    read(`src/content/blog/ai-agents/${baseLoc}.mdx`)
       .split('---')
       .pop()
       .trim()
       .split('\n')[0]
   );
   record(
-    !read('src/content/blog/ai-agents/de.mdx').includes('# [TODO: de] AI Coding Agents'),
+    !read(`src/content/blog/ai-agents/${altLoc}.mdx`).includes(`# [TODO: ${altLoc}] AI Coding Agents`),
     'new:post does not duplicate the localized title in the body'
   );
   record(
-    !read('src/content/blog/ai-agents/en.mdx').includes('[TODO: en] Description'),
+    !read(`src/content/blog/ai-agents/${baseLoc}.mdx`).includes(`[TODO: ${baseLoc}] Description`),
     'new:post does not leave a placeholder description in the source locale'
   );
   record(
-    !read('src/content/blog/ai-agents/de.mdx').includes('An introduction to our multi-lingual'),
+    !read(`src/content/blog/ai-agents/${altLoc}.mdx`).includes('An introduction to our multi-lingual'),
     'new:post --from does not clone an unrelated article body'
   );
   record(
-    read('src/content/blog/ai-agents/en.mdx').includes('categories: ["engineering"]') &&
-      read('src/content/blog/ai-agents/en.mdx').includes('tags: ["astro", "i18n"]'),
+    read(`src/content/blog/ai-agents/${baseLoc}.mdx`).includes('categories: ["engineering"]') &&
+      read(`src/content/blog/ai-agents/${baseLoc}.mdx`).includes('tags: ["astro", "i18n"]'),
     'new:post writes the taxonomy frontmatter'
   );
   record(
-    read('src/content/blog/ai-agents/en.mdx').includes('image: "./ai-agents.png"') &&
+    read(`src/content/blog/ai-agents/${baseLoc}.mdx`).includes('image: "./ai-agents.png"') &&
       exists('src/content/blog/ai-agents/ai-agents.png'),
     'new:post falls back to the group artwork when the named one is missing'
   );
   record(
-    /draft: false/.test(read('src/content/blog/ai-agents/en.mdx')) &&
-      ['de', 'fr', 'fa', 'ar'].every((loc) =>
+    /draft: false/.test(read(`src/content/blog/ai-agents/${baseLoc}.mdx`)) &&
+      altLocs.every((loc) =>
         /draft: true/.test(read(`src/content/blog/ai-agents/${loc}.mdx`))
       ),
     'new:post --publish keeps placeholder locales as drafts'
   );
 
   // A post created without --publish must not leak into the other locales.
-  run(sandbox, 'node', ['scripts/new-post.mjs', 'draft-post', '--from=en', '--title=Draft Post']);
+  run(sandbox, 'node', ['scripts/new-post.mjs', 'draft-post', `--from=${baseLoc}`, '--title=Draft Post']);
   record(
-    /draft: false/.test(read('src/content/blog/draft-post/en.mdx')) &&
-      /draft: true/.test(read('src/content/blog/draft-post/fa.mdx')),
+    /draft: false/.test(read(`src/content/blog/draft-post/${baseLoc}.mdx`)) &&
+      (altLoc === baseLoc || /draft: true/.test(read(`src/content/blog/draft-post/${altLoc}.mdx`))),
     'new:post drafts the non-source locales by default'
   );
 
   run(sandbox, 'node', [
     'scripts/new-post.mjs',
     'publish-ready',
-    '--from=en',
+    `--from=${baseLoc}`,
     '--title=Publish Ready',
     '--publish',
-    '--title:de=Publish Ready DE',
-    '--desc:de=Beschreibung',
-    '--title:fr=Publish Ready FR',
-    '--desc:fr=Description',
-    '--title:fa=آماده انتشار',
-    '--desc:fa=توضیحات',
-    '--title:ar=جاهز للنشر',
-    '--desc:ar=الوصف',
+    ...altLocs.flatMap((loc) => [
+      `--title:${loc}=${loc === 'fa' ? 'آماده انتشار' : `Publish Ready ${loc.toUpperCase()}`}`,
+      `--desc:${loc}=${loc === 'fa' ? 'توضیحات' : `Description ${loc.toUpperCase()}`}`,
+    ]),
   ]);
   record(
-    ['en', 'de', 'fr', 'fa', 'ar'].every((loc) =>
+    sandboxLocales.every((loc) =>
       /draft: false/.test(read(`src/content/blog/publish-ready/${loc}.mdx`))
     ),
     'new:post --publish publishes locales that have translations'
@@ -263,7 +264,7 @@ try {
   // 3. --update keeps the body
   // ---------------------------------------------------------------------
   console.log('\n### 3. new:post --update');
-  const bodyBefore = read('src/content/blog/ai-agents/de.mdx').split('---').slice(2).join('---');
+  const bodyBefore = read(`src/content/blog/ai-agents/${altLoc}.mdx`).split('---').slice(2).join('---');
   result = run(sandbox, 'node', [
     'scripts/new-post.mjs',
     'ai-agents',
@@ -272,15 +273,16 @@ try {
   ]);
   record(result.code === 0, 'new:post --update succeeds');
   record(
-    read('src/content/blog/ai-agents/en.mdx').includes('title: "AI Coding Agents 2"'),
+    read(`src/content/blog/ai-agents/${baseLoc}.mdx`).includes('title: "AI Coding Agents 2"'),
     'new:post --update rewrites the title of the source locale'
   );
   record(
-    read('src/content/blog/ai-agents/de.mdx').includes('title: "[TODO: de] AI Coding Agents"'),
+    altLoc === baseLoc ||
+      read(`src/content/blog/ai-agents/${altLoc}.mdx`).includes(`title: "[TODO: ${altLoc}] AI Coding Agents"`),
     'new:post --update leaves the other locales alone'
   );
   record(
-    read('src/content/blog/ai-agents/de.mdx').split('---').slice(2).join('---') === bodyBefore,
+    read(`src/content/blog/ai-agents/${altLoc}.mdx`).split('---').slice(2).join('---') === bodyBefore,
     'new:post --update leaves the body untouched'
   );
 
@@ -291,13 +293,16 @@ try {
     '--title=AI Coding Agents 2',
   ]);
   record(
-    read('src/content/blog/ai-agents/de.mdx').includes('title: "[TODO: de] AI Coding Agents 2"'),
+    altLoc === baseLoc ||
+      read(`src/content/blog/ai-agents/${altLoc}.mdx`).includes(`title: "[TODO: ${altLoc}] AI Coding Agents 2"`),
     'new:post --sync-frontmatter propagates the title to every locale'
   );
 
   // Quotes and backslashes in --title round-trip without breaking YAML or invoking a shell,
   // and recreating a missing locale during --update never injects a duplicate `# Title` H1.
-  fs.unlinkSync(path.join(sandbox, 'src', 'content', 'blog', 'ai-agents', 'fr.mdx'));
+  if (altLoc !== baseLoc) {
+    fs.unlinkSync(path.join(sandbox, 'src', 'content', 'blog', 'ai-agents', `${altLoc}.mdx`));
+  }
   result = run(sandbox, 'node', [
     'scripts/new-post.mjs',
     'ai-agents',
@@ -306,12 +311,12 @@ try {
   ]);
   record(
     result.code === 0 &&
-      read('src/content/blog/ai-agents/en.mdx').includes('title: "AI \\"Agents\\" \\\\ Guide"'),
+      read(`src/content/blog/ai-agents/${baseLoc}.mdx`).includes('title: "AI \\"Agents\\" \\\\ Guide"'),
     'new:post escapes quotes and backslashes in frontmatter safely'
   );
   record(
-    exists('src/content/blog/ai-agents/fr.mdx') &&
-      !/^\s*#\s+/m.test(read('src/content/blog/ai-agents/fr.mdx').split('---').slice(2).join('---')),
+    exists(`src/content/blog/ai-agents/${altLoc}.mdx`) &&
+      !/^\s*#\s+/m.test(read(`src/content/blog/ai-agents/${altLoc}.mdx`).split('---').slice(2).join('---')),
     'new:post --update recreates a missing locale without a duplicate # H1 heading'
   );
 
@@ -323,54 +328,63 @@ try {
     'scripts/i18n-add.mjs',
     '--category=contact',
     '--key=form_label',
-    '--en=Send message',
-    '--fa=ارسال پیام',
+    `--${baseLoc}=Send message`,
+    ...(altLoc !== baseLoc ? [`--${altLoc}=ارسال پیام`] : []),
   ]);
   record(result.code === 0, 'i18n:add registers a key');
   record(
-    JSON.parse(read('messages/en.json')).contact_form_label === 'Send message' &&
-      JSON.parse(read('messages/fa.json')).contact_form_label === 'ارسال پیام',
+    JSON.parse(read(`messages/${baseLoc}.json`)).contact_form_label === 'Send message' &&
+      (altLoc === baseLoc || JSON.parse(read(`messages/${altLoc}.json`)).contact_form_label === 'ارسال پیام'),
     'i18n:add writes the explicit translations'
   );
+
+  result = run(sandbox, 'node', [
+    'scripts/i18n-add.mjs',
+    '--category=contact',
+    '--key=placeholder_label',
+    `--${baseLoc}=Placeholder label`,
+  ]);
   record(
-    JSON.parse(read('messages/de.json')).contact_form_label === '[TODO: de] form_label',
+    altLoc === baseLoc ||
+      JSON.parse(read(`messages/${altLoc}.json`)).contact_placeholder_label === `[TODO: ${altLoc}] placeholder_label`,
     'i18n:add leaves a placeholder for the missing locales'
   );
 
   result = run(sandbox, 'node', [
     'scripts/i18n-add-batch.mjs',
-    '--json={"cart_checkout":{"en":"Checkout","fa":"تسویه حساب"}}',
+    `--json={"cart_checkout":{"${baseLoc}":"Checkout"${altLoc !== baseLoc ? `,"${altLoc}":"تسویه حساب"` : ''}}}`,
   ]);
   record(result.code === 0, 'i18n:add-batch accepts inline JSON');
   record(
-    JSON.parse(read('messages/en.json')).cart_checkout === 'Checkout',
+    JSON.parse(read(`messages/${baseLoc}.json`)).cart_checkout === 'Checkout',
     'i18n:add-batch writes the batch keys'
   );
 
   result = run(sandbox, 'node', [
     'scripts/i18n-add-batch.mjs',
-    '--json={"submit":{"en":"Submit"}}',
+    `--json={"submit":{"${baseLoc}":"Submit"}}`,
     '--category=contact',
   ]);
   record(result.code === 0, 'i18n:add-batch accepts --category');
   record(
-    JSON.parse(read('messages/en.json')).contact_submit === 'Submit',
+    JSON.parse(read(`messages/${baseLoc}.json`)).contact_submit === 'Submit',
     'i18n:add-batch applies the --category prefix',
-    Object.keys(JSON.parse(read('messages/en.json'))).filter((k) => k.startsWith('contact_')).join(', ')
+    Object.keys(JSON.parse(read(`messages/${baseLoc}.json`))).filter((k) => k.startsWith('contact_')).join(', ')
   );
 
   // ---------------------------------------------------------------------
   // 5. remove:page / remove:post
   // ---------------------------------------------------------------------
   console.log('\n### 5. remove:page and remove:post');
-  result = run(sandbox, 'node', ['scripts/remove-page.mjs', 'contact', '--locale=fa', '--force']);
+  result = run(sandbox, 'node', ['scripts/remove-page.mjs', 'contact', `--locale=${altLoc}`, '--force']);
   record(result.code === 0, 'remove:page --locale removes one locale');
   record(
-    !exists('src/content/pages/contact/fa.mdx') && exists('src/content/pages/contact/en.mdx'),
+    !exists(`src/content/pages/contact/${altLoc}.mdx`) &&
+      (altLoc === baseLoc || exists(`src/content/pages/contact/${baseLoc}.mdx`)),
     'remove:page --locale keeps the rest of the group'
   );
   record(
-    JSON.parse(read('messages/fa.json')).nav_contact !== undefined,
+    JSON.parse(read(`messages/${altLoc}.json`)).nav_contact !== undefined,
     'remove:page --locale keeps the nav key in every dictionary'
   );
   result = run(sandbox, 'node', ['scripts/audit-i18n.mjs'], { allowFailure: true });
@@ -383,12 +397,12 @@ try {
   result = run(sandbox, 'node', ['scripts/remove-page.mjs', 'contact', '--no-clean-nav', '--force']);
   record(result.code === 0, 'remove:page --no-clean-nav removes the whole group');
   record(
-    JSON.parse(read('messages/en.json')).nav_contact !== undefined,
+    JSON.parse(read(`messages/${baseLoc}.json`)).nav_contact !== undefined,
     'remove:page --no-clean-nav keeps the nav key'
   );
   record(!exists('src/content/pages/contact'), 'remove:page removes the group folder');
 
-  result = run(sandbox, 'node', ['scripts/remove-post.mjs', 'ai-agents', '--locale=fa', '--force']);
+  result = run(sandbox, 'node', ['scripts/remove-post.mjs', 'ai-agents', `--locale=${altLoc}`, '--force']);
   record(result.code === 0, 'remove:post --locale removes one locale');
   result = run(sandbox, 'node', ['scripts/audit-i18n.mjs'], { allowFailure: true });
   record(

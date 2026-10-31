@@ -36,6 +36,8 @@ export function runCli() {
   let skipNav = false;
   let customImage = '';
   let noImage = false;
+  let heroOption = '';
+  let layoutOption = '';
   const titlesByLocale = {};
   const descriptionsByLocale = {};
   const slugsByLocale = {};
@@ -113,6 +115,24 @@ export function runCli() {
       }
       noImage = resolved === '';
       customImage = resolved;
+    } else if (arg.startsWith('--hero=')) {
+      const raw = arg.slice(7).trim();
+      if (!['none', 'minimal', 'default'].includes(raw)) {
+        console.error(
+          `❌ Invalid --hero value: "${raw}". Expected "none", "minimal", or "default".`
+        );
+        process.exit(1);
+      }
+      heroOption = raw;
+    } else if (arg.startsWith('--container=') || arg.startsWith('--layout=')) {
+      const raw = arg.slice(arg.indexOf('=') + 1).trim();
+      if (!['canvas', 'contained', 'prose'].includes(raw)) {
+        console.error(
+          `❌ Invalid --container value: "${raw}". Expected "canvas", "contained", or "prose".`
+        );
+        process.exit(1);
+      }
+      layoutOption = raw;
     }
   }
 
@@ -127,13 +147,15 @@ Creation Options:
   --from=<locale>              Source locale to branch from (default: baseLocale / en)
   --publish / --draft=false    Publish the source and locales with real titles/descriptions
   --draft / --draft=true       Create every locale as a draft
+  --hero=none|minimal|default  Page hero presentation mode (default: default)
+  --container=canvas|contained|prose  Page body container mode (default: contained, or canvas when --hero=none)
   --image=cover.png            Hero background, referenced relative to the content file
   --image=none                 Use the shared hero artwork instead of a page-specific one
   --slug:<locale>="<slug>"     Native slug of one language (default: <page-key> for the source locale)
 
 Update / Sync Options:
   --update                     Update an existing page group without rewriting markdown body
-  --sync-frontmatter           Synchronize frontmatter fields across all 5 language files
+  --sync-frontmatter           Synchronize frontmatter fields across all configured locale files
   --title:<locale>="<title>"   Specify per-locale title (e.g. --title:fa="درباره ما")
   --desc:<locale>="<desc>"     Specify per-locale description
   --data='{...}'               JSON string mapping locales to { title, description }
@@ -194,6 +216,11 @@ Update / Sync Options:
       }
     }
 
+    const sourceFilePath = path.join(targetDir, `${sourceLocale}.mdx`);
+    const sourceFmData = fs.existsSync(sourceFilePath)
+      ? parseFrontmatter(fs.readFileSync(sourceFilePath, 'utf-8')).data
+      : null;
+
     for (const loc of LOCALES) {
       const filePath = path.join(targetDir, `${loc}.mdx`);
       const isSource = loc === sourceLocale;
@@ -209,9 +236,11 @@ Update / Sync Options:
         // Missing locale file - create symmetrical fallback
         const slug = resolveSlug(loc, pageKey, sourceLocale, defaultLocale, slugsByLocale);
         fmData = {
-          title: `[TODO: ${loc}] ${title}`,
+          title: `[TODO: ${loc}] ${sourceFmData?.title || title}`,
           slug,
-          description: `[TODO: ${loc}] Description for ${title}`,
+          description: `[TODO: ${loc}] ${sourceFmData?.description || `Description for ${title}`}`,
+          hero: heroOption || sourceFmData?.hero || 'default',
+          container: layoutOption || sourceFmData?.container || 'contained',
           draft: hasDraftArg ? !publishAll : !isSource,
         };
         body = `\n${contentStub(loc)}`;
@@ -254,11 +283,36 @@ Update / Sync Options:
         fmData.slug = slugsByLocale[loc];
       }
 
-      // Hero background resolution
+      // Hero background & layout resolution (including source-locale sync)
       if (noImage) {
         delete fmData.image;
       } else if (customImage) {
         fmData.image = customImage;
+      } else if (isSyncFrontmatter && sourceFmData && !isSource) {
+        if (sourceFmData.image !== undefined) fmData.image = sourceFmData.image;
+        else delete fmData.image;
+      }
+
+      if (heroOption) {
+        fmData.hero = heroOption;
+      } else if (isSyncFrontmatter && sourceFmData && !isSource) {
+        if (sourceFmData.hero !== undefined) fmData.hero = sourceFmData.hero;
+        else delete fmData.hero;
+      }
+
+      if (layoutOption) {
+        fmData.container = layoutOption;
+      } else if (isSyncFrontmatter && sourceFmData && !isSource) {
+        if (sourceFmData.container !== undefined) fmData.container = sourceFmData.container;
+        else delete fmData.container;
+      }
+
+      if (isSyncFrontmatter && sourceFmData && !isSource) {
+        if (sourceFmData.flushTop !== undefined) fmData.flushTop = sourceFmData.flushTop;
+        else delete fmData.flushTop;
+
+        if (sourceFmData.template !== undefined) fmData.template = sourceFmData.template;
+        else delete fmData.template;
       }
 
       // Heading update in markdown body if requested
@@ -365,16 +419,24 @@ Update / Sync Options:
     const isDraft = hasDraftArg ? !publishAll || hasPlaceholder : !isSource;
     (isDraft ? draftLocales : publishedLocales).push(loc);
 
+    const resolvedHero = heroOption || 'default';
+    const resolvedLayout = layoutOption || (resolvedHero === 'none' ? 'canvas' : 'contained');
     const stubBody = contentStub(loc);
+    const bodyMarkup =
+      resolvedHero === 'none'
+        ? `<section class="layout-container py-12">\n  <h1 class="text-4xl font-extrabold tracking-tight text-fg">${pageTitle}</h1>\n\n  ${stubBody}\n</section>`
+        : stubBody;
     const fmRecord = {
       title: pageTitle,
       slug,
       description: pageDesc,
       ...(pageImage ? { image: pageImage } : {}),
+      hero: resolvedHero,
+      container: resolvedLayout,
       draft: isDraft,
     };
 
-    const content = stringifyFrontmatter(fmRecord, `\n${stubBody}\n`);
+    const content = stringifyFrontmatter(fmRecord, `\n${bodyMarkup}\n`);
     fs.writeFileSync(path.join(targetDir, `${loc}.mdx`), content, 'utf-8');
   }
 

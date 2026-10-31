@@ -1,0 +1,146 @@
+---
+/**
+ * Bespoke full-bleed landing page template (`template: "home"`) shared across
+ * all locales (`src/content/pages/home/<locale>.mdx`).
+ *
+ * Demonstrates complete freedom from `<PageHero>` and narrow `.prose` wrappers:
+ * renders an architectural 12-column split hero on semantic OKLCH surfaces
+ * followed by full-width (`1280px`) localized MDX sections.
+ */
+import { render, type CollectionEntry } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageSection from '@/components/PageSection.astro';
+import Icon from '@/components/Icon.astro';
+import { formatNumber } from '@/i18n/format';
+import { LOCALES, type Locale } from '@/i18n/locales';
+import { HERO_TITLE_ID } from '@/libs/config/app';
+import { getBlogIndexHref, getPageUrl } from '@/libs/content/service';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  entry: CollectionEntry<'pages'>;
+  locale: Locale;
+  alternates: Partial<Record<Locale, string>>;
+  url: string;
+  schema?: Record<string, unknown> | Record<string, unknown>[];
+}
+
+const { entry, locale, alternates, url, schema } = Astro.props;
+const { Content } = await render(entry);
+
+const blogHref = getBlogIndexHref(locale);
+const featuresHref = (await getPageUrl('features', locale)) ?? blogHref;
+const formattedLocaleCount = formatNumber(LOCALES.length, locale);
+
+const blueprintItems = [
+  {
+    icon: 'globe',
+    tone: 'bg-primary/10 text-primary',
+    title: m.home_spec_i18n_title({}, { locale }),
+    description: m.home_spec_i18n_desc({ count: formattedLocaleCount }, { locale }),
+  },
+  {
+    icon: 'layers',
+    tone: 'bg-accent/15 text-fg',
+    title: m.home_spec_pages_title({}, { locale }),
+    description: m.home_spec_pages_desc({}, { locale }),
+  },
+  {
+    icon: 'shield',
+    tone: 'bg-secondary/10 text-secondary',
+    title: m.home_spec_rtl_title({}, { locale }),
+    description: m.home_spec_rtl_desc({}, { locale }),
+  },
+] as const;
+---
+
+<BaseLayout
+  title={entry.data.title}
+  description={entry.data.description}
+  image={entry.data.image}
+  schema={schema}
+  locale={locale}
+  url={url}
+  alternates={alternates}
+  flushTop
+  canvas
+>
+  <section
+    aria-labelledby={HERO_TITLE_ID}
+    class="relative isolate overflow-hidden border-b border-border bg-linear-to-b from-surface via-bg to-bg pt-28 pb-16 sm:pt-36 sm:pb-20 lg:pt-40 lg:pb-24 print:bg-none print:pt-4 print:pb-8"
+  >
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-x-0 -top-24 -z-10 mx-auto h-80 max-w-3xl rounded-full bg-primary/10 blur-3xl print:hidden"
+    >
+    </div>
+
+    <div class="layout-container">
+      <div class="grid gap-10 lg:grid-cols-12 lg:items-center lg:gap-12">
+        <div class="lg:col-span-7" data-trig>
+          <p class="section-kicker">{m.home_hero_kicker({}, { locale })}</p>
+
+          <h1
+            id={HERO_TITLE_ID}
+            class="mt-3 text-balance text-4xl font-extrabold leading-[1.08] tracking-tight text-fg sm:text-5xl lg:text-6xl"
+          >
+            {entry.data.title}
+          </h1>
+
+          {
+            entry.data.description && (
+              <p class="mt-5 max-w-2xl text-pretty text-base leading-relaxed text-muted sm:text-lg">
+                {entry.data.description}
+              </p>
+            )
+          }
+
+          <div class="mt-8 flex flex-wrap items-center gap-3 print:hidden">
+            <a href={featuresHref} class="cta h-11 px-6 text-sm">
+              <span>{m.common_get_started({}, { locale })}</span>
+              <Icon name="arrow-right" size={16} class="shrink-0 rtl:rotate-180" />
+            </a>
+            <a href={blogHref} class="btn-secondary h-11 px-6 text-sm">
+              {m.nav_blog({}, { locale })}
+            </a>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5" data-trig data-trig-direction="end">
+          <div class="rounded-2xl border border-border bg-surface p-6 shadow-xs sm:p-7">
+            <p class="section-kicker">{m.home_spec_heading({}, { locale })}</p>
+            <ul class="mt-5 divide-y divide-border">
+              {
+                blueprintItems.map((item) => (
+                  <li class="flex items-start gap-3.5 py-4 first:pt-0 last:pb-0">
+                    <span
+                      class:list={[
+                        'mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                        item.tone,
+                      ]}
+                      aria-hidden="true"
+                    >
+                      <Icon name={item.icon} size={18} />
+                    </span>
+                    <div class="min-w-0">
+                      <h2 class="text-sm font-bold text-fg">{item.title}</h2>
+                      <p class="mt-1 text-xs leading-relaxed text-muted">
+                        {item.description}
+                      </p>
+                    </div>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <PageSection spacing="md">
+    <div class="prose prose-wide">
+      <Content />
+    </div>
+  </PageSection>
+</BaseLayout>

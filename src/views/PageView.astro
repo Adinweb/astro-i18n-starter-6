@@ -3,10 +3,16 @@ import { render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageHero from '@/components/PageHero.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
+import PageHeader from '@/components/PageHeader.astro';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { buildBreadcrumbSchema, getBreadcrumbs } from '@/libs/content/service';
+import HomePageTemplate from '@/views/pages/HomePageTemplate.astro';
 import * as m from '@/paraglide/messages';
+
+const PAGE_TEMPLATES = {
+  home: HomePageTemplate,
+} as const;
 
 interface Props {
   entry: CollectionEntry<'pages'>;
@@ -16,7 +22,11 @@ interface Props {
 }
 
 const { entry, locale, alternates, url } = Astro.props;
-const { Content } = await render(entry);
+const CustomTemplate = entry.data.template
+  ? PAGE_TEMPLATES[entry.data.template]
+  : undefined;
+
+const { Content } = CustomTemplate ? { Content: null } : await render(entry);
 
 const breadcrumbs = getBreadcrumbs(url, locale, {
   home: m.nav_home({}, { locale }),
@@ -44,24 +54,78 @@ const pageSchema =
         buildBreadcrumbSchema(breadcrumbs, absoluteUrl),
       ]
     : undefined;
+
+const rawHero = entry.data.hero;
+const heroMode = rawHero === true ? 'default' : rawHero === false ? 'none' : rawHero;
+const containerMode = entry.data.container;
+const isDefaultHero = heroMode === 'default';
+const isMinimalHero = heroMode === 'minimal';
+const isCanvas = containerMode === 'canvas';
 ---
 
-<BaseLayout
-  title={entry.data.title}
-  description={entry.data.description}
-  image={entry.data.image}
-  schema={pageSchema}
-  locale={locale}
-  url={url}
-  alternates={alternates}
-  hero
->
-  <PageHero slot="hero" image={entry.data.image}>
-    <HeroCopy title={entry.data.title} description={entry.data.description} />
-  </PageHero>
+{
+  CustomTemplate ? (
+    <CustomTemplate
+      entry={entry}
+      locale={locale}
+      alternates={alternates}
+      url={url}
+      schema={pageSchema}
+    />
+  ) : (
+    <BaseLayout
+      title={entry.data.title}
+      description={entry.data.description}
+      image={entry.data.image}
+      schema={pageSchema}
+      locale={locale}
+      url={url}
+      alternates={alternates}
+      hero={isDefaultHero}
+      flushTop={!isDefaultHero && entry.data.flushTop}
+      canvas={isCanvas}
+    >
+      {isDefaultHero && (
+        <PageHero slot="hero" image={entry.data.image}>
+          <HeroCopy title={entry.data.title} description={entry.data.description} />
+        </PageHero>
+      )}
 
-  <article class="prose">
-    <Content />
-  </article>
-</BaseLayout>
-
+      {isCanvas ? (
+        <>
+          {isMinimalHero && (
+            <div class="layout-container pt-2">
+              <PageHeader
+                title={entry.data.title}
+                description={entry.data.description}
+                locale={locale}
+                breadcrumbs={breadcrumbs}
+              />
+            </div>
+          )}
+          {Content && <Content />}
+        </>
+      ) : (
+        <>
+          {isMinimalHero && (
+            <PageHeader
+              title={entry.data.title}
+              description={entry.data.description}
+              locale={locale}
+              breadcrumbs={breadcrumbs}
+            />
+          )}
+          {containerMode === 'contained' ? (
+            <div class:list={['prose prose-wide', isMinimalHero && 'pt-8 sm:pt-10']}>
+              {Content && <Content />}
+            </div>
+          ) : (
+            <article class:list={['prose', isMinimalHero && 'pt-8 sm:pt-10']}>
+              {Content && <Content />}
+            </article>
+          )}
+        </>
+      )}
+    </BaseLayout>
+  )
+}

@@ -121,11 +121,11 @@ pnpm run new:post -- tech-trends
 # Create post from Persian and publish the locales that have translations:
 pnpm run new:post -- ai-features --from=fa --title="قابلیت‌های هوش مصنوعی" --publish
 
-# Non-interactive frontmatter sync across all 5 language files without overwriting markdown body:
+# Non-interactive frontmatter sync across all active language files without overwriting markdown body:
 pnpm run new:post -- tech-trends --update --sync-frontmatter --title="Modern Tech Trends" --desc="Updated description"
 ```
 * **Why non-source locales default to `draft: true`:**
-  To prevent unreviewed placeholder translations (`[TODO: ...]`) from appearing publicly on the live blog index (`/fa/blog`, `/de/blog`, etc.), `new:post` sets `draft: true` on non-source locales by default.
+  To prevent unreviewed placeholder translations (`[TODO: ...]`) from appearing publicly on the live blog index (`/fa/blog/`, etc.), `new:post` sets `draft: true` on non-source locales by default.
   * To show a post on a specific language's blog listing, set `draft: false` in its frontmatter.
   * To publish every ready language at creation, pass `--publish` or `--draft=false`. Locales that still contain `[TODO: ...]` placeholders stay drafts; supply `--title:<locale>` / `--desc:<locale>` for each one you want to publish.
   * `--draft` / `--draft=true` keeps **every** locale (including the source) as a draft.
@@ -134,19 +134,19 @@ pnpm run new:post -- tech-trends --update --sync-frontmatter --title="Modern Tec
   * Category and tag keys stay language-neutral (`engineering`, `i18n`); visible labels are message keys (`blog_category_engineering`, `blog_tag_i18n`). Unknown keys fall back to a humanized label, so a new tag never blocks a build.
   * Run `pnpm run assets:generate` after adding a post group to produce `src/content/blog/<group>/<group>.png` (1200×675).
   * Filtering lives entirely in `src/libs/content/blog.ts`; the blog index syncs `?category=…&tag=a,b` so filtered views are linkable.
-* **Updating Frontmatter:** Pass `--update` or `--sync-frontmatter` to update `title`, `description`, `date`, or `draft` across all 5 language files while preserving markdown body content.
+* **Updating Frontmatter:** Pass `--update` and `--sync-frontmatter` to update `title`, `description`, `publishedAt`, `categories`, `tags`, `image`, `author`, or `draft` across all active language files while preserving markdown body content.
 
 ### 3. Scaffolding New Pages (`pnpm run new:page`)
 ```bash
-# Create new page across all locales:
-pnpm run new:page -- contact --from=fa --title="تماس با ما"
+# Create new page across all active locales with layout options:
+pnpm run new:page -- contact --from=fa --title="تماس با ما" --hero=minimal --container=contained
 
-# Non-interactive frontmatter update across all locales:
+# Non-interactive frontmatter update across all active locales:
 pnpm run new:page -- contact --update --sync-frontmatter --title:fa="تماس با تیم ما" --title:en="Contact Our Team"
 ```
-* Auto-creates localized page entries across all active locales.
+* Auto-creates localized page entries across all active locales in `src/i18n/locales.ts`.
 * Automatically registers navigation key `nav_<key>` in all dictionaries and recompiles Paraglide.
-* Use `--update` / `--sync-frontmatter` to update existing pages without manual file rewrites.
+* Use `--update` / `--sync-frontmatter` to synchronize structural frontmatter (`image`, `hero`, `container`, `flushTop`, `template`) without manual file rewrites.
 * Only the source locale is published by default; the other locales stay `draft: true` until translated. Use `--publish`, `--draft`, and `--slug:<locale>="…"` to control that explicitly.
 
 ### 4. Batch Adding Translations (`pnpm run i18n:add-batch`)
@@ -276,5 +276,17 @@ pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run 
 * When dynamically appending cards in client scripts, call `refreshChronoTrig()` from `@/scripts/chronotrig` to re-scan and observe the new elements.
 * A filter change is different: hiding cards leaves the surviving ones with `.trig`, so they would appear without animating. Reset the grid first (`replayGridReveals()` in `BlogIndexView.astro`), force a reflow, then call `refreshChronoTrig()` — and skip that replay on the initial render, otherwise the page entrance restarts.
 
+---
 
+## Playbook 8: Custom Page Layouts & Pure SSG External Form APIs
 
+### 1. Choosing a Page Layout (`src/content/pages/<group>/<locale>.mdx`)
+Unlike `blog` entries (which always use `BlogPostView.astro` + `PageHero.astro`), static `pages` default to `hero: "none"` and `container: "canvas"`:
+* **Custom Full-Bleed Canvas (`hero: "none"`, `container: "canvas"`)**: Compose arbitrary sections inside MDX using `<PageSection>` or `.layout-container` (`1280px` max-width), or delegate to a shared `.astro` view in `src/views/pages/` via `template: "home"`. Add `flushTop: true` when your first section sits directly behind the floating glass header. Never use `layout:` in MDX frontmatter (reserved by `@astrojs/mdx`).
+* **Minimal Typographic Header (`hero: "minimal"`, `container: "contained" | "prose"`)**: Renders `PageHeader.astro` (breadcrumbs, accent rule, `<h1>`, description) above either a `1280px` `.layout-container` (`contained`) or a `72ch` editorial column (`prose`).
+* **Atmospheric Banner (`hero: "default"`)**: Renders the defocused full-bleed `PageHero.astro` + `HeroCopy.astro`.
+
+### 2. Connecting Forms to an External API (Zero Backend)
+This starter is **100% Pure SSG** and ships with no backend server. Client-side forms (`src/components/ContactForm.astro`) post directly to external/headless APIs through `src/libs/api/client.ts`:
+1. Set `PUBLIC_CONTACT_API_URL="https://api.example.com/v1/contact"` (or `PUBLIC_API_BASE_URL`) in `.env` / deployment environment variables, **or** set `api.baseUrl` and `api.endpoints.contact` in `app.config.json`.
+2. Embed `<ContactForm locale={locale} />` in any Astro view or MDX page. When no external endpoint is configured yet, the form automatically displays a clear configuration notice and disables submission cleanly.

@@ -3,10 +3,7 @@
   "baseLocale": "en",
   "locales": [
     "en",
-    "de",
-    "fr",
-    "fa",
-    "ar"
+    "fa"
   ],
   "modules": [
     "./node_modules/@inlang/plugin-message-format/dist/index.js",

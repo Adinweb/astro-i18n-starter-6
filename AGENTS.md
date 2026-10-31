@@ -18,15 +18,17 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Slugs, feeds & alternates: `src/libs/content/service.ts` and `src/libs/content/feed.ts`.
    - Content entry invariants (IDs, drafts, locale selection, sorting): `src/libs/content/entries.ts`.
    - Blog filters & reading time: `src/libs/content/blog.ts`; taxonomy labels: `src/libs/content/taxonomy.ts`.
-   - Application config: `app.config.json`, validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, brand assets, dev server).
+   - Application config: `app.config.json`, validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIES_CONFIG`, brand assets, dev server).
    - Blog pagination: `blog.postsPerPage` in `app.config.json` (`POSTS_PER_PAGE`), math in `src/libs/content/pagination.ts` (`paginate`, `buildPageWindow`), URLs in `src/libs/content/service.ts` (`getBlogPageHref`).
+   - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs` (build-time Pagefind normalization), `src/libs/search/persian.ts` (ZWNJ/orthography/numeral query expansion & fallback folding), and `src/libs/search/client.ts`.
+   - External API & Consent (Pure SSG, Zero Backend): `src/libs/api/client.ts` (`ContactForm.astro` posts directly to external/headless endpoints configured via `app.config.json` `api` or `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL`) and `src/libs/cookies/` (`CookieConsent.astro`). Never add SSR servers or backend folders.
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
 2. **Lean Router Dispatcher Pattern**:
    - Never create dynamic routing files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
-   - All dynamic routing flows exclusively through `src/pages/[...path].astro`, which dispatches to views in `src/views/` (`PageView`, `BlogIndexView`, `BlogPostView`).
+   - All dynamic routing flows exclusively through `src/pages/[...path].astro`, which dispatches to views in `src/views/` (`PageView`, `BlogIndexView`, `BlogPostView`). `/api/*.json` endpoints are strictly build-time static JSON catalogs.
 3. **Prefix-less Default Locale**:
    - The default locale (`DEFAULT_LOCALE = 'en'`) has **no prefix** (`/`, `/about/`, `/blog/first-post/`).
-   - Non-default locales (`de`, `fr`, `fa`, `ar`) have prefixes (`/de/about/`, `/fa/درباره-ما/`, `/ar/من-نحن/`).
+   - Non-default locales (`fa` out of the box; `ar`, `de`, `fr`, etc. when added via `pnpm run i18n:add-lang`) have prefixes (`/fa/درباره-ما/`, `/de/about/`, `/ar/من-نحن/`).
    - Never write hardcoded `/en/` or `/fa/` paths in templates or logic.
 4. **RTL-Native Discipline**:
    - Always use CSS logical properties (`ms-`, `me-`, `ps-`, `pe-`, `start-*`, `end-*`, `text-start`, `text-end`, `border-s-*`, `border-e-*`).
@@ -40,11 +42,11 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - With `<ClientRouter />`, `astro:page-load` fires on initial load and every client transition. Guard DOM element listeners with `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';`.
 8. **Render-Time Message Invocation**:
    - Call `m.<key>({}, { locale })` inside component render cycles or templates. Never call message functions at module evaluation scope.
-9. **Shared Visual Language**:
+9. **Shared Visual Language & Page Layout Architecture**:
    - Semantic colour roles (`primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, `error` and their `-fg` partners) live **only** in `src/styles/global.css`. Never hardcode hex values in components; compose semantic roles instead.
-   - Frosted surfaces, buttons and chips are defined **once** in `src/styles/global.css` (`.glass-surface`, `.glass-control`, `.ghost-control`, `.cta`, `.btn-secondary`, `.chip`). Compose them rather than re-declaring treatments.
+   - Standard desktop width (`max-w-7xl` / `1280px` with responsive logical inline gutters) is defined once via `.layout-container` in `src/styles/global.css`. Frosted surfaces, buttons and chips live **once** in `src/styles/global.css` (`.glass-surface`, `.glass-control`, `.ghost-control`, `.cta`, `.btn-secondary`, `.chip`). Compose them rather than re-declaring treatments.
    - Icon-only controls are rendered by `src/components/IconButton.astro`. Never hand-roll a `<button>` with an `<Icon>` inside.
-   - Shared hero copy lives in `src/components/HeroCopy.astro`, composed inside `src/components/PageHero.astro`.
+   - **Flexible `pages` Content Collection**: Unlike `blog` entries (which share `BlogPostView.astro`), `pages` entries default to `hero: 'none'` and `container: 'canvas'` in `src/content.config.ts` so every page has complete design freedom (`<PageSection>`, `.layout-container`, custom grids). Pages may opt into `hero: 'minimal'` (`PageHeader.astro`), `hero: 'default'` (`PageHero.astro` + `HeroCopy.astro`), `container: 'contained'` (`.layout-container` + `.prose-wide`), `container: 'prose'` (`72ch` editorial column), `flushTop: true`, or a shared bespoke Astro template in `src/views/pages/` via `template: '<name>'`. Never use `layout` in MDX frontmatter (reserved by `@astrojs/mdx`).
    - Article chrome (TOC, related posts, newer/older links, code-copy buttons) and `@media print` flattening live once in `BlogPostView.astro` / `BaseLayout.astro` and `src/styles/global.css`.
 10. **ChronoTrig CSS Scroll Engine & Lenis Smooth Scroll**:
    - Viewport reveals and keyframe animations are powered by ChronoTrig (`public/chronotrig.min.js`, coordinator in `src/scripts/chronotrig.ts`, styles in `src/styles/chronotrig.css`). Elements/titles reveal smoothly from bottom via `data-trig` and staggered card cascades via `data-trig-stagger`. All initial states are scoped under `.js` to guarantee zero CLS and 100% visibility when JS is disabled or printed.
@@ -60,17 +62,17 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ```text
 /
 ├── .agents/skills/            # Agent skills (astro-i18n-starter/SKILL.md + references/)
-├── app.config.json            # SSOT for site, brand, blog pagination, external API & dev server values
-├── messages/                  # Dictionaries (en.json, de.json, fr.json, fa.json, ar.json)
+├── app.config.json            # SSOT for site, brand, blog pagination, cookies, external API & dev server values
+├── messages/                  # Dictionaries for active locales (en.json, fa.json; extendable via i18n:add-lang)
 ├── project.inlang/            # Paraglide compiler configuration (settings.json)
 ├── public/                    # Static assets (chronotrig.min.js, favicons, manifest, default OG)
-├── scripts/                   # Developer CLI automation suite (14 scripts + lib/)
+├── scripts/                   # Developer CLI automation & Pagefind indexing suite (15 scripts + lib/)
 │   └── lib/                   # Shared prompt, frontmatter, content-stub, slug, and artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph fallback
-│   ├── components/            # Reusable Astro components (Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHero, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar)
+│   ├── components/            # Reusable Astro components (Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHeader, PageHero, PageSection, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar)
 │   ├── content/               # Symmetrical content collections:
-│   │   ├── pages/<group>/     # Static pages (en.mdx, de.mdx, fr.mdx, fa.mdx, ar.mdx + hero artwork)
+│   │   ├── pages/<group>/     # Static pages (<locale>.mdx per active locale + hero artwork)
 │   │   └── blog/<group>/      # Blog posts with localized slugs (+ cover artwork)
 │   ├── i18n/                  # Core i18n engine:
 │   │   ├── locales.ts         # SSOT for LOCALES, DEFAULT_LOCALE, metadata (dir, font, name)
@@ -87,7 +89,8 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── content/feed.ts    # Per-locale Atom 1.0 feed builder
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
 │   │   ├── content/social.ts  # Builds the optimized og:image card
-│   │   └── cookies/           # TDDDG § 25 / GDPR consent model & multi-domain script gatekeeper
+│   │   ├── cookies/           # TDDDG § 25 / GDPR consent model & multi-domain script gatekeeper
+│   │   └── search/            # client.ts + persian.ts (Pagefind & dev fallback with Persian ZWNJ/orthography expansion)
 │   ├── pages/                 # Minimal physical pages:
 │   │   ├── [...path].astro    # Lean Router Dispatcher
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
@@ -99,11 +102,12 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── robots.txt.ts      # Robots.txt pointing to sitemap
 │   │   ├── api/blog-posts.json.ts # Combined static blog catalog fallback
 │   │   ├── api/blog-posts/[locale].json.ts # Per-locale static blog catalog for filtered pagination
-│   │   └── api/search-dev.json.ts # Locale-aware search fallback index
+│   │   ├── api/search-dev.json.ts # Combined locale-aware search fallback index
+│   │   └── api/search-dev/[locale].json.ts # Per-locale static search fallback index
 │   ├── paraglide/             # AUTO-GENERATED compiled messages (DO NOT EDIT)
 │   ├── scripts/               # Client modules: chronotrig.ts, lenis.ts (smooth scroll)
-│   ├── styles/                # global.css (OKLCH palette + glass system + print), prose.css, chronotrig.css
-│   └── views/                 # Presentation views (PageView, BlogIndexView, BlogPostView)
+│   ├── styles/                # global.css (.layout-container + OKLCH palette + glass + print), prose.css, chronotrig.css
+│   └── views/                 # Presentation views (PageView, BlogIndexView, BlogPostView + pages/HomePageTemplate)
 ```
 
 ---
@@ -117,7 +121,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 | `pnpm test` | Vitest unit tests (paths, ICU, routes, CLI helpers, scroll reveal, interactive views) | After routing, UI, or logic changes |
 | `pnpm run audit:i18n` | Locale-config parity, dictionary/placeholder parity, content parity, used/dead keys, route collisions & RTL logical property guard | Before commits & builds |
 | `pnpm run verify:cli` | End-to-end check of every documented CLI workflow (47 claims in temp sandbox) | After changing anything under `scripts/` |
-| `pnpm run build` | `messages:compile` + audit + `astro build` + `pagefind` | After major changes |
+| `pnpm run build` | `messages:compile` + audit + `astro build` + `node scripts/index-pagefind.mjs` | After major changes |
 | `pnpm run smoke` | HTML, SEO, feed, asset & H1 assertions on `dist/` | After every production build |
 | `pnpm run knip` | Dead files, exports, and dependencies | Before releases |
 | `pnpm run assets:generate` | Regenerate PNG icons, OG image and hero/cover artwork | After brand changes or adding content groups |
@@ -132,19 +136,19 @@ Start the server in background mode (`astro dev --background`) and manage via `a
 Execute these scripts instead of performing brittle manual file manipulations:
 
 ### 4.1 Content Scaffolding
-* **Create or update a static page group across all locales:**
+* **Create or update a static page group across all active locales:**
   ```bash
-  pnpm run new:page <page-key> [--title="<Title>"] [--from=<source-locale>] [--image=cover.png|none] [--publish]
-  pnpm run new:page <page-key> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"]
+  pnpm run new:page <page-key> [--title="<Title>"] [--from=<source-locale>] [--hero=none|minimal|default] [--container=canvas|contained|prose] [--image=cover.png|none] [--publish]
+  pnpm run new:page <page-key> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"] [--hero=...] [--container=...]
   ```
-  Creates/updates `src/content/pages/<key>/{en,de,fr,fa,ar}.mdx`, generates localized slugs, preserves body copy, registers `nav_<key>` across dictionaries, and wires `image` frontmatter (`./<key>.png` via `assets:generate` by default). Without `--publish`, only the source locale is `draft: false`; locales with `[TODO: ...]` placeholders always remain drafts.
+  Creates/updates `src/content/pages/<key>/<locale>.mdx` across all active locales in `src/i18n/locales.ts`, generates localized slugs, preserves body copy, registers `nav_<key>` across dictionaries, and wires `image` frontmatter (`./<key>.png` via `assets:generate` by default). `--sync-frontmatter` aligns structural/shared frontmatter (`image`, `hero`, `container`, `flushTop`, `template`) across locales. Without `--publish`, only the source locale is `draft: false`; locales with `[TODO: ...]` placeholders always remain drafts.
 
-* **Create or update a blog article across all locales:**
+* **Create or update a blog article across all active locales:**
   ```bash
   pnpm run new:post <group-slug> [--from=<source-locale>] [--title="<Title>"] [--category=<cat>] [--tags="a,b"] [--publish]
   pnpm run new:post <group-slug> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"]
   ```
-  Creates/updates `src/content/blog/<slug>/{en,de,fr,fa,ar}.mdx` with synchronized frontmatter (`categories`, `tags`, `image`). Use `--clone-from=<group>` to copy an existing article's body.
+  Creates/updates `src/content/blog/<slug>/<locale>.mdx` across all active locales with synchronized frontmatter (`categories`, `tags`, `image`, `publishedAt`, `author`). Use `--clone-from=<group>` to copy an existing article's body.
 
 ### 4.2 Content Removal
 ```bash
@@ -183,8 +187,10 @@ pnpm run i18n:add-batch -- --file=translations.json [--category=<cat>]
 2. Set `"baseLocale"` in `project.inlang/settings.json` (e.g., `"fa"`).
 3. Run `pnpm run messages:compile && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke`.
 
-### Playbook C: The Hero Background
-Rendered by `src/components/PageHero.astro` — the entry's `image` (`./<group>.png` resolved via `image()` in `src/content.config.ts`, or `DEFAULT_HERO_IMAGE` fallback) is the single full-bleed defocused (`blur-md scale-105`) background layer under vertical/flat scrims (identical in LTR and RTL), rendered with `<Image>` (`transition:persist`) and `HeroCopy.astro` / `BlogPostHeroContent.astro` inside its slot.
+### Playbook C: Page Heroes & Custom Page Design
+- **Custom Canvas Pages (default in schema):** Omit `hero` (or set `hero: "none"`, `container: "canvas"`, optional `flushTop: true`) in `src/content/pages/<group>/<locale>.mdx` to compose arbitrary full-bleed sections (`<PageSection>`, `.layout-container`, custom grids) — or set `template: "<name>"` to delegate to a shared `.astro` view in `src/views/pages/` mapped in `src/views/PageView.astro`. Never use `layout` in MDX frontmatter (reserved by `@astrojs/mdx`); always use `container`. Ensure every page renders **exactly one `<h1>`**.
+- **Minimal Typographic Header:** Set `hero: "minimal"` to render `src/components/PageHeader.astro` (breadcrumbs, accent rule, `<h1>`, description) without a blurred background banner.
+- **Atmospheric Hero Band (`hero: "default"` & Blog):** Rendered by `src/components/PageHero.astro` — the entry's `image` (`./<group>.png` resolved via `image()` in `src/content.config.ts`, or `DEFAULT_HERO_IMAGE` fallback) is the single full-bleed defocused (`blur-md scale-105`) background layer under vertical/flat scrims, rendered with `<Image>` (`transition:persist`) and `HeroCopy.astro` / `BlogPostHeroContent.astro` inside its slot.
 
 ### Playbook D: Adding an SVG Icon
 1. Add the `<path>` inner markup to `icons` in `src/pages/icons.svg.ts`.

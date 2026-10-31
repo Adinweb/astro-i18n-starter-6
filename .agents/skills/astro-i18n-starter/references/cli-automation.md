@@ -18,30 +18,31 @@ npm run <command> -- [options]
 
 ### 2.1 Static Pages (`new:page`)
 ```bash
-npm run new:page <page-key> -- [--title="<Title>"] [--desc="<Desc>"] [--from=<locale>] [--publish] [--slug:<locale>="<native-slug>"]
+npm run new:page <page-key> -- [--title="<Title>"] [--desc="<Desc>"] [--from=<locale>] [--hero=none|minimal|default] [--container=canvas|contained|prose] [--image=<path>|none] [--publish] [--slug:<locale>="<native-slug>"]
 ```
-* **Files Created**: `src/content/pages/<page-key>/{en,de,fr,fa,ar}.mdx` + `./<page-key>.png`.
+* **Files Created**: `src/content/pages/<page-key>/<locale>.mdx` across all active locales in `src/i18n/locales.ts` (`en.mdx`, `fa.mdx` out of the box) + `./<page-key>.png`.
 * **Dictionary Key**: Automatically registers `nav_<page-key>` across all dictionaries in `messages/*.json`.
 * **Publication State**:
-  - Default: Only the source locale (`--from`, defaults to `en`) is published (`draft: false`); other locales remain `draft: true` until translated.
+  - Default: Only the source locale (`--from`, defaults to `DEFAULT_LOCALE`) is published (`draft: false`); other locales remain `draft: true` until translated.
   - `--publish` / `--draft=false`: Publishes locales that have real translations. Locales retaining `[TODO: ...]` placeholders remain drafts.
 * **Updating Frontmatter without Body Overwrite**:
   ```bash
-  npm run new:page <page-key> -- --update --sync-frontmatter --title="<New Title>"
+  npm run new:page <page-key> -- --update --sync-frontmatter --title="<New Title>" --hero=minimal --container=contained
   ```
-  `--update` preserves existing markdown content and only synchronizes frontmatter fields.
+  `--update` preserves existing markdown content while `--sync-frontmatter` aligns structural/shared frontmatter (`image`, `hero`, `container`, `flushTop`, `template`) across all locale files.
 
 ### 2.2 Blog Posts (`new:post`)
 ```bash
-npm run new:post <group-slug> -- [--title="<Title>"] [--from=<locale>] [--publish] [--category=<cat>] [--tags=<tags>] [--image=<path>]
+npm run new:post <group-slug> -- [--title="<Title>"] [--from=<locale>] [--publish] [--category=<cat>] [--tags=<tags>] [--image=<path>|none]
 ```
-* **Files Created**: `src/content/blog/<group-slug>/{en,de,fr,fa,ar}.mdx` + `./<group-slug>.png`.
+* **Files Created**: `src/content/blog/<group-slug>/<locale>.mdx` across all active locales + `./<group-slug>.png`.
 * **Cloning Body**: Use `--clone-from=<existing-group>` to clone the body copy from another post.
 * **Taxonomy**: Validates categories and tags against ASCII lowercase rules (`/^[a-z0-9]+(?:-[a-z0-9]+)*$/`).
 * **Updating Frontmatter**:
   ```bash
   npm run new:post <group-slug> -- --update --sync-frontmatter --title="<New Title>"
   ```
+  Synchronizes shared taxonomy/date/image/author frontmatter across all active locales without overwriting localized body prose.
 
 ---
 
@@ -119,3 +120,10 @@ npm run i18n:extract -- --target=<file-or-dir> --key=<namespace> --auto-add --re
 npm run assets:generate
 ```
 * Generates `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `og-default.png`, and all per-group hero/cover PNG artwork using Node.js without requiring headless browsers.
+
+### 5.5 Post-Build Pagefind Indexing (`scripts/index-pagefind.mjs`)
+```bash
+node scripts/index-pagefind.mjs [--site=dist]
+```
+* Runs automatically as the final step of `npm run build`.
+* Feeds built HTML from `dist/` into Pagefind's Node API in memory, normalizing Perso-Arabic character variants (`ي`/`ك` → `ی`/`ک`) and isolating Perso-Arabic punctuation (`«»،؛؟٪٬`) so Persian tokens index cleanly without modifying `dist/*.html` on disk.

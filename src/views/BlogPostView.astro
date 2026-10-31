@@ -39,7 +39,7 @@ const tocHeadings = siteConfig.blog.showTableOfContents ? filterTocHeadings(head
 const allPosts = await getCollection('blog');
 const localePosts = getSortedLocaleEntries(allPosts, locale);
 const { newer: newerPost, older: olderPost } = getAdjacentPosts(localePosts, entry.id);
-const relatedPosts = siteConfig.blog.showRelatedPosts ? getRelatedPosts(localePosts, entry, 2) : [];
+const relatedPosts = siteConfig.blog.showRelatedPosts ? getRelatedPosts(localePosts, entry, 3) : [];
 
 const breadcrumbs = getBreadcrumbs(url, locale, {
   home: m.nav_home({}, { locale }),
@@ -113,7 +113,7 @@ const schema = [
   <div
     class:list={[
       tocHeadings.length > 0 &&
-        'lg:grid lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-start lg:gap-12',
+        'lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:items-start lg:gap-14',
     ]}
   >
     <div class="min-w-0">
@@ -150,7 +150,7 @@ const schema = [
         )
       }
 
-      <article class="max-w-3xl">
+      <article class="max-w-4xl">
         <div class="prose">
           <Content />
         </div>
@@ -274,7 +274,7 @@ const schema = [
         <h2 id="related-posts-heading" class="text-xl font-bold tracking-tight text-fg" data-trig>
           {m.blog_related_posts({}, { locale })}
         </h2>
-        <div class="mt-6 grid gap-6 sm:grid-cols-2" data-trig-stagger data-trig-stagger-delay="0.08">
+        <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-trig-stagger data-trig-stagger-delay="0.08">
           {relatedPosts.map((related) => (
             <PostCard
               post={related}

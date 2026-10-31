@@ -62,7 +62,30 @@ export const collections = {
       base: './src/content/pages',
       generateId: ({ entry }) => entry.replace(/\.(md|mdx)$/, ''),
     }),
-    schema: ({ image }) => baseSchema({ image }),
+    schema: ({ image }) =>
+      baseSchema({ image }).extend({
+        /**
+         * Hero presentation mode for pages. Defaults to `'none'` so pages do not
+         * force a pre-built hero banner unless explicitly requested.
+         */
+        hero: z.union([z.boolean(), z.enum(['none', 'minimal', 'default'])]).default('none'),
+        /**
+         * Page body container mode (`container` avoids colliding with Astro MDX's
+         * reserved `layout` import specifier and static MDX analyzers). Defaults
+         * to `'canvas'` so authors have full freedom for custom full-bleed sections.
+         */
+        container: z.enum(['canvas', 'contained', 'prose']).default('canvas'),
+        /**
+         * Renders `<main>` flush to the top edge (`pt-0`) when `hero` is `'none'`,
+         * allowing custom full-bleed heroes to sit directly under the fixed header.
+         */
+        flushTop: z.boolean().default(false),
+        /**
+         * Optional named `.astro` template in `src/views/pages/` mapped by
+         * `PageView.astro` for DRY bespoke page designs shared across locales.
+         */
+        template: z.enum(['home']).optional(),
+      }),
   }),
   blog: defineCollection({
     loader: glob({

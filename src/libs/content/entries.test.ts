@@ -8,6 +8,10 @@ import {
   sortByPublishedAtDesc,
   type DatedContentEntry,
 } from './entries';
+import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/i18n/locales';
+
+const altLocale: Locale = LOCALES.find((locale) => locale !== DEFAULT_LOCALE) ?? DEFAULT_LOCALE;
+
 function post(
   id: string,
   publishedAt = '2026-01-01T00:00:00Z',
@@ -79,44 +83,49 @@ describe('src/libs/content/entries.ts', () => {
   describe('groupPublishedEntries', () => {
     it('skips drafts and groups by group then locale', () => {
       const grouped = groupPublishedEntries(
-        [post('first/en'), post('first/de'), post('second/de'), post('draft/en', undefined, true)],
+        [
+          post(`first/${DEFAULT_LOCALE}`),
+          post(`first/${altLocale}`),
+          post(`second/${altLocale}`),
+          post(`draft/${DEFAULT_LOCALE}`, undefined, true),
+        ],
         'blog'
       );
 
       expect([...grouped.keys()]).toEqual(['first', 'second']);
-      expect([...grouped.get('first')!.keys()]).toEqual(['en', 'de']);
-      expect(grouped.get('second')!.has('en')).toBe(false);
+      expect([...grouped.get('first')!.keys()]).toEqual([DEFAULT_LOCALE, altLocale]);
+      expect(grouped.get('second')!.has(DEFAULT_LOCALE)).toBe(false);
     });
 
     it('fails on a duplicate group/locale entry', () => {
       expect(() =>
-        groupPublishedEntries([post('first/en'), post('first/en')], 'blog')
-      ).toThrow(/Duplicate blog entry for "first\/en"/);
+        groupPublishedEntries([post(`first/${DEFAULT_LOCALE}`), post(`first/${DEFAULT_LOCALE}`)], 'blog')
+      ).toThrow(new RegExp(`Duplicate blog entry for "first/${DEFAULT_LOCALE}"`));
     });
   });
 
   describe('locale selection', () => {
     const entries = [
-      post('first/en', '2026-01-01T00:00:00Z'),
-      post('second/en', '2026-03-01T00:00:00Z'),
-      post('first/de', '2026-02-01T00:00:00Z'),
-      post('hidden/en', '2026-04-01T00:00:00Z', true),
+      post(`first/${DEFAULT_LOCALE}`, '2026-01-01T00:00:00Z'),
+      post(`second/${DEFAULT_LOCALE}`, '2026-03-01T00:00:00Z'),
+      post(`first/${altLocale}`, '2026-02-01T00:00:00Z'),
+      post(`hidden/${DEFAULT_LOCALE}`, '2026-04-01T00:00:00Z', true),
     ];
 
     it('returns only published entries of the requested locale', () => {
-      expect(getPublishedLocaleEntries(entries, 'en').map((entry) => entry.id)).toEqual([
-        'first/en',
-        'second/en',
+      expect(getPublishedLocaleEntries(entries, DEFAULT_LOCALE).map((entry) => entry.id)).toEqual([
+        `first/${DEFAULT_LOCALE}`,
+        `second/${DEFAULT_LOCALE}`,
       ]);
-      expect(getPublishedLocaleEntries(entries, 'de').map((entry) => entry.id)).toEqual([
-        'first/de',
+      expect(getPublishedLocaleEntries(entries, altLocale).map((entry) => entry.id)).toEqual([
+        `first/${altLocale}`,
       ]);
     });
 
     it('sorts the locale selection newest first', () => {
-      expect(getSortedLocaleEntries(entries, 'en').map((entry) => entry.id)).toEqual([
-        'second/en',
-        'first/en',
+      expect(getSortedLocaleEntries(entries, DEFAULT_LOCALE).map((entry) => entry.id)).toEqual([
+        `second/${DEFAULT_LOCALE}`,
+        `first/${DEFAULT_LOCALE}`,
       ]);
     });
   });

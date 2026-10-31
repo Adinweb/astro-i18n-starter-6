@@ -34,6 +34,16 @@ interface Props {
    * The `hero` named slot is rendered full-bleed, outside the content column.
    */
   hero?: boolean;
+  /**
+   * Removes top header clearance without rendering the `hero` slot so custom
+   * full-bleed page sections can sit directly beneath the floating header.
+   */
+  flushTop?: boolean;
+  /**
+   * Renders `<slot />` directly inside `<main>` without a `.layout-container`
+   * wrapper so custom pages can compose arbitrary full-bleed bands.
+   */
+  canvas?: boolean;
   /** Artwork of the entry, already resolved by Astro's image pipeline. */
   image?: ImageMetadata;
   type?: 'website' | 'article';
@@ -57,6 +67,8 @@ const {
   noPagefind = false,
   showSearch = true,
   hero = false,
+  flushTop = false,
+  canvas = false,
   image,
   type = 'website',
   publishedTime,
@@ -226,7 +238,7 @@ const structuredData = schema ?? {
         siteConfig.ui.stickyHeader ? 'fixed' : 'relative',
       ]}
     >
-      <div class="mx-auto w-full max-w-5xl px-4 sm:px-6">
+      <div class="layout-container">
         <div
           class="glass-surface flex h-14 items-center justify-between gap-3 px-3 sm:h-16 sm:px-4"
         >
@@ -698,24 +710,30 @@ const structuredData = schema ?? {
       data-pagefind-ignore={noPagefind ? true : undefined}
       class:list={[
         'flex-1 w-full',
-        hero ? 'pt-0' : siteConfig.ui.stickyHeader ? 'pt-20 sm:pt-24' : 'pt-6 sm:pt-8',
+        hero || flushTop ? 'pt-0' : siteConfig.ui.stickyHeader ? 'pt-24 sm:pt-28' : 'pt-6 sm:pt-8',
       ]}
     >
       {/* Full-bleed hero: rendered outside the content column so it spans the viewport. */}
-      <slot name="hero" />
+      {hero && <slot name="hero" />}
 
-      <div
-        class:list={[
-          'mx-auto w-full max-w-5xl px-4 pb-12 sm:px-6 md:pb-16',
-          hero && 'pt-10 sm:pt-12',
-        ]}
-      >
-        <slot />
-      </div>
+      {
+        canvas ? (
+          <slot />
+        ) : (
+          <div
+            class:list={[
+              'layout-container pb-12 md:pb-16',
+              hero && 'pt-10 sm:pt-12',
+            ]}
+          >
+            <slot />
+          </div>
+        )
+      }
     </main>
 
     <footer class="border-t border-border bg-surface mt-auto pt-12 pb-8">
-      <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="layout-container">
         <!-- Multi-Column Footer Navigation Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 pb-10 border-b border-border/80">
           <!-- Column 1: Brand & Tagline -->

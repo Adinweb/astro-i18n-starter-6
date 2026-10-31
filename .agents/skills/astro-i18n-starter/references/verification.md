@@ -11,12 +11,12 @@ Before committing code or submitting changes, run these 7 commands:
 | Step | Command | Purpose & Assertion |
 | :--- | :--- | :--- |
 | **1. Lint** | `npm run lint` | Compiles Paraglide dictionaries, runs `astro check`, and checks strict types via `tsc --noEmit`. Must exit with 0 errors. |
-| **2. Test** | `npm test` | Runs Vitest unit tests across 14 test suites (ICU formatters, URL normalization, navigation slots, pagination, content loaders, scroll reveal, and interactive views). |
-| **3. Audit** | `npm run audit:i18n` | 5-stage check: locale agreement, dictionary key/placeholder parity across all 5 locales, content group completeness, slug collisions, unextracted text. |
-| **4. Build** | `npm run build` | Compiles dictionaries, runs audit, builds production static SSG bundle to `dist/`, and indexes static content with Pagefind. |
-| **5. Smoke** | `npm run smoke` | Inspects generated HTML files in `dist/` to assert canonical tags, hreflang links, Open Graph cards, Atom feeds, and H1 tags. |
+| **2. Test** | `npm test` | Runs Vitest unit tests across 18 test suites (ICU formatters, URL normalization, navigation slots, pagination, content loaders, Persian search & Pagefind normalization, external API client, cookie consent, Lenis, and ChronoTrig scroll reveals). |
+| **3. Audit** | `npm run audit:i18n` | 5-stage check: locale agreement, dictionary key/placeholder parity across all active locales, content group & frontmatter validation, slug collisions, unextracted text & RTL logical property guard. |
+| **4. Build** | `npm run build` | Compiles dictionaries, runs audit, builds production static SSG bundle to `dist/`, and indexes static content with `scripts/index-pagefind.mjs` (Perso-Arabic normalization). |
+| **5. Smoke** | `npm run smoke` | Inspects generated HTML files in `dist/` to assert canonical tags, hreflang links, Open Graph cards, Atom feeds, Pagefind bundle, and H1 tags. |
 | **6. Knip** | `npm run knip` | Audits the project for dead code, unused exports, and orphaned dependencies. |
-| **7. CLI Check** | `npm run verify:cli` | Clones the starter to an isolated temp sandbox and executes 45 end-to-end assertions against all CLI tools. |
+| **7. CLI Check** | `npm run verify:cli` | Clones the starter to an isolated temp sandbox and executes 47 end-to-end assertions against all CLI tools. |
 
 ---
 
@@ -26,7 +26,7 @@ Before committing code or submitting changes, run these 7 commands:
 Vitest unit tests run directly under Node.js without needing an Astro build process:
 - `vitest.config.ts` aliases `astro:content` to `src/test/astro-content-mock.ts`.
 - Content service tests mock `getPageUrl` or `getSiteRoutes` cleanly.
-- Tests verify ICU pluralization (`blog_read_time`) and ordinal rules (`position_ordinal`) across all 5 languages.
+- Tests verify ICU pluralization (`blog_read_time`) and ordinal rules (`position_ordinal`) across active locales.
 
 ---
 

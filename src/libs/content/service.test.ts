@@ -267,9 +267,9 @@ describe('src/libs/content/service.ts', () => {
     it('builds the href of every page via getBlogPageHref and getCollectionPageHref', () => {
       expect(getBlogPageHref(1, DEFAULT_LOCALE)).toBe(getBlogIndexHref(DEFAULT_LOCALE));
       expect(getBlogPageHref(2, DEFAULT_LOCALE)).toBe('/blog/page/2/');
-      expect(getBlogPageHref(3, 'de')).toBe('/de/blog/page/3/');
+      expect(getBlogPageHref(3, testLocale)).toBe(`/${testLocale}/blog/page/3/`);
       expect(getCollectionPageHref('docs', 1, DEFAULT_LOCALE)).toBe('/docs/');
-      expect(getCollectionPageHref('/docs/', 2, 'de')).toBe('/de/docs/page/2/');
+      expect(getCollectionPageHref('/docs/', 2, testLocale)).toBe(`/${testLocale}/docs/page/2/`);
     });
 
     it('registers one route per page of the index', () => {
@@ -302,7 +302,7 @@ describe('src/libs/content/service.ts', () => {
       const secondPage = routes.find((route) => route.props.url === '/blog/page/2/');
       expect(secondPage).toBeDefined();
       expect(secondPage!.props.alternates[DEFAULT_LOCALE]).toBe('/blog/page/2/');
-      expect(secondPage!.props.alternates['de']).toBe('/de/blog/page/2/');
+      expect(secondPage!.props.alternates[testLocale]).toBe(`/${testLocale}/blog/page/2/`);
     });
 
     it('keeps SEO alternates strictly reciprocal while clamping switcherAlternates to the last page', () => {
@@ -314,10 +314,10 @@ describe('src/libs/content/service.ts', () => {
       const thirdPage = routes.find((route) => route.props.url === '/blog/page/3/');
       expect(thirdPage).toBeDefined();
       // Other locales only have 1 page: omit from SEO hreflang alternates so reciprocity holds,
-      // while clamping switcherAlternates so UI language switching lands on /de/blog/.
+      // while clamping switcherAlternates so UI language switching lands on /<testLocale>/blog/.
       expect(thirdPage!.props.alternates[DEFAULT_LOCALE]).toBe('/blog/page/3/');
-      expect(thirdPage!.props.alternates['de']).toBeUndefined();
-      expect(thirdPage!.props.switcherAlternates?.['de']).toBe('/de/blog/');
+      expect(thirdPage!.props.alternates[testLocale]).toBeUndefined();
+      expect(thirdPage!.props.switcherAlternates?.[testLocale]).toBe(`/${testLocale}/blog/`);
     });
 
     it('counts only published posts', () => {

@@ -150,6 +150,36 @@ This is the body text that should never be deleted.
     expect(serialized).toContain('This is the body text that should never be deleted.');
   });
 
+  it('round-trips flexible container, hero, flushTop, and template fields', () => {
+    const raw = `---
+title: "Custom Landing"
+slug: "landing"
+description: "Bespoke canvas page"
+template: "home"
+hero: "none"
+container: "canvas"
+flushTop: true
+draft: false
+---
+
+<section class="layout-container">Custom section</section>
+`;
+
+    const { data, body } = parsePageFm(raw) as { data: Record<string, any>; body: string };
+    expect(data.template).toBe('home');
+    expect(data.hero).toBe('none');
+    expect(data.container).toBe('canvas');
+    expect(data.flushTop).toBe(true);
+    expect(data.draft).toBe(false);
+
+    const serialized = stringifyPageFm(data, body);
+    expect(serialized).toContain('template: "home"');
+    expect(serialized).toContain('hero: "none"');
+    expect(serialized).toContain('container: "canvas"');
+    expect(serialized).toContain('flushTop: true');
+    expect(serialized).toContain('<section class="layout-container">Custom section</section>');
+  });
+
   it('round-trips blog taxonomy arrays through post frontmatter', () => {
     const raw = `---
 title: "Taxonomy Post"
@@ -481,4 +511,141 @@ describe('Paraglide CLI helper (scripts/lib/compile-messages.mjs)', () => {
     },
     20_000
   );
+});
+
+describe('CLI --sync-frontmatter propagation (new-page.mjs & new-post.mjs)', () => {
+  let sandboxDir: string;
+
+  beforeEach(() => {
+    sandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astro-sync-fm-'));
+    fs.mkdirSync(path.join(sandboxDir, 'project.inlang'), { recursive: true });
+    fs.writeFileSync(
+      path.join(sandboxDir, 'project.inlang', 'settings.json'),
+      JSON.stringify({ baseLocale: 'en', locales: ['en', 'fa'] }, null, 2),
+      'utf-8'
+    );
+  });
+
+  afterEach(() => {
+    fs.rmSync(sandboxDir, { recursive: true, force: true });
+  });
+
+  it('propagates hero, container, flushTop, template, and image across locales in new-page.mjs --sync-frontmatter', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const pageDir = path.join(sandboxDir, 'src', 'content', 'pages', 'showcase');
+    fs.mkdirSync(pageDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(pageDir, 'en.mdx'),
+      `---
+title: "Showcase"
+slug: "showcase"
+description: "English showcase"
+template: "home"
+hero: "none"
+container: "canvas"
+flushTop: true
+draft: false
+---
+
+English body.
+`,
+      'utf-8'
+    );
+
+    fs.writeFileSync(
+      path.join(pageDir, 'fa.mdx'),
+      `---
+title: "ویترین"
+slug: "ویترین"
+description: "ویترین فارسی"
+image: "./showcase.png"
+hero: "default"
+container: "contained"
+draft: false
+---
+
+متن فارسی.
+`,
+      'utf-8'
+    );
+
+    execFileSync(
+      process.execPath,
+      [path.join(process.cwd(), 'scripts', 'new-page.mjs'), 'showcase', '--sync-frontmatter', '--skip-nav'],
+      { cwd: sandboxDir, stdio: 'pipe' }
+    );
+
+    const faParsed = parsePageFm(fs.readFileSync(path.join(pageDir, 'fa.mdx'), 'utf-8')) as {
+      data: Record<string, unknown>;
+      body: string;
+    };
+    expect(faParsed.data.title).toBe('ویترین');
+    expect(faParsed.data.slug).toBe('ویترین');
+    expect(faParsed.data.template).toBe('home');
+    expect(faParsed.data.hero).toBe('none');
+    expect(faParsed.data.container).toBe('canvas');
+    expect(faParsed.data.flushTop).toBe(true);
+    expect(faParsed.data.image).toBeUndefined();
+    expect(faParsed.body).toContain('متن فارسی.');
+  });
+
+  it('propagates categories, tags, image, and publishedAt across locales in new-post.mjs --sync-frontmatter', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const postDir = path.join(sandboxDir, 'src', 'content', 'blog', 'architecture-notes');
+    fs.mkdirSync(postDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(postDir, 'en.mdx'),
+      `---
+title: "Architecture Notes"
+slug: "architecture-notes"
+description: "System notes"
+image: "./architecture-notes.png"
+categories: ["engineering", "design"]
+tags: ["astro", "rtl"]
+publishedAt: 2026-07-10
+draft: false
+---
+
+English post body.
+`,
+      'utf-8'
+    );
+
+    fs.writeFileSync(
+      path.join(postDir, 'fa.mdx'),
+      `---
+title: "یادداشت‌های معماری"
+slug: "یادداشت‌های-معماری"
+description: "یادداشت‌های سیستم"
+categories: ["guides"]
+tags: ["i18n"]
+publishedAt: 2026-01-01
+draft: false
+---
+
+متن مقاله فارسی.
+`,
+      'utf-8'
+    );
+
+    execFileSync(
+      process.execPath,
+      [path.join(process.cwd(), 'scripts', 'new-post.mjs'), 'architecture-notes', '--sync-frontmatter'],
+      { cwd: sandboxDir, stdio: 'pipe' }
+    );
+
+    const faParsed = parsePostFm(fs.readFileSync(path.join(postDir, 'fa.mdx'), 'utf-8')) as {
+      data: Record<string, unknown>;
+      body: string;
+    };
+    expect(faParsed.data.title).toBe('یادداشت‌های معماری');
+    expect(faParsed.data.slug).toBe('یادداشت‌های-معماری');
+    expect(faParsed.data.image).toBe('./architecture-notes.png');
+    expect(faParsed.data.categories).toEqual(['engineering', 'design']);
+    expect(faParsed.data.tags).toEqual(['astro', 'rtl']);
+    expect(faParsed.data.publishedAt).toBe('2026-07-10');
+    expect(faParsed.body).toContain('متن مقاله فارسی.');
+  });
 });

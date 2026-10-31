@@ -382,6 +382,38 @@ for (const { collection, group, groupDir } of groups) {
       slugFatal = true;
     }
 
+    if (collection === 'pages') {
+      if (
+        frontmatter.hero !== undefined &&
+        ![true, false, 'none', 'minimal', 'default'].includes(frontmatter.hero)
+      ) {
+        fatal(
+          `Invalid hero "${frontmatter.hero}" in ${relative} (expected "none", "minimal", "default", or boolean)`
+        );
+        slugFatal = true;
+      }
+      const reservedLayoutKey = Object.keys(frontmatter).find((k) => /layout$/i.test(k));
+      if (reservedLayoutKey) {
+        fatal(
+          `Reserved MDX frontmatter key "${reservedLayoutKey}" in ${relative} — use "container" ("canvas", "contained", or "prose") instead`
+        );
+        slugFatal = true;
+      }
+      if (
+        frontmatter.container !== undefined &&
+        !['canvas', 'contained', 'prose'].includes(String(frontmatter.container))
+      ) {
+        fatal(
+          `Invalid container "${frontmatter.container}" in ${relative} (expected "canvas", "contained", or "prose")`
+        );
+        slugFatal = true;
+      }
+      if (frontmatter.flushTop !== undefined && typeof frontmatter.flushTop !== 'boolean') {
+        fatal(`Invalid flushTop "${frontmatter.flushTop}" in ${relative} (expected boolean)`);
+        slugFatal = true;
+      }
+    }
+
     for (const taxonomyField of ['categories', 'tags']) {
       const items = frontmatter[taxonomyField];
       if (Array.isArray(items)) {
