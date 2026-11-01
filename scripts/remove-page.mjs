@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { confirmDeletion } from './lib/prompt.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
+import { entryKeyError, localeCodeError } from './lib/validate.mjs';
 
 const args = process.argv.slice(2);
 const pageKey = args.find((a) => !a.startsWith('--'));
@@ -53,6 +54,20 @@ function cleanNavKey(rootDir, locales) {
 if (!pageKey) {
   console.error('Usage: pnpm run remove:page <page-key> [--locale=<locale>] [--no-clean-nav] [--force]');
   process.exit(1);
+}
+
+const keyError = entryKeyError(pageKey, 'page key');
+if (keyError) {
+  console.error(keyError);
+  process.exit(1);
+}
+
+if (targetLocale) {
+  const localeError = localeCodeError(targetLocale);
+  if (localeError) {
+    console.error(localeError);
+    process.exit(1);
+  }
 }
 
 if (pageKey === 'home' && !force) {

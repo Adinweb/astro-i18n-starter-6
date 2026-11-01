@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
 import { contentStub } from './lib/content-stub.mjs';
 import { resolveSlug } from './lib/slug.mjs';
+import { entryKeyError } from './lib/validate.mjs';
 import {
   escapeRegex,
   parseFrontmatter,
@@ -166,6 +167,12 @@ Update / Sync Options:
     process.exit(1);
   }
 
+  const keyError = entryKeyError(pageKey, 'page key');
+  if (keyError) {
+    console.error(keyError);
+    process.exit(1);
+  }
+
   // Ingest JSON data if supplied
   if (jsonData && typeof jsonData === 'object') {
     for (const [loc, fields] of Object.entries(jsonData)) {
@@ -184,7 +191,29 @@ Update / Sync Options:
   );
   const LOCALES = inlangSettings.locales;
   const defaultLocale = inlangSettings.baseLocale || 'en';
+  if (fromLocale && !LOCALES.includes(fromLocale)) {
+    console.error(
+      `❌ Unknown source locale "${fromLocale}". Registered locales: ${LOCALES.join(', ')}.`
+    );
+    process.exit(1);
+  }
   const sourceLocale = fromLocale || defaultLocale;
+
+  /**
+   * Builds `--<locale>=<label>` arguments for the navigation key from every
+   * real (non-placeholder) title passed on the command line. A page that is
+   * published in a locale must not show a `[TODO: …]` label in that locale's
+   * navigation.
+   */
+  const navTranslationArgs = () => {
+    const navArgs = [];
+    for (const loc of LOCALES) {
+      const label = titlesByLocale[loc] || (loc === sourceLocale ? title : '');
+      if (!label || label.includes('[TODO')) continue;
+      navArgs.push(`--${loc}=${label}`);
+    }
+    return navArgs;
+  };
 
   const publishedLocales = [];
   const draftLocales = [];
@@ -195,6 +224,7 @@ Update / Sync Options:
   if (fs.existsSync(targetDir) && (isUpdate || isSyncFrontmatter)) {
     console.log(`🔄 Updating existing page group: src/content/pages/${pageKey}/`);
     const updatedLocales = [];
+    const bodyHeadingLocales = [];
 
     // A custom artwork has to sit next to the content, so it is copied into
     // the group folder before the frontmatter is rewritten.
@@ -235,10 +265,12 @@ Update / Sync Options:
       } else {
         // Missing locale file - create symmetrical fallback
         const slug = resolveSlug(loc, pageKey, sourceLocale, defaultLocale, slugsByLocale);
+        const sourceDescription =
+          typeof sourceFmData?.description === 'string' ? sourceFmData.description : '';
         fmData = {
           title: `[TODO: ${loc}] ${sourceFmData?.title || title}`,
           slug,
-          description: `[TODO: ${loc}] ${sourceFmData?.description || `Description for ${title}`}`,
+          ...(sourceDescription ? { description: `[TODO: ${loc}] ${sourceDescription}` } : {}),
           hero: heroOption || sourceFmData?.hero || 'default',
           container: layoutOption || sourceFmData?.container || 'contained',
           draft: hasDraftArg ? !publishAll : !isSource,
@@ -323,28 +355,34 @@ Update / Sync Options:
         }
       }
 
+      // `hero: "minimal"` renders the frontmatter title as the page's only
+      // `<h1>`; a body that still carries its own heading would duplicate it.
+      if (heroOption === 'minimal' && /<h1[\s>]/i.test(body)) bodyHeadingLocales.push(loc);
+
       const newContent = stringifyFrontmatter(fmData, body);
       fs.writeFileSync(filePath, newContent, 'utf-8');
       updatedLocales.push(loc);
     }
 
     console.log(`✅ Frontmatter successfully updated for [${pageKey}] across locales: ${updatedLocales.join(', ')}`);
+    if (bodyHeadingLocales.length > 0) {
+      console.warn(
+        `⚠️ hero "minimal" renders the title as the page's <h1>, but the body of ` +
+          `[${bodyHeadingLocales.join(', ')}] also contains an <h1>. Remove the body heading so the page has exactly one.`
+      );
+    }
 
-    // Optional nav key update
-    if (!skipNav && hasCustomTitle) {
+    // Optional nav key update (any per-locale `--title:<locale>` counts too)
+    const hasAnyTitle = hasCustomTitle || Object.keys(titlesByLocale).length > 0;
+    if (!skipNav && hasAnyTitle) {
       try {
-        const navText = titlesByLocale[sourceLocale] || title;
         console.log(`🔄 Updating nav_${pageKey} translation key...`);
-        execFileSync(
-          process.execPath,
-          [
-            path.join(rootDir, 'scripts', 'i18n-add.mjs'),
-            '--category=nav',
-            `--key=${pageKey}`,
-            `--${sourceLocale}=${navText}`,
-          ],
-          { cwd: rootDir, stdio: 'inherit' }
-        );
+        execFileSync(process.execPath, [
+          path.join(rootDir, 'scripts', 'i18n-add.mjs'),
+          '--category=nav',
+          `--key=${pageKey}`,
+          ...navTranslationArgs(),
+        ], { cwd: rootDir, stdio: 'inherit' });
       } catch (e) {
         console.warn('⚠️ Warning: Failed to update nav key:', e.message);
       }
@@ -404,13 +442,16 @@ Update / Sync Options:
       pageTitle = isSource ? title : `[TODO: ${loc}] ${title}`;
     }
 
+    // Without `--desc` the entry simply has no description: the SEO component
+    // then falls back to the site description, instead of publishing an
+    // invented "Description for …" string in the meta tags of a live site.
     let pageDesc;
     if (descriptionsByLocale[loc]) {
       pageDesc = descriptionsByLocale[loc];
     } else if (hasCustomDesc) {
       pageDesc = isSource ? customDesc : `[TODO: ${loc}] ${customDesc}`;
     } else {
-      pageDesc = isSource ? `Description for ${title}` : `[TODO: ${loc}] Description for ${title}`;
+      pageDesc = '';
     }
 
     // A locale with placeholder copy stays a draft even under `--publish`, so
@@ -429,7 +470,7 @@ Update / Sync Options:
     const fmRecord = {
       title: pageTitle,
       slug,
-      description: pageDesc,
+      ...(pageDesc ? { description: pageDesc } : {}),
       ...(pageImage ? { image: pageImage } : {}),
       hero: resolvedHero,
       container: resolvedLayout,
@@ -479,18 +520,13 @@ Update / Sync Options:
   // Register nav translation key
   if (!skipNav) {
     try {
-      const navText = titlesByLocale[sourceLocale] || title;
       console.log(`🔄 Registering nav_${pageKey} translation key...`);
-      execFileSync(
-        process.execPath,
-        [
-          path.join(rootDir, 'scripts', 'i18n-add.mjs'),
-          '--category=nav',
-          `--key=${pageKey}`,
-          `--${sourceLocale}=${navText}`,
-        ],
-        { cwd: rootDir, stdio: 'inherit' }
-      );
+      execFileSync(process.execPath, [
+        path.join(rootDir, 'scripts', 'i18n-add.mjs'),
+        '--category=nav',
+        `--key=${pageKey}`,
+        ...navTranslationArgs(),
+      ], { cwd: rootDir, stdio: 'inherit' });
     } catch (e) {
       console.warn('⚠️ Warning: Failed to auto-register nav key:', e.message);
     }

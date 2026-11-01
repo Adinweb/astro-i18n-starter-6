@@ -4,6 +4,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { contentStub, stripLeadingHeading } from './lib/content-stub.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
+import { localeCodeError } from './lib/validate.mjs';
 import {
   escapeRegex,
   parseFrontmatter,
@@ -35,6 +36,12 @@ for (const arg of args) {
 
 if (!langCode) {
   console.error('Usage: pnpm run i18n:add-lang <locale-code> [--name="<Display Name>"] [--dir="ltr|rtl"] [--from=<source-locale>] [--with-content|--no-content] [--draft=true|false]');
+  process.exit(1);
+}
+
+const localeError = localeCodeError(langCode);
+if (localeError) {
+  console.error(localeError);
   process.exit(1);
 }
 
@@ -208,8 +215,18 @@ for (const [key, val] of Object.entries(sourceDict)) {
   }
 }
 
-fs.writeFileSync(targetDictPath, JSON.stringify(newDict, null, 2) + '\n', 'utf-8');
-console.log(`✅ Created messages/${langCode}.json (derived from "${sourceLocale}")`);
+if (fs.existsSync(targetDictPath)) {
+  // Re-running the command for an existing language must never wipe the
+  // translations that were already paid for. Only a missing dictionary is
+  // derived from the source locale.
+  console.log(
+    `⏭️  messages/${langCode}.json already exists — keeping its existing translations.`
+  );
+  console.log('   Delete the file first if you want a freshly derived all-placeholder dictionary.');
+} else {
+  fs.writeFileSync(targetDictPath, JSON.stringify(newDict, null, 2) + '\n', 'utf-8');
+  console.log(`✅ Created messages/${langCode}.json (derived from "${sourceLocale}")`);
+}
 
 // 3. Update src/i18n/locales.ts (SSOT for LOCALES and metadata)
 const localesPath = path.join(rootDir, 'src', 'i18n', 'locales.ts');
@@ -242,12 +259,18 @@ if (!metaKeyPattern.test(localesCode)) {
     ? langCode
     : `'${langCode}'`;
   const escapedName = langName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  const newMetaBlock = `  ${formattedKey}: {
-    dir: '${dir}',
-    htmlLang: '${langCode}',
-    name: '${escapedName}',
-    fontFamily: '${fontVar}',
-  },\n} satisfies Record<Locale, LocaleMeta>;`;
+  // Keep the file's own line ending so inserting a locale does not rewrite a
+  // CRLF file with mixed endings.
+  const eol = localesCode.includes('\r\n') ? '\r\n' : '\n';
+  const newMetaBlock = [
+    `  ${formattedKey}: {`,
+    `    dir: '${dir}',`,
+    `    htmlLang: '${langCode}',`,
+    `    name: '${escapedName}',`,
+    `    fontFamily: '${fontVar}',`,
+    '  },',
+    '} satisfies Record<Locale, LocaleMeta>;',
+  ].join(eol);
 
   localesCode = localesCode.replace(/}\s*satisfies Record<Locale, LocaleMeta>;/, newMetaBlock);
   console.log(`✅ Updated LOCALE_METADATA in src/i18n/locales.ts with metadata for "${langCode}"`);
@@ -287,7 +310,9 @@ if (shouldPopulateContent) {
 
           let title = group;
           const slug = group === 'home' ? '' : `${group}-${langCode}`;
-          let description = `Description for ${group}`;
+          // A page without a description keeps none: inventing one would ship a
+          // placeholder as the meta description of the localized page.
+          let description = '';
           let body = contentStub(langCode);
           let sourceFm = {};
 
@@ -309,18 +334,20 @@ if (shouldPopulateContent) {
           const pageTitle = langCode === 'fr'
             ? (group === 'home' ? 'Bienvenue sur Astro i18n' : group === 'about' ? 'À propos de nous' : title)
             : `[TODO: ${langCode}] ${title}`;
-          const pageDescription = description.startsWith('[TODO:')
-            ? description
-            : langCode === 'fr' && (group === 'home' || group === 'about')
+          const pageDescription = !description
+            ? ''
+            : description.startsWith('[TODO:')
               ? description
-              : `[TODO: ${langCode}] ${description}`;
+              : langCode === 'fr' && (group === 'home' || group === 'about')
+                ? description
+                : `[TODO: ${langCode}] ${description}`;
           const entryIsDraft =
             isDraft || pageTitle.includes('[TODO') || pageDescription.includes('[TODO');
 
           const fmRecord = {
             title: pageTitle,
             slug,
-            description: pageDescription,
+            ...(pageDescription ? { description: pageDescription } : {}),
             ...(sourceFm.image ? { image: sourceFm.image } : {}),
             ...(collection === 'pages'
               ? {

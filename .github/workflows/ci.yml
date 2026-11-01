@@ -48,11 +48,17 @@ jobs:
       - name: i18n audit
         run: pnpm run audit:i18n
 
+      - name: Project health (doctor)
+        run: pnpm run doctor
+
       - name: Build (Astro + Pagefind)
         run: pnpm run build
 
       - name: Smoke test built output
         run: pnpm run smoke
+
+      - name: Internal link crawl
+        run: pnpm run link:check
 
       - name: Dead code check
         run: pnpm run knip

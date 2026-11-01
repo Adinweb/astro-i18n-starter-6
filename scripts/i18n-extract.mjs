@@ -132,18 +132,28 @@ for (const file of filesToProcess) {
 
   if (replacements.length > 0) {
     console.log(`Found ${replacements.length} string(s) in ${path.relative(rootDir, file)}`);
+    const missingKeys = [];
 
     for (const r of replacements) {
       extractedCount++;
+      const baseDictionary = dictsByLocale[BASE_LOCALE];
+      const keyExists = Boolean(baseDictionary && baseDictionary[r.key]);
+
       if (autoAdd) {
-        if (dictsByLocale[BASE_LOCALE] && !dictsByLocale[BASE_LOCALE][r.key]) {
+        if (baseDictionary && !keyExists) {
           for (const loc of LOCALES) {
             if (!dictsByLocale[loc]) continue;
             dictsByLocale[loc][r.key] =
               loc === BASE_LOCALE ? r.text : `[TODO: ${loc}] ${r.text}`;
           }
-          console.log(`  + Key created: ${r.key} = "${r.text}" across locales: ${LOCALES.join(', ')}`);
+          const prefix = dryRun ? '[dry-run] Would create key' : '+ Key created';
+          console.log(`  ${prefix}: ${r.key} = "${r.text}" across locales: ${LOCALES.join(', ')}`);
         }
+      } else if (replace && !keyExists) {
+        // Rewriting the template with a key that does not exist produces code
+        // that compiles but fails `astro check`. Say so instead of silently
+        // leaving a broken reference behind.
+        missingKeys.push(r.key);
       }
 
       if (replace) {
@@ -158,6 +168,14 @@ for (const file of filesToProcess) {
             : `{m.${r.key}({})}`;
         s.overwrite(r.start, r.end, call);
       }
+    }
+
+    if (missingKeys.length > 0) {
+      const preview = missingKeys.slice(0, 5).join(', ') + (missingKeys.length > 5 ? ', …' : '');
+      console.warn(
+        `⚠️ ${missingKeys.length} extracted key(s) are missing from messages/${BASE_LOCALE}.json: ${preview}`
+      );
+      console.warn('   Re-run with --auto-add to create them; otherwise `pnpm run lint` will fail.');
     }
 
     if (replace) {

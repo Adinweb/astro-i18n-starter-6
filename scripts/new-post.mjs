@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
 import { postStub, stripLeadingHeading } from './lib/content-stub.mjs';
 import { resolveSlug } from './lib/slug.mjs';
+import { collectionError, entryKeyError } from './lib/validate.mjs';
 import {
   escapeRegex,
   parseFrontmatter,
@@ -169,6 +170,24 @@ Update / Sync Options:
     process.exit(1);
   }
 
+  const keyError = entryKeyError(groupSlug, 'article group slug');
+  if (keyError) {
+    console.error(keyError);
+    process.exit(1);
+  }
+  const collectionNameError = collectionError(collection);
+  if (collectionNameError) {
+    console.error(collectionNameError);
+    process.exit(1);
+  }
+  if (cloneFrom) {
+    const cloneError = entryKeyError(cloneFrom, '--clone-from article group slug');
+    if (cloneError) {
+      console.error(cloneError);
+      process.exit(1);
+    }
+  }
+
   // Ingest JSON data if supplied
   if (jsonData && typeof jsonData === 'object') {
     for (const [loc, fields] of Object.entries(jsonData)) {
@@ -193,6 +212,12 @@ Update / Sync Options:
   );
   const LOCALES = inlangSettings.locales;
   const defaultLocale = inlangSettings.baseLocale || 'en';
+  if (fromLocale && !LOCALES.includes(fromLocale)) {
+    console.error(
+      `❌ Unknown source locale "${fromLocale}". Registered locales: ${LOCALES.join(', ')}.`
+    );
+    process.exit(1);
+  }
   const sourceLocale = fromLocale || defaultLocale;
   const today = new Date().toISOString().split('T')[0];
   const publishedLocales = [];
@@ -244,14 +269,19 @@ Update / Sync Options:
       } else {
         const slug = resolveSlug(loc, groupSlug, sourceLocale, defaultLocale, slugsByLocale);
         const baseTitle = sourceFmData?.title || sourceTitle;
-        const baseDesc = sourceFmData?.description || `Description for ${groupSlug}`;
+        const baseDesc =
+          typeof sourceFmData?.description === 'string' ? sourceFmData.description : '';
         const fallbackTitle = isSource ? baseTitle : `[TODO: ${loc}] ${baseTitle}`;
-        const fallbackDesc = isSource ? baseDesc : `[TODO: ${loc}] ${baseDesc}`;
+        const fallbackDesc = baseDesc
+          ? isSource
+            ? baseDesc
+            : `[TODO: ${loc}] ${baseDesc}`
+          : '';
         const hasPlaceholder = [fallbackTitle, fallbackDesc].some((v) => v.includes('[TODO'));
         fmData = {
           title: fallbackTitle,
           slug,
-          description: fallbackDesc,
+          ...(fallbackDesc ? { description: fallbackDesc } : {}),
           publishedAt: customDate || sourceFmData?.publishedAt || today,
           draft: hasDraftArg ? !publishAll || hasPlaceholder : !isSource,
         };
@@ -361,6 +391,31 @@ Update / Sync Options:
   // -------------------------------------------------------------
   // NEW ARTICLE CREATION MODE
   // -------------------------------------------------------------
+  const sourceTitle = customTitle || groupSlug.replace(/-/g, ' ');
+
+  // `--clone-from` is validated before anything is written: a missing source
+  // article must not leave an empty group folder behind that then blocks the
+  // corrected retry with "group already exists".
+  let clonedBody = '';
+  if (cloneFrom) {
+    const cloneDir = path.join(colDir, cloneFrom);
+    const cloneFile = ['.mdx', '.md']
+      .map((extension) => path.join(cloneDir, `${sourceLocale}${extension}`))
+      .find((candidate) => fs.existsSync(candidate));
+
+    if (!cloneFile) {
+      console.error(
+        `❌ No article group "${cloneFrom}" with a "${sourceLocale}" entry in ${path.relative(rootDir, colDir)}.`
+      );
+      process.exit(1);
+    }
+
+    clonedBody = fs
+      .readFileSync(cloneFile, 'utf-8')
+      .replace(/^---[\s\S]*?---/, '')
+      .trim();
+  }
+
   // A custom cover is copied into the group folder, because the frontmatter
   // reference is relative to the entry file. This runs before the group
   // folder is created, so a missing artwork leaves nothing behind.
@@ -384,30 +439,6 @@ Update / Sync Options:
 
   fs.mkdirSync(targetDir, { recursive: true });
 
-  const sourceTitle = customTitle || groupSlug.replace(/-/g, ' ');
-
-  // `--clone-from` reuses the body of an existing article. Only the source
-  // locale gets that copy; every other language starts from its own stub.
-  let clonedBody = '';
-  if (cloneFrom) {
-    const cloneDir = path.join(colDir, cloneFrom);
-    const cloneFile = ['.mdx', '.md']
-      .map((extension) => path.join(cloneDir, `${sourceLocale}${extension}`))
-      .find((candidate) => fs.existsSync(candidate));
-
-    if (!cloneFile) {
-      console.error(
-        `❌ No article group "${cloneFrom}" with a "${sourceLocale}" entry in ${path.relative(rootDir, colDir)}.`
-      );
-      process.exit(1);
-    }
-
-    clonedBody = fs
-      .readFileSync(cloneFile, 'utf-8')
-      .replace(/^---[\s\S]*?---/, '')
-      .trim();
-  }
-
   // Every group owns its cover. The artwork is drawn from code by
   // `assets:generate`, so the referenced file always exists once it is run.
   // `--image=none` opts out, and the post falls back to the shared artwork.
@@ -427,13 +458,16 @@ Update / Sync Options:
       title = isSource ? sourceTitle : `[TODO: ${loc}] ${sourceTitle}`;
     }
 
+    // Without `--desc` the article has no description; the SEO component then
+    // falls back to the site description instead of publishing an invented
+    // "Description for …" meta tag.
     let description;
     if (descriptionsByLocale[loc]) {
       description = descriptionsByLocale[loc];
     } else if (hasCustomDesc) {
       description = isSource ? customDesc : `[TODO: ${loc}] ${customDesc}`;
     } else {
-      description = isSource ? `Description for ${groupSlug}` : `[TODO: ${loc}] Description for ${groupSlug}`;
+      description = '';
     }
 
     const dateValue = customDate || today;
@@ -449,7 +483,7 @@ Update / Sync Options:
     const fmRecord = {
       title,
       slug,
-      description,
+      ...(description ? { description } : {}),
       ...(groupImage ? { image: groupImage } : {}),
       ...(customCategories?.length ? { categories: customCategories } : {}),
       ...(customTags?.length ? { tags: customTags } : {}),

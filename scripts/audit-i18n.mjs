@@ -14,6 +14,14 @@ const settings = JSON.parse(
 const LOCALES = settings.locales;
 const BASE_LOCALE = settings.baseLocale || 'en';
 
+// Content types own top-level route segments; a page slug must never shadow
+// one of them. Read from the same config the router uses.
+const appConfig = JSON.parse(fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8'));
+const CONTENT_TYPE_ENTRIES = Object.entries(appConfig.content?.types ?? {});
+const ENABLED_CONTENT_BASES = CONTENT_TYPE_ENTRIES.filter(
+  ([key, settings]) => key !== 'pages' && settings?.enabled !== false && settings?.base
+).map(([, settings]) => settings.base);
+
 if (!LOCALES.includes(BASE_LOCALE)) {
   console.error(`❌ FATAL: baseLocale "${BASE_LOCALE}" is not listed in locales.`);
   process.exit(1);
@@ -312,9 +320,10 @@ function deriveReservedRouteBases() {
   const pagesDir = path.join(rootDir, 'src', 'pages');
   // The blog index, static build output folders, and non-default locale prefixes must never be shadowed by a page slug.
   const reserved = new Set([
-    'blog',
+    'page',
     'pagefind',
     '_astro',
+    ...ENABLED_CONTENT_BASES,
     ...LOCALES.filter((locale) => locale !== BASE_LOCALE),
   ]);
   if (!fs.existsSync(pagesDir)) return reserved;

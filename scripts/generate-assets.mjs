@@ -3,11 +3,24 @@
  * Generates the raster brand assets that social platforms and mobile browsers
  * require. Everything is drawn from code so the assets stay reproducible and
  * no binary image editing tool is needed in contributor environments.
+ *
+ * Existing files are kept so real client artwork is never overwritten by a
+ * placeholder; pass `--force` to regenerate every asset in place.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+
+/**
+ * Existing files are kept unless `--force` is passed.
+ *
+ * The generator draws placeholder artwork, so overwriting by default would
+ * silently replace a real client photograph or logo with a generated one every
+ * time a page or post is scaffolded. `--force` still regenerates everything.
+ */
+const force = process.argv.includes('--force') || process.argv.includes('-f');
+const skippedAssets = [];
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const publicDir = path.join(rootDir, 'public');
@@ -282,8 +295,12 @@ function artPixel(width, height, hue) {
 /** Writes the generated artwork of a content group next to its entries. */
 function writeArtwork(collection, group, width, height, hue) {
   const targetDir = path.join(contentDir, collection, group);
-  fs.mkdirSync(targetDir, { recursive: true });
   const filePath = path.join(targetDir, `${group}.png`);
+  if (!force && fs.existsSync(filePath)) {
+    skippedAssets.push(path.relative(rootDir, filePath));
+    return;
+  }
+  fs.mkdirSync(targetDir, { recursive: true });
   fs.writeFileSync(filePath, encodePng(width, height, artPixel(width, height, hue)));
   const kb = (fs.statSync(filePath).size / 1024).toFixed(1);
   console.log(`✅ src/content/${collection}/${group}/${group}.png (${width}×${height}, ${kb} KB)`);
@@ -291,6 +308,10 @@ function writeArtwork(collection, group, width, height, hue) {
 
 function writeAsset(filename, width, height, options) {
   const filePath = path.join(publicDir, filename);
+  if (!force && fs.existsSync(filePath)) {
+    skippedAssets.push(path.relative(rootDir, filePath));
+    return;
+  }
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, encodePng(width, height, brandPixel(width, height, options)));
   const kb = (fs.statSync(filePath).size / 1024).toFixed(1);
@@ -323,14 +344,33 @@ function contentGroups(collectionDir) {
     .sort();
 }
 
-// One cover per blog group so `assets:generate` keeps artwork in sync with posts.
+// One cover per entry group of every declared content type, so `assets:generate`
+// keeps artwork in sync with the collections `content.types` declares.
 const COVER_HUES = [262, 198, 330, 158, 32, 286, 210, 350];
-contentGroups(path.join(contentDir, 'blog')).forEach((group, index) => {
-  writeArtwork('blog', group, 1200, 675, COVER_HUES[index % COVER_HUES.length]);
-});
+const TYPE_HUES = {
+  projects: [212, 168, 318, 24, 276],
+};
+
+// Artwork is generated for every declared collection, including a disabled one:
+// `content:new` writes `image: "./<group>.png"` into the entry, and a scaffold
+// that produced a missing reference would break the build the moment the type
+// is switched back on.
+for (const [type] of Object.entries(appConfig.content?.types ?? {})) {
+  if (type === 'pages') continue;
+  const hues = TYPE_HUES[type] ?? COVER_HUES;
+  contentGroups(path.join(contentDir, type)).forEach((group, index) => {
+    writeArtwork(type, group, 1200, 675, hues[index % hues.length]);
+  });
+}
 
 // One cover per page group, so every page has its own hero background.
 const PAGE_HUES = [232, 292, 172, 336, 208, 24];
 contentGroups(path.join(contentDir, 'pages')).forEach((group, index) => {
   writeArtwork('pages', group, 1200, 675, PAGE_HUES[index % PAGE_HUES.length]);
 });
+
+if (skippedAssets.length > 0) {
+  console.log(
+    `⏭️  Kept ${skippedAssets.length} existing asset(s) (pass --force to regenerate): ${skippedAssets.join(', ')}`
+  );
+}

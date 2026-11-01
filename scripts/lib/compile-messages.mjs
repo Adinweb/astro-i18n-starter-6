@@ -51,14 +51,21 @@ export function compileMessages(rootDir = process.cwd()) {
     return;
   }
 
-  const pnpmCmd = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  // On Windows the package managers are `.cmd` shims, which Node refuses to
+  // spawn directly (EINVAL). Resolving them through the shell keeps the
+  // dependency-less fallback working instead of dying on a spawn error.
+  const runPackageScript = (manager) =>
+    execFileSync(manager, ['run', 'messages:compile'], {
+      cwd: rootDir,
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+    });
 
   try {
-    execFileSync(pnpmCmd, ['run', 'messages:compile'], { cwd: rootDir, stdio: 'inherit' });
+    runPackageScript('pnpm');
   } catch (err) {
-    if (err && err.code === 'ENOENT') {
-      execFileSync(npmCmd, ['run', 'messages:compile'], { cwd: rootDir, stdio: 'inherit' });
+    if (err && (err.code === 'ENOENT' || err.code === 'EINVAL')) {
+      runPackageScript('npm');
       return;
     }
     throw err;

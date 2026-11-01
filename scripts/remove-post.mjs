@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { confirmDeletion } from './lib/prompt.mjs';
+import { collectionError, entryKeyError, localeCodeError } from './lib/validate.mjs';
 
 const args = process.argv.slice(2);
 const groupSlug = args.find((a) => !a.startsWith('--'));
@@ -18,6 +19,24 @@ for (const arg of args) {
 if (!groupSlug) {
   console.error('Usage: pnpm run remove:post <group-slug> [--collection=<name>] [--locale=<locale>] [--force]');
   process.exit(1);
+}
+
+const keyError = entryKeyError(groupSlug, 'article group slug');
+if (keyError) {
+  console.error(keyError);
+  process.exit(1);
+}
+const collectionNameError = collectionError(collection);
+if (collectionNameError) {
+  console.error(collectionNameError);
+  process.exit(1);
+}
+if (targetLocale) {
+  const localeError = localeCodeError(targetLocale);
+  if (localeError) {
+    console.error(localeError);
+    process.exit(1);
+  }
 }
 
 const rootDir = process.cwd();
