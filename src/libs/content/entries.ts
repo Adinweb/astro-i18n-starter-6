@@ -83,7 +83,7 @@ export function sortByPublishedAtDesc<T extends DatedContentEntry>(
  */
 export function groupPublishedEntries<T extends ContentEntryLike>(
   entries: readonly T[],
-  collectionName: 'pages' | 'blog'
+  collectionName: string
 ): Map<string, Map<Locale, T>> {
   const grouped = new Map<string, Map<Locale, T>>();
 

@@ -1,0 +1,168 @@
+---
+import { render, type CollectionEntry } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import HeroCopy from '@/components/HeroCopy.astro';
+import Icon from '@/components/Icon.astro';
+import {
+  buildBreadcrumbSchema,
+  getBreadcrumbs,
+} from '@/libs/content/service';
+import {
+  getContentTypeIndexHref,
+  getContentTypeLabel,
+  type ContentTypeKey,
+} from '@/libs/content/types';
+import { getSocialCard } from '@/libs/content/social';
+import { absoluteUrl, siteConfig } from '@/libs/config/app';
+import { getLocaleMeta, type Locale } from '@/i18n/locales';
+import * as m from '@/paraglide/messages';
+
+/**
+ * Entry page of a content type declared in `content.types`.
+ *
+ * Shared by every non-blog collection: hero, prose body, optional project meta
+ * (client, year, stack, live link) and the way back to the index. Blog entries
+ * keep `BlogPostView.astro` because they own taxonomy, related posts and feeds.
+ */
+interface Props {
+  contentType: ContentTypeKey;
+  entry: CollectionEntry<'projects'>;
+  locale: Locale;
+  alternates: Partial<Record<Locale, string>>;
+  url: string;
+}
+
+const { contentType, entry, locale, alternates, url } = Astro.props;
+const { Content } = await render(entry);
+const { title, description, image, client, year, link, stack } = entry.data;
+
+const typeLabel = getContentTypeLabel(contentType, locale);
+const indexHref = getContentTypeIndexHref(contentType, locale);
+
+const breadcrumbs = getBreadcrumbs(url, locale, {
+  home: m.nav_home({}, { locale }),
+  blog: m.nav_blog({}, { locale }),
+  section: { label: typeLabel, href: indexHref },
+  current: title,
+});
+
+const canonicalUrl = absoluteUrl(url);
+const socialImage = await getSocialCard(image);
+const socialImageUrl = socialImage.url;
+const meta = getLocaleMeta(locale);
+
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CreativeWork',
+    name: title,
+    description: description ?? m.site_description({}, { locale }),
+    image: socialImageUrl,
+    url: canonicalUrl,
+    inLanguage: meta.htmlLang,
+    ...(year ? { dateCreated: String(year) } : {}),
+    creator: {
+      '@type': 'Organization',
+      name: siteConfig.name,
+      url: absoluteUrl(breadcrumbs[0].href),
+    },
+  },
+  buildBreadcrumbSchema(breadcrumbs, absoluteUrl),
+];
+
+const metaItems: { label: string; value: string }[] = [];
+if (client) metaItems.push({ label: `${m.projects_client({}, { locale })}`, value: client });
+if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: String(year) });
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  image={image}
+  type="article"
+  schema={schema}
+  locale={locale}
+  url={url}
+  alternates={alternates}
+  hero
+>
+  <PageHero slot="hero" image={image}>
+    <HeroCopy title={title} description={description} size="post">
+      <Fragment slot="prelude">
+        <nav aria-label={m.common_breadcrumbs({}, { locale })}>
+          <ol class="flex flex-wrap items-center gap-2 text-xs text-hero-fg/90">
+            {
+              breadcrumbs.map((crumb, index) => (
+                <li class="flex items-center gap-2">
+                  {index > 0 && <span aria-hidden="true">/</span>}
+                  {index === breadcrumbs.length - 1 ? (
+                    <span class="max-w-xs truncate font-medium text-hero-fg">{crumb.label}</span>
+                  ) : (
+                    <a href={crumb.href} class="transition-colors hover:text-hero-fg">
+                      {crumb.label}
+                    </a>
+                  )}
+                </li>
+              ))
+            }
+          </ol>
+        </nav>
+      </Fragment>
+    </HeroCopy>
+  </PageHero>
+
+  <article class="max-w-4xl">
+    {
+      (metaItems.length > 0 || stack.length > 0 || link) && (
+        <dl class="mb-8 flex flex-wrap items-baseline gap-x-8 gap-y-3 border-b border-border pb-6 text-sm">
+          {metaItems.map((item) => (
+            <div class="flex items-baseline gap-2">
+              <dt class="text-xs font-semibold uppercase tracking-wider text-muted">
+                {item.label}
+              </dt>
+              <dd class="text-fg">{item.value}</dd>
+            </div>
+          ))}
+          {stack.length > 0 && (
+            <div class="flex flex-wrap items-baseline gap-2">
+              <dt class="text-xs font-semibold uppercase tracking-wider text-muted">
+                {m.projects_stack({}, { locale })}
+              </dt>
+              <dd class="flex flex-wrap gap-1.5">
+                {stack.map((item) => (
+                  <span class="chip px-2.5 py-0.5 text-xs">{item}</span>
+                ))}
+              </dd>
+            </div>
+          )}
+          {link && (
+            <a
+              href={link}
+              rel="noopener noreferrer"
+              target="_blank"
+              class="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
+              {m.projects_visit({}, { locale })}
+              <Icon name="arrow-right" size={14} class="rtl:rotate-180" />
+            </a>
+          )}
+        </dl>
+      )
+    }
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <footer class="mt-10 border-t border-border pt-6">
+      <a
+        href={indexHref}
+        class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+      >
+        <Icon name="arrow-right" size={15} class="rotate-180 rtl:rotate-0" />
+        <span>{m.projects_back({}, { locale })}</span>
+      </a>
+    </footer>
+  </article>
+</BaseLayout>

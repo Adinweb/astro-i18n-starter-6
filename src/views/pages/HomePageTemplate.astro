@@ -15,6 +15,7 @@ import { formatNumber } from '@/i18n/format';
 import { LOCALES, type Locale } from '@/i18n/locales';
 import { HERO_TITLE_ID } from '@/libs/config/app';
 import { getBlogIndexHref, getPageUrl } from '@/libs/content/service';
+import { getContentType, getContentTypeIndexHref } from '@/libs/content/types';
 import * as m from '@/paraglide/messages';
 
 interface Props {
@@ -28,8 +29,13 @@ interface Props {
 const { entry, locale, alternates, url, schema } = Astro.props;
 const { Content } = await render(entry);
 
-const blogHref = getBlogIndexHref(locale);
-const featuresHref = (await getPageUrl('features', locale)) ?? blogHref;
+// A disabled content type must not leave a dead CTA behind: the secondary
+// button disappears with the section it points at.
+const blogHref = getContentType('blog').enabled ? getBlogIndexHref(locale) : null;
+const featuresHref =
+  (await getPageUrl('features', locale)) ??
+  blogHref ??
+  getContentTypeIndexHref('pages', locale);
 const formattedLocaleCount = formatNumber(LOCALES.length, locale);
 
 const blueprintItems = [
@@ -100,9 +106,11 @@ const blueprintItems = [
               <span>{m.common_get_started({}, { locale })}</span>
               <Icon name="arrow-right" size={16} class="shrink-0 rtl:rotate-180" />
             </a>
-            <a href={blogHref} class="btn-secondary h-11 px-6 text-sm">
-              {m.nav_blog({}, { locale })}
-            </a>
+            {blogHref && (
+              <a href={blogHref} class="btn-secondary h-11 px-6 text-sm">
+                {m.nav_blog({}, { locale })}
+              </a>
+            )}
           </div>
         </div>
 

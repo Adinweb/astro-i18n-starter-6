@@ -2,6 +2,12 @@ import * as m from '@/paraglide/messages';
 import type { Locale } from '@/i18n/locales';
 import { getPathname, localizeHref, stripLocale, withTrailingSlash } from '@/i18n/paths';
 import { getBlogIndexHref, getPageUrl } from '@/libs/content/service';
+import {
+  getContentType,
+  getContentTypeIndexHref,
+  getContentTypeLabel,
+  getNavigableContentTypes,
+} from '@/libs/content/types';
 import { siteConfig } from '@/libs/config/app';
 
 export interface NavItem {
@@ -53,6 +59,24 @@ export const BLOG_ITEM = {
   key: 'blog',
   label: (locale: Locale) => m.nav_blog({}, { locale }),
 } as const;
+
+/**
+ * One navigation item per enabled, navigable content type (blog, projects, …).
+ *
+ * The registry decides what appears: switching a type off in `content.types`
+ * removes its link from the header, the drawer and the footer at once.
+ */
+export function getContentTypeNavItems(locale: Locale, currentUrl = ''): NavItem[] {
+  return getNavigableContentTypes().map((type) => {
+    const href = getContentTypeIndexHref(type.key, locale);
+    return {
+      key: type.key,
+      label: getContentTypeLabel(type.key, locale),
+      href,
+      active: isActive(href, currentUrl),
+    };
+  });
+}
 
 function extractPathname(urlOrPath: string): string {
   try {
@@ -114,15 +138,12 @@ export async function getHeaderNavigation(locale: Locale, currentUrl = ''): Prom
     });
   }
 
-  const blogHref = getBlogIndexHref(locale);
-  items.push({
-    key: BLOG_ITEM.key,
-    label: BLOG_ITEM.label(locale),
-    href: blogHref,
-    active: isActive(blogHref, currentUrl),
-  });
+  // Anchor fallbacks must never point at a section that is switched off, or a
+  // project without a features page would ship dead links.
+  const blogHref = getContentType('blog').enabled ? getBlogIndexHref(locale) : null;
+  items.push(...getContentTypeNavItems(locale, currentUrl));
 
-  const fallbackFeaturesHref = featuresHref ?? blogHref;
+  const fallbackFeaturesHref = featuresHref ?? blogHref ?? localizeHref('/', locale);
   const exploreChildren: NavItem[] = [
     {
       key: 'rtl_support',
@@ -182,16 +203,11 @@ export async function getDrawerNavigation(locale: Locale, currentUrl = ''): Prom
     });
   }
 
-  const blogHref = getBlogIndexHref(locale);
-  items.push({
-    key: BLOG_ITEM.key,
-    label: BLOG_ITEM.label(locale),
-    href: blogHref,
-    active: isActive(blogHref, currentUrl),
-  });
+  const blogHref = getContentType('blog').enabled ? getBlogIndexHref(locale) : null;
+  items.push(...getContentTypeNavItems(locale, currentUrl));
 
   const rawFeaturesHref = await getPageUrl('features', locale);
-  const featuresHref = rawFeaturesHref ?? blogHref;
+  const featuresHref = rawFeaturesHref ?? blogHref ?? localizeHref('/', locale);
   const exploreChildren: NavItem[] = [
     {
       key: 'rtl_support',
@@ -240,7 +256,6 @@ export async function getFooterNavigation(locale: Locale, currentUrl = ''): Prom
   const aboutHref = await getPageUrl('about', locale);
   const featuresHref = await getPageUrl('features', locale);
   const pricingHref = await getPageUrl('pricing', locale);
-  const blogHref = getBlogIndexHref(locale);
 
   const productColumn: FooterColumn = {
     key: 'product',
@@ -257,7 +272,7 @@ export async function getFooterNavigation(locale: Locale, currentUrl = ''): Prom
     key: 'resources',
     title: m.footer_col_resources({}, { locale }),
     items: [
-      { key: 'blog', label: m.nav_blog({}, { locale }), href: blogHref, active: isActive(blogHref, currentUrl) },
+      ...getContentTypeNavItems(locale, currentUrl),
       ...(featuresHref ? [{ key: 'rtl_support', label: m.nav_rtl_support({}, { locale }), href: `${featuresHref}#rtl`, active: false }] : []),
       ...(featuresHref ? [{ key: 'overview', label: m.nav_overview({}, { locale }), href: featuresHref, active: false }] : []),
       { key: 'documentation', label: m.nav_documentation({}, { locale }), href: 'https://astro.build', external: true, active: false },

@@ -1,0 +1,25 @@
+---
+title: "Atlas Operations Dashboard"
+slug: "atlas-dashboard"
+description: "A bilingual control room for a logistics operator: one screen for fleet, warehouse, and exceptions."
+image: "./atlas-dashboard.png"
+client: "Atlas Logistics"
+year: 2025
+link: "https://example.com/atlas"
+stack: ["Astro", "TypeScript", "D3"]
+draft: false
+---
+
+Atlas ran its daily operations from eleven spreadsheets. Dispatchers copied numbers between them, and nobody could answer a simple question — *where is truck 14 right now?* — without calling someone.
+
+We rebuilt that workflow as a single dashboard: a live fleet map, warehouse throughput, and an exception queue that only shows what needs a decision.
+
+## What changed
+
+- **One source of truth.** Every view reads from the same delivery feed, so the map and the numbers can no longer disagree.
+- **Right-to-left by default.** The Persian interface was not a translation layer added afterwards; the layout, number formatting, and charts mirror natively.
+- **Exceptions first.** The queue sorts by business impact, not by arrival time, which cut the average response from 40 minutes to 9.
+
+## Constraints
+
+The team needed it to run on the existing static host with no server to maintain, so the whole application ships as pre-rendered pages plus a thin client for live data.

@@ -1,0 +1,20 @@
+---
+title: "Linen & Co. Storefront"
+slug: "linen-store"
+description: "A two-language storefront for a small textile studio, built to be edited by the shop owner."
+image: "./linen-store.png"
+client: "Linen & Co."
+year: 2024
+stack: ["Astro", "Tailwind CSS"]
+draft: false
+---
+
+Linen & Co. sells hand-woven textiles in Tehran and ships to Europe. Their old site was a single long page that loaded 4 MB of images before showing a price.
+
+We rebuilt it as a static storefront with a real product structure, localized prices, and an editing workflow the owner can run herself.
+
+## What changed
+
+- **Editable content, not a CMS course.** Products are Markdown files next to their photos; adding one is a folder and two files.
+- **Prices in both currencies.** Formatters live in one module, so the euro and rial views can never drift apart.
+- **Images that fit the page.** Every photograph is optimized at build time, which took the first paint from 6.1 s to 0.9 s on a mobile connection.

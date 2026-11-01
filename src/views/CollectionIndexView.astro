@@ -1,0 +1,176 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHeader from '@/components/PageHeader.astro';
+import Icon from '@/components/Icon.astro';
+import { getBreadcrumbs, getCollectionPageHref } from '@/libs/content/service';
+import { parseContentEntryId } from '@/libs/content/entries';
+import {
+  getContentType,
+  getContentTypeDescription,
+  getContentTypeEntryHref,
+  getContentTypeLabel,
+  type ContentTypeKey,
+} from '@/libs/content/types';
+import type { Locale } from '@/i18n/locales';
+import * as m from '@/paraglide/messages';
+
+/**
+ * Listing page of a content type declared in `content.types`.
+ *
+ * The view is deliberately generic: it only relies on the shared entry
+ * contract (title, slug, description, image, draft) plus the optional project
+ * fields the card shows when present. Type-specific chrome (feeds, filters,
+ * taxonomy) stays in its own view, which is why the blog keeps
+ * `BlogIndexView.astro`.
+ */
+interface Props {
+  contentType: ContentTypeKey;
+  locale: Locale;
+  alternates: Partial<Record<Locale, string>>;
+  switcherAlternates?: Partial<Record<Locale, string>>;
+  url: string;
+  page: number;
+  totalPages: number;
+  perPage: number;
+}
+
+const {
+  contentType,
+  locale,
+  alternates,
+  switcherAlternates,
+  url,
+  page,
+  totalPages,
+  perPage,
+} = Astro.props;
+
+const type = getContentType(contentType);
+const title = getContentTypeLabel(contentType, locale);
+const description = getContentTypeDescription(contentType, locale);
+
+// The section label is the type's localized name, so the trail reads
+// "Home → Projects" instead of falling back to the raw route segment.
+const breadcrumbs = getBreadcrumbs(url, locale, {
+  home: m.nav_home({}, { locale }),
+  blog: m.nav_blog({}, { locale }),
+  section: { label: title, href: url },
+  current: title,
+});
+
+// Only published entries of this locale belong on the listing: the route
+// builder counts exactly the same set, so the slice below can never disagree
+// with the pagination it was given.
+const published = (await getCollection('projects')).filter((entry) => {
+  if (entry.data.draft) return false;
+  return parseContentEntryId(entry.id).locale === locale;
+});
+
+published.sort(
+  (a, b) =>
+    (b.data.year ?? 0) - (a.data.year ?? 0) ||
+    a.data.title.localeCompare(b.data.title, locale)
+);
+
+const start = (page - 1) * perPage;
+const pageEntries = published.slice(start, start + perPage);
+const pageHref = (target: number) => getCollectionPageHref(type.base, target, locale);
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  locale={locale}
+  url={url}
+  alternates={alternates}
+  switcherAlternates={switcherAlternates}
+>
+  <PageHeader title={title} description={description} locale={locale} breadcrumbs={breadcrumbs} />
+
+  {
+    pageEntries.length === 0 ? (
+      <p class="mt-10 text-sm text-muted">{m.content_empty({}, { locale })}</p>
+    ) : (
+      <ul
+        class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        data-trig-stagger
+        data-trig-stagger-delay="0.08"
+      >
+        {pageEntries.map((entry) => {
+          const href = getContentTypeEntryHref(contentType, entry.data.slug, locale);
+          return (
+            <li data-trig>
+              <a
+                href={href}
+                class="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface transition-colors hover:border-primary/50 hover:bg-surface-hover"
+              >
+                {entry.data.image && (
+                  <div class="aspect-video overflow-hidden bg-surface-hover">
+                    <Image
+                      src={entry.data.image}
+                      alt=""
+                      widths={[400, 640, 900]}
+                      sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw"
+                      class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    />
+                  </div>
+                )}
+                <div class="flex flex-1 flex-col gap-2 p-5">
+                  <h2 class="text-lg font-semibold tracking-tight text-fg transition-colors group-hover:text-primary">
+                    {entry.data.title}
+                  </h2>
+                  {entry.data.description && (
+                    <p class="line-clamp-3 text-sm leading-relaxed text-muted">
+                      {entry.data.description}
+                    </p>
+                  )}
+                  {(entry.data.client || entry.data.year) && (
+                    <p class="mt-auto pt-3 text-xs text-muted">
+                      {[entry.data.client, entry.data.year].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+                </div>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+
+  {
+    totalPages > 1 && (
+      <nav
+        aria-label={title}
+        class="mt-12 flex items-center justify-center gap-2 border-t border-border pt-8"
+        data-pagefind-ignore
+      >
+        {page > 1 && (
+          <a
+            href={pageHref(page - 1)}
+            rel="prev"
+            class="ghost-control inline-flex items-center gap-1 px-3 py-2 text-sm"
+          >
+            <Icon name="chevron-left" size={15} class="rtl:rotate-180" />
+            <span>{page - 1}</span>
+          </a>
+        )}
+        <span class="px-2 text-sm font-semibold text-fg" aria-current="page">
+          {page} / {totalPages}
+        </span>
+        {page < totalPages && (
+          <a
+            href={pageHref(page + 1)}
+            rel="next"
+            class="ghost-control inline-flex items-center gap-1 px-3 py-2 text-sm"
+          >
+            <span>{page + 1}</span>
+            <Icon name="chevron-left" size={15} class="rotate-180 rtl:rotate-0" />
+          </a>
+        )}
+      </nav>
+    )
+  }
+</BaseLayout>

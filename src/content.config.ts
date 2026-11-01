@@ -55,6 +55,12 @@ const baseSchema = ({ image }: { image: ImageFunction }) =>
     draft: z.boolean().default(false),
   });
 
+/**
+ * Collections are static here by design: Astro needs their schemas at build
+ * time. Which of them are actually routed, listed, linked or scaffolded is
+ * decided by the content-type registry in `app.config.json` (`content.types`),
+ * so disabling a type never needs a schema edit.
+ */
 export const collections = {
   pages: defineCollection({
     loader: glob({
@@ -105,6 +111,32 @@ export const collections = {
             'Slug "page" is reserved for pagination (/blog/page/<n>/).'
           ),
         publishedAt: z.coerce.date(),
+      }),
+  }),
+  /**
+   * Case studies and portfolio entries. Same `<group>/<locale>.mdx` contract as
+   * the other collections, plus the fields a project page actually shows.
+   */
+  projects: defineCollection({
+    loader: glob({
+      pattern: '**/*.{md,mdx}',
+      base: './src/content/projects',
+      generateId: ({ entry }) => entry.replace(/\.(md|mdx)$/, ''),
+    }),
+    schema: ({ image }) =>
+      baseSchema({ image }).extend({
+        slug: slugSchema.min(1, 'Projects need a non-empty slug.').refine(
+          (value) => value !== 'page',
+          'Slug "page" is reserved for pagination (/projects/page/<n>/).'
+        ),
+        /** Who the work was done for. */
+        client: z.string().min(1).optional(),
+        /** Delivery year, used for the index card meta. */
+        year: z.number().int().min(1990).max(2100).optional(),
+        /** Live project URL, rendered as an external link. */
+        link: z.url().optional(),
+        /** Technologies shown as chips on the entry page. */
+        stack: z.array(z.string().min(1)).default([]),
       }),
   }),
 };

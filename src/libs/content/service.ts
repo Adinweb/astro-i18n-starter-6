@@ -7,6 +7,14 @@ import {
   isPublished,
 } from '@/libs/content/entries';
 import { getPageCount } from '@/libs/content/pagination';
+import {
+  getContentType,
+  getContentTypeEntryHref,
+  getContentTypeIndexHref,
+  getEntryContentTypes,
+  getIndexedContentTypes,
+  type ContentTypeKey,
+} from '@/libs/content/types';
 
 interface RouteBase {
   locale: Locale;
@@ -27,6 +35,22 @@ export type SiteRouteProps =
       totalPages: number;
       /** How many posts a page holds. */
       perPage: number;
+    })
+  // Every enabled content type other than `pages` and `blog` shares one generic
+  // route pair. The entry type is the union of the declared collections, so
+  // adding a fourth collection means adding it here and in `loadExtraEntries`.
+  | (RouteBase & {
+      routeType: 'collection-index';
+      contentType: ContentTypeKey;
+      entry?: undefined;
+      page: number;
+      totalPages: number;
+      perPage: number;
+    })
+  | (RouteBase & {
+      routeType: 'collection-entry';
+      contentType: ContentTypeKey;
+      entry: CollectionEntry<'projects'>;
     });
 
 export interface SiteRoute {
@@ -41,12 +65,16 @@ export interface BreadcrumbItem {
   href: string;
 }
 
-type EntryLike<T extends 'pages' | 'blog'> = {
+type EntryLike<T extends 'pages' | 'blog' | 'projects'> = {
   id: string;
   data: CollectionEntry<T>['data'];
 };
 
-const BLOG_BASE = 'blog';
+/**
+ * Route segment of the blog, read from the content-type registry so a project
+ * that renames `content.types.blog.base` gets working links everywhere.
+ */
+const BLOG_BASE = getContentType('blog').base;
 
 function pathToParam(urlPath: string): string | undefined {
   const clean = urlPath.replace(/^\/+|\/+$/g, '');
@@ -65,7 +93,12 @@ function pageSlug(group: string, entry: EntryLike<'pages'>): string {
 }
 
 export function getBlogIndexHref(locale: Locale): string {
-  return localizeHref(`/${BLOG_BASE}`, locale);
+  return getContentTypeIndexHref('blog', locale);
+}
+
+/** Whether the blog type is switched on in `app.config.json`. */
+export function isBlogEnabled(): boolean {
+  return getContentType('blog').enabled;
 }
 
 /**
@@ -96,7 +129,7 @@ export function getBlogPageHref(page: number, locale: Locale): string {
 }
 
 export function getBlogPostHref(slug: string, locale: Locale): string {
-  return localizeHref(`/${BLOG_BASE}/${slug}`, locale);
+  return getContentTypeEntryHref('blog', slug, locale);
 }
 
 /**
@@ -124,7 +157,8 @@ function resolvePageUrl(
 
 export function buildSiteRoutes(
   pages: EntryLike<'pages'>[],
-  posts: EntryLike<'blog'>[]
+  posts: EntryLike<'blog'>[],
+  extraCollections: Partial<Record<ContentTypeKey, EntryLike<'projects'>[]>> = {}
 ): SiteRoute[] {
   const routes: SiteRoute[] = [];
   const registeredPaths = new Set<string>();
@@ -179,7 +213,12 @@ export function buildSiteRoutes(
   // The blog index is paginated, so the post map has to exist before the
   // index routes are registered: the number of pages of a locale follows from
   // the number of published posts that locale has.
-  const postsByGroup = groupPublishedEntries(posts, 'blog');
+  // A disabled blog owns no routes at all — not even an empty index, so the
+  // navigation, the sitemap and the build agree that the section is gone.
+  const blogEnabled = isBlogEnabled();
+  const postsByGroup = blogEnabled
+    ? groupPublishedEntries(posts, 'blog')
+    : new Map<string, Map<Locale, EntryLike<'blog'>>>();
 
   const postsPerLocale = new Map<Locale, number>(LOCALES.map((locale) => [locale, 0]));
   for (const [, localeMap] of postsByGroup) {
@@ -190,7 +229,10 @@ export function buildSiteRoutes(
 
   const pagesPerLocale = new Map<Locale, number>();
   for (const locale of LOCALES) {
-    pagesPerLocale.set(locale, getPageCount(postsPerLocale.get(locale) ?? 0, POSTS_PER_PAGE));
+    pagesPerLocale.set(
+      locale,
+      blogEnabled ? getPageCount(postsPerLocale.get(locale) ?? 0, POSTS_PER_PAGE) : 0
+    );
   }
 
   // One route per page of the index, per locale.
@@ -260,12 +302,133 @@ export function buildSiteRoutes(
     }
   }
 
+  // --- Content types declared in app.config.json beyond pages and blog ------
+  for (const type of getEntryContentTypes()) {
+    if (type.key === 'blog') continue;
+
+    const entries = extraCollections[type.key] ?? [];
+    const entriesByGroup = groupPublishedEntries(entries, type.key);
+
+    for (const [, localeMap] of entriesByGroup) {
+      const alternates: Partial<Record<Locale, string>> = {};
+
+      for (const locale of LOCALES) {
+        const entry = localeMap.get(locale);
+        if (!entry) continue;
+        if (!entry.data.slug) {
+          throw new Error(`[ContentService] ${type.key} entry "${entry.id}" has an empty slug.`);
+        }
+        if (type.paginated && entry.data.slug === 'page') {
+          throw new Error(
+            `[ContentService] ${type.key} entry "${entry.id}" uses reserved pagination slug "page".`
+          );
+        }
+        alternates[locale] = getContentTypeEntryHref(type.key, entry.data.slug, locale);
+      }
+
+      for (const locale of LOCALES) {
+        const entry = localeMap.get(locale);
+        const url = alternates[locale];
+        if (!entry || !url) continue;
+
+        registerRoute(url, {
+          routeType: 'collection-entry',
+          contentType: type.key,
+          locale,
+          entry: entry as unknown as CollectionEntry<'projects'>,
+          alternates,
+          url,
+        });
+      }
+    }
+
+    if (!type.index) continue;
+
+    const entriesPerLocale = new Map<Locale, number>(LOCALES.map((locale) => [locale, 0]));
+    for (const [, localeMap] of entriesByGroup) {
+      for (const [locale] of localeMap) {
+        entriesPerLocale.set(locale, (entriesPerLocale.get(locale) ?? 0) + 1);
+      }
+    }
+
+    const perPage = type.paginated
+      ? POSTS_PER_PAGE
+      : Math.max(1, ...entriesPerLocale.values());
+
+    for (const locale of LOCALES) {
+      const pagesForLocale = (other: Locale) =>
+        type.paginated
+          ? getPageCount(entriesPerLocale.get(other) ?? 0, perPage)
+          : getPageCount(1, 1);
+      const totalPages = pagesForLocale(locale);
+
+      for (let page = 1; page <= totalPages; page += 1) {
+        const url = getCollectionPageHref(type.base, page, locale);
+        const alternates: Partial<Record<Locale, string>> = {};
+        const switcherAlternates: Partial<Record<Locale, string>> = {};
+
+        for (const other of LOCALES) {
+          const otherPages = pagesForLocale(other);
+          if (otherPages >= page) {
+            alternates[other] = getCollectionPageHref(type.base, page, other);
+          }
+          switcherAlternates[other] = getCollectionPageHref(
+            type.base,
+            Math.min(page, otherPages),
+            other
+          );
+        }
+
+        registerRoute(url, {
+          routeType: 'collection-index',
+          contentType: type.key,
+          locale,
+          alternates,
+          switcherAlternates,
+          url,
+          page,
+          totalPages,
+          perPage,
+        });
+      }
+    }
+  }
+
   return routes;
 }
 
+/**
+ * Loads the entries of every enabled collection other than `pages` and `blog`.
+ *
+ * `blog` keeps its own loader because its index, feed and search catalogs carry
+ * blog-only fields.
+ */
+async function loadExtraEntries(): Promise<Partial<Record<ContentTypeKey, EntryLike<'projects'>[]>>> {
+  const collections: Partial<Record<ContentTypeKey, EntryLike<'projects'>[]>> = {};
+
+  for (const type of getEntryContentTypes()) {
+    if (type.key === 'projects') {
+      collections.projects = (await getCollection(
+        'projects'
+      )) as unknown as EntryLike<'projects'>[];
+    }
+  }
+
+  return collections;
+}
+
 export async function getSiteRoutes(): Promise<SiteRoute[]> {
-  const [pages, posts] = await Promise.all([getCollection('pages'), getCollection('blog')]);
-  return buildSiteRoutes(pages, posts);
+  const [pages, posts, extra] = await Promise.all([
+    getCollection('pages'),
+    isBlogEnabled() ? getCollection('blog') : Promise.resolve([]),
+    loadExtraEntries(),
+  ]);
+
+  return buildSiteRoutes(
+    pages as unknown as EntryLike<'pages'>[],
+    posts as unknown as EntryLike<'blog'>[],
+    extra
+  );
 }
 
 export async function getPageUrl(group: string, locale: Locale): Promise<string | null> {
@@ -276,6 +439,12 @@ export async function getPageUrl(group: string, locale: Locale): Promise<string 
 export interface BreadcrumbLabels {
   home: string;
   blog: string;
+  /**
+   * Label and URL of the section a non-blog collection entry belongs to. Views
+   * of registry-driven types pass the type's own index so the trail reads
+   * `Home → Projects → Entry` without adding a case per collection.
+   */
+  section?: { label: string; href: string };
   current?: string;
 }
 
@@ -289,7 +458,6 @@ export function getBreadcrumbs(
   labels: BreadcrumbLabels
 ): BreadcrumbItem[] {
   const homeHref = localizeHref('/', locale);
-  const blogHref = getBlogIndexHref(locale);
   const pathname = pathOnly(url);
   const firstSegment = pathname.split('/').filter(Boolean)[0];
 
@@ -297,9 +465,22 @@ export function getBreadcrumbs(
 
   if (pathname === '/') return crumbs;
 
-  if (firstSegment === BLOG_BASE) {
-    crumbs.push({ label: labels.blog, href: blogHref });
-    if (pathname !== `/${BLOG_BASE}/` && labels.current) {
+  // Any enabled indexed type owns the first segment as its section, so a new
+  // collection gets a correct trail without a case here.
+  const section = getIndexedContentTypes().find(
+    (type) => type.base !== '' && type.base === firstSegment
+  );
+
+  if (section) {
+    const sectionHref = getContentTypeIndexHref(section.key, locale);
+    const sectionLabel =
+      section.key === 'blog'
+        ? labels.blog
+        : (labels.section?.label ?? section.base);
+
+    crumbs.push({ label: sectionLabel, href: sectionHref });
+
+    if (pathname !== `/${section.base}/` && labels.current) {
       crumbs.push({ label: labels.current, href: url });
     }
   } else if (labels.current) {

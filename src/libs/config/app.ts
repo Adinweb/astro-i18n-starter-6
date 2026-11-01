@@ -46,6 +46,28 @@ export const blogConfigSchema = z.object({
 });
 export type BlogConfig = z.infer<typeof blogConfigSchema>;
 
+/**
+ * One content type (a content collection plus the routes it owns).
+ *
+ * `base` is the route segment the type lives under and doubles as the URL of
+ * its index. `pages` is the page system itself and always owns the root, so its
+ * base stays empty.
+ */
+export const contentTypeSchema = z.object({
+  enabled: z.boolean().default(true),
+  base: z.string().default(''),
+  index: z.boolean().default(true),
+  paginated: z.boolean().default(false),
+  feed: z.boolean().default(false),
+  nav: z.boolean().default(true),
+});
+export type ContentTypeSettings = z.infer<typeof contentTypeSchema>;
+
+export const contentConfigSchema = z.object({
+  types: z.record(z.string(), contentTypeSchema).default({}),
+});
+export type ContentConfig = z.infer<typeof contentConfigSchema>;
+
 export const cookieConfigSchema = z.object({
   enabled: z.boolean().default(true),
   consentVersion: z.number().int().positive().default(1),
@@ -131,6 +153,7 @@ export const appConfigSchema = z.object({
   }),
   ui: uiConfigSchema.default(defaultUiConfig),
   blog: blogConfigSchema,
+  content: contentConfigSchema.default({ types: {} }),
   cookies: cookieConfigSchema.default(defaultCookieConfig),
   social: socialConfigSchema.default(defaultSocialConfig),
   api: apiConfigSchema.default(defaultApiConfig),
@@ -209,6 +232,14 @@ export const UI_CONFIG = siteConfig.ui;
 
 /** Direct export for blog presentation toggles. */
 export const BLOG_CONFIG = siteConfig.blog;
+
+/**
+ * Declared content types, keyed by collection name.
+ *
+ * `src/libs/content/types.ts` turns this into the typed registry the router,
+ * navigation, sitemap and CLI share.
+ */
+export const CONTENT_CONFIG = appConfig.content;
 
 /** Direct export for TDDDG §25 / DSGVO cookie consent configuration. */
 export const COOKIE_CONFIG = siteConfig.cookies;

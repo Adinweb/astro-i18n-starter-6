@@ -45,6 +45,34 @@
     "showTableOfContents": true,
     "showRelatedPosts": true
   },
+  "content": {
+    "types": {
+      "pages": {
+        "enabled": true,
+        "base": "",
+        "index": false,
+        "paginated": false,
+        "feed": false,
+        "nav": true
+      },
+      "blog": {
+        "enabled": true,
+        "base": "blog",
+        "index": true,
+        "paginated": true,
+        "feed": true,
+        "nav": true
+      },
+      "projects": {
+        "enabled": true,
+        "base": "projects",
+        "index": true,
+        "paginated": false,
+        "feed": false,
+        "nav": true
+      }
+    }
+  },
   "cookies": {
     "enabled": true,
     "consentVersion": 1,
