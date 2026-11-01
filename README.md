@@ -16,6 +16,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Zero Route Collisions**: A single Lean Router Dispatcher (`src/pages/[...path].astro`) dynamically handles all localized pages, translated slugs, and index views.
 * **Compile-Time i18n via Paraglide**: Strongly typed translations with native ICU plurals and ordinals, compiled directly to tree-shakeable JS functions without runtime overhead.
 * **Symmetrical Content Collections**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs and cross-language alternate linking.
+* **Manageable Content Types**: `pages`, `blog` and `projects` are declared in `app.config.json` → `content.types`. `pnpm run content:enable|disable <type>` adds or removes a type's routes, sitemap entries and navigation links without touching a single content file, and `content:new` scaffolds an entry in any type.
 * **Paginated Blog Index & Cross-Page Filtering**: Static paginated route set — one URL per page per locale (`/blog/`, `/blog/page/2/`, `/fa/blog/page/2/`) — with reciprocal `hreflang`, `rel="prev"` / `rel="next"`, and progressive cross-page taxonomy filtering powered by lightweight per-locale static catalogs (`/api/blog-posts/<locale>.json`).
 * **Persian-Aware Search Built-In**: Production static indexing with **Pagefind** (`scripts/index-pagefind.mjs`) enhanced with Perso-Arabic character normalization (`ي`/`ك` → `ی`/`ک`), punctuation token boundary isolation (`«...»`, `،`), client-side ZWNJ/space compound & numeral query expansion (`src/libs/search/persian.ts`), and per-locale JSON fallbacks (`/api/search-dev/<locale>.json`).
 * **SEO & Social Metadata**: Canonical URLs, hreflang plus `x-default`, Open Graph/Twitter cards, `WebSite`/`WebPage`/`CollectionPage`/`BlogPosting` + `BreadcrumbList` JSON-LD, a multilingual sitemap with `lastmod`, and per-locale Atom feeds (`/rss.xml` and `/rss/<locale>.xml`).
@@ -83,8 +84,8 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 ├── messages/                  # Dictionaries for active locales (en.json, fa.json; extendable via i18n:add-lang)
 ├── project.inlang/            # Paraglide JS configuration & settings
 ├── public/                    # Static assets that need a stable URL (favicons, browser icons, chronotrig.min.js)
-├── scripts/                   # Developer automation CLI & Pagefind indexing scripts (15 tools)
-│   └── lib/                   # Shared prompt, frontmatter, and artwork helpers
+├── scripts/                   # Developer automation CLI, health checks & Pagefind indexing (21 tools)
+│   └── lib/                   # Shared prompt, frontmatter, validation, content-type & artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph (no page image of its own)
 │   ├── components/            # Reusable UI components
@@ -107,7 +108,9 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   ├── content/               # Multilingual Content Collections
 │   │   ├── pages/             # Static pages: home, about, features, pricing
 │   │   │   └── <group>/       # Holds <locale>.mdx files + group hero/OG artwork
-│   │   └── blog/              # Blog articles with localized slugs
+│   │   ├── blog/              # Blog articles with localized slugs
+│   │   │   └── <group>/       # Holds <locale>.mdx files + group cover artwork
+│   │   └── projects/          # Case studies/portfolio entries (registry-driven type)
 │   │       └── <group>/       # Holds <locale>.mdx files + group cover artwork
 │   ├── i18n/                  # Core i18n Single Source of Truth (SSOT)
 │   │   ├── locales.ts         # LOCALES array, DEFAULT_LOCALE, metadata (dir, fonts)
@@ -121,6 +124,7 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── config/navigation.ts # Multi-menu header/drawer/footer/legal navigation builder
 │   │   ├── content/entries.ts # Entry IDs, draft filtering, locale selection & sorting
 │   │   ├── content/service.ts # Route resolution, slug alternates, feeds & breadcrumbs
+│   │   ├── content/types.ts   # Content-type registry: enabled/base/index/paginated/feed/nav + URL helpers
 │   │   ├── content/blog-catalog.ts # Serializer for static blog JSON catalogs
 │   │   ├── content/feed.ts    # Per-locale Atom 1.0 feed builder
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
@@ -152,6 +156,8 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │       ├── PageView.astro     # Flexible static page renderer (canvas / contained / prose / custom template)
 │       ├── BlogIndexView.astro # Blog listing page
 │       ├── BlogPostView.astro # Individual article renderer
+│       ├── CollectionIndexView.astro # Generic listing for registry-driven types (projects, …)
+│       ├── CollectionEntryView.astro # Generic entry renderer for those types
 │       └── pages/HomePageTemplate.astro # Shared bespoke home page template
 ```
 
@@ -188,6 +194,12 @@ All automation scripts run from the terminal using `pnpm run <command>`:
 | `pnpm run block:adapt` | Adapts external Tailwind HTML/JSX to logical RTL tokens | `pnpm run block:adapt -- --file=src/components/MyCard.astro` |
 | `pnpm run i18n:extract` | Extracts raw copy into Paraglide message keys | `pnpm run i18n:extract -- --target=src/components/MyCard.astro --key=card --auto-add --replace` |
 | `pnpm run i18n:add` | Adds a single translation key to all dictionaries | `pnpm run i18n:add -- --category=nav --key=docs --en="Docs" --fa="مستندات"` |
+| `pnpm run content:list` | Lists every declared content type with its route base, state and entry counts | `pnpm run content:list -- --json` |
+| `pnpm run content:new` | Scaffolds an entry group in any content type | `pnpm run content:new projects atlas -- --title="Atlas" --publish` |
+| `pnpm run content:enable` / `content:disable` | Switches a content type's routes, sitemap entries and navigation links on or off | `pnpm run content:disable projects` |
+| `pnpm run content:status` | Prints the per-locale readiness matrix (published/draft/missing, words, TODOs) | `pnpm run content:status -- --write=docs/STATUS.md` |
+| `pnpm run doctor` | No-build health check (runtime, config, content types, dictionaries, content) with fix hints | `pnpm run doctor` |
+| `pnpm run link:check` | Crawls the built HTML and reports internal links that resolve to nothing | `pnpm run link:check` |
 | `pnpm run audit:i18n` | Audits locale-config parity, placeholders, used keys, content and route collisions | `pnpm run audit:i18n` |
 | `pnpm run smoke` | Runs HTML, SEO, feed, manifest and H1 assertions on `dist/` | `pnpm run smoke` |
 | `pnpm run knip` | Finds dead files, exports and dependencies | `pnpm run knip` |
@@ -401,10 +413,14 @@ SITE_URL=https://example.com pnpm run build
 # 5. Post-Build HTML, SEO, Feed & Asset Smoke Test
 pnpm run smoke
 
-# 6. Dead Code / Dependency Check
+# 6. No-Build Health Check & Internal Link Crawl
+pnpm run doctor
+pnpm run link:check
+
+# 7. Dead Code / Dependency Check
 pnpm run knip
 
-# 7. End-to-end check of every documented CLI workflow (47 claims)
+# 8. End-to-end check of every documented CLI workflow (82 claims)
 pnpm run verify:cli
 
 # Regenerate icons, the Open Graph image, and all hero/cover artwork
@@ -420,6 +436,8 @@ The same pipeline runs on every push and pull request in [`.github/workflows/ci.
 | Document | Language | Contents |
 | --- | --- | --- |
 | [docs/GUIDE-FA.md](docs/GUIDE-FA.md) | فارسی | راهنمای جامع کاربر: همهٔ ویژگی‌ها با مثال (نصب، محتوا، CLI، RTL، وبلاگ، SEO، استقرار) |
+| [docs/GUIDE-HOMEPAGE-FA.md](docs/GUIDE-HOMEPAGE-FA.md) | فارسی | راهنمای گام‌به‌گام ساخت صفحهٔ اصلی سفارشی برای پروژهٔ مشتری (سه مسیر، بلوک‌های آماده، چک‌لیست تحویل) |
+| [docs/CONTENT-TYPES-FA.md](docs/CONTENT-TYPES-FA.md) | فارسی | انواع محتوا: رجیستری، فعال/غیرفعال کردن، افزودن مجموعهٔ جدید و دستورهای content/doctor/link |
 | [README.md](README.md) | English | Feature overview, quick start, and operational guide |
 | [AGENTS.md](AGENTS.md) | English | Contract rules and playbooks for AI coding agents |
 | [docs/PRD.md](docs/PRD.md) | English | Master build prompt: goals, architecture, and definition of done |

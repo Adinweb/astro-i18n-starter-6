@@ -34,48 +34,49 @@ To switch the primary default (prefix-less) language of the site (e.g. from Engl
 
 ---
 
-## Playbook 2: Adding a New Content Collection
+## Playbook 2: Content Types — Toggling, Adding & Managing Collections
 
-To add a new multilingual content collection (e.g., `docs`, `case-studies`, `changelog`):
+Which collections are built is decided by `app.config.json` → `content.types`. `pages` owns the root and cannot be disabled; `blog` and `projects` ship enabled.
 
-1. **Define Schema & Loader**:
-   In `src/content.config.ts`, add the new collection using `glob` loader:
-   ```typescript
-   caseStudies: defineCollection({
-     loader: glob({
-       pattern: '**/*.{md,mdx}',
-       base: './src/content/case-studies',
-       generateId: ({ entry }) => entry.replace(/\.(md|mdx)$/, ''),
-     }),
-     schema: baseSchema,
-   }),
-   ```
+### 1. Toggle an existing type
 
-2. **Register Route Mapping**:
-   In `src/libs/content/service.ts`:
-   - Add the collection name to collection scanning in `getSiteRoutes()`.
-   - Resolve alternates and register routes with appropriate `routeType` (or generic collection view).
+```bash
+pnpm run content:list                 # state, route base, entry counts
+pnpm run content:disable projects     # routes, sitemap entries and nav links disappear
+pnpm run content:enable projects      # they come back
+pnpm run build && pnpm run smoke
+```
 
-3. **Add View Branch**:
-   In `src/pages/[...path].astro`, add a rendering branch for the new route type or view:
-   ```astro
-   {routeType === 'case-study' && entry && (
-     <CaseStudyView entry={entry} locale={locale} alternates={alternates} url={url} />
-   )}
-   ```
+* The command only flips `content.types.<type>.enabled`; the file's indentation and line endings are preserved, so the diff is one line.
+* Disabling never deletes content. It removes the index/entry routes, the sitemap entries, the header/drawer/footer link and the home-page CTA. `/api/blog-posts.json` and `/rss.xml` deliberately keep working so external consumers do not break.
+* Hand-written MDX links to a removed section are not rewritten — `pnpm run link:check` reports them after a build.
 
-4. **Scaffold First Content Item**:
-   Run the CLI scaffolder:
-   ```bash
-   pnpm run new:post my-first-case-study -- --collection=case-studies
-   ```
+### 2. Inspect what is ready
 
-5. **Audit & Build**:
-   ```bash
-   pnpm run audit:i18n && pnpm build
-   ```
+```bash
+pnpm run content:status                      # group × locale matrix
+pnpm run content:status -- --write=docs/STATUS.md
+pnpm run doctor                              # setup health, with a fix hint per finding
+```
 
----
+### 3. Add a new collection (e.g. `services`)
+
+1. **Schema** — `defineCollection` in `src/content.config.ts` on top of `baseSchema` (with a non-empty `slug` and the fields the collection needs).
+2. **Registry keys** — add the key to `CONTENT_TYPE_KEYS` (`src/libs/content/types.ts`) and `KNOWN_TYPES` (`scripts/lib/content-types.mjs`).
+3. **Configuration** — add a `content.types.services` block in `app.config.json` (`base: "services"`, `index: true`, `nav: true`, …).
+4. **Messages** — `nav_services` in every `messages/<locale>.json`, plus a `case` in `getContentTypeLabel` / `getContentTypeDescription`.
+5. **Routing** — extend `loadExtraEntries()` and the `SiteRouteProps` union in `src/libs/content/service.ts` with `CollectionEntry<'services'>`. Routes, sitemap entries, breadcrumbs and navigation are generated from the registry; no new view is needed for a standard listing + article pair.
+6. **Artwork (optional)** — add a hue row to `TYPE_HUES` in `scripts/generate-assets.mjs`.
+
+### 4. Scaffold and verify
+
+```bash
+pnpm run content:new services web-design --title="Web Design" --publish
+pnpm run assets:generate
+pnpm run doctor && pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke && pnpm run link:check
+```
+
+`content:new` delegates `pages` and `blog` to `new:page` / `new:post`; every other type receives the shared frontmatter, a generated cover, and `[TODO: …]` drafts for locales that are not translated yet. Full reference: `docs/CONTENT-TYPES-FA.md`.
 
 ## Playbook 3: Adding or Adapting UI Components
 
@@ -289,4 +290,4 @@ Unlike `blog` entries (which always use `BlogPostView.astro` + `PageHero.astro`)
 ### 2. Connecting Forms to an External API (Zero Backend)
 This starter is **100% Pure SSG** and ships with no backend server. Client-side forms (`src/components/ContactForm.astro`) post directly to external/headless APIs through `src/libs/api/client.ts`:
 1. Set `PUBLIC_CONTACT_API_URL="https://api.example.com/v1/contact"` (or `PUBLIC_API_BASE_URL`) in `.env` / deployment environment variables, **or** set `api.baseUrl` and `api.endpoints.contact` in `app.config.json`.
-2. Embed `<ContactForm locale={locale} />` in any Astro view or MDX page. When no external endpoint is configured yet, the form automatically displays a clear configuration notice and disables submission cleanly.
+2. Embed `<ContactForm locale={locale} />` in any Astro view or MDX page. When no external endpoint is configured yet, the form displays a clear configuration notice and `submitContactInquiry()` returns `errorCode: 'unconfigured'` before any network request is made, so nothing is ever posted to a local route.

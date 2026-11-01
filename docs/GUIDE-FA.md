@@ -43,6 +43,7 @@
 | رنگ، برند یا تنظیمات سایت را عوض کنم | [۴. منبع حقیقت واحد](#۴-منبع-حقیقت-واحد-ssot) |
 | زبان پیش‌فرض یا پیشوندها را عوض کنم | [۵. سیستم مسیر و زبان](#۵-سیستم-مسیر-و-زبان) |
 | صفحه یا مقالهٔ جدید بسازم / حذف کنم | [۷. مجموعهٔ CLI](#۷-مجموعهٔ-cli) |
+| یک بخش (نوع محتوا) را روشن/خاموش کنم یا نمونه‌کار اضافه کنم | [۷. مجموعهٔ CLI](#۷-مجموعهٔ-cli) و [CONTENT-TYPES-FA.md](CONTENT-TYPES-FA.md) |
 | زبان جدید اضافه یا حذف کنم | [۸. مدیریت زبان](#۸-مدیریت-زبان) |
 | مشکل RTL یا فونت دارم | [۹. RTL](#۹-rtl-و-ویژگیهای-منطقی) |
 | توکن‌ها و استایل‌ها را تغییر دهم | [۱۰. سیستم طراحی](#۱۰-سیستم-طراحی) |
@@ -74,8 +75,8 @@
 | **جستجوی فارسی بهینه‌شده** | ایندکس Pagefind با نرمال‌سازی حروف و علائم فارسی (`scripts/index-pagefind.mjs`) + بازسازی نیم‌فاصله، همزه و ارقام در سمت کاربر (`src/libs/search/persian.ts`) + فهرست `/api/search-dev/<locale>.json` به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K |
 | **SEO** | canonical، hreflang چندزبانه + `x-default`، Open Graph (`article:modified_time`)، Twitter Card، JSON-LD (`WebSite`, `WebPage`, `CollectionPage`, `BlogPosting`, `BreadcrumbList`)، sitemap با `lastmod` کامل، فیدهای Atom مجزا به ازای هر زبان (`/rss.xml` و `/rss/<locale>.xml`)، webmanifest آگاه از زبان و جهت |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک «نسخهٔ انگلیسی» |
-| **ابزار CLI** | ۱۵ اسکریپت برای ساخت/حذف صفحه و مقاله، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، تولید تصاویر و ایندکس Pagefind |
-| **کیفیت** | TypeScript strict، `astro check`، ۱۸ مجموعه تست واحد Vitest، ۴۷ تست سرتاسری CLI، ممیزی i18n پنج‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
+| **ابزار CLI** | ۲۱ اسکریپت برای ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا (روشن/خاموش/ساخت)، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، بررسی سلامت پروژه، خزش لینک‌ها، تولید تصاویر و ایندکس Pagefind |
+| **کیفیت** | TypeScript strict، `astro check`، ۱۸ فایل تست واحد Vitest (۱۹۳ تست)، ۸۲ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
 | **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
 | **حرکت و اسکرول** | اسکرول نرم با **Lenis** + موتور **ChronoTrig** (`data-trig`) با پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`)، پلکانی‌سازی گروهی (`data-trig-stagger`) و سازگاری کامل با View Transitions |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، کنترل حرکت (`data-motion="reduced"`) |
@@ -87,7 +88,7 @@
 ### پیش‌نیازها
 
 - **Node.js ≥ ۲۲٫۱۲** (در `engines` تعریف شده)
-- **pnpm ۱۰٫۶٫۵** (در `packageManager` قفل شده)
+- **pnpm ۱۲٫۱۰٫۱** (در `packageManager` قفل شده و در `pnpm-lock.yaml` تثبیت شده)
 
 ### نصب و اجرا
 
@@ -173,8 +174,14 @@ pnpm exec astro dev stop           # توقف سرور
 | `pnpm run i18n:add-batch` | افزودن گروهی کلیدها |
 | `pnpm run i18n:extract` | استخراج متن سخت‌کد از قالب |
 | `pnpm run block:adapt` | تبدیل بلوک Tailwind به خواص منطقی |
-| `pnpm run audit:i18n` | ممیزی چندزبانه (۵ مرحله) |
-| `pnpm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۴۷ ادعا) |
+| `pnpm run audit:i18n` | ممیزی چندزبانه (۶ مرحله) |
+| `pnpm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۸۲ ادعا) |
+| `pnpm run content:list` | فهرست انواع محتوا، مسیر و تعداد ورودی‌ها (`--json`) |
+| `pnpm run content:new` | ساخت گروه در هر نوع محتوا |
+| `pnpm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا (مسیرها، sitemap و ناوبری) |
+| `pnpm run content:status` | ماتریس آمادگی هر گروه × هر زبان (`--write=docs/STATUS.md`) |
+| `pnpm run doctor` | بررسی سلامت پروژه بدون build، با دستور رفع هر مورد |
+| `pnpm run link:check` | خزش `dist/` و گزارش لینک‌های داخلی شکسته |
 
 ### ساخت برای انتشار
 
@@ -202,9 +209,9 @@ SITE_URL=https://example.com pnpm run build
 ├── messages/                # فرهنگ لغت‌های زبان‌های فعال: en.json, fa.json (قابل گسترش با i18n:add-lang)
 ├── project.inlang/          # پیکربندی کامپایلر Paraglide (settings.json)
 ├── public/                  # chronotrig.min.js، favicon، آیکون‌ها، کارت OG پیش‌فرض
-├── scripts/                 # ۱۵ اسکریپت CLI و ایندکس بهینه‌شدهٔ Pagefind (index-pagefind.mjs)
-│   └── lib/                 # کتابخانهٔ مشترک: locales, frontmatter, image-reference,
-│                            # content-stub, slug, prompt, compile-messages
+├── scripts/                 # ۲۱ اسکریپت CLI، بررسی سلامت و ایندکس Pagefind (index-pagefind.mjs)
+│   └── lib/                 # کتابخانهٔ مشترک: locales, frontmatter, image-reference, content-stub,
+│                            # slug, validate, content-types, prompt, compile-messages
 ├── .github/workflows/ci.yml # CI: lint → test → audit → build → smoke → knip → verify:cli
 ├── .agents/skills/         # مهارت عملیاتی برای عامل‌های AI
 │   └── astro-i18n-starter/  # SKILL.md + references/
@@ -216,7 +223,8 @@ SITE_URL=https://example.com pnpm run build
     │                        # DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar
     ├── content/
     │   ├── pages/<گروه>/    # صفحات ایستا: <locale>.mdx + <گروه>.png
-    │   └── blog/<گروه>/     # مقالات: <locale>.mdx + <گروه>.png
+    │   ├── blog/<گروه>/     # مقالات: <locale>.mdx + <گروه>.png
+    │   └── projects/<گروه>/ # نمونه‌کارها: <locale>.mdx + <گروه>.png
     ├── content.config.ts    # شمای Zod هر دو کالکشن (همراه با گزینه‌های چیدمان pages)
     ├── i18n/
     │   ├── locales.ts       # SSOT زبان‌ها: LOCALES, DEFAULT_LOCALE, LOCALE_METADATA
@@ -228,7 +236,8 @@ SITE_URL=https://example.com pnpm run build
     │   ├── config/
     │   │   ├── app.ts       # خواندن و اعتبارسنجی app.config.json
     │   │   └── navigation.ts # ساخت ناوبری چندمنویی هدر/کشوی موبایل/فوتر
-    │   ├── content/         # entries, service, feed, pagination, blog, blog-catalog, taxonomy, social
+    │   ├── content/         # entries, service, types (رجیستری انواع محتوا), feed, pagination, blog,
+    │   │                    # blog-catalog, taxonomy, social
     │   ├── cookies/         # مدل رضایت کوکی و مدیریت اسکریپت‌ها (model.ts, manager.ts)
     │   └── search/          # client.ts + persian.ts (جستجوی Pagefind و فالبک با نرمال‌سازی فارسی)
     ├── pages/               # فقط فایل‌های فیزیکی استاتیک
@@ -248,7 +257,8 @@ SITE_URL=https://example.com pnpm run build
     ├── scripts/             # lenis.ts (اسکرول نرم)، chronotrig.ts (هماهنگ‌کنندهٔ انیمیشن)
     ├── styles/              # global.css (.layout-container + پالت معنایی)، prose.css، chronotrig.css
     ├── test/                # mock ماژول astro:content برای Vitest
-    └── views/               # PageView, BlogIndexView, BlogPostView + pages/HomePageTemplate
+    └── views/               # PageView, BlogIndexView, BlogPostView, CollectionIndexView,
+                             # CollectionEntryView + pages/HomePageTemplate
 ```
 
 ---
@@ -266,6 +276,7 @@ SITE_URL=https://example.com pnpm run build
 | جهت، `lang`، فونت هر زبان | `LOCALE_METADATA` در `src/i18n/locales.ts` |
 | مسیرها و URLها | `src/i18n/paths.ts` |
 | اسلاگ‌ها و نسخه‌های جایگزین | `src/libs/content/service.ts` |
+| انواع محتوا (فعال/غیرفعال، مسیر، صفحه‌بندی، ناوبری) | `app.config.json` → `content.types` → `src/libs/content/types.ts` |
 | قواعد فرانت‌متر | `src/content.config.ts` |
 | متن‌های رابط کاربری | `messages/<locale>.json` → کامپایل به `src/paraglide/` |
 | طرح رنگ و سیستم شیشه‌ای | `src/styles/global.css` |
@@ -320,6 +331,13 @@ SITE_URL=https://example.com pnpm run build
     "showReadingTime": true,
     "showTableOfContents": true,
     "showRelatedPosts": true
+  },
+  "content": {
+    "types": {
+      "pages": { "enabled": true, "base": "", "index": false, "paginated": false, "feed": false, "nav": true },
+      "blog": { "enabled": true, "base": "blog", "index": true, "paginated": true, "feed": true, "nav": true },
+      "projects": { "enabled": true, "base": "projects", "index": true, "paginated": false, "feed": false, "nav": true }
+    }
   },
   "cookies": {
     "enabled": true,
@@ -524,6 +542,25 @@ src/content/pages/about/
 
 شناسهٔ (ID) هر ورودی = `<گروه>/<زبان>` — مثلاً `about/fa`. این ID منبع حقیقت
 گروه و زبان است و توسط `generateId` در `src/content.config.ts` ساخته می‌شود.
+
+### انواع محتوا (`content.types`)
+
+سه نوع محتوا وجود دارد: `pages`، `blog` و `projects`. هر نوع یک مجموعه و یک
+مسیر است، و `app.config.json` تعیین می‌کند کدام‌ها ساخته شوند:
+
+```bash
+pnpm run content:list                 # وضعیت، مسیر و تعداد ورودی هر نوع
+pnpm run content:disable projects     # مسیرها، sitemap و لینک ناوبری حذف می‌شوند
+pnpm run content:enable projects      # برمی‌گردند (فایل‌ها هرگز حذف نمی‌شوند)
+pnpm run content:new projects atlas --title="Atlas" --publish
+```
+
+* `enabled: false` فقط روت و لینک را حذف می‌کند؛ محتوا سرجایش می‌ماند. `pages` را نمی‌توان خاموش کرد.
+* `base` بخش اول مسیر است (`/projects/`). `pages` همیشه ریشه است و مقدار `base` نمی‌گیرد.
+* `index` / `paginated` / `feed` / `nav` تعیین می‌کنند فهرست، صفحه‌بندی، فید و لینک ناوبری ساخته شود یا نه.
+* `content:new` برای `pages` و `blog` به `new:page` / `new:post` واگذار می‌شود؛ بقیهٔ نوع‌ها فرانت‌متر مشترک، کاور تولیدی و برای زبان ترجمه‌نشده `[TODO: …]` + `draft: true` می‌گیرند.
+
+جزئیات کامل، از جمله مراحل افزودن نوع چهارم، در [CONTENT-TYPES-FA.md](CONTENT-TYPES-FA.md) آمده است.
 
 ### شمای Zod (`src/content.config.ts`)
 
@@ -910,8 +947,7 @@ pnpm run assets:generate
 | `public/icon-192.png` | ۱۹۲×۱۹۲ | آیکون PWA |
 | `public/icon-512.png` | ۵۱۲×۵۱۲ | آیکون PWA |
 | `public/og-default.png` | ۱۲۰۰×۶۳۰ | کارت OG پیش‌فرض سایت |
-| `src/content/blog/<group>/<group>.png` | ۱۲۰۰×۶۷۵ | کاور هر گروه مقاله |
-| `src/content/pages/<group>/<group>.png` | ۱۲۰۰×۶۷۵ | پس‌زمینهٔ هیروی هر گروه صفحه |
+| `src/content/<type>/<group>/<group>.png` | ۱۲۰۰×۶۷۵ | کاور/هیروی هر گروه از هر نوع محتوای تعریف‌شده (`pages`, `blog`, `projects`, …) |
 
 پالت نرمال‌شده به روشنایی است، بنابراین هر رنگ با یک روشنایی ادراک‌شده دیده می‌شود.
 
@@ -925,16 +961,38 @@ pnpm run assets:generate
 - عکس مشترک هیرو (`src/assets/hero/hero-0.jpg`) — یک عکس واقعی است، نه artwork کدنویسی‌شده؛
 - `public/favicon.svg` و `public/favicon.ico` — دستی ساخته و در مخزن نگه‌داری می‌شوند.
 
+آرتورک برای **همهٔ مجموعه‌های تعریف‌شده** ساخته می‌شود، حتی اگر نوع محتوا خاموش
+باشد: ورودی ساخته‌شده به `./<group>.png` ارجاع می‌دهد و روشن‌کردن دوبارهٔ نوع
+نباید بیلد را با ارجاع تصویر ناموجود بشکند.
+
 > چون نام فایل artwork هر گروه همان `<group>.png` است، اگر فایل سفارشی‌ای با همین نام
 > بدهید، اسکریپت آن را با نام `<group>-custom.<ext>` کپی می‌کند تا بیلد نشکند.
 
-### ۷.۹ ممیزی و تست
+### ۷.۹ مدیریت انواع محتوا و سلامت پروژه
 
 ```bash
-pnpm run audit:i18n    # ۵ بخش: پیکربندی زبان، فرهنگ‌ها، محتوا، مسیرها، متن هاردکد
+pnpm run content:list                 # نوع‌ها، مسیر، وضعیت و تعداد ورودی
+pnpm run content:disable projects     # حذف مسیرها/sitemap/ناوبری (فایل‌ها می‌مانند)
+pnpm run content:enable projects
+pnpm run content:new projects atlas --title="Atlas" --publish
+pnpm run doctor                       # سلامت بدون build، با دستور رفع
+pnpm run content:status -- --write=docs/STATUS.md
+pnpm run link:check                   # خزش dist/ و گزارش لینک شکسته
+```
+
+`content:new` برای `pages` و `blog` به `new:page` / `new:post` واگذار می‌شود؛
+برای بقیهٔ نوع‌ها فرانت‌متر مشترک، کاور تولیدی و `[TODO: …]` + `draft: true`
+برای زبان‌های ترجمه‌نشده می‌سازد. slugهای فرار (`../blog`) و slug رزروشدهٔ
+`page` قبل از هر نوشتن رد می‌شوند. جزئیات کامل در
+[CONTENT-TYPES-FA.md](CONTENT-TYPES-FA.md).
+
+### ۷.۱۰ ممیزی و تست
+
+```bash
+pnpm run audit:i18n    # ۶ بخش: پیکربندی زبان، فرهنگ‌ها، محتوا، مسیرها، متن هاردکد، نگهبان RTL
 pnpm run smoke         # تست دود روی خروجی بیلدشده
 pnpm run knip          # فایل/اکسپورت/وابستگی مرده
-pnpm run verify:cli    # ۴۷ ادعا دربارهٔ گردش‌کارهای CLI
+pnpm run verify:cli    # ۸۲ ادعا دربارهٔ گردش‌کارهای CLI
 ```
 
 `verify:cli` پروژه را در یک پوشهٔ موقت کپی می‌کند، همهٔ فرمان‌های CLI را دقیقاً
@@ -947,7 +1005,7 @@ pnpm run verify:cli    # ۴۷ ادعا دربارهٔ گردش‌کارهای CL
 > نوشتن یک مقاله فقط به انگلیسی حالت عادی است و سایت، ناوبری و تعویض زبان
 > هر سه با آن کنار می‌آیند.
 
-### ۷.۱۰ کتابخانهٔ مشترک `scripts/lib/`
+### ۷.۱۱ کتابخانهٔ مشترک `scripts/lib/`
 
 | فایل | نقش |
 | --- | --- |
@@ -957,6 +1015,8 @@ pnpm run verify:cli    # ۴۷ ادعا دربارهٔ گردش‌کارهای CL
 | `content-stub.mjs` | متن جانشین هر زبان برای محتوای تولیدشده (صفحه و مقاله) |
 | `slug.mjs` | `resolveSlug` — اسلاگ هر زبان در محتوای تازه‌ساخته (نام گروه برای زبان مبدأ، `<گروه>-<locale>` برای بقیه) |
 | `prompt.mjs` | `askYesNo` / `confirmDeletion` — تأیید یکسان برای اسکریپت‌های مخرب |
+| `validate.mjs` | اعتبارسنجی کلید ورودی، نام مجموعه و کد زبان تا هیچ مسیری از مجموعه خارج نشود |
+| `content-types.mjs` | خواندن/نوشتن `content.types` در `app.config.json` (با حفظ EOL و قالب) و آمار ورودی‌ها برای CLI |
 
 ---
 
@@ -1153,18 +1213,18 @@ pre, code, .math {
 | --- | --- | --- |
 | `Icon.astro` | `name`, `size` (پیش‌فرض ۲۰), `class`, `aria-hidden`, `aria-label` | نماد SVG از `/icons.svg#name` |
 | `IconButton.astro` | `icon`, `label`, `size` (۱۸), `variant` (`glass`/`ghost`), `class` + هر `data-*`/`aria-*` | دکمهٔ فقط-آیکون — دستی نسازید |
-| `PageHeader.astro` | `title`, `description?`, `breadcrumbs?`, `locale` | هدر تایپوگرافیک مینیمال برای صفحات `hero: 'minimal'` |
-| `PageSection.astro` | `id?`, `surface?`, `spacing?`, `container?`, `class?` | سکشن تمام‌عرض با ظرف استاندارد `.layout-container` برای صفحات `canvas` |
+| `PageHeader.astro` | `title`, `description?`, `locale`, `breadcrumbs?`, `kicker?`, `align?` (`start`/`center`), `class?` | هدر تایپوگرافیک مینیمال برای صفحات `hero: 'minimal'` |
+| `PageSection.astro` | `id?`, `surface?` (`default`/`surface`/`subtle`), `spacing?` (`none`/`sm`/`md`/`lg`), `bleed?` (بدون `.layout-container`), `borderTop?`, `borderBottom?`, `class?`, `containerClass?` | سکشن تمام‌عرض برای صفحات `canvas`؛ به‌طور پیش‌فرض محتوا را داخل `.layout-container` می‌گذارد و با `bleed` لبه‌به‌لبه می‌شود |
 | `HeroCopy.astro` | `title`, `description?`, `size?` (`page`/`post`)؛ اسلات `prelude` و پیش‌فرض | تیتر/توضیح/اسلات‌های مشترک هیرو |
 | `PageHero.astro` | `image?` | بخش هیرو؛ خودش هیچ متنی ندارد، فقط پس‌زمینه و اسلات |
-| `BlogPostHeroContent.astro` | `title`, `description?`, `locale`, `categories`, `author?`, `body?`, `publishedAt`, `breadcrumbs` | محتوای هیروی مقاله (از `HeroCopy` استفاده می‌کند) |
+| `BlogPostHeroContent.astro` | `title`, `description?`, `locale`, `categories`, `author?`, `body?`, `publishedAt`, `updatedAt?`, `breadcrumbs` | محتوای هیروی مقاله (از `HeroCopy` استفاده می‌کند) |
 | `PostCard.astro` | `post`, `locale`, `href`, `priority?` | کارت مقاله در فهرست |
 | `LanguageSwitcher.astro` | `currentLocale`, `alternates` | تعویض زبان با بارگذاری کامل |
 | `SearchModal.astro` | `locale` | مودال جستجوی دسکتاپ (Pagefind در پروداکشن / fallback استاتیک) |
 | `DrawerSearch.astro` | `locale` | جستجوی درون کشوی موبایل هماهنگ با تب‌بندی کشو |
-| `ContactForm.astro` | `locale`, `endpoint?`, `class?` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` |
+| `ContactForm.astro` | `locale` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` (نشانی از `app.config.json` یا `PUBLIC_*` خوانده می‌شود) |
 | `CookieConsent.astro` | `locale` | بنر و مودال مدیریت رضایت کوکی و اسکریپت‌ها (TDDDG § 25 / GDPR) |
-| `Seo.astro` | `title`, `description?`, `locale`, `url`, `alternates`, `siteName?`, `image?`, `type?`, `publishedTime?`, `schema?`, `noindex?`, `prevUrl?`, `nextUrl?` | همهٔ متادیتای SEO |
+| `Seo.astro` | `title`, `description?`, `locale`, `url`, `alternates`, `siteName?`, `image?`, `type?`, `publishedTime?`, `modifiedTime?`, `schema?`, `noindex?`, `prevUrl?`, `nextUrl?` | همهٔ متادیتای SEO |
 | `TopLoadingBar.astro` | — | نوار پیشرفت ناوبری |
 
 <a id="scroll-motion"></a>
@@ -1622,9 +1682,9 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 | امنیت در برابر XSS | تبدیل مارک‌آپ خلاصه‌های Pagefind به متن ساده توسط `plainText()` و درج امن با `textContent` |
 
 ### فرم تماس و اتصال به API خارجی (معماری Pure SSG بدون بک‌اند)
-این استارتر **۱۰۰٪ استاتیک (SSG)** است و هیچ سرور بک‌اند داخلی ندارد. برای فرم تماس (`src/components/ContactForm.astro`)، داده‌ها مستقیماً از مرورگر از طریق آداپتور نوع‌امن `src/libs/api/client.ts` (`submitContactInquiry` / `postJson`) با محافظت تایم‌اوت (`AbortController`) و فیلتر ضداسپم Honeypot به سرویس یا API خارجی شما ارسال می‌شوند:
+این استارتر **۱۰۰٪ استاتیک (SSG)** است و هیچ سرور بک‌اند داخلی ندارد. برای فرم تماس (`src/components/ContactForm.astro`)، داده‌ها مستقیماً از مرورگر از طریق آداپتور نوع‌امن `src/libs/api/client.ts` (`submitContactInquiry` و کمکی‌های `resolveApiEndpoint` / `getInvalidContactFields` / `validateContactPayload`) با محافظت تایم‌اوت (`AbortController`) و فیلتر ضداسپم Honeypot به سرویس یا API خارجی شما ارسال می‌شوند:
 - نشانی API را در متغیر محیطی `PUBLIC_CONTACT_API_URL` (یا `PUBLIC_API_BASE_URL`) و یا در بخش `api` فایل `app.config.json` تنظیم کنید.
-- تا زمانی که نشانی API خارجی تنظیم نشده باشد، فرم به‌طور خودکار پیام راهنما نمایش می‌دهد و دکمهٔ ارسال را ایمن غیرفعال نگه می‌دارد.
+- تا زمانی که نشانی API خارجی تنظیم نشده باشد، فرم پیام راهنمای پیکربندی را نشان می‌دهد و هیچ درخواستی ارسال نمی‌کند (`errorCode: 'unconfigured'`).
 
 ---
 
@@ -1705,12 +1765,12 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 
 ```bash
 pnpm run lint     # کامپایل پیام‌ها + astro check + tsc --noEmit
-pnpm test         # ۱۸ مجموعه تست واحد Vitest
+pnpm test         # ۱۸ فایل تست واحد Vitest (۱۹۳ تست)
 pnpm run audit:i18n
 SITE_URL=https://example.com pnpm run build
 pnpm run smoke    # تست دود روی dist/
 pnpm run knip
-pnpm run verify:cli  # ۴۷ ادعا دربارهٔ گردش‌کارهای CLI
+pnpm run verify:cli  # ۸۲ ادعا دربارهٔ گردش‌کارهای CLI
 ```
 
 ### چه چیزی تست می‌شود
@@ -1735,22 +1795,23 @@ pnpm run verify:cli  # ۴۷ ادعا دربارهٔ گردش‌کارهای CLI
 | `src/scripts/lenis.test.ts` | اسکرول نرم، آفست لینک‌های `#hash` و ایزوله‌سازی پنل‌ها |
 | `src/scripts/chronotrig.test.ts` | قرارداد `.js [data-trig]`، جهت‌های منطقی RTL، پلکانی‌سازی، مکث `--trig-reveal-delay` و سازگاری Lenis |
 
-> **۱۸ مجموعه تست واحد.** ماژول `astro:content` در Vitest با
+> **۱۸ فایل تست واحد (۱۹۳ تست).** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
-### ممیزی i18n — ۵ بخش
+### ممیزی i18n — ۶ بخش
 
 | بخش | چه چیزی را بررسی می‌کند |
 | --- | --- |
 | ۱. پیکربندی زبان | تطابق `locales.ts` و `project.inlang/settings.json`، وجود `dir` برای هر زبان |
-| ۲. فرهنگ‌ها | کلیدها و placeholderهای ICU در همهٔ زبان‌ها، وجود همهٔ کلیدهای استفاده‌شده |
+| ۲. فرهنگ‌ها | کلیدها و placeholderهای ICU در همهٔ زبان‌ها، همهٔ کلیدهای استفاده‌شده، کلیدهای بی‌استفاده |
 | ۳. کالکشن محتوا | وجود فایل هر زبان برای هر گروه (نبودِ یک زبان = هشدار) |
 | ۴. نگهبان slug و مسیر | فرانت‌متر معتبر، اسلاگ‌های یکتا، نبود برخورد مسیر |
 | ۵. اسکنر متن هاردکد | هشدار دربارهٔ رشته‌های ترجمه‌نشده در قالب‌ها (هشدار، نه خطا) |
+| ۶. نگهبان RTL | نبود کلاس جهت‌دار فیزیکی (`ml-`, `pr-`, `text-left`, `left/right`) و بردارهای فیزیکی انیمیشن |
 
-خروجی واقعی روی این مخزن: ۵ زبان، ۵۲ کلید در همهٔ فرهنگ‌ها با placeholder
-یکسان، ۴۱ کلید استفاده‌شدهٔ ایستا، ۷ گروه محتوا، بدون برخورد مسیر و بدون
+خروجی واقعی روی این مخزن: ۲ زبان، ۱۵۴ کلید در همهٔ فرهنگ‌ها با placeholder
+یکسان، ۱۴۳ کلید استفاده‌شدهٔ ایستا، ۹ گروه محتوا، بدون برخورد مسیر و بدون
 هشدار متن هاردکد.
 
 ### تست دود — ۷ بخش روی `dist/`
@@ -1955,6 +2016,12 @@ dist/
 | `pnpm run block:adapt` | تبدیل به خواص منطقی |
 | `pnpm run audit:i18n` | ممیزی چندزبانه |
 | `pnpm run verify:cli` | تست سرتاسری گردش‌کارهای CLI |
+| `pnpm run content:list` | فهرست انواع محتوا و وضعیت آن‌ها |
+| `pnpm run content:new` | ساخت گروه در هر نوع محتوا |
+| `pnpm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا |
+| `pnpm run content:status` | ماتریس آمادگی گروه × زبان |
+| `pnpm run doctor` | بررسی سلامت پروژه بدون build |
+| `pnpm run link:check` | خزش `dist/` و گزارش لینک شکسته |
 | `pnpm exec astro dev --background` | اجرای سرور توسعه در پس‌زمینه |
 | `pnpm exec astro dev status` | وضعیت سرور توسعه |
 | `pnpm exec astro dev logs --follow` | دنبال کردن لاگ سرور |
@@ -1964,7 +2031,7 @@ dist/
 
 ## پیوست B — کلیدهای ترجمه
 
-۷۸ کلید ترجمه در `messages/en.json` (و یک کلید `$schema` که فقط متادیتای JSON Schema است):
+۱۵۴ کلید ترجمه در `messages/en.json` (و یک کلید `$schema` که فقط متادیتای JSON Schema است). این فهرست گزیده است؛ منبع دقیق خود فایل و `pnpm run audit:i18n` است:
 
 ### `common_*` (۲۴ کلید)
 
@@ -2002,17 +2069,24 @@ dist/
 `footer_col_product` · `footer_col_resources` · `footer_col_company` ·
 `footer_col_legal` · `footer_legal_privacy` · `footer_legal_terms`
 
-### `nav_*` (۱۱ کلید)
+### `nav_*` (۱۲ کلید)
 
 `nav_about` · `nav_blog` · `nav_design_system` · `nav_documentation` ·
 `nav_explore` · `nav_features` · `nav_home` · `nav_overview` ·
-`nav_pricing` · `nav_resources` · `nav_rtl_support`
+`nav_pricing` · `nav_projects` · `nav_resources` · `nav_rtl_support`
+
+### `projects_*` (۵ کلید)
+
+`projects_back` · `projects_client` · `projects_index_description` ·
+`projects_stack` · `projects_visit` — برچسب‌های نمای عمومی نوع‌های محتوا
+(در کنار `content_empty` که حالت خالی فهرست را نشان می‌دهد).
 
 ### کلیدهای متفرقه و ICU
 
 | کلید | نوع / placeholder |
 | --- | --- |
 | `site_description` | شرح اصلی وب‌سایت در هدر، فوتر و متادیتا |
+| `content_empty` | حالت خالی فهرست یک نوع محتوا («هنوز چیزی منتشر نشده») |
 | `blog_read_time` | `{count}` — زمان مطالعه (ICU plural) |
 | `blog_filter_showing_page` | `{visible}` و `{total}` — «نمایش X از Y مقاله در این صفحه» |
 | `blog_filter_showing_all` | `{visible}` و `{total}` — «نمایش X از Y مقاله» |
@@ -2050,13 +2124,13 @@ dist/
 
 ### `src/libs/config/app.ts`
 
-`siteConfig` · `POSTS_PER_PAGE` · `HERO_TITLE_ID` · `DEFAULT_HERO_IMAGE` · `absoluteUrl` · `UI_CONFIG` · `BLOG_CONFIG` · `COOKIES_CONFIG` · `API_CONFIG` · `SOCIAL_CONFIG`
+`siteConfig` · `POSTS_PER_PAGE` · `HERO_TITLE_ID` · `DEFAULT_HERO_IMAGE` · `absoluteUrl` · `UI_CONFIG` · `BLOG_CONFIG` · `COOKIE_CONFIG` · `API_CONFIG` · `SOCIAL_CONFIG`
 
 ### `src/libs/api/client.ts` و `src/libs/search/*`
 
 | فایل | خروجی‌ها |
 | --- | --- |
-| `api/client.ts` | `resolveApiEndpoint` · `isContactApiConfigured` · `postJson` · `submitContactInquiry` |
+| `api/client.ts` | `resolveApiEndpoint` · `getInvalidContactFields` · `validateContactPayload` · `submitContactInquiry` |
 | `search/client.ts` | `executeSearch` · `getPagefindInstance` · `plainText` |
 | `search/persian.ts` | `normalizePersianQuery` · `applyPersianZwnjCompounds` · `buildSearchQueryVariants` · `normalizeForFallbackMatch` · `matchesFallbackSearch` |
 
