@@ -51,6 +51,44 @@ function cleanNavKey(rootDir, locales) {
   return modified;
 }
 
+/**
+ * Finds source files that still call `m.nav_<pageKey>(...)`.
+ *
+ * The nav key is deleted from the dictionaries with the page, so a call that
+ * survives in the code turns into a fatal i18n-audit error on the next build.
+ * Reporting the files here turns a failed build into a fixable instruction.
+ *
+ * @param {string} rootDir
+ * @param {string} key page group
+ * @returns {string[]} workspace-relative file paths
+ */
+function findRemainingNavReferences(rootDir, key) {
+  const needle = `m.nav_${key}(`;
+  const hits = [];
+  const srcDir = path.join(rootDir, 'src');
+  if (!fs.existsSync(srcDir)) return hits;
+
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      // Generated Paraglide output re-exports every message; it never defines a
+      // navigation item of its own.
+      if (entry.name === 'paraglide' || entry.name === 'node_modules') continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.(ts|tsx|js|mjs|astro|mdx)$/.test(entry.name)) continue;
+      if (fs.readFileSync(full, 'utf-8').includes(needle)) {
+        hits.push(path.relative(rootDir, full));
+      }
+    }
+  };
+
+  walk(srcDir);
+  return hits;
+}
+
 if (!pageKey) {
   console.error('Usage: pnpm run remove:page <page-key> [--locale=<locale>] [--no-clean-nav] [--force]');
   process.exit(1);
@@ -131,6 +169,7 @@ if (targetLocale) {
 
   // Clean nav translation key if present
   if (cleanNav) {
+    const remainingReferences = findRemainingNavReferences(rootDir, pageKey);
     const messagesDir = path.join(rootDir, 'messages');
     const files = fs.existsSync(messagesDir)
       ? fs
@@ -141,6 +180,14 @@ if (targetLocale) {
 
     if (cleanNavKey(rootDir, files)) {
       console.log(`🧹 Cleaned translation key "nav_${pageKey}" from dictionaries.`);
+      if (remainingReferences.length > 0) {
+        console.warn(
+          `⚠️ Code still calls m.nav_${pageKey}(): ${remainingReferences.join(', ')}.`
+        );
+        console.warn(
+          `   Remove or rewrite those references (PAGE_ITEMS / footer) before building; the i18n audit fails while they exist.`
+        );
+      }
       console.log('🔄 Recompiling Paraglide messages...');
       try {
         compileMessages(rootDir);

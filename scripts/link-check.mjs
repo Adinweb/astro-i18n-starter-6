@@ -6,7 +6,9 @@
  * `smoke` asserts the links it knows about (hreflang, pager, feed). This walks
  * what was actually rendered — Markdown links, CTAs, breadcrumbs, navigation,
  * the language switcher, JSON catalogs linked from a page — so a renamed slug
- * or a typo in body copy cannot ship as a 404.
+ * or a typo in body copy cannot ship as a 404. Fragment links (`/about/#privacy`)
+ * are resolved too: a section id that is renamed or deleted breaks the link just
+ * as surely as a removed page.
  *
  * Usage:
  *   pnpm run link:check [--dir=dist] [--json] [--limit=50]
@@ -47,7 +49,6 @@ function isExternal(value) {
   return (
     /^[a-z][a-z0-9+.-]*:/i.test(value) ||
     value.startsWith('//') ||
-    value.startsWith('#') ||
     value.trim() === ''
   );
 }
@@ -56,12 +57,37 @@ function stripUrl(value) {
   return value.split('#')[0].split('?')[0];
 }
 
+/** Splits `path#fragment` (and drops the query string from the path). */
+function splitFragment(value) {
+  const hashIndex = value.indexOf('#');
+  if (hashIndex === -1) return { pathPart: value, fragment: '' };
+  return {
+    pathPart: value.slice(0, hashIndex),
+    fragment: value.slice(hashIndex + 1).split('?')[0],
+  };
+}
+
+/** Cached `id`/`name` inventories: one page can be linked from hundreds of places. */
+const anchorCache = new Map();
+
+function anchorsOf(file) {
+  const cached = anchorCache.get(file);
+  if (cached) return cached;
+
+  const anchors = new Set();
+  for (const match of fs.readFileSync(file, 'utf-8').matchAll(/\s(?:id|name)\s*=\s*"([^"]*)"/g)) {
+    anchors.add(match[1]);
+  }
+  anchorCache.set(file, anchors);
+  return anchors;
+}
+
 /**
  * Maps a site-root path to the file a static host would serve.
  *
- * @returns {boolean} whether something in `dist/` answers that path
+ * @returns {string | null} absolute path of the built file, or `null`
  */
-function targetExists(urlPath) {
+function resolveTargetFile(urlPath) {
   let clean = urlPath;
   try {
     clean = decodeURIComponent(urlPath);
@@ -85,9 +111,32 @@ function targetExists(urlPath) {
   for (const candidate of candidates) {
     const full = path.join(siteDir, candidate);
     if (!full.startsWith(siteDir)) continue;
-    if (fs.existsSync(full) && fs.statSync(full).isFile()) return true;
+    if (fs.existsSync(full) && fs.statSync(full).isFile()) return full;
   }
-  return false;
+  return null;
+}
+
+/**
+ * Checks that a fragment resolves to an element on the target page.
+ *
+ * Only HTML targets are inspected: `icons.svg#star` and friends address
+ * symbols inside an asset, which this crawl does not parse.
+ *
+ * @returns {boolean} whether the fragment is present (or not checkable)
+ */
+function fragmentExists(file, fragment) {
+  if (!file || !file.endsWith('.html')) return true;
+
+  let id = fragment;
+  try {
+    id = decodeURIComponent(fragment);
+  } catch {
+    // A malformed escape cannot match an id either.
+  }
+  // `#` alone and `#top` are the browser's built-in "back to the top"
+  // anchors: they work without an element, so they are not dead links.
+  if (id === '' || id === 'top') return true;
+  return anchorsOf(file).has(id);
 }
 
 const broken = [];
@@ -103,14 +152,24 @@ for (const file of htmlFiles) {
     const value = rawValue.trim();
     if (!LINK_ATTRIBUTES.includes(attribute) || isExternal(value)) continue;
 
-    // Resolve a relative URL against the page that contains it.
-    const resolved = value.startsWith('/') ? value : new URL(value, `http://x${pageUrl}`).pathname;
-    if (SKIPPED_PREFIXES.some((prefix) => resolved.startsWith(prefix))) continue;
+    // Resolve a relative URL against the page that contains it. A bare
+    // fragment (`#privacy`) points into the page it appears on.
+    const { pathPart, fragment } = splitFragment(value);
+    const resolved =
+      pathPart === ''
+        ? ''
+        : pathPart.startsWith('/')
+          ? pathPart
+          : new URL(pathPart, `http://x${pageUrl}`).pathname;
+    const target = resolved === '' ? pageUrl : stripUrl(resolved) || '/';
+    if (SKIPPED_PREFIXES.some((prefix) => target.startsWith(prefix))) continue;
 
-    const target = stripUrl(resolved) || '/';
     checked += 1;
-    if (!targetExists(target)) {
+    const targetFile = resolveTargetFile(target);
+    if (!targetFile) {
       broken.push({ page: pageUrl, link: value, target });
+    } else if (fragment && !fragmentExists(targetFile, fragment)) {
+      broken.push({ page: pageUrl, link: value, target: `${target}#${fragment}` });
     }
   }
 
@@ -122,7 +181,7 @@ for (const file of htmlFiles) {
       const resolved = url.startsWith('/') ? url : new URL(url, `http://x${pageUrl}`).pathname;
       const target = stripUrl(resolved);
       checked += 1;
-      if (!targetExists(target)) {
+      if (!resolveTargetFile(target)) {
         broken.push({ page: pageUrl, link: url, target });
       }
     }
@@ -155,7 +214,7 @@ console.log(
 );
 
 if (uniqueBroken.length === 0) {
-  console.log('✅ Every internal link resolves to a built file.');
+  console.log('✅ Every internal link and fragment resolves to a built file and an anchor.');
   process.exit(0);
 }
 

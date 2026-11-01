@@ -17,6 +17,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Compile-Time i18n via Paraglide**: Strongly typed translations with native ICU plurals and ordinals, compiled directly to tree-shakeable JS functions without runtime overhead.
 * **Symmetrical Content Collections**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs and cross-language alternate linking.
 * **Manageable Content Types**: `pages`, `blog` and `projects` are declared in `app.config.json` → `content.types`. `pnpm run content:enable|disable <type>` adds or removes a type's routes, sitemap entries and navigation links without touching a single content file, and `content:new` scaffolds an entry in any type.
+* **Configurable, Dead-Link-Free Navigation**: One `PAGE_ITEMS` list feeds the desktop header **and** the mobile drawer from a single builder, `ui.ctaPage` in `app.config.json` picks the header/drawer CTA target, and any entry whose page (or `#anchor`) no longer exists hides itself — `pnpm run link:check` fails the pipeline if an internal link or fragment resolves to nothing.
 * **Paginated Blog Index & Cross-Page Filtering**: Static paginated route set — one URL per page per locale (`/blog/`, `/blog/page/2/`, `/fa/blog/page/2/`) — with reciprocal `hreflang`, `rel="prev"` / `rel="next"`, and progressive cross-page taxonomy filtering powered by lightweight per-locale static catalogs (`/api/blog-posts/<locale>.json`).
 * **Persian-Aware Search Built-In**: Production static indexing with **Pagefind** (`scripts/index-pagefind.mjs`) enhanced with Perso-Arabic character normalization (`ي`/`ك` → `ی`/`ک`), punctuation token boundary isolation (`«...»`, `،`), client-side ZWNJ/space compound & numeral query expansion (`src/libs/search/persian.ts`), and per-locale JSON fallbacks (`/api/search-dev/<locale>.json`).
 * **SEO & Social Metadata**: Canonical URLs, hreflang plus `x-default`, Open Graph/Twitter cards, `WebSite`/`WebPage`/`CollectionPage`/`BlogPosting` + `BreadcrumbList` JSON-LD, a multilingual sitemap with `lastmod`, and per-locale Atom feeds (`/rss.xml` and `/rss/<locale>.xml`).
@@ -91,12 +92,15 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   ├── components/            # Reusable UI components
 │   │   ├── Icon.astro         # SVG sprite icon renderer (<Icon name="..." />)
 │   │   ├── IconButton.astro   # Icon-only button (glass or ghost variant)
+│   │   ├── Button.astro       # The one text button: variant + size + label + icon
+│   │   ├── DrawerNavLink.astro # Drawer menu row: icon + label (tile box only at depth 0)
 │   │   ├── ThemeToggle.astro  # Accessible light/dark mode toggle
 │   │   ├── LanguageSwitcher.astro # Dropdown with translated alternate links
 │   │   ├── PageHeader.astro   # Minimal typographic page header (hero: "minimal")
 │   │   ├── PageHero.astro     # Hero shell: full-bleed background + light-shaping scrims
 │   │   ├── PageSection.astro  # Full-bleed section wrapper with .layout-container inner width
 │   │   ├── HeroCopy.astro     # Shared hero copy (heading, description, slots)
+│   │   ├── HomeHero.astro     # Bespoke home hero band (badge, headline, CTAs, three proofs)
 │   │   ├── BlogPostHeroContent.astro # Hero copy for articles (breadcrumbs, meta)
 │   │   ├── PostCard.astro     # Blog listing card (direct child of [data-trig-stagger])
 │   │   ├── DrawerSearch.astro # Inline mobile drawer search
@@ -130,7 +134,8 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
 │   │   ├── content/social.ts  # Optimized og:image card
 │   │   ├── cookies/           # Consent state model & multi-domain cookie/script manager
-│   │   └── search/            # client.ts + persian.ts (Pagefind + ZWNJ/orthography search engine)
+│   │   ├── search/            # client.ts + persian.ts (Pagefind + ZWNJ/orthography search engine)
+│   │   └── ui/button.ts       # Button class recipe shared by Button.astro and client renderers
 │   ├── pages/
 │   │   ├── [...path].astro    # Lean Router Dispatcher
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
@@ -167,10 +172,10 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 
 All application-level values that must stay in sync across the app and the CLI scripts live in [`app.config.json`](app.config.json):
 
-* **`site`** — name, short name, description (used by the web manifest; page/SEO descriptions come from the localized `site_description` message), default social card path and size.
+* **`site`** — name, short name, description (used by the web manifest; page/SEO descriptions come from the localized `site_description` message), `contactEmail` (the `mailto:` destination of the contact form's fallback), default social card path and size.
 * **`brand`** — browser theme colours (`themeColor` and `darkThemeColor`), background colour, Apple touch icon, manifest icons.
 * **`blog.postsPerPage`** — how many posts one index page holds.
-* **`api`** — optional `baseUrl`, `timeoutMs`, and `endpoints.contact` for connecting client-side forms (`src/libs/api/client.ts`) to an external/headless backend (overridable via `PUBLIC_API_BASE_URL` and `PUBLIC_CONTACT_API_URL`).
+* **`api`** — optional `baseUrl`, `timeoutMs`, and `endpoints.contact` for connecting client-side forms (`src/libs/api/client.ts`) to an external/headless backend (overridable via `PUBLIC_API_BASE_URL` and `PUBLIC_CONTACT_API_URL`). Without an endpoint the form is not rendered at all: the page shows a visitor-facing notice plus a `mailto:` button when `site.contactEmail` is set, and the developer-only setup note appears in `import.meta.env.DEV` only.
 * **`server`** — dev host/port, also used as the local fallback site origin.
 
 [`src/libs/config/app.ts`](src/libs/config/app.ts) validates that file with Zod and exposes typed values (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, hero defaults, `absoluteUrl`). The asset generator, web manifest, and smoke tests read the same file. Framework-only settings remain in `astro.config.mjs`, and locale configuration in `src/i18n/locales.ts` + `project.inlang/settings.json`.
@@ -199,7 +204,7 @@ All automation scripts run from the terminal using `pnpm run <command>`:
 | `pnpm run content:enable` / `content:disable` | Switches a content type's routes, sitemap entries and navigation links on or off | `pnpm run content:disable projects` |
 | `pnpm run content:status` | Prints the per-locale readiness matrix (published/draft/missing, words, TODOs) | `pnpm run content:status -- --write=docs/STATUS.md` |
 | `pnpm run doctor` | No-build health check (runtime, config, content types, dictionaries, content) with fix hints | `pnpm run doctor` |
-| `pnpm run link:check` | Crawls the built HTML and reports internal links that resolve to nothing | `pnpm run link:check` |
+| `pnpm run link:check` | Crawls the built HTML and reports internal links and `#anchor` fragments that resolve to nothing | `pnpm run link:check` |
 | `pnpm run audit:i18n` | Audits locale-config parity, placeholders, used keys, content and route collisions | `pnpm run audit:i18n` |
 | `pnpm run smoke` | Runs HTML, SEO, feed, manifest and H1 assertions on `dist/` | `pnpm run smoke` |
 | `pnpm run knip` | Finds dead files, exports and dependencies | `pnpm run knip` |
@@ -231,16 +236,15 @@ placeholders stay drafts. `--draft` keeps every locale as a draft, and
 
 Pass `--image=cover.png` to use a different file: the path is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file. Pass `--image=none` to leave the page without artwork of its own. A named image that does not exist is reported as a warning and the group artwork is used instead, so the build never breaks.
 
-To display the new page in the navigation bar, register it in the navigation single source of truth (`src/libs/config/navigation.ts`) — the desktop header, mobile drawer, and multi-column footer all consume `getNavigationSlots(locale, currentUrl)`:
+To display the new page in the navigation bar, add one entry to `PAGE_ITEMS` in `src/libs/config/navigation.ts` — the single list the desktop header **and** the mobile drawer read (the footer and the legal bar have their own builders in the same file):
 ```ts
 // src/libs/config/navigation.ts
-{
-  key: 'team',
-  label: (loc) => m.nav_team({}, { locale: loc }),
-  href: (loc) => getPageUrl('team', loc),
-}
+export const PAGE_ITEMS = [
+  // …
+  { group: 'team', label: (locale: Locale) => m.nav_team({}, { locale }) },
+] as const;
 ```
-No template edits are required.
+The URL comes from `getPageUrl`, the label from the `nav_team` key `new:page` registered, and a page that is unpublished in a locale simply drops out of the menu. No template edits are required.
 
 ### 2. Adding a New Blog Post
 Run the article scaffolder:
@@ -371,6 +375,23 @@ Every frosted surface, button and chip in the project is defined **once**, in `s
 | `cta` | The primary call to action. |
 | `btn-secondary` | The outlined call to action. |
 | `chip` | Pill-shaped filter and taxonomy chips. |
+
+Text buttons go through one component, so only the colour, the text and the icon ever change:
+```astro
+<Button href={pricingHref} variant="primary" size="lg" icon="arrow-right">
+  {m.common_get_started({}, { locale })}
+</Button>
+```
+
+| Prop | Values |
+| :--- | :--- |
+| `variant` | `primary` (`cta`), `secondary` (`btn-secondary`), `hero` (`btn-hero-secondary`), `ghost` (`ghost-control`), `glass` (`glass-control`) |
+| `size` | `sm` (`h-9`), `md` (`h-10`), `lg` (`h-11`), `auto` (caller-sized) |
+| `href` | Present → renders `<a>`; absent → renders `<button type="…">` |
+| `icon` / `iconPosition` | Sprite name plus `start` or `end`; `arrow-*` and `chevron-*` mirror in RTL and nudge forward on hover |
+| `block`, `class` | Full width, and call-site utilities merged last |
+
+Every button shares the hover lift and press from `src/libs/ui/button.ts`, which the blog pager's client renderer reuses, so a server-rendered control and a runtime one never drift apart.
 
 Icon-only controls go through one component, so their size, shape and accessible name are consistent:
 ```astro

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
 import { contentStub } from './lib/content-stub.mjs';
-import { resolveSlug } from './lib/slug.mjs';
+import { findPlaceholderSlugs, placeholderSlugNotice, resolveSlug } from './lib/slug.mjs';
 import { entryKeyError } from './lib/validate.mjs';
 import {
   escapeRegex,
@@ -365,6 +365,13 @@ Update / Sync Options:
     }
 
     console.log(`✅ Frontmatter successfully updated for [${pageKey}] across locales: ${updatedLocales.join(', ')}`);
+    for (const line of placeholderSlugNotice(
+      'new:page',
+      pageKey,
+      findPlaceholderSlugs(targetDir, pageKey, LOCALES)
+    )) {
+      console.warn(line);
+    }
     if (bodyHeadingLocales.length > 0) {
       console.warn(
         `⚠️ hero "minimal" renders the title as the page's <h1>, but the body of ` +
@@ -481,6 +488,14 @@ Update / Sync Options:
     fs.writeFileSync(path.join(targetDir, `${loc}.mdx`), content, 'utf-8');
   }
 
+  for (const line of placeholderSlugNotice(
+    'new:page',
+    pageKey,
+    findPlaceholderSlugs(targetDir, pageKey, LOCALES)
+  )) {
+    console.warn(line);
+  }
+
   console.log(`✅ Scaffolding complete in src/content/pages/${pageKey}/ across locales: ${LOCALES.join(', ')}`);
   console.log(`ℹ️ Source locale: "${sourceLocale}" (title: "${title}")`);
   console.log(
@@ -499,6 +514,15 @@ Update / Sync Options:
     console.log('   (To publish every locale immediately, pass --publish or --draft=false).');
   } else {
     console.log(`🚀 Published locales: ${publishedLocales.join(', ') || 'none'}.`);
+    if (publishedLocales.length > 0) {
+      // The scaffold body is the localized "content coming soon" sentence, and
+      // `smoke` refuses a built page that still contains it. Say so now, while
+      // the author is still in the terminal, instead of at the next build.
+      console.warn(
+        '⚠️ The published body is still the scaffold sentence ("content coming soon").' +
+          ' Write the real copy before the next production build; `pnpm run smoke` fails while it is in dist/.'
+      );
+    }
     if (draftLocales.length) {
       console.log(
         `📝 Locales with placeholder copy stay drafts: ${draftLocales.join(', ')}. Provide --title:<locale> and --desc:<locale> to publish them.`
@@ -530,6 +554,12 @@ Update / Sync Options:
     } catch (e) {
       console.warn('⚠️ Warning: Failed to auto-register nav key:', e.message);
     }
+
+    // The dictionaries now have the label; the menu order is still the
+    // project's decision, so point at the one place that decides it.
+    console.log(
+      `   ↳ Add "${pageKey}" (label: nav_${pageKey}) to PAGE_ITEMS in src/libs/config/navigation.ts to show it in the menus.`
+    );
   }
 }
 

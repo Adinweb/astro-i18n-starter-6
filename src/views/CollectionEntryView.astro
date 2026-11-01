@@ -7,6 +7,7 @@ import Icon from '@/components/Icon.astro';
 import {
   buildBreadcrumbSchema,
   getBreadcrumbs,
+  getHomeHref,
 } from '@/libs/content/service';
 import {
   getContentTypeIndexHref,
@@ -15,6 +16,7 @@ import {
 } from '@/libs/content/types';
 import { getSocialCard } from '@/libs/content/social';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
+import { formatYear } from '@/i18n/format';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
 
@@ -42,6 +44,7 @@ const indexHref = getContentTypeIndexHref(contentType, locale);
 
 const breadcrumbs = getBreadcrumbs(url, locale, {
   home: m.nav_home({}, { locale }),
+  homeHref: await getHomeHref(locale),
   blog: m.nav_blog({}, { locale }),
   section: { label: typeLabel, href: indexHref },
   current: title,
@@ -61,7 +64,9 @@ const schema = [
     image: socialImageUrl,
     url: canonicalUrl,
     inLanguage: meta.htmlLang,
-    ...(year ? { dateCreated: String(year) } : {}),
+    // `year` is a four-digit delivery year, but schema.org expects an ISO 8601
+    // date, so it is expanded to the first day of that year.
+    ...(year ? { dateCreated: `${year}-01-01` } : {}),
     creator: {
       '@type': 'Organization',
       name: siteConfig.name,
@@ -73,7 +78,7 @@ const schema = [
 
 const metaItems: { label: string; value: string }[] = [];
 if (client) metaItems.push({ label: `${m.projects_client({}, { locale })}`, value: client });
-if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: String(year) });
+if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: formatYear(year, locale) });
 ---
 
 <BaseLayout

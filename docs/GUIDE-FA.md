@@ -76,7 +76,7 @@
 | **SEO** | canonical، hreflang چندزبانه + `x-default`، Open Graph (`article:modified_time`)، Twitter Card، JSON-LD (`WebSite`, `WebPage`, `CollectionPage`, `BlogPosting`, `BreadcrumbList`)، sitemap با `lastmod` کامل، فیدهای Atom مجزا به ازای هر زبان (`/rss.xml` و `/rss/<locale>.xml`)، webmanifest آگاه از زبان و جهت |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک «نسخهٔ انگلیسی» |
 | **ابزار CLI** | ۲۱ اسکریپت برای ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا (روشن/خاموش/ساخت)، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، بررسی سلامت پروژه، خزش لینک‌ها، تولید تصاویر و ایندکس Pagefind |
-| **کیفیت** | TypeScript strict، `astro check`، ۱۸ فایل تست واحد Vitest (۱۹۳ تست)، ۸۲ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
+| **کیفیت** | TypeScript strict، `astro check`، ۱۸ فایل تست واحد Vitest (۱۹۷ تست)، ۸۲ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
 | **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
 | **حرکت و اسکرول** | اسکرول نرم با **Lenis** + موتور **ChronoTrig** (`data-trig`) با پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`)، پلکانی‌سازی گروهی (`data-trig-stagger`) و سازگاری کامل با View Transitions |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، کنترل حرکت (`data-motion="reduced"`) |
@@ -181,7 +181,7 @@ pnpm exec astro dev stop           # توقف سرور
 | `pnpm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا (مسیرها، sitemap و ناوبری) |
 | `pnpm run content:status` | ماتریس آمادگی هر گروه × هر زبان (`--write=docs/STATUS.md`) |
 | `pnpm run doctor` | بررسی سلامت پروژه بدون build، با دستور رفع هر مورد |
-| `pnpm run link:check` | خزش `dist/` و گزارش لینک‌های داخلی شکسته |
+| `pnpm run link:check` | خزش `dist/` و گزارش لینک‌های داخلی شکسته (از جمله لنگرهای `#anchor`) |
 
 ### ساخت برای انتشار
 
@@ -219,8 +219,8 @@ SITE_URL=https://example.com pnpm run build
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
     ├── components/          # Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHeader, PageHero,
-    │                        # PageSection, HeroCopy, BlogPostHeroContent, PostCard, SearchModal,
-    │                        # DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar
+    │                        # PageSection, HeroCopy, HomeHero, BlogPostHeroContent, PostCard,
+    │                        # SearchModal, DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar
     ├── content/
     │   ├── pages/<گروه>/    # صفحات ایستا: <locale>.mdx + <گروه>.png
     │   ├── blog/<گروه>/     # مقالات: <locale>.mdx + <گروه>.png
@@ -239,7 +239,8 @@ SITE_URL=https://example.com pnpm run build
     │   ├── content/         # entries, service, types (رجیستری انواع محتوا), feed, pagination, blog,
     │   │                    # blog-catalog, taxonomy, social
     │   ├── cookies/         # مدل رضایت کوکی و مدیریت اسکریپت‌ها (model.ts, manager.ts)
-    │   └── search/          # client.ts + persian.ts (جستجوی Pagefind و فالبک با نرمال‌سازی فارسی)
+    │   ├── search/          # client.ts + persian.ts (جستجوی Pagefind و فالبک با نرمال‌سازی فارسی)
+    │   └── ui/button.ts     # دستور کلاس دکمه‌ها؛ منبع مشترک Button.astro و رندرهای کلاینت
     ├── pages/               # فقط فایل‌های فیزیکی استاتیک
     │   ├── [...path].astro  # دیسپچر مسیریاب
     │   ├── 404.astro        # صفحهٔ ۴۰۴ locale-aware
@@ -320,6 +321,7 @@ SITE_URL=https://example.com pnpm run build
     ]
   },
   "ui": {
+    "ctaPage": "pricing",
     "showSearch": true,
     "showThemeToggle": true,
     "showLanguageSwitcher": true,
@@ -370,13 +372,14 @@ SITE_URL=https://example.com pnpm run build
 | --- | --- |
 | `site.name` / `shortName` / `description` | رشتهٔ غیرخالی |
 | `site.author` | رشتهٔ اختیاری (پیش‌فرض: `'Astro Starter Team'`) |
+| `site.contactEmail` | ایمیل معتبر یا رشتهٔ خالی (پیش‌فرض: `''`) — مقصد دکمهٔ `mailto:` وقتی API فرم تماس تنظیم نشده است |
 | `site.socialImage.path` | باید با `/` شروع شود |
 | `site.socialImage.width` / `height` | عدد صحیح مثبت |
 | `brand.defaultTheme` | یکی از `'system'`، `'light'` یا `'dark'` (پیش‌فرض: `'system'`) |
 | `brand.themeColor` / `backgroundColor` | hex شش‌رقمی (`#4338ca`) |
 | `brand.darkThemeColor` | hex شش‌رقمی اختیاری برای تم تیره |
 | `brand.icons` | آرایهٔ غیرخالی از `{ file, size, purpose }` |
-| `ui` | پرچم‌های بولین (`showSearch`, `showThemeToggle`, `showLanguageSwitcher`, `showTopLoadingBar`, `stickyHeader`) |
+| `ui` | پرچم‌های بولین (`showSearch`, `showThemeToggle`, `showLanguageSwitcher`, `showTopLoadingBar`, `stickyHeader`) + `ui.ctaPage` (نام گروه صفحه‌ای که دکمهٔ CTA به آن می‌رود؛ پیش‌فرض `'pricing'`) |
 | `blog.postsPerPage` | عدد صحیح مثبت |
 | `blog` | پرچم‌های بولین نمایش (`showReadingTime`, `showTableOfContents`, `showRelatedPosts`) |
 | `cookies` | تنظیمات رضایت کوکی (`enabled`, `consentVersion`, `storageKey`, `expirationDays`) |
@@ -509,7 +512,7 @@ export const DEFAULT_LOCALE: Locale = 'fa';
 pnpm run messages:compile && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke
 ```
 
-نتیجه: فارسی به `/` و `/darbare-ma/` می‌رود و انگلیسی به `/en/`، `/en/about/`.
+نتیجه: فارسی به `/` و `/درباره-ما/` می‌رود و انگلیسی به `/en/`، `/en/about/`.
 
 > ⚠️ تعویض زبان پیش‌فرض یک تغییر **ساختاری** در URLهاست. قبل از انجام، برای
 > ریدایرکت‌های ۳۰۱ از سرور/CDN برنامه‌ریزی کنید.
@@ -977,7 +980,7 @@ pnpm run content:enable projects
 pnpm run content:new projects atlas --title="Atlas" --publish
 pnpm run doctor                       # سلامت بدون build، با دستور رفع
 pnpm run content:status -- --write=docs/STATUS.md
-pnpm run link:check                   # خزش dist/ و گزارش لینک شکسته
+pnpm run link:check                   # خزش dist/ و گزارش لینک/لنگر شکسته
 ```
 
 `content:new` برای `pages` و `blog` به `new:page` / `new:post` واگذار می‌شود؛
@@ -1204,25 +1207,50 @@ pre, code, .math {
 | `.section-kicker` | سوتیتر (Eyebrow) بالای تیتر بخش‌ها با ایمنی خودکار RTL |
 
 ```astro
-<a href={pricingHref} class="cta hidden h-9 text-xs lg:inline-flex">شروع کنید</a>
+<!-- ctaHref از `ui.ctaPage` می‌آید و اگر آن صفحه منتشر نشده باشد `null` است -->
+{
+  ctaHref && (
+    <Button href={ctaHref} size="sm" class="hidden lg:inline-flex">
+      {m.common_get_started({}, { locale })}
+    </Button>
+  )
+}
 ```
+
+### یک دکمه برای همه‌جا
+
+هر دکمهٔ متنی از `src/components/Button.astro` می‌آید و فقط **رنگ، متن و آیکن** آن عوض می‌شود.
+دستور کلاس‌ها در `src/libs/ui/button.ts` (`buttonClasses()`) است، پس رندرهای سمت کلاینت (صفحه‌بندی بلاگ) هم دقیقاً همان دکمه را می‌سازند.
+
+| پراپ | مقدارها |
+| --- | --- |
+| `variant` | `primary` (`.cta`)، `secondary` (`.btn-secondary`)، `hero` (`.btn-hero-secondary`)، `ghost` (`.ghost-control`)، `glass` (`.glass-control`) |
+| `size` | `sm` (`h-9`)، `md` (`h-10`)، `lg` (`h-11`)، `auto` (اندازهٔ دلخواه فراخوان) |
+| `href` | اگر بدهید `<a>` و اگر نه `<button type="…">` رندر می‌شود |
+| `icon` / `iconPosition` | نام نماد از `/icons.svg` و جای آن (`start`/`end`)؛ `arrow-*` و `chevron-*` در RTL آینه و در هاور به سمت خواندن جلو می‌روند |
+| `block` / `class` | تمام‌عرض، و کلاس‌های محلی که آخر می‌آیند و برنده‌اند |
+
+همهٔ دکمه‌ها افکت هاور مشترک (بالا آمدن ۲ پیکسل) و هاور رنگ متناسب با نقش را از همین پراپ‌ها می‌گیرند؛ هیچ کامپوننتی کلاس دکمه را دوباره نمی‌نویسد.
 
 ### کامپوننت‌های مشترک و پراپ‌هایشان
 
 | کامپوننت | پراپ‌ها | نقش |
 | --- | --- | --- |
 | `Icon.astro` | `name`, `size` (پیش‌فرض ۲۰), `class`, `aria-hidden`, `aria-label` | نماد SVG از `/icons.svg#name` |
+| `Button.astro` | `href?`, `variant` (`primary`/`secondary`/`hero`/`ghost`/`glass`), `size` (`sm`/`md`/`lg`/`auto`), `block?`, `icon?`, `iconPosition?` (`start`/`end`), `flipIcon?`, `type?`, `disabled?`, `external?`, `class?` + هر `data-*`/`aria-*` | تنها دکمهٔ متنی — فقط رنگ/متن/آیکن عوض می‌شود |
+| `DrawerNavLink.astro` | `item` (یک `NavItem`), `depth` (`0`/`1`/`2`) | ردیف منوی کشو: آیکن + عنوان، با حالت فعال و هاور در هر سه سطح (قاب کاشی فقط در سطح اول) |
 | `IconButton.astro` | `icon`, `label`, `size` (۱۸), `variant` (`glass`/`ghost`), `class` + هر `data-*`/`aria-*` | دکمهٔ فقط-آیکون — دستی نسازید |
 | `PageHeader.astro` | `title`, `description?`, `locale`, `breadcrumbs?`, `kicker?`, `align?` (`start`/`center`), `class?` | هدر تایپوگرافیک مینیمال برای صفحات `hero: 'minimal'` |
 | `PageSection.astro` | `id?`, `surface?` (`default`/`surface`/`subtle`), `spacing?` (`none`/`sm`/`md`/`lg`), `bleed?` (بدون `.layout-container`), `borderTop?`, `borderBottom?`, `class?`, `containerClass?` | سکشن تمام‌عرض برای صفحات `canvas`؛ به‌طور پیش‌فرض محتوا را داخل `.layout-container` می‌گذارد و با `bleed` لبه‌به‌لبه می‌شود |
 | `HeroCopy.astro` | `title`, `description?`, `size?` (`page`/`post`)؛ اسلات `prelude` و پیش‌فرض | تیتر/توضیح/اسلات‌های مشترک هیرو |
 | `PageHero.astro` | `image?` | بخش هیرو؛ خودش هیچ متنی ندارد، فقط پس‌زمینه و اسلات |
+| `HomeHero.astro` | `locale`, `description?`, `primaryHref`, `secondaryHref?`, `highlights` (سه اثبات کوتاه با `key`/`icon`/`title`/`description`) | هیروی اختصاصی صفحهٔ اصلی (قالب `home`): نوار تیره با نشان، تیتر دو تکه با متن گرادیانی، دو CTA و سه اثبات؛ همهٔ کلاس‌ها منطقی و رنگ‌ها از نقش‌های تم |
 | `BlogPostHeroContent.astro` | `title`, `description?`, `locale`, `categories`, `author?`, `body?`, `publishedAt`, `updatedAt?`, `breadcrumbs` | محتوای هیروی مقاله (از `HeroCopy` استفاده می‌کند) |
 | `PostCard.astro` | `post`, `locale`, `href`, `priority?` | کارت مقاله در فهرست |
 | `LanguageSwitcher.astro` | `currentLocale`, `alternates` | تعویض زبان با بارگذاری کامل |
 | `SearchModal.astro` | `locale` | مودال جستجوی دسکتاپ (Pagefind در پروداکشن / fallback استاتیک) |
 | `DrawerSearch.astro` | `locale` | جستجوی درون کشوی موبایل هماهنگ با تب‌بندی کشو |
-| `ContactForm.astro` | `locale` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` (نشانی از `app.config.json` یا `PUBLIC_*` خوانده می‌شود) |
+| `ContactForm.astro` | `locale` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` (نشانی از `app.config.json` یا `PUBLIC_*` خوانده می‌شود)؛ بدون نشانی، فرم رندر نمی‌شود و پنل `mailto:` (از `site.contactEmail`) جای آن را می‌گیرد |
 | `CookieConsent.astro` | `locale` | بنر و مودال مدیریت رضایت کوکی و اسکریپت‌ها (TDDDG § 25 / GDPR) |
 | `Seo.astro` | `title`, `description?`, `locale`, `url`, `alternates`, `siteName?`, `image?`, `type?`, `publishedTime?`, `modifiedTime?`, `schema?`, `noindex?`, `prevUrl?`, `nextUrl?` | همهٔ متادیتای SEO |
 | `TopLoadingBar.astro` | — | نوار پیشرفت ناوبری |
@@ -1418,7 +1446,7 @@ const icons: Record<string, string> = {
 
 ### معماری ناوبری چندمنویی (`src/libs/config/navigation.ts`)
 
-در معماری جدید، هدر دسکتاپ، منوی موبایل و فوتر دیگر یک لیست مسطح مشترک را به اشتراک نمی‌گذارند؛ بلکه هر بخش دارای ساختار، اولویت و سلسله‌مراتب اختصاصی است که توسط تابع مرکزی `getNavigationSlots(locale, currentUrl)` ساخته و توزیع می‌شود:
+هدر دسکتاپ و کشوی موبایل از **یک** سازندهٔ مشترک (`buildPrimaryNavigation`) تغذیه می‌شوند تا هرگز از هم جدا نیفتند؛ فوتر و لینک‌های حقوقی ساختار و اولویت اختصاصی خود را دارند. هر چهار منو توسط تابع مرکزی `getNavigationSlots(locale, currentUrl)` ساخته و توزیع می‌شوند:
 
 ```ts
 export interface NavItem {
@@ -1445,13 +1473,13 @@ export interface NavigationSlots {
 ```
 
 #### ۱. ناوبری هدر دسکتاپ (`headerNav`)
-- از تابع `getHeaderNavigation(locale, currentUrl)` تأمین می‌شود.
+- از تابع `getHeaderNavigation(locale, currentUrl)` تأمین می‌شود؛ این تابع همان `buildPrimaryNavigation` مشترک با کشوی موبایل را برمی‌گرداند، پس یک صفحه هرگز یک بار در هدر و یک بار جداگانه در کشو تعریف نمی‌شود.
 - **منوهای آبشاری چندسطحی (Dropdowns)**: از فیلد `children` در `NavItem` پشتیبانی می‌کند. روی دسکتاپ با هاور و فوکوس کیبورد (`group-hover` و `group-focus-within`) باز می‌شود. زیرمنوهای تو در تو نیز با آیکون `chevron-right` (با چرخش خودکار `rtl:rotate-180` در زبان‌های راست‌به‌چپ) به سمت جهت خواندن هدایت می‌شوند.
 - **تشخیص خودکار صفحهٔ فعال**: تابع `isActive(href, currentUrl)` مسیر جاری را با لینک‌ها مقایسه کرده و کلاس `text-primary font-medium` و نشانگر `aria-current="page"` را اعمال می‌کند.
-- **دکمهٔ CTA مستقیم**: دکمهٔ شروع سریع (`common_get_started`) به صفحهٔ قیمت‌گذاری هدایت می‌کند.
+- **دکمهٔ CTA پیکربندی‌پذیر**: دکمهٔ شروع سریع (`common_get_started`) به گروه صفحهٔ تعیین‌شده در `ui.ctaPage` (`app.config.json`) می‌رود — پیش‌فرض `pricing`. اگر آن صفحه برای این زبان منتشر نشده باشد، دکمه به‌جای لینک مرده پنهان می‌شود.
 
 #### ۲. کشوی کشویی موبایل (`drawerNav` و پنل اختصاصی)
-- از تابع `getDrawerNavigation(locale, currentUrl)` تأمین می‌شود و با دکمهٔ همبرگری `data-mobile-menu-btn` باز می‌شود.
+- از تابع `getDrawerNavigation(locale, currentUrl)` تأمین می‌شود (همان فهرست هدر، از سازندهٔ مشترک) و با دکمهٔ همبرگری `data-mobile-menu-btn` باز می‌شود.
 - **طراحی دوتبی (Two-Tab Interface)**:
   - **تب ناوبری (`drawer_tab_nav`)**: شامل سلسله‌مراتب کامل صفحات سایت با زیرمنوهای تو در توی درون‌خطی (Inline Nested Lists با حاشیهٔ منطقی `border-s-2 border-primary/30 ps-3`) بدون پاپ‌آپ‌های آزاردهنده.
   - **بخش اختصاصی زبان‌ها**: یک گرید دو ستونه از همهٔ زبان‌های فعال (`data-drawer-language-section`) با نمایش نام بومی، کد زبان و آیکون تیک برای زبان جاری، همراه با ناوبری استاتیک امن (`window.location.assign`).
@@ -1463,11 +1491,11 @@ export interface NavigationSlots {
 - از توابع `getFooterNavigation(locale, currentUrl)` و `getLegalNavigation(locale)` تأمین می‌شود و فوتر قدیمی تک‌خطی را به یک شبکهٔ واکنشی استاندارد تبدیل می‌کند:
   - **ستون ۱ (برند و مأموریت)**: نام برند، توضیح بومی سایت (`site_description`).
   - **ستون ۲ (محصول / Product)**: خانه، امکانات، قیمت‌گذاری و ارجاع به بخش سیستم طراحی.
-  - **ستون ۳ (منابع / Resources)**: وبلاگ، راهنمای پشتیبانی RTL، نمای کلی، و پیوند مستندات خارجی (همراه با آیکون `external-link` و `rel="noopener noreferrer"`).
-  - **ستون ۴ (شرکت / Company)**: درباره ما و پیوند مخزن گیت‌هاب (در صورت تنظیم در `socialConfig`).
+  - **ستون ۳ (منابع / Resources)**: یک لینک برای هر نوع محتوای قابل‌ناوبری (وبلاگ، پروژه‌ها — از رجیستری `getContentTypeNavItems`) به‌علاوهٔ لنگر RTL و «نمای کلی»، که هر دو فقط وقتی صفحهٔ `features` منتشر شده باشد ساخته می‌شوند. هیچ لینک خارجی/قالبی در فوتر نیست.
+  - **ستون ۴ (شرکت / Company)**: درباره ما و پیوند مخزن گیت‌هاب (تنها وقتی `social.github` ست شده باشد).
 - **نوار پایین فوتر (Bottom Bar)**:
   - درج سال کپی‌رایت خودکار با تقویم هجری شمسی برای فارسی (`formatYear(currentYear, locale)`) و متن همه‌حقوق محفوظ است (`common_all_rights_reserved`).
-  - پیوندهای حقوقی ثانویه (`legalNav`) شامل حریم خصوصی (`footer_legal_privacy`) و شرایط استفاده (`footer_legal_terms`).
+  - پیوندهای حقوقی ثانویه (`legalNav`) شامل حریم خصوصی (`footer_legal_privacy`) و شرایط استفاده (`footer_legal_terms`) — هر دو لنگرهای صفحهٔ about هستند و اگر آن صفحه منتشر نشده باشد، نوار حقوقی خالی می‌ماند (هیچ `#privacy` مرده‌ای ساخته نمی‌شود).
 
 #### ۴. لایهٔ سازگاری با گذشته (Backward Compatibility)
 تابع قدیمی `getNavigation(locale, currentUrl)` همچنان در `src/libs/config/navigation.ts` وجود دارد و به عنوان مستعار (alias) برای `getDrawerNavigation` عمل می‌کند تا هیچ اسکریپت یا تستی دچار شکست نشود.
@@ -1528,9 +1556,15 @@ const PAGE_ITEMS = [
 ] as const;
 ```
 
-هدر دسکتاپ، منوی موبایل و فوتر همگی از `getNavigation()` می‌خوانند؛ نیازی به
-ویرایش قالب‌ها نیست. صفحه‌ای که ترجمه‌ای برای زبانی ندارد، خودکار از منو حذف
-می‌شود (`getPageUrl` مقدار `null` برمی‌گرداند).
+هدر دسکتاپ و کشوی موبایل هر دو از `buildPrimaryNavigation` (پشت `getHeaderNavigation`
+و `getDrawerNavigation`) می‌خوانند و فوتر/لینک‌های حقوقی از `getFooterNavigation` و
+`getLegalNavigation`؛ نیازی به ویرایش قالب‌ها نیست. صفحه‌ای که ترجمه‌ای برای زبانی
+ندارد، خودکار از منو حذف می‌شود (`getPageUrl` مقدار `null` برمی‌گرداند).
+
+**منوی Resources**: زیرمنوها به بخش‌های صفحهٔ `features` (`#rtl` و `#design`)
+اشاره می‌کنند. اگر صفحهٔ features وجود نداشته باشد، این منو به یک لینک «Overview»
+به وبلاگ کاهش می‌یابد و اگر وبلاگ هم خاموش باشد کاملاً حذف می‌شود — هیچ لنگر
+مرده‌ای (`#rtl`) در منو نمی‌ماند.
 
 ---
 
@@ -1684,7 +1718,9 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 ### فرم تماس و اتصال به API خارجی (معماری Pure SSG بدون بک‌اند)
 این استارتر **۱۰۰٪ استاتیک (SSG)** است و هیچ سرور بک‌اند داخلی ندارد. برای فرم تماس (`src/components/ContactForm.astro`)، داده‌ها مستقیماً از مرورگر از طریق آداپتور نوع‌امن `src/libs/api/client.ts` (`submitContactInquiry` و کمکی‌های `resolveApiEndpoint` / `getInvalidContactFields` / `validateContactPayload`) با محافظت تایم‌اوت (`AbortController`) و فیلتر ضداسپم Honeypot به سرویس یا API خارجی شما ارسال می‌شوند:
 - نشانی API را در متغیر محیطی `PUBLIC_CONTACT_API_URL` (یا `PUBLIC_API_BASE_URL`) و یا در بخش `api` فایل `app.config.json` تنظیم کنید.
-- تا زمانی که نشانی API خارجی تنظیم نشده باشد، فرم پیام راهنمای پیکربندی را نشان می‌دهد و هیچ درخواستی ارسال نمی‌کند (`errorCode: 'unconfigured'`).
+- **بدون نشانی API، فرم اصلاً رندر نمی‌شود.** بازدیدکننده به‌جای فرم، یک پنل کوتاه با پیام `contact_fallback_desc` و — اگر `site.contactEmail` تنظیم شده باشد — دکمهٔ `mailto:` (`contact_fallback_cta`) می‌بیند. دلیل: کنترل بفرست‌نشدنی بدتر از یک نشانی روشن است، و متن‌هایی مثل نام متغیر محیطی هرگز نباید به بازدیدکننده نشان داده شوند.
+- متن راهنمای توسعه‌دهنده (`contact_unconfigured_notice`) فقط در حالت `import.meta.env.DEV` رندر می‌شود؛ در بیلد پروداکشن از HTML حذف می‌شود.
+- `pnpm run doctor` اگر هیچ مقصدی (نه `api.baseUrl`/متغیرهای `PUBLIC_*` و نه `site.contactEmail`) تنظیم نشده باشد هشدار می‌دهد، چون در آن حالت سایت هیچ درخواستی دریافت نمی‌کند.
 
 ---
 
@@ -1740,6 +1776,14 @@ const card = await getSocialCard(entry.data.image);
 canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مانند — نه `/404` که وجود ندارد —
 و صفحه `noindex, nofollow` است.
 
+**بدون جاوااسکریپت:** سند ایستا همیشه نسخهٔ زبان پیش‌فرض است، چون پیشوند مسیر فقط
+در زمان اجرا خوانده می‌شود. برای همین یک بلوک `<noscript>` فهرست زبان‌ها را نشان
+می‌دهد: هر زبان با نام بومی خودش (`LOCALE_METADATA[locale].name`) و لینکی به
+همان خانه‌ای که واقعاً ساخته شده (`alternates`، بدون زبان‌های نیمه‌ترجمه). یعنی
+بازدیدکنندهٔ فارسی‌زبان بدون JS با یک کلیک به `/fa/` می‌رسد. اگر می‌خواهید ۴۰۴
+دقیقاً به زبان بازدیدکننده باشد، باید روی هاست برای هر پیشوند یک سند جدا سرو کنید؛
+این کار خارج از خروجی استاتیک است.
+
 ---
 
 ## ۱۶. دسترس‌پذیری
@@ -1765,7 +1809,7 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 
 ```bash
 pnpm run lint     # کامپایل پیام‌ها + astro check + tsc --noEmit
-pnpm test         # ۱۸ فایل تست واحد Vitest (۱۹۳ تست)
+pnpm test         # ۱۸ فایل تست واحد Vitest (۱۹۷ تست)
 pnpm run audit:i18n
 SITE_URL=https://example.com pnpm run build
 pnpm run smoke    # تست دود روی dist/
@@ -1795,7 +1839,7 @@ pnpm run verify:cli  # ۸۲ ادعا دربارهٔ گردش‌کارهای CLI
 | `src/scripts/lenis.test.ts` | اسکرول نرم، آفست لینک‌های `#hash` و ایزوله‌سازی پنل‌ها |
 | `src/scripts/chronotrig.test.ts` | قرارداد `.js [data-trig]`، جهت‌های منطقی RTL، پلکانی‌سازی، مکث `--trig-reveal-delay` و سازگاری Lenis |
 
-> **۱۸ فایل تست واحد (۱۹۳ تست).** ماژول `astro:content` در Vitest با
+> **۱۸ فایل تست واحد (۱۹۷ تست).** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -1979,7 +2023,7 @@ dist/
 | `navigate()` برای تعویض زبان | `window.location.assign(target)` |
 | `<svg>` خام در قالب | افزودن نماد به `icons.svg.ts` + `<Icon>` |
 | نوار پیشرفت بدون `dataset.bound` | `if (el.dataset.bound === 'true') return;` |
-| تعریف دوبارهٔ `.cta` در کامپوننت | ترکیب کلاس از `src/styles/global.css` |
+| تعریف دوبارهٔ `.cta` در کامپوننت | دکمهٔ متنی را با `<Button variant="…" size="…" icon="…">` بسازید |
 | `<button>` دستی با `<Icon>` | `IconButton` |
 | `hidden` / `display: none` یا `opacity-0` مستقیم برای انیمیشن اسکرول | صفت `data-trig` (محصور در `.js` روی GPU) |
 | کارتِ غیرفرزند مستقیم داخل `[data-trig-stagger]` | کارت‌ها را فرزند مستقیم ظرف قرار دهید (`:scope > *`) |
@@ -2044,7 +2088,7 @@ dist/
 `common_skip_to_content` · `common_theme_dark` · `common_theme_light` ·
 `common_theme_toggle` · `common_type_to_search` · `common_updated_on`
 
-### `blog_*` (۳۰ کلید)
+### `blog_*` (۳۲ کلید)
 
 عمومی: `blog_all_posts` · `blog_categories` · `blog_empty` ·
 `blog_filter_by_category` · `blog_filter_by_tag` · `blog_filter_clear` ·
@@ -2066,19 +2110,23 @@ dist/
 
 ### `footer_*` (۶ کلید)
 
-`footer_col_product` · `footer_col_resources` · `footer_col_company` ·
+`footer_col_pages` · `footer_col_resources` · `footer_col_company` ·
 `footer_col_legal` · `footer_legal_privacy` · `footer_legal_terms`
 
-### `nav_*` (۱۲ کلید)
+ستون «صفحات» در فوتر از همان فهرست `PAGE_ITEMS` ساخته می‌شود که هدر و کشوی موبایل
+می‌خوانند؛ پس افزودن، تغییر نام یا حذف یک صفحه، فوتر را هم با خود می‌برد و
+`remove:page` هرگز کلید ناوبری‌ای را که فوتر هنوز صدا می‌زند پاک نمی‌کند.
 
-`nav_about` · `nav_blog` · `nav_design_system` · `nav_documentation` ·
+### `nav_*` (۱۱ کلید)
+
+`nav_about` · `nav_blog` · `nav_design_system` ·
 `nav_explore` · `nav_features` · `nav_home` · `nav_overview` ·
 `nav_pricing` · `nav_projects` · `nav_resources` · `nav_rtl_support`
 
-### `projects_*` (۵ کلید)
+### `projects_*` (۶ کلید)
 
 `projects_back` · `projects_client` · `projects_index_description` ·
-`projects_stack` · `projects_visit` — برچسب‌های نمای عمومی نوع‌های محتوا
+`projects_stack` · `projects_visit` · `projects_year` — برچسب‌های نمای عمومی نوع‌های محتوا
 (در کنار `content_empty` که حالت خالی فهرست را نشان می‌دهد).
 
 ### کلیدهای متفرقه و ICU

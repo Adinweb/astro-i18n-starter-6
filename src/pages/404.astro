@@ -1,9 +1,10 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import Button from '@/components/Button.astro';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_METADATA, type Locale } from '@/i18n/locales';
 import { formatNumber, formatYear } from '@/i18n/format';
-import { localizeHref } from '@/i18n/paths';
 import { getNavigationSlots, type NavItem } from '@/libs/config/navigation';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { siteConfig } from '@/libs/config/app';
 import * as m from '@/paraglide/messages';
 
@@ -15,11 +16,35 @@ const siteName = siteConfig.name;
 // page, the closest page that is guaranteed to exist. The canonical URL is
 // that home page too: the 404 is served at whatever address was requested,
 // and `/404` itself is not a page of the site.
-const alternates = Object.fromEntries(
-  LOCALES.map((loc) => [loc, localizeHref('/', loc)])
-) as Record<Locale, string>;
+//
+// Only locales that actually publish a home page are offered: a locale can be
+// live without one (`/de/about/` exists before `home/de.mdx` is translated),
+// and `/<locale>/` would be a dead link in that state.
+const homePages = Object.fromEntries(
+  (
+    await Promise.all(
+      LOCALES.map(async (loc) => [loc, await getPageUrl('home', loc)] as const)
+    )
+  ).filter(([, href]) => href !== null)
+) as Partial<Record<Locale, string>>;
 
-const homeHref = localizeHref('/', locale);
+const alternates = homePages;
+
+const homeHref = await getHomeHref(locale);
+
+/**
+ * Language picker for visitors without JavaScript.
+ *
+ * The static document is always the default locale's copy: the visitor's
+ * prefix is only read at runtime. A `<noscript>` list of the homes that exist
+ * is therefore the one honest offline affordance this page can offer — a
+ * Persian visitor reaches `/fa/` in one click instead of being stuck on
+ * English.
+ */
+const languageLinks = LOCALES.flatMap((loc) => {
+  const href = homePages[loc];
+  return href ? [{ locale: loc, href }] : [];
+});
 
 function flattenNavItems(
   items: readonly NavItem[],
@@ -54,7 +79,8 @@ const i18nData = Object.fromEntries(
       }
       flattenNavItems(slots.legal, linksMap, groupsMap);
 
-      const resolvedHomeHref = linksMap.get('home')?.href ?? localizeHref('/', loc);
+      const resolvedHomeHref =
+        linksMap.get('home')?.href ?? homePages[loc] ?? homePages[DEFAULT_LOCALE] ?? '/';
 
       return [
         loc,
@@ -117,27 +143,51 @@ const i18nData = Object.fromEntries(
     </p>
 
     <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-      <a
-        id="not-found-home-link"
-        href={homeHref}
-        class="cta w-full sm:w-auto"
-      >
+      <Button id="not-found-home-link" href={homeHref} class="w-full sm:w-auto">
         {m.common_back_home({}, { locale })}
-      </a>
+      </Button>
 
-      <a
+      <Button
         id="not-found-english-link"
         href="/"
-        class="btn-secondary hidden w-full sm:w-auto"
+        variant="secondary"
+        class="hidden w-full sm:w-auto"
       >
         {m.common_go_english_version({}, { locale })}
-      </a>
+      </Button>
     </div>
 
     <p id="not-found-english-hint" class="hidden text-xs text-muted mt-4">
       {m.common_english_version_hint({}, { locale })}
     </p>
   </div>
+
+  <noscript>
+    <div
+      class="mx-auto mb-14 max-w-xl rounded-2xl border border-border bg-surface px-6 py-5 text-start"
+    >
+      <p class="text-xs font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
+        {m.common_change_language({}, { locale })}
+      </p>
+      <ul class="mt-3 flex flex-wrap gap-2">
+        {
+          languageLinks.map(({ locale: linkLocale, href }) => (
+            <li>
+              <a
+                href={href}
+                hreflang={LOCALE_METADATA[linkLocale].htmlLang}
+                lang={LOCALE_METADATA[linkLocale].htmlLang}
+                dir={LOCALE_METADATA[linkLocale].dir}
+                class="chip px-3 py-1.5 text-sm"
+              >
+                {LOCALE_METADATA[linkLocale].name}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </noscript>
 
   <script define:vars={{ LOCALES, DEFAULT_LOCALE, i18nData, siteName }}>
     function updateNotFoundPage() {
@@ -307,7 +357,9 @@ const i18nData = Object.fromEntries(
       for (const item of data.nav) {
         document.querySelectorAll(`[data-nav-link="${item.key}"]`).forEach((el) => {
           if (item.href) el.setAttribute('href', item.href);
-          const textSpan = el.querySelector('span');
+          // Drawer rows keep an icon tile before the label, so the label is
+          // marked: rewriting the first `span` would erase the icon instead.
+          const textSpan = el.querySelector('[data-nav-label]') ?? el.querySelector('span');
           if (textSpan) textSpan.textContent = item.label;
           else el.textContent = item.label;
         });

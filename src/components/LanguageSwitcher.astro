@@ -1,6 +1,7 @@
 ---
 import { LOCALES, LOCALE_METADATA, type Locale } from '@/i18n/locales';
 import Icon from '@/components/Icon.astro';
+import Button from '@/components/Button.astro';
 import * as m from '@/paraglide/messages';
 
 interface Props {
@@ -12,17 +13,20 @@ const { currentLocale, alternates } = Astro.props;
 ---
 
 <div class="relative inline-block text-start" data-language-switcher>
-  <button
+  <Button
     type="button"
+    variant="glass"
+    size="sm"
+    icon="globe"
+    iconPosition="start"
     data-switcher-button
-    class="glass-control h-9 cursor-pointer px-3 text-fg"
     aria-expanded="false"
     aria-label={m.common_change_language({}, { locale: currentLocale })}
     title={m.common_change_language({}, { locale: currentLocale })}
+    class="text-fg"
   >
-    <Icon name="globe" size={15} class="shrink-0" />
     <span data-switcher-active lang="en" dir="ltr" class="text-xs font-semibold tracking-wide uppercase">{currentLocale}</span>
-  </button>
+  </Button>
 
   <div
     data-switcher-menu

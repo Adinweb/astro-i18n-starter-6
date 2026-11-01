@@ -21,10 +21,11 @@ npm run <command> -- [options]
 npm run new:page <page-key> -- [--title="<Title>"] [--desc="<Desc>"] [--from=<locale>] [--hero=none|minimal|default] [--container=canvas|contained|prose] [--image=<path>|none] [--publish] [--slug:<locale>="<native-slug>"]
 ```
 * **Files Created**: `src/content/pages/<page-key>/<locale>.mdx` across all active locales in `src/i18n/locales.ts` (`en.mdx`, `fa.mdx` out of the box) + `./<page-key>.png`.
-* **Dictionary Key**: Automatically registers `nav_<page-key>` across all dictionaries in `messages/*.json`.
+* **Dictionary Key**: Automatically registers `nav_<page-key>` across all dictionaries in `messages/*.json` and prints the follow-up. The key is only a label — the page appears in a menu once it is added to `PAGE_ITEMS` (header + drawer) or to `getFooterNavigation` / `getLegalNavigation` in `src/libs/config/navigation.ts`.
 * **Publication State**:
   - Default: Only the source locale (`--from`, defaults to `DEFAULT_LOCALE`) is published (`draft: false`); other locales remain `draft: true` until translated.
-  - `--publish` / `--draft=false`: Publishes locales that have real translations. Locales retaining `[TODO: ...]` placeholders remain drafts.
+  - `--publish` / `--draft=false`: Publishes locales that have real translations. Locales retaining `[TODO: ...]` placeholders remain drafts. The body is still the localized "content coming soon" sentence, so the command warns and `npm run smoke` fails while that sentence is in `dist/`.
+* **Placeholder Slugs**: the source locale owns the group slug (`contact`); every other locale starts with `contact-<locale>` so each has a valid route. The command prints those placeholders with the fix (`--update --slug:fa="<native-slug>"`) and `npm run doctor` keeps reporting any that are still in the content — they build, but `/fa/contact-fa/` is not a URL to ship.
 * **Updating Frontmatter without Body Overwrite**:
   ```bash
   npm run new:page <page-key> -- --update --sync-frontmatter --title="<New Title>" --hero=minimal --container=contained
@@ -36,7 +37,8 @@ npm run new:page <page-key> -- [--title="<Title>"] [--desc="<Desc>"] [--from=<lo
 npm run new:post <group-slug> -- [--title="<Title>"] [--from=<locale>] [--publish] [--category=<cat>] [--tags=<tags>] [--image=<path>|none]
 ```
 * **Files Created**: `src/content/blog/<group-slug>/<locale>.mdx` across all active locales + `./<group-slug>.png`.
-* **Cloning Body**: Use `--clone-from=<existing-group>` to clone the body copy from another post.
+* **Cloning Body**: Use `--clone-from=<existing-group>` to clone the body copy from another post; without it the body is the scaffold sentence that `npm run smoke` refuses to publish.
+* **Placeholder Slugs**: non-source locales start with `<group>-<locale>`; the command lists them with the `--update --slug:<locale>=` fix, and `npm run doctor` reports any leftovers.
 * **Taxonomy**: Validates categories and tags against ASCII lowercase rules (`/^[a-z0-9]+(?:-[a-z0-9]+)*$/`).
 * **Updating Frontmatter**:
   ```bash
@@ -58,6 +60,7 @@ npm run remove:page <page-key> -- --locale=fa --force
 ```
 * When `--locale` is used, the navigation key **remains** in dictionaries to maintain invariant key parity across all languages.
 * In non-interactive environments (CI), `--force` (or `-y` / `--yes`) is mandatory.
+* A whole-group removal deletes `nav_<key>` and recompiles Paraglide. Because the footer's pages column is derived from `PAGE_ITEMS`, the remaining step is removing the group's `PAGE_ITEMS` entry: the command scans `src/` for surviving `m.nav_<key>(` calls and lists the files to fix, so a dangling key fails loudly here instead of breaking the next build with an undefined message.
 
 ### 3.2 Removing Posts (`remove:post`)
 ```bash
@@ -186,4 +189,4 @@ One row per group with a column per locale: `✅` published, `✏️` draft, `�
 npm run link:check
 npm run link:check -- --dir=dist --json --limit=100
 ```
-Walks every built HTML file and verifies `href`, `src`, `poster` and each `srcset` candidate that points inside the site. A path resolves when it maps to a real file, to `<path>/index.html`, or to `<path>.html`; `/pagefind/` is skipped because it is loaded at runtime. Exits 1 with `page → target` pairs, so a renamed slug or a stale CTA cannot ship as a 404.
+Walks every built HTML file and verifies `href`, `src`, `poster` and each `srcset` candidate that points inside the site. A path resolves when it maps to a real file, to `<path>/index.html`, or to `<path>.html`; `/pagefind/` is skipped because it is loaded at runtime. A `#fragment` must also exist as an `id`/`name` on the target page (the browser's built-in `#top`/`#` anchors and fragments into non-HTML assets such as `icons.svg#star` are not inspectable and are skipped), so renaming a section id breaks the build check instead of shipping a dead `#privacy` link. Exits 1 with `page → target#fragment` pairs, so a renamed slug, a stale CTA or a deleted section cannot ship as a 404.

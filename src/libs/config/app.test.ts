@@ -54,6 +54,12 @@ describe('src/libs/config/app.ts', () => {
       expect(parsed.stickyHeader).toBe(false);
       expect(parsed.showThemeToggle).toBe(true);
     });
+
+    it('points the call to action at the pricing page by default', () => {
+      expect(uiConfigSchema.parse({}).ctaPage).toBe('pricing');
+      expect(uiConfigSchema.parse({ ctaPage: 'contact' }).ctaPage).toBe('contact');
+      expect(() => uiConfigSchema.parse({ ctaPage: '' })).toThrow();
+    });
   });
 
   describe('blogConfigSchema', () => {

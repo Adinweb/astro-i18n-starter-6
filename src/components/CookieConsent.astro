@@ -9,6 +9,7 @@
  *          expandable per-cookie transparency tables (Art. 13 DSGVO), and
  *          recorded consent proof with 1-click withdrawal (Art. 7 (3) DSGVO).
  */
+import Button from '@/components/Button.astro';
 import * as m from '@/paraglide/messages';
 import Icon from '@/components/Icon.astro';
 import IconButton from '@/components/IconButton.astro';
@@ -182,20 +183,25 @@ const categorySections = COOKIE_CATEGORIES.map((category) => {
 
       <!-- Equal-prominence primary choices (Gleichwertige Schaltflächen per DSK / TDDDG § 25) -->
       <div class="grid grid-cols-1 min-[390px]:grid-cols-2 gap-2.5 pt-0.5">
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="auto"
+          block
           data-cookie-reject-banner
-          class="btn-secondary min-h-10 w-full px-3 py-2 text-xs sm:text-[13px] font-semibold border-fg/30 hover:border-fg/50 text-center leading-tight cursor-pointer"
+          class="min-h-10 px-3 py-2 text-xs font-semibold border-fg/30 hover:border-fg/50 leading-tight sm:text-[13px]"
         >
           {rejectLabel}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          size="auto"
+          block
           data-cookie-accept-banner
-          class="cta min-h-10 w-full px-3 py-2 text-xs sm:text-[13px] font-semibold shadow-xs text-center leading-tight cursor-pointer"
+          class="min-h-10 px-3 py-2 text-xs font-semibold leading-tight shadow-xs sm:text-[13px]"
         >
           {acceptAllLabel}
-        </button>
+        </Button>
       </div>
 
       <!-- Secondary footer row: legal links (§ 5 DDG) + granular settings trigger -->
@@ -228,14 +234,16 @@ const categorySections = COOKIE_CATEGORIES.map((category) => {
           }
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="auto"
           data-cookie-open-modal
           aria-haspopup="dialog"
-          class="btn-secondary h-8 px-3.5 py-0 text-xs font-semibold text-fg hover:border-primary/50 hover:text-primary whitespace-nowrap shrink-0 cursor-pointer"
+          class="h-8 shrink-0 whitespace-nowrap px-3.5 py-0 text-xs font-semibold text-fg hover:border-primary/50 hover:text-primary"
         >
           {customizeLabel}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -445,27 +453,32 @@ const categorySections = COOKIE_CATEGORIES.map((category) => {
       </div>
 
       <div class="flex flex-wrap items-center justify-end gap-2">
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="auto"
           data-cookie-reject-modal
-          class="btn-secondary h-9 px-4 py-0 text-xs font-semibold border-fg/25 whitespace-nowrap shrink-0 cursor-pointer"
+          class="h-9 shrink-0 whitespace-nowrap border-fg/25 px-4 py-0 text-xs font-semibold"
         >
           {rejectLabel}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
+          size="auto"
           data-cookie-save-modal
-          class="btn-secondary h-9 px-4 py-0 text-xs font-semibold border-primary/40 text-fg whitespace-nowrap shrink-0 cursor-pointer"
+          class="h-9 shrink-0 whitespace-nowrap border-primary/40 px-4 py-0 text-xs font-semibold text-fg"
         >
           {saveLabel}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          size="auto"
           data-cookie-accept-modal
-          class="cta h-9 px-4 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer"
+          class="h-9 shrink-0 whitespace-nowrap px-4 py-0 text-xs font-semibold"
         >
           {acceptAllLabel}
-        </button>
+        </Button>
       </div>
     </div>
   </div>

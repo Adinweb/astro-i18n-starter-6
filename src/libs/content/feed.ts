@@ -1,9 +1,8 @@
 import { getCollection } from 'astro:content';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
-import { localizeHref } from '@/i18n/paths';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { getSortedLocaleEntries } from '@/libs/content/entries';
-import { getBlogPostHref, getRssFeedHref } from '@/libs/content/service';
+import { getBlogPostHref, getHomeHref, getRssFeedHref } from '@/libs/content/service';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import * as m from '@/paraglide/messages';
 
@@ -57,7 +56,9 @@ export async function buildLocaleAtomFeed(locale: Locale): Promise<Response> {
   }, 0);
   const latest =
     posts.length > 0 ? new Date(latestTimestamp).toISOString() : new Date().toISOString();
-  const localeHomeUrl = absoluteUrl(localizeHref('/', locale));
+  // A locale's feed can exist before its home page is translated, so the
+  // alternate link follows the home the site actually builds.
+  const localeHomeUrl = absoluteUrl(await getHomeHref(locale));
   const selfFeedUrl = absoluteUrl(getRssFeedHref(locale));
   const subtitle = m.site_description({}, { locale });
 

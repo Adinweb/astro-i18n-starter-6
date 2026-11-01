@@ -1,0 +1,76 @@
+---
+/**
+ * One row of the mobile drawer menu — a page, a content type or a submenu
+ * entry.
+ *
+ * The drawer is the only place the site can afford an icon per destination, so
+ * the top level is an icon tile plus a label: the tile carries the state
+ * (filled in the accent colour for the current page) and the row carries the
+ * hover. Submenu rows keep the same rhythm but drop the tile box — at depth the
+ * indentation and the guide rule already say where a row belongs, and boxes
+ * there would read as a row of buttons rather than a tree.
+ *
+ * Colours come from the semantic roles in `src/styles/global.css`; nothing here
+ * is a physical direction, so the indentation and the icon order mirror in RTL
+ * on their own.
+ */
+import Icon from '@/components/Icon.astro';
+import type { NavItem } from '@/libs/config/navigation';
+
+interface Props {
+  item: NavItem;
+  /** `0` top level, `1` submenu entry, `2` nested submenu entry. */
+  depth?: 0 | 1 | 2;
+}
+
+const { item, depth = 0 } = Astro.props;
+
+const scales = {
+  0: { row: 'gap-3 rounded-xl px-2 py-2 text-sm', box: 'size-9 rounded-xl border', icon: 17 },
+  1: { row: 'gap-2.5 rounded-lg px-2 py-1.5 text-sm', box: 'size-8', icon: 16 },
+  2: { row: 'gap-2 rounded-lg px-2 py-1.5 text-[13px]', box: 'size-7', icon: 14 },
+} as const;
+
+const scale = scales[depth];
+const isTopLevel = depth === 0;
+---
+
+<a
+  href={item.href}
+  data-nav-link={item.key}
+  aria-current={item.active ? 'page' : undefined}
+  class:list={[
+    'group flex items-center transition-colors',
+    scale.row,
+    item.active
+      ? 'bg-primary/10 font-semibold text-primary'
+      : 'text-fg hover:bg-surface-hover hover:text-primary',
+  ]}
+>
+  <span
+    aria-hidden="true"
+    class:list={[
+      'flex shrink-0 items-center justify-center transition-colors',
+      scale.box,
+      isTopLevel
+        ? item.active
+          ? 'border-primary/40 bg-primary text-primary-fg shadow-xs'
+          : 'border-border/70 bg-bg/60 text-muted group-hover:border-primary/30 group-hover:text-primary'
+        : item.active
+          ? 'text-primary'
+          : 'text-muted group-hover:text-primary',
+    ]}
+  >
+    <Icon name={item.icon ?? 'file'} size={scale.icon} />
+  </span>
+
+  <!-- `data-nav-label` is the text node the 404 page rewrites per locale;
+       without it a re-labelling pass would overwrite the icon instead. -->
+  <span data-nav-label class="min-w-0 flex-1 truncate">{item.label}</span>
+
+  {
+    item.external && (
+      <Icon name="external-link" size={13} class="shrink-0 text-muted group-hover:text-primary" />
+    )
+  }
+</a>

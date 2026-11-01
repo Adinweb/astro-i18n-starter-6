@@ -63,6 +63,6 @@ Supporting Persian (`fa`) and Arabic (`ar`) alongside English, German, and Frenc
 Every colour role—`primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, and `error`—is defined once in perceptually uniform **OKLCH** colour space in `src/styles/global.css`. Switching between light and dark themes preserves hue identity while guaranteeing **WCAG AA (4.5:1)** contrast across surfaces and foreground pairs.
 
 - **Composable Frosted Surfaces:** Navigation chrome, drawers, and interactive chips share unified `.glass-surface`, `.glass-control`, `.cta`, and `.chip` primitives so visual elevation never drifts across templates.
-- **Accessible Smooth Scrolling:** Lenis smooth scrolling coordinates seamlessly with Astro `<ClientRouter />`, nested scrollable drawers (`data-lenis-prevent`), and operating-system `prefers-reduced-motion: reduce` preferences.
+- **Accessible Smooth Scrolling:** Lenis smooth scrolling coordinates with Astro `<ClientRouter />` and nested scrollable drawers (`data-lenis-prevent`). Smooth scrolling stays on for every visitor by design; setting `data-motion="reduced"` on `<html>` turns it off together with the scroll reveals.
 
 </section>

@@ -9,6 +9,7 @@ import {
   getNavigation,
   PAGE_ITEMS,
   BLOG_ITEM,
+  getContentTypeIcon,
   type NavItemConfig,
 } from './navigation';
 import * as service from '@/libs/content/service';
@@ -19,6 +20,9 @@ describe('src/libs/config/navigation.ts', () => {
       if (group === 'home') return locale === 'en' ? '/' : `/${locale}/`;
       return locale === 'en' ? `/${group}/` : `/${locale}/${group}/`;
     });
+    vi.spyOn(service, 'getHomeHref').mockImplementation(async (locale: string) =>
+      locale === 'en' ? '/' : `/${locale}/`
+    );
   });
 
   describe('isActive()', () => {
@@ -134,7 +138,7 @@ describe('src/libs/config/navigation.ts', () => {
     it('works across different locales (e.g. Persian/fa) and localizes home fallback', async () => {
       const slotsFa = await getNavigationSlots('fa', 'https://example.com/fa/features/');
       expect(slotsFa.footer.length).toBe(3);
-      expect(slotsFa.footer[0].title).toBe('محصولات');
+      expect(slotsFa.footer[0].title).toBe('صفحات');
       expect(slotsFa.footer[1].title).toBe('منابع');
       expect(slotsFa.footer[2].title).toBe('سازمان');
 
@@ -146,6 +150,97 @@ describe('src/libs/config/navigation.ts', () => {
         .find((col) => col.key === 'product')
         ?.items.find((item) => item.key === 'home');
       expect(productHome?.href).toBe('/fa/');
+    });
+  });
+
+  describe('footer columns', () => {
+    it('derives the pages column from PAGE_ITEMS and drops unpublished pages', async () => {
+      vi.mocked(service.getPageUrl).mockImplementation(async (group: string) =>
+        group === 'pricing' ? null : `/${group}/`
+      );
+
+      const footer = await getFooterNavigation('en', '/');
+      const pagesColumn = footer.find((column) => column.key === 'product');
+
+      expect(pagesColumn?.title).toBe('Pages');
+      expect(pagesColumn?.items.map((item) => item.key)).toEqual(
+        PAGE_ITEMS.map((item) => item.group).filter((group) => group !== 'pricing')
+      );
+      // The pages column is the only place a page group is listed in the footer.
+      const pageKeys = new Set<string>(PAGE_ITEMS.map((item) => item.group));
+      const otherColumns = footer.filter((column) => column.key !== 'product');
+      for (const column of otherColumns) {
+        for (const item of column.items) {
+          expect(pageKeys.has(item.key)).toBe(false);
+        }
+      }
+    });
+  });
+
+  describe('shared primary navigation', () => {
+    it('serves the header and the drawer from the same page list', async () => {
+      const header = await getHeaderNavigation('en', '/pricing/');
+      const drawer = await getDrawerNavigation('en', '/pricing/');
+      expect(drawer.map((item) => item.key)).toEqual(header.map((item) => item.key));
+
+      // Every declared page group with a published translation is listed once.
+      for (const group of PAGE_ITEMS.map((item) => item.group)) {
+        expect(header.filter((item) => item.key === group)).toHaveLength(1);
+      }
+    });
+
+    it('never emits anchors into a features page that does not exist', async () => {
+      vi.mocked(service.getPageUrl).mockImplementation(async (group: string, locale: string) =>
+        group === 'features' || group === 'home' ? null : locale === 'en' ? `/${group}/` : `/${locale}/${group}/`
+      );
+
+      const header = await getHeaderNavigation('en', '/');
+      const footer = await getFooterNavigation('en', '/');
+      const headerItems = header.flatMap((item) => [item, ...(item.children ?? [])]);
+      const hrefs = [...headerItems, ...footer.flatMap((column) => column.items)].map(
+        (item) => item.href ?? ''
+      );
+      expect(hrefs.some((href) => href.includes('#rtl') || href.includes('#design'))).toBe(false);
+
+      // The Resources menu survives as a single Overview link to the blog.
+      const resources = (await getHeaderNavigation('en', '/')).find((item) => item.key === 'resources');
+      expect(resources?.children?.map((child) => child.key)).toEqual(['overview']);
+      expect(resources?.children?.[0].href).toBe('/blog/');
+    });
+
+    it('hides the legal links when the about page is unpublished', async () => {
+      vi.mocked(service.getPageUrl).mockImplementation(async (group: string) =>
+        group === 'about' ? null : '/any/'
+      );
+      expect(await getLegalNavigation('en', '/')).toEqual([]);
+    });
+  });
+
+  describe('drawer icons', () => {
+    it('gives every page group, content type and submenu entry an icon', async () => {
+      const drawer = await getDrawerNavigation('en', '/');
+      const everyItem = drawer.flatMap(function flatten(item): typeof drawer {
+        return [item, ...(item.children ?? []).flatMap(flatten)];
+      });
+
+      // The drawer renders an icon tile per row, so a row without an icon would
+      // fall back to the generic `file` glyph.
+      expect(everyItem.length).toBeGreaterThan(0);
+      for (const item of everyItem) {
+        expect(item.icon, `missing icon for ${item.key}`).toBeTruthy();
+      }
+    });
+
+    it('declares an icon for every page group in PAGE_ITEMS', () => {
+      for (const item of PAGE_ITEMS) {
+        expect(item.icon).toMatch(/^[a-z-]+$/);
+      }
+    });
+
+    it('falls back to a neutral icon for a content type without one', () => {
+      expect(getContentTypeIcon('blog')).toBe('newspaper');
+      expect(getContentTypeIcon('projects')).toBe('folder');
+      expect(getContentTypeIcon('services')).toBe('layers');
     });
   });
 

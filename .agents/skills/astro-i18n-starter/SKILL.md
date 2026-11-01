@@ -14,7 +14,7 @@ This skill coordinates workflows for developing, maintaining, and extending this
    - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
    - Content schemas: `src/content.config.ts`.
    - Content types (`pages`, `blog`, `projects`): `app.config.json` → `content.types`, validated by `src/libs/content/types.ts` (`enabled`, `base`, `index`, `paginated`, `feed`, `nav`). Toggle with `pnpm run content:enable|disable <type>`; never delete a collection to hide a section.
-   - Navigation slots: `src/libs/config/navigation.ts` (`getNavigationSlots`, `getContentTypeNavItems`).
+   - Navigation slots: `src/libs/config/navigation.ts` (`PAGE_ITEMS` → `buildPrimaryNavigation` shared by the header **and** the drawer, plus `getFooterNavigation` / `getLegalNavigation`, all distributed by `getNavigationSlots`). The header/drawer CTA target is `ui.ctaPage` in `app.config.json`; a CTA or anchor whose target page is unpublished hides itself.
    - Application, cookie & external API config: `app.config.json` -> `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`).
    - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs`, `src/libs/search/persian.ts`, and `src/libs/search/client.ts`.
    - Pure SSG External APIs (Zero Backend): `src/libs/api/client.ts` + `src/components/ContactForm.astro`. Never add a backend server or SSR endpoints; `/api/*.json` routes are static build-time catalogs only.
@@ -64,12 +64,12 @@ All scripts support both `npm run` and `pnpm run`:
 
 ```bash
 npm run lint          # paraglide compile + astro check + tsc --noEmit
-npm test              # Vitest test suite (18 files, 193 tests)
+npm test              # Vitest test suite (18 files, 197 tests)
 npm run audit:i18n    # 6-stage i18n completeness, frontmatter & RTL parity audit
 npm run build         # Production SSG build + Persian-aware Pagefind indexing
 npm run smoke         # Post-build HTML, SEO, feed & pagination validation over dist/
 npm run doctor        # No-build health check (config, content types, dictionaries, content, SITE_URL)
-npm run link:check    # Crawl dist/ and report internal links that resolve to nothing
+npm run link:check    # Crawl dist/ and report internal links or #anchors that resolve to nothing
 npm run content:list  # Content types, route bases, enable state and entry counts
 npm run verify:cli    # 82 end-to-end CLI workflow assertions in isolated sandbox
 ```

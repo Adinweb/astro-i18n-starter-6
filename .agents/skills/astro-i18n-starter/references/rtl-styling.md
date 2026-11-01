@@ -83,7 +83,7 @@ Never re-declare container widths, buttons, chips, kickers, or raw `text-white`/
 - `.layout-container` — standard desktop width (`max-w-7xl` / `1280px`) with responsive logical inline gutters (`px-4 sm:px-6 lg:px-8`), used across header, footer, blog, and `<PageSection>`
 - `.prose-wide` — full container-width `.prose` variant (`max-w: none`) for `container: 'contained'` pages (declared in `src/styles/prose.css`, not `global.css`)
 - `.glass-surface`, `.glass-control`, `.ghost-control`
-- `.cta`, `.btn-secondary`, `.btn-hero-secondary`
+- `.cta`, `.btn-secondary`, `.btn-hero-secondary` — consumed through `Button.astro`, never re-applied by hand to an `<a>` or `<button>`
 - `.chip` (automatically styled when `[aria-selected='true']`, `[aria-current='true']`, or `[aria-current='page']`)
 - `.hero-badge`, `.section-kicker`
 - Reusable page shells: `PageSection.astro` (full-bleed surface bands + `.layout-container`), `PageHeader.astro` (`hero: 'minimal'`), and `PageHero.astro` (`hero: 'default'` & blog)
@@ -96,6 +96,8 @@ Every role clears **WCAG AA (4.5:1)** contrast against its respective `-fg` coun
 ## 5. SVG Sprite Catalog (`src/pages/icons.svg.ts`)
 
 Never embed raw `<svg><path ...></svg>` in templates. Use `<Icon name="..." />` or `<IconButton icon="..." label="..." />`.
+
+Every text button is `<Button>`: colour from `variant` (`primary`/`secondary`/`hero`/`ghost`/`glass`), scale from `size` (`sm`/`md`/`lg`/`auto`), plus `icon` and the label. It renders an `<a>` when given `href` and a `<button>` otherwise, and `arrow-*` / `chevron-*` icons mirror in RTL and nudge forward on hover. The class recipe lives in `src/libs/ui/button.ts`, so client-side renderers (the blog pager) produce the same control.
 
 ### Available Icon Names:
 1. `search` — magnifying glass for search triggers and inputs
@@ -113,4 +115,24 @@ Never embed raw `<svg><path ...></svg>` in templates. Use `<Icon name="..." />` 
 13. `arrow-right` — call-to-action directional arrow (pair with `rtl:rotate-180`)
 14. `shield` — privacy & cookie consent control icon
 15. `mail` — contact & external API inquiry notice icon
-16. `layers` — stacked-layers marker used by the home blueprint and architecture cards
+16. `layers` — stacked-layers marker used by the home blueprint, architecture cards and the Resources menu
+
+### Navigation Icons:
+The mobile drawer renders one icon tile per row, so every navigation entry carries an `icon` from this catalog (`NavItem.icon` in `src/libs/config/navigation.ts`; a row without one falls back to `file`):
+
+| Key | Icon |
+| :--- | :--- |
+| `home` | `home` |
+| `about` | `info` |
+| `features` | `sparkles` |
+| `pricing` | `tag` |
+| `blog` (content type) | `newspaper` |
+| `projects` (content type) | `folder` |
+| `resources` | `layers` |
+| `overview` | `book-open` |
+| `explore` | `compass` |
+| `rtl_support` | `globe` |
+| `design_system` | `palette` |
+| fallback | `file` |
+
+`getContentTypeIcon(key)` resolves a content type's row icon (`layers` for a newly registered type), so a registry-driven menu never renders an empty tile.

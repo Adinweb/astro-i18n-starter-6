@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
 import { postStub, stripLeadingHeading } from './lib/content-stub.mjs';
-import { resolveSlug } from './lib/slug.mjs';
+import { findPlaceholderSlugs, placeholderSlugNotice, resolveSlug } from './lib/slug.mjs';
 import { collectionError, entryKeyError } from './lib/validate.mjs';
 import {
   escapeRegex,
@@ -376,6 +376,13 @@ Update / Sync Options:
     }
 
     console.log(`✅ Frontmatter successfully updated for [${groupSlug}] across locales: ${updatedLocales.join(', ')}`);
+    for (const line of placeholderSlugNotice(
+      'new:post',
+      groupSlug,
+      findPlaceholderSlugs(targetDir, groupSlug, LOCALES)
+    )) {
+      console.warn(line);
+    }
     process.exit(0);
   }
 
@@ -494,6 +501,14 @@ Update / Sync Options:
     const content = stringifyFrontmatter(fmRecord, `\n${bodyText.trimEnd()}\n`);
 
     fs.writeFileSync(path.join(targetDir, `${loc}.mdx`), content, 'utf-8');
+  }
+
+  for (const line of placeholderSlugNotice(
+    'new:post',
+    groupSlug,
+    findPlaceholderSlugs(targetDir, groupSlug, LOCALES)
+  )) {
+    console.warn(line);
   }
 
   console.log(`✅ Created synchronized article group in src/content/${collection}/${groupSlug}/ across locales: ${LOCALES.join(', ')}`);

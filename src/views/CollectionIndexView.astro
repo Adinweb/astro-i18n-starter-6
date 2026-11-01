@@ -3,8 +3,8 @@ import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageHeader from '@/components/PageHeader.astro';
-import Icon from '@/components/Icon.astro';
-import { getBreadcrumbs, getCollectionPageHref } from '@/libs/content/service';
+import Button from '@/components/Button.astro';
+import { getBreadcrumbs, getCollectionPageHref, getHomeHref } from '@/libs/content/service';
 import { parseContentEntryId } from '@/libs/content/entries';
 import {
   getContentType,
@@ -13,6 +13,7 @@ import {
   getContentTypeLabel,
   type ContentTypeKey,
 } from '@/libs/content/types';
+import { formatYear } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
 
@@ -55,6 +56,7 @@ const description = getContentTypeDescription(contentType, locale);
 // "Home → Projects" instead of falling back to the raw route segment.
 const breadcrumbs = getBreadcrumbs(url, locale, {
   home: m.nav_home({}, { locale }),
+  homeHref: await getHomeHref(locale),
   blog: m.nav_blog({}, { locale }),
   section: { label: title, href: url },
   current: title,
@@ -128,7 +130,12 @@ const pageHref = (target: number) => getCollectionPageHref(type.base, target, lo
                   )}
                   {(entry.data.client || entry.data.year) && (
                     <p class="mt-auto pt-3 text-xs text-muted">
-                      {[entry.data.client, entry.data.year].filter(Boolean).join(' · ')}
+                      {[
+                        entry.data.client,
+                        entry.data.year ? formatYear(entry.data.year, locale) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </p>
                   )}
                 </div>
@@ -148,27 +155,32 @@ const pageHref = (target: number) => getCollectionPageHref(type.base, target, lo
         data-pagefind-ignore
       >
         {page > 1 && (
-          <a
+          <Button
             href={pageHref(page - 1)}
             rel="prev"
-            class="ghost-control inline-flex items-center gap-1 px-3 py-2 text-sm"
+            variant="ghost"
+            size="auto"
+            icon="chevron-left"
+            iconPosition="start"
+            class="px-3 py-2 text-sm"
           >
-            <Icon name="chevron-left" size={15} class="rtl:rotate-180" />
             <span>{page - 1}</span>
-          </a>
+          </Button>
         )}
         <span class="px-2 text-sm font-semibold text-fg" aria-current="page">
           {page} / {totalPages}
         </span>
         {page < totalPages && (
-          <a
+          <Button
             href={pageHref(page + 1)}
             rel="next"
-            class="ghost-control inline-flex items-center gap-1 px-3 py-2 text-sm"
+            variant="ghost"
+            size="auto"
+            icon="chevron-right"
+            class="px-3 py-2 text-sm"
           >
             <span>{page + 1}</span>
-            <Icon name="chevron-left" size={15} class="rotate-180 rtl:rotate-0" />
-          </a>
+          </Button>
         )}
       </nav>
     )

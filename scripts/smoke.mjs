@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLocaleConfig } from './lib/locales.mjs';
+import { contentStub, postStub } from './lib/content-stub.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -592,11 +593,21 @@ const untranspiledInlineScriptPages = [];
 const inlineTsGenericPattern =
   /\.\s*(?:querySelector|querySelectorAll|getElementById|closest)\s*<\s*[A-Z]\w*\s*>\s*\(/;
 
+// `new:page --publish` can publish a body that is still the localized
+// "content coming soon" sentence. It is not a `[TODO: …]` marker, so it needs
+// its own guard: the scaffold strings are the SSOT of that copy.
+const scaffoldCopy = [
+  ...LOCALES.map((locale) => contentStub(locale)),
+  ...LOCALES.map((locale) => postStub(locale)),
+];
+
 for (const file of builtHtmlFiles) {
   const html = fs.readFileSync(file, 'utf-8');
   const relative = path.relative(distDir, file);
   if (count(html, /<h1[\s>]/g) !== 1) duplicateHeadingPages.push(relative);
-  if (html.includes('[TODO')) placeholderPages.push(relative);
+  if (html.includes('[TODO') || scaffoldCopy.some((copy) => html.includes(copy))) {
+    placeholderPages.push(relative);
+  }
 
   for (const scriptMatch of html.matchAll(
     /<script\b(?![^>]*\btype=["']application\/ld\+json["'])[^>]*>([\s\S]*?)<\/script>/gi
@@ -614,7 +625,7 @@ assert(
 );
 assert(
   placeholderPages.length === 0,
-  `No placeholder copy is published${placeholderPages.length ? ` (offenders: ${placeholderPages.join(', ')})` : ''}`
+  `No placeholder or scaffold-stub copy is published${placeholderPages.length ? ` (offenders: ${placeholderPages.join(', ')})` : ''}`
 );
 assert(
   untranspiledInlineScriptPages.length === 0,

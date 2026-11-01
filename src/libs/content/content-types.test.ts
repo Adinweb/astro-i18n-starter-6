@@ -98,7 +98,7 @@ describe('collection routes for registry-driven types', () => {
   const projectsEnabled = getContentType('projects').enabled;
   const routeOptions = { projects: [projectEntry(`atlas/${DEFAULT_LOCALE}`, 'atlas')] };
 
-  it.runIf(projectsEnabled)('registers one index route per locale and an entry route per locale', () => {
+  it.runIf(projectsEnabled)('registers an index route for a live locale and an entry route per locale', () => {
     const routes = buildSiteRoutes([homeEntry], [], routeOptions);
     const indexes = routes.filter(
       (route): route is CollectionIndexRoute => route.props.routeType === 'collection-index'
@@ -107,12 +107,41 @@ describe('collection routes for registry-driven types', () => {
       (route): route is CollectionEntryRoute => route.props.routeType === 'collection-entry'
     );
 
-    expect(indexes).toHaveLength(LOCALES.length);
+    // Only the default locale has a published entry here, so only it is live.
+    // A locale that exists in configuration alone must not gain an empty
+    // listing whose UI copy is still a `[TODO: …]` placeholder.
+    expect(indexes.map((route) => route.props.locale)).toEqual([DEFAULT_LOCALE]);
     expect(entries).toHaveLength(1);
     expect(entries[0].props.entry.id).toBe(`atlas/${DEFAULT_LOCALE}`);
     expect(entries[0].props.alternates[DEFAULT_LOCALE]).toBe(
       getContentTypeEntryHref('projects', 'atlas', DEFAULT_LOCALE)
     );
+  });
+
+  it.runIf(projectsEnabled)('gives a locale its index route once one of its entries is published', () => {
+    const draftOnly = buildSiteRoutes([homeEntry], [], {
+      projects: [
+        projectEntry(`atlas/${DEFAULT_LOCALE}`, 'atlas'),
+        projectEntry(`atlas/${otherLocale}`, 'atlas-fa', true),
+      ],
+    });
+    const indexed = (routes: SiteRoute[]) =>
+      routes
+        .filter(
+          (route): route is CollectionIndexRoute =>
+            route.props.routeType === 'collection-index'
+        )
+        .map((route) => route.props.locale);
+
+    expect(indexed(draftOnly)).toEqual([DEFAULT_LOCALE]);
+
+    const translated = buildSiteRoutes([homeEntry], [], {
+      projects: [
+        projectEntry(`atlas/${DEFAULT_LOCALE}`, 'atlas'),
+        projectEntry(`atlas/${otherLocale}`, 'atlas-fa'),
+      ],
+    });
+    expect(indexed(translated)).toEqual([DEFAULT_LOCALE, otherLocale]);
   });
 
   it.runIf(projectsEnabled)('marks an index route of every locale as an alternate', () => {

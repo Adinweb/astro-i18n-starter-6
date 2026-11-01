@@ -1,7 +1,7 @@
 import * as m from '@/paraglide/messages';
 import type { Locale } from '@/i18n/locales';
-import { getPathname, localizeHref, stripLocale, withTrailingSlash } from '@/i18n/paths';
-import { getBlogIndexHref, getPageUrl } from '@/libs/content/service';
+import { getPathname, stripLocale, withTrailingSlash } from '@/i18n/paths';
+import { getBlogIndexHref, getHomeHref, getPageUrl } from '@/libs/content/service';
 import {
   getContentType,
   getContentTypeIndexHref,
@@ -16,6 +16,12 @@ export interface NavItem {
   href?: string;
   active: boolean;
   external?: boolean;
+  /**
+   * Sprite icon of the row, from `/icons.svg`. The mobile drawer renders it;
+   * the desktop header stays text-only, so an item without an icon is normal
+   * and falls back to `file`.
+   */
+  icon?: string;
   children?: NavItem[];
 }
 
@@ -40,6 +46,7 @@ export interface NavItemConfig {
   label: (locale: Locale) => string;
   href?: string | ((locale: Locale) => Promise<string | null | undefined>);
   external?: boolean;
+  icon?: string;
   children?: NavItemConfig[];
 }
 
@@ -49,16 +56,26 @@ export interface NavItemConfig {
  * `new:page` registers.
  */
 export const PAGE_ITEMS = [
-  { group: 'home', label: (locale: Locale) => m.nav_home({}, { locale }) },
-  { group: 'about', label: (locale: Locale) => m.nav_about({}, { locale }) },
-  { group: 'features', label: (locale: Locale) => m.nav_features({}, { locale }) },
-  { group: 'pricing', label: (locale: Locale) => m.nav_pricing({}, { locale }) },
+  { group: 'home', icon: 'home', label: (locale: Locale) => m.nav_home({}, { locale }) },
+  { group: 'about', icon: 'info', label: (locale: Locale) => m.nav_about({}, { locale }) },
+  { group: 'features', icon: 'sparkles', label: (locale: Locale) => m.nav_features({}, { locale }) },
+  { group: 'pricing', icon: 'tag', label: (locale: Locale) => m.nav_pricing({}, { locale }) },
 ] as const;
 
 export const BLOG_ITEM = {
   key: 'blog',
+  icon: 'newspaper',
   label: (locale: Locale) => m.nav_blog({}, { locale }),
 } as const;
+
+/**
+ * Icon of a content type's navigation row. A type without an entry (one added
+ * through the registry) still gets a coherent row instead of a missing icon.
+ */
+export function getContentTypeIcon(key: string): string {
+  const icons: Record<string, string> = { blog: 'newspaper', projects: 'folder' };
+  return icons[key] ?? 'layers';
+}
 
 /**
  * One navigation item per enabled, navigable content type (blog, projects, …).
@@ -73,6 +90,7 @@ export function getContentTypeNavItems(locale: Locale, currentUrl = ''): NavItem
       key: type.key,
       label: getContentTypeLabel(type.key, locale),
       href,
+      icon: getContentTypeIcon(type.key),
       active: isActive(href, currentUrl),
     };
   });
@@ -103,93 +121,12 @@ export function isActive(href: string | undefined, currentUrl: string): boolean 
 }
 
 /**
- * Builds the desktop header navigation items.
+ * Primary navigation. The desktop header and the mobile drawer share this
+ * one builder so the two menus can never drift apart: both are driven by
+ * `PAGE_ITEMS`, both skip unpublished pages and both list the navigable
+ * content types.
  */
-export async function getHeaderNavigation(locale: Locale, currentUrl = ''): Promise<NavItem[]> {
-  const items: NavItem[] = [];
-
-  const homeHref = await getPageUrl('home', locale);
-  if (homeHref) {
-    items.push({
-      key: 'home',
-      label: m.nav_home({}, { locale }),
-      href: homeHref,
-      active: isActive(homeHref, currentUrl),
-    });
-  }
-
-  const featuresHref = await getPageUrl('features', locale);
-  if (featuresHref) {
-    items.push({
-      key: 'features',
-      label: m.nav_features({}, { locale }),
-      href: featuresHref,
-      active: isActive(featuresHref, currentUrl),
-    });
-  }
-
-  const pricingHref = await getPageUrl('pricing', locale);
-  if (pricingHref) {
-    items.push({
-      key: 'pricing',
-      label: m.nav_pricing({}, { locale }),
-      href: pricingHref,
-      active: isActive(pricingHref, currentUrl),
-    });
-  }
-
-  // Anchor fallbacks must never point at a section that is switched off, or a
-  // project without a features page would ship dead links.
-  const blogHref = getContentType('blog').enabled ? getBlogIndexHref(locale) : null;
-  items.push(...getContentTypeNavItems(locale, currentUrl));
-
-  const fallbackFeaturesHref = featuresHref ?? blogHref ?? localizeHref('/', locale);
-  const exploreChildren: NavItem[] = [
-    {
-      key: 'rtl_support',
-      label: m.nav_rtl_support({}, { locale }),
-      href: `${fallbackFeaturesHref}#rtl`,
-      active: false,
-    },
-    {
-      key: 'design_system',
-      label: m.nav_design_system({}, { locale }),
-      href: `${fallbackFeaturesHref}#design`,
-      active: false,
-    },
-  ];
-
-  const resourcesChildren: NavItem[] = [
-    {
-      key: 'overview',
-      label: m.nav_overview({}, { locale }),
-      href: fallbackFeaturesHref,
-      // Avoid highlighting both top-level `Features` and `Resources` simultaneously.
-      active: featuresHref ? false : isActive(fallbackFeaturesHref, currentUrl),
-    },
-    {
-      key: 'explore',
-      label: m.nav_explore({}, { locale }),
-      active: exploreChildren.some((child) => child.active),
-      children: exploreChildren,
-    },
-  ];
-
-  items.push({
-    key: 'resources',
-    label: m.nav_resources({}, { locale }),
-    active: resourcesChildren.some((child) => child.active),
-    children: resourcesChildren,
-  });
-
-  return items;
-}
-
-/**
- * Builds the mobile drawer navigation items, including all primary pages
- * and deeper nested navigation links.
- */
-export async function getDrawerNavigation(locale: Locale, currentUrl = ''): Promise<NavItem[]> {
+async function buildPrimaryNavigation(locale: Locale, currentUrl = ''): Promise<NavItem[]> {
   const items: NavItem[] = [];
 
   for (const item of PAGE_ITEMS) {
@@ -199,103 +136,164 @@ export async function getDrawerNavigation(locale: Locale, currentUrl = ''): Prom
       key: item.group,
       label: item.label(locale),
       href,
+      icon: item.icon,
       active: isActive(href, currentUrl),
     });
   }
 
-  const blogHref = getContentType('blog').enabled ? getBlogIndexHref(locale) : null;
   items.push(...getContentTypeNavItems(locale, currentUrl));
 
-  const rawFeaturesHref = await getPageUrl('features', locale);
-  const featuresHref = rawFeaturesHref ?? blogHref ?? localizeHref('/', locale);
-  const exploreChildren: NavItem[] = [
-    {
-      key: 'rtl_support',
-      label: m.nav_rtl_support({}, { locale }),
-      href: `${featuresHref}#rtl`,
-      active: false,
-    },
-    {
-      key: 'design_system',
-      label: m.nav_design_system({}, { locale }),
-      href: `${featuresHref}#design`,
-      active: false,
-    },
-  ];
-
-  const resourcesChildren: NavItem[] = [
-    {
-      key: 'overview',
-      label: m.nav_overview({}, { locale }),
-      href: featuresHref,
-      active: rawFeaturesHref ? false : isActive(featuresHref, currentUrl),
-    },
-    {
-      key: 'explore',
-      label: m.nav_explore({}, { locale }),
-      active: exploreChildren.some((child) => child.active),
-      children: exploreChildren,
-    },
-  ];
-
-  items.push({
-    key: 'resources',
-    label: m.nav_resources({}, { locale }),
-    active: resourcesChildren.some((child) => child.active),
-    children: resourcesChildren,
-  });
+  const resources = await buildResourcesItem(locale, currentUrl);
+  if (resources) items.push(resources);
 
   return items;
 }
 
 /**
+ * The Resources dropdown.
+ *
+ * Its children are deep links into sections of the features page, so the
+ * menu only exists while those anchors do: without a features page it
+ * degrades to a single Overview link to the blog, and it disappears entirely
+ * when there is nothing left to point at — never shipping a `#rtl` or
+ * `#design` anchor that resolves to nothing.
+ */
+async function buildResourcesItem(locale: Locale, currentUrl = ''): Promise<NavItem | null> {
+  const featuresHref = await getPageUrl('features', locale);
+  const blogHref = getContentType('blog').enabled ? getBlogIndexHref(locale) : null;
+  const overviewHref = featuresHref ?? blogHref;
+  if (!overviewHref) return null;
+
+  const exploreChildren: NavItem[] = featuresHref
+    ? [
+        {
+          key: 'rtl_support',
+          label: m.nav_rtl_support({}, { locale }),
+          href: `${featuresHref}#rtl`,
+          icon: 'globe',
+          active: false,
+        },
+        {
+          key: 'design_system',
+          label: m.nav_design_system({}, { locale }),
+          href: `${featuresHref}#design`,
+          icon: 'palette',
+          active: false,
+        },
+      ]
+    : [];
+
+  const resourcesChildren: NavItem[] = [
+    {
+      key: 'overview',
+      label: m.nav_overview({}, { locale }),
+      href: overviewHref,
+      icon: 'book-open',
+      // The top-level Features item owns the highlight while it exists.
+      active: featuresHref ? false : isActive(overviewHref, currentUrl),
+    },
+    ...(exploreChildren.length > 0
+      ? [
+          {
+            key: 'explore',
+            label: m.nav_explore({}, { locale }),
+            icon: 'compass',
+            active: exploreChildren.some((child) => child.active),
+            children: exploreChildren,
+          },
+        ]
+      : []),
+  ];
+
+  return {
+    key: 'resources',
+    label: m.nav_resources({}, { locale }),
+    icon: 'layers',
+    active: resourcesChildren.some((child) => child.active),
+    children: resourcesChildren,
+  };
+}
+
+/**
+ * Builds the desktop header navigation items.
+ */
+export async function getHeaderNavigation(locale: Locale, currentUrl = ''): Promise<NavItem[]> {
+  return buildPrimaryNavigation(locale, currentUrl);
+}
+
+/**
+ * Builds the mobile drawer navigation items (the same list as the header).
+ */
+export async function getDrawerNavigation(locale: Locale, currentUrl = ''): Promise<NavItem[]> {
+  return buildPrimaryNavigation(locale, currentUrl);
+}
+/**
  * Builds the multi-column footer navigation hierarchy.
+ *
+ * The pages column is derived from `PAGE_ITEMS` — the same list the header and
+ * the drawer read — instead of naming page groups here. A page that is added,
+ * renamed or removed therefore changes the footer with it, and `remove:page`
+ * can never delete a `nav_<key>` message that the footer still references.
+ * Empty columns are dropped so a project without social links does not render
+ * an empty heading.
  */
 export async function getFooterNavigation(locale: Locale, currentUrl = ''): Promise<FooterColumn[]> {
-  const homeHref = (await getPageUrl('home', locale)) ?? localizeHref('/', locale);
-  const aboutHref = await getPageUrl('about', locale);
-  const featuresHref = await getPageUrl('features', locale);
-  const pricingHref = await getPageUrl('pricing', locale);
+  const pageItems: NavItem[] = [];
 
-  const productColumn: FooterColumn = {
+  for (const item of PAGE_ITEMS) {
+    // The home page is the one link a footer always offers: every other page
+    // needs a published entry of its own.
+    const href =
+      (await getPageUrl(item.group, locale)) ??
+      (item.group === 'home' ? await getHomeHref(locale) : null);
+    if (!href) continue;
+
+    pageItems.push({
+      key: item.group,
+      label: item.label(locale),
+      href,
+      active: isActive(href, currentUrl),
+    });
+  }
+
+  const pagesColumn: FooterColumn = {
     key: 'product',
-    title: m.footer_col_product({}, { locale }),
-    items: [
-      ...(homeHref ? [{ key: 'home', label: m.nav_home({}, { locale }), href: homeHref, active: isActive(homeHref, currentUrl) }] : []),
-      ...(featuresHref ? [{ key: 'features', label: m.nav_features({}, { locale }), href: featuresHref, active: isActive(featuresHref, currentUrl) }] : []),
-      ...(pricingHref ? [{ key: 'pricing', label: m.nav_pricing({}, { locale }), href: pricingHref, active: isActive(pricingHref, currentUrl) }] : []),
-      ...(featuresHref ? [{ key: 'design_system', label: m.nav_design_system({}, { locale }), href: `${featuresHref}#design`, active: false }] : []),
-    ],
+    title: m.footer_col_pages({}, { locale }),
+    items: pageItems,
   };
 
   const resourcesColumn: FooterColumn = {
     key: 'resources',
     title: m.footer_col_resources({}, { locale }),
-    items: [
-      ...getContentTypeNavItems(locale, currentUrl),
-      ...(featuresHref ? [{ key: 'rtl_support', label: m.nav_rtl_support({}, { locale }), href: `${featuresHref}#rtl`, active: false }] : []),
-      ...(featuresHref ? [{ key: 'overview', label: m.nav_overview({}, { locale }), href: featuresHref, active: false }] : []),
-      { key: 'documentation', label: m.nav_documentation({}, { locale }), href: 'https://astro.build', external: true, active: false },
-    ],
+    items: getContentTypeNavItems(locale, currentUrl),
   };
+
+  const socialItems: NavItem[] = [];
+  if (siteConfig.social.github) {
+    socialItems.push({ key: 'github', label: 'GitHub', href: siteConfig.social.github, external: true, active: false });
+  }
+  if (siteConfig.social.twitter) {
+    socialItems.push({ key: 'twitter', label: 'X', href: siteConfig.social.twitter, external: true, active: false });
+  }
 
   const companyColumn: FooterColumn = {
     key: 'company',
     title: m.footer_col_company({}, { locale }),
-    items: [
-      ...(aboutHref ? [{ key: 'about', label: m.nav_about({}, { locale }), href: aboutHref, active: isActive(aboutHref, currentUrl) }] : []),
-      ...(siteConfig.social.github ? [{ key: 'github', label: 'GitHub', href: siteConfig.social.github, external: true, active: false }] : []),
-    ],
+    items: socialItems,
   };
 
-  return [productColumn, resourcesColumn, companyColumn];
+  return [pagesColumn, resourcesColumn, companyColumn].filter((column) => column.items.length > 0);
 }
 
 /**
  * Builds the secondary legal links shown at the very bottom of the footer.
  */
 export async function getLegalNavigation(locale: Locale, _currentUrl = ''): Promise<NavItem[]> {
-  const aboutHref = (await getPageUrl('about', locale)) ?? '';
+  // Privacy and terms are sections of the about page. Without that page there
+  // is nothing to link to, and `${aboutHref}#privacy` would silently point at
+  // whatever page the visitor happens to be on.
+  const aboutHref = await getPageUrl('about', locale);
+  if (!aboutHref) return [];
   return [
     {
       key: 'privacy',
@@ -316,14 +314,14 @@ export async function getLegalNavigation(locale: Locale, _currentUrl = ''): Prom
  * Master slot resolver returning distinct menus for Header, Drawer, and Footer.
  */
 export async function getNavigationSlots(locale: Locale, currentUrl = ''): Promise<NavigationSlots> {
-  const [header, drawer, footer, legal] = await Promise.all([
-    getHeaderNavigation(locale, currentUrl),
-    getDrawerNavigation(locale, currentUrl),
+  const [primary, footer, legal] = await Promise.all([
+    buildPrimaryNavigation(locale, currentUrl),
     getFooterNavigation(locale, currentUrl),
     getLegalNavigation(locale, currentUrl),
   ]);
 
-  return { header, drawer, footer, legal };
+  // Header and drawer render the same entries, so one pass serves both.
+  return { header: primary, drawer: primary, footer, legal };
 }
 
 /**

@@ -19,10 +19,11 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Slugs, feeds & alternates: `src/libs/content/service.ts` and `src/libs/content/feed.ts`.
    - Content entry invariants (IDs, drafts, locale selection, sorting): `src/libs/content/entries.ts`.
    - Blog filters & reading time: `src/libs/content/blog.ts`; taxonomy labels: `src/libs/content/taxonomy.ts`.
-   - Application config: `app.config.json`, validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`, brand assets, dev server).
+   - Application config: `app.config.json`, validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`, brand assets, dev server). `ui.ctaPage` names the page group the header/drawer CTA points at; a CTA whose page is unpublished hides itself.
+   - Navigation: `src/libs/config/navigation.ts` — `PAGE_ITEMS` for page links, one `buildPrimaryNavigation` shared by the header and the drawer, plus `getFooterNavigation` / `getLegalNavigation`. Anchor links (`#rtl`, `#design`, `#privacy`) are only emitted while their target page exists.
    - Blog pagination: `blog.postsPerPage` in `app.config.json` (`POSTS_PER_PAGE`), math in `src/libs/content/pagination.ts` (`paginate`, `buildPageWindow`), URLs in `src/libs/content/service.ts` (`getBlogPageHref`).
    - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs` (build-time Pagefind normalization), `src/libs/search/persian.ts` (ZWNJ/orthography/numeral query expansion & fallback folding), and `src/libs/search/client.ts`.
-   - External API & Consent (Pure SSG, Zero Backend): `src/libs/api/client.ts` (`ContactForm.astro` posts directly to external/headless endpoints configured via `app.config.json` `api` or `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL`) and `src/libs/cookies/` (`CookieConsent.astro`). Never add SSR servers or backend folders.
+   - External API & Consent (Pure SSG, Zero Backend): `src/libs/api/client.ts` (`ContactForm.astro` posts directly to external/headless endpoints configured via `app.config.json` `api` or `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL`) and `src/libs/cookies/` (`CookieConsent.astro`). A site without an endpoint renders **no form**: `site.contactEmail` powers the `mailto:` fallback and the developer setup note is `import.meta.env.DEV`-only, so visitors never read environment-variable names. Never add SSR servers or backend folders.
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
 2. **Lean Router Dispatcher Pattern**:
    - Never create dynamic routing files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
@@ -46,6 +47,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 9. **Shared Visual Language & Page Layout Architecture**:
    - Semantic colour roles (`primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, `error` and their `-fg` partners) live **only** in `src/styles/global.css`. Never hardcode hex values in components; compose semantic roles instead.
    - Standard desktop width (`max-w-7xl` / `1280px` with responsive logical inline gutters) is defined once via `.layout-container` in `src/styles/global.css`. Frosted surfaces, buttons and chips live **once** in `src/styles/global.css` (`.glass-surface`, `.glass-control`, `.ghost-control`, `.cta`, `.btn-secondary`, `.chip`). Compose them rather than re-declaring treatments.
+   - Text buttons are rendered by `src/components/Button.astro` (colour from `variant`: `primary`/`secondary`/`hero`/`ghost`/`glass`, scale from `size`, plus `icon`), whose class recipe lives in `src/libs/ui/button.ts` (`buttonClasses()`) and is shared with client-side renderers such as the blog pager. In these components only the colour, the text and the icon change; navigation renders an `<a>`, actions render a `<button>`.
    - Icon-only controls are rendered by `src/components/IconButton.astro`. Never hand-roll a `<button>` with an `<Icon>` inside.
    - **Flexible `pages` Content Collection**: Unlike `blog` entries (which share `BlogPostView.astro`), `pages` entries default to `hero: 'none'` and `container: 'canvas'` in `src/content.config.ts` so every page has complete design freedom (`<PageSection>`, `.layout-container`, custom grids). Pages may opt into `hero: 'minimal'` (`PageHeader.astro`), `hero: 'default'` (`PageHero.astro` + `HeroCopy.astro`), `container: 'contained'` (`.layout-container` + `.prose-wide`), `container: 'prose'` (`72ch` editorial column), `flushTop: true`, or a shared bespoke Astro template in `src/views/pages/` via `template: '<name>'`. Never use `layout` in MDX frontmatter (reserved by `@astrojs/mdx`).
    - Article chrome (TOC, related posts, newer/older links, code-copy buttons) and `@media print` flattening live once in `BlogPostView.astro` / `BaseLayout.astro` and `src/styles/global.css`.
@@ -71,7 +73,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   └── lib/                   # Shared prompt, frontmatter, content-stub, slug, validation, content-type & artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph fallback
-│   ├── components/            # Reusable Astro components (Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHeader, PageHero, PageSection, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar)
+│   ├── components/            # Reusable Astro components (Icon, IconButton, Button, HomeHero, ThemeToggle, LanguageSwitcher, DrawerNavLink, PageHeader, PageHero, PageSection, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar)
 │   ├── content/               # Symmetrical content collections:
 │   │   ├── pages/<group>/     # Static pages (<locale>.mdx per active locale + hero artwork)
 │   │   ├── blog/<group>/      # Blog posts with localized slugs (+ cover artwork)
@@ -93,7 +95,8 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
 │   │   ├── content/social.ts  # Builds the optimized og:image card
 │   │   ├── cookies/           # TDDDG § 25 / GDPR consent model & multi-domain script gatekeeper
-│   │   └── search/            # client.ts + persian.ts (Pagefind & dev fallback with Persian ZWNJ/orthography expansion)
+│   │   ├── search/            # client.ts + persian.ts (Pagefind & dev fallback with Persian ZWNJ/orthography expansion)
+│   │   └── ui/button.ts       # The button class recipe (`buttonClasses`) behind Button.astro and client renderers
 │   ├── pages/                 # Minimal physical pages:
 │   │   ├── [...path].astro    # Lean Router Dispatcher
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
@@ -126,7 +129,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 | `pnpm run verify:cli` | End-to-end check of every documented CLI workflow (82 claims in temp sandbox) | After changing anything under `scripts/` |
 | `pnpm run doctor` | No-build health check: runtime, config, content types, dictionaries, content, `SITE_URL` | After cloning a project or before a client hand-off |
 | `pnpm run content:list` / `content:status` | Content types and their entries / per-locale readiness matrix | When auditing what is published |
-| `pnpm run link:check` | Crawls `dist/` and reports internal links that resolve to nothing | After a rename or before delivery |
+| `pnpm run link:check` | Crawls `dist/` and reports internal links and `#fragment` anchors that resolve to nothing | After a rename or before delivery |
 | `pnpm run build` | `messages:compile` + audit + `astro build` + `node scripts/index-pagefind.mjs` | After major changes |
 | `pnpm run smoke` | HTML, SEO, feed, asset & H1 assertions on `dist/` | After every production build |
 | `pnpm run knip` | Dead files, exports, and dependencies | Before releases |
@@ -192,9 +195,9 @@ pnpm run i18n:add-batch -- --file=translations.json [--category=<cat>]
 ## 5. Playbooks for Common Agent Tasks
 
 ### Playbook A: Adding a New Navigation Link
-1. Ensure `src/content/pages/<page-key>/` exists (`pnpm run new:page <page-key>`).
-2. Add the item to the appropriate slot config in `src/libs/config/navigation.ts`.
-3. Desktop header, mobile drawer, and footer all consume `getNavigationSlots()`, skipping missing/draft locale files automatically.
+1. Ensure `src/content/pages/<page-key>/` exists (`pnpm run new:page <page-key>` scaffolds it and registers `nav_<page-key>`).
+2. Add **one** entry to `PAGE_ITEMS` in `src/libs/config/navigation.ts` — the shared list behind the desktop header and the mobile drawer — including its `icon` (a sprite name from `src/pages/icons.svg.ts`; the drawer renders it, and a missing one falls back to `file`). Use `getFooterNavigation` / `getLegalNavigation` only for a footer-only or legal link.
+3. Everything consumes `getNavigationSlots()`, which skips pages that are missing or draft in a locale and emits anchor links only while their target page exists.
 4. Run `pnpm run lint && pnpm test && pnpm run audit:i18n`.
 
 ### Playbook B: Swapping the Default Locale
@@ -210,6 +213,7 @@ pnpm run i18n:add-batch -- --file=translations.json [--category=<cat>]
 ### Playbook D: Adding an SVG Icon
 1. Add the `<path>` inner markup to `icons` in `src/pages/icons.svg.ts`.
 2. Render with `<Icon name="star" size={20} class="text-primary" />` or `<IconButton icon="star" label="..." />`. Never paste raw `<svg>` blobs in templates.
+3. Icon-only button: `<IconButton icon="star" label="..." />`. Text button: `<Button variant="primary" icon="star">Label</Button>`.
 
 ### Playbook E: Changing the Blog Pagination
 1. Edit `blog.postsPerPage` in `app.config.json` (exposed as `POSTS_PER_PAGE`).
@@ -249,7 +253,7 @@ pnpm run i18n:add-batch -- --file=translations.json [--category=<cat>]
 | Using `navigate()` for language switching | Use `window.location.assign(target)` for static language switch |
 | Missing `el.dataset.bound` guard in scripts | Check `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';` |
 | Showing the hero image as a side card or duplicated layer | Make the image the single full-bleed background in `PageHero.astro` |
-| Re-declaring a button, chip or frosted surface in a component | Compose `.cta`, `.btn-secondary`, `.chip`, `.glass-*` from `src/styles/global.css` |
+| Re-declaring a button, chip or frosted surface in a component | Compose `.cta`, `.btn-secondary`, `.chip`, `.glass-*` from `src/styles/global.css`, or render a text button with `<Button variant="…" size="…" icon="…">` |
 | Hand-rolling an icon-only `<button>` with an `<Icon>` inside | Use `<IconButton icon="..." label="..." />` |
 | Serving a page image from `public/` or with a raw `<img src>` | Keep it next to the content entry (`./<file>`) and render with `<Image />` |
 | Rendering every blog post on one page, or hardcoding `/blog/page/2` | Slice with `paginate()` and link with `getBlogPageHref(page, locale)` |

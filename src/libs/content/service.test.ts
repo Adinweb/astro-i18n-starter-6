@@ -123,6 +123,18 @@ describe('src/libs/content/service.ts', () => {
       expect(crumbs[2].href).toBe(url);
     });
 
+    it('links the first crumb at the home the locale actually builds', () => {
+      const crumbs = getBreadcrumbs(localizeHref('/about-fa', testLocale), testLocale, {
+        home: m.nav_home({}, { locale: testLocale }),
+        // A partially translated locale has pages but no `/<locale>/` yet.
+        homeHref: '/',
+        blog: m.nav_blog({}, { locale: testLocale }),
+        current: 'About',
+      });
+
+      expect(crumbs[0].href).toBe('/');
+    });
+
     it('does not duplicate the home or blog index crumb in non-default locales', () => {
       const localizedHome = localizeHref('/', testLocale);
       expect(
@@ -305,7 +317,7 @@ describe('src/libs/content/service.ts', () => {
       expect(secondPage!.props.alternates[testLocale]).toBe(`/${testLocale}/blog/page/2/`);
     });
 
-    it('keeps SEO alternates strictly reciprocal while clamping switcherAlternates to the last page', () => {
+    it('drops a locale that has no published content from alternates and the switcher', () => {
       const routes = buildSiteRoutes(
         [pageEntry(`home/${DEFAULT_LOCALE}`, { slug: '' })],
         manyPosts(POSTS_PER_PAGE * 2 + 1, DEFAULT_LOCALE)
@@ -313,11 +325,31 @@ describe('src/libs/content/service.ts', () => {
 
       const thirdPage = routes.find((route) => route.props.url === '/blog/page/3/');
       expect(thirdPage).toBeDefined();
-      // Other locales only have 1 page: omit from SEO hreflang alternates so reciprocity holds,
-      // while clamping switcherAlternates so UI language switching lands on /<testLocale>/blog/.
+      // `testLocale` is configured but has published nothing, so it owns no blog
+      // index at all. Linking hreflang or the switcher to it would 404.
       expect(thirdPage!.props.alternates[DEFAULT_LOCALE]).toBe('/blog/page/3/');
       expect(thirdPage!.props.alternates[testLocale]).toBeUndefined();
-      expect(thirdPage!.props.switcherAlternates?.[testLocale]).toBe(`/${testLocale}/blog/`);
+      expect(thirdPage!.props.switcherAlternates?.[testLocale]).toBeUndefined();
+    });
+
+    it('clamps the switcher to the last page of a live locale with fewer pages', () => {
+      const routes = buildSiteRoutes(
+        [
+          pageEntry(`home/${DEFAULT_LOCALE}`, { slug: '' }),
+          pageEntry(`home/${testLocale}`, { slug: '' }),
+        ],
+        [
+          ...manyPosts(POSTS_PER_PAGE * 2 + 1, DEFAULT_LOCALE),
+          ...manyPosts(1, testLocale),
+        ]
+      );
+
+      const thirdPage = routes.find((route) => route.props.url === '/blog/page/3/');
+      expect(thirdPage!.props.alternates[testLocale]).toBeUndefined();
+      expect(thirdPage!.props.switcherAlternates?.[testLocale]).toBe(getBlogIndexHref(testLocale));
+
+      const firstPage = routes.find((route) => route.props.url === '/blog/');
+      expect(firstPage!.props.alternates[testLocale]).toBe(getBlogIndexHref(testLocale));
     });
 
     it('counts only published posts', () => {

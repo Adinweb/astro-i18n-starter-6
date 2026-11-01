@@ -314,6 +314,11 @@ if (shouldPopulateContent) {
           // placeholder as the meta description of the localized page.
           let description = '';
           let body = contentStub(langCode);
+          // A body copied from the source locale is *not* translated copy: it is
+          // carried over so the translator has something to start from. Marking
+          // it keeps a half-done translation from being published as if it were
+          // finished.
+          let bodyCopiedFromSource = false;
           let sourceFm = {};
 
           if (sourceCandidate && fs.existsSync(sourceCandidate)) {
@@ -327,7 +332,11 @@ if (shouldPopulateContent) {
 
             const bodyStripped = parsed.body.trim();
             if (bodyStripped) {
-              body = stripLeadingHeading(bodyStripped).trim() || contentStub(langCode);
+              const copied = stripLeadingHeading(bodyStripped).trim();
+              if (copied) {
+                body = copied;
+                bodyCopiedFromSource = true;
+              }
             }
           }
 
@@ -377,7 +386,10 @@ if (shouldPopulateContent) {
           };
 
           const cleanBody = (body.startsWith('#') ? stripLeadingHeading(body) : body).trim();
-          const mdxContent = stringifyFrontmatter(fmRecord, `\n${cleanBody}\n`);
+          const untranslatedNote = bodyCopiedFromSource
+            ? `{/* TODO(${langCode}): translate this body — it is still ${path.basename(sourceCandidate ?? sourceLocale, '.mdx')} copy. */}\n\n`
+            : '';
+          const mdxContent = stringifyFrontmatter(fmRecord, `\n${untranslatedNote}${cleanBody}\n`);
           fs.writeFileSync(targetFile, mdxContent, 'utf-8');
           if (!isDraft && entryIsDraft) {
             console.warn(`  ⚠️ src/content/${collection}/${group}/${langCode}.mdx stays a draft: its title or description still contains a placeholder.`);

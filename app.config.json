@@ -4,6 +4,7 @@
     "shortName": "Astro i18n",
     "description": "Production-grade, multi-lingual Astro v7 starter template with native RTL and LTR support.",
     "author": "Astro Starter Team",
+    "contactEmail": "",
     "socialImage": {
       "path": "/og-default.png",
       "width": 1200,
@@ -33,6 +34,7 @@
     ]
   },
   "ui": {
+    "ctaPage": "pricing",
     "showSearch": true,
     "showThemeToggle": true,
     "showLanguageSwitcher": true,

@@ -260,7 +260,9 @@ summary::-webkit-details-marker {
 
   /* Translucent pill badge sitting over hero or card media scrims. */
   .hero-badge {
-    @apply inline-flex items-center rounded-full border border-hero-fg/20 bg-scrim px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-hero-fg backdrop-blur-sm;
+    /* Persian and Arabic letters join, so the Latin uppercase tracking is reset
+       in RTL the same way `.section-kicker` does it. */
+    @apply inline-flex items-center rounded-full border border-hero-fg/20 bg-scrim px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-hero-fg backdrop-blur-sm rtl:tracking-normal;
   }
 
   /* Editorial eyebrow label shared across section headers. */

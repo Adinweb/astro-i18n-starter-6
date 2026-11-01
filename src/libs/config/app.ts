@@ -30,6 +30,12 @@ export const themeModeSchema = z.enum(['system', 'light', 'dark']);
 export type ThemeMode = z.infer<typeof themeModeSchema>;
 
 export const uiConfigSchema = z.object({
+  /**
+   * Content group the header and drawer CTA (the "Get Started" button) links
+   * to. It is a page group name, so the CTA hides itself automatically when
+   * that page is unpublished, and any published page can become its target.
+   */
+  ctaPage: z.string().min(1).default('pricing'),
   showSearch: z.boolean().default(true),
   showThemeToggle: z.boolean().default(true),
   showLanguageSwitcher: z.boolean().default(true),
@@ -101,6 +107,7 @@ export const apiConfigSchema = z.object({
 export type ApiConfig = z.infer<typeof apiConfigSchema>;
 
 export const defaultUiConfig: UiConfig = {
+  ctaPage: 'pricing',
   showSearch: true,
   showThemeToggle: true,
   showLanguageSwitcher: true,
@@ -134,6 +141,13 @@ export const appConfigSchema = z.object({
     shortName: z.string().min(1),
     description: z.string().min(1),
     author: z.string().optional().default('Astro Starter Team'),
+    /**
+     * Public contact address. It is the destination of the contact form's
+     * mailto fallback when `api.baseUrl` (or `PUBLIC_CONTACT_API_URL`) is not
+     * configured, so a visitor never reads a developer instruction. Empty means
+     * "no address yet": the form then states that inquiries are unavailable.
+     */
+    contactEmail: z.union([z.literal(''), z.email()]).optional().default(''),
     socialImage: z.object({
       path: z.string().startsWith('/'),
       width: z.number().int().positive(),
@@ -171,6 +185,7 @@ const siteConfigSchema = z.object({
   shortName: z.string().min(1),
   description: z.string().min(1),
   author: z.string(),
+  contactEmail: z.string(),
   defaultTheme: themeModeSchema,
   themeColor: hexColor,
   darkThemeColor: hexColor,
@@ -199,6 +214,7 @@ export const siteConfig = siteConfigSchema.parse({
   shortName: appConfig.site.shortName,
   description: appConfig.site.description,
   author: appConfig.site.author,
+  contactEmail: appConfig.site.contactEmail,
   defaultTheme: appConfig.brand.defaultTheme,
   /** Browser chrome colour; mirrors `--color-primary` in `src/styles/global.css`. */
   themeColor: appConfig.brand.themeColor,

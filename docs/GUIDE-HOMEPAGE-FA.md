@@ -189,6 +189,7 @@ draft: false
 ```mdx
 import PageSection from '@/components/PageSection.astro';
 import Icon from '@/components/Icon.astro';
+import Button from '@/components/Button.astro';
 ```
 
 ### ۵.۳ هیروی اختصاصی (اولین بخش، زیر هدر شناور)
@@ -216,11 +217,8 @@ import Icon from '@/components/Icon.astro';
           توضیح یک‌خطی ارزش پیشنهادی؛ همان چیزی که مشتری در سه ثانیه باید بفهمد.
         </p>
         <div class="mt-8 flex flex-wrap items-center gap-3">
-          <a href="#contact" class="cta h-11 px-6 text-sm">
-            <span>شروع گفت‌وگو</span>
-            <Icon name="arrow-right" size={16} class="shrink-0 rtl:rotate-180" />
-          </a>
-          <a href="#services" class="btn-secondary h-11">خدمات</a>
+          <Button href="#contact" size="lg" icon="arrow-right">شروع گفت‌وگو</Button>
+          <Button href="#services" variant="secondary" size="lg">خدمات</Button>
         </div>
       </div>
       <div class="lg:col-span-5" data-trig data-trig-direction="end">
@@ -261,7 +259,7 @@ import Icon from '@/components/Icon.astro';
     <p class="section-kicker">تماس</p>
     <h2 class="mt-3 text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">بریم سراغ پروژه؟</h2>
     <p class="mt-4 text-base leading-relaxed text-muted">ایمیل یا فرم؛ هرکدام که برای مشتری طبیعی‌تر است.</p>
-    <a href="mailto:hello@example.com" class="cta mt-8 h-11 px-6 text-sm">ارسال ایمیل</a>
+    <Button href="mailto:hello@example.com" size="lg" class="mt-8">ارسال ایمیل</Button>
   </div>
 </PageSection>
 ```
@@ -336,10 +334,7 @@ const services = [
           {entry.data.description}
         </p>
       )}
-      <a href="#contact" class="cta mt-8 h-11 px-6 text-sm">
-        <span>شروع گفت‌وگو</span>
-        <Icon name="arrow-right" size={16} class="shrink-0 rtl:rotate-180" />
-      </a>
+      <Button href="#contact" size="lg" icon="arrow-right" class="mt-8">شروع گفت‌وگو</Button>
     </div>
   </section>
 
@@ -361,7 +356,7 @@ const services = [
     <div class="prose prose-wide">
       <Content />
     </div>
-    <a href={workHref} class="btn-secondary mt-6">نمونه‌کارها</a>
+    <Button href={workHref} variant="secondary" icon="arrow-right" class="mt-6">نمونه‌کارها</Button>
   </PageSection>
 </BaseLayout>
 ```
@@ -471,20 +466,21 @@ flushTop: true
       <h2 class="text-2xl font-extrabold tracking-tight text-fg sm:text-3xl">آمادهٔ شروع هستید؟</h2>
       <p class="mt-2 text-sm text-muted">پاسخ در کمتر از یک روز کاری.</p>
     </div>
-    <a href="mailto:hello@example.com" class="cta h-11 px-6 text-sm">تماس با ما</a>
+    <Button href="mailto:hello@example.com" size="lg">تماس با ما</Button>
   </div>
 </PageSection>
 ```
 
 ### ۷.۵ قواعد ثابت
 
-- دکمهٔ اصلی: `.cta` — دکمهٔ ثانویه: `.btn-secondary` — چیپ: `.chip` — سطح شیشه‌ای: `.glass-surface`.
-  این کلاس‌ها یک‌جا در `global.css` تعریف شده‌اند؛ دوباره نسازید.
+- دکمه: `<Button variant="primary" size="lg" icon="arrow-right">…</Button>` — فقط رنگ، متن و آیکن عوض می‌شود.
+  کلاس‌های `.cta`، `.btn-secondary`، `.btn-hero-secondary`، `.chip` و `.glass-surface` یک‌جا در `global.css` تعریف شده‌اند؛ در کامپوننت‌ها دوباره نسازید.
 - فقط یک `<h1>` در کل صفحه (تست smoke تعدادش را چک می‌کند).
 - هیچ کلاس فیزیکی (`ml-`، `pr-`، `text-left`، `left-`) ننویسید؛ همیشه `ms-`، `pe-`، `text-start`، `start-*`.
 - آیکون فقط با `<Icon name="…" />`. نام‌های موجود: `search`، `globe`، `close`، `check`،
   `menu`، `chevron-left/right/down`، `sun`، `moon`، `copy`، `external-link`، `arrow-right`،
-  `shield`، `mail`، `layers`، `headers`. آیکون جدید: [icons.svg.ts](../src/pages/icons.svg.ts).
+  `shield`، `mail`، `layers` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
+  `folder`، `compass`، `palette`، `book-open`، `file`. آیکون جدید: [icons.svg.ts](../src/pages/icons.svg.ts).
 - متن دکمه‌های مشترک را با `m.common_…` از Paraglide بگیرید، نه رشتهٔ ثابت.
 
 ---
@@ -528,8 +524,12 @@ const blogHref = getBlogIndexHref(locale);
 - `getPageUrl('<group>', locale)` برای صفحات محتوایی؛ اگر صفحه در آن زبان draft باشد
   `null` برمی‌گرداند، پس همیشه fallback بدهید.
 - بخش‌های داخلی خانه: `href="#services"` (همان صفحه).
-- برای اضافه‌کردن آیتم به هدر/دراور/فوتر: [navigation.ts](../src/libs/config/navigation.ts)
-  — هر سه از `getNavigationSlots()` می‌خوانند.
+- برای اضافه‌کردن آیتم به هدر و دراور: یک ورودی در `PAGE_ITEMS` در
+  [navigation.ts](../src/libs/config/navigation.ts) — هر دو از همان یک فهرست می‌خوانند.
+  فوتر و لینک‌های حقوقی سازندهٔ اختصاصی خود را دارند (`getFooterNavigation`،
+  `getLegalNavigation`) و همه با `getNavigationSlots()` توزیع می‌شوند.
+- دکمهٔ CTA هدر و دراور از `ui.ctaPage` در `app.config.json` می‌آید؛ اگر آن صفحه
+  منتشر نشده باشد، دکمه پنهان می‌شود (لینک مرده ساخته نمی‌شود).
 - زبان هرگز با `navigate()` عوض نمی‌شود؛ `LanguageSwitcher` خودش `window.location.assign` را انجام می‌دهد.
 
 ---
@@ -557,7 +557,7 @@ pnpm run messages:compile
 
 ```astro
 import * as m from '@/paraglide/messages';
-<a href="#contact" class="cta h-11 px-6 text-sm">{m.home_cta_primary({}, { locale })}</a>
+<Button href="#contact" size="lg">{m.home_cta_primary({}, { locale })}</Button>
 ```
 
 ۴. زبان جدید؟ `pnpm run i18n:add-lang -- de --name="Deutsch" --dir=ltr --with-content`.
@@ -586,7 +586,7 @@ import * as m from '@/paraglide/messages';
 
 ```bash
 pnpm run lint          # messages + astro check + tsc (خطای تایپ/شمای محتوا اینجا گیر می‌افتد)
-pnpm test              # ۱۹۳ تست واحد
+pnpm test              # ۱۹۷ تست واحد
 pnpm run audit:i18n    # هم‌ترازی زبان‌ها، کلیدها، مسیرها، RTL
 pnpm run build         # Astro + Pagefind
 pnpm run smoke         # HTML/SEO/feed/H1 روی خروجی واقعی

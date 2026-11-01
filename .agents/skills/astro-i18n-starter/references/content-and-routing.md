@@ -181,7 +181,9 @@ Helpers exported from the same module — use these instead of hardcoding a segm
 `buildSiteRoutes(pages, posts, extraCollections)` registers the page and blog routes as before, then loops `getEntryContentTypes()`:
 
 * one `collection-entry` route per published entry per locale, with `alternates` built from `getContentTypeEntryHref`;
-* one `collection-index` route per locale when `index` is on — paginated types get the same clamping logic as the blog (`switcherAlternates` never points past a locale's last page).
+* one `collection-index` route per **live** locale when `index` is on — paginated types get the same clamping logic as the blog (`switcherAlternates` never points past a locale's last page).
+
+**Live locales.** A locale is live once at least one entry of it is published — a page, a post or an entry of any other collection. A locale that exists in configuration only gets no section indexes at all (`/de/blog/` is not built for a German dictionary that still holds `[TODO: de]` titles), because those listings would be placeholder copy and would link at a home page that was never built. Declaring a locale therefore never publishes anything: the first translated, published entry is what turns its sections on, and `pnpm run i18n:add-lang` alone cannot produce a broken build.
 
 A disabled blog registers **no** routes at all (not even an empty `/blog/`). `getBreadcrumbs()` matches the first URL segment against the enabled indexed types, so a new collection gets `Home → Section → Entry` for free.
 
@@ -189,7 +191,7 @@ A disabled blog registers **no** routes at all (not even an empty `/blog/`). `ge
 
 `CollectionIndexView.astro` loads the collection itself, filters `draft` and locale via `parseContentEntryId`, sorts by `year` then title, and renders a staggered card grid, an empty state (`content_empty`) and an optional pager. It passes the type's localized label as the breadcrumb section, so the trail reads `Home → Projects` rather than the raw route segment.
 
-`CollectionEntryView.astro` renders the hero (with a breadcrumb prelude inside `HeroCopy`'s `prelude` slot, matching `BlogPostHeroContent`), the prose body, optional project meta (`client`, `year`, `stack`, `link`) and a `CreativeWork` + `BreadcrumbList` JSON-LD pair. The visible trail and the structured data must stay in sync: if a view emits `BreadcrumbList`, it must render the same breadcrumbs.
+`CollectionEntryView.astro` renders the hero (with a breadcrumb prelude inside `HeroCopy`'s `prelude` slot, matching `BlogPostHeroContent`), the prose body, optional project meta (`client`, `year`, `stack`, `link`) and a `CreativeWork` + `BreadcrumbList` JSON-LD pair (`year` is serialized as an ISO `dateCreated: '<year>-01-01'`, because schema.org rejects a bare four-digit year). The visible trail and the structured data must stay in sync: if a view emits `BreadcrumbList`, it must render the same breadcrumbs.
 
 Neither view knows about taxonomy, TOC, related posts or feeds: that chrome stays in the blog views, so adding a collection never drags blog complexity along.
 

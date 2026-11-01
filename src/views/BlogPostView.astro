@@ -10,6 +10,7 @@ import {
   getBreadcrumbs,
   getBlogIndexHref,
   getBlogPostHref,
+  getHomeHref,
 } from '@/libs/content/service';
 import {
   buildBlogFilterQuery,
@@ -43,6 +44,7 @@ const relatedPosts = siteConfig.blog.showRelatedPosts ? getRelatedPosts(localePo
 
 const breadcrumbs = getBreadcrumbs(url, locale, {
   home: m.nav_home({}, { locale }),
+  homeHref: await getHomeHref(locale),
   blog: m.nav_blog({}, { locale }),
   current: title,
 });

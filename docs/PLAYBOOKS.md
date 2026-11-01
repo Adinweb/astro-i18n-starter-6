@@ -27,7 +27,7 @@ To switch the primary default (prefix-less) language of the site (e.g. from Engl
    ```
 
 4. **Expected Outcome**:
-   - Persian (`fa`) instantly routes to prefix-less URLs (`/`, `/darbare-ma`, `/blog/اولین-پست`).
+   - Persian (`fa`) instantly routes to prefix-less URLs (`/`, `/درباره-ما`, `/blog/اولین-پست`).
    - English (`en`) routes to prefixed URLs (`/en`, `/en/about`, `/en/blog/first-post`).
    - Hreflang `x-default` automatically points to the Persian version.
    - Language switcher, canonical URLs, and sitemap update seamlessly without moving a single file.
@@ -49,7 +49,7 @@ pnpm run build && pnpm run smoke
 
 * The command only flips `content.types.<type>.enabled`; the file's indentation and line endings are preserved, so the diff is one line.
 * Disabling never deletes content. It removes the index/entry routes, the sitemap entries, the header/drawer/footer link and the home-page CTA. `/api/blog-posts.json` and `/rss.xml` deliberately keep working so external consumers do not break.
-* Hand-written MDX links to a removed section are not rewritten — `pnpm run link:check` reports them after a build.
+* Hand-written MDX links to a removed section are not rewritten — `pnpm run link:check` reports the missing page **or the missing `#anchor`** after a build, and the navigation itself never emits an anchor whose target page is gone.
 
 ### 2. Inspect what is ready
 
@@ -98,6 +98,15 @@ pnpm run doctor && pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run
    pnpm messages:compile
    ```
 
+4. **Reach for `<Button>`, not a hand-rolled control**:
+   Every text button in the project is `src/components/Button.astro` — only its colour (`variant`), scale (`size`), label and icon change. It renders `<a>` for navigation and `<button>` for actions, adds the shared hover lift/press, and mirrors directional icons in RTL:
+   ```astro
+   <Button href="/pricing/" variant="primary" size="lg" icon="arrow-right">
+     {m.common_get_started({}, { locale })}
+   </Button>
+   ```
+   The class recipe lives in `src/libs/ui/button.ts` (`buttonClasses()`), so client-side renderers such as the blog pager produce the same control. Icon-only controls stay `IconButton.astro`.
+
 ---
 
 ## Playbook 4: Adding New Languages & Scaffolding Multilingual Content
@@ -113,6 +122,7 @@ pnpm run i18n:add-lang -- it --no-content
   * `--with-content` / `--no-content`: Chooses whether to auto-generate markdown files for all existing pages and posts in the new language.
   * `--from=<locale>`: Selects which existing language to clone titles, descriptions, and markdown body from (defaults to `DEFAULT_LOCALE` / `en`).
   * `--publish` / `--draft=false`: Requests published output, but entries whose title still contains a `[TODO: ...]` placeholder always stay `draft: true`. Generated content copies the source language, so translate each file and flip its `draft` flag instead of forcing it.
+  * A body copied from `--from=<locale>` starts with an MDX comment naming the source file (`{/* TODO(de): translate this body — it is still en copy. */}`). It is not translated copy, and the marker makes that obvious in review instead of leaving source-language prose under a translated title. Locales that were never translated keep a localized `[TODO: …]` stub instead.
 
 ### 2. Scaffolding New Articles (`pnpm run new:post`)
 ```bash
@@ -146,9 +156,11 @@ pnpm run new:page -- contact --from=fa --title="تماس با ما" --hero=minim
 pnpm run new:page -- contact --update --sync-frontmatter --title:fa="تماس با تیم ما" --title:en="Contact Our Team"
 ```
 * Auto-creates localized page entries across all active locales in `src/i18n/locales.ts`.
-* Automatically registers navigation key `nav_<key>` in all dictionaries and recompiles Paraglide.
+* Automatically registers navigation key `nav_<key>` in all dictionaries and recompiles Paraglide. The label alone does not add the page to a menu: add `{ group: '<key>', label: … }` to `PAGE_ITEMS` in `src/libs/config/navigation.ts` (header + drawer) or to `getFooterNavigation` / `getLegalNavigation`.
 * Use `--update` / `--sync-frontmatter` to synchronize structural frontmatter (`image`, `hero`, `container`, `flushTop`, `template`) without manual file rewrites.
 * Only the source locale is published by default; the other locales stay `draft: true` until translated. Use `--publish`, `--draft`, and `--slug:<locale>="…"` to control that explicitly.
+* **Slugs:** the source locale owns the group slug (`contact`); every other locale starts with the placeholder `contact-<locale>` so that each locale has a valid route. The command lists those placeholders with the exact fix (`--update --slug:fa="تماس"`), and `pnpm run doctor` keeps reporting any placeholder that is still in the content: it builds and routes, but `/fa/contact-fa/` is not a URL you want to ship.
+* **`--publish` and scaffold copy:** publishing flips the entry live while its body is still the localized "content coming soon" sentence. The command warns about it, and `pnpm run smoke` fails while that sentence is in `dist/`, so the copy cannot reach production by accident.
 
 ### 4. Batch Adding Translations (`pnpm run i18n:add-batch`)
 ```bash
@@ -204,6 +216,7 @@ pnpm run remove:page -- pricing --force
 pnpm run remove:page -- pricing --locale=de --force
 ```
 * Automatically cleans up `nav_<page-key>` from all dictionary files (`messages/*.json`) and recompiles Paraglide messages. With `--locale` only that locale's file is deleted and the navigation key stays in every dictionary, because the dictionaries always carry the same key set; the missing locale is reported by `pnpm run audit:i18n` as a warning, not an error.
+* Before deleting the key it scans `src/` for surviving `m.nav_<page-key>(` calls and names every file that still needs fixing. The footer's pages column is derived from `PAGE_ITEMS`, so after removing a group from that list there is nothing else to rewrite — but a leftover reference is reported here instead of failing the next build with an undefined message.
 * Guards the critical `home` page from deletion without `--force`.
 
 ---

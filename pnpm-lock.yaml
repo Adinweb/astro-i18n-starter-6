@@ -178,6 +178,9 @@ importers:
       '@inlang/paraglide-js':
         specifier: ^2.26.0
         version: 2.29.1(typescript@6.0.3)(vite@8.3.5(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))
+      '@tabler/icons-astro':
+        specifier: ^3.50.0
+        version: 3.50.0(astro@7.3.8(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.5(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))
@@ -1305,6 +1308,14 @@ packages:
   '@sqlite.org/sqlite-wasm@3.48.0-build4':
     resolution: {integrity: sha512-hI6twvUkzOmyGZhQMza1gpfqErZxXRw6JEsiVjUbo7tFanVD+8Oil0Ih3l2nGzHdxPI41zFmfUQG7GHqhciKZQ==}
     hasBin: true
+
+  '@tabler/icons-astro@3.50.0':
+    resolution: {integrity: sha512-x6iqEhbP6x0PEyPJCF120mSRX50o/m7RFjW+5aSrjEI9S3SsQNFk2mDQyENf5BMrs5412MTkGXv76tGU4t30Uw==}
+    peerDependencies:
+      astro: '>=4.0.0'
+
+  '@tabler/icons@3.50.0':
+    resolution: {integrity: sha512-HflLxyrH1cqC7s7jzQGSjpsTAVIoaf7+/yHjbdM59rJQBMjliibp+LYhDPFxOMcwa1M8DNpOk6ENzQiWn9a1Dg==}
 
   '@tailwindcss/node@4.3.3':
     resolution: {integrity: sha512-/T8IKEsf9VTU6tLjgC7+sv2mOPtQxzE2jMw7u4Tt40Tx+QSZxpzh95/H6cMKoja9XuW7iMdLJYBB0o9G1CaAgg==}
@@ -3567,6 +3578,13 @@ snapshots:
   '@sinclair/typebox@0.31.30': {}
 
   '@sqlite.org/sqlite-wasm@3.48.0-build4': {}
+
+  '@tabler/icons-astro@3.50.0(astro@7.3.8(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))':
+    dependencies:
+      '@tabler/icons': 3.50.0
+      astro: 7.3.8(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1)
+
+  '@tabler/icons@3.50.0': {}
 
   '@tailwindcss/node@4.3.3':
     dependencies:

@@ -4,13 +4,14 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageHero from '@/components/PageHero.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import PostCard from '@/components/PostCard.astro';
-import Icon from '@/components/Icon.astro';
+import Button from '@/components/Button.astro';
 import {
   buildBreadcrumbSchema,
   getBreadcrumbs,
   getBlogIndexHref,
   getBlogPageHref,
   getBlogPostHref,
+  getHomeHref,
 } from '@/libs/content/service';
 import {
   buildBlogFilterQuery,
@@ -75,6 +76,7 @@ const pageTitle = page > 1 ? `${m.nav_blog({}, { locale })} — ${pageStatus}` :
 const indexDescription = m.blog_index_description({}, { locale });
 const breadcrumbs = getBreadcrumbs(url, locale, {
   home: m.nav_home({}, { locale }),
+  homeHref: await getHomeHref(locale),
   blog: m.nav_blog({}, { locale }),
   current: page > 1 ? pageStatus : undefined,
 });
@@ -244,16 +246,18 @@ const indexSchema = [
                   data-blog-pagination
                 >
                   {previousHref && (
-                    <a
+                    <Button
                       href={previousHref}
                       rel="prev"
+                      variant="secondary"
+                      size="sm"
+                      icon="chevron-left"
+                      iconPosition="start"
                       data-page-link="previous"
                       data-page-href={previousHref}
-                      class="btn-secondary gap-1.5 px-4 py-2 text-xs"
                     >
-                      <Icon name="chevron-left" size={16} class="shrink-0 rtl:rotate-180" />
                       {m.blog_pagination_previous({}, { locale })}
-                    </a>
+                    </Button>
                   )}
 
                   {pageWindow.map((entry) =>
@@ -276,20 +280,17 @@ const indexSchema = [
                   )}
 
                   {nextHref && (
-                    <a
+                    <Button
                       href={nextHref}
                       rel="next"
+                      variant="secondary"
+                      size="sm"
+                      icon="chevron-right"
                       data-page-link="next"
                       data-page-href={nextHref}
-                      class="btn-secondary gap-1.5 px-4 py-2 text-xs"
                     >
                       {m.blog_pagination_next({}, { locale })}
-                      <Icon
-                        name="chevron-left"
-                        size={16}
-                        class="shrink-0 rotate-180 rtl:rotate-0"
-                      />
-                    </a>
+                    </Button>
                   )}
                 </nav>
               </div>
@@ -313,6 +314,7 @@ const indexSchema = [
   import { getLenis } from '@/scripts/lenis';
   import { refreshChronoTrig } from '@/scripts/chronotrig';
   import { buildPageWindow, PAGE_GAP, paginate } from '@/libs/content/pagination';
+  import { buttonClasses } from '@/libs/ui/button';
   import {
     NO_FILTERS,
     areBlogFiltersEqual,
@@ -592,7 +594,7 @@ const indexSchema = [
         const prev = document.createElement('a');
         prev.href = makePageHref(currentPage - 1);
         prev.dataset.dynamicPage = String(currentPage - 1);
-        prev.className = 'btn-secondary gap-1.5 px-4 py-2 text-xs';
+        prev.className = buttonClasses({ variant: 'secondary', size: 'sm' });
         prev.append(
           createSvgIcon('chevron-left', 16, 'shrink-0 rtl:rotate-180'),
           document.createTextNode(prevLabel)
@@ -626,10 +628,10 @@ const indexSchema = [
         const next = document.createElement('a');
         next.href = makePageHref(currentPage + 1);
         next.dataset.dynamicPage = String(currentPage + 1);
-        next.className = 'btn-secondary gap-1.5 px-4 py-2 text-xs';
+        next.className = buttonClasses({ variant: 'secondary', size: 'sm' });
         next.append(
           document.createTextNode(nextLabel),
-          createSvgIcon('chevron-left', 16, 'shrink-0 rotate-180 rtl:rotate-0')
+          createSvgIcon('chevron-right', 16, 'shrink-0 rtl:rotate-180')
         );
         nav.append(next);
       }

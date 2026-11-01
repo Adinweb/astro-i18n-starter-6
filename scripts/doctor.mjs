@@ -24,6 +24,7 @@ import {
 } from './lib/content-types.mjs';
 import { readLocaleConfig } from './lib/locales.mjs';
 import { parseFrontmatter } from './lib/frontmatter.mjs';
+import { findPlaceholderSlugs } from './lib/slug.mjs';
 
 const wantsJson = process.argv.includes('--json');
 const findings = [];
@@ -146,6 +147,63 @@ if (appConfig) {
 
   if (/example\.com|github\.com\/?$/.test(appConfig.social?.github ?? '')) {
     add('warn', 'Social links still point at placeholders.', 'Set social.github/twitter in app.config.json.');
+  }
+
+  // The contact form needs a destination. Without an endpoint it renders a
+  // visitor-facing "unavailable" panel and, when `site.contactEmail` is set, a
+  // mailto button; without both, the page can receive nothing at all.
+  const hasEndpoint = Boolean(
+    appConfig.api?.baseUrl ||
+      process.env.PUBLIC_API_BASE_URL ||
+      process.env.PUBLIC_CONTACT_API_URL
+  );
+  const contactEmail = appConfig.site?.contactEmail ?? '';
+
+  if (!hasEndpoint && !contactEmail) {
+    add(
+      'warn',
+      'The contact form has no destination (api.baseUrl and site.contactEmail are both empty).',
+      'Set site.contactEmail for the mailto fallback and/or api.baseUrl (or PUBLIC_CONTACT_API_URL) for the external endpoint.'
+    );
+  } else {
+    add(
+      'ok',
+      contactEmail
+        ? `Contact fallback address: ${contactEmail}.`
+        : 'Contact form posts to the configured external endpoint.'
+    );
+  }
+
+  // The web manifest reads `site.description`; the footer, the Open Graph
+  // description, the feed subtitle and the 404 read the `site_description`
+  // message. Rebranding one and forgetting the other is the classic leftover
+  // copy, so the two are compared here before anyone hands the site over.
+  const localeConfig = readLocaleConfig(rootDir);
+  const baseLocale = localeConfig.defaultLocale ?? localeConfig.locales?.[0];
+  const dictionaryPath = baseLocale
+    ? path.join(rootDir, 'messages', `${baseLocale}.json`)
+    : null;
+
+  if (dictionaryPath && fs.existsSync(dictionaryPath)) {
+    try {
+      const dictionary = JSON.parse(fs.readFileSync(dictionaryPath, 'utf-8'));
+      const messageDescription = dictionary.site_description;
+      const appDescription = appConfig.site?.description;
+
+      if (
+        typeof messageDescription === 'string' &&
+        typeof appDescription === 'string' &&
+        messageDescription.trim() !== appDescription.trim()
+      ) {
+        add(
+          'warn',
+          `Site description differs between app.config.json and messages/${baseLocale}.json.`,
+          `Set both to the same sentence: site.description feeds the web manifest ("${appDescription}"), site_description feeds the footer, OG description and feeds ("${messageDescription}").`
+        );
+      }
+    } catch {
+      // A dictionary that cannot be parsed is reported by the audit, not here.
+    }
   }
 }
 
@@ -303,6 +361,22 @@ for (const type of types.filter((candidate) => KNOWN_TYPES.includes(candidate.ke
       'warn',
       `${type.key}: ${todoEntries} entr(ies) still carry a [TODO: …] title.`,
       'Translate the title before publishing that locale.'
+    );
+  }
+
+  // A scaffolded locale starts with `<group>-<locale>` as its slug. It routes
+  // and builds, so nothing fails — the URL simply reads like a leftover
+  // (`/fa/services-fa/`) and indexes for the wrong phrase in the wrong script.
+  const placeholderSlugs = groups.flatMap((group) =>
+    findPlaceholderSlugs(path.join(contentDirFor(type.key), group), group, locales).map(
+      (entry) => `${group}/${entry.locale} → "${entry.slug}"`
+    )
+  );
+  if (placeholderSlugs.length > 0) {
+    add(
+      'warn',
+      `${type.key}: ${placeholderSlugs.length} placeholder slug(s): ${placeholderSlugs.slice(0, 3).join(', ')}${placeholderSlugs.length > 3 ? ', …' : ''}.`,
+      'Set a native slug per language: `pnpm run new:page|new:post <group> --update --slug:<locale>="<native-slug>"` before publishing.'
     );
   }
   if (missingFiles === 0 && brokenImages === 0 && todoEntries === 0) {

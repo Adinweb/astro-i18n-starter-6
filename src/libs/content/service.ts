@@ -5,6 +5,8 @@ import { POSTS_PER_PAGE } from '@/libs/config/app';
 import {
   groupPublishedEntries,
   isPublished,
+  parseContentEntryId,
+  type ContentEntryLike,
 } from '@/libs/content/entries';
 import { getPageCount } from '@/libs/content/pagination';
 import {
@@ -177,6 +179,24 @@ export function buildSiteRoutes(
 
   const pagesByGroup = groupPublishedEntries(pages, 'pages');
 
+  //
+  // A locale is *live* once at least one entry of it is published — a page, a
+  // post or an entry of any other collection. Until then the locale exists in
+  // configuration only, and building its section indexes would ship empty
+  // listings whose UI copy is still a `[TODO: …]` placeholder and whose links
+  // point at a home page that was never built. One command (`i18n:add-lang`)
+  // must never be able to create that state.
+  //
+  const liveLocales = new Set<Locale>();
+  const markLive = (entries: readonly ContentEntryLike[]) => {
+    for (const entry of entries) {
+      if (isPublished(entry)) liveLocales.add(parseContentEntryId(entry.id).locale);
+    }
+  };
+  markLive(pages);
+  markLive(posts);
+  for (const entries of Object.values(extraCollections)) markLive(entries ?? []);
+
   const homePages = pagesByGroup.get('home');
   if (!homePages?.has(DEFAULT_LOCALE)) {
     throw new Error(
@@ -241,6 +261,8 @@ export function buildSiteRoutes(
   // - `switcherAlternates` (UI language switcher) clamps to `Math.min(page, otherPages)`
   //   so switching languages on deep pages never leads to a 404.
   for (const locale of LOCALES) {
+    if (!liveLocales.has(locale)) continue;
+
     const totalPages = pagesPerLocale.get(locale)!;
 
     for (let page = 1; page <= totalPages; page += 1) {
@@ -249,6 +271,7 @@ export function buildSiteRoutes(
       const switcherAlternates: Partial<Record<Locale, string>> = {};
 
       for (const other of LOCALES) {
+        if (!liveLocales.has(other)) continue;
         const otherPages = pagesPerLocale.get(other)!;
         if (otherPages >= page) {
           alternates[other] = getBlogPageHref(page, other);
@@ -356,6 +379,8 @@ export function buildSiteRoutes(
       : Math.max(1, ...entriesPerLocale.values());
 
     for (const locale of LOCALES) {
+      if (!liveLocales.has(locale)) continue;
+
       const pagesForLocale = (other: Locale) =>
         type.paginated
           ? getPageCount(entriesPerLocale.get(other) ?? 0, perPage)
@@ -368,6 +393,7 @@ export function buildSiteRoutes(
         const switcherAlternates: Partial<Record<Locale, string>> = {};
 
         for (const other of LOCALES) {
+          if (!liveLocales.has(other)) continue;
           const otherPages = pagesForLocale(other);
           if (otherPages >= page) {
             alternates[other] = getCollectionPageHref(type.base, page, other);
@@ -436,8 +462,27 @@ export async function getPageUrl(group: string, locale: Locale): Promise<string 
   return resolvePageUrl(pages, group, locale);
 }
 
+/**
+ * Home URL a locale's chrome can link to.
+ *
+ * A locale becomes live before its home page is translated: publishing
+ * `about/de.mdx` already builds `/de/about/`, while `/de/` does not exist until
+ * `home/de.mdx` is published. The brand link, the footer and the breadcrumbs
+ * always need *a* home, so they resolve the locale's own one and otherwise fall
+ * back to the default locale's home instead of guessing `/<locale>/`.
+ */
+export async function getHomeHref(locale: Locale): Promise<string> {
+  return (await getPageUrl('home', locale)) ?? localizeHref('/', DEFAULT_LOCALE);
+}
+
 export interface BreadcrumbLabels {
   home: string;
+  /**
+   * Resolved home URL of the locale (`getHomeHref`). Views pass it because only
+   * the caller can await content; without it the trail assumes `/<locale>/`,
+   * which a partially translated locale does not have.
+   */
+  homeHref?: string;
   blog: string;
   /**
    * Label and URL of the section a non-blog collection entry belongs to. Views
@@ -457,7 +502,7 @@ export function getBreadcrumbs(
   locale: Locale,
   labels: BreadcrumbLabels
 ): BreadcrumbItem[] {
-  const homeHref = localizeHref('/', locale);
+  const homeHref = labels.homeHref ?? localizeHref('/', locale);
   const pathname = pathOnly(url);
   const firstSegment = pathname.split('/').filter(Boolean)[0];
 

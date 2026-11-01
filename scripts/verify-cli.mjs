@@ -748,10 +748,10 @@ try {
 
   const fakeDist = path.join(sandbox, 'fake-dist');
   fs.mkdirSync(path.join(fakeDist, 'ok'), { recursive: true });
-  fs.writeFileSync(path.join(fakeDist, 'ok', 'index.html'), '<p>ok</p>', 'utf-8');
+  fs.writeFileSync(path.join(fakeDist, 'ok', 'index.html'), '<p id="present">ok</p>', 'utf-8');
   fs.writeFileSync(
     path.join(fakeDist, 'index.html'),
-    '<a href="/ok/">ok</a><a href="/missing-page/">broken</a>',
+    '<a href="/ok/">ok</a><a href="/ok/#missing-anchor">broken anchor</a><a href="/missing-page/">broken</a>',
     'utf-8'
   );
 
@@ -759,20 +759,23 @@ try {
     allowFailure: true,
   });
   const linkReport = JSON.parse(result.stdout);
+  const brokenTargets = linkReport.broken.map((entry) => entry.target);
   record(
     result.code === 1 &&
-      linkReport.broken.length === 1 &&
-      linkReport.broken[0].target === '/missing-page/',
-    'link:check fails on an internal link whose target was not built'
+      linkReport.broken.length === 2 &&
+      brokenTargets.includes('/missing-page/') &&
+      brokenTargets.includes('/ok/#missing-anchor'),
+    'link:check fails on a link whose page or fragment was not built',
+    brokenTargets.join(', ')
   );
 
   fs.writeFileSync(
     path.join(fakeDist, 'index.html'),
-    '<a href="/ok/">ok</a><a href="/ok">also ok</a>',
+    '<a href="/ok/">ok</a><a href="/ok">also ok</a><a href="/ok/#present">anchor ok</a>',
     'utf-8'
   );
   result = run(sandbox, 'node', ['scripts/link-check.mjs', '--dir=fake-dist']);
-  record(result.code === 0, 'link:check accepts directory and extension-less paths that resolve');
+  record(result.code === 0, 'link:check accepts directory, extension-less and anchored paths that resolve');
 
   // ---------------------------------------------------------------------
   // 10. The working copy is untouched

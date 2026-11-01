@@ -1,0 +1,114 @@
+---
+/**
+ * The site's button.
+ *
+ * It renders an `<a>` when it navigates and a `<button>` when it acts, so the
+ * element always matches the behaviour — a control that changes the page must
+ * be a link (middle-click, new tab, crawlable) and one that submits must not
+ * be. Icon-only controls are not a button with an empty label: use
+ * `IconButton.astro` for those.
+ *
+ * Colour comes from `variant`, scale from `size`, and the motion (hover lift,
+ * press, disabled state) from `buttonClasses()` — the same recipe the blog
+ * pager's runtime renderer uses, so a server-rendered button and a client one
+ * cannot drift apart.
+ *
+ * `icon` is a sprite name from `/icons.svg`; icons that point along the reading
+ * direction (`arrow-*`, `chevron-*`) mirror automatically in RTL.
+ */
+import Icon from '@/components/Icon.astro';
+import {
+  buttonClasses,
+  isDirectionalIcon,
+  type ButtonSize,
+  type ButtonVariant,
+} from '@/libs/ui/button';
+
+interface Props {
+  /** Presence switches the element to `<a href>`. */
+  href?: string;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  block?: boolean;
+  icon?: string;
+  iconPosition?: 'start' | 'end';
+  /**
+   * Force the RTL mirroring of `icon`. Defaults to `true` for directional
+   * icons and `false` for the rest.
+   */
+  flipIcon?: boolean;
+  /** `<button>` only. */
+  type?: 'button' | 'submit' | 'reset';
+  disabled?: boolean;
+  /** Opens a new tab and adds the matching `rel`. */
+  external?: boolean;
+  class?: string;
+  /** Anything else (`data-*`, `aria-*`, `id`, `rel`, …) lands on the element. */
+  [attribute: string]: unknown;
+}
+
+const {
+  href,
+  variant = 'primary',
+  size = 'md',
+  block = false,
+  icon,
+  iconPosition = 'end',
+  flipIcon,
+  type = 'button',
+  disabled = false,
+  external = false,
+  class: className,
+  ...rest
+} = Astro.props;
+
+const classes = buttonClasses({ variant, size, block, className });
+const directional = isDirectionalIcon(icon);
+const mirrors = flipIcon ?? directional;
+
+// The hover nudge belongs to the icon's meaning: an arrow that points along the
+// reading direction moves forward on hover, so it needs the opposite offset in
+// RTL. `translate` is applied before the rotation, hence the mirrored offset
+// instead of relying on `rtl:rotate-180` to flip it. Other icons stay still and
+// only change colour with the variant.
+const iconClass = [
+  'shrink-0 transition-transform duration-200 ease-out',
+  mirrors && 'rtl:rotate-180',
+  directional && 'group-hover:translate-x-0.5',
+  directional && mirrors && 'rtl:group-hover:-translate-x-0.5',
+]
+  .filter(Boolean)
+  .join(' ');
+const iconSize = size === 'sm' ? 15 : 16;
+const attributes = rest as Record<string, string | number | boolean | undefined>;
+---
+
+{
+  href ? (
+    <a
+      href={href}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noreferrer noopener' : undefined}
+      class={classes}
+      {...attributes}
+    >
+      {icon && iconPosition === 'start' && (
+        <Icon name={icon} size={iconSize} class={iconClass} />
+      )}
+      <slot />
+      {icon && iconPosition === 'end' && (
+        <Icon name={icon} size={iconSize} class={iconClass} />
+      )}
+    </a>
+  ) : (
+    <button type={type} disabled={disabled} class={classes} {...attributes}>
+      {icon && iconPosition === 'start' && (
+        <Icon name={icon} size={iconSize} class={iconClass} />
+      )}
+      <slot />
+      {icon && iconPosition === 'end' && (
+        <Icon name={icon} size={iconSize} class={iconClass} />
+      )}
+    </button>
+  )
+}
