@@ -480,7 +480,7 @@ flushTop: true
 - آیکون فقط با `<Icon name="…" />`. نام‌های موجود: `search`، `globe`، `close`، `check`،
   `menu`، `chevron-left/right/down`، `sun`، `moon`، `copy`، `external-link`، `arrow-right`،
   `shield`، `mail`، `layers` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
-  `folder`، `compass`، `palette`، `book-open`، `file`. آیکون جدید: [icons.svg.ts](../src/pages/icons.svg.ts).
+  `folder`، `compass`، `palette`، `book-open`، `file`. آیکون جدید: نام را در [icons.ts](../src/libs/ui/icons.ts) ثبت و در رجیستری [Icon.astro](../src/components/Icon.astro) با import تک‌فایلی وصل کنید (هرگز از barrel بستهٔ `@tabler/icons-astro` import نکنید).
 - متن دکمه‌های مشترک را با `m.common_…` از Paraglide بگیرید، نه رشتهٔ ثابت.
 
 ---

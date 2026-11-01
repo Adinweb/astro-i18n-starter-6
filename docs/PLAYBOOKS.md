@@ -255,7 +255,7 @@ const window = buildPageWindow(page, totalPages);   // holes become the PAGE_GAP
 
 ### 4. The Pager UI
 `src/views/BlogIndexView.astro` renders the pager only when there is more than one page:
-* The previous/next arrows use the `chevron-left` symbol from `/icons.svg`, flipped with `rtl:rotate-180` / `rotate-180 rtl:rotate-0`, so the direction follows the reading direction.
+* The previous/next arrows are cloned from the server-rendered `<template data-icon-template="chevron-left">` / `…chevron-right` markup and flipped with `rtl:rotate-180` / `rotate-180 rtl:rotate-0`, so the direction follows the reading direction and the pager never carries its own SVG paths.
 * Every pager link carries the active taxonomy filter query, so paging never drops the selection.
 * `Seo.astro` / `BaseLayout.astro` accept `prevUrl` / `nextUrl` and emit `<link rel="prev">` / `<link rel="next">`; pages beyond the first get a distinct document title (`Blog — Page 2 of 3`).
 

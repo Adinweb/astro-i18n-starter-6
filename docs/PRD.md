@@ -71,7 +71,7 @@ You are a senior Astro v7 and TypeScript systems engineer building a production-
 | **Styling** | **Tailwind CSS v4** | Via `@tailwindcss/vite`. `@theme static inline` required. CSS logical properties throughout. |
 | **Content** | Astro Content Layer (`glob` loader + Zod) | Symmetrical `<group>/{locale}.mdx` convention for both `pages` and `blog`. |
 | **Search** | **Pagefind** + static JSON fallback | Pagefind indexes `dist/` post-build; `/api/search-dev.json` is a generated fallback for any environment where Pagefind is unavailable. |
-| **Icons** | Build-Time SVG Sprite Endpoint | `src/pages/icons.svg.ts` endpoint + `<Icon name="..." />` component. Zero inline `<path>` bloat. |
+| **Icons** | **`@tabler/icons-astro`**, per-icon imports | `<Icon name="..." />` resolves a semantic name from `src/libs/ui/icons.ts` to one Tabler component imported from its own module, so only the glyphs the site uses are built and no sprite request exists. |
 | **Auditing & Tests** | `vitest`, `knip`, custom smoke suite | Automated contract enforcement in CI. |
 
 ### Commands (Strict Naming)
@@ -146,7 +146,6 @@ Physical routes in `src/pages/` are strictly limited to:
 ```text
 src/pages/
 ├── 404.astro               # Path-prefix locale-aware 404
-├── icons.svg.ts            # SVG sprite endpoint (cacheable, zero-JS)
 ├── sitemap.xml.ts          # Derived from URL layer and content service
 ├── robots.txt.ts           # Derived from site config and sitemap URL
 └── [...path].astro         # Lean Router Dispatcher (< 50 lines)
@@ -349,7 +348,7 @@ The smoke test script (`scripts/smoke.mjs`) parses `dist/` directly:
 3. Verifies translated slug routes exist (e.g., `dist/fa/blog/اولین-پست/index.html`).
 4. Verifies canonical `<link rel="canonical">` matches the target URL.
 5. Verifies hreflang tags: exactly `locales.length + 1` tags (`en`, `de`, `fa`, `x-default`).
-6. Verifies `dist/icons.svg` exists and contains compiled icon symbols.
+6. Verifies pages render inline Tabler icons and that no page still references the retired `icons.svg` sprite.
 7. Verifies `dist/pagefind/` search bundle exists.
 
 ---
@@ -384,7 +383,7 @@ For operations that modify business logic, the agent refers to written playbooks
   3. Record spike results in `docs/SPIKE_RESULTS.md`.
 * Scaffold Astro 7, TypeScript strict, Tailwind v4 (`@tailwindcss/vite`).
 * Setup `project.inlang/settings.json` and `src/i18n/locales.ts`.
-* Create `src/pages/icons.svg.ts` endpoint and `<Icon />` component.
+* Create the `Icon` component plus its name registry (`src/libs/ui/icons.ts`) backed by `@tabler/icons-astro`.
 * Create script stubs in `scripts/` so verification commands exist.
 * **Exit Criteria (DoD):** `pnpm lint`, `pnpm messages:compile`, and `pnpm build` succeed with 0 errors.
 
@@ -402,7 +401,7 @@ For operations that modify business logic, the agent refers to written playbooks
 
 ### Phase 2 — Universal Routing & Layouts
 * Implement `src/pages/[...path].astro` powered by `getSiteRoutes()`.
-* Build `BaseLayout.astro` rendering `<html lang dir>`, CSS font variables, ClientRouter, and SVG sprite injection.
+* Build `BaseLayout.astro` rendering `<html lang dir>`, CSS font variables, ClientRouter, and the `<template>` icon sources client code clones.
 * Build `Seo.astro` generating accurate canonical and hreflang tags (count = 4).
 * Build `404.astro` (locale-aware via path prefix).
 * Implement `src/pages/sitemap.xml.ts` and `src/pages/robots.txt.ts`.

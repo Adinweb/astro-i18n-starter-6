@@ -25,6 +25,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs` (build-time Pagefind normalization), `src/libs/search/persian.ts` (ZWNJ/orthography/numeral query expansion & fallback folding), and `src/libs/search/client.ts`.
    - External API & Consent (Pure SSG, Zero Backend): `src/libs/api/client.ts` (`ContactForm.astro` posts directly to external/headless endpoints configured via `app.config.json` `api` or `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL`) and `src/libs/cookies/` (`CookieConsent.astro`). A site without an endpoint renders **no form**: `site.contactEmail` powers the `mailto:` fallback and the developer setup note is `import.meta.env.DEV`-only, so visitors never read environment-variable names. Never add SSR servers or backend folders.
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
+   - Icons: the closed name list in `src/libs/ui/icons.ts` (`SITE_ICONS`, `resolveIconName`) and the Tabler registry in `src/components/Icon.astro`. Names are semantic; templates never carry raw `<svg>`, and client code clones server-rendered icons instead of writing paths.
 2. **Lean Router Dispatcher Pattern**:
    - Never create dynamic routing files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
    - All dynamic routing flows exclusively through `src/pages/[...path].astro`, which dispatches to views in `src/views/` (`PageView`, `BlogIndexView`, `BlogPostView`, and the generic `CollectionIndexView` / `CollectionEntryView` used by registry-driven types such as `projects`). `/api/*.json` endpoints are strictly build-time static JSON catalogs.
@@ -96,11 +97,11 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── content/social.ts  # Builds the optimized og:image card
 │   │   ├── cookies/           # TDDDG § 25 / GDPR consent model & multi-domain script gatekeeper
 │   │   ├── search/            # client.ts + persian.ts (Pagefind & dev fallback with Persian ZWNJ/orthography expansion)
-│   │   └── ui/button.ts       # The button class recipe (`buttonClasses`) behind Button.astro and client renderers
+│   │   ├── ui/button.ts       # The button class recipe (`buttonClasses`) behind Button.astro and client renderers
+│   │   └── ui/icons.ts        # The closed icon vocabulary (SITE_ICONS) shared by Icon.astro, navigation and tests
 │   ├── pages/                 # Minimal physical pages:
 │   │   ├── [...path].astro    # Lean Router Dispatcher
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
-│   │   ├── icons.svg.ts       # SVG sprite endpoint
 │   │   ├── site.webmanifest.ts # Web app manifest generated from app.config.json
 │   │   ├── rss.xml.ts         # Default-locale Atom feed
 │   │   ├── rss/[locale].xml.ts # Non-default locale Atom feeds (/rss/<locale>.xml)
@@ -196,7 +197,7 @@ pnpm run i18n:add-batch -- --file=translations.json [--category=<cat>]
 
 ### Playbook A: Adding a New Navigation Link
 1. Ensure `src/content/pages/<page-key>/` exists (`pnpm run new:page <page-key>` scaffolds it and registers `nav_<page-key>`).
-2. Add **one** entry to `PAGE_ITEMS` in `src/libs/config/navigation.ts` — the shared list behind the desktop header and the mobile drawer — including its `icon` (a sprite name from `src/pages/icons.svg.ts`; the drawer renders it, and a missing one falls back to `file`). Use `getFooterNavigation` / `getLegalNavigation` only for a footer-only or legal link.
+2. Add **one** entry to `PAGE_ITEMS` in `src/libs/config/navigation.ts` — the shared list behind the desktop header and the mobile drawer — including its `icon` (a name from `src/libs/ui/icons.ts`; the drawer renders it, and a missing one falls back to `file`). Use `getFooterNavigation` / `getLegalNavigation` only for a footer-only or legal link.
 3. Everything consumes `getNavigationSlots()`, which skips pages that are missing or draft in a locale and emits anchor links only while their target page exists.
 4. Run `pnpm run lint && pnpm test && pnpm run audit:i18n`.
 
@@ -210,10 +211,13 @@ pnpm run i18n:add-batch -- --file=translations.json [--category=<cat>]
 - **Minimal Typographic Header:** Set `hero: "minimal"` to render `src/components/PageHeader.astro` (breadcrumbs, accent rule, `<h1>`, description) without a blurred background banner.
 - **Atmospheric Hero Band (`hero: "default"` & Blog):** Rendered by `src/components/PageHero.astro` — the entry's `image` (`./<group>.png` resolved via `image()` in `src/content.config.ts`, or `DEFAULT_HERO_IMAGE` fallback) is the single full-bleed defocused (`blur-md scale-105`) background layer under vertical/flat scrims, rendered with `<Image>` (`transition:persist`) and `HeroCopy.astro` / `BlogPostHeroContent.astro` inside its slot.
 
-### Playbook D: Adding an SVG Icon
-1. Add the `<path>` inner markup to `icons` in `src/pages/icons.svg.ts`.
-2. Render with `<Icon name="star" size={20} class="text-primary" />` or `<IconButton icon="star" label="..." />`. Never paste raw `<svg>` blobs in templates.
-3. Icon-only button: `<IconButton icon="star" label="..." />`. Text button: `<Button variant="primary" icon="star">Label</Button>`.
+### Playbook D: Adding an Icon
+Icons come from `@tabler/icons-astro`; nothing else renders an `<svg>` in a template.
+1. Add the semantic name to `SITE_ICONS` in `src/libs/ui/icons.ts` (e.g. `'star'`).
+2. Add one line to the `ICONS` registry in `src/components/Icon.astro`, importing the **individual** module (`import IconStar from '@tabler/icons-astro/dist/esm/icons/star.mjs'`). Never import from the package barrel: it re-exports all 6,258 icons, so Vite loads the whole set before tree-shaking (measured ≈ +2–7 s per build, same HTML output).
+3. Render with `<Icon name="star" size={20} class="text-primary" />` or `<IconButton icon="star" label="..." />`. Never paste raw `<svg>`/`<path>` blobs in templates.
+4. Icon-only button: `<IconButton icon="star" label="..." />`. Text button: `<Button variant="primary" icon="star">Label</Button>`.
+5. For an icon that appears *after* load (a pager, a copied state), render it inside a `<template data-icon-template="…">` and clone it in the script; for a state swap, render both glyphs and let CSS choose (`theme-icon-*`, `code-copy-*`). Never hand-write SVG paths in client code.
 
 ### Playbook E: Changing the Blog Pagination
 1. Edit `blog.postsPerPage` in `app.config.json` (exposed as `POSTS_PER_PAGE`).
@@ -249,12 +253,13 @@ pnpm run i18n:add-batch -- --file=translations.json [--category=<cat>]
 | Hand-editing files in `src/paraglide/` | Edit `messages/<lang>.json` and run `pnpm run messages:compile` |
 | Calling `m.key()` at top-level module scope | Call `m.key({}, { locale })` inside template/render cycle |
 | Creating `src/pages/[lang]/...` route files | Use `src/pages/[...path].astro` dispatcher with `src/views/` |
-| Inline `<svg>` `<path>` blobs in HTML | Add icon symbol to `src/pages/icons.svg.ts` and use `<Icon name="..." />` |
+| Inline `<svg>` `<path>` blobs in templates, or a hand-written SVG path string in client code | Register the name in `src/libs/ui/icons.ts`, map it in `Icon.astro`, and render `<Icon name="..." />` (clone from a `<template>` for runtime icons) |
 | Using `navigate()` for language switching | Use `window.location.assign(target)` for static language switch |
 | Missing `el.dataset.bound` guard in scripts | Check `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';` |
 | Showing the hero image as a side card or duplicated layer | Make the image the single full-bleed background in `PageHero.astro` |
 | Re-declaring a button, chip or frosted surface in a component | Compose `.cta`, `.btn-secondary`, `.chip`, `.glass-*` from `src/styles/global.css`, or render a text button with `<Button variant="…" size="…" icon="…">` |
 | Hand-rolling an icon-only `<button>` with an `<Icon>` inside | Use `<IconButton icon="..." label="..." />` |
+| Importing icons from the `@tabler/icons-astro` barrel | Import the per-icon module (`@tabler/icons-astro/dist/esm/icons/<name>.mjs`) so the build only reads the icons in use |
 | Serving a page image from `public/` or with a raw `<img src>` | Keep it next to the content entry (`./<file>`) and render with `<Image />` |
 | Rendering every blog post on one page, or hardcoding `/blog/page/2` | Slice with `paginate()` and link with `getBlogPageHref(page, locale)` |
 | Hiding elements with `display: none`, un-scoped `opacity-0`, or physical `left`/`right` | Use `data-trig` (scoped under `.js`) with logical `data-trig-direction="start|end"` |

@@ -435,20 +435,26 @@ if (notFound) {
   }
 }
 
-const iconsSvg = readHtml('icons.svg');
-assert(iconsSvg !== null, 'dist/icons.svg exists');
-if (iconsSvg) {
-  assert(
-    iconsSvg.includes('<symbol id="search"') &&
-      iconsSvg.includes('<symbol id="globe"') &&
-      iconsSvg.includes('<symbol id="sun"') &&
-      iconsSvg.includes('<symbol id="moon"') &&
-      iconsSvg.includes('<symbol id="copy"') &&
-      iconsSvg.includes('<symbol id="shield"') &&
-      iconsSvg.includes('<symbol id="mail"'),
-    'icons.svg contains compiled symbols (including sun, moon, copy, shield, and mail)'
-  );
-}
+// Icons are inline Tabler components: every page must carry its own glyphs,
+// and no page may still point at a sprite the build no longer emits.
+const homeHtml = readHtml('index.html');
+assert(
+  homeHtml !== null && count(homeHtml, /class="tabler-icon tabler-icon-/g) > 0,
+  'Icons render inline as Tabler components'
+);
+assert(
+  homeHtml !== null &&
+    homeHtml.includes('tabler-icon-home') &&
+    homeHtml.includes('tabler-icon-moon') &&
+    homeHtml.includes('tabler-icon-sun'),
+  'Navigation and theme icons are present in the built home page'
+);
+assert(
+  homeHtml !== null &&
+    !homeHtml.includes('/icons.svg') &&
+    !fs.existsSync(path.join(distDir, 'icons.svg')),
+  'No page references a retired icon sprite'
+);
 
 const pagefindDir = path.join(distDir, 'pagefind');
 assert(fs.existsSync(pagefindDir), 'dist/pagefind/ exists');

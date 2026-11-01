@@ -813,6 +813,16 @@ const structuredData = schema ?? {
       )
     }
 
+    <!--
+      Icons a script has to place later. The code-copy button is built at
+      runtime and shows two states; its markup is rendered here by `Icon` and
+      cloned, so client code never carries a second copy of the SVG paths.
+    -->
+    <template data-icon-template="code-copy">
+      <Icon name="copy" size={14} class="code-copy-copy" />
+      <Icon name="check" size={14} class="code-copy-check" />
+    </template>
+
     <style>
       :where(a, button, input, select, textarea):focus-visible {
         outline: 2px solid var(--color-primary);
@@ -1028,7 +1038,9 @@ const structuredData = schema ?? {
       function setupCodeCopyButtons() {
         const copyLabel = document.body.dataset.copyLabel || 'Copy code';
         const copiedLabel = document.body.dataset.copiedLabel || 'Copied!';
-        const svgNs = 'http://www.w3.org/2000/svg';
+        const iconTemplate = document.querySelector<HTMLTemplateElement>(
+          'template[data-icon-template="code-copy"]'
+        );
 
         document.querySelectorAll<HTMLPreElement>('.prose pre').forEach((pre) => {
           if (pre.dataset.copyBound === 'true') return;
@@ -1046,15 +1058,7 @@ const structuredData = schema ?? {
           btn.setAttribute('aria-label', copyLabel);
           btn.title = copyLabel;
 
-          const svg = document.createElementNS(svgNs, 'svg');
-          svg.setAttribute('width', '14');
-          svg.setAttribute('height', '14');
-          svg.setAttribute('viewBox', '0 0 24 24');
-          svg.setAttribute('aria-hidden', 'true');
-          const useEl = document.createElementNS(svgNs, 'use');
-          useEl.setAttribute('href', '/icons.svg#copy');
-          svg.appendChild(useEl);
-          btn.appendChild(svg);
+          if (iconTemplate) btn.append(iconTemplate.content.cloneNode(true));
 
           let resetTimer = 0;
           btn.addEventListener('click', async () => {
@@ -1065,12 +1069,10 @@ const structuredData = schema ?? {
               btn.dataset.copied = 'true';
               btn.setAttribute('aria-label', copiedLabel);
               btn.title = copiedLabel;
-              useEl.setAttribute('href', '/icons.svg#check');
               resetTimer = window.setTimeout(() => {
                 delete btn.dataset.copied;
                 btn.setAttribute('aria-label', copyLabel);
                 btn.title = copyLabel;
-                useEl.setAttribute('href', '/icons.svg#copy');
               }, 1800);
             } catch {
               // Clipboard API may be unavailable in non-secure contexts; fail silently.

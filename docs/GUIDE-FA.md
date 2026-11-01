@@ -244,7 +244,6 @@ SITE_URL=https://example.com pnpm run build
     ├── pages/               # فقط فایل‌های فیزیکی استاتیک
     │   ├── [...path].astro  # دیسپچر مسیریاب
     │   ├── 404.astro        # صفحهٔ ۴۰۴ locale-aware
-    │   ├── icons.svg.ts     # اسپرایت SVG
     │   ├── site.webmanifest.ts
     │   ├── rss.xml.ts       # فید Atom زبان پیش‌فرض
     │   ├── rss/[locale].xml.ts # فیدهای Atom سایر زبان‌ها
@@ -1227,7 +1226,7 @@ pre, code, .math {
 | `variant` | `primary` (`.cta`)، `secondary` (`.btn-secondary`)، `hero` (`.btn-hero-secondary`)، `ghost` (`.ghost-control`)، `glass` (`.glass-control`) |
 | `size` | `sm` (`h-9`)، `md` (`h-10`)، `lg` (`h-11`)، `auto` (اندازهٔ دلخواه فراخوان) |
 | `href` | اگر بدهید `<a>` و اگر نه `<button type="…">` رندر می‌شود |
-| `icon` / `iconPosition` | نام نماد از `/icons.svg` و جای آن (`start`/`end`)؛ `arrow-*` و `chevron-*` در RTL آینه و در هاور به سمت خواندن جلو می‌روند |
+| `icon` / `iconPosition` | نام آیکون از `src/libs/ui/icons.ts` و جای آن (`start`/`end`)؛ آیکون‌های جهت‌دار در RTL آینه و در هاور به سمت خواندن جلو می‌روند |
 | `block` / `class` | تمام‌عرض، و کلاس‌های محلی که آخر می‌آیند و برنده‌اند |
 
 همهٔ دکمه‌ها افکت هاور مشترک (بالا آمدن ۲ پیکسل) و هاور رنگ متناسب با نقش را از همین پراپ‌ها می‌گیرند؛ هیچ کامپوننتی کلاس دکمه را دوباره نمی‌نویسد.
@@ -1236,7 +1235,7 @@ pre, code, .math {
 
 | کامپوننت | پراپ‌ها | نقش |
 | --- | --- | --- |
-| `Icon.astro` | `name`, `size` (پیش‌فرض ۲۰), `class`, `aria-hidden`, `aria-label` | نماد SVG از `/icons.svg#name` |
+| `Icon.astro` | `name`, `size` (پیش‌فرض ۲۰), `class`, `aria-hidden`, `aria-label` | آیکون Tabler به‌صورت inline از رجیستری داخلی؛ نام نامعتبر به `file` برمی‌گردد |
 | `Button.astro` | `href?`, `variant` (`primary`/`secondary`/`hero`/`ghost`/`glass`), `size` (`sm`/`md`/`lg`/`auto`), `block?`, `icon?`, `iconPosition?` (`start`/`end`), `flipIcon?`, `type?`, `disabled?`, `external?`, `class?` + هر `data-*`/`aria-*` | تنها دکمهٔ متنی — فقط رنگ/متن/آیکن عوض می‌شود |
 | `DrawerNavLink.astro` | `item` (یک `NavItem`), `depth` (`0`/`1`/`2`) | ردیف منوی کشو: آیکن + عنوان، با حالت فعال و هاور در هر سه سطح (قاب کاشی فقط در سطح اول) |
 | `IconButton.astro` | `icon`, `label`, `size` (۱۸), `variant` (`glass`/`ghost`), `class` + هر `data-*`/`aria-*` | دکمهٔ فقط-آیکون — دستی نسازید |
@@ -1408,21 +1407,30 @@ refreshChronoTrig();
 
 ### افزودن آیکون
 
-نمادهای موجود در اسپرایت SVG (`src/pages/icons.svg.ts`):
-`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link` · `arrow-right` · `shield` · `mail`.
+آیکون‌ها از بستهٔ `@tabler/icons-astro` (لایسنس MIT) می‌آیند و با نام معنایی از `src/libs/ui/icons.ts` صدا زده می‌شوند:
+`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link` · `arrow-right` · `shield` · `mail` · `layers` · و آیکون‌های ناوبری (`home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `file`).
 
 ```ts
-// src/pages/icons.svg.ts
-const icons: Record<string, string> = {
-  star: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="2" fill="none"/>',
-};
+// ۱) نام تازه را به فهرست بسته اضافه کنید
+// src/libs/ui/icons.ts
+export const SITE_ICONS = [ /* … */ 'star' ] as const;
+```
+
+```ts
+// ۲) فقط همان آیکون را import کنید — نه از barrel بسته
+// src/components/Icon.astro
+import IconStar from '@tabler/icons-astro/dist/esm/icons/star.mjs';
 ```
 
 ```astro
 <Icon name="star" size={20} class="text-primary" />
 ```
 
-> هرگز `<svg>` خام با `<path>` را مستقیم در قالب‌ها نچسبانید.
+> هرگز `<svg>` خام با `<path>` را در قالب‌ها نچسبانید و مسیر SVG را در کد کلاینت دستی نسازید؛ آیکون‌هایی که بعد از بارگذاری لازم می‌شوند از `<template data-icon-template="…">` کلون می‌شوند (مانند صفحه‌بندی بلاگ) یا هر دو حالت رندر و با CSS جابه‌جا می‌شوند (تم و دکمهٔ کپی کد).
+>
+> **کارایی:** barrel بسته `@tabler/icons-astro` هر ۶٫۲۵۸ آیکون را صادر می‌کند؛ import از آن کل مجموعه را پیش از tree-shaking می‌خواند و در همین پروژه حدود ۲ تا ۷ ثانیه به هر بیلد اضافه کرد (HTML خروجی یکسان). مسیر تک‌آیکون فقط همان یک فایل را وارد گراف بیلد می‌کند.
+>
+> آیکون‌ها inline رندر می‌شوند (بدون درخواست sprite). در صفحهٔ خانه ۴۹ آیکون و ۲۳ آیکون یکتا حدود ۱۹KB از ۸۳KB HTML خام را می‌گیرند، اما با gzip تفاوت ناچیز است (کل صفحه ≈ ۱۴KB).
 
 ---
 
@@ -1764,7 +1772,6 @@ const card = await getSocialCard(entry.data.image);
 | `/rss/<locale>.xml` | Atom | مقالات منتشرشدهٔ همان زبان (غیرپیش‌فرض) |
 | `/robots.txt` | متن | `User-agent: *` / `Allow: /` / `Disallow: /api/` / `Sitemap: <مطلق>` |
 | `/site.webmanifest` | JSON | از `app.config.json` + زبان پیش‌فرض ساخته می‌شود: نام، `short_name`، `lang`/`dir`، رنگ‌ها، آیکون‌ها، `display: standalone` |
-| `/icons.svg` | SVG | اسپرایت نمادها؛ هر نماد یک `<symbol id="name">` |
 | `/api/search-dev/<locale>.json` و `/api/search-dev.json` | JSON | فهرست استاتیک fallback جستجو به تفکیک هر زبان و کل سایت |
 | `/api/blog-posts/<locale>.json` و `/api/blog-posts.json` | JSON | کاتالوگ استاتیک مقالات منتشرشده به تفکیک زبان برای فیلتر فراصفحه‌ای |
 
@@ -1866,7 +1873,7 @@ pnpm run verify:cli  # ۸۲ ادعا دربارهٔ گردش‌کارهای CLI
 | ۲. زبان‌های دیگر | حفظ پیشوند، زبان و جهت |
 | ۳. اسلاگ مقاله | اسلاگ‌های محلی‌شده به صفحهٔ ساخته‌شدهٔ واقعی می‌رسند |
 | ۴. hreflang | پوشش کامل روی صفحهٔ خانه + `x-default` |
-| ۵. endpointها | `sitemap.xml`، `rss.xml`، `robots.txt`، `site.webmanifest`، `icons.svg`، کارت OG |
+| ۵. endpointها | `sitemap.xml`، `rss.xml`، `robots.txt`، `site.webmanifest`، کارت OG |
 | ۶. یک `h1` و متن بدون placeholder | هر صفحهٔ بیلدشده دقیقاً یک `<h1>` دارد و هیچ `[TODO` منتشر نشده |
 | ۷. صفحه‌بندی وبلاگ | مسیر صفحه‌ها، نشانه‌گذاری پیجر، `rel=prev/next`، نبود صفحهٔ اضافی |
 
@@ -1942,7 +1949,7 @@ dist/
 ├── fa/index.html       # خانهٔ فارسی
 ├── blog/index.html     # ایندکس وبلاگ
 ├── 404.html            # صفحهٔ خطای locale-aware
-├── sitemap.xml  rss.xml  robots.txt  site.webmanifest  icons.svg
+├── sitemap.xml  rss.xml  robots.txt  site.webmanifest
 ├── pagefind/           # ایندکس جستجو
 └── _astro/             # JS/CSS/فونت/تصویرهای بهینه‌شده
 ```
@@ -2021,7 +2028,7 @@ dist/
 | فراخوانی `m.key()` در سطح ماژول | فراخوانی داخل چرخهٔ رندر |
 | ساخت `src/pages/[lang]/…` | استفاده از `[...path].astro` + `src/views/` |
 | `navigate()` برای تعویض زبان | `window.location.assign(target)` |
-| `<svg>` خام در قالب | افزودن نماد به `icons.svg.ts` + `<Icon>` |
+| `<svg>` خام در قالب یا مسیر SVG دستی در کد کلاینت | افزودن نام به `src/libs/ui/icons.ts` + رجیستری `Icon.astro` و استفاده از `<Icon>` (یا کلون از `<template>`) |
 | نوار پیشرفت بدون `dataset.bound` | `if (el.dataset.bound === 'true') return;` |
 | تعریف دوبارهٔ `.cta` در کامپوننت | دکمهٔ متنی را با `<Button variant="…" size="…" icon="…">` بسازید |
 | `<button>` دستی با `<Icon>` | `IconButton` |

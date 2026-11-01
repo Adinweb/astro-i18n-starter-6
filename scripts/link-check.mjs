@@ -119,8 +119,8 @@ function resolveTargetFile(urlPath) {
 /**
  * Checks that a fragment resolves to an element on the target page.
  *
- * Only HTML targets are inspected: `icons.svg#star` and friends address
- * symbols inside an asset, which this crawl does not parse.
+ * Only HTML targets are inspected: a fragment into a non-HTML asset addresses
+ * an id inside that asset, which this crawl does not parse.
  *
  * @returns {boolean} whether the fragment is present (or not checkable)
  */

@@ -272,6 +272,39 @@ summary::-webkit-details-marker {
 }
 
 /*
+ * Theme toggle: both glyphs are rendered once and the active theme picks one.
+ * The control shows what it will do — a moon while the page is light, a sun
+ * while it is dark — and no script has to rewrite icon markup on every switch.
+ */
+.theme-icon-sun {
+  display: none;
+}
+
+:root[data-theme='dark'] .theme-icon-moon {
+  display: none;
+}
+
+:root[data-theme='dark'] .theme-icon-sun {
+  display: block;
+}
+
+/*
+ * Code-copy button: the idle and the confirmed glyph are both in the DOM and
+ * `data-copied` picks one, so the copied state is a CSS swap after the click.
+ */
+.code-copy-btn .code-copy-check {
+  display: none;
+}
+
+.code-copy-btn[data-copied='true'] .code-copy-copy {
+  display: none;
+}
+
+.code-copy-btn[data-copied='true'] .code-copy-check {
+  display: block;
+}
+
+/*
  * Mobile & Tablet Drawer System.
  * Pure GPU compositor transition: elements remain in the render tree off-screen,
  * eliminating layout-thrashing and ensuring 100% reliable 60fps transitions.

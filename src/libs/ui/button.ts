@@ -52,18 +52,6 @@ const MOTION =
 
 const BASE = `group inline-flex cursor-pointer items-center justify-center gap-2 text-center ${MOTION} disabled:pointer-events-none disabled:opacity-60`;
 
-/** Icons that point along the reading direction and therefore mirror in RTL. */
-const DIRECTIONAL_ICONS = new Set([
-  'arrow-right',
-  'arrow-left',
-  'chevron-right',
-  'chevron-left',
-]);
-
-export function isDirectionalIcon(name: string | undefined): boolean {
-  return name ? DIRECTIONAL_ICONS.has(name) : false;
-}
-
 export interface ButtonClassOptions {
   variant?: ButtonVariant;
   size?: ButtonSize;

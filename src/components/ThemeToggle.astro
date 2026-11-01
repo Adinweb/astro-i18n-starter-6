@@ -5,9 +5,12 @@
  * Composes `IconButton` so it shares the exact glass geometry of the header
  * controls (`AGENTS.md` Rule 9). Initial paint state is set synchronously in
  * `BaseLayout.astro` before first paint to prevent FOUC; this script syncs the
- * icon symbol (`sun`/`moon`), ARIA attributes, `localStorage`, and OS
- * `prefers-color-scheme` changes.
+ * ARIA attributes, `localStorage`, and OS `prefers-color-scheme` changes.
+ *
+ * Both glyphs are rendered once and `global.css` picks one from
+ * `:root[data-theme]`, so switching the theme never has to rewrite icon markup.
  */
+import Icon from '@/components/Icon.astro';
 import IconButton from '@/components/IconButton.astro';
 import type { Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
@@ -20,14 +23,15 @@ const { locale } = Astro.props;
 ---
 
 <IconButton
-  icon="moon"
-  size={16}
   label={m.common_theme_toggle({}, { locale })}
   data-theme-toggle
   data-label-light={m.common_theme_light({}, { locale })}
   data-label-dark={m.common_theme_dark({}, { locale })}
   aria-pressed="false"
-/>
+>
+  <Icon name="moon" size={16} class="theme-icon-moon" />
+  <Icon name="sun" size={16} class="theme-icon-sun" />
+</IconButton>
 
 <script>
   type Theme = 'light' | 'dark';
@@ -61,10 +65,6 @@ const { locale } = Astro.props;
       if (label) {
         btn.setAttribute('aria-label', label);
         btn.setAttribute('title', label);
-      }
-      const useEl = btn.querySelector('use');
-      if (useEl) {
-        useEl.setAttribute('href', isDark ? '/icons.svg#sun' : '/icons.svg#moon');
       }
     });
   }

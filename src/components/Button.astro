@@ -13,16 +13,13 @@
  * pager's runtime renderer uses, so a server-rendered button and a client one
  * cannot drift apart.
  *
- * `icon` is a sprite name from `/icons.svg`; icons that point along the reading
- * direction (`arrow-*`, `chevron-*`) mirror automatically in RTL.
+ * `icon` is a semantic name from `src/libs/ui/icons.ts`; icons that point along
+ * the reading direction (`arrow-right`, `chevron-left`/`-right`) mirror
+ * automatically in RTL.
  */
 import Icon from '@/components/Icon.astro';
-import {
-  buttonClasses,
-  isDirectionalIcon,
-  type ButtonSize,
-  type ButtonVariant,
-} from '@/libs/ui/button';
+import { buttonClasses, type ButtonSize, type ButtonVariant } from '@/libs/ui/button';
+import { isDirectionalIcon } from '@/libs/ui/icons';
 
 interface Props {
   /** Presence switches the element to `<a href>`. */

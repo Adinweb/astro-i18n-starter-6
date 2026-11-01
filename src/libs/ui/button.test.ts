@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buttonClasses, isDirectionalIcon } from './button';
+import { buttonClasses } from './button';
 
 describe('src/libs/ui/button.ts', () => {
   describe('buttonClasses()', () => {
@@ -48,15 +48,4 @@ describe('src/libs/ui/button.ts', () => {
     });
   });
 
-  describe('isDirectionalIcon()', () => {
-    it('recognises arrows and chevrons', () => {
-      expect(isDirectionalIcon('arrow-right')).toBe(true);
-      expect(isDirectionalIcon('chevron-left')).toBe(true);
-    });
-
-    it('treats other icons and a missing icon as non-directional', () => {
-      expect(isDirectionalIcon('mail')).toBe(false);
-      expect(isDirectionalIcon(undefined)).toBe(false);
-    });
-  });
 });

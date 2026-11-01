@@ -5,6 +5,7 @@ import PageHero from '@/components/PageHero.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import PostCard from '@/components/PostCard.astro';
 import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
 import {
   buildBreadcrumbSchema,
   getBreadcrumbs,
@@ -300,6 +301,20 @@ const indexSchema = [
       )
     }
   </div>
+
+  <!--
+    Icons for the pager and the empty state, which are rebuilt after a filter
+    change: the script clones these instead of carrying SVG paths of its own.
+  -->
+  <template data-icon-template="chevron-left">
+    <Icon name="chevron-left" size={16} />
+  </template>
+  <template data-icon-template="chevron-right">
+    <Icon name="chevron-right" size={16} />
+  </template>
+  <template data-icon-template="globe">
+    <Icon name="globe" size={44} />
+  </template>
 </BaseLayout>
 
 <style>
@@ -355,17 +370,23 @@ const indexSchema = [
     return request;
   }
 
-  function createSvgIcon(name: string, size: number, extraClass = ''): SVGSVGElement {
-    const svgNs = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(svgNs, 'svg');
-    svg.setAttribute('width', String(size));
-    svg.setAttribute('height', String(size));
-    svg.setAttribute('aria-hidden', 'true');
-    if (extraClass) svg.setAttribute('class', extraClass);
-    const use = document.createElementNS(svgNs, 'use');
-    use.setAttribute('href', `/icons.svg#${name}`);
-    svg.append(use);
-    return svg;
+  /**
+   * Clones an icon the server already rendered into a `<template>`.
+   *
+   * The pager is built after a filter change, so its chevrons cannot come from
+   * the `Icon` component directly; cloning keeps one source of icon markup and
+   * keeps SVG paths out of this script.
+   */
+  function cloneIcon(name: string, size: number, extraClass = ''): SVGElement | null {
+    const template = document.querySelector<HTMLTemplateElement>(
+      `template[data-icon-template="${name}"]`
+    );
+    const node = template?.content.firstElementChild?.cloneNode(true) as SVGElement | null | undefined;
+    if (!node) return null;
+    node.setAttribute('width', String(size));
+    node.setAttribute('height', String(size));
+    if (extraClass) node.classList.add(...extraClass.split(' ').filter(Boolean));
+    return node;
   }
 
   function createDynamicPostCard(
@@ -385,7 +406,8 @@ const indexSchema = [
     const createCoverPlaceholder = () => {
       const placeholder = document.createElement('div');
       placeholder.className = 'flex h-full items-center justify-center text-primary/40';
-      placeholder.append(createSvgIcon('globe', 44));
+      const placeholderIcon = cloneIcon('globe', 44);
+      if (placeholderIcon) placeholder.append(placeholderIcon);
       return placeholder;
     };
 
@@ -595,10 +617,9 @@ const indexSchema = [
         prev.href = makePageHref(currentPage - 1);
         prev.dataset.dynamicPage = String(currentPage - 1);
         prev.className = buttonClasses({ variant: 'secondary', size: 'sm' });
-        prev.append(
-          createSvgIcon('chevron-left', 16, 'shrink-0 rtl:rotate-180'),
-          document.createTextNode(prevLabel)
-        );
+        const prevIcon = cloneIcon('chevron-left', 16, 'shrink-0 rtl:rotate-180');
+        if (prevIcon) prev.append(prevIcon);
+        prev.append(document.createTextNode(prevLabel));
         nav.append(prev);
       }
 
@@ -629,10 +650,9 @@ const indexSchema = [
         next.href = makePageHref(currentPage + 1);
         next.dataset.dynamicPage = String(currentPage + 1);
         next.className = buttonClasses({ variant: 'secondary', size: 'sm' });
-        next.append(
-          document.createTextNode(nextLabel),
-          createSvgIcon('chevron-right', 16, 'shrink-0 rtl:rotate-180')
-        );
+        next.append(document.createTextNode(nextLabel));
+        const nextIcon = cloneIcon('chevron-right', 16, 'shrink-0 rtl:rotate-180');
+        if (nextIcon) next.append(nextIcon);
         nav.append(next);
       }
 

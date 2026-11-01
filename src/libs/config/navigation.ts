@@ -17,8 +17,8 @@ export interface NavItem {
   active: boolean;
   external?: boolean;
   /**
-   * Sprite icon of the row, from `/icons.svg`. The mobile drawer renders it;
-   * the desktop header stays text-only, so an item without an icon is normal
+   * Icon name of the row, from `src/libs/ui/icons.ts`. The mobile drawer renders
+   * it; the desktop header stays text-only, so an item without an icon is normal
    * and falls back to `file`.
    */
   icon?: string;

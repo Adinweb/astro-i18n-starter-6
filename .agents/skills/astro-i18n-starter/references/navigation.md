@@ -132,7 +132,7 @@ To add a new page or custom link:
    ```ts
    { group: 'contact', icon: 'mail', label: (locale: Locale) => m.nav_contact({}, { locale }) },
    ```
-   `icon` names a sprite symbol from `src/pages/icons.svg.ts`; the mobile drawer shows it in the row's tile, and a missing entry simply falls back to `file`.
+   `icon` names an entry of `src/libs/ui/icons.ts`; the mobile drawer shows it in the row's tile, and a missing entry simply falls back to `file`.
 3. For a footer-only link, extend `getFooterNavigation`; for a legal link, `getLegalNavigation`.
 4. Use compiled Paraglide message functions for labels (`m.nav_<key>({}, { locale })`).
 5. Run `npm test` and `npm run lint` to verify active state and TypeScript types.

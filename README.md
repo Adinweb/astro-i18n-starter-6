@@ -30,7 +30,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Optimized Image Pipeline**: Every picture is served through Astro's image pipeline — WebP output, a responsive `srcset` with the right `sizes`, and an `og:image` cropped to the social ratio. A 263 KB hero PNG becomes a 7 KB WebP on a phone.
 * **Frosted-Glass Design System**: The header, its icon controls, the calls to action and every chip are defined once in `src/styles/global.css` and composed everywhere else, so the whole site speaks one visual language. The same file defines a DaisyUI-inspired semantic palette — `primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning` and `error`, each with an AA-contrast `-fg` partner — available as Tailwind utilities in both light and dark mode.
 * **Raster Brand Assets From Code**: `scripts/generate-assets.mjs` deterministically produces the app icons, the Open Graph image, and all hero/cover artwork with no image-editing dependency.
-* **SVG Sprite Endpoint**: Zero-JS, cacheable build-time SVG sprite (`/icons.svg`) with an `<Icon name="..." />` component.
+* **Inline Tabler Icons**: Every icon is an `<Icon name="..." />` from `@tabler/icons-astro`, imported per icon so the build only contains the glyphs the site uses — no sprite request, no empty `<use>` tiles while an asset loads.
 * **Turnkey Developer CLI Suite**: Automation scripts to scaffold pages/posts, add/remove languages, adapt Tailwind blocks, extract translations, audit dictionary parity, and detect dead code.
 
 ---
@@ -90,7 +90,7 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph (no page image of its own)
 │   ├── components/            # Reusable UI components
-│   │   ├── Icon.astro         # SVG sprite icon renderer (<Icon name="..." />)
+│   │   ├── Icon.astro         # Tabler icon registry behind <Icon name="..." />
 │   │   ├── IconButton.astro   # Icon-only button (glass or ghost variant)
 │   │   ├── Button.astro       # The one text button: variant + size + label + icon
 │   │   ├── DrawerNavLink.astro # Drawer menu row: icon + label (tile box only at depth 0)
@@ -139,7 +139,6 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   ├── pages/
 │   │   ├── [...path].astro    # Lean Router Dispatcher
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
-│   │   ├── icons.svg.ts       # SVG sprite endpoint
 │   │   ├── site.webmanifest.ts # Web app manifest generated from app.config.json
 │   │   ├── rss.xml.ts         # Default-locale Atom feed
 │   │   ├── rss/[locale].xml.ts # Non-default locale Atom feeds (/rss/fa.xml, etc.)

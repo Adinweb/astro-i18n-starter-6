@@ -1,7 +1,90 @@
 ---
+/**
+ * The site's icon renderer.
+ *
+ * Every icon comes from `@tabler/icons-astro` (MIT) and is referenced by a
+ * semantic name from `src/libs/ui/icons.ts` (`home`, `shield`, `chevron-left`,
+ * …) instead of a vendor component name, so replacing the icon set stays a
+ * one-file change.
+ *
+ * Why per-icon imports instead of the package barrel: `import { IconSun } from
+ * '@tabler/icons-astro'` re-exports the entire 6,258-module set, and Vite has to
+ * load every one of them before tree-shaking discards the unused icons — it
+ * still produces the same HTML, but costs ≈ +2–7 s on every build here (measured
+ * 5.0–9.8 s against 3.2–3.9 s with per-icon imports). Importing the individual
+ * `dist/esm/icons/*` modules (typed in `src/types/tabler-icons-astro.d.ts`) keeps
+ * the build graph to the icons this file lists and nothing else.
+ *
+ * Icons render inline: one request less than a sprite, no empty `<use>` tiles
+ * while a sprite loads, and a newly added icon can never be hidden by a cached
+ * sprite. Icons that appear later (pager chevrons, code-copy state) are cloned
+ * from a server-rendered `<template>`, and the theme toggle renders both glyphs
+ * for CSS to choose between, so client code never carries SVG paths of its own.
+ */
+import IconArrowRight from '@tabler/icons-astro/dist/esm/icons/arrow-right.mjs';
+import IconBook2 from '@tabler/icons-astro/dist/esm/icons/book-2.mjs';
+import IconCheck from '@tabler/icons-astro/dist/esm/icons/check.mjs';
+import IconChevronDown from '@tabler/icons-astro/dist/esm/icons/chevron-down.mjs';
+import IconChevronLeft from '@tabler/icons-astro/dist/esm/icons/chevron-left.mjs';
+import IconChevronRight from '@tabler/icons-astro/dist/esm/icons/chevron-right.mjs';
+import IconCompass from '@tabler/icons-astro/dist/esm/icons/compass.mjs';
+import IconCopy from '@tabler/icons-astro/dist/esm/icons/copy.mjs';
+import IconExternalLink from '@tabler/icons-astro/dist/esm/icons/external-link.mjs';
+import IconFile from '@tabler/icons-astro/dist/esm/icons/file.mjs';
+import IconFolder from '@tabler/icons-astro/dist/esm/icons/folder.mjs';
+import IconHome from '@tabler/icons-astro/dist/esm/icons/home.mjs';
+import IconInfoCircle from '@tabler/icons-astro/dist/esm/icons/info-circle.mjs';
+import IconMail from '@tabler/icons-astro/dist/esm/icons/mail.mjs';
+import IconMenu2 from '@tabler/icons-astro/dist/esm/icons/menu-2.mjs';
+import IconMoon from '@tabler/icons-astro/dist/esm/icons/moon.mjs';
+import IconNews from '@tabler/icons-astro/dist/esm/icons/news.mjs';
+import IconPalette from '@tabler/icons-astro/dist/esm/icons/palette.mjs';
+import IconSearch from '@tabler/icons-astro/dist/esm/icons/search.mjs';
+import IconShieldCheck from '@tabler/icons-astro/dist/esm/icons/shield-check.mjs';
+import IconSparkles from '@tabler/icons-astro/dist/esm/icons/sparkles.mjs';
+import IconStack2 from '@tabler/icons-astro/dist/esm/icons/stack-2.mjs';
+import IconSun from '@tabler/icons-astro/dist/esm/icons/sun.mjs';
+import IconTag from '@tabler/icons-astro/dist/esm/icons/tag.mjs';
+import IconWorld from '@tabler/icons-astro/dist/esm/icons/world.mjs';
+import IconX from '@tabler/icons-astro/dist/esm/icons/x.mjs';
+import type { TablerIcon } from '@tabler/icons-astro/dist/esm/icons/*.mjs';
+import { resolveIconName, type IconName } from '@/libs/ui/icons';
+
+const ICONS: Record<IconName, TablerIcon> = {
+  search: IconSearch,
+  globe: IconWorld,
+  close: IconX,
+  check: IconCheck,
+  menu: IconMenu2,
+  'chevron-left': IconChevronLeft,
+  'chevron-right': IconChevronRight,
+  'chevron-down': IconChevronDown,
+  sun: IconSun,
+  moon: IconMoon,
+  copy: IconCopy,
+  'external-link': IconExternalLink,
+  'arrow-right': IconArrowRight,
+  shield: IconShieldCheck,
+  mail: IconMail,
+  layers: IconStack2,
+  home: IconHome,
+  info: IconInfoCircle,
+  sparkles: IconSparkles,
+  tag: IconTag,
+  newspaper: IconNews,
+  folder: IconFolder,
+  compass: IconCompass,
+  palette: IconPalette,
+  'book-open': IconBook2,
+  file: IconFile,
+};
+
 interface Props {
+  /** Semantic name from `SITE_ICONS`; an unknown string falls back to `file`. */
   name: string;
+  /** Width and height in pixels (or any CSS length). */
   size?: number | string;
+  /** Extra classes; directional icons receive `rtl:rotate-180` from the caller. */
   class?: string;
   'aria-hidden'?: boolean | 'true' | 'false';
   'aria-label'?: string;
@@ -15,16 +98,13 @@ const {
   'aria-label': ariaLabel,
 } = Astro.props;
 
-const sizePx = typeof size === 'number' ? `${size}px` : size;
+const IconComponent = ICONS[resolveIconName(name)];
 ---
 
-<svg
+<IconComponent
+  size={size}
   class={className}
-  width={sizePx}
-  height={sizePx}
   aria-hidden={ariaLabel ? undefined : ariaHidden}
   aria-label={ariaLabel}
   role={ariaLabel ? 'img' : 'presentation'}
->
-  <use href={`/icons.svg#${name}`} />
-</svg>
+/>

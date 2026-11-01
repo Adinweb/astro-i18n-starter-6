@@ -34,7 +34,8 @@ export function getPathname(url: string): string {
 
 /**
  * Pages use canonical trailing slashes (`/about/`, `/fa/blog/`), while file
- * endpoints (`/sitemap.xml`, `/rss.xml`, `/icons.svg`) keep their extension.
+ * endpoints (`/sitemap.xml`, `/rss.xml`, `/site.webmanifest`) keep their
+ * extension.
  */
 export function withTrailingSlash(pathname: string): string {
   const { pathname: path, suffix } = splitSuffix(pathname);

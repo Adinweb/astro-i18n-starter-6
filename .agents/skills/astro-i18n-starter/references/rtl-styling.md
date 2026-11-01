@@ -93,29 +93,34 @@ Every role clears **WCAG AA (4.5:1)** contrast against its respective `-fg` coun
 
 ---
 
-## 5. SVG Sprite Catalog (`src/pages/icons.svg.ts`)
+## 5. Icon Catalog (`@tabler/icons-astro`)
 
-Never embed raw `<svg><path ...></svg>` in templates. Use `<Icon name="..." />` or `<IconButton icon="..." label="..." />`.
+Never embed raw `<svg><path ...></svg>` in templates or write SVG paths in client code. Every glyph comes from the Tabler set through `<Icon name="..." />` or `<IconButton icon="..." label="..." />`; the semantic names live in `src/libs/ui/icons.ts` (`SITE_ICONS`) and the vendor mapping in `src/components/Icon.astro`.
 
-Every text button is `<Button>`: colour from `variant` (`primary`/`secondary`/`hero`/`ghost`/`glass`), scale from `size` (`sm`/`md`/`lg`/`auto`), plus `icon` and the label. It renders an `<a>` when given `href` and a `<button>` otherwise, and `arrow-*` / `chevron-*` icons mirror in RTL and nudge forward on hover. The class recipe lives in `src/libs/ui/button.ts`, so client-side renderers (the blog pager) produce the same control.
+**Always import the per-icon module** (`@tabler/icons-astro/dist/esm/icons/<name>.mjs`), never the package barrel: the barrel re-exports all 6,258 icons, so the bundler reads the whole set before tree-shaking it away (measured ≈ +2–7 s per build here, for identical HTML). Types for those deep modules are declared in `src/types/tabler-icons-astro.d.ts`.
+
+Icons render inline — no sprite request and no empty `<use>` tiles. Anything that appears after load is cloned from a server-rendered `<template data-icon-template="…">` (blog pager, empty state), and a two-state control renders both glyphs for CSS to choose (`theme-icon-sun`/`theme-icon-moon`, `code-copy-copy`/`code-copy-check`).
+
+Every text button is `<Button>`: colour from `variant` (`primary`/`secondary`/`hero`/`ghost`/`glass`), scale from `size` (`sm`/`md`/`lg`/`auto`), plus `icon` and the label. It renders an `<a>` when given `href` and a `<button>` otherwise, and `arrow-right` / `chevron-left` / `chevron-right` mirror in RTL and nudge forward on hover. The class recipe lives in `src/libs/ui/button.ts`, so client-side renderers (the blog pager) produce the same control.
 
 ### Available Icon Names:
-1. `search` — magnifying glass for search triggers and inputs
-2. `globe` — internationalization language switcher icon
-3. `close` — dismiss / exit modal and drawer icon
-4. `check` — confirmation checkmark for copied state and active locale
-5. `menu` — hamburger toggle for mobile drawer navigation
-6. `chevron-left` — back / previous navigation arrow (flipped in RTL)
-7. `chevron-right` — forward / sub-dropdown arrow (flipped in RTL with `rtl:rotate-180`)
-8. `chevron-down` — dropdown accordion expand indicator
-9. `sun` — light theme indicator
-10. `moon` — dark theme indicator
-11. `copy` — clipboard copy action icon for code blocks
-12. `external-link` — outbound link indicator for docs and external URLs
-13. `arrow-right` — call-to-action directional arrow (pair with `rtl:rotate-180`)
-14. `shield` — privacy & cookie consent control icon
-15. `mail` — contact & external API inquiry notice icon
-16. `layers` — stacked-layers marker used by the home blueprint, architecture cards and the Resources menu
+1. `search` — search triggers and inputs (Tabler `search`)
+2. `globe` — language switcher and RTL notes (`world`)
+3. `close` — dismiss / exit modal and drawer (`x`)
+4. `check` — confirmation for the copied state and the active locale (`check`)
+5. `menu` — hamburger toggle for the mobile drawer (`menu-2`)
+6. `chevron-left` — back / previous arrow (mirrored in RTL)
+7. `chevron-right` — forward / sub-dropdown arrow (mirrored in RTL)
+8. `chevron-down` — dropdown and accordion indicator
+9. `sun` — shown while the page is dark
+10. `moon` — shown while the page is light
+11. `copy` — code-block copy action
+12. `external-link` — outbound links
+13. `arrow-right` — call-to-action arrow (pair with `rtl:rotate-180`)
+14. `shield` — privacy and cookie consent (`shield-check`)
+15. `mail` — contact and inquiry notice
+16. `layers` — architecture and Resources markers (`stack-2`)
+17. `home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `file` — navigation icons; an unknown name resolves to `file`
 
 ### Navigation Icons:
 The mobile drawer renders one icon tile per row, so every navigation entry carries an `icon` from this catalog (`NavItem.icon` in `src/libs/config/navigation.ts`; a row without one falls back to `file`):
