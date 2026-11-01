@@ -25,7 +25,7 @@ Hiding elements with `display: none` collapses their bounding box to `0×0`, bre
 ```text
 1. <head> Script       : Adds <html class="js"> synchronously before first paint (100% visible if JS disabled).
 2. .js [data-trig]     : Initial state in chronotrig.css: opacity: 0; transform: translate3d(0, 56px, 0);
-3. ChronoTrig Observer : Adds .trig when the element enters the viewport (rootMargin 0 0 -40px 0).
+3. ChronoTrig Observer : Adds .trig when the element enters the viewport (rootMargin 10% 0px 10% 0px).
 4. .js [data-trig].trig: Runs `trig-reveal-up` for 1.2s on cubic-bezier(0.22, 1, 0.36, 1) to opacity: 1; transform: none;
                          after a deliberate --trig-reveal-delay (180ms) hold, so the entrance is actually noticed.
 5. Failsafe            : If /chronotrig.min.js never loads, setupChronoTrig() removes the `.js` class,
@@ -53,7 +53,7 @@ Add `data-trig` to any element or title to give it a smooth, natural entrance fr
 ```
 
 ### Option B: Automatic Heading Reveals in Content Collections (`.mdx`)
-In `src/scripts/chronotrig.ts`, headings inside articles and pages (`.prose > h2, .prose > h3`) are automatically tagged with `data-trig` during the `setupChronoTrig()` lifecycle pass. Authors can write standard markdown headings (`## Heading`) and they will automatically reveal smoothly from the bottom as readers scroll down.
+In `src/scripts/chronotrig.ts`, titles inside articles and pages (`.prose h2`, `.prose h3`, `.prose h4`, `.prose .section-kicker`, and any `[data-prose-reveal]` element) are automatically tagged with `data-trig` during the `setupChronoTrig()` lifecycle pass. Authors can write standard markdown headings (`## Heading`) and they will automatically reveal smoothly from the bottom as readers scroll down.
 
 ---
 

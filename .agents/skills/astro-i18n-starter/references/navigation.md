@@ -98,7 +98,30 @@ export function isActive(href: string | undefined, currentUrl: string): boolean
 
 ---
 
-## 4. Extending Navigation Menus
+## 4. Content-Type Menu Items (`getContentTypeNavItems`)
+
+Every enabled, indexed content type is one navigation item, produced once and spread into all three slots:
+
+```typescript
+export function getContentTypeNavItems(locale: Locale, currentUrl = ''): NavItem[] {
+  return getNavigableContentTypes().map((type) => ({
+    key: type.key,
+    label: getContentTypeLabel(type.key, locale),
+    href: getContentTypeIndexHref(type.key, locale),
+    active: isActive(href, currentUrl),
+  }));
+}
+```
+
+* Order follows `CONTENT_TYPE_KEYS` (`blog`, then `projects`), so the header, drawer and footer always agree.
+* `content.types.<type>.nav: false` keeps the routes but drops the link; `enabled: false` drops routes **and** link.
+* Never hardcode `/blog/` or `/projects/` in a menu: the segment comes from the registry.
+* The home page's secondary CTA renders only when `getContentType('blog').enabled`, so disabling the blog cannot leave a dead button behind.
+* The header/drawer anchor fallback (`featuresHref ?? blogHref`) also degrades to `localizeHref('/', locale)` when the blog is disabled, so a project without a features page still ships no dead links.
+
+---
+
+## 5. Extending Navigation Menus
 
 To add a new page or custom link:
 1. Ensure the page exists under `src/content/pages/<page-key>/`.

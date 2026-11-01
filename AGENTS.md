@@ -15,17 +15,18 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Locale-native numbers & dates: `src/i18n/format.ts` (`formatNumber`, `formatYear`, `formatDate`, `formatDateTime`).
    - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
    - Content schemas: `src/content.config.ts`.
+   - Content types (enabled/disabled, route base, index/pagination/feed/nav): `app.config.json` → `content.types`, validated and typed by `src/libs/content/types.ts`. **Switching a type off removes its routes, sitemap entries and navigation links** — never delete the collection to hide a section.
    - Slugs, feeds & alternates: `src/libs/content/service.ts` and `src/libs/content/feed.ts`.
    - Content entry invariants (IDs, drafts, locale selection, sorting): `src/libs/content/entries.ts`.
    - Blog filters & reading time: `src/libs/content/blog.ts`; taxonomy labels: `src/libs/content/taxonomy.ts`.
-   - Application config: `app.config.json`, validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIES_CONFIG`, brand assets, dev server).
+   - Application config: `app.config.json`, validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`, brand assets, dev server).
    - Blog pagination: `blog.postsPerPage` in `app.config.json` (`POSTS_PER_PAGE`), math in `src/libs/content/pagination.ts` (`paginate`, `buildPageWindow`), URLs in `src/libs/content/service.ts` (`getBlogPageHref`).
    - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs` (build-time Pagefind normalization), `src/libs/search/persian.ts` (ZWNJ/orthography/numeral query expansion & fallback folding), and `src/libs/search/client.ts`.
    - External API & Consent (Pure SSG, Zero Backend): `src/libs/api/client.ts` (`ContactForm.astro` posts directly to external/headless endpoints configured via `app.config.json` `api` or `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL`) and `src/libs/cookies/` (`CookieConsent.astro`). Never add SSR servers or backend folders.
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
 2. **Lean Router Dispatcher Pattern**:
    - Never create dynamic routing files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
-   - All dynamic routing flows exclusively through `src/pages/[...path].astro`, which dispatches to views in `src/views/` (`PageView`, `BlogIndexView`, `BlogPostView`). `/api/*.json` endpoints are strictly build-time static JSON catalogs.
+   - All dynamic routing flows exclusively through `src/pages/[...path].astro`, which dispatches to views in `src/views/` (`PageView`, `BlogIndexView`, `BlogPostView`, and the generic `CollectionIndexView` / `CollectionEntryView` used by registry-driven types such as `projects`). `/api/*.json` endpoints are strictly build-time static JSON catalogs.
 3. **Prefix-less Default Locale**:
    - The default locale (`DEFAULT_LOCALE = 'en'`) has **no prefix** (`/`, `/about/`, `/blog/first-post/`).
    - Non-default locales (`fa` out of the box; `ar`, `de`, `fr`, etc. when added via `pnpm run i18n:add-lang`) have prefixes (`/fa/درباره-ما/`, `/de/about/`, `/ar/من-نحن/`).
@@ -62,18 +63,19 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ```text
 /
 ├── .agents/skills/            # Agent skills (astro-i18n-starter/SKILL.md + references/)
-├── app.config.json            # SSOT for site, brand, blog pagination, cookies, external API & dev server values
+├── app.config.json            # SSOT for site, brand, content types, blog pagination, cookies, external API & dev server values
 ├── messages/                  # Dictionaries for active locales (en.json, fa.json; extendable via i18n:add-lang)
 ├── project.inlang/            # Paraglide compiler configuration (settings.json)
 ├── public/                    # Static assets (chronotrig.min.js, favicons, manifest, default OG)
-├── scripts/                   # Developer CLI automation & Pagefind indexing suite (15 scripts + lib/)
-│   └── lib/                   # Shared prompt, frontmatter, content-stub, slug, and artwork helpers
+├── scripts/                   # Developer CLI automation, health checks & Pagefind indexing suite (21 scripts + lib/)
+│   └── lib/                   # Shared prompt, frontmatter, content-stub, slug, validation, content-type & artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph fallback
 │   ├── components/            # Reusable Astro components (Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHeader, PageHero, PageSection, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar)
 │   ├── content/               # Symmetrical content collections:
 │   │   ├── pages/<group>/     # Static pages (<locale>.mdx per active locale + hero artwork)
-│   │   └── blog/<group>/      # Blog posts with localized slugs (+ cover artwork)
+│   │   ├── blog/<group>/      # Blog posts with localized slugs (+ cover artwork)
+│   │   └── projects/<group>/  # Case studies/portfolio entries (registry-driven type)
 │   ├── i18n/                  # Core i18n engine:
 │   │   ├── locales.ts         # SSOT for LOCALES, DEFAULT_LOCALE, metadata (dir, font, name)
 │   │   ├── format.ts          # Locale-native Intl number & date/time formatters (Solar Hijri for fa)
@@ -85,6 +87,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── config/navigation.ts # Multi-menu header/drawer/footer/legal navigation builder
 │   │   ├── content/entries.ts # Entry ID parsing, draft filtering, locale selection, sorting
 │   │   ├── content/service.ts # getSiteRoutes(), getPageUrl(), getBreadcrumbs(), getRssFeedHref()
+│   │   ├── content/types.ts   # Content-type registry (enabled/base/index/paginated/feed/nav) + URL & label helpers
 │   │   ├── content/blog-catalog.ts # Shared serializer for static blog JSON catalogs
 │   │   ├── content/feed.ts    # Per-locale Atom 1.0 feed builder
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
@@ -120,7 +123,10 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 | `pnpm run lint` | Messages compile + `astro check` + `tsc --noEmit` | After any code changes |
 | `pnpm test` | Vitest unit tests (paths, ICU, routes, CLI helpers, scroll reveal, interactive views) | After routing, UI, or logic changes |
 | `pnpm run audit:i18n` | Locale-config parity, dictionary/placeholder parity, content parity, used/dead keys, route collisions & RTL logical property guard | Before commits & builds |
-| `pnpm run verify:cli` | End-to-end check of every documented CLI workflow (47 claims in temp sandbox) | After changing anything under `scripts/` |
+| `pnpm run verify:cli` | End-to-end check of every documented CLI workflow (82 claims in temp sandbox) | After changing anything under `scripts/` |
+| `pnpm run doctor` | No-build health check: runtime, config, content types, dictionaries, content, `SITE_URL` | After cloning a project or before a client hand-off |
+| `pnpm run content:list` / `content:status` | Content types and their entries / per-locale readiness matrix | When auditing what is published |
+| `pnpm run link:check` | Crawls `dist/` and reports internal links that resolve to nothing | After a rename or before delivery |
 | `pnpm run build` | `messages:compile` + audit + `astro build` + `node scripts/index-pagefind.mjs` | After major changes |
 | `pnpm run smoke` | HTML, SEO, feed, asset & H1 assertions on `dist/` | After every production build |
 | `pnpm run knip` | Dead files, exports, and dependencies | Before releases |
@@ -142,6 +148,15 @@ Execute these scripts instead of performing brittle manual file manipulations:
   pnpm run new:page <page-key> --update [--sync-frontmatter] [--title="<New Title>"] [--desc="<New Desc>"] [--hero=...] [--container=...]
   ```
   Creates/updates `src/content/pages/<key>/<locale>.mdx` across all active locales in `src/i18n/locales.ts`, generates localized slugs, preserves body copy, registers `nav_<key>` across dictionaries, and wires `image` frontmatter (`./<key>.png` via `assets:generate` by default). `--sync-frontmatter` aligns structural/shared frontmatter (`image`, `hero`, `container`, `flushTop`, `template`) across locales. Without `--publish`, only the source locale is `draft: false`; locales with `[TODO: ...]` placeholders always remain drafts.
+
+* **Manage a content type (enable/disable) and scaffold an entry in any type:**
+  ```bash
+  pnpm run content:list                                  # state, route base, entry counts
+  pnpm run content:disable projects                      # routes/sitemap/nav removed, content kept
+  pnpm run content:enable projects
+  pnpm run content:new projects atlas --title="Atlas" --publish
+  ```
+  `content:new` delegates `pages`/`blog` to `new:page`/`new:post`. Disabling a type never touches files; it only flips `content.types.<type>.enabled` in `app.config.json`.
 
 * **Create or update a blog article across all active locales:**
   ```bash
@@ -208,6 +223,14 @@ pnpm run i18n:add-batch -- --file=translations.json [--category=<cat>]
 4. When dynamically appending cards, call `refreshChronoTrig()` from `@/scripts/chronotrig` to re-scan and observe new elements. For filter changes that only toggle `hidden`, reset the grid's reveal classes first (see `replayGridReveals()` in `BlogIndexView.astro`), then re-scan.
 5. Add `data-lenis-prevent` on any nested `overflow-y-auto` modal/panel. Full details: `.agents/skills/astro-i18n-starter/references/scroll-and-motion.md`.
 
+### Playbook G: Content Types (enable/disable/add)
+1. **Toggle:** edit `content.types.<type>.enabled` — preferably `pnpm run content:disable <type>` / `content:enable <type>`, which preserves the file's formatting. Disabling removes the type's index/entry routes, sitemap entries, navigation links and home-page CTA; the content files stay on disk. `pages` cannot be disabled.
+2. **Inspect:** `pnpm run content:list` (state + counts) and `pnpm run content:status` (per-locale published/draft/missing, words, `[TODO: …]`).
+3. **Scaffold:** `pnpm run content:new <type> <slug> --title="…" --publish` — delegates `pages`/`blog` to `new:page`/`new:post`; every other type gets the shared frontmatter, a generated cover, and `[TODO: …]` drafts for untranslated locales.
+4. **Add a new type:** collection in `src/content.config.ts` → key in `CONTENT_TYPE_KEYS` (`src/libs/content/types.ts`) and `KNOWN_TYPES` (`scripts/lib/content-types.mjs`) → `content.types` block in `app.config.json` → `nav_<type>` message + `case` in `getContentTypeLabel`/`getContentTypeDescription` → `loadExtraEntries()` + `SiteRouteProps` union in `service.ts`. Routes, sitemap, breadcrumbs and navigation follow automatically.
+5. **Verify:** `pnpm run doctor && pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke && pnpm run link:check`.
+   Full details: `docs/CONTENT-TYPES-FA.md`.
+
 ---
 
 ## 6. Forbidden Anti-Patterns (Zero Tolerance)
@@ -215,6 +238,9 @@ pnpm run i18n:add-batch -- --file=translations.json [--category=<cat>]
 | ❌ Forbidden Pattern | ✅ Correct Pattern |
 | :--- | :--- |
 | Hardcoding paths like `/en/about` or `/fa/blog` | Use `localizeHref('/about', locale)` or `getPageUrl('about', locale)` |
+| Hardcoding a content-type segment (`/projects/…`) | Use `getContentTypeIndexHref()` / `getContentTypeEntryHref()` from `src/libs/content/types.ts` |
+| Deleting a collection, or commenting out routes, to hide a section | `pnpm run content:disable <type>` (routes, sitemap, nav and CTAs follow) |
+| Adding a new collection without a `content.types` entry | Declare it in `app.config.json` so routing, sitemap and the CLIs see it |
 | Using physical directions (`ml-4`, `pr-6`, `text-left`) | Use logical properties (`ms-4`, `pe-6`, `text-start`) |
 | Hand-editing files in `src/paraglide/` | Edit `messages/<lang>.json` and run `pnpm run messages:compile` |
 | Calling `m.key()` at top-level module scope | Call `m.key({}, { locale })` inside template/render cycle |

@@ -127,3 +127,63 @@ node scripts/index-pagefind.mjs [--site=dist]
 ```
 * Runs automatically as the final step of `npm run build`.
 * Feeds built HTML from `dist/` into Pagefind's Node API in memory, normalizing Perso-Arabic character variants (`ي`/`ك` → `ی`/`ک`) and isolating Perso-Arabic punctuation (`«»،؛؟٪٬`) so Persian tokens index cleanly without modifying `dist/*.html` on disk.
+
+---
+
+## 6. Content-Type Management (`content:*`)
+
+Every command reads the registry from `app.config.json` through `scripts/lib/content-types.mjs`, so the CLI and the build can never disagree about which collections exist.
+
+### 6.1 Inspect (`content:list`)
+```bash
+npm run content:list
+npm run content:list -- --json
+```
+Prints each type's route base, enable state, `index`/`paginated`/`nav` flags, group count, published/draft/missing entry counts, and a per-locale tally. `--json` is stable enough to consume from CI.
+
+### 6.2 Enable / disable (`content:enable`, `content:disable`)
+```bash
+npm run content:disable projects
+npm run content:enable projects
+```
+* Flips `content.types.<type>.enabled` and rewrites `app.config.json` with its own indentation and line endings, so the diff is one line.
+* A disabled type loses its index/entry routes, sitemap entries, navigation links and the home-page CTA on the next build. **Content files are never touched**, so re-enabling restores the section.
+* `pages` is refused (it owns the home page); unknown keys are refused with the list of known types.
+* Static `/api/blog-posts.json` and `/rss.xml` keep working when `blog` is disabled, deliberately, so external consumers do not break.
+
+### 6.3 Scaffold any type (`content:new`)
+```bash
+npm run content:new <type> <slug> -- [--title="<Title>"] [--desc="<Desc>"] \
+  [--from=<locale>] [--slug:<locale>="<native-slug>"] [--image=cover.png|none] [--publish]
+```
+* `pages` and `blog` are forwarded to `new:page` / `new:post` (their frontmatter and taxonomy stay authoritative).
+* Other types get `src/content/<type>/<slug>/<locale>.mdx` for every active locale, plus a generated `./<slug>.png` cover.
+* Only the source locale is published with `--publish`; other locales get a `[TODO: <locale>]` title and `draft: true`, so untranslated placeholder copy never reaches production.
+* Group slugs are validated before any write (`../blog`, `/etc`, `.` are rejected, as is the reserved pagination slug `page`), and an existing group is never overwritten.
+* The cover is generated even when the type is disabled: the entry's `image` reference must exist so re-enabling the type cannot fail the build. `assets:generate` covers every declared collection for the same reason.
+
+---
+
+## 7. Health, Readiness & Link Checks
+
+### 7.1 `doctor` (no build)
+```bash
+npm run doctor
+npm run doctor -- --json     # exit 1 only when a real error is found
+```
+Checks Node against `engines`, the pinned package manager and lockfile, `app.config.json` parsing, content-type bases (empty, duplicate, reserved by the router or equal to a locale prefix), template branding still in place, `SITE_URL`, dictionary parity and `[TODO: …]` values, `src/paraglide` freshness (compared against `src/paraglide/messages/_index.js`, the file the compiler always rewrites), missing group/locale files, frontmatter image references that point at nothing, and the presence of `dist/`. Each finding prints the command that fixes it.
+
+### 7.2 `content:status` (readiness matrix)
+```bash
+npm run content:status
+npm run content:status -- --json
+npm run content:status -- --write=docs/STATUS.md --type=projects
+```
+One row per group with a column per locale: `✅` published, `✏️` draft, `—` missing, plus word count, reading time, `[TODO: …]` count and a `type disabled` note. `--write` emits a Markdown table for a client hand-off.
+
+### 7.3 `link:check` (post-build crawl)
+```bash
+npm run link:check
+npm run link:check -- --dir=dist --json --limit=100
+```
+Walks every built HTML file and verifies `href`, `src`, `poster` and each `srcset` candidate that points inside the site. A path resolves when it maps to a real file, to `<path>/index.html`, or to `<path>.html`; `/pagefind/` is skipped because it is loaded at runtime. Exits 1 with `page → target` pairs, so a renamed slug or a stale CTA cannot ship as a 404.

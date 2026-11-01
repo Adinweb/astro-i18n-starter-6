@@ -81,7 +81,7 @@ All colors are defined once in `src/styles/global.css` using OKLCH and exposed v
 ### Shared Layout & Semantic Component Classes (`@layer components` in `global.css`)
 Never re-declare container widths, buttons, chips, kickers, or raw `text-white`/`bg-black` utilities in components. Compose:
 - `.layout-container` — standard desktop width (`max-w-7xl` / `1280px`) with responsive logical inline gutters (`px-4 sm:px-6 lg:px-8`), used across header, footer, blog, and `<PageSection>`
-- `.prose-wide` — full container-width `.prose` variant (`max-w: none`) for `container: 'contained'` pages
+- `.prose-wide` — full container-width `.prose` variant (`max-w: none`) for `container: 'contained'` pages (declared in `src/styles/prose.css`, not `global.css`)
 - `.glass-surface`, `.glass-control`, `.ghost-control`
 - `.cta`, `.btn-secondary`, `.btn-hero-secondary`
 - `.chip` (automatically styled when `[aria-selected='true']`, `[aria-current='true']`, or `[aria-current='page']`)
@@ -113,3 +113,4 @@ Never embed raw `<svg><path ...></svg>` in templates. Use `<Icon name="..." />` 
 13. `arrow-right` — call-to-action directional arrow (pair with `rtl:rotate-180`)
 14. `shield` — privacy & cookie consent control icon
 15. `mail` — contact & external API inquiry notice icon
+16. `layers` — stacked-layers marker used by the home blueprint and architecture cards

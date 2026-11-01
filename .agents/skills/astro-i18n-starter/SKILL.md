@@ -13,23 +13,27 @@ This skill coordinates workflows for developing, maintaining, and extending this
    - Locales & directions: `src/i18n/locales.ts` and `project.inlang/settings.json`.
    - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
    - Content schemas: `src/content.config.ts`.
-   - Navigation slots: `src/libs/config/navigation.ts` (`getNavigationSlots`).
-   - Application, cookie & external API config: `app.config.json` -> `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIES_CONFIG`).
+   - Content types (`pages`, `blog`, `projects`): `app.config.json` → `content.types`, validated by `src/libs/content/types.ts` (`enabled`, `base`, `index`, `paginated`, `feed`, `nav`). Toggle with `pnpm run content:enable|disable <type>`; never delete a collection to hide a section.
+   - Navigation slots: `src/libs/config/navigation.ts` (`getNavigationSlots`, `getContentTypeNavItems`).
+   - Application, cookie & external API config: `app.config.json` -> `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`).
    - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs`, `src/libs/search/persian.ts`, and `src/libs/search/client.ts`.
    - Pure SSG External APIs (Zero Backend): `src/libs/api/client.ts` + `src/components/ContactForm.astro`. Never add a backend server or SSR endpoints; `/api/*.json` routes are static build-time catalogs only.
    - Semantic tokens & `.layout-container` (`1280px`): `src/styles/global.css`.
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
 2. **Lean Router Dispatcher**:
    - Centralized exclusively in `src/pages/[...path].astro` -> `src/views/`. Never create dynamic route files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
+   - `pages` → `PageView`, `blog-entry` → `BlogPostView`, `blog-index` → `BlogIndexView`; every other enabled type (e.g. `projects`) uses the generic `CollectionIndexView` / `CollectionEntryView` with `routeType` `collection-index` / `collection-entry`.
 3. **Prefix-less Default Locale**:
    - Default locale (`en`) has NO prefix (`/`, `/about/`, `/blog/first-post/`). Non-default locales (`fa` out of the box; `ar`, `de`, `fr`, etc. via `i18n:add-lang`) have prefixes (`/fa/درباره-ما/`).
 4. **RTL-Native Discipline**:
    - Always use CSS logical properties (`ms-`, `me-`, `ps-`, `pe-`, `start-*`, `end-*`, `text-start`, `text-end`, `border-s-*`, `border-e-*`). Never use physical directions.
-5. **Idempotent Client Scripts**:
+5. **Page Design Freedom (canvas pages)**:
+   - `pages` entries are not locked into one template: the schema defaults to `hero: 'none'` + `container: 'canvas'`, so MDX may compose arbitrary full-bleed bands (`<PageSection>`, `<section class="w-full …">`, custom hero with `<Image>`), opt into `hero: 'minimal'` / `hero: 'default'`, pick `container: 'contained' | 'prose'`, add `flushTop: true`, or delegate to a shared Astro view via `template: '<name>'` registered in `src/views/PageView.astro` → `PAGE_TEMPLATES`. `blog` posts are the opposite: they always render through `BlogPostView.astro` + `PageHero.astro`. Every page must still render exactly one `<h1>`.
+6. **Idempotent Client Scripts**:
    - Guard DOM listeners in Astro components with `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';`.
-6. **Static Language Switching**:
+7. **Static Language Switching**:
    - Use `window.location.assign(target)` rather than client-side SPA view transitions so `<html lang dir>` and font stacks are fully applied.
-7. **ChronoTrig CSS Scroll Engine & Lenis Discipline**:
+8. **ChronoTrig CSS Scroll Engine & Lenis Discipline**:
    - **Zero CLS & Print/No-JS Safe**: Entrance states are strictly scoped under `.js [data-trig]`. When JavaScript is disabled or printed, all elements render with `opacity: 1` and `transform: none` immediately.
    - **ChronoTrig Architecture**: Pinned sections (`data-trig-pin`), harmonic staggers (`data-trig-stagger`), and multi-step keyframe timelines (`data-trig-timeline`). Runtime managed in `src/scripts/chronotrig.ts` and styled via `src/styles/chronotrig.css`.
    - **Logical RTL Directions**: Always use `data-trig-direction="start"` / `data-trig-direction="end"` (never physical `left`/`right`) so horizontal entrances mirror automatically in `fa` and `ar`.
@@ -45,9 +49,9 @@ To perform work in this repository, identify your specific task and read the ind
 
 | Task / Domain | Action / Reference File |
 | :--- | :--- |
-| **Content Pipeline, Search & Pure SSG APIs**<br>Collections schemas, pure URL paths, lean router dispatcher, blog engine, pagination, Persian-aware Pagefind search, external API client, feeds & sitemaps | ➡️ Read `references/content-and-routing.md` |
+| **Content Pipeline, Search & Pure SSG APIs**<br>Collections schemas, content-type registry (enable/disable, generic collection views), page canvas / full-bleed composition, pure URL paths, lean router dispatcher, blog engine, pagination, Persian-aware Pagefind search, external API client, feeds & sitemaps | ➡️ Read `references/content-and-routing.md` |
 | **Multi-Menu Navigation**<br>Header dropdowns, mobile drawer tabs, 4-column footer, active states, slot resolvers | ➡️ Read `references/navigation.md` |
-| **CLI Automation Suite**<br>Scaffolding pages/posts, deleting content, language lifecycle, batch translations, asset generation | ➡️ Read `references/cli-automation.md` |
+| **CLI Automation Suite**<br>Scaffolding pages/posts/any content type, enabling & disabling content types, deleting content, language lifecycle, batch translations, asset generation, `doctor` / `content:status` / `link:check` | ➡️ Read `references/cli-automation.md` |
 | **RTL, Typography & Styling**<br>CSS logical properties, `.layout-container`, font stacks, LTR code block isolation, OKLCH tokens, SVG icon catalog | ➡️ Read `references/rtl-styling.md` |
 | **Smooth Scroll, ChronoTrig & Motion**<br>ChronoTrig CSS scroll engine, `data-trig` smooth bottom reveals, `data-trig-stagger` cascades, `data-trig-pin` sticky stages, RTL start/end vectors, and Lenis smooth-scroll rules | ➡️ Read `references/scroll-and-motion.md` |
 | **Testing, Linting & QA**<br>Paraglide compile, Vitest unit tests, i18n parity audit, production build, smoke tests, Knip | ➡️ Read `references/verification.md` |
@@ -60,9 +64,12 @@ All scripts support both `npm run` and `pnpm run`:
 
 ```bash
 npm run lint          # paraglide compile + astro check + tsc --noEmit
-npm test              # Vitest test suite (18 suites)
-npm run audit:i18n    # 5-stage i18n completeness, frontmatter & RTL parity audit
+npm test              # Vitest test suite (18 files, 193 tests)
+npm run audit:i18n    # 6-stage i18n completeness, frontmatter & RTL parity audit
 npm run build         # Production SSG build + Persian-aware Pagefind indexing
 npm run smoke         # Post-build HTML, SEO, feed & pagination validation over dist/
-npm run verify:cli    # 47 end-to-end CLI workflow assertions in isolated sandbox
+npm run doctor        # No-build health check (config, content types, dictionaries, content, SITE_URL)
+npm run link:check    # Crawl dist/ and report internal links that resolve to nothing
+npm run content:list  # Content types, route bases, enable state and entry counts
+npm run verify:cli    # 82 end-to-end CLI workflow assertions in isolated sandbox
 ```
