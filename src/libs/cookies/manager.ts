@@ -6,7 +6,10 @@
  * Works seamlessly across Astro `<ClientRouter />` transitions.
  */
 
-import { COOKIE_CONFIG, type CookieConfig } from '@/libs/config/app';
+// The runtime controller ships to every page, so it reads the browser-safe copy
+// of the configuration: importing `app.ts` here would pull in the Zod validator.
+import { CLIENT_COOKIE_CONFIG } from '@/libs/config/client';
+import type { CookieConfig } from '@/libs/config/app';
 import {
   COOKIE_REGISTRY,
   OPTIONAL_COOKIE_CATEGORIES,
@@ -112,7 +115,7 @@ function clearConsentStorage(storageKey: string): void {
  */
 export function purgeOptionalStorage(
   unconsentedCategories: readonly OptionalCookieCategory[],
-  storageKey: string = COOKIE_CONFIG.storageKey
+  storageKey: string = CLIENT_COOKIE_CONFIG.storageKey
 ): void {
   if (!isBrowser() || unconsentedCategories.length === 0) return;
 
@@ -295,7 +298,7 @@ export function applyEmbedGatekeeper(
  * Reads and validates the stored consent record from `localStorage` or first-party
  * HTTP cookie fallback. Automatically clears expired or outdated-version records.
  */
-export function readStoredConsent(config: CookieConfig = COOKIE_CONFIG): ConsentRecord | null {
+export function readStoredConsent(config: CookieConfig = CLIENT_COOKIE_CONFIG): ConsentRecord | null {
   if (!isBrowser()) return null;
 
   const localRaw = safeLocalGet(config.storageKey);
@@ -323,7 +326,7 @@ export function readStoredConsent(config: CookieConfig = COOKIE_CONFIG): Consent
 
 export function hasCategoryConsent(
   category: CookieCategory,
-  config: CookieConfig = COOKIE_CONFIG
+  config: CookieConfig = CLIENT_COOKIE_CONFIG
 ): boolean {
   if (category === 'necessary') return true;
   const record = readStoredConsent(config);
@@ -345,7 +348,7 @@ function dispatchConsentChange(
 export function persistConsent(
   categories: Partial<Record<CookieCategory, boolean>>,
   method: ConsentDecisionMethod,
-  config: CookieConfig = COOKIE_CONFIG
+  config: CookieConfig = CLIENT_COOKIE_CONFIG
 ): ConsentRecord {
   const previous = readStoredConsent(config);
   const record = createConsentRecord({
@@ -376,17 +379,17 @@ export function persistConsent(
   return record;
 }
 
-export function acceptAllCookies(config: CookieConfig = COOKIE_CONFIG): ConsentRecord {
+export function acceptAllCookies(config: CookieConfig = CLIENT_COOKIE_CONFIG): ConsentRecord {
   return persistConsent(getAllAcceptedCategories(), 'accept_all', config);
 }
 
-export function rejectOptionalCookies(config: CookieConfig = COOKIE_CONFIG): ConsentRecord {
+export function rejectOptionalCookies(config: CookieConfig = CLIENT_COOKIE_CONFIG): ConsentRecord {
   return persistConsent(getDefaultCategories(), 'reject_optional', config);
 }
 
 export function saveCookiePreferences(
   categories: Partial<Record<CookieCategory, boolean>>,
-  config: CookieConfig = COOKIE_CONFIG
+  config: CookieConfig = CLIENT_COOKIE_CONFIG
 ): ConsentRecord {
   return persistConsent(categories, 'custom', config);
 }
@@ -395,7 +398,7 @@ export function saveCookiePreferences(
  * Completely withdraws and deletes stored consent (Art. 7 Abs. 3 DSGVO),
  * purges all optional cookies/storage, tears down scripts/embeds, and re-prompts cleanly.
  */
-export function withdrawCookieConsent(config: CookieConfig = COOKIE_CONFIG): void {
+export function withdrawCookieConsent(config: CookieConfig = CLIENT_COOKIE_CONFIG): void {
   if (!isBrowser()) return;
   const previous = readStoredConsent(config);
   clearConsentStorage(config.storageKey);
@@ -412,7 +415,7 @@ export function withdrawCookieConsent(config: CookieConfig = COOKIE_CONFIG): voi
  * and after every Astro View Transition (`astro:page-load`).
  */
 export function syncConsentOnPageLoad(
-  config: CookieConfig = COOKIE_CONFIG
+  config: CookieConfig = CLIENT_COOKIE_CONFIG
 ): ConsentRecord | null {
   if (!isBrowser()) return null;
   const record = readStoredConsent(config);
@@ -427,7 +430,7 @@ export function syncConsentOnPageLoad(
  * Binds cross-tab synchronization via the `storage` event so consent updates or
  * withdrawals in one tab immediately propagate to all open tabs.
  */
-export function bindCrossTabConsentSync(config: CookieConfig = COOKIE_CONFIG): void {
+export function bindCrossTabConsentSync(config: CookieConfig = CLIENT_COOKIE_CONFIG): void {
   if (!isBrowser() || typeof window.addEventListener !== 'function') return;
   const root = document.documentElement;
   if (!root || root.dataset.cookieStorageSyncBound === 'true') return;

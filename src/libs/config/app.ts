@@ -1,6 +1,7 @@
 import heroPhoto from '@/assets/hero/hero-0.jpg';
 import { z } from 'astro/zod';
 import rawConfig from '../../../app.config.json';
+import { COOKIE_CONFIG_DEFAULTS } from './defaults';
 
 /**
  * Typed access to the application's single configuration file.
@@ -115,13 +116,6 @@ export const defaultUiConfig: UiConfig = {
   stickyHeader: true,
 };
 
-const defaultCookieConfig: CookieConfig = {
-  enabled: true,
-  consentVersion: 1,
-  storageKey: 'cookie_consent',
-  expirationDays: 180,
-};
-
 export const defaultSocialConfig: SocialConfig = {
   github: '',
   twitter: '',
@@ -168,7 +162,7 @@ export const appConfigSchema = z.object({
   ui: uiConfigSchema.default(defaultUiConfig),
   blog: blogConfigSchema,
   content: contentConfigSchema.default({ types: {} }),
-  cookies: cookieConfigSchema.default(defaultCookieConfig),
+  cookies: cookieConfigSchema.default(COOKIE_CONFIG_DEFAULTS),
   social: socialConfigSchema.default(defaultSocialConfig),
   api: apiConfigSchema.default(defaultApiConfig),
   server: z.object({
