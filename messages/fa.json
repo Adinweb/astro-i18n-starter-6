@@ -81,6 +81,7 @@
   "contact_topic_general": "پرسش عمومی",
   "contact_topic_label": "موضوع",
   "contact_unconfigured_notice": "هنوز نشانی API خارجی تنظیم نشده است. برای اتصال فرم به سرویس مستقل، متغیر PUBLIC_CONTACT_API_URL یا مقدار api.baseUrl را در app.config.json تنظیم کنید.",
+  "contact_unavailable_desc": "فرم آنلاین هنوز در دسترس نیست. لطفاً بعداً دوباره سر بزنید.",
   "content_empty": "هنوز چیزی در این بخش منتشر نشده است.",
   "cookie_action_accept_all": "پذیرش همه",
   "cookie_action_customize": "سفارشی‌سازی",

@@ -26,6 +26,12 @@ interface Props {
   description?: string;
   locale: Locale;
   url: string;
+  /**
+   * URL that decides which navigation entry renders as current. Defaults to
+   * `url`; the 404 document publishes the home page as its canonical but is
+   * not itself a page of the site, so it passes `null` and highlights nothing.
+   */
+  activeUrl?: string | null;
   alternates: Partial<Record<Locale, string>>;
   switcherAlternates?: Partial<Record<Locale, string>>;
   noindex?: boolean;
@@ -63,6 +69,7 @@ const {
   description,
   locale,
   url,
+  activeUrl,
   alternates,
   switcherAlternates,
   noindex = false,
@@ -83,7 +90,7 @@ const {
 const meta = getLocaleMeta(locale);
 const siteName = siteConfig.name;
 const { header: headerNav, drawer: drawerNav, footer: footerNav, legal: legalNav } =
-  await getNavigationSlots(locale, url);
+  await getNavigationSlots(locale, activeUrl === undefined ? url : (activeUrl ?? ''));
 const homeHref = await getHomeHref(locale);
 // The call to action points at the content group configured in `ui.ctaPage`
 // instead of a hardcoded page: a site without a pricing page keeps its CTA,

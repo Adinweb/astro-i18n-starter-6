@@ -109,6 +109,7 @@ const i18nData = Object.fromEntries(
           code: formatNumber(404, loc),
           year: formatYear(new Date().getFullYear(), loc),
           homeHref: resolvedHomeHref,
+          ctaHref: await getPageUrl(siteConfig.ui.ctaPage, loc),
           nav: [...linksMap.values()],
           dropdownLabels: Object.fromEntries(groupsMap),
           footerCols: Object.fromEntries(slots.footer.map((col) => [col.key, col.title])),
@@ -127,6 +128,7 @@ const i18nData = Object.fromEntries(
   description={m.common_not_found_desc({}, { locale })}
   locale={locale}
   url={homeHref}
+  activeUrl={null}
   alternates={alternates}
   noindex
   noPagefind
@@ -228,9 +230,19 @@ const i18nData = Object.fromEntries(
         homeLink.textContent = data.backHome;
       }
 
-      // Re-label shared header, mobile drawer, and footer controls
+      // Re-label shared header, mobile drawer, and footer controls. The CTA's
+      // label is localized but its destination was rendered for the default
+      // locale, so it moves to the detected locale's page too — and hides when
+      // that locale has not published the page, exactly like the layout does.
       document.querySelectorAll('[data-cta-link="get-started"]').forEach((el) => {
         el.textContent = data.cta;
+        if (data.ctaHref) {
+          el.setAttribute('href', data.ctaHref);
+          el.style.display = '';
+        } else {
+          el.removeAttribute('href');
+          el.style.display = 'none';
+        }
       });
       const rights = document.querySelector('[data-footer-rights]');
       if (rights) rights.textContent = data.rights;

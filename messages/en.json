@@ -81,6 +81,7 @@
   "contact_topic_general": "General inquiry",
   "contact_topic_label": "Topic",
   "contact_unconfigured_notice": "External API endpoint not configured yet. Set PUBLIC_CONTACT_API_URL (or api.baseUrl in app.config.json) to connect your form backend.",
+  "contact_unavailable_desc": "Online inquiries are not available yet. Please check back soon.",
   "content_empty": "Nothing has been published here yet.",
   "cookie_action_accept_all": "Accept all",
   "cookie_action_customize": "Customize",

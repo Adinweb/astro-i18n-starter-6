@@ -46,6 +46,7 @@ const copy = {
   errUnconfigured: m.contact_error_unconfigured({}, { locale }),
   fallbackDesc: m.contact_fallback_desc({}, { locale }),
   fallbackCta: m.contact_fallback_cta({}, { locale }),
+  unavailableDesc: m.contact_unavailable_desc({}, { locale }),
   devNotice: m.contact_unconfigured_notice({}, { locale }),
 };
 ---
@@ -76,7 +77,15 @@ const copy = {
             >
               <Icon name="mail" size={20} />
             </span>
-            <p class="mt-4 text-sm leading-relaxed text-muted">{copy.fallbackDesc}</p>
+            <!--
+              The fallback copy promises an email reply, so it only makes sense
+              next to the mailto button: a site with neither an endpoint nor
+              `site.contactEmail` says plainly that inquiries are unavailable
+              instead of pointing at a mailbox that does not exist.
+            -->
+            <p class="mt-4 text-sm leading-relaxed text-muted">
+              {emailHref ? copy.fallbackDesc : copy.unavailableDesc}
+            </p>
             {emailHref && (
               <Button
                 href={emailHref}
