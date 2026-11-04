@@ -16,14 +16,14 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
    - Content schemas: `src/content.config.ts`.
    - Content types (enabled/disabled, route base, index/pagination/feed/nav): `app.config.json` → `content.types`, validated and typed by `src/libs/content/types.ts`. **Switching a type off removes its routes, sitemap entries and navigation links** — never delete the collection to hide a section.
-   - Slugs, feeds & alternates: `src/libs/content/service.ts` and `src/libs/content/feed.ts`.
+   - Slugs, feeds, alternates & home URL: `src/libs/content/service.ts` (`getHomeHref` is the one home URL for chrome, breadcrumbs and feeds — it falls back to the default locale when a locale's home page is not translated) and `src/libs/content/feed.ts`.
    - Content entry invariants (IDs, drafts, locale selection, sorting): `src/libs/content/entries.ts`.
    - Blog filters & reading time: `src/libs/content/blog.ts`; taxonomy labels: `src/libs/content/taxonomy.ts`.
-   - Application config: `app.config.json`, validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`, brand assets, dev server). `ui.ctaPage` names the page group the header/drawer CTA points at; a CTA whose page is unpublished hides itself.
+   - Application config: `app.config.json`, validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`, brand assets, dev server). `ui.ctaPage` names the page group the header/drawer CTA points at; a CTA whose page is unpublished hides itself. Modules that ship to the browser read `src/libs/config/client.ts` (and the shared defaults in `defaults.ts`) instead of `app.ts`: the validator runs at import time, so a client import of `app.ts` drags the whole Zod runtime onto every page. Components, views, pages and Node scripts keep using `app.ts`.
    - Navigation: `src/libs/config/navigation.ts` — `PAGE_ITEMS` for page links, one `buildPrimaryNavigation` shared by the header and the drawer, plus `getFooterNavigation` / `getLegalNavigation`. Anchor links (`#rtl`, `#design`, `#privacy`) are only emitted while their target page exists.
    - Blog pagination: `blog.postsPerPage` in `app.config.json` (`POSTS_PER_PAGE`), math in `src/libs/content/pagination.ts` (`paginate`, `buildPageWindow`), URLs in `src/libs/content/service.ts` (`getBlogPageHref`).
    - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs` (build-time Pagefind normalization), `src/libs/search/persian.ts` (ZWNJ/orthography/numeral query expansion & fallback folding), and `src/libs/search/client.ts`.
-   - External API & Consent (Pure SSG, Zero Backend): `src/libs/api/client.ts` (`ContactForm.astro` posts directly to external/headless endpoints configured via `app.config.json` `api` or `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL`) and `src/libs/cookies/` (`CookieConsent.astro`). A site without an endpoint renders **no form**: `site.contactEmail` powers the `mailto:` fallback and the developer setup note is `import.meta.env.DEV`-only, so visitors never read environment-variable names. Never add SSR servers or backend folders.
+   - External API & Consent (Pure SSG, Zero Backend): `src/libs/api/client.ts` (`ContactForm.astro` posts directly to external/headless endpoints configured via `app.config.json` `api` or `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL`) and `src/libs/cookies/` (`CookieConsent.astro`). A site without an endpoint renders **no form**: `contact_fallback_desc` + a `mailto:` button come from `site.contactEmail`, `contact_unavailable_desc` replaces them when that address is empty (never promise an email channel the site does not have), and the developer setup note is `import.meta.env.DEV`-only, so visitors never read environment-variable names. Never add SSR servers or backend folders.
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
    - Icons: the closed name list in `src/libs/ui/icons.ts` (`SITE_ICONS`, `resolveIconName`) and the Tabler registry in `src/components/Icon.astro`. Names are semantic; templates never carry raw `<svg>`, and client code clones server-rendered icons instead of writing paths.
 2. **Lean Router Dispatcher Pattern**:
@@ -36,6 +36,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 4. **RTL-Native Discipline**:
    - Always use CSS logical properties (`ms-`, `me-`, `ps-`, `pe-`, `start-*`, `end-*`, `text-start`, `text-end`, `border-s-*`, `border-e-*`).
    - Never use physical directions (`ml-`, `mr-`, `pl-`, `pr-`, `left-`, `right-`, `text-left`, `text-right`).
+   - Gradients are directional too: a horizontal one is written `bg-linear-to-r rtl:bg-linear-to-l` so its start colour sits at the reading start, and text clipped with `bg-clip-text` resets to `print:bg-none print:text-fg`.
    - Code blocks (`pre`, `code`, `.math`) are strictly isolated to `ltr` via `src/styles/prose.css`.
 5. **Untouchable Generated Code**:
    - `src/paraglide/` is auto-generated by `@inlang/paraglide-js`. **Never hand-edit files in `src/paraglide/`**. Edit `messages/<locale>.json` and run `pnpm run messages:compile`.
@@ -114,6 +115,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   ├── paraglide/             # AUTO-GENERATED compiled messages (DO NOT EDIT)
 │   ├── scripts/               # Client modules: chronotrig.ts, lenis.ts (smooth scroll)
 │   ├── styles/                # global.css (.layout-container + OKLCH palette + glass + print), prose.css, chronotrig.css
+│   ├── types/                 # tabler-icons-astro.d.ts: types for the per-icon deep imports used by Icon.astro
 │   └── views/                 # Presentation views (PageView, BlogIndexView, BlogPostView + pages/HomePageTemplate)
 ```
 
@@ -250,6 +252,7 @@ Icons come from `@tabler/icons-astro`; nothing else renders an `<svg>` in a temp
 | Deleting a collection, or commenting out routes, to hide a section | `pnpm run content:disable <type>` (routes, sitemap, nav and CTAs follow) |
 | Adding a new collection without a `content.types` entry | Declare it in `app.config.json` so routing, sitemap and the CLIs see it |
 | Using physical directions (`ml-4`, `pr-6`, `text-left`) | Use logical properties (`ms-4`, `pe-6`, `text-start`) |
+| A one-way gradient (`bg-linear-to-r`) that points the wrong way in RTL | Add the mirrored variant (`rtl:bg-linear-to-l`) |
 | Hand-editing files in `src/paraglide/` | Edit `messages/<lang>.json` and run `pnpm run messages:compile` |
 | Calling `m.key()` at top-level module scope | Call `m.key({}, { locale })` inside template/render cycle |
 | Creating `src/pages/[lang]/...` route files | Use `src/pages/[...path].astro` dispatcher with `src/views/` |

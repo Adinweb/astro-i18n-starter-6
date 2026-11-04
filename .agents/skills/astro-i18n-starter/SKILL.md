@@ -64,7 +64,7 @@ All scripts support both `npm run` and `pnpm run`:
 
 ```bash
 npm run lint          # paraglide compile + astro check + tsc --noEmit
-npm test              # Vitest test suite (18 files, 197 tests)
+npm test              # Vitest test suite (21 files, 222 tests)
 npm run audit:i18n    # 6-stage i18n completeness, frontmatter & RTL parity audit
 npm run build         # Production SSG build + Persian-aware Pagefind indexing
 npm run smoke         # Post-build HTML, SEO, feed & pagination validation over dist/

@@ -139,6 +139,7 @@ Physical dynamic routes are consolidated into a single dispatcher file (`src/pag
 ### 6.3 Pure SSG External API Adapter (`src/libs/api/client.ts`)
 * This starter is **100% static SSG with zero backend**. Never add SSR routes or backend server directories.
 * Interactive forms (`src/components/ContactForm.astro`) post JSON payloads directly from the browser through `submitContactInquiry()` in `src/libs/api/client.ts` (helpers: `resolveApiEndpoint()`, `getInvalidContactFields()`, `validateContactPayload()`), resolving endpoints from `PUBLIC_CONTACT_API_URL`, `PUBLIC_API_BASE_URL`, or `app.config.json` (`api.baseUrl` + `api.endpoints.contact`) with `AbortController` timeout protection and honeypot spam filtering.
+* Without a resolved endpoint the form is **not rendered at all**. The panel then shows `contact_fallback_desc` plus a `mailto:` button when `site.contactEmail` is set, and `contact_unavailable_desc` ("inquiries are not available yet") when it is not — the copy must never promise an email channel the site does not have. `contact_unconfigured_notice` (which names `PUBLIC_CONTACT_API_URL`) is rendered in `import.meta.env.DEV` only.
 
 ---
 

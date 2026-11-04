@@ -171,13 +171,13 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 
 All application-level values that must stay in sync across the app and the CLI scripts live in [`app.config.json`](app.config.json):
 
-* **`site`** — name, short name, description (used by the web manifest; page/SEO descriptions come from the localized `site_description` message), `contactEmail` (the `mailto:` destination of the contact form's fallback), default social card path and size.
+* **`site`** — name, short name, description (used by the web manifest; page/SEO descriptions come from the localized `site_description` message), `contactEmail` (the `mailto:` destination of the contact form's fallback; leave it empty and the panel says inquiries are unavailable instead of promising an email), default social card path and size.
 * **`brand`** — browser theme colours (`themeColor` and `darkThemeColor`), background colour, Apple touch icon, manifest icons.
 * **`blog.postsPerPage`** — how many posts one index page holds.
-* **`api`** — optional `baseUrl`, `timeoutMs`, and `endpoints.contact` for connecting client-side forms (`src/libs/api/client.ts`) to an external/headless backend (overridable via `PUBLIC_API_BASE_URL` and `PUBLIC_CONTACT_API_URL`). Without an endpoint the form is not rendered at all: the page shows a visitor-facing notice plus a `mailto:` button when `site.contactEmail` is set, and the developer-only setup note appears in `import.meta.env.DEV` only.
+* **`api`** — optional `baseUrl`, `timeoutMs`, and `endpoints.contact` for connecting client-side forms (`src/libs/api/client.ts`) to an external/headless backend (overridable via `PUBLIC_API_BASE_URL` and `PUBLIC_CONTACT_API_URL`). Without an endpoint the form is not rendered at all: the page shows a visitor-facing notice plus a `mailto:` button when `site.contactEmail` is set (`contact_unavailable_desc` replaces both when it is empty), and the developer-only setup note appears in `import.meta.env.DEV` only.
 * **`server`** — dev host/port, also used as the local fallback site origin.
 
-[`src/libs/config/app.ts`](src/libs/config/app.ts) validates that file with Zod and exposes typed values (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, hero defaults, `absoluteUrl`). The asset generator, web manifest, and smoke tests read the same file. Framework-only settings remain in `astro.config.mjs`, and locale configuration in `src/i18n/locales.ts` + `project.inlang/settings.json`.
+[`src/libs/config/app.ts`](src/libs/config/app.ts) validates that file with Zod and exposes typed values (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, hero defaults, `absoluteUrl`). The asset generator, web manifest, and smoke tests read the same file. Browser scripts read the same JSON through [`src/libs/config/client.ts`](src/libs/config/client.ts), which shares its fallbacks with the schema via [`defaults.ts`](src/libs/config/defaults.ts) and never imports the validator — an import of `app.ts` from a client module would ship the whole Zod runtime (~93 kB) to every page. Framework-only settings remain in `astro.config.mjs`, and locale configuration in `src/i18n/locales.ts` + `project.inlang/settings.json`.
 
 The two Paraglide plugins are declared in `project.inlang/settings.json` as paths into `node_modules`, so message compilation resolves them from the lockfile instead of fetching them from a CDN; a cold CI build needs no network access and cannot pick up a changed plugin under the same version.
 
@@ -358,9 +358,10 @@ Always use logical properties instead of physical left/right classes:
 | `rounded-l` | `rounded-s` | Corner border radius start |
 | `rounded-r` | `rounded-e` | Corner border radius end |
 
-To flip arrow icons in RTL layouts, use Tailwind's `rtl:` variant:
+`<Button>` already rotates a directional icon (`arrow-right`, `chevron-left`, `chevron-right`) in RTL. For any other mirrored element — an icon passed to `<Icon>`, or a horizontal gradient — use Tailwind's `rtl:` variant:
 ```astro
-<span class="inline-block rtl:rotate-180">→</span>
+<Icon name="arrow-right" class="rtl:rotate-180" />
+<span class="bg-linear-to-r from-accent to-fg bg-clip-text text-transparent rtl:bg-linear-to-l">…</span>
 ```
 
 ### 6. Using the Glass Design System
@@ -387,7 +388,7 @@ Text buttons go through one component, so only the colour, the text and the icon
 | `variant` | `primary` (`cta`), `secondary` (`btn-secondary`), `hero` (`btn-hero-secondary`), `ghost` (`ghost-control`), `glass` (`glass-control`) |
 | `size` | `sm` (`h-9`), `md` (`h-10`), `lg` (`h-11`), `auto` (caller-sized) |
 | `href` | Present → renders `<a>`; absent → renders `<button type="…">` |
-| `icon` / `iconPosition` | Sprite name plus `start` or `end`; `arrow-*` and `chevron-*` mirror in RTL and nudge forward on hover |
+| `icon` / `iconPosition` | Semantic name from `src/libs/ui/icons.ts` plus `start` or `end`; `arrow-*` and `chevron-*` mirror in RTL and nudge forward on hover |
 | `block`, `class` | Full width, and call-site utilities merged last |
 
 Every button shares the hover lift and press from `src/libs/ui/button.ts`, which the blog pager's client renderer reuses, so a server-rendered control and a runtime one never drift apart.

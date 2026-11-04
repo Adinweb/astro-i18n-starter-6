@@ -586,7 +586,7 @@ import * as m from '@/paraglide/messages';
 
 ```bash
 pnpm run lint          # messages + astro check + tsc (خطای تایپ/شمای محتوا اینجا گیر می‌افتد)
-pnpm test              # ۱۹۷ تست واحد
+pnpm test              # ۲۱۹ تست واحد
 pnpm run audit:i18n    # هم‌ترازی زبان‌ها، کلیدها، مسیرها، RTL
 pnpm run build         # Astro + Pagefind
 pnpm run smoke         # HTML/SEO/feed/H1 روی خروجی واقعی

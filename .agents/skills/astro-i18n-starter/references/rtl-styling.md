@@ -17,6 +17,7 @@ Never use physical directional utilities. Always use logical properties:
 | `border-l-*`, `border-r-*` | `border-s-*`, `border-e-*` | `border-inline-start`, `border-inline-end` |
 | `rounded-l-*`, `rounded-r-*` | `rounded-s-*`, `rounded-e-*` | `border-start-*-radius`, `border-end-*-radius` |
 | Directional arrows | `rtl:rotate-180` / `rotate-180 rtl:rotate-0` | Mirrors icon based on `dir="rtl"` |
+| `bg-linear-to-r` | `bg-linear-to-r rtl:bg-linear-to-l` | Mirrors a horizontal gradient so its start colour sits at the reading start |
 | `data-trig-direction="left"`, `="right"` | `data-trig-direction="start"`, `="end"` | Mirrors horizontal viewport entrance in RTL (`chronotrig.css`) |
 
 ---
@@ -116,7 +117,7 @@ Every text button is `<Button>`: colour from `variant` (`primary`/`secondary`/`h
 10. `moon` — shown while the page is light
 11. `copy` — code-block copy action
 12. `external-link` — outbound links
-13. `arrow-right` — call-to-action arrow (pair with `rtl:rotate-180`)
+13. `arrow-right` — call-to-action arrow (`Button` rotates it in RTL by itself)
 14. `shield` — privacy and cookie consent (`shield-check`)
 15. `mail` — contact and inquiry notice
 16. `layers` — architecture and Resources markers (`stack-2`)

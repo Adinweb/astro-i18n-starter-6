@@ -17,6 +17,8 @@ export interface NavItem {
   href?: string;
   active: boolean;
   external?: boolean;
+  /** Semantic icon name from `src/libs/ui/icons.ts`; the drawer renders it. */
+  icon?: string;
   children?: NavItem[];
 }
 
@@ -38,6 +40,7 @@ export interface NavItemConfig {
   label: (locale: Locale) => string;
   href?: string | ((locale: Locale) => Promise<string | null | undefined>);
   external?: boolean;
+  icon?: string;
   children?: NavItemConfig[];
 }
 ```
@@ -51,6 +54,7 @@ export interface NavItemConfig {
 ```typescript
 const { header, drawer, footer, legal } = await getNavigationSlots(locale, url);
 ```
+`url` is also the page's canonical URL, so a view whose canonical is not the page it renders under passes `activeUrl` to `BaseLayout` instead: the 404 document keeps its home canonical for SEO but opts out of active highlighting with `activeUrl={null}`.
 All four slots are resolved concurrently via `Promise.all` to maintain maximum build performance. The header and the drawer come from a single `buildPrimaryNavigation` pass (`PAGE_ITEMS` → page links → content-type links → the Resources dropdown), so the two menus cannot drift apart and the page lookups run once.
 
 ### 2.2 Desktop Header Navigation (`getHeaderNavigation`)

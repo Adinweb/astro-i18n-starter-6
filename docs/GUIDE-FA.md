@@ -76,7 +76,7 @@
 | **SEO** | canonical، hreflang چندزبانه + `x-default`، Open Graph (`article:modified_time`)، Twitter Card، JSON-LD (`WebSite`, `WebPage`, `CollectionPage`, `BlogPosting`, `BreadcrumbList`)، sitemap با `lastmod` کامل، فیدهای Atom مجزا به ازای هر زبان (`/rss.xml` و `/rss/<locale>.xml`)، webmanifest آگاه از زبان و جهت |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک «نسخهٔ انگلیسی» |
 | **ابزار CLI** | ۲۱ اسکریپت برای ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا (روشن/خاموش/ساخت)، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، بررسی سلامت پروژه، خزش لینک‌ها، تولید تصاویر و ایندکس Pagefind |
-| **کیفیت** | TypeScript strict، `astro check`، ۱۸ فایل تست واحد Vitest (۱۹۷ تست)، ۸۲ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
+| **کیفیت** | TypeScript strict، `astro check`، ۲۱ فایل تست واحد Vitest (۲۲۲ تست)، ۸۲ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
 | **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
 | **حرکت و اسکرول** | اسکرول نرم با **Lenis** + موتور **ChronoTrig** (`data-trig`) با پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`)، پلکانی‌سازی گروهی (`data-trig-stagger`) و سازگاری کامل با View Transitions |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، کنترل حرکت (`data-motion="reduced"`) |
@@ -365,7 +365,9 @@ SITE_URL=https://example.com pnpm run build
 ```
 
 مقادیر با **Zod** در `src/libs/config/app.ts` اعتبارسنجی می‌شوند؛ خطای اعتبارسنجی
-بیلد را متوقف می‌کند. قواعد:
+بیلد را متوقف می‌کند. اعتبارسنجی فقط در زمان بیلد اجرا می‌شود: اسکریپت‌های مرورگر
+همان فایل را از `src/libs/config/client.ts` می‌خوانند تا موتور Zod وارد باندل
+کلاینت نشود، و پیش‌فرض‌های مشترک در `defaults.ts` یک‌بار تعریف شده‌اند. قواعد:
 
 | فیلد | قاعده |
 | --- | --- |
@@ -1463,6 +1465,8 @@ export interface NavItem {
   href?: string;
   active: boolean;
   external?: boolean;
+  /** نام معنایی آیکون از `src/libs/ui/icons.ts`؛ کشو آن را رندر می‌کند. */
+  icon?: string;
   children?: NavItem[];
 }
 
@@ -1489,7 +1493,7 @@ export interface NavigationSlots {
 #### ۲. کشوی کشویی موبایل (`drawerNav` و پنل اختصاصی)
 - از تابع `getDrawerNavigation(locale, currentUrl)` تأمین می‌شود (همان فهرست هدر، از سازندهٔ مشترک) و با دکمهٔ همبرگری `data-mobile-menu-btn` باز می‌شود.
 - **طراحی دوتبی (Two-Tab Interface)**:
-  - **تب ناوبری (`drawer_tab_nav`)**: شامل سلسله‌مراتب کامل صفحات سایت با زیرمنوهای تو در توی درون‌خطی (Inline Nested Lists با حاشیهٔ منطقی `border-s-2 border-primary/30 ps-3`) بدون پاپ‌آپ‌های آزاردهنده.
+  - **تب ناوبری (`drawer_tab_nav`)**: یک درخت پیوسته، نه کارت جداگانه. هر ردیف `DrawerNavLink.astro` است: کاشی آیکون + برچسب. شاخه (مثل «منابع») یک ردیف معمولی غیرقابل‌کلیک با آیکون و برچسب `font-semibold` است و فرزندانش زیر آن روی یک خط راهنما آویزان می‌شوند که از مرکز کاشی والد شروع می‌شود (`ms-6.5 border-s border-border/70 ps-2` و برای یک سطح پایین‌تر `ms-6 border-s border-border/60 ps-1.5`). هیچ پاپ‌آپی در کشو نیست.
   - **بخش اختصاصی زبان‌ها**: یک گرید دو ستونه از همهٔ زبان‌های فعال (`data-drawer-language-section`) با نمایش نام بومی، کد زبان و آیکون تیک برای زبان جاری، همراه با ناوبری استاتیک امن (`window.location.assign`).
   - **بخش اختصاصی تغییر تم**: کنترلگر تغییر حالت روشن/تیره درون کشو.
   - **تب جستجو (`drawer_tab_search`)**: کامپوننت `DrawerSearch.astro` مستقیماً درون کشو تعبیه شده و با انتخاب تب، فوکوس خودکار روی اینپوت جستجو قرار می‌گیرد.
@@ -1498,9 +1502,9 @@ export interface NavigationSlots {
 #### ۳. فوتر چندستونهٔ پیشرفته (`footerNav` و `legalNav`)
 - از توابع `getFooterNavigation(locale, currentUrl)` و `getLegalNavigation(locale)` تأمین می‌شود و فوتر قدیمی تک‌خطی را به یک شبکهٔ واکنشی استاندارد تبدیل می‌کند:
   - **ستون ۱ (برند و مأموریت)**: نام برند، توضیح بومی سایت (`site_description`).
-  - **ستون ۲ (محصول / Product)**: خانه، امکانات، قیمت‌گذاری و ارجاع به بخش سیستم طراحی.
-  - **ستون ۳ (منابع / Resources)**: یک لینک برای هر نوع محتوای قابل‌ناوبری (وبلاگ، پروژه‌ها — از رجیستری `getContentTypeNavItems`) به‌علاوهٔ لنگر RTL و «نمای کلی»، که هر دو فقط وقتی صفحهٔ `features` منتشر شده باشد ساخته می‌شوند. هیچ لینک خارجی/قالبی در فوتر نیست.
-  - **ستون ۴ (شرکت / Company)**: درباره ما و پیوند مخزن گیت‌هاب (تنها وقتی `social.github` ست شده باشد).
+  - **ستون ۲ (صفحات / Pages)**: دقیقاً از `PAGE_ITEMS` ساخته می‌شود (خانه، درباره ما، ویژگی‌ها، قیمت‌گذاری)، پس افزودن/حذف صفحه در فوتر هم اثر می‌کند. خانه تنها لینکی است که حتی بدون صفحهٔ خانهٔ همان زبان (با `getHomeHref`) زنده می‌ماند.
+  - **ستون ۳ (منابع / Resources)**: فقط یک لینک برای هر نوع محتوای قابل‌ناوبری (`getContentTypeNavItems`: وبلاگ، پروژه‌ها). لنگرهای `#rtl`/`#design` و «نمای کلی» متعلق به منوی هدر/کشو هستند، نه فوتر. هیچ لینک خارجی/قالبی در فوتر نیست.
+  - **ستون ۴ (شرکت / Company)**: فقط شبکه‌های اجتماعی `social.github` و `social.twitter` از `app.config.json`؛ هر کدام فقط وقتی مقدار داشته باشند. ستون خالی کلاً حذف می‌شود.
 - **نوار پایین فوتر (Bottom Bar)**:
   - درج سال کپی‌رایت خودکار با تقویم هجری شمسی برای فارسی (`formatYear(currentYear, locale)`) و متن همه‌حقوق محفوظ است (`common_all_rights_reserved`).
   - پیوندهای حقوقی ثانویه (`legalNav`) شامل حریم خصوصی (`footer_legal_privacy`) و شرایط استفاده (`footer_legal_terms`) — هر دو لنگرهای صفحهٔ about هستند و اگر آن صفحه منتشر نشده باشد، نوار حقوقی خالی می‌ماند (هیچ `#privacy` مرده‌ای ساخته نمی‌شود).
@@ -1726,7 +1730,11 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 ### فرم تماس و اتصال به API خارجی (معماری Pure SSG بدون بک‌اند)
 این استارتر **۱۰۰٪ استاتیک (SSG)** است و هیچ سرور بک‌اند داخلی ندارد. برای فرم تماس (`src/components/ContactForm.astro`)، داده‌ها مستقیماً از مرورگر از طریق آداپتور نوع‌امن `src/libs/api/client.ts` (`submitContactInquiry` و کمکی‌های `resolveApiEndpoint` / `getInvalidContactFields` / `validateContactPayload`) با محافظت تایم‌اوت (`AbortController`) و فیلتر ضداسپم Honeypot به سرویس یا API خارجی شما ارسال می‌شوند:
 - نشانی API را در متغیر محیطی `PUBLIC_CONTACT_API_URL` (یا `PUBLIC_API_BASE_URL`) و یا در بخش `api` فایل `app.config.json` تنظیم کنید.
-- **بدون نشانی API، فرم اصلاً رندر نمی‌شود.** بازدیدکننده به‌جای فرم، یک پنل کوتاه با پیام `contact_fallback_desc` و — اگر `site.contactEmail` تنظیم شده باشد — دکمهٔ `mailto:` (`contact_fallback_cta`) می‌بیند. دلیل: کنترل بفرست‌نشدنی بدتر از یک نشانی روشن است، و متن‌هایی مثل نام متغیر محیطی هرگز نباید به بازدیدکننده نشان داده شوند.
+- **بدون نشانی API، فرم اصلاً رندر نمی‌شود.** بازدیدکننده به‌جای فرم یک پنل کوتاه می‌بیند:
+  - اگر `site.contactEmail` تنظیم شده باشد: پیام `contact_fallback_desc` («ایمیل بزنید…») + دکمهٔ `mailto:` (`contact_fallback_cta`).
+  - اگر خالی باشد: پیام بی‌طرف `contact_unavailable_desc` («فرم آنلاین هنوز در دسترس نیست») — بدون وعدهٔ ایمیلی که وجود ندارد و بدون دکمه.
+
+  دلیل: کنترل بفرست‌نشدنی بدتر از یک نشانی روشن است، و متن‌هایی مثل نام متغیر محیطی هرگز نباید به بازدیدکننده نشان داده شوند.
 - متن راهنمای توسعه‌دهنده (`contact_unconfigured_notice`) فقط در حالت `import.meta.env.DEV` رندر می‌شود؛ در بیلد پروداکشن از HTML حذف می‌شود.
 - `pnpm run doctor` اگر هیچ مقصدی (نه `api.baseUrl`/متغیرهای `PUBLIC_*` و نه `site.contactEmail`) تنظیم نشده باشد هشدار می‌دهد، چون در آن حالت سایت هیچ درخواستی دریافت نمی‌کند.
 
@@ -1816,7 +1824,7 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 
 ```bash
 pnpm run lint     # کامپایل پیام‌ها + astro check + tsc --noEmit
-pnpm test         # ۱۸ فایل تست واحد Vitest (۱۹۷ تست)
+pnpm test         # ۲۱ فایل تست واحد Vitest (۲۲۲ تست)
 pnpm run audit:i18n
 SITE_URL=https://example.com pnpm run build
 pnpm run smoke    # تست دود روی dist/
@@ -1839,14 +1847,17 @@ pnpm run verify:cli  # ۸۲ ادعا دربارهٔ گردش‌کارهای CLI
 | `src/libs/content/scripts.test.ts` | توابع فرانت‌متر، CLI helperها، پارسر زبان |
 | `src/libs/config/app.test.ts` | اعتبارسنجی `app.config.json` و تنظیمات برند/وبلاگ/API/کوکی |
 | `src/libs/config/navigation.test.ts` | اسلات‌های ناوبری چندمنویی هدر، کشوی موبایل و فوتر |
+| `src/libs/config/client.test.ts` | هم‌خوانی `CLIENT_COOKIE_CONFIG` با پیکربندی اعتبارسنجی‌شده و نبود import زمان اجرا از `app.ts` (به‌این‌ترتیب Zod به باندل مرورگر نمی‌رسد) |
 | `src/libs/config/astro-config.test.ts` | alias `astro/components` در `astro.config.mjs` (رفع `Unknown file extension ".astro"`) |
 | `src/libs/api/client.test.ts` | آداپتور Pure-SSG ارسال درخواست به API خارجی، تایم‌اوت و Honeypot |
 | `src/libs/cookies/cookies.test.ts` | مدل رضایت کوکی، انقضا و مدیریت اسکریپت‌ها |
 | `src/libs/search/client.test.ts` | جستجوی کلاینت، نرمال‌سازی حروف/نیم‌فاصله/ارقام فارسی و ایندکسر Pagefind |
 | `src/scripts/lenis.test.ts` | اسکرول نرم، آفست لینک‌های `#hash` و ایزوله‌سازی پنل‌ها |
 | `src/scripts/chronotrig.test.ts` | قرارداد `.js [data-trig]`، جهت‌های منطقی RTL، پلکانی‌سازی، مکث `--trig-reveal-delay` و سازگاری Lenis |
+| `src/libs/ui/button.test.ts` | نگاشت `variant`/`size` به کلاس‌های `global.css`، حرکت هاور/فشرده‌سازی و اولویت `className` فراخوان |
+| `src/libs/ui/icons.test.ts` | یکتایی و kebab-case بودن `SITE_ICONS`، `resolveIconName`، آیکون‌های جهت‌دار RTL و پوشش آیکون‌های ناوبری |
 
-> **۱۸ فایل تست واحد (۱۹۷ تست).** ماژول `astro:content` در Vitest با
+> **۲۱ فایل تست واحد (۲۲۲ تست).** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -1861,7 +1872,7 @@ pnpm run verify:cli  # ۸۲ ادعا دربارهٔ گردش‌کارهای CLI
 | ۵. اسکنر متن هاردکد | هشدار دربارهٔ رشته‌های ترجمه‌نشده در قالب‌ها (هشدار، نه خطا) |
 | ۶. نگهبان RTL | نبود کلاس جهت‌دار فیزیکی (`ml-`, `pr-`, `text-left`, `left/right`) و بردارهای فیزیکی انیمیشن |
 
-خروجی واقعی روی این مخزن: ۲ زبان، ۱۵۴ کلید در همهٔ فرهنگ‌ها با placeholder
+خروجی واقعی روی این مخزن: ۲ زبان، ۱۵۸ کلید در همهٔ فرهنگ‌ها با placeholder
 یکسان، ۱۴۳ کلید استفاده‌شدهٔ ایستا، ۹ گروه محتوا، بدون برخورد مسیر و بدون
 هشدار متن هاردکد.
 
@@ -2082,7 +2093,7 @@ dist/
 
 ## پیوست B — کلیدهای ترجمه
 
-۱۵۴ کلید ترجمه در `messages/en.json` (و یک کلید `$schema` که فقط متادیتای JSON Schema است). این فهرست گزیده است؛ منبع دقیق خود فایل و `pnpm run audit:i18n` است:
+۱۵۸ کلید ترجمه در `messages/en.json` (و یک کلید `$schema` که فقط متادیتای JSON Schema است). این فهرست گزیده است؛ منبع دقیق خود فایل و `pnpm run audit:i18n` است:
 
 ### `common_*` (۲۴ کلید)
 
@@ -2180,6 +2191,12 @@ dist/
 ### `src/libs/config/app.ts`
 
 `siteConfig` · `POSTS_PER_PAGE` · `HERO_TITLE_ID` · `DEFAULT_HERO_IMAGE` · `absoluteUrl` · `UI_CONFIG` · `BLOG_CONFIG` · `COOKIE_CONFIG` · `API_CONFIG` · `SOCIAL_CONFIG`
+
+> ⚠️ این ماژول در زمان import اعتبارسنجی Zod را اجرا می‌کند، پس فقط در کامپوننت‌ها، viewها، صفحه‌ها و اسکریپت‌های Node استفاده می‌شود. ماژولی که به مرورگر می‌رود باید از `src/libs/config/client.ts` بخواند (`CLIENT_COOKIE_CONFIG`) که همان `app.config.json` را بدون Zod می‌خواند و پیش‌فرض‌هایش را از `defaults.ts` می‌گیرد — یک تعریف مشترک با طرح‌واره، بدون تکرار مقدار.
+
+### `src/libs/config/client.ts` و `defaults.ts`
+
+`CLIENT_COOKIE_CONFIG` (پیکربندی امن برای مرورگر) · `COOKIE_CONFIG_DEFAULTS` (پیش‌فرض‌های مشترک طرح‌واره و کلاینت)
 
 ### `src/libs/api/client.ts` و `src/libs/search/*`
 
