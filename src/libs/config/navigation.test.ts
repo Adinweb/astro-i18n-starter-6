@@ -14,15 +14,17 @@ import {
 } from './navigation';
 import * as service from '@/libs/content/service';
 import { siteConfig } from '@/libs/config/app';
+import { DEFAULT_LOCALE } from '@/i18n/locales';
+import * as m from '@/paraglide/messages';
 
 describe('src/libs/config/navigation.ts', () => {
   beforeEach(() => {
     vi.spyOn(service, 'getPageUrl').mockImplementation(async (group: string, locale: string) => {
-      if (group === 'home') return locale === 'en' ? '/' : `/${locale}/`;
-      return locale === 'en' ? `/${group}/` : `/${locale}/${group}/`;
+      if (group === 'home') return locale === DEFAULT_LOCALE ? '/' : `/${locale}/`;
+      return locale === DEFAULT_LOCALE ? `/${group}/` : `/${locale}/${group}/`;
     });
     vi.spyOn(service, 'getHomeHref').mockImplementation(async (locale: string) =>
-      locale === 'en' ? '/' : `/${locale}/`
+      locale === DEFAULT_LOCALE ? '/' : `/${locale}/`
     );
   });
 
@@ -61,13 +63,14 @@ describe('src/libs/config/navigation.ts', () => {
       expect(groups).toContain('about');
       expect(groups).toContain('features');
       expect(groups).toContain('pricing');
+      expect(groups).toContain('contact');
 
       const sampleConfig: NavItemConfig = {
         key: BLOG_ITEM.key,
         label: BLOG_ITEM.label,
       };
       expect(sampleConfig.key).toBe('blog');
-      expect(sampleConfig.label('en')).toBe('Blog');
+      expect(sampleConfig.label('en')).toBe(m.nav_blog({}, { locale: 'en' }));
     });
   });
 
@@ -139,9 +142,9 @@ describe('src/libs/config/navigation.ts', () => {
     it('works across different locales (e.g. Persian/fa) and localizes home fallback', async () => {
       const slotsFa = await getNavigationSlots('fa', 'https://example.com/fa/features/');
       expect(slotsFa.footer.length).toBe(3);
-      expect(slotsFa.footer[0].title).toBe('صفحات');
-      expect(slotsFa.footer[1].title).toBe('منابع');
-      expect(slotsFa.footer[2].title).toBe('سازمان');
+      expect(slotsFa.footer[0].title).toBe(m.footer_col_pages({}, { locale: 'fa' }));
+      expect(slotsFa.footer[1].title).toBe(m.footer_col_resources({}, { locale: 'fa' }));
+      expect(slotsFa.footer[2].title).toBe(m.footer_col_company({}, { locale: 'fa' }));
 
       vi.spyOn(service, 'getPageUrl').mockImplementationOnce(async (group: string) =>
         group === 'home' ? null : '/fa/about/'
@@ -163,7 +166,7 @@ describe('src/libs/config/navigation.ts', () => {
       const footer = await getFooterNavigation('en', '/');
       const pagesColumn = footer.find((column) => column.key === 'product');
 
-      expect(pagesColumn?.title).toBe('Pages');
+      expect(pagesColumn?.title).toBe(m.footer_col_pages({}, { locale: 'en' }));
       expect(pagesColumn?.items.map((item) => item.key)).toEqual(
         PAGE_ITEMS.map((item) => item.group).filter((group) => group !== 'pricing')
       );
@@ -211,21 +214,25 @@ describe('src/libs/config/navigation.ts', () => {
 
     it('never emits anchors into a features page that does not exist', async () => {
       vi.mocked(service.getPageUrl).mockImplementation(async (group: string, locale: string) =>
-        group === 'features' || group === 'home' ? null : locale === 'en' ? `/${group}/` : `/${locale}/${group}/`
+        group === 'features' || group === 'home'
+          ? null
+          : locale === DEFAULT_LOCALE
+            ? `/${group}/`
+            : `/${locale}/${group}/`
       );
 
-      const header = await getHeaderNavigation('en', '/');
-      const footer = await getFooterNavigation('en', '/');
+      const header = await getHeaderNavigation(DEFAULT_LOCALE, '/');
+      const footer = await getFooterNavigation(DEFAULT_LOCALE, '/');
       const headerItems = header.flatMap((item) => [item, ...(item.children ?? [])]);
       const hrefs = [...headerItems, ...footer.flatMap((column) => column.items)].map(
         (item) => item.href ?? ''
       );
-      expect(hrefs.some((href) => href.includes('#rtl') || href.includes('#design'))).toBe(false);
+      expect(hrefs.some((href) => href.includes('#iso-standards') || href.includes('#trustmark'))).toBe(false);
 
       // The Resources menu survives as a single Overview link to the blog.
-      const resources = (await getHeaderNavigation('en', '/')).find((item) => item.key === 'resources');
+      const resources = (await getHeaderNavigation(DEFAULT_LOCALE, '/')).find((item) => item.key === 'resources');
       expect(resources?.children?.map((child) => child.key)).toEqual(['overview']);
-      expect(resources?.children?.[0].href).toBe('/blog/');
+      expect(resources?.children?.[0].href).toBe(service.getBlogIndexHref(DEFAULT_LOCALE));
     });
 
     it('hides the legal links when the about page is unpublished', async () => {

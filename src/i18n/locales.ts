@@ -1,8 +1,8 @@
-export const LOCALES = ['en', 'fa'] as const;
+export const LOCALES = ['en', 'fa', 'de'] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
-export const DEFAULT_LOCALE: Locale = 'en';
+export const DEFAULT_LOCALE: Locale = 'de';
 
 export function isLocale(value: string): value is Locale {
   return (LOCALES as readonly string[]).includes(value);
@@ -27,6 +27,12 @@ export const LOCALE_METADATA = {
     htmlLang: 'fa',
     name: 'فارسی',
     fontFamily: 'var(--font-fa)',
+  },
+  de: {
+    dir: 'ltr',
+    htmlLang: 'de',
+    name: 'Deutsch',
+    fontFamily: 'var(--font-sans)',
   },
 } satisfies Record<Locale, LocaleMeta>;
 

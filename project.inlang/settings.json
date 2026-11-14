@@ -1,9 +1,10 @@
 {
   "$schema": "https://inlang.com/schema/project-settings",
-  "baseLocale": "en",
+  "baseLocale": "de",
   "locales": [
     "en",
-    "fa"
+    "fa",
+    "de"
   ],
   "modules": [
     "./node_modules/@inlang/plugin-message-format/dist/index.js",

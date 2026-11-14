@@ -1,10 +1,10 @@
 {
   "site": {
-    "name": "Astro i18n Starter",
-    "shortName": "Astro i18n",
-    "description": "Production-grade, multi-lingual Astro v7 starter template with native RTL and LTR support.",
-    "author": "Astro Starter Team",
-    "contactEmail": "",
+    "name": "GermanCert",
+    "shortName": "GermanCert",
+    "description": "Unabhängige Managementsystem-Zertifizierung nach ISO 9001, ISO 14001 und ISO 45001 sowie GermanCert Trustmark aus Tuntenhausen.",
+    "author": "GermanCert Fachredaktion",
+    "contactEmail": "info@germancert.de",
     "socialImage": {
       "path": "/og-default.png",
       "width": 1200,
@@ -13,11 +13,11 @@
   },
   "brand": {
     "defaultTheme": "system",
-    "preset": "indigo",
-    "fontPreset": "system",
+    "preset": "slate",
+    "fontPreset": "jakarta",
     "rtlFontPreset": "vazirmatn",
     "socialCardMode": "branded",
-    "themeColor": "#4338ca",
+    "themeColor": "#0f2942",
     "darkThemeColor": "#0f172a",
     "backgroundColor": "#f8fafc",
     "appleTouchIcon": {
@@ -35,10 +35,12 @@
         "size": 512,
         "purpose": "any"
       }
-    ]
+    ],
+    "primaryColor": "#0f2942",
+    "accentColor": "#0284c7"
   },
   "ui": {
-    "ctaPage": "pricing",
+    "ctaPage": "contact",
     "showSearch": true,
     "showThemeToggle": true,
     "showLanguageSwitcher": true,
@@ -86,9 +88,9 @@
     "expirationDays": 180
   },
   "social": {
-    "github": "https://github.com",
+    "github": "",
     "twitter": "",
-    "linkedin": "",
+    "linkedin": "https://www.linkedin.com/company/germancert",
     "instagram": "",
     "telegram": ""
   },
@@ -97,7 +99,54 @@
     "timeoutMs": 10000,
     "endpoints": {
       "contact": "/contact"
-    }
+    },
+    "topics": [
+      {
+        "value": "iso-9001",
+        "label": "ISO 9001:2015 Qualitätsmanagement",
+        "labels": {
+          "de": "ISO 9001:2015 Qualitätsmanagement",
+          "en": "ISO 9001:2015 Quality Management",
+          "fa": "ایزو ۹۰۰۱:۲۰۱۵ مدیریت کیفیت"
+        }
+      },
+      {
+        "value": "iso-14001",
+        "label": "ISO 14001:2015 Umweltmanagement",
+        "labels": {
+          "de": "ISO 14001:2015 Umweltmanagement",
+          "en": "ISO 14001:2015 Environmental Management",
+          "fa": "ایزو ۱۴۰۰۱:۲۰۱۵ مدیریت محیط‌زیست"
+        }
+      },
+      {
+        "value": "iso-45001",
+        "label": "ISO 45001:2018 Arbeitsschutz",
+        "labels": {
+          "de": "ISO 45001:2018 Arbeitsschutz",
+          "en": "ISO 45001:2018 Occupational Health & Safety",
+          "fa": "ایزو ۴۵۰۰۱:۲۰۱۸ ایمنی و بهداشت شغلی"
+        }
+      },
+      {
+        "value": "integrated",
+        "label": "Integriertes Managementsystem (IMS)",
+        "labels": {
+          "de": "Integriertes Managementsystem (IMS)",
+          "en": "Integrated Management System (IMS)",
+          "fa": "ممیزی یکپارچه سیستم‌های مدیریت (IMS)"
+        }
+      },
+      {
+        "value": "trustmark",
+        "label": "GermanCert Trustmark",
+        "labels": {
+          "de": "GermanCert Trustmark Prüfsiegel",
+          "en": "GermanCert Trustmark Assessment",
+          "fa": "نشان اعتماد GermanCert Trustmark"
+        }
+      }
+    ]
   },
   "server": {
     "host": "0.0.0.0",

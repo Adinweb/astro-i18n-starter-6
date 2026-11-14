@@ -39,8 +39,8 @@
     },
     "jakarta": {
       "label": "Jakarta Geometric",
-      "display": "'Plus Jakarta Sans', 'Avenir Next', 'Segoe UI', system-ui, sans-serif",
-      "body": "'Plus Jakarta Sans', 'DM Sans', 'Segoe UI', system-ui, sans-serif"
+      "display": "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'Avenir Next', 'Segoe UI', system-ui, sans-serif",
+      "body": "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'DM Sans', 'Segoe UI', system-ui, sans-serif"
     },
     "manrope": {
       "label": "Manrope Neo-Grotesk",

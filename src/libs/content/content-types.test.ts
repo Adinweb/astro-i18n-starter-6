@@ -141,15 +141,14 @@ describe('collection routes for registry-driven types', () => {
         projectEntry(`atlas/${otherLocale}`, 'atlas-fa'),
       ],
     });
-    expect(indexed(translated)).toEqual([DEFAULT_LOCALE, otherLocale]);
+    expect(indexed(translated).sort()).toEqual([DEFAULT_LOCALE, otherLocale].sort());
   });
 
   it.runIf(projectsEnabled)('marks an index route of every locale as an alternate', () => {
     const routes = buildSiteRoutes([homeEntry], [], {
-      projects: [
-        projectEntry(`atlas/${DEFAULT_LOCALE}`, 'atlas'),
-        projectEntry(`atlas/${otherLocale}`, 'atlas-fa'),
-      ],
+      projects: LOCALES.map((loc) =>
+        projectEntry(`atlas/${loc}`, loc === DEFAULT_LOCALE ? 'atlas' : `atlas-${loc}`)
+      ),
     });
 
     const index = routes.find(

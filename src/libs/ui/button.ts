@@ -50,7 +50,7 @@ const SIZES: Record<ButtonSize, string> = {
 const MOTION =
   'transition-[color,background-color,border-color,opacity,translate,box-shadow] duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0 active:duration-75';
 
-const BASE = `group inline-flex cursor-pointer items-center justify-center gap-2 text-center ${MOTION} disabled:pointer-events-none disabled:opacity-60`;
+const BASE = `group inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap text-center ${MOTION} disabled:pointer-events-none disabled:opacity-60`;
 
 export interface ButtonClassOptions {
   variant?: ButtonVariant;

@@ -202,7 +202,7 @@ describe('src/libs/content/service.ts', () => {
           pageEntry(`about/${DEFAULT_LOCALE}`, { slug: 'about' }),
           pageEntry(`about/${testLocale}`, { slug: `about-${testLocale}` }),
         ],
-        [postEntry(`first-post/${DEFAULT_LOCALE}`), postEntry(`first-post/${testLocale}`)]
+        LOCALES.map((loc) => postEntry(`first-post/${loc}`))
       );
 
       const defaultHome = routes.find(

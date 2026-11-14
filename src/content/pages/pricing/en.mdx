@@ -1,69 +1,73 @@
 ---
-title: "Pricing"
-slug: "pricing"
-description: "Transparent licensing and architecture support tiers—from the MIT open-source starter to tailored enterprise engagements."
+title: "Packages & Audit Scoping"
+slug: "packages"
+description: "Transparent conformity assessment tiers from GermanCert: single-standard ISO 9001/14001/45001 audits, integrated IMS programs, and the GermanCert Trustmark."
 image: "./pricing.png"
 hero: "minimal"
 container: "contained"
 draft: false
 ---
 
-import ContactForm from '@/components/ContactForm.astro';
 import PricingSection from '@/components/PricingSection.astro';
 
-Choose the engagement model that matches your engineering velocity. The core Astro v7 multilingual architecture is free and open-source under the MIT license, with optional advisory and custom integration packages for teams scaling across global markets.
+International audit duration follows **IAF MD 5** guidelines based on effective headcount within scope, number of operational sites, shift patterns, and NACE sector complexity. The tiers below outline our standard engagement scopes prior to formal calculation.
 
 <PricingSection
   contained
   locale="en"
   tiers={[
     {
-      eyebrow: '01 · Starter',
-      name: 'Open Source Core',
-      price: '$0',
-      period: '· MIT License',
+      eyebrow: '01 · Trustmark',
+      name: 'GermanCert Trustmark',
+      price: 'from €950',
+      period: '· initial evaluation',
       description:
-        'Full repository access for self-directed engineering teams building fast multilingual static sites.',
+        'Structured operational and compliance evaluation designed for SMEs, B2B suppliers, and digital organizations.',
       features: [
-        'LTR & RTL locales with native, per-language slugs',
-        'Paraglide compile-time i18n & CLI suite',
-        'Pagefind search, Atom feeds & SEO schema',
-        'TDDDG § 25 / GDPR consent gatekeeper',
+        'Process & documentation check across 5 governance pillars',
+        'Verification of legal transparency and data-handling readiness',
+        'Official GermanCert Trustmark verification record',
+        'Structured annual renewal review',
       ],
-      cta: { label: 'Ask a question', href: '#contact-inquiry' },
+      cta: { label: 'Request Trustmark', href: '/en/contact/#contact-inquiry', icon: 'arrow-right' },
     },
     {
-      eyebrow: '02 · Studio',
-      name: 'Architecture Review',
-      price: '$1,400',
-      period: '· one-time',
+      eyebrow: '02 · Single Standard',
+      name: 'ISO Single Certification',
+      price: 'from €2,400',
+      period: '· Stage 1 + 2',
       featured: true,
       description:
-        'Hands-on localization audit, custom design token tuning, and headless API wiring for growing product teams.',
+        'Complete initial audit cycle for ISO 9001, ISO 14001, or ISO 45001 conducted under DIN EN ISO/IEC 17021-1.',
       features: [
-        'Custom OKLCH brand palette & typography',
-        'Bidirectional RTL layout & SEO verification',
-        'External form & microservice API integration',
-        'CI/CD build, smoke & i18n audit pipeline',
+        'Stage 1 audit: documentation & system readiness review',
+        'Stage 2 audit: on-site conformity assessment by lead auditors',
+        'Three-year certificate valid across procurement & tenders',
+        'Predictable annual surveillance schedule (Years 1 & 2)',
       ],
-      cta: { label: 'Request studio review', href: '#contact-inquiry' },
+      cta: { label: 'Request custom quote', href: '/en/contact/#contact-inquiry', icon: 'arrow-right' },
     },
     {
-      eyebrow: '03 · Enterprise',
-      name: 'Dedicated Partnership',
+      eyebrow: '03 · Combined Audit',
+      name: 'Integrated System (IMS)',
       price: 'Custom',
-      period: '· SLA',
+      period: '· Multi-Standard',
       description:
-        'End-to-end migration, multi-region CDN architecture, and ongoing engineering support for large content catalogs.',
+        'Coordinated auditing across two or three standards (ISO 9001 + 14001 + 45001) to reduce operational disruption.',
       features: [
-        'Custom Content Collection adapters & CMS sync',
-        'Multi-brand design system & accessibility audit',
-        'Dedicated Slack channel & priority code reviews',
-        'Team workshops on RTL & Astro v7 patterns',
+        'Unified review of shared leadership & internal audit controls',
+        'Audit-day synergy reductions aligned with IAF MD 5',
+        'Coordinated multi-site sampling methodology',
+        'Synchronized three-year cycle across all certifications',
       ],
-      cta: { label: 'Contact architecture team', href: '#contact-inquiry' },
+      cta: { label: 'Discuss IMS scope', href: '/en/contact/#contact-inquiry', icon: 'arrow-right' },
     },
   ]}
 />
 
-<ContactForm locale="en" />
+## Information Needed for a Binding Proposal
+
+1. **Target Standard(s):** Single ISO standard (9001, 14001, or 45001), Integrated Management System (IMS), or GermanCert Trustmark.
+2. **Scope & Headcount:** Full-time equivalents (FTEs) operating within the defined certification boundary.
+3. **Site Footprint:** Single location or multi-site operations requiring coordinated sampling.
+4. **Target Timeline:** Preferred schedule window for Stage 1 readiness and Stage 2 on-site assessment.

@@ -224,9 +224,20 @@ const description = (opts.desc ?? config.site.description).trim();
 const author = (opts.author ?? config.site.author ?? 'Astro Starter Team').trim();
 const email = (opts.email ?? config.site.contactEmail ?? '').trim();
 
+const presetChanged = opts.preset !== undefined && opts.preset !== config.brand.preset;
 const preset = opts.preset ?? config.brand.preset ?? 'indigo';
-const primary = opts.primary !== undefined ? opts.primary.trim() : (config.brand.primaryColor ?? '');
-const accent = opts.accent !== undefined ? opts.accent.trim() : (config.brand.accentColor ?? '');
+const primary =
+  opts.primary !== undefined
+    ? opts.primary.trim()
+    : presetChanged
+      ? ''
+      : (config.brand.primaryColor ?? '');
+const accent =
+  opts.accent !== undefined
+    ? opts.accent.trim()
+    : presetChanged
+      ? ''
+      : (config.brand.accentColor ?? '');
 const fontPreset = opts.fontPreset ?? config.brand.fontPreset ?? 'system';
 const rtlFontPreset = opts.rtlFontPreset ?? config.brand.rtlFontPreset ?? 'vazirmatn';
 const socialCardMode = opts.socialCardMode ?? config.brand.socialCardMode ?? 'branded';

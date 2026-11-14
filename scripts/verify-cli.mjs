@@ -136,6 +136,17 @@ function makeSandbox() {
       fs.cpSync(codecDir, codecTarget, { recursive: true });
     }
   }
+  // Ensure CLI sandbox scratch targets start clean even when verifying inside a customized client project.
+  for (const scratch of [
+    'src/content/pages/contact',
+    'src/content/blog/ai-agents',
+    'src/content/projects/demo-work',
+    'src/content/projects/dormant-work',
+    'src/content/blog/delegated-post',
+  ]) {
+    fs.rmSync(path.join(copy, scratch), { recursive: true, force: true });
+  }
+
   writePnpmShim(path.join(SANDBOX_ROOT, 'bin'), copy);
   return copy;
 }
@@ -185,6 +196,19 @@ const sandboxLocales = sandboxSettings.locales;
 const baseLoc = sandboxSettings.baseLocale || 'en';
 const altLocs = sandboxLocales.filter((loc) => loc !== baseLoc);
 const altLoc = altLocs[0] || baseLoc;
+const trackedSandboxTargets = [
+  'src/content/pages/contact',
+  'src/content/blog/ai-agents',
+  'src/content/projects/demo-work',
+  'src/content/projects/dormant-work',
+  'src/content/blog/delegated-post',
+];
+const workingCopyPreState = Object.fromEntries(
+  trackedSandboxTargets.map((rel) => [rel, fs.existsSync(path.join(rootDir, rel))])
+);
+const workingCopyProjectsEnabledBefore = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8')
+).content.types.projects.enabled;
 
 try {
   // ---------------------------------------------------------------------
@@ -835,6 +859,8 @@ try {
     '--desc=Rapid web delivery studio',
     '--email=hello@acme.test',
     '--preset=emerald',
+    '--primary=',
+    '--accent=',
     '--font=jakarta',
     '--rtl-font=noto-arabic',
     '--og-mode=branded',
@@ -901,17 +927,15 @@ try {
     'the dependency links of the working copy are intact'
   );
   record(
-    !fs.existsSync(path.join(rootDir, 'src', 'content', 'pages', 'contact')) &&
-      !fs.existsSync(path.join(rootDir, 'src', 'content', 'blog', 'ai-agents')) &&
-      !fs.existsSync(path.join(rootDir, 'src', 'content', 'projects', 'demo-work')) &&
-      !fs.existsSync(path.join(rootDir, 'src', 'content', 'projects', 'dormant-work')) &&
-      !fs.existsSync(path.join(rootDir, 'src', 'content', 'blog', 'delegated-post')),
-    'the working copy keeps no scaffolded content'
+    trackedSandboxTargets.every(
+      (rel) => fs.existsSync(path.join(rootDir, rel)) === workingCopyPreState[rel]
+    ),
+    'the working copy keeps no scaffolded content from the sandbox'
   );
   record(
     JSON.parse(
       fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8')
-    ).content.types.projects.enabled === true,
+    ).content.types.projects.enabled === workingCopyProjectsEnabledBefore,
     'the working copy keeps its content-type configuration'
   );
 } catch (error) {

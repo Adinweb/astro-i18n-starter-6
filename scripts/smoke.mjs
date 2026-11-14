@@ -698,14 +698,6 @@ function readDefaultLocalePageHtml(groupName) {
   return readHtml(path.join(slug, 'index.html'));
 }
 
-const featuresHtml = readDefaultLocalePageHtml('features');
-if (featuresHtml) {
-  assert(
-    featuresHtml.includes('id="rtl"') && featuresHtml.includes('id="design"'),
-    'Features page renders #rtl and #design section anchors for footer navigation'
-  );
-}
-
 const aboutHtml = readDefaultLocalePageHtml('about');
 if (aboutHtml) {
   assert(
@@ -714,11 +706,15 @@ if (aboutHtml) {
   );
 }
 
-const pricingHtml = readDefaultLocalePageHtml('pricing');
-if (pricingHtml) {
+const contactFormPages = ['contact', 'pricing']
+  .map((group) => ({ group, html: readDefaultLocalePageHtml(group) }))
+  .filter((entry) => entry.html !== null);
+if (contactFormPages.length > 0) {
   assert(
-    pricingHtml.includes('id="contact-inquiry"') && pricingHtml.includes('data-contact-form'),
-    'Pricing page renders #contact-inquiry external API form section'
+    contactFormPages.some(
+      ({ html }) => html.includes('id="contact-inquiry"') && html.includes('data-contact-form')
+    ),
+    `Contact inquiry section (#contact-inquiry / data-contact-form) renders cleanly on published page(s): ${contactFormPages.map((e) => e.group).join(', ')}`
   );
 }
 

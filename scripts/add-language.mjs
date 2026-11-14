@@ -46,9 +46,13 @@ if (localeError) {
 }
 
 const defaultNames = {
+  de: 'Deutsch',
   fr: 'Français',
   es: 'Español',
   it: 'Italiano',
+  nl: 'Nederlands',
+  pt: 'Português',
+  tr: 'Türkçe',
   ar: 'العربية',
   ru: 'Русский',
   ja: '日本語',
@@ -173,10 +177,15 @@ for (const [key, val] of Object.entries(sourceDict)) {
                 'countPlural=one': '{count} élément',
                 'countPlural=*': '{count} éléments',
               }
-            : {
-                'countPlural=one': `[TODO: ${langCode}] {count} item`,
-                'countPlural=*': `[TODO: ${langCode}] {count} items`,
-              },
+            : langCode === 'de'
+              ? {
+                  'countPlural=one': '{count} Element',
+                  'countPlural=*': '{count} Elemente',
+                }
+              : {
+                  'countPlural=one': `[TODO: ${langCode}] {count} item`,
+                  'countPlural=*': `[TODO: ${langCode}] {count} items`,
+                },
       },
     ];
   } else if (key === 'position_ordinal') {
@@ -190,9 +199,13 @@ for (const [key, val] of Object.entries(sourceDict)) {
                 'posOrdinal=one': '{pos}er',
                 'posOrdinal=*': '{pos}e',
               }
-            : {
-                'posOrdinal=*': `[TODO: ${langCode}] #{pos}`,
-              },
+            : langCode === 'de'
+              ? {
+                  'posOrdinal=*': '{pos}.',
+                }
+              : {
+                  'posOrdinal=*': `[TODO: ${langCode}] #{pos}`,
+                },
       },
     ];
   } else if (langCode === 'fr' && frTranslations[key]) {
