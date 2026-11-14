@@ -38,8 +38,8 @@ if (!inlangSettings.locales.includes(langCode)) {
 
 if (langCode === baseLocale) {
   console.error(`❌ Cannot remove base/default locale "${langCode}".`);
-  console.error(`   To remove "${langCode}", first swap the default locale to another language.`);
-  console.error(`   See docs/PLAYBOOKS.md Playbook 1 for instructions.`);
+  console.error(`   To remove "${langCode}", first swap the default locale with: pnpm run i18n:set-default <other-locale>`);
+  console.error(`   See docs/PLAYBOOKS.md Playbook 1 for more details.`);
   process.exit(1);
 }
 

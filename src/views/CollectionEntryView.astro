@@ -120,26 +120,30 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
   <article class="max-w-4xl">
     {
       (metaItems.length > 0 || stack.length > 0 || link) && (
-        <dl class="mb-8 flex flex-wrap items-baseline gap-x-8 gap-y-3 border-b border-border pb-6 text-sm">
-          {metaItems.map((item) => (
-            <div class="flex items-baseline gap-2">
-              <dt class="text-xs font-semibold uppercase tracking-wider text-muted">
-                {item.label}
-              </dt>
-              <dd class="text-fg">{item.value}</dd>
-            </div>
-          ))}
-          {stack.length > 0 && (
-            <div class="flex flex-wrap items-baseline gap-2">
-              <dt class="text-xs font-semibold uppercase tracking-wider text-muted">
-                {m.projects_stack({}, { locale })}
-              </dt>
-              <dd class="flex flex-wrap gap-1.5">
-                {stack.map((item) => (
-                  <span class="chip px-2.5 py-0.5 text-xs">{item}</span>
-                ))}
-              </dd>
-            </div>
+        <div class="mb-8 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 border-b border-border pb-6 text-sm">
+          {(metaItems.length > 0 || stack.length > 0) && (
+            <dl class="flex flex-wrap items-baseline gap-x-8 gap-y-3">
+              {metaItems.map((item) => (
+                <div class="flex items-baseline gap-2">
+                  <dt class="text-xs font-semibold uppercase tracking-wider text-muted">
+                    {item.label}
+                  </dt>
+                  <dd class="text-fg">{item.value}</dd>
+                </div>
+              ))}
+              {stack.length > 0 && (
+                <div class="flex flex-wrap items-baseline gap-2">
+                  <dt class="text-xs font-semibold uppercase tracking-wider text-muted">
+                    {m.projects_stack({}, { locale })}
+                  </dt>
+                  <dd class="flex flex-wrap gap-1.5">
+                    {stack.map((item) => (
+                      <span class="chip px-2.5 py-0.5 text-xs">{item}</span>
+                    ))}
+                  </dd>
+                </div>
+              )}
+            </dl>
           )}
           {link && (
             <a
@@ -152,7 +156,7 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
               <Icon name="arrow-right" size={14} class="rtl:rotate-180" />
             </a>
           )}
-        </dl>
+        </div>
       )
     }
 

@@ -15,13 +15,28 @@ function escapeXml(value: string): string {
 export const GET: APIRoute = async () => {
   const routes = await getSiteRoutes();
 
-  const latestBlogModified = new Map<string, Date>();
+  const latestModifiedByType = new Map<string, Date>();
   for (const route of routes) {
-    if (route.props.routeType !== 'blog-entry') continue;
-    const candidate = route.props.entry.data.updatedAt ?? route.props.entry.data.publishedAt;
-    const previous = latestBlogModified.get(route.props.locale);
+    let typeKey: string | null = null;
+    let candidate: Date | undefined;
+
+    if (route.props.routeType === 'blog-entry') {
+      typeKey = 'blog';
+      candidate = route.props.entry.data.updatedAt ?? route.props.entry.data.publishedAt;
+    } else if (route.props.routeType === 'collection-entry') {
+      typeKey = route.props.contentType;
+      const data = route.props.entry.data;
+      candidate =
+        data.updatedAt ??
+        data.publishedAt ??
+        (data.year ? new Date(Date.UTC(data.year, 0, 1)) : undefined);
+    }
+
+    if (!typeKey || !candidate) continue;
+    const mapKey = `${typeKey}:${route.props.locale}`;
+    const previous = latestModifiedByType.get(mapKey);
     if (!previous || candidate.getTime() > previous.getTime()) {
-      latestBlogModified.set(route.props.locale, candidate);
+      latestModifiedByType.set(mapKey, candidate);
     }
   }
 
@@ -42,12 +57,13 @@ export const GET: APIRoute = async () => {
         .join('\n');
 
       const entryData = route.props.entry?.data;
-      const modified =
-        entryData?.updatedAt ??
-        entryData?.publishedAt ??
-        (route.props.routeType === 'blog-index'
-          ? latestBlogModified.get(route.props.locale)
-          : undefined);
+      const indexLastmod =
+        route.props.routeType === 'blog-index'
+          ? latestModifiedByType.get(`blog:${route.props.locale}`)
+          : route.props.routeType === 'collection-index'
+            ? latestModifiedByType.get(`${route.props.contentType}:${route.props.locale}`)
+            : undefined;
+      const modified = entryData?.updatedAt ?? entryData?.publishedAt ?? indexLastmod;
       const lastmod = modified ? `\n    <lastmod>${modified.toISOString()}</lastmod>` : '';
       const changefreq = route.props.routeType === 'page' ? 'monthly' : 'weekly';
 

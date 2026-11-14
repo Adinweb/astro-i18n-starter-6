@@ -1,9 +1,10 @@
 import type { APIRoute, GetStaticPaths } from 'astro';
 import { LOCALES, isLocale } from '@/i18n/locales';
 import { buildSerializedBlogCatalog } from '@/libs/content/blog-catalog';
+import { isBlogEnabled } from '@/libs/content/service';
 
 export const getStaticPaths: GetStaticPaths = () => {
-  return LOCALES.map((locale) => ({ params: { locale } }));
+  return isBlogEnabled() ? LOCALES.map((locale) => ({ params: { locale } })) : [];
 };
 
 export const GET: APIRoute = async ({ params }) => {

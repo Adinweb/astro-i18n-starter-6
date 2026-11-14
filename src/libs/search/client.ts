@@ -1,3 +1,4 @@
+import { formatNumber } from '@/i18n/format';
 import { buildSearchQueryVariants, matchesFallbackSearch } from './persian';
 
 export interface SearchItem {
@@ -31,6 +32,15 @@ export function plainText(html: string): string {
   const container = document.createElement('div');
   container.innerHTML = cleanHtml;
   return (container.textContent ?? '').replace(/\u200A/g, '');
+}
+
+/** Formats the screen-reader result count announcement using locale-native digits. */
+export function formatSearchResultsStatus(
+  count: number,
+  template: string,
+  locale: string
+): string {
+  return template.replace('{count}', formatNumber(count, locale));
 }
 
 export async function getPagefindInstance() {

@@ -8,6 +8,7 @@ import {
   getBlogPostHref,
   getCollectionPageHref,
   getRssFeedHref,
+  isBlogFeedEnabled,
   type SiteRoute,
   type SiteRouteProps,
 } from './service';
@@ -367,7 +368,12 @@ describe('src/libs/content/service.ts', () => {
     });
   });
 
-  describe('getRssFeedHref and buildBreadcrumbSchema', () => {
+  describe('getRssFeedHref, isBlogFeedEnabled and buildBreadcrumbSchema', () => {
+    it('reflects blog content type enabled & feed configuration in isBlogFeedEnabled()', () => {
+      expect(typeof isBlogFeedEnabled()).toBe('boolean');
+      expect(isBlogFeedEnabled()).toBe(true);
+    });
+
     it('returns /rss.xml for DEFAULT_LOCALE and /rss/<locale>.xml for non-default locales', () => {
       expect(getRssFeedHref(DEFAULT_LOCALE)).toBe('/rss.xml');
       for (const locale of nonDefaultLocales) {

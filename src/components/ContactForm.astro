@@ -1,7 +1,7 @@
 ---
 import Icon from '@/components/Icon.astro';
 import Button from '@/components/Button.astro';
-import type { Locale } from '@/i18n/locales';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n/locales';
 import { resolveApiEndpoint } from '@/libs/api/client';
 import { API_CONFIG, siteConfig } from '@/libs/config/app';
 import * as m from '@/paraglide/messages';
@@ -40,6 +40,10 @@ const copy = {
   successTitle: m.contact_success_title({}, { locale }),
   successDesc: m.contact_success_desc({}, { locale }),
   errValidation: m.contact_error_validation({}, { locale }),
+  errName: m.contact_error_name({}, { locale }),
+  errEmail: m.contact_error_email({}, { locale }),
+  errTopic: m.contact_error_topic({}, { locale }),
+  errMessage: m.contact_error_message({}, { locale }),
   errTimeout: m.contact_error_timeout({}, { locale }),
   errHttp: m.contact_error_http({}, { locale }),
   errNetwork: m.contact_error_network({}, { locale }),
@@ -49,6 +53,21 @@ const copy = {
   unavailableDesc: m.contact_unavailable_desc({}, { locale }),
   devNotice: m.contact_unconfigured_notice({}, { locale }),
 };
+
+const topicOptions = API_CONFIG.topics?.length
+  ? API_CONFIG.topics.map((topic) => ({
+      value: topic.value,
+      label:
+        topic.labels?.[locale] ??
+        topic.labels?.[DEFAULT_LOCALE] ??
+        topic.label ??
+        topic.value,
+    }))
+  : [
+      { value: 'architecture', label: copy.topicArchitecture },
+      { value: 'enterprise', label: copy.topicEnterprise },
+      { value: 'general', label: copy.topicGeneral },
+    ];
 ---
 
 <section
@@ -122,6 +141,10 @@ const copy = {
         data-msg-success-title={copy.successTitle}
         data-msg-success-desc={copy.successDesc}
         data-err-validation={copy.errValidation}
+        data-err-name={copy.errName}
+        data-err-email={copy.errEmail}
+        data-err-topic={copy.errTopic}
+        data-err-message={copy.errMessage}
         data-err-unconfigured={copy.errUnconfigured}
         data-err-timeout={copy.errTimeout}
         data-err-http={copy.errHttp}
@@ -159,6 +182,12 @@ const copy = {
               placeholder={copy.namePlaceholder}
               class="mt-1.5 w-full rounded-xl border border-border bg-bg px-3.5 py-2.5 text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error"
             />
+            <p
+              id={`contact-name-error-${locale}`}
+              data-field-error="name"
+              hidden
+              class="mt-1.5 text-xs text-error"
+            ></p>
           </div>
 
           <div>
@@ -178,6 +207,12 @@ const copy = {
               placeholder={copy.emailPlaceholder}
               class="mt-1.5 w-full rounded-xl border border-border bg-bg px-3.5 py-2.5 text-start text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error rtl:text-end"
             />
+            <p
+              id={`contact-email-error-${locale}`}
+              data-field-error="email"
+              hidden
+              class="mt-1.5 text-xs text-error"
+            ></p>
           </div>
         </div>
 
@@ -193,10 +228,16 @@ const copy = {
             name="topic"
             class="mt-1.5 w-full rounded-xl border border-border bg-bg px-3.5 py-2.5 text-sm text-fg focus:border-primary focus:outline-none aria-[invalid=true]:border-error"
           >
-            <option value="architecture">{copy.topicArchitecture}</option>
-            <option value="enterprise">{copy.topicEnterprise}</option>
-            <option value="general">{copy.topicGeneral}</option>
+            {topicOptions.map((option) => (
+              <option value={option.value}>{option.label}</option>
+            ))}
           </select>
+          <p
+            id={`contact-topic-error-${locale}`}
+            data-field-error="topic"
+            hidden
+            class="mt-1.5 text-xs text-error"
+          ></p>
         </div>
 
         <div>
@@ -215,6 +256,12 @@ const copy = {
             placeholder={copy.messagePlaceholder}
             class="mt-1.5 w-full rounded-xl border border-border bg-bg px-3.5 py-2.5 text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error"
           ></textarea>
+          <p
+            id={`contact-message-error-${locale}`}
+            data-field-error="message"
+            hidden
+            class="mt-1.5 text-xs text-error"
+          ></p>
         </div>
 
         <div
@@ -276,19 +323,40 @@ const copy = {
         network: form.dataset.errNetwork ?? '',
       };
 
-      const clearInvalidState = () => {
-        for (const name of fieldNames) {
-          const el = form.querySelector<HTMLElement>(`[name="${name}"]`);
-          el?.removeAttribute('aria-invalid');
+      const fieldErrorMessages: Record<(typeof fieldNames)[number], string> = {
+        name: form.dataset.errName ?? '',
+        email: form.dataset.errEmail ?? '',
+        topic: form.dataset.errTopic ?? '',
+        message: form.dataset.errMessage ?? '',
+      };
+
+      const clearFieldError = (name: string) => {
+        const el = form.querySelector<HTMLElement>(`[name="${name}"]`);
+        el?.removeAttribute('aria-invalid');
+        el?.removeAttribute('aria-describedby');
+        const errEl = form.querySelector<HTMLElement>(`[data-field-error="${name}"]`);
+        if (errEl) {
+          errEl.hidden = true;
+          errEl.textContent = '';
         }
       };
 
-      form.addEventListener('input', (event) => {
-        const target = event.target as HTMLElement | null;
-        if (target?.hasAttribute('aria-invalid')) {
-          target.removeAttribute('aria-invalid');
+      const clearInvalidState = () => {
+        for (const name of fieldNames) {
+          clearFieldError(name);
         }
-      });
+      };
+
+      const handleFieldEdit = (event: Event) => {
+        const target = event.target as HTMLElement | null;
+        const fieldName = target?.getAttribute('name');
+        if (fieldName && target?.hasAttribute('aria-invalid')) {
+          clearFieldError(fieldName);
+        }
+      };
+
+      form.addEventListener('input', handleFieldEdit);
+      form.addEventListener('change', handleFieldEdit);
 
       const renderFeedback = (kind: 'success' | 'error', title: string, body: string) => {
         if (!feedback || !feedbackTitle || !feedbackBody) return;
@@ -323,8 +391,14 @@ const copy = {
             let firstInvalid: HTMLElement | null = null;
             for (const fieldName of invalidFields) {
               const el = form.querySelector<HTMLElement>(`[name="${fieldName}"]`);
+              const errEl = form.querySelector<HTMLElement>(`[data-field-error="${fieldName}"]`);
               if (el) {
                 el.setAttribute('aria-invalid', 'true');
+                if (errEl && fieldErrorMessages[fieldName]) {
+                  errEl.textContent = fieldErrorMessages[fieldName];
+                  errEl.hidden = false;
+                  if (errEl.id) el.setAttribute('aria-describedby', errEl.id);
+                }
                 if (!firstInvalid) firstInvalid = el;
               }
             }

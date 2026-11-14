@@ -93,6 +93,9 @@ export type CookieConfig = z.infer<typeof cookieConfigSchema>;
 export const socialConfigSchema = z.object({
   github: z.string().optional().default(''),
   twitter: z.string().optional().default(''),
+  linkedin: z.string().optional().default(''),
+  instagram: z.string().optional().default(''),
+  telegram: z.string().optional().default(''),
 });
 export type SocialConfig = z.infer<typeof socialConfigSchema>;
 
@@ -100,10 +103,17 @@ export const apiEndpointsSchema = z.object({
   contact: z.string().default('/contact'),
 });
 
+const contactTopicSchema = z.object({
+  value: z.string().min(1),
+  label: z.string().optional(),
+  labels: z.record(z.string(), z.string()).optional(),
+});
+
 export const apiConfigSchema = z.object({
   baseUrl: z.string().default(''),
   timeoutMs: z.number().int().min(1000).max(60000).default(10000),
   endpoints: apiEndpointsSchema.default({ contact: '/contact' }),
+  topics: z.array(contactTopicSchema).optional(),
 });
 export type ApiConfig = z.infer<typeof apiConfigSchema>;
 
@@ -119,6 +129,9 @@ export const defaultUiConfig: UiConfig = {
 export const defaultSocialConfig: SocialConfig = {
   github: '',
   twitter: '',
+  linkedin: '',
+  instagram: '',
+  telegram: '',
 };
 
 export const defaultApiConfig: ApiConfig = {
@@ -231,6 +244,7 @@ export const siteConfig = siteConfigSchema.parse({
     endpoints: {
       contact: envContactEndpoint || appConfig.api.endpoints.contact,
     },
+    ...(appConfig.api.topics ? { topics: appConfig.api.topics } : {}),
   },
 });
 

@@ -145,8 +145,15 @@ if (appConfig) {
     add('ok', `Site identity is customised (${appConfig.site.name}).`);
   }
 
-  if (/example\.com|github\.com\/?$/.test(appConfig.social?.github ?? '')) {
-    add('warn', 'Social links still point at placeholders.', 'Set social.github/twitter in app.config.json.');
+  const hasPlaceholderSocial = Object.values(appConfig.social ?? {}).some((url) =>
+    typeof url === 'string' && /example\.com|github\.com\/?$/.test(url.trim())
+  );
+  if (hasPlaceholderSocial) {
+    add(
+      'warn',
+      'Social links still point at placeholders.',
+      'Set your links under social (github, twitter, linkedin, instagram, telegram) in app.config.json.'
+    );
   }
 
   // The contact form needs a destination. Without an endpoint it renders a
@@ -174,12 +181,10 @@ if (appConfig) {
     );
   }
 
-  // The web manifest reads `site.description`; the footer, the Open Graph
-  // description, the feed subtitle and the 404 read the `site_description`
-  // message. Rebranding one and forgetting the other is the classic leftover
-  // copy, so the two are compared here before anyone hands the site over.
-  const localeConfig = readLocaleConfig(rootDir);
-  const baseLocale = localeConfig.defaultLocale ?? localeConfig.locales?.[0];
+  // Both the footer/OG metadata and `site.webmanifest` now read `site_description`
+  // from the active `DEFAULT_LOCALE` dictionary. Verify it is populated and
+  // warn only if `baseLocale === 'en'` has diverged from `app.config.json`.
+  const baseLocale = defaultLocale ?? locales[0];
   const dictionaryPath = baseLocale
     ? path.join(rootDir, 'messages', `${baseLocale}.json`)
     : null;
@@ -190,15 +195,21 @@ if (appConfig) {
       const messageDescription = dictionary.site_description;
       const appDescription = appConfig.site?.description;
 
-      if (
-        typeof messageDescription === 'string' &&
+      if (typeof messageDescription !== 'string' || !messageDescription.trim()) {
+        add(
+          'error',
+          `messages/${baseLocale}.json is missing a non-empty "site_description".`,
+          `Add "site_description" in messages/${baseLocale}.json.`
+        );
+      } else if (
+        baseLocale === 'en' &&
         typeof appDescription === 'string' &&
         messageDescription.trim() !== appDescription.trim()
       ) {
         add(
           'warn',
           `Site description differs between app.config.json and messages/${baseLocale}.json.`,
-          `Set both to the same sentence: site.description feeds the web manifest ("${appDescription}"), site_description feeds the footer, OG description and feeds ("${messageDescription}").`
+          `Keep site.description in app.config.json aligned with site_description in messages/${baseLocale}.json.`
         );
       }
     } catch {

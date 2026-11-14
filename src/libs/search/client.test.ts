@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   executeSearch,
+  formatSearchResultsStatus,
   getPagefindInstance,
   plainText,
   resetSearchClientForTests,
@@ -176,5 +177,15 @@ describe('src/libs/search/client.ts & persian.ts', () => {
 
     const sampleEnHtml = '<html lang="en"><body><p>Hello «world»</p></body></html>';
     expect(prepareHtmlForPagefind(sampleEnHtml)).toBe(sampleEnHtml);
+  });
+
+  it('formats screen-reader search result status announcements in the active locale numerals', () => {
+    expect(formatSearchResultsStatus(5, '{count} result(s) found.', 'en')).toBe(
+      '5 result(s) found.'
+    );
+    expect(formatSearchResultsStatus(5, '{count} نتیجه پیدا شد.', 'fa')).toBe(
+      '۵ نتیجه پیدا شد.'
+    );
+    expect(formatSearchResultsStatus(3, '{count} results', 'ar')).toBe('٣ results');
   });
 });

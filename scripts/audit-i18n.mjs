@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LOCALES_SOURCE_PATH, readLocaleConfig } from './lib/locales.mjs';
 import { parseFrontmatter } from './lib/frontmatter.mjs';
+import { readContentTypes } from './lib/content-types.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -17,10 +18,11 @@ const BASE_LOCALE = settings.baseLocale || 'en';
 // Content types own top-level route segments; a page slug must never shadow
 // one of them. Read from the same config the router uses.
 const appConfig = JSON.parse(fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8'));
-const CONTENT_TYPE_ENTRIES = Object.entries(appConfig.content?.types ?? {});
-const ENABLED_CONTENT_BASES = CONTENT_TYPE_ENTRIES.filter(
-  ([key, settings]) => key !== 'pages' && settings?.enabled !== false && settings?.base
-).map(([, settings]) => settings.base);
+const CONTENT_TYPES = readContentTypes(appConfig);
+const CONTENT_TYPE_MAP = new Map(CONTENT_TYPES.map((type) => [type.key, type]));
+const ENABLED_CONTENT_BASES = CONTENT_TYPES.filter(
+  (type) => type.key !== 'pages' && type.enabled && type.base
+).map((type) => type.base);
 
 if (!LOCALES.includes(BASE_LOCALE)) {
   console.error(`❌ FATAL: baseLocale "${BASE_LOCALE}" is not listed in locales.`);
@@ -463,9 +465,10 @@ for (const { collection, group, groupDir } of groups) {
       slugFatal = true;
     }
 
-    if (collection === 'blog' && String(slug) === 'page') {
+    const collectionType = CONTENT_TYPE_MAP.get(collection);
+    if (collectionType?.paginated && String(slug) === 'page') {
       fatal(
-        `Slug "page" in ${relative} collides with reserved blog pagination route (/blog/page/<n>/)`
+        `Slug "page" in ${relative} collides with reserved ${collectionType.key} pagination route (/${collectionType.base}/page/<n>/)`
       );
       slugFatal = true;
     }
@@ -519,12 +522,18 @@ for (const locale of LOCALES) {
     if (collection === 'pages') {
       addRoute(slug, file);
     } else {
-      addRoute(`blog/${slug}`, file);
+      const type = CONTENT_TYPE_MAP.get(collection);
+      if (!type || !type.enabled) continue;
+      addRoute(`${type.base}/${slug}`, file);
     }
   }
 
-  // Blog index is registered once per locale by the content service.
-  addRoute('blog', 'generated blog index');
+  // Enabled indexed collection bases are registered once per locale by the content service.
+  for (const type of CONTENT_TYPES) {
+    if (type.key !== 'pages' && type.enabled && type.index && type.base) {
+      addRoute(type.base, `generated ${type.key} index`);
+    }
+  }
 }
 
 if (!slugFatal) {

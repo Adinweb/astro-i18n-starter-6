@@ -17,6 +17,7 @@ const { locale } = Astro.props;
   data-locale={locale}
   data-no-results={m.common_no_results({}, { locale })}
   data-placeholder={m.common_type_to_search({}, { locale })}
+  data-results-count={m.common_search_results_count({ count: '{count}' }, { locale })}
 >
   <div class="relative shrink-0 p-3 pb-2">
     <Icon
@@ -43,11 +44,17 @@ const { locale } = Astro.props;
   </div>
 
   <div
+    data-drawer-search-status
+    class="sr-only"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  ></div>
+
+  <div
     data-drawer-search-results
     data-lenis-prevent
     class="flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-3 py-2"
-    role="status"
-    aria-live="polite"
   >
     <p class="py-8 text-center text-xs text-muted" data-drawer-search-msg>
       {m.common_type_to_search({}, { locale })}
@@ -56,12 +63,13 @@ const { locale } = Astro.props;
 </div>
 
 <script>
-  import { executeSearch } from '@/libs/search/client';
+  import { executeSearch, formatSearchResultsStatus } from '@/libs/search/client';
 
   function setupDrawerSearch() {
     const root = document.querySelector<HTMLElement>('[data-drawer-search]');
     const input = document.querySelector<HTMLInputElement>('[data-drawer-search-input]');
     const clearBtn = document.querySelector<HTMLButtonElement>('[data-drawer-search-clear]');
+    const statusEl = document.querySelector<HTMLElement>('[data-drawer-search-status]');
     const resultsContainer = document.querySelector<HTMLElement>('[data-drawer-search-results]');
 
     if (!root || !input || !resultsContainer) return;
@@ -71,13 +79,18 @@ const { locale } = Astro.props;
     let searchTimeout: ReturnType<typeof setTimeout> | null = null;
     let requestId = 0;
 
-    function setMessage(text: string) {
+    function announceStatus(text: string) {
+      if (statusEl) statusEl.textContent = text;
+    }
+
+    function setMessage(text: string, announce = '') {
       if (!resultsContainer) return;
       resultsContainer.replaceChildren();
       const p = document.createElement('p');
       p.className = 'py-8 text-center text-xs text-muted';
       p.textContent = text;
       resultsContainer.append(p);
+      announceStatus(announce);
     }
 
     function createResultLink(href: string, title: string, excerpt: string) {
@@ -122,12 +135,20 @@ const { locale } = Astro.props;
       if (currentReq !== requestId) return;
 
       if (results.length === 0) {
-        setMessage(root?.dataset.noResults || 'No results found.');
+        const noResultsMsg = root?.dataset.noResults || 'No results found.';
+        setMessage(noResultsMsg, noResultsMsg);
         return;
       }
 
       resultsContainer?.replaceChildren(
         ...results.map((item) => createResultLink(item.url, item.title, item.excerpt))
+      );
+      announceStatus(
+        formatSearchResultsStatus(
+          results.length,
+          root?.dataset.resultsCount || '{count} result(s) found.',
+          locale
+        )
       );
     }
 

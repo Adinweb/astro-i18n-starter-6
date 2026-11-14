@@ -4,7 +4,7 @@ import { LOCALES, type Locale } from '@/i18n/locales';
 import { formatDate, formatNumber } from '@/i18n/format';
 import { getReadingTime, type SerializedBlogPost } from '@/libs/content/blog';
 import { getSortedLocaleEntries } from '@/libs/content/entries';
-import { getBlogPostHref } from '@/libs/content/service';
+import { getBlogPostHref, isBlogEnabled } from '@/libs/content/service';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import * as m from '@/paraglide/messages';
 
@@ -16,6 +16,7 @@ import * as m from '@/paraglide/messages';
 export async function buildSerializedBlogCatalog(
   targetLocale?: Locale
 ): Promise<SerializedBlogPost[]> {
+  if (!isBlogEnabled()) return [];
   const allEntries = await getCollection('blog');
   const localesToInclude = targetLocale ? [targetLocale] : LOCALES;
   const payload: SerializedBlogPost[] = [];

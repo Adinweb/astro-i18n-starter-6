@@ -9,6 +9,7 @@ import { siteConfig } from '@/libs/config/app';
 import * as m from '@/paraglide/messages';
 
 const locale: Locale = DEFAULT_LOCALE;
+const defaultLanguageName = LOCALE_METADATA[DEFAULT_LOCALE].name;
 const siteName = siteConfig.name;
 
 // A 404 has no translations of its own: one static document serves every
@@ -89,8 +90,8 @@ const i18nData = Object.fromEntries(
           desc: m.common_not_found_desc({}, { locale: loc }),
           siteDesc: m.site_description({}, { locale: loc }),
           backHome: m.common_back_home({}, { locale: loc }),
-          goEnglish: m.common_go_english_version({}, { locale: loc }),
-          englishHint: m.common_english_version_hint({}, { locale: loc }),
+          goDefault: m.common_go_default_version({ language: defaultLanguageName }, { locale: loc }),
+          defaultHint: m.common_default_version_hint({ language: defaultLanguageName }, { locale: loc }),
           cta: m.common_get_started({}, { locale: loc }),
           rights: m.common_all_rights_reserved({}, { locale: loc }),
           menu: m.common_menu({}, { locale: loc }),
@@ -99,6 +100,7 @@ const i18nData = Object.fromEntries(
           search: m.common_search_placeholder({}, { locale: loc }),
           searchHint: m.common_type_to_search({}, { locale: loc }),
           searchEmpty: m.common_no_results({}, { locale: loc }),
+          searchResultsCount: m.common_search_results_count({ count: '{count}' }, { locale: loc }),
           close: m.common_close({}, { locale: loc }),
           pressEsc: m.common_press_esc({}, { locale: loc }),
           changeLanguage: m.common_change_language({}, { locale: loc }),
@@ -150,17 +152,17 @@ const i18nData = Object.fromEntries(
       </Button>
 
       <Button
-        id="not-found-english-link"
+        id="not-found-default-link"
         href="/"
         variant="secondary"
         class="hidden w-full sm:w-auto"
       >
-        {m.common_go_english_version({}, { locale })}
+        {m.common_go_default_version({ language: defaultLanguageName }, { locale })}
       </Button>
     </div>
 
-    <p id="not-found-english-hint" class="hidden text-xs text-muted mt-4">
-      {m.common_english_version_hint({}, { locale })}
+    <p id="not-found-default-hint" class="hidden text-xs text-muted mt-4">
+      {m.common_default_version_hint({ language: defaultLanguageName }, { locale })}
     </p>
   </div>
 
@@ -295,6 +297,7 @@ const i18nData = Object.fromEntries(
         searchModal.dataset.locale = detectedLocale;
         searchModal.dataset.placeholder = data.searchHint;
         searchModal.dataset.noResults = data.searchEmpty;
+        searchModal.dataset.resultsCount = data.searchResultsCount;
       }
       const searchTitle = document.getElementById('search-modal-title');
       if (searchTitle) searchTitle.textContent = data.search;
@@ -320,6 +323,7 @@ const i18nData = Object.fromEntries(
         drawerSearch.dataset.locale = detectedLocale;
         drawerSearch.dataset.placeholder = data.searchHint;
         drawerSearch.dataset.noResults = data.searchEmpty;
+        drawerSearch.dataset.resultsCount = data.searchResultsCount;
       }
       const drawerSearchInput = document.querySelector('[data-drawer-search-input]');
       if (drawerSearchInput instanceof HTMLInputElement) {
@@ -388,30 +392,30 @@ const i18nData = Object.fromEntries(
       }
 
       // Update default-locale fallback button safely (avoid pointing to a second 404)
-      const englishLink = document.getElementById('not-found-english-link');
-      const englishHint = document.getElementById('not-found-english-hint');
+      const defaultLink = document.getElementById('not-found-default-link');
+      const defaultHint = document.getElementById('not-found-default-hint');
       const defaultData = i18nData[DEFAULT_LOCALE];
 
-      if (englishLink && defaultData) {
+      if (defaultLink && defaultData) {
         if (isKnownLocale && detectedLocale !== DEFAULT_LOCALE) {
           const restOfPath = segments.slice(1).join('/');
           const candidatePath = restOfPath ? `/${restOfPath}/` : '/';
           const knownDefaultHrefs = new Set(
             defaultData.nav.map((item) => item.href.split('#')[0]).filter(Boolean)
           );
-          englishLink.href = knownDefaultHrefs.has(candidatePath)
+          defaultLink.href = knownDefaultHrefs.has(candidatePath)
             ? candidatePath
             : defaultData.homeHref;
-          englishLink.textContent = data.goEnglish;
-          englishLink.classList.remove('hidden');
+          defaultLink.textContent = data.goDefault;
+          defaultLink.classList.remove('hidden');
 
-          if (englishHint) {
-            englishHint.textContent = data.englishHint;
-            englishHint.classList.remove('hidden');
+          if (defaultHint) {
+            defaultHint.textContent = data.defaultHint;
+            defaultHint.classList.remove('hidden');
           }
         } else {
-          englishLink.classList.add('hidden');
-          if (englishHint) englishHint.classList.add('hidden');
+          defaultLink.classList.add('hidden');
+          if (defaultHint) defaultHint.classList.add('hidden');
         }
       }
     }

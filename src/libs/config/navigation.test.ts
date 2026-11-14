@@ -13,6 +13,7 @@ import {
   type NavItemConfig,
 } from './navigation';
 import * as service from '@/libs/content/service';
+import { siteConfig } from '@/libs/config/app';
 
 describe('src/libs/config/navigation.ts', () => {
   beforeEach(() => {
@@ -173,6 +174,25 @@ describe('src/libs/config/navigation.ts', () => {
         for (const item of column.items) {
           expect(pageKeys.has(item.key)).toBe(false);
         }
+      }
+    });
+
+    it('includes extended social channels (linkedin, instagram, telegram) when configured', async () => {
+      const originalSocial = { ...siteConfig.social };
+      try {
+        siteConfig.social.linkedin = 'https://linkedin.com/company/acme';
+        siteConfig.social.instagram = 'https://instagram.com/acme';
+        siteConfig.social.telegram = 'https://t.me/acme';
+
+        const footer = await getFooterNavigation('en', '/');
+        const companyCol = footer.find((column) => column.key === 'company');
+        const keys = companyCol?.items.map((item) => item.key) ?? [];
+
+        expect(keys).toContain('linkedin');
+        expect(keys).toContain('instagram');
+        expect(keys).toContain('telegram');
+      } finally {
+        Object.assign(siteConfig.social, originalSocial);
       }
     });
   });

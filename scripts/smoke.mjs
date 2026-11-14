@@ -85,8 +85,17 @@ const LOCALE_DIRECTIONS = Object.fromEntries(
 );
 
 const dirFor = (locale) => LOCALE_DIRECTIONS[locale] ?? 'ltr';
+const htmlLangFor = (locale) => LOCALE_METADATA[locale]?.htmlLang ?? locale;
 const nonDefaultLocales = LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
 const testLocale = nonDefaultLocales.includes('fa') ? 'fa' : nonDefaultLocales[0];
+
+const contentTypes = appConfig.content?.types ?? {};
+const blogType = contentTypes.blog ?? {};
+const blogEnabled = blogType.enabled !== false;
+const blogBase = blogType.base || 'blog';
+const blogIndex = blogEnabled && blogType.index !== false;
+const blogPaginated = blogIndex && blogType.paginated !== false;
+const blogFeed = blogEnabled && blogType.feed === true;
 
 // A locale without a direction is a configuration error, not a default: the
 // direction checks below would silently pass on a page whose `dir` is wrong.
@@ -104,13 +113,14 @@ const rootHtml = readHtml('index.html');
 assert(rootHtml !== null, 'Root index.html exists');
 if (rootHtml) {
   const rootAttributes = htmlAttributes(rootHtml);
+  const expectedRootLang = htmlLangFor(DEFAULT_LOCALE);
   assert(
     Boolean(
       rootAttributes &&
-        rootAttributes.lang === DEFAULT_LOCALE &&
+        rootAttributes.lang === expectedRootLang &&
         rootAttributes.dir === dirFor(DEFAULT_LOCALE)
     ),
-    `Root renders the default locale (<html lang="${DEFAULT_LOCALE}" dir="${dirFor(DEFAULT_LOCALE)}">)`
+    `Root renders the default locale (<html lang="${expectedRootLang}" dir="${dirFor(DEFAULT_LOCALE)}">)`
   );
   assert(
     count(rootHtml, /<h1[\s>]/g) === 1,
@@ -136,10 +146,17 @@ if (rootHtml) {
     rootHtml.includes('application/ld+json'),
     'Root emits JSON-LD structured data'
   );
-  assert(
-    rootHtml.includes('application/atom+xml'),
-    'Root advertises the Atom feed'
-  );
+  if (blogFeed) {
+    assert(
+      rootHtml.includes('application/atom+xml'),
+      'Root advertises the Atom feed'
+    );
+  } else {
+    assert(
+      !rootHtml.includes('application/atom+xml'),
+      'Root omits Atom feed link when blog feed is disabled'
+    );
+  }
   assert(
     rootHtml.includes('name="color-scheme" content="light dark"') &&
       rootHtml.includes('data-theme-toggle'),
@@ -155,49 +172,68 @@ if (testLocale) {
   assert(html !== null, `/${testLocale}/index.html exists`);
   if (html) {
     const attributes = htmlAttributes(html);
+    const expectedTestLang = htmlLangFor(testLocale);
     assert(
       Boolean(
         attributes &&
-          attributes.lang === testLocale &&
+          attributes.lang === expectedTestLang &&
           attributes.dir === dirFor(testLocale)
       ),
-      `/${testLocale}/ renders <html lang="${testLocale}" dir="${dirFor(testLocale)}">`
+      `/${testLocale}/ renders <html lang="${expectedTestLang}" dir="${dirFor(testLocale)}">`
     );
     assert(count(html, /<h1[\s>]/g) === 1, `/${testLocale}/ has exactly one <h1>`);
     const atomLink = html.match(
       /<link[^>]+type="application\/atom\+xml"[^>]*href="([^"]+)"/i
     );
-    assert(
-      Boolean(atomLink && atomLink[1].endsWith(`/rss/${testLocale}.xml`)),
-      `/${testLocale}/ advertises its localized Atom feed (/rss/${testLocale}.xml)`
-    );
+    if (blogFeed) {
+      assert(
+        Boolean(atomLink && atomLink[1].endsWith(`/rss/${testLocale}.xml`)),
+        `/${testLocale}/ advertises its localized Atom feed (/rss/${testLocale}.xml)`
+      );
+    } else {
+      assert(
+        atomLink === null,
+        `/${testLocale}/ omits Atom feed link when blog feed is disabled`
+      );
+    }
   }
 
-  const blogIndex = readHtml(path.join(testLocale, 'blog', 'index.html'));
-  assert(blogIndex !== null, `/${testLocale}/blog/index.html exists`);
   if (blogIndex) {
-    assert(
-      blogIndex.includes('"@type":"BreadcrumbList"') ||
-        blogIndex.includes('"@type": "BreadcrumbList"'),
-      `/${testLocale}/blog/ emits BreadcrumbList JSON-LD`
-    );
-    if (testLocale === 'fa') {
+    const blogIndexHtml = readHtml(path.join(testLocale, blogBase, 'index.html'));
+    assert(blogIndexHtml !== null, `/${testLocale}/${blogBase}/index.html exists`);
+    if (blogIndexHtml) {
       assert(
-        /[۰-۹]/.test(blogIndex),
-        '/fa/blog/ renders native Persian numerals in dates and counters'
+        blogIndexHtml.includes('"@type":"BreadcrumbList"') ||
+          blogIndexHtml.includes('"@type": "BreadcrumbList"'),
+        `/${testLocale}/${blogBase}/ emits BreadcrumbList JSON-LD`
       );
     }
   }
 }
 
-if (LOCALES.includes('ar')) {
-  const html = readHtml(path.join('ar', 'index.html'));
-  assert(html !== null, '/ar/index.html exists');
-  if (html) {
-    const attributes = htmlAttributes(html);
+if (LOCALES.includes('fa') && blogIndex) {
+  const faBlogRelative =
+    DEFAULT_LOCALE === 'fa'
+      ? path.join(blogBase, 'index.html')
+      : path.join('fa', blogBase, 'index.html');
+  const faBlogHtml = readHtml(faBlogRelative);
+  if (faBlogHtml) {
     assert(
-      Boolean(attributes && attributes.lang === 'ar' && attributes.dir === 'rtl'),
-      '/ar/ renders Arabic with RTL'
+      /[۰-۹]/.test(faBlogHtml),
+      'Persian blog index renders native Persian numerals in dates and counters'
+    );
+  }
+}
+
+if (LOCALES.includes('ar')) {
+  const arHtml =
+    DEFAULT_LOCALE === 'ar' ? rootHtml : readHtml(path.join('ar', 'index.html'));
+  assert(arHtml !== null, `${DEFAULT_LOCALE === 'ar' ? '/' : '/ar/'}index.html exists`);
+  if (arHtml) {
+    const attributes = htmlAttributes(arHtml);
+    assert(
+      Boolean(attributes && attributes.lang === htmlLangFor('ar') && attributes.dir === 'rtl'),
+      'Arabic renders with RTL'
     );
   }
 }
@@ -208,7 +244,7 @@ if (LOCALES.includes('ar')) {
 let blogArticleHtml = null;
 let blogArticlePath = null;
 const blogRoot = path.join(rootDir, 'src', 'content', 'blog');
-if (fs.existsSync(blogRoot) && testLocale) {
+if (blogEnabled && fs.existsSync(blogRoot) && testLocale) {
   const firstGroup = fs
     .readdirSync(blogRoot, { withFileTypes: true })
     .find((entry) => entry.isDirectory())?.name;
@@ -218,7 +254,7 @@ if (fs.existsSync(blogRoot) && testLocale) {
       path.join(blogRoot, firstGroup, `${testLocale}.mdx`)
     );
     if (slug) {
-      const relative = path.join(testLocale, 'blog', slug, 'index.html');
+      const relative = path.join(testLocale, blogBase, slug, 'index.html');
       blogArticleHtml = readHtml(relative);
       blogArticlePath = relative;
       assert(blogArticleHtml !== null, `Localized article exists: ${relative}`);
@@ -303,41 +339,54 @@ if (sitemap) {
     );
   }
   assert(sitemap.includes('<lastmod>'), 'Sitemap includes lastmod timestamps');
-  assert(
-    /<loc>[^<]*\/blog\/<\/loc>[\s\S]*?<lastmod>[^<]+<\/lastmod>[\s\S]*?<\/url>/.test(sitemap),
-    'Sitemap emits lastmod timestamps for blog index routes'
-  );
-}
-
-assert(fs.existsSync(path.join(distDir, 'rss.xml')), 'dist/rss.xml exists');
-const rss = readHtml('rss.xml');
-if (rss) {
-  assert(rss.includes('<feed') && rss.includes('<entry'), 'RSS feed contains entries');
-  assert(
-    rss.includes(`xml:lang="${DEFAULT_LOCALE}"`),
-    `Default RSS feed declares xml:lang="${DEFAULT_LOCALE}"`
-  );
-  assert(
-    nonDefaultLocales.every((loc) => !rss.includes(`/${loc}/blog/`)),
-    'Default RSS feed contains only default-locale entries'
-  );
-}
-
-for (const locale of nonDefaultLocales) {
-  const localeFeedPath = path.join('rss', `${locale}.xml`);
-  assert(
-    fs.existsSync(path.join(distDir, localeFeedPath)),
-    `dist/rss/${locale}.xml exists`
-  );
-  const localeRss = readHtml(localeFeedPath);
-  if (localeRss) {
+  if (blogIndex) {
     assert(
-      localeRss.includes('<feed') && localeRss.includes(`xml:lang="${locale}"`),
-      `dist/rss/${locale}.xml declares xml:lang="${locale}"`
+      new RegExp(`<loc>[^<]*\\/${blogBase}\\/<\\/loc>[\\s\\S]*?<lastmod>[^<]+<\\/lastmod>[\\s\\S]*?<\\/url>`).test(
+        sitemap
+      ),
+      'Sitemap emits lastmod timestamps for blog index routes'
+    );
+  }
+}
+
+if (blogFeed) {
+  assert(fs.existsSync(path.join(distDir, 'rss.xml')), 'dist/rss.xml exists');
+  const rss = readHtml('rss.xml');
+  if (rss) {
+    assert(rss.includes('<feed') && rss.includes('<entry'), 'RSS feed contains entries');
+    assert(
+      rss.includes(`xml:lang="${htmlLangFor(DEFAULT_LOCALE)}"`),
+      `Default RSS feed declares xml:lang="${htmlLangFor(DEFAULT_LOCALE)}"`
     );
     assert(
-      !localeRss.includes(`hreflang="${DEFAULT_LOCALE}"`),
-      `dist/rss/${locale}.xml contains only "${locale}" entries`
+      nonDefaultLocales.every((loc) => !rss.includes(`/${loc}/${blogBase}/`)),
+      'Default RSS feed contains only default-locale entries'
+    );
+  }
+
+  for (const locale of nonDefaultLocales) {
+    const localeFeedPath = path.join('rss', `${locale}.xml`);
+    assert(
+      fs.existsSync(path.join(distDir, localeFeedPath)),
+      `dist/rss/${locale}.xml exists`
+    );
+    const localeRss = readHtml(localeFeedPath);
+    if (localeRss) {
+      assert(
+        localeRss.includes('<feed') && localeRss.includes(`xml:lang="${htmlLangFor(locale)}"`),
+        `dist/rss/${locale}.xml declares xml:lang="${htmlLangFor(locale)}"`
+      );
+      assert(
+        !localeRss.includes(`hreflang="${DEFAULT_LOCALE}"`),
+        `dist/rss/${locale}.xml contains only "${locale}" entries`
+      );
+    }
+  }
+} else {
+  for (const locale of nonDefaultLocales) {
+    assert(
+      !fs.existsSync(path.join(distDir, 'rss', `${locale}.xml`)),
+      `dist/rss/${locale}.xml is omitted when blog feed is disabled`
     );
   }
 }
@@ -500,19 +549,26 @@ assert(blogCatalog !== null, 'Static blog catalog (dist/api/blog-posts.json) exi
 if (blogCatalog) {
   try {
     const items = JSON.parse(blogCatalog);
-    assert(
-      Array.isArray(items) && items.length > 0,
-      'Static blog catalog contains published post entries'
-    );
-    assert(
-      items.every(
-        (item) =>
-          LOCALES.includes(item.locale) &&
-          typeof item.href === 'string' &&
-          item.href.endsWith('/')
-      ),
-      'Static blog catalog entries have valid locales and canonical trailing slashes'
-    );
+    if (blogEnabled) {
+      assert(
+        Array.isArray(items) && items.length > 0,
+        'Static blog catalog contains published post entries'
+      );
+      assert(
+        items.every(
+          (item) =>
+            LOCALES.includes(item.locale) &&
+            typeof item.href === 'string' &&
+            item.href.endsWith('/')
+        ),
+        'Static blog catalog entries have valid locales and canonical trailing slashes'
+      );
+    } else {
+      assert(
+        Array.isArray(items) && items.length === 0,
+        'Static blog catalog is empty when blog is disabled'
+      );
+    }
   } catch {
     assert(false, 'Static blog catalog is valid JSON');
   }
@@ -520,6 +576,13 @@ if (blogCatalog) {
 
 for (const locale of LOCALES) {
   const localeCatalogRaw = readHtml(path.join('api', 'blog-posts', `${locale}.json`));
+  if (!blogEnabled) {
+    assert(
+      localeCatalogRaw === null,
+      `Per-locale blog catalog (${locale}.json) is omitted when blog is disabled`
+    );
+    continue;
+  }
   assert(
     localeCatalogRaw !== null,
     `Per-locale blog catalog (dist/api/blog-posts/${locale}.json) exists`
@@ -539,6 +602,51 @@ for (const locale of LOCALES) {
       );
     } catch {
       assert(false, `Per-locale blog catalog (${locale}.json) is valid JSON`);
+    }
+  }
+}
+
+// Verify enabled non-blog indexed collections (e.g. projects)
+for (const [typeKey, typeCfg] of Object.entries(contentTypes)) {
+  if (typeKey === 'pages' || typeKey === 'blog') continue;
+  if (typeCfg.enabled === false || typeCfg.index === false) continue;
+
+  const base = typeCfg.base || typeKey;
+  const indexHtml = readHtml(path.join(base, 'index.html'));
+  assert(indexHtml !== null, `Collection index exists: /${base}/index.html`);
+  if (indexHtml) {
+    assert(
+      (indexHtml.includes('"@type":"CollectionPage"') ||
+        indexHtml.includes('"@type": "CollectionPage"')) &&
+        (indexHtml.includes('"@type":"BreadcrumbList"') ||
+          indexHtml.includes('"@type": "BreadcrumbList"')),
+      `/${base}/ emits CollectionPage and BreadcrumbList JSON-LD`
+    );
+  }
+
+  const typeRoot = path.join(rootDir, 'src', 'content', typeKey);
+  if (fs.existsSync(typeRoot)) {
+    const firstGroup = fs
+      .readdirSync(typeRoot, { withFileTypes: true })
+      .find((entry) => entry.isDirectory())?.name;
+    if (firstGroup) {
+      const slug = readFrontmatterSlug(
+        path.join(typeRoot, firstGroup, `${DEFAULT_LOCALE}.mdx`)
+      );
+      if (slug) {
+        const entryHtml = readHtml(path.join(base, slug, 'index.html'));
+        assert(
+          entryHtml !== null,
+          `Collection entry exists: /${base}/${slug}/index.html`
+        );
+        if (entryHtml) {
+          const dlBlocks = entryHtml.match(/<dl\b[^>]*>[\s\S]*?<\/dl>/gi) ?? [];
+          assert(
+            dlBlocks.every((block) => !/<a\b[^>]*href=/i.test(block)),
+            `/${base}/${slug}/ keeps <dl> free of direct <a> children`
+          );
+        }
+      }
     }
   }
 }
@@ -667,20 +775,20 @@ function countPublishedPosts(locale) {
 /** The public URL of one page of a locale's blog index. */
 function expectedBlogPath(locale, page) {
   const prefix = locale === DEFAULT_LOCALE ? '' : `/${locale}`;
-  return page === 1 ? `${prefix}/blog/` : `${prefix}/blog/page/${page}/`;
+  return page === 1 ? `${prefix}/${blogBase}/` : `${prefix}/${blogBase}/page/${page}/`;
 }
 
 /** The file of one page of a locale's blog index inside dist/. */
 function builtBlogPath(locale, page) {
   const segments =
     locale === DEFAULT_LOCALE
-      ? ['blog']
-      : [locale, 'blog'];
+      ? [blogBase]
+      : [locale, blogBase];
   if (page > 1) segments.push('page', String(page));
   return path.join(...segments, 'index.html');
 }
 
-if (postsPerPage > 0) {
+if (blogPaginated && postsPerPage > 0) {
   for (const locale of LOCALES) {
     const total = countPublishedPosts(locale);
     const expectedPages = Math.max(1, Math.ceil(total / postsPerPage));

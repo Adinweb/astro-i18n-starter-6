@@ -556,6 +556,31 @@ try {
     result.code === 0 ? '' : result.stdout.trim().split('\n').slice(-8).join(' | ')
   );
 
+  if (altLoc !== baseLoc) {
+    result = run(sandbox, 'node', ['scripts/set-default-language.mjs', altLoc]);
+    record(
+      result.code === 0 &&
+        JSON.parse(read('project.inlang/settings.json')).baseLocale === altLoc &&
+        read('src/i18n/locales.ts').includes(`DEFAULT_LOCALE: Locale = '${altLoc}'`),
+      `i18n:set-default switches baseLocale and DEFAULT_LOCALE to ${altLoc}`
+    );
+
+    result = run(sandbox, 'node', ['scripts/audit-i18n.mjs'], { allowFailure: true });
+    record(
+      result.code === 0,
+      `the audit passes while default locale is ${altLoc}`,
+      result.code === 0 ? '' : result.stdout.trim().split('\n').slice(-8).join(' | ')
+    );
+
+    result = run(sandbox, 'node', ['scripts/set-default-language.mjs', baseLoc]);
+    record(
+      result.code === 0 &&
+        JSON.parse(read('project.inlang/settings.json')).baseLocale === baseLoc &&
+        read('src/i18n/locales.ts').includes(`DEFAULT_LOCALE: Locale = '${baseLoc}'`),
+      `i18n:set-default restores baseLocale and DEFAULT_LOCALE back to ${baseLoc}`
+    );
+  }
+
   // ---------------------------------------------------------------------
   // 7. block:adapt and i18n:extract
   // ---------------------------------------------------------------------

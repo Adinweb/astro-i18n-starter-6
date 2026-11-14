@@ -95,9 +95,23 @@ describe('src/libs/config/app.ts', () => {
   });
 
   describe('socialConfigSchema', () => {
-    it('defaults github and twitter to empty strings if omitted', () => {
+    it('defaults github, twitter, linkedin, instagram, and telegram to empty strings if omitted', () => {
       const parsed = socialConfigSchema.parse({});
       expect(parsed).toEqual(defaultSocialConfig);
+      expect(parsed).toHaveProperty('linkedin', '');
+      expect(parsed).toHaveProperty('instagram', '');
+      expect(parsed).toHaveProperty('telegram', '');
+    });
+
+    it('accepts valid HTTPS URLs for extended social platforms', () => {
+      const parsed = socialConfigSchema.parse({
+        linkedin: 'https://linkedin.com/company/acme',
+        instagram: 'https://instagram.com/acme',
+        telegram: 'https://t.me/acme',
+      });
+      expect(parsed.linkedin).toBe('https://linkedin.com/company/acme');
+      expect(parsed.instagram).toBe('https://instagram.com/acme');
+      expect(parsed.telegram).toBe('https://t.me/acme');
     });
   });
 
@@ -108,6 +122,21 @@ describe('src/libs/config/app.ts', () => {
       expect(apiEndpointsSchema.parse({})).toEqual({ contact: '/contact' });
       expect(() => apiConfigSchema.parse({ timeoutMs: 200 })).toThrow();
       expect(() => apiConfigSchema.parse({ timeoutMs: 90000 })).toThrow();
+    });
+
+    it('validates optional localized contact topics when configured', () => {
+      const parsed = apiConfigSchema.parse({
+        topics: [
+          {
+            value: 'sales',
+            label: 'Sales',
+            labels: { en: 'Sales & Pricing', fa: 'فروش و تعرفه‌ها' },
+          },
+        ],
+      });
+      expect(parsed.topics).toHaveLength(1);
+      expect(parsed.topics?.[0]?.labels?.fa).toBe('فروش و تعرفه‌ها');
+      expect(() => apiConfigSchema.parse({ topics: [{ value: '', label: 'Empty' }] })).toThrow();
     });
   });
 

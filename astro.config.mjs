@@ -149,6 +149,10 @@ try {
   throw new Error(`SITE_URL is not a valid absolute URL: "${site}"`);
 }
 
+const disableHmr = ['1', 'true', 'yes'].includes(
+  String(process.env.DISABLE_HMR ?? '').toLowerCase()
+);
+
 // https://astro.build/config
 export default defineConfig({
   site,
@@ -157,6 +161,9 @@ export default defineConfig({
   // slash-less URLs (e.g. `/unknown`, `/fa/unknown`, `/404`) render the custom
   // `src/pages/404.astro` page instead of Astro's built-in trailing-slash 404 screen.
   trailingSlash: 'ignore',
+  devToolbar: {
+    enabled: !disableHmr,
+  },
   build: {
     format: 'directory',
   },
@@ -171,6 +178,7 @@ export default defineConfig({
     },
     server: {
       allowedHosts: true,
+      hmr: disableHmr ? false : undefined,
     },
   },
   server: {

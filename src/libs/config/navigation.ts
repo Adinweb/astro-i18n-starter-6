@@ -268,13 +268,18 @@ export async function getFooterNavigation(locale: Locale, currentUrl = ''): Prom
     items: getContentTypeNavItems(locale, currentUrl),
   };
 
-  const socialItems: NavItem[] = [];
-  if (siteConfig.social.github) {
-    socialItems.push({ key: 'github', label: 'GitHub', href: siteConfig.social.github, external: true, active: false });
-  }
-  if (siteConfig.social.twitter) {
-    socialItems.push({ key: 'twitter', label: 'X', href: siteConfig.social.twitter, external: true, active: false });
-  }
+  const SOCIAL_CHANNELS = [
+    ['github', 'GitHub'],
+    ['twitter', 'X'],
+    ['linkedin', 'LinkedIn'],
+    ['instagram', 'Instagram'],
+    ['telegram', 'Telegram'],
+  ] as const;
+
+  const socialItems: NavItem[] = SOCIAL_CHANNELS.flatMap(([key, label]) => {
+    const href = siteConfig.social[key];
+    return href ? [{ key, label, href, external: true, active: false }] : [];
+  });
 
   const companyColumn: FooterColumn = {
     key: 'company',

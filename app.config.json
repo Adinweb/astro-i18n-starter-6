@@ -83,7 +83,10 @@
   },
   "social": {
     "github": "https://github.com",
-    "twitter": ""
+    "twitter": "",
+    "linkedin": "",
+    "instagram": "",
+    "telegram": ""
   },
   "api": {
     "baseUrl": "",

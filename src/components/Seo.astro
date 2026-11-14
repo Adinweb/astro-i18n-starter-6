@@ -1,7 +1,7 @@
 ---
 import type { ImageMetadata } from 'astro';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
-import { getRssFeedHref } from '@/libs/content/service';
+import { getRssFeedHref, isBlogFeedEnabled } from '@/libs/content/service';
 import { getSocialCard } from '@/libs/content/social';
 import { DEFAULT_LOCALE, LOCALES, getLocaleMeta, getOgLocale, type Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
@@ -45,7 +45,7 @@ const {
 
 const resolvedDescription = description || m.site_description({}, { locale });
 const localeMeta = getLocaleMeta(locale);
-const feedUrl = absoluteUrl(getRssFeedHref(locale));
+const feedUrl = isBlogFeedEnabled() ? absoluteUrl(getRssFeedHref(locale)) : undefined;
 const canonicalUrl = absoluteUrl(url);
 const defaultAlternate = alternates[DEFAULT_LOCALE];
 const xDefaultUrl = defaultAlternate ? absoluteUrl(defaultAlternate) : undefined;
@@ -73,12 +73,16 @@ const jsonLd = schema
 <link rel="canonical" href={canonicalUrl} />
 {prevUrl && <link rel="prev" href={absoluteUrl(prevUrl)} />}
 {nextUrl && <link rel="next" href={absoluteUrl(nextUrl)} />}
-<link
-  rel="alternate"
-  type="application/atom+xml"
-  title={`${siteName} — ${localeMeta.name}`}
-  href={feedUrl}
-/>
+{
+  feedUrl && (
+    <link
+      rel="alternate"
+      type="application/atom+xml"
+      title={`${siteName} — ${localeMeta.name}`}
+      href={feedUrl}
+    />
+  )
+}
 {noindex && <meta name="robots" content="noindex, nofollow" />}
 
 {/* Hreflang: one entry per available reciprocal translation + x-default when default locale exists. */}

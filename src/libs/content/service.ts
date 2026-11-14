@@ -103,6 +103,12 @@ export function isBlogEnabled(): boolean {
   return getContentType('blog').enabled;
 }
 
+/** Whether the blog Atom feed is switched on in `app.config.json`. */
+export function isBlogFeedEnabled(): boolean {
+  const blog = getContentType('blog');
+  return blog.enabled && blog.feed;
+}
+
 /**
  * Generic paginated index URL builder for any content collection (`blog`, `docs`, etc.).
  *
@@ -235,7 +241,9 @@ export function buildSiteRoutes(
   // the number of published posts that locale has.
   // A disabled blog owns no routes at all — not even an empty index, so the
   // navigation, the sitemap and the build agree that the section is gone.
-  const blogEnabled = isBlogEnabled();
+  const blogType = getContentType('blog');
+  const blogEnabled = blogType.enabled;
+  const blogIndexEnabled = blogEnabled && blogType.index;
   const postsByGroup = blogEnabled
     ? groupPublishedEntries(posts, 'blog')
     : new Map<string, Map<Locale, EntryLike<'blog'>>>();
@@ -251,7 +259,11 @@ export function buildSiteRoutes(
   for (const locale of LOCALES) {
     pagesPerLocale.set(
       locale,
-      blogEnabled ? getPageCount(postsPerLocale.get(locale) ?? 0, POSTS_PER_PAGE) : 0
+      blogIndexEnabled
+        ? blogType.paginated
+          ? getPageCount(postsPerLocale.get(locale) ?? 0, POSTS_PER_PAGE)
+          : 1
+        : 0
     );
   }
 
@@ -264,6 +276,9 @@ export function buildSiteRoutes(
     if (!liveLocales.has(locale)) continue;
 
     const totalPages = pagesPerLocale.get(locale)!;
+    const perPage = blogType.paginated
+      ? POSTS_PER_PAGE
+      : Math.max(1, postsPerLocale.get(locale) ?? 0);
 
     for (let page = 1; page <= totalPages; page += 1) {
       const url = getBlogPageHref(page, locale);
@@ -276,7 +291,9 @@ export function buildSiteRoutes(
         if (otherPages >= page) {
           alternates[other] = getBlogPageHref(page, other);
         }
-        switcherAlternates[other] = getBlogPageHref(Math.min(page, otherPages), other);
+        if (otherPages > 0) {
+          switcherAlternates[other] = getBlogPageHref(Math.min(page, otherPages), other);
+        }
       }
 
       registerRoute(url, {
@@ -287,7 +304,7 @@ export function buildSiteRoutes(
         url,
         page,
         totalPages,
-        perPage: POSTS_PER_PAGE,
+        perPage,
       });
     }
   }

@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import { fileURLToPath } from 'node:url';
+import { readAppConfig, rootDir } from './lib/content-types.mjs';
 
 /**
  * Existing files are kept unless `--force` is passed.
@@ -22,13 +22,10 @@ import { fileURLToPath } from 'node:url';
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 const skippedAssets = [];
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const publicDir = path.join(rootDir, 'public');
 // Brand dimensions and the default social-card path are owned by
-// `app.config.json`, so the generator and the app cannot disagree.
-const appConfig = JSON.parse(
-  fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8')
-);
+// `app.config.json` via `readAppConfig()`, so the generator and app agree.
+const appConfig = readAppConfig();
 // Artwork lives next to the content that uses it, so Astro's `image()`
 // helper can resolve it relative to the entry file and optimize it.
 // `public/` is reserved for files that need a stable, unprocessed URL.
@@ -110,32 +107,126 @@ function withLuminance([r, g, b], target) {
   return [Math.min(255, r * k), Math.min(255, g * k), Math.min(255, b * k)];
 }
 
+function parseHexRgb(hex) {
+  if (typeof hex !== 'string') return null;
+  const match = hex.trim().match(/^#([0-9a-fA-F]{6})$/);
+  if (!match) return null;
+  const n = Number.parseInt(match[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function rgbToHsl(r, g, b) {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const d = max - min;
+  const l = (max + min) / 2;
+  if (d === 0) return [0, 0, l];
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h =
+    max === rn
+      ? (gn - bn) / d + (gn < bn ? 6 : 0)
+      : max === gn
+        ? (bn - rn) / d + 2
+        : (rn - gn) / d + 4;
+  h *= 60;
+  return [h, s, l];
+}
+
 function distanceToSegment(px, py, ax, ay, bx, by) {
   const dx = bx - ax;
   const dy = by - ay;
   const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared === 0) return Math.hypot(px - ax, py - ay);
   const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSquared));
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
 
-/** Draws a white, round-capped "A" centred in a square of `size` pixels. */
+const GLYPH_SEGMENTS = {
+  A: [[0, -0.27, -0.21, 0.27], [0, -0.27, 0.21, 0.27], [-0.115, 0.1, 0.115, 0.1]],
+  B: [[-0.17, -0.27, -0.17, 0.27], [-0.17, -0.27, 0.1, -0.27], [0.1, -0.27, 0.16, -0.15], [0.16, -0.15, 0.1, -0.01], [-0.17, -0.01, 0.11, -0.01], [0.11, -0.01, 0.18, 0.13], [0.18, 0.13, 0.11, 0.27], [-0.17, 0.27, 0.11, 0.27]],
+  C: [[0.16, -0.19, 0.02, -0.27], [0.02, -0.27, -0.14, -0.16], [-0.14, -0.16, -0.14, 0.16], [-0.14, 0.16, 0.02, 0.27], [0.02, 0.27, 0.16, 0.19]],
+  D: [[-0.17, -0.27, -0.17, 0.27], [-0.17, -0.27, 0.05, -0.27], [0.05, -0.27, 0.18, -0.11], [0.18, -0.11, 0.18, 0.11], [0.18, 0.11, 0.05, 0.27], [-0.17, 0.27, 0.05, 0.27]],
+  E: [[-0.16, -0.27, -0.16, 0.27], [-0.16, -0.27, 0.17, -0.27], [-0.16, 0, 0.11, 0], [-0.16, 0.27, 0.17, 0.27]],
+  F: [[-0.16, -0.27, -0.16, 0.27], [-0.16, -0.27, 0.17, -0.27], [-0.16, 0, 0.11, 0]],
+  G: [[0.16, -0.19, 0.01, -0.27], [0.01, -0.27, -0.15, -0.16], [-0.15, -0.16, -0.15, 0.16], [-0.15, 0.16, 0.02, 0.27], [0.02, 0.27, 0.17, 0.18], [0.17, 0.18, 0.17, 0.02], [0.03, 0.02, 0.17, 0.02]],
+  H: [[-0.17, -0.27, -0.17, 0.27], [0.17, -0.27, 0.17, 0.27], [-0.17, 0, 0.17, 0]],
+  I: [[0, -0.27, 0, 0.27], [-0.11, -0.27, 0.11, -0.27], [-0.11, 0.27, 0.11, 0.27]],
+  J: [[0.12, -0.27, 0.12, 0.15], [0.12, 0.15, 0.02, 0.27], [0.02, 0.27, -0.11, 0.22], [-0.11, 0.22, -0.15, 0.12]],
+  K: [[-0.16, -0.27, -0.16, 0.27], [0.16, -0.27, -0.16, 0.04], [-0.04, -0.04, 0.17, 0.27]],
+  L: [[-0.15, -0.27, -0.15, 0.27], [-0.15, 0.27, 0.16, 0.27]],
+  M: [[-0.2, 0.27, -0.2, -0.27], [-0.2, -0.27, 0, 0.06], [0, 0.06, 0.2, -0.27], [0.2, -0.27, 0.2, 0.27]],
+  N: [[-0.17, 0.27, -0.17, -0.27], [-0.17, -0.27, 0.17, 0.27], [0.17, 0.27, 0.17, -0.27]],
+  O: [[0, -0.27, 0.16, -0.15], [0.16, -0.15, 0.16, 0.15], [0.16, 0.15, 0, 0.27], [0, 0.27, -0.16, 0.15], [-0.16, 0.15, -0.16, -0.15], [-0.16, -0.15, 0, -0.27]],
+  P: [[-0.16, -0.27, -0.16, 0.27], [-0.16, -0.27, 0.1, -0.27], [0.1, -0.27, 0.17, -0.14], [0.17, -0.14, 0.1, 0], [-0.16, 0, 0.1, 0]],
+  Q: [[0, -0.27, 0.16, -0.15], [0.16, -0.15, 0.16, 0.15], [0.16, 0.15, 0, 0.27], [0, 0.27, -0.16, 0.15], [-0.16, 0.15, -0.16, -0.15], [-0.16, -0.15, 0, -0.27], [0.05, 0.11, 0.2, 0.28]],
+  R: [[-0.16, -0.27, -0.16, 0.27], [-0.16, -0.27, 0.1, -0.27], [0.1, -0.27, 0.17, -0.14], [0.17, -0.14, 0.1, 0], [-0.16, 0, 0.1, 0], [0.02, 0, 0.18, 0.27]],
+  S: [[0.15, -0.21, 0.01, -0.27], [0.01, -0.27, -0.14, -0.18], [-0.14, -0.18, -0.12, -0.04], [-0.12, -0.04, 0.13, 0.04], [0.13, 0.04, 0.15, 0.18], [0.15, 0.18, 0, 0.27], [0, 0.27, -0.15, 0.2]],
+  T: [[-0.19, -0.27, 0.19, -0.27], [0, -0.27, 0, 0.27]],
+  U: [[-0.16, -0.27, -0.16, 0.14], [-0.16, 0.14, 0, 0.27], [0, 0.27, 0.16, 0.14], [0.16, 0.14, 0.16, -0.27]],
+  V: [[-0.19, -0.27, 0, 0.27], [0, 0.27, 0.19, -0.27]],
+  W: [[-0.21, -0.27, -0.11, 0.27], [-0.11, 0.27, 0, -0.05], [0, -0.05, 0.11, 0.27], [0.11, 0.27, 0.21, -0.27]],
+  X: [[-0.17, -0.27, 0.17, 0.27], [0.17, -0.27, -0.17, 0.27]],
+  Y: [[-0.18, -0.27, 0, 0.01], [0.18, -0.27, 0, 0.01], [0, 0.01, 0, 0.27]],
+  Z: [[-0.17, -0.27, 0.17, -0.27], [0.17, -0.27, -0.17, 0.27], [-0.17, 0.27, 0.17, 0.27]],
+  '0': [[0, -0.27, 0.15, -0.15], [0.15, -0.15, 0.15, 0.15], [0.15, 0.15, 0, 0.27], [0, 0.27, -0.15, 0.15], [-0.15, 0.15, -0.15, -0.15], [-0.15, -0.15, 0, -0.27]],
+  '1': [[-0.08, -0.17, 0.02, -0.27], [0.02, -0.27, 0.02, 0.27], [-0.11, 0.27, 0.13, 0.27]],
+  '2': [[-0.14, -0.16, -0.02, -0.27], [-0.02, -0.27, 0.13, -0.17], [0.13, -0.17, -0.15, 0.27], [-0.15, 0.27, 0.16, 0.27]],
+  '3': [[-0.14, -0.22, 0.02, -0.27], [0.02, -0.27, 0.15, -0.14], [0.15, -0.14, -0.02, -0.01], [-0.02, -0.01, 0.16, 0.13], [0.16, 0.13, 0.01, 0.27], [0.01, 0.27, -0.15, 0.2]],
+  '4': [[0.1, 0.27, 0.1, -0.27], [0.1, -0.27, -0.17, 0.08], [-0.17, 0.08, 0.17, 0.08]],
+  '5': [[0.14, -0.27, -0.14, -0.27], [-0.14, -0.27, -0.14, -0.04], [-0.14, -0.04, 0.04, -0.04], [0.04, -0.04, 0.16, 0.11], [0.16, 0.11, 0.01, 0.27], [0.01, 0.27, -0.15, 0.2]],
+  '6': [[0.12, -0.23, -0.03, -0.27], [-0.03, -0.27, -0.16, -0.06], [-0.16, -0.06, -0.15, 0.15], [-0.15, 0.15, 0, 0.27], [0, 0.27, 0.16, 0.14], [0.16, 0.14, 0.02, 0], [0.02, 0, -0.15, 0.04]],
+  '7': [[-0.16, -0.27, 0.16, -0.27], [0.16, -0.27, -0.05, 0.27]],
+  '8': [[0, -0.27, 0.14, -0.15], [0.14, -0.15, 0, -0.01], [0, -0.01, -0.14, -0.15], [-0.14, -0.15, 0, -0.27], [0, -0.01, 0.16, 0.13], [0.16, 0.13, 0, 0.27], [0, 0.27, -0.16, 0.13], [-0.16, 0.13, 0, -0.01]],
+  '9': [[0.15, -0.04, 0, 0], [0, 0, -0.15, -0.13], [-0.15, -0.13, 0, -0.27], [0, -0.27, 0.15, -0.14], [0.15, -0.14, 0.14, 0.08], [0.14, 0.08, -0.02, 0.27], [-0.02, 0.27, -0.14, 0.22]],
+};
+
+const PRISM_SEGMENTS = [
+  [0, -0.27, 0.21, 0],
+  [0.21, 0, 0, 0.27],
+  [0, 0.27, -0.21, 0],
+  [-0.21, 0, 0, -0.27],
+  [0, -0.11, 0.09, 0],
+  [0.09, 0, 0, 0.11],
+  [0, 0.11, -0.09, 0],
+  [-0.09, 0, 0, -0.11],
+];
+
+function resolveBrandSegments() {
+  const shortName = String(appConfig.site?.shortName || appConfig.site?.name || '').trim();
+  const initial = shortName.toUpperCase().match(/[A-Z0-9]/)?.[0];
+  return (initial && GLYPH_SEGMENTS[initial]) || PRISM_SEGMENTS;
+}
+
+const brandSegments = resolveBrandSegments();
+const primaryBrandRgb = parseHexRgb(appConfig.brand?.themeColor) ?? [67, 56, 202];
+const [brandHue, brandSat, brandLight] = rgbToHsl(...primaryBrandRgb);
+const companionBrandRgb = hslToRgb(
+  (brandHue + 305) % 360,
+  Math.min(0.9, Math.max(0.55, brandSat)),
+  Math.min(0.46, Math.max(0.32, brandLight * 0.78))
+);
+
+/** Draws a white, round-capped brand monogram or prism emblem centred in a square of `size` pixels. */
 function glyphCoverage(px, py, size, scale = 1, offsetX = 0, offsetY = 0) {
   const cx = offsetX + size / 2;
   const cy = offsetY + size / 2;
   const s = size * scale;
 
-  const apex = [cx, cy - s * 0.27];
-  const left = [cx - s * 0.21, cy + s * 0.27];
-  const right = [cx + s * 0.21, cy + s * 0.27];
-  const barY = cy + s * 0.1;
-  const barHalf = s * 0.115;
-
-  const leg = Math.min(
-    distanceToSegment(px, py, apex[0], apex[1], left[0], left[1]),
-    distanceToSegment(px, py, apex[0], apex[1], right[0], right[1])
-  );
-  const bar = distanceToSegment(px, py, cx - barHalf, barY, cx + barHalf, barY);
-  const distance = Math.min(leg, bar);
+  let distance = Number.POSITIVE_INFINITY;
+  for (const [ax, ay, bx, by] of brandSegments) {
+    const segDist = distanceToSegment(
+      px,
+      py,
+      cx + s * ax,
+      cy + s * ay,
+      cx + s * bx,
+      cy + s * by
+    );
+    if (segDist < distance) distance = segDist;
+  }
   const thickness = s * 0.055;
 
   return Math.max(0, Math.min(1, thickness + 0.75 - distance));
@@ -146,10 +237,10 @@ function brandPixel(width, height, options = {}) {
   return (x, y) => {
     const nx = x / width;
     const ny = y / height;
-    const t = Math.min(1, (nx * 0.65 + ny * 0.35));
-    let r = mix(67, 8, t);
-    let g = mix(56, 145, t);
-    let b = mix(202, 178, t);
+    const t = Math.min(1, nx * 0.65 + ny * 0.35);
+    let r = mix(primaryBrandRgb[0], companionBrandRgb[0], t);
+    let g = mix(primaryBrandRgb[1], companionBrandRgb[1], t);
+    let b = mix(primaryBrandRgb[2], companionBrandRgb[2], t);
 
     // Soft radial light in the upper-left keeps flat gradients from looking dead.
     const glow = Math.max(0, 1 - Math.hypot(nx - 0.25, ny - 0.2) * 1.7);
@@ -160,7 +251,7 @@ function brandPixel(width, height, options = {}) {
     const size = icon ? Math.min(width, height) : Math.min(width, height) * 0.62;
     const offsetX = icon ? (width - size) / 2 : width * 0.06;
     const offsetY = icon ? (height - size) / 2 : (height - size) / 2;
-    const coverage = glyphCoverage(x, y, size, icon ? 1 : 1, offsetX, offsetY);
+    const coverage = glyphCoverage(x, y, size, 1, offsetX, offsetY);
 
     if (coverage > 0) {
       r = mix(r, 255, coverage);
