@@ -1,0 +1,118 @@
+---
+/**
+ * Focused closing conversion banner for canvas landing pages.
+ */
+import PageSection from '@/components/PageSection.astro';
+import Button from '@/components/Button.astro';
+
+interface CtaAction {
+  label: string;
+  href: string;
+  icon?: string;
+  external?: boolean;
+}
+
+interface Props {
+  id?: string;
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  primaryCta: CtaAction;
+  secondaryCta?: CtaAction;
+  surface?: 'hero' | 'surface';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  eyebrow,
+  title,
+  description,
+  primaryCta,
+  secondaryCta,
+  surface = 'hero',
+  spacing = 'md',
+} = Astro.props;
+
+const isHero = surface === 'hero';
+---
+
+<PageSection id={id} spacing={spacing}>
+  <div
+    data-trig
+    class:list={[
+      'relative isolate overflow-hidden rounded-3xl border px-6 py-10 sm:px-10 sm:py-14 lg:px-14',
+      isHero
+        ? 'border-hero-fg/15 bg-hero-base text-hero-fg print:border-border print:bg-bg print:text-fg'
+        : 'border-border bg-surface text-fg',
+    ]}
+  >
+    {
+      isHero && (
+        <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 print:hidden">
+          <div class="absolute -bottom-32 end-[-4rem] size-80 rounded-full bg-primary/25 blur-3xl" />
+          <div class="absolute -top-32 start-[-4rem] size-72 rounded-full bg-accent/20 blur-3xl" />
+        </div>
+      )
+    }
+
+    <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+      <div class="max-w-2xl">
+        {
+          eyebrow && (
+            <p
+              class:list={[
+                'text-xs font-semibold uppercase tracking-[0.14em] rtl:tracking-normal',
+                isHero ? 'text-accent print:text-primary' : 'text-primary',
+              ]}
+            >
+              {eyebrow}
+            </p>
+          )
+        }
+
+        <h2 class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl text-balance">
+          {title}
+        </h2>
+
+        {
+          description && (
+            <p
+              class:list={[
+                'mt-3 text-base leading-relaxed text-pretty',
+                isHero ? 'text-hero-fg/85 print:text-muted' : 'text-muted',
+              ]}
+            >
+              {description}
+            </p>
+          )
+        }
+      </div>
+
+      <div class="flex shrink-0 flex-wrap items-center gap-3 print:hidden">
+        <Button
+          href={primaryCta.href}
+          variant="primary"
+          size="lg"
+          icon={primaryCta.icon ?? 'arrow-right'}
+          external={primaryCta.external}
+        >
+          {primaryCta.label}
+        </Button>
+
+        {
+          secondaryCta && (
+            <Button
+              href={secondaryCta.href}
+              variant={isHero ? 'hero' : 'secondary'}
+              size="lg"
+              external={secondaryCta.external}
+            >
+              {secondaryCta.label}
+            </Button>
+          )
+        }
+      </div>
+    </div>
+  </div>
+</PageSection>

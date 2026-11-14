@@ -18,8 +18,8 @@ import {
   getAdjacentPosts,
   getRelatedPosts,
 } from '@/libs/content/blog';
-import { getSortedLocaleEntries } from '@/libs/content/entries';
-import { getSocialCard } from '@/libs/content/social';
+import { getSortedLocaleEntries, parseContentEntryId } from '@/libs/content/entries';
+import { buildOgRouteKey, getSocialCard, type SocialCardContext } from '@/libs/content/social';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
@@ -51,9 +51,18 @@ const breadcrumbs = getBreadcrumbs(url, locale, {
 const blogIndexHref = getBlogIndexHref(locale);
 const tagHref = (tag: string) => `${blogIndexHref}${buildBlogFilterQuery({ category: null, tags: [tag] })}`;
 
+const { group } = parseContentEntryId(entry.id);
+const ogContext: SocialCardContext = {
+  routeKey: buildOgRouteKey('blog-entry', { group, locale }),
+  title,
+  subtitle: description,
+  kicker: categories[0] ? getCategoryLabel(categories[0], locale) : m.nav_blog({}, { locale }),
+  locale,
+};
+
 const canonicalUrl = absoluteUrl(url);
 // The schema points at the same optimized card the `og:image` meta tag uses.
-const socialImage = await getSocialCard(image);
+const socialImage = await getSocialCard(image, ogContext);
 const imageUrl = socialImage.url;
 
 const meta = getLocaleMeta(locale);
@@ -89,6 +98,7 @@ const schema = [
   title={title}
   description={description}
   image={image}
+  ogContext={ogContext}
   type="article"
   publishedTime={publishedAt.toISOString()}
   modifiedTime={modifiedIso}

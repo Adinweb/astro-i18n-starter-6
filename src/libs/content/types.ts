@@ -17,7 +17,7 @@ import * as m from '@/paraglide/messages';
  * entries follow the shared `<group>/<locale>.mdx` contract. `pages` is the page
  * system itself: it always owns the root and cannot be disabled.
  */
-export const CONTENT_TYPE_KEYS = ['pages', 'blog', 'projects'] as const;
+const CONTENT_TYPE_KEYS = ['pages', 'blog', 'projects'] as const;
 export type ContentTypeKey = (typeof CONTENT_TYPE_KEYS)[number];
 
 export interface ContentTypeConfig {
@@ -45,6 +45,7 @@ const RESERVED_BASES = new Set([
   '_astro',
   'api',
   'rss',
+  'og',
   'sitemap',
   'robots',
   'icons',

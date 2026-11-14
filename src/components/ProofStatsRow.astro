@@ -1,0 +1,89 @@
+---
+/**
+ * Quantitative proof strip separating key metrics by clean hairline rules.
+ * Numerals format automatically via `formatNumber` when `count` is provided
+ * and render with `tabular-nums` alignment.
+ */
+import PageSection from '@/components/PageSection.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+
+export interface StatItem {
+  value?: string;
+  count?: number;
+  prefix?: string;
+  suffix?: string;
+  label: string;
+  context?: string;
+}
+
+interface Props {
+  id?: string;
+  eyebrow?: string;
+  heading?: string;
+  items: readonly StatItem[];
+  locale?: Locale | string;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  eyebrow,
+  heading,
+  items,
+  locale = 'en',
+  surface = 'surface',
+  spacing = 'md',
+} = Astro.props;
+
+const gridColsClass =
+  items.length <= 2
+    ? 'sm:grid-cols-2'
+    : items.length === 3
+      ? 'sm:grid-cols-3'
+      : 'sm:grid-cols-2 lg:grid-cols-4';
+---
+
+<PageSection id={id} surface={surface} spacing={spacing} borderTop borderBottom>
+  {
+    (eyebrow || heading) && (
+      <div class="mb-8 max-w-2xl" data-trig>
+        {eyebrow && <p class="section-kicker">{eyebrow}</p>}
+        {heading && (
+          <h2 class="mt-2 text-2xl font-bold tracking-tight text-fg sm:text-3xl text-balance">
+            {heading}
+          </h2>
+        )}
+      </div>
+    )
+  }
+
+  <dl
+    class:list={['grid gap-8', gridColsClass]}
+    data-trig-stagger
+    data-trig-stagger-delay="0.06"
+  >
+    {
+      items.map((item) => {
+        const displayValue =
+          item.value ??
+          `${item.prefix ?? ''}${item.count !== undefined ? formatNumber(item.count, locale) : ''}${item.suffix ?? ''}`;
+        return (
+          <div
+            data-trig
+            class="border-t border-border pt-4 sm:border-t-0 sm:border-s sm:pt-0 sm:ps-6 sm:first:border-s-0 sm:first:ps-0"
+          >
+            <dt class="text-sm font-medium text-muted">{item.label}</dt>
+            <dd class="mt-2 text-3xl font-extrabold tracking-tight text-primary tabular-nums sm:text-4xl">
+              {displayValue}
+            </dd>
+            {item.context && (
+              <p class="mt-1.5 text-xs leading-relaxed text-muted">{item.context}</p>
+            )}
+          </div>
+        );
+      })
+    }
+  </dl>
+</PageSection>

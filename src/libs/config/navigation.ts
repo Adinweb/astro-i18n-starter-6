@@ -83,7 +83,7 @@ export function getContentTypeIcon(key: string): string {
  * The registry decides what appears: switching a type off in `content.types`
  * removes its link from the header, the drawer and the footer at once.
  */
-export function getContentTypeNavItems(locale: Locale, currentUrl = ''): NavItem[] {
+function getContentTypeNavItems(locale: Locale, currentUrl = ''): NavItem[] {
   return getNavigableContentTypes().map((type) => {
     const href = getContentTypeIndexHref(type.key, locale);
     return {

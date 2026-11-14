@@ -216,6 +216,7 @@ for (const [key, val] of Object.entries(sourceDict)) {
   }
 }
 
+const archivedDictPath = path.join(rootDir, '.locale-archive', langCode, 'messages.json');
 if (fs.existsSync(targetDictPath)) {
   // Re-running the command for an existing language must never wipe the
   // translations that were already paid for. Only a missing dictionary is
@@ -224,6 +225,9 @@ if (fs.existsSync(targetDictPath)) {
     `⏭️  messages/${langCode}.json already exists — keeping its existing translations.`
   );
   console.log('   Delete the file first if you want a freshly derived all-placeholder dictionary.');
+} else if (fs.existsSync(archivedDictPath)) {
+  fs.renameSync(archivedDictPath, targetDictPath);
+  console.log(`✅ Restored messages/${langCode}.json from .locale-archive/${langCode}/messages.json`);
 } else {
   fs.writeFileSync(targetDictPath, JSON.stringify(newDict, null, 2) + '\n', 'utf-8');
   console.log(`✅ Created messages/${langCode}.json (derived from "${sourceLocale}")`);
@@ -297,7 +301,21 @@ if (shouldPopulateContent) {
       for (const group of groups) {
         const groupDir = path.join(colDir, group);
         const targetFile = path.join(groupDir, `${langCode}.mdx`);
-        if (!fs.existsSync(targetFile)) {
+        const existingTarget = ['mdx', 'md'].find((ext) =>
+          fs.existsSync(path.join(groupDir, `${langCode}.${ext}`))
+        );
+        if (!existingTarget) {
+          const archivedCandidate = ['mdx', 'md']
+            .map((ext) => ({
+              ext,
+              file: path.join(rootDir, '.locale-archive', langCode, 'content', collection, group, `${langCode}.${ext}`),
+            }))
+            .find((entry) => fs.existsSync(entry.file));
+          if (archivedCandidate) {
+            fs.renameSync(archivedCandidate.file, path.join(groupDir, `${langCode}.${archivedCandidate.ext}`));
+            console.log(`  ↩ Restored archived content: src/content/${collection}/${group}/${langCode}.${archivedCandidate.ext}`);
+            continue;
+          }
           // Resolve candidate source file
           const preferredSourceFile = path.join(groupDir, `${sourceLocale}.mdx`);
           const fallbackSourceFile = path.join(groupDir, `${defaultBaseLocale}.mdx`);
@@ -403,6 +421,16 @@ if (shouldPopulateContent) {
 } else {
   console.log(`\n⏭️ Skipped creating content files for existing content as requested.`);
   console.log(`💡 You can create "${langCode}.mdx" files under src/content/ whenever you are ready.`);
+}
+
+// Clean up processed archive folder if present
+const langArchiveDir = path.join(rootDir, '.locale-archive', langCode);
+if (fs.existsSync(langArchiveDir)) {
+  fs.rmSync(langArchiveDir, { recursive: true, force: true });
+}
+const archiveRoot = path.join(rootDir, '.locale-archive');
+if (fs.existsSync(archiveRoot) && fs.readdirSync(archiveRoot).length === 0) {
+  fs.rmSync(archiveRoot, { recursive: true, force: true });
 }
 
 // 5. Compile Paraglide

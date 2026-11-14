@@ -14,7 +14,8 @@ import {
   getContentTypeLabel,
   type ContentTypeKey,
 } from '@/libs/content/types';
-import { getSocialCard } from '@/libs/content/social';
+import { parseContentEntryId } from '@/libs/content/entries';
+import { buildOgRouteKey, getSocialCard, type SocialCardContext } from '@/libs/content/social';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { formatYear } from '@/i18n/format';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
@@ -50,8 +51,17 @@ const breadcrumbs = getBreadcrumbs(url, locale, {
   current: title,
 });
 
+const { group } = parseContentEntryId(entry.id);
+const ogContext: SocialCardContext = {
+  routeKey: buildOgRouteKey('collection-entry', { contentType, group, locale }),
+  title,
+  subtitle: description,
+  kicker: typeLabel,
+  locale,
+};
+
 const canonicalUrl = absoluteUrl(url);
-const socialImage = await getSocialCard(image);
+const socialImage = await getSocialCard(image, ogContext);
 const socialImageUrl = socialImage.url;
 const meta = getLocaleMeta(locale);
 
@@ -85,6 +95,7 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
   title={title}
   description={description}
   image={image}
+  ogContext={ogContext}
   type="article"
   schema={schema}
   locale={locale}

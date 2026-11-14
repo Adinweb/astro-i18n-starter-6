@@ -2,8 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { askYesNo, confirmDeletion } from './lib/prompt.mjs';
-import { compileMessages } from './lib/compile-messages.mjs';
-import { escapeRegex } from './lib/frontmatter.mjs';
+import { unregisterLocale } from './lib/locale-mutations.mjs';
 
 const args = process.argv.slice(2);
 const langCode = args.find((a) => !a.startsWith('--'));
@@ -21,7 +20,9 @@ for (const arg of args) {
 }
 
 if (!langCode) {
-  console.error('Usage: pnpm run i18n:remove-lang <locale-code> [--with-content|--keep-content] [--force]');
+  console.error(
+    'Usage: pnpm run i18n:remove-lang <locale-code> [--with-content|--keep-content] [--force]'
+  );
   process.exit(1);
 }
 
@@ -38,13 +39,15 @@ if (!inlangSettings.locales.includes(langCode)) {
 
 if (langCode === baseLocale) {
   console.error(`❌ Cannot remove base/default locale "${langCode}".`);
-  console.error(`   To remove "${langCode}", first swap the default locale with: pnpm run i18n:set-default <other-locale>`);
-  console.error(`   See docs/PLAYBOOKS.md Playbook 1 for more details.`);
+  console.error(
+    `   To remove "${langCode}", first swap the default locale with: pnpm run i18n:set-default <other-locale>`
+  );
+  console.error('   See docs/PLAYBOOKS.md Playbook 1 for more details.');
   process.exit(1);
 }
 
 if (inlangSettings.locales.length <= 1) {
-  console.error(`❌ Cannot remove the only remaining locale.`);
+  console.error('❌ Cannot remove the only remaining locale.');
   process.exit(1);
 }
 
@@ -75,89 +78,36 @@ if (!force && contentOption === null) {
 
 console.log(`\n🗑️ Removing language "${langCode}"...`);
 
-// 1. Remove from project.inlang/settings.json
-inlangSettings.locales = inlangSettings.locales.filter((l) => l !== langCode);
-fs.writeFileSync(inlangPath, JSON.stringify(inlangSettings, null, 2) + '\n', 'utf-8');
-console.log(`✅ Removed "${langCode}" from project.inlang/settings.json`);
-
-// 2. Remove messages/<locale>.json
-const dictPath = path.join(rootDir, 'messages', `${langCode}.json`);
-if (fs.existsSync(dictPath)) {
-  fs.unlinkSync(dictPath);
-  console.log(`✅ Deleted messages/${langCode}.json`);
-}
-
-// 3. Update src/i18n/locales.ts
-const localesPath = path.join(rootDir, 'src', 'i18n', 'locales.ts');
-if (fs.existsSync(localesPath)) {
-  let localesCode = fs.readFileSync(localesPath, 'utf-8');
-
-  // Remove from LOCALES array
-  localesCode = localesCode.replace(
-    /export const LOCALES = \[(.*?)\] as const;/s,
-    (_match, p1) => {
-      const remaining = p1
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s && s !== `'${langCode}'` && s !== `"${langCode}"`);
-      return `export const LOCALES = [${remaining.join(', ')}] as const;`;
-    }
-  );
-
-  // Remove from LOCALE_METADATA block (supports bare or quoted BCP-47 keys)
-  const metaRegex = new RegExp(
-    `\\r?\\n  ['"]?${escapeRegex(langCode)}['"]?:\\s*\\{[\\s\\S]*?^  \\},?`,
-    'm'
-  );
-  localesCode = localesCode.replace(metaRegex, '');
-
-  fs.writeFileSync(localesPath, localesCode, 'utf-8');
-  console.log(`✅ Updated LOCALES and LOCALE_METADATA in src/i18n/locales.ts`);
-}
-
-// 4. Delete content files if requested
-if (deleteContent) {
-  console.log(`\n📄 Deleting content files for "${langCode}"...`);
-  const contentDir = path.join(rootDir, 'src', 'content');
-  if (fs.existsSync(contentDir)) {
-    const collections = fs.readdirSync(contentDir, { withFileTypes: true })
-      .filter((d) => d.isDirectory())
-      .map((d) => d.name);
-
-    let deletedFilesCount = 0;
-    for (const collection of collections) {
-      const colDir = path.join(contentDir, collection);
-      const groups = fs.readdirSync(colDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory())
-        .map((d) => d.name);
-
-      for (const group of groups) {
-        const groupDir = path.join(colDir, group);
-        const candidates = [
-          path.join(groupDir, `${langCode}.mdx`),
-          path.join(groupDir, `${langCode}.md`),
-        ];
-        for (const file of candidates) {
-          if (fs.existsSync(file)) {
-            fs.unlinkSync(file);
-            console.log(`  - Deleted: src/content/${collection}/${group}/${path.basename(file)}`);
-            deletedFilesCount++;
-          }
-        }
-      }
-    }
-    console.log(`✅ Deleted ${deletedFilesCount} content files.`);
-  }
-} else {
-  console.log(`ℹ️ Kept content files for "${langCode}" under src/content/ as requested.`);
-}
-
-// 5. Recompile Paraglide messages
-console.log('\n🔄 Recompiling Paraglide messages...');
 try {
-  compileMessages(rootDir);
+  const result = unregisterLocale(langCode, {
+    rootDir,
+    deleteContent,
+    archiveContent: !deleteContent,
+    compile: true,
+  });
+  console.log(`✅ Removed "${langCode}" from project.inlang/settings.json`);
+  if (result.deletedDictionary) {
+    console.log(
+      result.archivedDictionary
+        ? `✅ Archived messages/${langCode}.json → .locale-archive/${langCode}/messages.json`
+        : `✅ Deleted messages/${langCode}.json`
+    );
+  }
+  console.log('✅ Updated LOCALES and LOCALE_METADATA in src/i18n/locales.ts');
+  if (deleteContent) {
+    for (const rel of result.deletedContentFiles) {
+      console.log(`  - Deleted: ${rel}`);
+    }
+    console.log(`✅ Deleted ${result.deletedContentFiles.length} content files.`);
+  } else if (result.archivedContentFiles.length > 0) {
+    console.log(
+      `📦 Archived ${result.archivedContentFiles.length} content file(s) for "${langCode}" under .locale-archive/${langCode}/content/ (restore anytime with \`pnpm run i18n:add-lang ${langCode}\`).`
+    );
+  } else {
+    console.log(`ℹ️ No content files found for "${langCode}".`);
+  }
   console.log(`🎉 Language "${langCode}" successfully removed!`);
-} catch (e) {
-  console.error('❌ Failed to recompile messages:', e.message);
+} catch (error) {
+  console.error('❌', error instanceof Error ? error.message : String(error));
   process.exit(1);
 }

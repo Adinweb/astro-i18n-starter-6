@@ -20,6 +20,7 @@ import { readAppConfig, rootDir } from './lib/content-types.mjs';
  * time a page or post is scaffolded. `--force` still regenerates everything.
  */
 const force = process.argv.includes('--force') || process.argv.includes('-f');
+const brandOnly = process.argv.includes('--brand-only');
 const skippedAssets = [];
 
 const publicDir = path.join(rootDir, 'public');
@@ -201,13 +202,24 @@ function resolveBrandSegments() {
 }
 
 const brandSegments = resolveBrandSegments();
-const primaryBrandRgb = parseHexRgb(appConfig.brand?.themeColor) ?? [67, 56, 202];
+const themePresetsPath = path.join(rootDir, 'src', 'libs', 'config', 'theme-presets.json');
+const themePresets = fs.existsSync(themePresetsPath)
+  ? JSON.parse(fs.readFileSync(themePresetsPath, 'utf-8'))
+  : { palettes: {} };
+const activePreset = appConfig.brand?.preset ? themePresets.palettes?.[appConfig.brand.preset] : null;
+const resolvedPrimaryHex =
+  appConfig.brand?.primaryColor ?? activePreset?.primary ?? appConfig.brand?.themeColor;
+const resolvedAccentHex = appConfig.brand?.accentColor ?? activePreset?.accent ?? null;
+
+const primaryBrandRgb = parseHexRgb(resolvedPrimaryHex) ?? [67, 56, 202];
 const [brandHue, brandSat, brandLight] = rgbToHsl(...primaryBrandRgb);
-const companionBrandRgb = hslToRgb(
-  (brandHue + 305) % 360,
-  Math.min(0.9, Math.max(0.55, brandSat)),
-  Math.min(0.46, Math.max(0.32, brandLight * 0.78))
-);
+const companionBrandRgb =
+  parseHexRgb(resolvedAccentHex) ??
+  hslToRgb(
+    (brandHue + 305) % 360,
+    Math.min(0.9, Math.max(0.55, brandSat)),
+    Math.min(0.46, Math.max(0.32, brandLight * 0.78))
+  );
 
 /** Draws a white, round-capped brand monogram or prism emblem centred in a square of `size` pixels. */
 function glyphCoverage(px, py, size, scale = 1, offsetX = 0, offsetY = 0) {
@@ -446,19 +458,21 @@ const TYPE_HUES = {
 // `content:new` writes `image: "./<group>.png"` into the entry, and a scaffold
 // that produced a missing reference would break the build the moment the type
 // is switched back on.
-for (const [type] of Object.entries(appConfig.content?.types ?? {})) {
-  if (type === 'pages') continue;
-  const hues = TYPE_HUES[type] ?? COVER_HUES;
-  contentGroups(path.join(contentDir, type)).forEach((group, index) => {
-    writeArtwork(type, group, 1200, 675, hues[index % hues.length]);
+if (!brandOnly) {
+  for (const [type] of Object.entries(appConfig.content?.types ?? {})) {
+    if (type === 'pages') continue;
+    const hues = TYPE_HUES[type] ?? COVER_HUES;
+    contentGroups(path.join(contentDir, type)).forEach((group, index) => {
+      writeArtwork(type, group, 1200, 675, hues[index % hues.length]);
+    });
+  }
+
+  // One cover per page group, so every page has its own hero background.
+  const PAGE_HUES = [232, 292, 172, 336, 208, 24];
+  contentGroups(path.join(contentDir, 'pages')).forEach((group, index) => {
+    writeArtwork('pages', group, 1200, 675, PAGE_HUES[index % PAGE_HUES.length]);
   });
 }
-
-// One cover per page group, so every page has its own hero background.
-const PAGE_HUES = [232, 292, 172, 336, 208, 24];
-contentGroups(path.join(contentDir, 'pages')).forEach((group, index) => {
-  writeArtwork('pages', group, 1200, 675, PAGE_HUES[index % PAGE_HUES.length]);
-});
 
 if (skippedAssets.length > 0) {
   console.log(

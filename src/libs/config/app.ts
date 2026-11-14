@@ -2,6 +2,12 @@ import heroPhoto from '@/assets/hero/hero-0.jpg';
 import { z } from 'astro/zod';
 import rawConfig from '../../../app.config.json';
 import { COOKIE_CONFIG_DEFAULTS } from './defaults';
+import {
+  BRAND_PRESET_KEYS,
+  FONT_PRESET_KEYS,
+  RTL_FONT_PRESET_KEYS,
+  SOCIAL_CARD_MODES,
+} from './theme';
 
 /**
  * Typed access to the application's single configuration file.
@@ -60,7 +66,7 @@ export type BlogConfig = z.infer<typeof blogConfigSchema>;
  * its index. `pages` is the page system itself and always owns the root, so its
  * base stays empty.
  */
-export const contentTypeSchema = z.object({
+const contentTypeSchema = z.object({
   enabled: z.boolean().default(true),
   base: z.string().default(''),
   index: z.boolean().default(true),
@@ -68,12 +74,10 @@ export const contentTypeSchema = z.object({
   feed: z.boolean().default(false),
   nav: z.boolean().default(true),
 });
-export type ContentTypeSettings = z.infer<typeof contentTypeSchema>;
 
-export const contentConfigSchema = z.object({
+const contentConfigSchema = z.object({
   types: z.record(z.string(), contentTypeSchema).default({}),
 });
-export type ContentConfig = z.infer<typeof contentConfigSchema>;
 
 export const cookieConfigSchema = z.object({
   enabled: z.boolean().default(true),
@@ -163,6 +167,12 @@ export const appConfigSchema = z.object({
   }),
   brand: z.object({
     defaultTheme: themeModeSchema.default('system'),
+    preset: z.enum(BRAND_PRESET_KEYS).optional(),
+    primaryColor: hexColor.optional(),
+    accentColor: hexColor.optional(),
+    fontPreset: z.enum(FONT_PRESET_KEYS).default('system'),
+    rtlFontPreset: z.enum(RTL_FONT_PRESET_KEYS).default('vazirmatn'),
+    socialCardMode: z.enum(SOCIAL_CARD_MODES).default('artwork'),
     themeColor: hexColor,
     darkThemeColor: hexColor.optional(),
     backgroundColor: hexColor,
@@ -194,6 +204,12 @@ const siteConfigSchema = z.object({
   author: z.string(),
   contactEmail: z.string(),
   defaultTheme: themeModeSchema,
+  preset: z.enum(BRAND_PRESET_KEYS).optional(),
+  primaryColor: hexColor.optional(),
+  accentColor: hexColor.optional(),
+  fontPreset: z.enum(FONT_PRESET_KEYS),
+  rtlFontPreset: z.enum(RTL_FONT_PRESET_KEYS),
+  socialCardMode: z.enum(SOCIAL_CARD_MODES),
   themeColor: hexColor,
   darkThemeColor: hexColor,
   backgroundColor: hexColor,
@@ -223,6 +239,12 @@ export const siteConfig = siteConfigSchema.parse({
   author: appConfig.site.author,
   contactEmail: appConfig.site.contactEmail,
   defaultTheme: appConfig.brand.defaultTheme,
+  preset: appConfig.brand.preset,
+  primaryColor: appConfig.brand.primaryColor,
+  accentColor: appConfig.brand.accentColor,
+  fontPreset: appConfig.brand.fontPreset,
+  rtlFontPreset: appConfig.brand.rtlFontPreset,
+  socialCardMode: appConfig.brand.socialCardMode,
   /** Browser chrome colour; mirrors `--color-primary` in `src/styles/global.css`. */
   themeColor: appConfig.brand.themeColor,
   /** Browser chrome colour in dark mode; mirrors dark `--color-bg`. */

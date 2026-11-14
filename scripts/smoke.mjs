@@ -484,6 +484,45 @@ if (notFound) {
   }
 }
 
+// Verify branded social card mode renders dedicated 1200x630 PNGs in dist/og/
+if (appConfig.brand?.socialCardMode === 'branded') {
+  for (const [label, pageHtml] of [
+    ['Root page', rootHtml],
+    ...(testLocale ? [[`/${testLocale}/ page`, readHtml(path.join(testLocale, 'index.html'))]] : []),
+  ]) {
+    if (!pageHtml) continue;
+    const ogMatch = pageHtml.match(/<meta[^>]+property="og:image"[^>]*content="([^"]+)"/i);
+    assert(
+      Boolean(ogMatch && new URL(ogMatch[1]).pathname.startsWith('/og/')),
+      `${label} emits branded /og/*.png social card`
+    );
+    if (ogMatch) {
+      const relOg = decodeURIComponent(new URL(ogMatch[1]).pathname).replace(/^\/+/, '');
+      const ogFile = path.join(distDir, relOg);
+      const exists = fs.existsSync(ogFile);
+      assert(exists, `${label} branded OG file exists in dist: ${relOg}`);
+      if (exists) {
+        const png = fs.readFileSync(ogFile);
+        const isPng = png.length > 24 && png.toString('ascii', 1, 4) === 'PNG';
+        assert(
+          isPng && png.readUInt32BE(16) === 1200 && png.readUInt32BE(20) === 630,
+          `${label} branded OG card is a 1200x630 PNG`
+        );
+      }
+    }
+  }
+}
+
+// Verify language switcher renders iff more than one locale is active and UI toggle allows it
+if (rootHtml) {
+  const expectsSwitcher = LOCALES.length > 1 && appConfig.ui?.showLanguageSwitcher !== false;
+  const hasSwitcher = rootHtml.includes('data-language-switcher');
+  assert(
+    hasSwitcher === expectsSwitcher,
+    `Language switcher is ${expectsSwitcher ? 'rendered' : 'hidden'} for ${LOCALES.length} active locale(s)`
+  );
+}
+
 // Icons are inline Tabler components: every page must carry its own glyphs,
 // and no page may still point at a sprite the build no longer emits.
 const homeHtml = readHtml('index.html');

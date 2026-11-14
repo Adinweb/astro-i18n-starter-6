@@ -169,5 +169,46 @@ describe('src/libs/config/app.ts', () => {
       };
       expect(() => appConfigSchema.parse(invalidConfig)).toThrow();
     });
+
+    it('accepts valid brand preset, custom color overrides, font pairings, and socialCardMode', () => {
+      const parsed = appConfigSchema.parse({
+        ...appConfig,
+        brand: {
+          ...appConfig.brand,
+          preset: 'emerald',
+          primaryColor: '#047857',
+          accentColor: '#0ea5e9',
+          fontPreset: 'editorial',
+          rtlFontPreset: 'noto-arabic',
+          socialCardMode: 'branded',
+        },
+      });
+      expect(parsed.brand.preset).toBe('emerald');
+      expect(parsed.brand.primaryColor).toBe('#047857');
+      expect(parsed.brand.fontPreset).toBe('editorial');
+      expect(parsed.brand.rtlFontPreset).toBe('noto-arabic');
+      expect(parsed.brand.socialCardMode).toBe('branded');
+    });
+
+    it('rejects unknown brand preset, font preset, or socialCardMode values', () => {
+      expect(() =>
+        appConfigSchema.parse({
+          ...appConfig,
+          brand: { ...appConfig.brand, preset: 'neon' },
+        })
+      ).toThrow();
+      expect(() =>
+        appConfigSchema.parse({
+          ...appConfig,
+          brand: { ...appConfig.brand, fontPreset: 'comic-sans' },
+        })
+      ).toThrow();
+      expect(() =>
+        appConfigSchema.parse({
+          ...appConfig,
+          brand: { ...appConfig.brand, socialCardMode: 'screenshot' },
+        })
+      ).toThrow();
+    });
   });
 });

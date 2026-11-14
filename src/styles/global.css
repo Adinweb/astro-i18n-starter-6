@@ -68,6 +68,7 @@
     0 10px 24px -6px oklch(50% 0.2 260 / 0.16);
 
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-display: var(--font-sans);
   --font-fa: 'Vazirmatn Variable', 'Vazirmatn', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
   --font-ar: 'Noto Sans Arabic Variable', 'Noto Sans Arabic', 'Geeza Pro', 'Al Bayan', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
 }
@@ -164,6 +165,12 @@ html {
 body {
   font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
+}
+
+/* Display font pairing applies to Latin headings/display elements while preserving
+   zero-specificity fallback so :lang(fa)/:lang(ar) script stacks always win. */
+:where(h1, h2, h3, h4, .font-display):where(:not(:lang(fa)):not(:lang(ar))) {
+  font-family: var(--font-display);
 }
 
 /*

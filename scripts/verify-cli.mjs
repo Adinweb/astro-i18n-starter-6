@@ -803,9 +803,95 @@ try {
   record(result.code === 0, 'link:check accepts directory, extension-less and anchored paths that resolve');
 
   // ---------------------------------------------------------------------
-  // 10. The working copy is untouched
+  // 10. Client delivery workflows: --preset=landing, site:init, i18n:solo
   // ---------------------------------------------------------------------
-  console.log('\n### 10. Isolation');
+  console.log('\n### 10. Landing preset, site:init, and i18n:solo');
+
+  result = run(sandbox, 'node', [
+    'scripts/new-page.mjs',
+    'offer',
+    '--preset=landing',
+    `--from=${baseLoc}`,
+    '--title=Product Launch',
+    '--publish',
+  ]);
+  const offerSource = read(`src/content/pages/offer/${baseLoc}.mdx`);
+  record(
+    result.code === 0 &&
+      /hero:\s*"none"/.test(offerSource) &&
+      /container:\s*"canvas"/.test(offerSource) &&
+      /flushTop:\s*true/.test(offerSource) &&
+      offerSource.includes('LandingHeroSplit') &&
+      offerSource.includes('FaqAccordion') &&
+      exists('src/content/pages/offer/offer.png'),
+    'new:page --preset=landing scaffolds canvas landing blocks and artwork'
+  );
+  run(sandbox, 'node', ['scripts/remove-page.mjs', 'offer', '--force']);
+
+  result = run(sandbox, 'node', [
+    'scripts/site-init.mjs',
+    '--name=Acme Digital',
+    '--short-name=Acme',
+    '--desc=Rapid web delivery studio',
+    '--email=hello@acme.test',
+    '--preset=emerald',
+    '--font=jakarta',
+    '--rtl-font=noto-arabic',
+    '--og-mode=branded',
+    '--blog=false',
+    '--skip-assets',
+    '--yes',
+  ]);
+  const initedConfig = JSON.parse(read('app.config.json'));
+  record(
+    result.code === 0 &&
+      initedConfig.site.name === 'Acme Digital' &&
+      initedConfig.brand.preset === 'emerald' &&
+      initedConfig.brand.themeColor === '#047857' &&
+      initedConfig.brand.fontPreset === 'jakarta' &&
+      initedConfig.brand.rtlFontPreset === 'noto-arabic' &&
+      initedConfig.brand.socialCardMode === 'branded' &&
+      initedConfig.content.types.blog.enabled === false,
+    'site:init applies client identity, brand tokens, font pairings, and content modules cleanly'
+  );
+
+  if (altLoc !== baseLoc) {
+    result = run(sandbox, 'node', ['scripts/set-language-mode.mjs', altLoc, '--force']);
+    const soloSettings = JSON.parse(read('project.inlang/settings.json'));
+    record(
+      result.code === 0 &&
+        soloSettings.locales.length === 1 &&
+        soloSettings.baseLocale === altLoc &&
+        read('src/i18n/locales.ts').includes(`DEFAULT_LOCALE: Locale = '${altLoc}'`) &&
+        exists(`.locale-archive/${baseLoc}/messages.json`),
+      `i18n:solo switches to single-language "${altLoc}" and archives removed locale content`
+    );
+
+    result = run(sandbox, 'node', ['scripts/audit-i18n.mjs'], { allowFailure: true });
+    record(
+      result.code === 0,
+      'audit passes in solo mode with archived inactive locale content',
+      result.code === 0 ? '' : result.stdout.trim().split('\n').slice(-8).join(' | ')
+    );
+
+    // Restore archived locale seamlessly via add-language + set-default
+    result = run(sandbox, 'node', [
+      'scripts/add-language.mjs',
+      baseLoc,
+      '--with-content',
+    ]);
+    const restored =
+      result.code === 0 &&
+      JSON.parse(read('project.inlang/settings.json')).locales.includes(baseLoc) &&
+      exists(`src/content/pages/home/${baseLoc}.mdx`);
+    record(restored, `i18n:add-lang restores archived locale "${baseLoc}" cleanly`);
+    run(sandbox, 'node', ['scripts/set-default-language.mjs', baseLoc]);
+  }
+
+  // ---------------------------------------------------------------------
+  // 11. The working copy is untouched
+  // ---------------------------------------------------------------------
+  console.log('\n### 11. Isolation');
   record(
     !exists('node_modules/@inlang/paraglide-js'),
     'the sandbox has no Paraglide install of its own'

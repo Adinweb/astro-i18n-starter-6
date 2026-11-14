@@ -1,0 +1,71 @@
+{
+  "palettes": {
+    "indigo": {
+      "label": "Indigo Studio",
+      "primary": "#4338ca",
+      "accent": "#06b6d4"
+    },
+    "cobalt": {
+      "label": "Electric Cobalt",
+      "primary": "#1e40af",
+      "accent": "#f59e0b"
+    },
+    "emerald": {
+      "label": "Emerald Pine",
+      "primary": "#047857",
+      "accent": "#0ea5e9"
+    },
+    "amber": {
+      "label": "Warm Marigold",
+      "primary": "#b45309",
+      "accent": "#0284c7"
+    },
+    "slate": {
+      "label": "Industrial Slate",
+      "primary": "#0f172a",
+      "accent": "#0284c7"
+    },
+    "rose": {
+      "label": "Crimson Rose",
+      "primary": "#be123c",
+      "accent": "#0d9488"
+    }
+  },
+  "latinFonts": {
+    "system": {
+      "label": "System Sans",
+      "display": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
+      "body": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif"
+    },
+    "jakarta": {
+      "label": "Jakarta Geometric",
+      "display": "'Plus Jakarta Sans', 'Avenir Next', 'Segoe UI', system-ui, sans-serif",
+      "body": "'Plus Jakarta Sans', 'DM Sans', 'Segoe UI', system-ui, sans-serif"
+    },
+    "manrope": {
+      "label": "Manrope Neo-Grotesk",
+      "display": "'Manrope', 'Segoe UI', system-ui, sans-serif",
+      "body": "'Manrope', 'Public Sans', system-ui, sans-serif"
+    },
+    "outfit": {
+      "label": "Outfit Modern",
+      "display": "'Outfit', 'Avenir Next', system-ui, sans-serif",
+      "body": "'DM Sans', 'Segoe UI', system-ui, sans-serif"
+    },
+    "editorial": {
+      "label": "Editorial Serif + Sans",
+      "display": "'Fraunces', 'Playfair Display', Georgia, 'Times New Roman', serif",
+      "body": "'DM Sans', 'Public Sans', system-ui, sans-serif"
+    }
+  },
+  "rtlFonts": {
+    "vazirmatn": {
+      "label": "Vazirmatn (Persian/Arabic Sans)",
+      "stack": "'Vazirmatn Variable', 'Vazirmatn', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif"
+    },
+    "noto-arabic": {
+      "label": "Noto Sans Arabic",
+      "stack": "'Noto Sans Arabic Variable', 'Noto Sans Arabic', 'Geeza Pro', 'Al Bayan', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif"
+    }
+  }
+}

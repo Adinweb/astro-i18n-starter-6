@@ -13,6 +13,10 @@
   },
   "brand": {
     "defaultTheme": "system",
+    "preset": "indigo",
+    "fontPreset": "system",
+    "rtlFontPreset": "vazirmatn",
+    "socialCardMode": "branded",
     "themeColor": "#4338ca",
     "darkThemeColor": "#0f172a",
     "backgroundColor": "#f8fafc",

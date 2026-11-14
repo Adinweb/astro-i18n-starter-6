@@ -36,6 +36,7 @@ const RESERVED_BASES = new Set([
   '_astro',
   'api',
   'rss',
+  'og',
   'sitemap',
   'robots',
   'icons',
@@ -139,10 +140,58 @@ if (appConfig) {
     add(
       'warn',
       `Site name is still the template default ("${appConfig.site?.name}").`,
-      'Set site.name/shortName/description, brand colors and social links in app.config.json.'
+      'Run `pnpm run site:init` or update site metadata and brand palette in app.config.json.'
     );
   } else {
     add('ok', `Site identity is customised (${appConfig.site.name}).`);
+  }
+
+  const presetsFile = path.join(rootDir, 'src', 'libs', 'config', 'theme-presets.json');
+  if (fs.existsSync(presetsFile)) {
+    const themePresets = JSON.parse(fs.readFileSync(presetsFile, 'utf-8'));
+    const brand = appConfig.brand ?? {};
+    if (brand.preset && !(brand.preset in themePresets.palettes)) {
+      add(
+        'error',
+        `Unknown brand.preset "${brand.preset}" in app.config.json.`,
+        `Use one of: ${Object.keys(themePresets.palettes).join(', ')}.`
+      );
+    }
+    if (brand.primaryColor && !/^#[0-9a-fA-F]{6}$/.test(brand.primaryColor)) {
+      add(
+        'error',
+        `Invalid brand.primaryColor "${brand.primaryColor}" in app.config.json.`,
+        'Use a 6-digit hex color like "#1e40af".'
+      );
+    }
+    if (brand.accentColor && !/^#[0-9a-fA-F]{6}$/.test(brand.accentColor)) {
+      add(
+        'error',
+        `Invalid brand.accentColor "${brand.accentColor}" in app.config.json.`,
+        'Use a 6-digit hex color like "#f59e0b".'
+      );
+    }
+    if (brand.fontPreset && !(brand.fontPreset in themePresets.latinFonts)) {
+      add(
+        'error',
+        `Unknown brand.fontPreset "${brand.fontPreset}" in app.config.json.`,
+        `Use one of: ${Object.keys(themePresets.latinFonts).join(', ')}.`
+      );
+    }
+    if (brand.rtlFontPreset && !(brand.rtlFontPreset in themePresets.rtlFonts)) {
+      add(
+        'error',
+        `Unknown brand.rtlFontPreset "${brand.rtlFontPreset}" in app.config.json.`,
+        `Use one of: ${Object.keys(themePresets.rtlFonts).join(', ')}.`
+      );
+    }
+    if (brand.socialCardMode && !['branded', 'artwork', 'default'].includes(brand.socialCardMode)) {
+      add(
+        'error',
+        `Unknown brand.socialCardMode "${brand.socialCardMode}" in app.config.json.`,
+        'Use "branded", "artwork", or "default".'
+      );
+    }
   }
 
   const hasPlaceholderSocial = Object.values(appConfig.social ?? {}).some((url) =>

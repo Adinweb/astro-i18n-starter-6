@@ -1,6 +1,9 @@
 import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
+import { buildOgRouteKey, getBrandedOgHref, type SocialCardContext } from './og-card';
+
+export { buildOgRouteKey, type SocialCardContext };
 
 export interface SocialImage {
   /** Absolute URL of the optimized card. */
@@ -24,18 +27,26 @@ function getDefaultSocialImage(): SocialImage {
 /**
  * Builds the social card of a page.
  *
- * The artwork is cropped to the 1.91:1 ratio Open Graph asks for and encoded
- * as JPEG, so a crawler always receives a card of exactly the expected size —
- * never the full-size artwork, and never a PNG.
- *
- * Pages without artwork get the site's default card, so callers always have a
- * complete `{ url, width, height }` triple and never need to re-implement the
- * fallback.
+ * When `brand.socialCardMode` is `'branded'` and an `ogContext` is provided,
+ * points at the build-time rendered `/og/<routeKey>.png` card. Otherwise
+ * falls back to cropping `image` (in `'artwork'` mode) or serving the site-wide
+ * default card (`'/og-default.png'`).
  */
 export async function getSocialCard(
-  image?: ImageMetadata | null
+  image?: ImageMetadata | null,
+  context?: SocialCardContext | null
 ): Promise<SocialImage> {
-  if (!image) return getDefaultSocialImage();
+  if (siteConfig.socialCardMode === 'branded' && context) {
+    return {
+      url: absoluteUrl(getBrandedOgHref(context.routeKey)),
+      width: siteConfig.ogImageWidth,
+      height: siteConfig.ogImageHeight,
+    };
+  }
+
+  if (siteConfig.socialCardMode === 'default' || !image) {
+    return getDefaultSocialImage();
+  }
 
   const card = await getImage({
     src: image,

@@ -6,6 +6,8 @@ import { formatYear } from '@/i18n/format';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { getNavigationSlots } from '@/libs/config/navigation';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
+import { buildBrandThemeCss } from '@/libs/config/theme';
+import type { SocialCardContext } from '@/libs/content/social';
 import * as m from '@/paraglide/messages';
 import Seo from '@/components/Seo.astro';
 import TopLoadingBar from '@/components/TopLoadingBar.astro';
@@ -54,6 +56,8 @@ interface Props {
   canvas?: boolean;
   /** Artwork of the entry, already resolved by Astro's image pipeline. */
   image?: ImageMetadata;
+  /** Route context used for branded OpenGraph card generation. */
+  ogContext?: SocialCardContext;
   type?: 'website' | 'article';
   publishedTime?: string;
   modifiedTime?: string;
@@ -79,6 +83,7 @@ const {
   flushTop = false,
   canvas = false,
   image,
+  ogContext,
   type = 'website',
   publishedTime,
   modifiedTime,
@@ -89,6 +94,8 @@ const {
 
 const meta = getLocaleMeta(locale);
 const siteName = siteConfig.name;
+const brandThemeCss = buildBrandThemeCss(siteConfig);
+const showLanguageSwitcher = siteConfig.ui.showLanguageSwitcher && LOCALES.length > 1;
 const { header: headerNav, drawer: drawerNav, footer: footerNav, legal: legalNav } =
   await getNavigationSlots(locale, activeUrl === undefined ? url : (activeUrl ?? ''));
 const homeHref = await getHomeHref(locale);
@@ -221,6 +228,7 @@ const structuredData = schema ?? {
     <link rel="apple-touch-icon" href={`/${siteConfig.appleTouchIcon}`} />
     <ClientRouter />
     <script is:inline src="/chronotrig.min.js"></script>
+    {brandThemeCss && <style is:inline set:html={brandThemeCss} />}
     <Seo
       title={title}
       description={description}
@@ -229,6 +237,7 @@ const structuredData = schema ?? {
       alternates={alternates}
       siteName={siteName}
       image={image}
+      ogContext={ogContext}
       type={type}
       publishedTime={publishedTime}
       modifiedTime={modifiedTime}
@@ -410,7 +419,7 @@ const structuredData = schema ?? {
               {siteConfig.ui.showThemeToggle && <ThemeToggle locale={locale} />}
 
               {
-                siteConfig.ui.showLanguageSwitcher && (
+                showLanguageSwitcher && (
                   <LanguageSwitcher
                     currentLocale={locale}
                     alternates={switcherAlternates ?? alternates}
@@ -595,7 +604,7 @@ const structuredData = schema ?? {
 
             <!-- Dedicated Languages Section (NO popups!) -->
             {
-              siteConfig.ui.showLanguageSwitcher && (
+              showLanguageSwitcher && (
                 <div class="pt-4 border-t border-border space-y-2.5">
                   <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
                     <Icon name="globe" size={14} />

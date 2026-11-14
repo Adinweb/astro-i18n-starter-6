@@ -2,7 +2,7 @@
 import type { ImageMetadata } from 'astro';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { getRssFeedHref, isBlogFeedEnabled } from '@/libs/content/service';
-import { getSocialCard } from '@/libs/content/social';
+import { getSocialCard, type SocialCardContext } from '@/libs/content/social';
 import { DEFAULT_LOCALE, LOCALES, getLocaleMeta, getOgLocale, type Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
 
@@ -15,6 +15,8 @@ interface Props {
   siteName?: string;
   /** Artwork of the entry, already resolved by Astro's image pipeline. */
   image?: ImageMetadata;
+  /** Metadata used to resolve the route's branded OpenGraph PNG when enabled. */
+  ogContext?: SocialCardContext;
   type?: 'website' | 'article';
   publishedTime?: string;
   modifiedTime?: string;
@@ -34,6 +36,7 @@ const {
   alternates,
   siteName = siteConfig.name,
   image,
+  ogContext,
   type = 'website',
   publishedTime,
   modifiedTime,
@@ -50,9 +53,9 @@ const canonicalUrl = absoluteUrl(url);
 const defaultAlternate = alternates[DEFAULT_LOCALE];
 const xDefaultUrl = defaultAlternate ? absoluteUrl(defaultAlternate) : undefined;
 
-// The page's own artwork becomes a social card, cropped and encoded by
-// Astro's image pipeline. Pages without artwork get the site card.
-const socialImage = await getSocialCard(image);
+// In branded mode `ogContext` addresses a bespoke `/og/...png` card; otherwise
+// artwork is cropped via Astro's image pipeline or falls back to `og-default.png`.
+const socialImage = await getSocialCard(image, ogContext);
 const imageUrl = socialImage.url;
 
 const alternateHrefs = Object.entries(alternates)

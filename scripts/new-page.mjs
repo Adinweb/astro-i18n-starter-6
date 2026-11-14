@@ -39,6 +39,7 @@ export function runCli() {
   let noImage = false;
   let heroOption = '';
   let layoutOption = '';
+  let presetOption = 'standard';
   const titlesByLocale = {};
   const descriptionsByLocale = {};
   const slugsByLocale = {};
@@ -134,6 +135,15 @@ export function runCli() {
         process.exit(1);
       }
       layoutOption = raw;
+    } else if (arg.startsWith('--preset=')) {
+      const raw = arg.slice(9).trim();
+      if (!['standard', 'landing'].includes(raw)) {
+        console.error(
+          `❌ Invalid --preset value: "${raw}". Expected "standard" or "landing".`
+        );
+        process.exit(1);
+      }
+      presetOption = raw;
     }
   }
 
@@ -148,8 +158,9 @@ Creation Options:
   --from=<locale>              Source locale to branch from (default: baseLocale / en)
   --publish / --draft=false    Publish the source and locales with real titles/descriptions
   --draft / --draft=true       Create every locale as a draft
-  --hero=none|minimal|default  Page hero presentation mode (default: default)
-  --container=canvas|contained|prose  Page body container mode (default: contained, or canvas when --hero=none)
+  --preset=standard|landing    Page template preset (default: standard; "landing" scaffolds composable canvas blocks)
+  --hero=none|minimal|default  Page hero presentation mode (default: default, or none for --preset=landing)
+  --container=canvas|contained|prose  Page body container mode (default: contained, or canvas when --hero=none / --preset=landing)
   --image=cover.png            Hero background, referenced relative to the content file
   --image=none                 Use the shared hero artwork instead of a page-specific one
   --slug:<locale>="<slug>"     Native slug of one language (default: <page-key> for the source locale)
@@ -467,11 +478,86 @@ Update / Sync Options:
     const isDraft = hasDraftArg ? !publishAll || hasPlaceholder : !isSource;
     (isDraft ? draftLocales : publishedLocales).push(loc);
 
-    const resolvedHero = heroOption || 'default';
-    const resolvedLayout = layoutOption || (resolvedHero === 'none' ? 'canvas' : 'contained');
+    const isLandingPreset = presetOption === 'landing';
+    const resolvedHero = heroOption || (isLandingPreset ? 'none' : 'default');
+    const resolvedLayout =
+      layoutOption || (isLandingPreset || resolvedHero === 'none' ? 'canvas' : 'contained');
     const stubBody = contentStub(loc);
-    const bodyMarkup =
-      resolvedHero === 'none'
+
+    const buildLandingBody = () => {
+      const isFa = loc === 'fa';
+      const isAr = loc === 'ar';
+      const heroImport = pageImage ? `import heroVisual from '${pageImage}';\n` : '';
+      const heroImageProp = pageImage ? `\n  image={heroVisual}\n  imageAlt=${JSON.stringify(pageTitle)}` : '';
+      const heroDesc =
+        pageDesc ||
+        (isFa
+          ? 'توضیح کوتاه معرفی ارزش پیشنهادی و مزیت رقابتی این بخش.'
+          : isAr
+            ? 'وصف موجز يبرز القيمة المقدمة والمزايا الرئيسية.'
+            : 'Concise value proposition explaining who this solution serves and the measurable outcome it delivers.');
+      const ctaHref = loc === defaultLocale ? '/' : `/${loc}/`;
+
+      return [
+        `import LandingHeroSplit from '@/components/LandingHeroSplit.astro';`,
+        `import ProofStatsRow from '@/components/ProofStatsRow.astro';`,
+        `import BentoCapabilities from '@/components/BentoCapabilities.astro';`,
+        `import FaqAccordion from '@/components/FaqAccordion.astro';`,
+        `import CtaBanner from '@/components/CtaBanner.astro';`,
+        heroImport,
+        `<LandingHeroSplit`,
+        `  surface="hero"`,
+        `  eyebrow=${JSON.stringify(isFa ? 'معرفی محصول و خدمات' : isAr ? 'نظرة عامة' : 'Overview')}`,
+        `  title=${JSON.stringify(pageTitle)}`,
+        `  description=${JSON.stringify(heroDesc)}`,
+        `  primaryCta={{ label: ${JSON.stringify(isFa ? 'شروع همکاری' : isAr ? 'ابدأ الآن' : 'Get started')}, href: "#next-step" }}`,
+        `  secondaryCta={{ label: ${JSON.stringify(isFa ? 'امکانات کلیدی' : isAr ? 'المميزات' : 'Explore capabilities')}, href: "#capabilities" }}${heroImageProp}`,
+        `/>`,
+        ``,
+        `<ProofStatsRow`,
+        `  locale=${JSON.stringify(loc)}`,
+        `  items={[`,
+        `    { count: 99, suffix: "%", label: ${JSON.stringify(isFa ? 'پایداری سرویس' : isAr ? 'استقرار الخدمة' : 'Uptime SLA')}, context: ${JSON.stringify(isFa ? 'پایش پیوسته در شبکه توزیع‌شده' : isAr ? 'مراقبة مستمرة' : 'Monitored edge delivery')} },`,
+        `    { count: 14, suffix: "ms", label: ${JSON.stringify(isFa ? 'میانگین پاسخ‌گویی' : isAr ? 'متوسط الاستجابة' : 'Median TTFB')}, context: ${JSON.stringify(isFa ? 'خروجی کاملاً استاتیک' : isAr ? 'بناء ثابت بالكامل' : 'Pre-rendered static HTML')} },`,
+        `    { count: 100, suffix: "", label: ${JSON.stringify(isFa ? 'امتیاز دسترسی‌پذیری' : isAr ? 'سهولة الوصول' : 'WCAG AA Ready')}, context: ${JSON.stringify(isFa ? 'طراحی استاندارد برای صفحه‌کلید و RTL' : isAr ? 'دعم كامل للوحة المفاتيح' : 'Full keyboard & RTL parity')} }`,
+        `  ]}`,
+        `/>`,
+        ``,
+        `<BentoCapabilities`,
+        `  id="capabilities"`,
+        `  locale=${JSON.stringify(loc)}`,
+        `  eyebrow=${JSON.stringify(isFa ? 'قابلیت‌های اصلی' : isAr ? 'القدرات الأساسية' : 'Capabilities')}`,
+        `  heading=${JSON.stringify(isFa ? 'طراحی‌شده برای تحویل سریع پروژه‌ها' : isAr ? 'مصمم لتسليم المشاريع بسرعة' : 'Engineered for fast client delivery')}`,
+        `  items={[`,
+        `    { wide: true, icon: "sparkles", title: ${JSON.stringify(isFa ? 'معماری ماژولار و مقیاس‌پذیر' : isAr ? 'بنية معمارية مرنة' : 'Modular Section Architecture')}, description: ${JSON.stringify(isFa ? 'هر بخش به صورت مستقل با رنگ‌ها و تایپوگرافی برند هماهنگ می‌شود و در حالت‌های روشن، تاریک و چاپ کیفیت خود را حفظ می‌کند.' : isAr ? 'يتكيف كل قسم تلقائياً مع ألوان وخطوط العلامة التجارية.' : 'Every block adapts automatically to your brand tokens and stays crisp across light, dark, and print themes.')} },`,
+        `    { icon: "globe", title: ${JSON.stringify(isFa ? 'دوجهته بومی' : isAr ? 'دعم ثنائي الاتجاه' : 'Native RTL & LTR')}, description: ${JSON.stringify(isFa ? 'چیدمان و جهت‌گیری آیکون‌ها در زبان‌های فارسی، عربی و لاتین به صورت خودکار قرینه می‌شود.' : isAr ? 'محاذاة منطقية تلقائية للعربية والفارسية.' : 'Logical CSS geometry mirrors layouts, borders, and reading icons seamlessly.')} },`,
+        `    { icon: "shield", title: ${JSON.stringify(isFa ? 'سئو و دسترس‌پذیری استاندارد' : isAr ? 'تحسين محركات البحث' : 'Verified SEO & Schema')}, description: ${JSON.stringify(isFa ? 'دارای متادیتای ساختاریافته، نقشه سایت و کارت‌های اختصاصی اشتراک‌گذاری.' : isAr ? 'بيانات منظمة وبطاقات مشاركة مخصصة.' : 'Ships structured metadata, canonical alternates, and per-route social cards.')} }`,
+        `  ]}`,
+        `/>`,
+        ``,
+        `<FaqAccordion`,
+        `  id="faq"`,
+        `  surface="subtle"`,
+        `  eyebrow=${JSON.stringify(isFa ? 'پرسش‌های متداول' : isAr ? 'الأسئلة الشائعة' : 'FAQ')}`,
+        `  heading=${JSON.stringify(isFa ? 'پاسخ به پرسش‌های رایج' : isAr ? 'إجابات على الأسئلة المتكررة' : 'Frequently asked questions')}`,
+        `  items={[`,
+        `    { question: ${JSON.stringify(isFa ? 'چگونه رنگ‌ها و فونت برند را تغییر دهم؟' : isAr ? 'كيف أخصص ألوان العلامة التجارية؟' : 'How do we customize brand colors and fonts?')}, answer: ${JSON.stringify(isFa ? 'تنظیمات برند از یک منبع واحد در app.config.json خوانده می‌شود و با دستور site:init قابل تغییر است.' : isAr ? 'تُقرأ إعدادات العلامة من مصدر واحد في app.config.json.' : 'Brand tokens, palettes, and font pairings are managed centrally in app.config.json or via pnpm run site:init.')} },`,
+        `    { question: ${JSON.stringify(isFa ? 'آیا این صفحه با زبان‌های راست‌به‌چپ سازگار است؟' : isAr ? 'هل تدعم الصفحة اللغات من اليمين لليسار؟' : 'Does this layout mirror for RTL languages?')}, answer: ${JSON.stringify(isFa ? 'بله، تمامی بخش‌ها صرفاً با ویژگی‌های منطقی CSS پیاده‌سازی شده‌اند.' : isAr ? 'نعم، جميع المكونات مبنية بخصائص CSS المنطقية.' : 'Yes. All layout spacing, borders, and directional chevrons mirror automatically using CSS logical properties.')} }`,
+        `  ]}`,
+        `/>`,
+        ``,
+        `<CtaBanner`,
+        `  id="next-step"`,
+        `  title=${JSON.stringify(isFa ? 'آماده راه‌اندازی پروژه بعدی خود هستید؟' : isAr ? 'هل أنت مستعد لإطلاق مشروعك القادم؟' : 'Ready to launch your next site?')}`,
+        `  description=${JSON.stringify(isFa ? 'محتوای این بخش‌ها را مطابق نیاز مشتری ویرایش کرده و خروجی نهایی استاتیک را منتشر کنید.' : isAr ? 'خصص هذه الأقسام لتناسب متطلبات مشروعك وانشر الموقع الثابت.' : 'Tailor these composable sections to your client brief and ship static HTML with zero runtime bloat.')}`,
+        `  primaryCta={{ label: ${JSON.stringify(isFa ? 'بازگشت به خانه' : isAr ? 'العودة للرئيسية' : 'Back to home')}, href: ${JSON.stringify(ctaHref)} }}`,
+        `/>`,
+      ].join('\n');
+    };
+
+    const bodyMarkup = isLandingPreset
+      ? buildLandingBody()
+      : resolvedHero === 'none'
         ? `<section class="layout-container py-12">\n  <h1 class="text-4xl font-extrabold tracking-tight text-fg">${pageTitle}</h1>\n\n  ${stubBody}\n</section>`
         : stubBody;
     const fmRecord = {
@@ -481,6 +567,7 @@ Update / Sync Options:
       ...(pageImage ? { image: pageImage } : {}),
       hero: resolvedHero,
       container: resolvedLayout,
+      ...(isLandingPreset ? { flushTop: true } : {}),
       draft: isDraft,
     };
 
