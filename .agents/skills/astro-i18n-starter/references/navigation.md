@@ -69,7 +69,7 @@ All four slots are resolved concurrently via `Promise.all` to maintain maximum b
   1. **Navigation Tab (`drawer_tab_nav`)**:
      - Every row is `DrawerNavLink.astro`: `NavItem.icon` (`file` as fallback) plus the label. Top-level rows are 36px tiles in 52px rows and are the only place with a tile box; submenu rows keep the same rhythm with a bare glyph, filled with the accent colour for the current page and turning accent on hover.
      - One continuous tree, never a separate card: a branch renders as a normal row (icon + `font-semibold` label, not a control), and its children hang below it on a guide rule that starts under the parent tile's centre (`ms-6.5 border-s ps-2`, then `ms-6` for the next level). Never uses popups in mobile drawers.
-     - Dedicated **2-column language grid** (`data-drawer-language-section`) showing native language names and status checkmarks.
+     - Dedicated **2-column language grid** (`data-drawer-language-section`) showing native language names and status checkmarks — hidden automatically alongside `<LanguageSwitcher>` whenever `ui.showLanguageSwitcher: false` (ideal for single-language sites).
      - Dedicated **theme toggle** row.
      - Mobile CTA button.
   2. **Search Tab (`drawer_tab_search`)**:
@@ -82,7 +82,7 @@ All four slots are resolved concurrently via `Promise.all` to maintain maximum b
 Renders a semantic responsive grid: a brand & mission block (title + `m.site_description`) followed by up to three `FooterColumn` data sets:
 * **Pages** (`footer_col_pages`): derived from `PAGE_ITEMS` — the same list the header and the drawer read — so adding, renaming or removing a page changes the footer with it. The home page is the one link that always stays, as a localized fallback.
 * **Resources**: one link per navigable content type (`getContentTypeNavItems`, so Blog and Projects follow the registry — `nav: false` drops the link). Nothing here points at a template's external homepage.
-* **Company**: the social links from `app.config.json` (`site.social.github` / `twitter`), each rendered only when configured.
+* **Company**: all configured social links from `app.config.json` (`social.github`, `twitter`, `linkedin`, `instagram`, `telegram`), each rendered only when populated (if none are configured, the column is omitted).
 
 Every entry is skipped when its page is missing or unpublished in the locale, and empty columns are dropped, so the footer of a fresh client project never ships an empty or dead column entry. Page groups are named **only** in `PAGE_ITEMS`: `remove:page` can therefore never delete a `nav_<key>` message the footer still calls.
 

@@ -59,18 +59,32 @@ pnpm dev                          # http://localhost:3000  (نه ۴۳۲۱)
 بیلد روی `http://localhost:3000` ساخته می‌شود و در محیط انتشار با گارد
 `ASTRO_REQUIRE_SITE_URL` جلوی انتشار آدرس اشتباه گرفته می‌شود.
 
-### ۲.۲ هویت برند (قبل از طراحی صفحه)
+### ۲.۲ هویت برند و تک‌زبانه‌کردن (قبل از طراحی صفحه)
+
+سریع‌ترین راه تنظیم هویت برند، پالت، فونت و ایمیل تماس یک مشتری، اجرای دستور `site:init` است (به‌جای ویرایش دستی چندین فایل):
+
+```bash
+pnpm run site:init \
+  --name="Acme Studio" \
+  --preset=indigo \
+  --font=jakarta \
+  --rtl-font=vazirmatn \
+  --email=hello@acme.example \
+  --social-card=branded
+```
 
 | چه چیزی | کجا |
 | --- | --- |
-| نام، توضیح، author، تصویر اجتماعی | [app.config.json](../app.config.json) → `site` |
+| نام، توضیح، author، ایمیل تماس، تصویر اجتماعی | [app.config.json](../app.config.json) → `site` |
+| پالت برند، فونت لاتین/RTL، حالت کارت اجتماعی | `brand` در `app.config.json` (`preset`، `fontPreset`، `rtlFontPreset`، `socialCardMode`) و [theme.ts](../src/libs/config/theme.ts) |
+| توکن‌های دقیق OKLCH در صورت سفارشی‌سازی عمیق | [src/styles/global.css](../src/styles/global.css) → توکن‌های `--theme-*` |
 | لوگو/فاوآیکون/PWA | `public/` + `brand` در همان فایل، سپس `pnpm run assets:generate` |
-| رنگ اصلی و نقش‌های معنایی | [src/styles/global.css](../src/styles/global.css) → توکن‌های OKLCH |
-| فونت هر زبان | [src/i18n/locales.ts](../src/i18n/locales.ts) → `font` در `LOCALE_METADATA` |
+| فونت اختصاصی هر زبان | [src/i18n/locales.ts](../src/i18n/locales.ts) → `fontFamily` در `LOCALE_METADATA` |
 | متن دکمه‌ها و ناوبری | `messages/en.json` و `messages/fa.json` (هرگز در قالب هاردکد نشود) |
+| سایت تک‌زبانه (بدون تغییر ساختاری) | `ui.showLanguageSwitcher: false` در `app.config.json` (+ `pnpm run i18n:set-default fa` اگر دامنه فقط فارسی است؛ پیش‌فرض بدون پیشوند `/` روی زبان اصلی قرار می‌گیرد) |
 
-هیچ رنگ hex داخل کامپوننت ننویسید؛ از `primary`، `accent`، `surface`، `muted`، `border`
-و معادل‌های `-fg` استفاده کنید تا دارک‌مود و RTL هم درست بمانند.
+هیچ رنگ hex داخل کامپوننت ننویسید؛ از `primary`، `secondary`، `accent`، `surface`، `muted`، `border`
+و معادل‌های `-fg` استفاده کنید تا دارک‌مود و RTL هم درست بمانند. (اگر نیاز به حذف کامل مسیرها و فایل‌های زبان دیگر از خروجی بیلد دارید، دستور اختیاری `pnpm run i18n:solo <locale>` نیز در دسترس است.)
 
 ### ۲.۳ پاک‌سازی محتوای دمو
 
@@ -144,6 +158,12 @@ flushTop: true
 
 > ⚠️ هرگز `layout` را در فرانت‌متر MDX ننویسید؛ این کلید رزرو `@astrojs/mdx` است و
 > بیلد را می‌شکند. معادل آن `container` است.
+>
+> 💡 سه سطح پیش‌فرض در پروژه تعریف شده است: در **شِمای `src/content.config.ts`** پیش‌فرض
+> `hero: "none"` و `container: "canvas"` است؛ دستور `pnpm run new:page <key>` به‌طور
+> پیش‌فرض صفحه‌های استاندارد را با `hero: "default"` و `container: "contained"` می‌سازد؛ و
+> برای لندینگ‌پیج‌ها می‌توانید `pnpm run new:page <key> -- --preset=landing` را بزنید تا
+> مستقیماً با `hero: "none"`، `container: "canvas"`، `flushTop: true` و بلوک‌های آماده ساخته شود.
 
 ---
 
@@ -407,68 +427,131 @@ flushTop: true
 
 ---
 
-## ۷. بلوک‌های آماده برای کپی
+## ۷. بلوک‌های آماده (کامپوننت‌های شرکتی و لندینگ)
 
-همهٔ نمونه‌ها با توکن‌های موجود پروژه ساخته شده‌اند و در RTL خودکار آینه می‌شوند.
+به جای کپی کردن HTML خام، از **۱۰ بلوک آمادهٔ پروژه** استفاده کنید. همهٔ آن‌ها با
+توکن‌های OKLCH، خواص منطقی CSS، Paraglide i18n، آیکون‌های `<Icon>` و انیمیشن‌های
+ChronoTrig (`data-trig` / `data-trig-stagger`) ساخته شده‌اند و در صفحات `canvas` (و در
+`PricingSection` با `contained` حتی داخل صفحات متنی) کار می‌کنند:
 
-### ۷.۱ نوار لوگوی مشتریان
+| کامپوننت | کاربرد در لندینگ / سایت شرکتی |
+| --- | --- |
+| `LandingHeroSplit.astro` | هیروی دو‌ستونه همراه کارت/ویژوال مقابل |
+| `PartnerLogos.astro` | نوار اعتماد و لوگوی مشتریان/همکاران |
+| `BentoCapabilities.astro` | شبکهٔ بنتو برای معرفی قابلیت‌ها و خدمات |
+| `ProofStatsRow.astro` | ردیف آمار و ارقام اثبات‌شده (با ارقام بومی) |
+| `PricingSection.astro` | کارت‌های تعرفه و پلن‌ها (با نشان پلن پیشنهادی و قیمت بومی) |
+| `TestimonialGrid.astro` | شبکهٔ نظرات مشتریان با امتیاز ستاره‌ای و نقل‌قول |
+| `TeamSection.astro` | معرفی اعضای تیم و مدیران با تصویر یا مونوگرام و لینک شبکه‌ها |
+| `FaqAccordion.astro` | پرسش‌های متداول با خروجی `FAQPage` JSON-LD |
+| `NewsletterBanner.astro` | بنر خبرنامه Pure-SSG متصل به API خارجی یا `mailto:` |
+| `CtaBanner.astro` | بنر فراخوان پایانی (CTA) پیش از فوتر |
 
-```html
-<PageSection spacing="sm" borderTop borderBottom>
-  <p class="text-center text-xs font-semibold uppercase tracking-[0.14em] text-muted rtl:tracking-normal">
-    مورد اعتماد تیم‌ها
-  </p>
-  <ul class="mt-8 grid grid-cols-2 items-center gap-6 sm:grid-cols-3 lg:grid-cols-5">
-    <li class="flex items-center justify-center opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0">
-      <Image src={logo1} alt="نام مشتری" class="h-8 w-auto" />
-    </li>
-  </ul>
-</PageSection>
+### ۷.۱ هیرو و نوار لوگوی مشتریان (`LandingHeroSplit` + `PartnerLogos`)
+
+```astro
+import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
+import PartnerLogos from '@/components/PartnerLogos.astro';
+
+<LandingHeroSplit
+  eyebrow="طراحی و توسعه"
+  title="برند شما، سایت شما"
+  description="توضیح یک‌خطی ارزش پیشنهادی؛ همان چیزی که مشتری در سه ثانیه باید بفهمد."
+  primaryCta={{ label: 'شروع گفت‌وگو', href: '#contact', icon: 'arrow-right' }}
+  secondaryCta={{ label: 'خدمات', href: '#services' }}
+/>
+
+<PartnerLogos
+  eyebrow="مورد اعتماد تیم‌ها"
+  items={[
+    { name: 'آکمی کلود', tagline: 'زیرساخت ابری', icon: 'building' },
+    { name: 'رایا استودیو', tagline: 'طراحی محصول', icon: 'layers' },
+  ]}
+/>
 ```
 
-لوگوها را با `import` از `src/assets/` بیاورید تا Astro نسخهٔ بهینه بسازد (بخش ۸).
+### ۷.۲ قابلیت‌ها و نظرات مشتریان (`BentoCapabilities` + `TestimonialGrid`)
 
-### ۷.۲ بخش «چطور کار می‌کنیم» (سه مرحله)
+```astro
+import BentoCapabilities from '@/components/BentoCapabilities.astro';
+import TestimonialGrid from '@/components/TestimonialGrid.astro';
 
-```html
-<PageSection spacing="lg" surface="subtle">
-  <h2 class="text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">سه قدم تا نتیجه</h2>
-  <ol class="mt-10 grid gap-8 sm:grid-cols-3" data-trig-stagger>
-    <li data-trig class="relative ps-12">
-      <span class="absolute start-0 top-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-fg" aria-hidden="true">۱</span>
-      <h3 class="text-lg font-bold text-fg">کشف</h3>
-      <p class="mt-2 text-sm leading-relaxed text-muted">…</p>
-    </li>
-    <!--۲ و ۳-->
-  </ol>
-</PageSection>
+<BentoCapabilities
+  id="services"
+  eyebrow="خدمات"
+  heading="چه کاری انجام می‌دهیم"
+  items={[
+    { icon: 'globe', title: 'وب‌سایت چندزبانه', description: 'سازگار با RTL و LTR.' },
+    { icon: 'shield', title: 'عملکرد Pure SSG', description: 'بدون سرور و فوق‌العاده سریع.' },
+  ]}
+/>
+
+<TestimonialGrid
+  locale={locale}
+  eyebrow="تجربهٔ مشتریان"
+  heading="نظر تیم‌هایی که با ما کار کرده‌اند"
+  items={[
+    {
+      quote: 'نتیجه دقیقاً همان چیزی بود که در اولین جلسه توصیفش کردیم.',
+      author: 'سارا احمدی',
+      role: 'مدیر محصول',
+      company: 'تیم رایا',
+      rating: 5,
+    },
+  ]}
+/>
 ```
 
-### ۷.۳ نقل‌قول مشتری
+### ۷.۳ تعرفه‌ها و اعضای تیم (`PricingSection` + `TeamSection`)
 
-```html
-<PageSection spacing="lg">
-  <figure class="mx-auto max-w-3xl text-center" data-trig>
-    <blockquote class="text-balance text-2xl font-semibold leading-relaxed text-fg sm:text-3xl">
-      «نتیجه دقیقاً همان چیزی بود که در اولین جلسه توصیفش کردیم.»
-    </blockquote>
-    <figcaption class="mt-6 text-sm text-muted">نام، سمت، شرکت</figcaption>
-  </figure>
-</PageSection>
+```astro
+import PricingSection from '@/components/PricingSection.astro';
+import TeamSection from '@/components/TeamSection.astro';
+
+<PricingSection
+  locale={locale}
+  heading="تعرفه‌های شفاف"
+  tiers={[
+    {
+      name: 'رشد',
+      amount: 49,
+      currencyPrefix: '$',
+      period: '/ ماه',
+      featured: true,
+      features: ['صفحهٔ اختصاصی لندینگ', 'سئوی چندزبانه'],
+      cta: { label: 'شروع پروژه', href: '#contact', icon: 'arrow-right' },
+    },
+  ]}
+/>
+
+<TeamSection
+  heading="تیم ما"
+  members={[
+    { name: 'علی رضایی', role: 'هم‌بنیان‌گذار و طراح', bio: 'تمرکز بر سیستم‌های طراحی.' },
+  ]}
+/>
 ```
 
-### ۷.۴ نوار CTA پایانی
+### ۷.۴ خبرنامه، پرسش‌های متداول و CTA پایانی (`NewsletterBanner` + `CtaBanner`)
 
-```html
-<PageSection spacing="lg" surface="surface" borderTop>
-  <div class="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
-    <div>
-      <h2 class="text-2xl font-extrabold tracking-tight text-fg sm:text-3xl">آمادهٔ شروع هستید؟</h2>
-      <p class="mt-2 text-sm text-muted">پاسخ در کمتر از یک روز کاری.</p>
-    </div>
-    <Button href="mailto:hello@example.com" size="lg">تماس با ما</Button>
-  </div>
-</PageSection>
+```astro
+import FaqAccordion from '@/components/FaqAccordion.astro';
+import NewsletterBanner from '@/components/NewsletterBanner.astro';
+import CtaBanner from '@/components/CtaBanner.astro';
+
+<FaqAccordion
+  heading="پرسش‌های متداول"
+  items={[{ question: 'زمان تحویل چقدر است؟', answer: 'بین دو تا چهار هفته.' }]}
+/>
+
+<NewsletterBanner locale={locale} source="home-landing" />
+
+<CtaBanner
+  id="contact"
+  heading="آمادهٔ شروع هستید؟"
+  description="پاسخ در کمتر از یک روز کاری."
+  primaryCta={{ label: 'تماس با ما', href: 'mailto:hello@example.com', icon: 'mail' }}
+/>
 ```
 
 ### ۷.۵ قواعد ثابت
@@ -477,9 +560,9 @@ flushTop: true
   کلاس‌های `.cta`، `.btn-secondary`، `.btn-hero-secondary`، `.chip` و `.glass-surface` یک‌جا در `global.css` تعریف شده‌اند؛ در کامپوننت‌ها دوباره نسازید.
 - فقط یک `<h1>` در کل صفحه (تست smoke تعدادش را چک می‌کند).
 - هیچ کلاس فیزیکی (`ml-`، `pr-`، `text-left`، `left-`) ننویسید؛ همیشه `ms-`، `pe-`، `text-start`، `start-*`.
-- آیکون فقط با `<Icon name="…" />`. نام‌های موجود: `search`، `globe`، `close`، `check`،
-  `menu`، `chevron-left/right/down`، `sun`، `moon`، `copy`، `external-link`، `arrow-right`،
-  `shield`، `mail`، `layers` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
+- آیکون فقط با `<Icon name="…" />`. ۳۱ نام ثبت‌شده عبارت‌اند از: `search`، `globe`، `close`، `check`،
+  `menu`، `chevron-left`، `chevron-right`، `chevron-down`، `sun`، `moon`، `copy`، `external-link`، `arrow-right`،
+  `shield`، `mail`، `layers`، `star`، `star-filled`، `quote`، `users`، `building` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
   `folder`، `compass`، `palette`، `book-open`، `file`. آیکون جدید: نام را در [icons.ts](../src/libs/ui/icons.ts) ثبت و در رجیستری [Icon.astro](../src/components/Icon.astro) با import تک‌فایلی وصل کنید (هرگز از barrel بستهٔ `@tabler/icons-astro` import نکنید).
 - متن دکمه‌های مشترک را با `m.common_…` از Paraglide بگیرید، نه رشتهٔ ثابت.
 
@@ -586,22 +669,24 @@ import * as m from '@/paraglide/messages';
 
 ```bash
 pnpm run lint          # messages + astro check + tsc (خطای تایپ/شمای محتوا اینجا گیر می‌افتد)
-pnpm test              # ۲۱۹ تست واحد
+pnpm test              # ۲۴ فایل تست واحد (۲۴۵ تست)
 pnpm run audit:i18n    # هم‌ترازی زبان‌ها، کلیدها، مسیرها، RTL
+pnpm run doctor        # بررسی سلامت پروژه بدون بیلد
 pnpm run build         # Astro + Pagefind
 pnpm run smoke         # HTML/SEO/feed/H1 روی خروجی واقعی
+pnpm run link:check    # خزش dist/ برای یافتن لینک یا #anchor شکسته
 pnpm run knip          # کد و وابستگی مرده
 ```
 
 سپس دستی در مرورگر:
 
-- [ ] `/` و `/fa/` هر دو باز می‌شوند و متن‌ها ترجمه شده‌اند.
+- [ ] `/` و `/fa/` هر دو باز می‌شوند و متن‌ها ترجمه شده‌اند (یا در سایت تک‌زبانه، `ui.showLanguageSwitcher: false` ست و زبان پیش‌فرض روی زبان هدف تنظیم شده است).
 - [ ] در فارسی، جهت، فونت، فاصله‌ها و آینه‌شدن آیکون‌ها درست است.
 - [ ] تم روشن/تاریک/سیستم هر سه خوانا هستند.
 - [ ] فقط یک `<h1>` (خروجی `grep -o '<h1' dist/index.html | wc -l` باید ۱ باشد).
 - [ ] لینک‌های `#anchor` زیر هدر ثابت نمی‌پَرند.
-- [ ] انیمیشن ظاهر شدن با اسکرول اجرا می‌شود و با JS خاموش همه‌چیز دیده می‌شود (`print` هم).
-- [ ] ناوبری موبایل، زبان و جستجو کار می‌کنند.
+- [ ] انیمیشن ظاهر شدن با اسکرول اجرا می‌شود و با JS خاموش یا `prefers-reduced-motion` همه‌چیز مرتب است (`print` هم).
+- [ ] ناوبری موبایل، زبان (در حالت چندزبانه) و جستجو کار می‌کنند.
 - [ ] هیچ کلمهٔ دمو/استارتر («Astro i18n Starter»، «لوکس»...) باقی نمانده است.
 - [ ] `pnpm run build` بدون هشدار محتوای گمشده (تصویر/ترجمه) تمام شد.
 
@@ -612,16 +697,17 @@ pnpm run knip          # کد و وابستگی مرده
 | مورد | کجا | چرا |
 | --- | --- | --- |
 | `SITE_URL` روی دامنهٔ نهایی | محیط بیلد | canonical/sitemap/RSS |
-| نام، توضیح، author، شبکه‌های اجتماعی | `app.config.json` | متادیتا و فوتر |
-| تصویر OG و فاوآیکون | `public/` + `site.socialImage` | اشتراک‌گذاری و PWA |
+| نام، توضیح، author، ایمیل تماس، شبکه‌های اجتماعی | `app.config.json` (یا `pnpm run site:init`) | متادیتا و فوتر |
+| تحویل تک‌زبانه (در صورت نیاز مشتری) | `ui.showLanguageSwitcher: false` + در صورت نیاز `i18n:set-default` | حذف دکمهٔ تعویض زبان بدون تغییر ساختاری |
+| تصویر OG و فاوآیکون | `public/` + `brand.socialCardMode` + `site.socialImage` | اشتراک‌گذاری و PWA |
 | تنظیم کوکی و رضایت | `cookies` در `app.config.json` | انطباق GDPR/TDDDG |
-| فرم تماس | `api.baseUrl` یا `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL` | اتصال به سرویس ایمیل/CRM |
+| فرم تماس و خبرنامه | `api.baseUrl` / `api.endpoints` یا `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL` / `PUBLIC_NEWSLETTER_API_URL` | اتصال به سرویس ایمیل/CRM |
 | صفحات حقوقی | `privacy`، `terms` در ناوبری فوتر | الزام قانونی |
 | حذف محتوای دمو | `remove:page`/`remove:post` | جلوگیری از محتوای گمراه‌کننده |
 | بازبینی لایسنس | `LICENSE` | حقوق استفاده برای مشتری |
 
-اگر فرم تماس لازم است و هنوز سرویس انتخاب نشده، پیش از نوشتن هر کد یک سرویس
-تراکنشی ایمیل انتخاب کنید؛ فرم فعلی فقط یک آداپتور سمت کلاینت برای endpoint خارجی است
+اگر فرم تماس یا خبرنامه لازم است و هنوز سرویس انتخاب نشده، پیش از نوشتن هر کد یک سرویس
+تراکنشی ایمیل انتخاب کنید؛ فرم‌های فعلی فقط آداپتور سمت کلاینت برای endpoint خارجی هستند
 و هیچ بک‌اندی در این پروژه وجود ندارد (Pure SSG).
 
 ---

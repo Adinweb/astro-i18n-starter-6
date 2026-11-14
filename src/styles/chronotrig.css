@@ -12,10 +12,10 @@
  *     `opacity: 1` and `transform: none` immediately.
  *  2. RTL-Native: Directional entrances use CSS logical properties (`start` and
  *     `end`), automatically mirroring in Persian (`fa`) and Arabic (`ar`).
- *  3. Reveals Run Everywhere: Entrances play on desktop and mobile alike, and are
- *     never gated behind the OS `prefers-reduced-motion` setting (matching how
- *     most production sites behave). The explicit opt-out is `data-motion="reduced"`
- *     on `<html>`, plus automatic flattening when printing.
+ *  3. Accessible Motion Control: Entrances play across viewports while deferring
+ *     to `<head>` `resolveMotion()`, which sets `html[data-motion="reduced"]` when
+ *     OS `prefers-reduced-motion: reduce` matches (unless overridden in
+ *     `localStorage.motion`). `@media print` always flattens reveals.
  */
 
 /* --------------------------------------------------------------------------
@@ -190,9 +190,9 @@
 /* --------------------------------------------------------------------------
    5. Explicit Opt-Out & Print Isolation
    -------------------------------------------------------------------------- */
-/* Reveals are intentionally NOT disabled by `prefers-reduced-motion`; they run
-   for every visitor. Setting `data-motion="reduced"` on <html> (e.g. from a site
-   preference control) flattens them instantly, and print always flattens. */
+/* BaseLayout `resolveMotion()` sets `data-motion="reduced"` automatically when
+   OS `prefers-reduced-motion: reduce` matches (or via `localStorage.motion`),
+   flattening all reveals instantly; print always flattens. */
 html[data-motion="reduced"] .js [data-trig],
 html[data-motion="reduced"] .js [data-trig-stagger] > * {
   opacity: 1 !important;

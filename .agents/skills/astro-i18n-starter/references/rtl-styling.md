@@ -24,10 +24,10 @@ Never use physical directional utilities. Always use logical properties:
 
 ## 2. Bidirectional Typography & Font Stacks
 
-Fonts are variable and self-hosted via `@fontsource-variable/*` packages:
-* **Latin (`en`, `de`, `fr`)**: System sans stack (`var(--font-sans)`).
-* **Persian (`fa`)**: `Vazirmatn Variable` (`var(--font-fa)`).
-* **Arabic (`ar`)**: `Noto Sans Arabic Variable` (`var(--font-ar)`).
+Fonts are variable and self-hosted (`@fontsource-variable/*`) and configurable through `brand.fontPreset` (`system`, `jakarta`, `manrope`, `outfit`, `editorial`) and `brand.rtlFontPreset` (`vazirmatn`, `noto-arabic`) in `app.config.json` (`src/libs/config/theme.ts` + `theme-presets.json`):
+* **Latin (`en`, `de`, `fr`)**: Configurable display/sans stacks (`--font-sans`, `--font-display`), defaulting to `system`.
+* **Persian (`fa`)**: `Vazirmatn Variable` or `Noto Sans Arabic Variable` (`--font-fa`), defaulting to `vazirmatn`.
+* **Arabic (`ar`)**: `Noto Sans Arabic Variable` (`--font-ar`).
 
 ### CSS `:lang()` Rules
 In `src/styles/global.css`, font stacks are bound by language pseudo-class:
@@ -89,6 +89,9 @@ Never re-declare container widths, buttons, chips, kickers, or raw `text-white`/
 - `.hero-badge`, `.section-kicker`
 - Reusable page shells: `PageSection.astro` (full-bleed surface bands + `.layout-container`), `PageHeader.astro` (`hero: 'minimal'`), and `PageHero.astro` (`hero: 'default'` & blog)
 
+### Brand Palette Presets & Hex Overrides (`src/libs/config/theme.ts`)
+`app.config.json` → `brand.preset` supports 6 curated OKLCH-safe palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose` defined in `theme-presets.json`) plus optional `brand.primaryColor` / `brand.accentColor` hex overrides. `BaseLayout.astro` computes light and dark `--theme-*` overrides at build time (verified to meet WCAG AA contrast) and binds `--font-sans`, `--font-display`, and `--font-fa`.
+
 ### Two-Mode Contrast
 Every role clears **WCAG AA (4.5:1)** contrast against its respective `-fg` counterpart in both light and dark mode.
 
@@ -121,7 +124,7 @@ Every text button is `<Button>`: colour from `variant` (`primary`/`secondary`/`h
 14. `shield` — privacy and cookie consent (`shield-check`)
 15. `mail` — contact and inquiry notice
 16. `layers` — architecture and Resources markers (`stack-2`)
-17. `home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `file` — navigation icons; an unknown name resolves to `file`
+17. `home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `star`, `star-filled`, `quote`, `users`, `building`, `file` — navigation, ratings, quotes, team, and partner emblem icons (31 total); an unknown name resolves to `file`
 
 ### Navigation Icons:
 The mobile drawer renders one icon tile per row, so every navigation entry carries an `icon` from this catalog (`NavItem.icon` in `src/libs/config/navigation.ts`; a row without one falls back to `file`):

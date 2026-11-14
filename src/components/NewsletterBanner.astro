@@ -1,0 +1,318 @@
+---
+/**
+ * Composable newsletter / lead-capture banner inspired by PrebuiltUI CTA and
+ * newsletter sections. Pure-SSG: posts directly to external APIs configured
+ * via `api.endpoints.newsletter` + `api.baseUrl`, `PUBLIC_NEWSLETTER_API_URL`,
+ * or explicit component props. Renders a static fallback (`mailto:` or clear
+ * unavailable status) instead of an unsubmittable form when unconfigured.
+ */
+import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import { DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n/locales';
+import { resolveApiEndpoint } from '@/libs/api/client';
+import { API_CONFIG, siteConfig } from '@/libs/config/app';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string;
+  title?: string;
+  subtitle?: string;
+  baseUrl?: string;
+  endpoint?: string;
+  timeoutMs?: number;
+  source?: string;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale = DEFAULT_LOCALE,
+  eyebrow,
+  title,
+  subtitle,
+  baseUrl,
+  endpoint,
+  timeoutMs,
+  source = 'newsletter-banner',
+  surface = 'surface',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale: Locale = isLocale(locale) ? locale : DEFAULT_LOCALE;
+const effectiveBaseUrl = baseUrl ?? API_CONFIG.baseUrl;
+const effectiveEndpoint = endpoint ?? API_CONFIG.endpoints.newsletter ?? '';
+const resolvedEndpoint = effectiveEndpoint
+  ? resolveApiEndpoint(effectiveEndpoint, effectiveBaseUrl)
+  : null;
+const isConfigured = resolvedEndpoint !== null;
+const effectiveTimeout = timeoutMs ?? API_CONFIG.timeoutMs;
+
+const emailHref = siteConfig.contactEmail ? `mailto:${siteConfig.contactEmail}` : null;
+const isDev = import.meta.env.DEV;
+
+const copy = {
+  kicker: eyebrow ?? m.newsletter_kicker({}, { locale: activeLocale }),
+  title: title ?? m.newsletter_title({}, { locale: activeLocale }),
+  subtitle: subtitle ?? m.newsletter_subtitle({}, { locale: activeLocale }),
+  emailLabel: m.newsletter_email_label({}, { locale: activeLocale }),
+  emailPlaceholder: m.newsletter_email_placeholder({}, { locale: activeLocale }),
+  submit: m.newsletter_submit({}, { locale: activeLocale }),
+  submitting: m.newsletter_submitting({}, { locale: activeLocale }),
+  successTitle: m.newsletter_success_title({}, { locale: activeLocale }),
+  successDesc: m.newsletter_success_desc({}, { locale: activeLocale }),
+  errEmail: m.newsletter_error_email({}, { locale: activeLocale }),
+  errTimeout: m.newsletter_error_timeout({}, { locale: activeLocale }),
+  errHttp: m.newsletter_error_http({}, { locale: activeLocale }),
+  errNetwork: m.newsletter_error_network({}, { locale: activeLocale }),
+  errUnconfigured: m.newsletter_error_unconfigured({}, { locale: activeLocale }),
+  fallbackDesc: m.newsletter_fallback_desc({}, { locale: activeLocale }),
+  fallbackCta: m.newsletter_fallback_cta({}, { locale: activeLocale }),
+  unavailableDesc: m.newsletter_unavailable_desc({}, { locale: activeLocale }),
+  devNotice: m.newsletter_unconfigured_notice({}, { locale: activeLocale }),
+};
+
+const cardSurface = surface === 'surface' ? 'bg-bg' : 'bg-surface';
+---
+
+<PageSection id={id} surface={surface} spacing={spacing}>
+  <div
+    data-newsletter-banner
+    data-trig
+    class:list={[
+      'rounded-3xl border border-border p-6 sm:p-8 lg:p-10',
+      cardSurface,
+    ]}
+  >
+    <div class="grid gap-8 lg:grid-cols-12 lg:items-center lg:gap-10">
+      <div class="lg:col-span-6">
+        <p class="section-kicker">{copy.kicker}</p>
+        <h2 class="mt-2 text-2xl font-bold tracking-tight text-fg sm:text-3xl text-balance">
+          {copy.title}
+        </h2>
+        <p class="mt-3 text-sm leading-relaxed text-muted sm:text-base text-pretty">
+          {copy.subtitle}
+        </p>
+      </div>
+
+      <div class="lg:col-span-6">
+        {
+          !isConfigured && (
+            <div class="rounded-2xl border border-dashed border-border bg-surface/60 p-5 sm:p-6">
+              <div class="flex items-start gap-3">
+                <span
+                  class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                  aria-hidden="true"
+                >
+                  <Icon name="mail" size={18} />
+                </span>
+                <div class="min-w-0">
+                  <p class="text-sm leading-relaxed text-muted">
+                    {emailHref ? copy.fallbackDesc : copy.unavailableDesc}
+                  </p>
+                  {emailHref && (
+                    <Button
+                      href={emailHref}
+                      variant="primary"
+                      size="md"
+                      icon="mail"
+                      iconPosition="start"
+                      class="mt-4"
+                    >
+                      {copy.fallbackCta}
+                    </Button>
+                  )}
+                  {isDev && (
+                    <p class="mt-4 rounded-lg border border-border bg-surface p-3 text-xs leading-relaxed text-muted">
+                      {copy.devNotice}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        }
+
+        {
+          isConfigured && (
+            <form
+              data-newsletter-form-el
+              data-locale={activeLocale}
+              data-base-url={effectiveBaseUrl}
+              data-endpoint={effectiveEndpoint}
+              data-timeout-ms={String(effectiveTimeout)}
+              data-source={source}
+              data-label-submit={copy.submit}
+              data-label-submitting={copy.submitting}
+              data-msg-success-title={copy.successTitle}
+              data-msg-success-desc={copy.successDesc}
+              data-err-validation={copy.errEmail}
+              data-err-unconfigured={copy.errUnconfigured}
+              data-err-timeout={copy.errTimeout}
+              data-err-http={copy.errHttp}
+              data-err-network={copy.errNetwork}
+              novalidate
+              class="space-y-3"
+            >
+              <div
+                aria-hidden="true"
+                class="pointer-events-none absolute -z-10 h-0 w-0 overflow-hidden opacity-0"
+              >
+                <input
+                  type="text"
+                  name="company_website"
+                  tabindex="-1"
+                  autocomplete="off"
+                />
+              </div>
+
+              <label
+                for={`newsletter-email-${activeLocale}`}
+                class="block text-xs font-semibold text-fg"
+              >
+                {copy.emailLabel}
+              </label>
+
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input
+                  id={`newsletter-email-${activeLocale}`}
+                  name="email"
+                  type="email"
+                  dir="ltr"
+                  required
+                  autocomplete="email"
+                  placeholder={copy.emailPlaceholder}
+                  class="min-w-0 flex-1 rounded-full border border-border bg-surface px-4 py-2.5 text-start text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error rtl:text-end"
+                />
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  icon="arrow-right"
+                  data-newsletter-submit
+                  class="shrink-0"
+                >
+                  <span data-newsletter-submit-label>{copy.submit}</span>
+                </Button>
+              </div>
+
+              <div
+                data-newsletter-feedback
+                role="status"
+                aria-live="polite"
+                hidden
+                class="rounded-xl border p-3.5 text-sm"
+              >
+                <p data-newsletter-feedback-title class="font-semibold"></p>
+                <p data-newsletter-feedback-body class="mt-0.5 text-xs leading-relaxed"></p>
+              </div>
+            </form>
+          )
+        }
+      </div>
+    </div>
+  </div>
+</PageSection>
+
+<script>
+  import {
+    submitNewsletterSubscription,
+    type ContactSubmissionErrorCode,
+    type NewsletterSubscriptionPayload,
+  } from '@/libs/api/client';
+
+  function initNewsletterForms() {
+    const forms = document.querySelectorAll<HTMLFormElement>('[data-newsletter-form-el]');
+
+    forms.forEach((form) => {
+      if (form.dataset.bound === 'true') return;
+      form.dataset.bound = 'true';
+
+      const emailInput = form.querySelector<HTMLInputElement>('input[name="email"]');
+      const submitBtn = form.querySelector<HTMLButtonElement>('[data-newsletter-submit]');
+      const submitLabel = form.querySelector<HTMLElement>('[data-newsletter-submit-label]');
+      const feedback = form.querySelector<HTMLElement>('[data-newsletter-feedback]');
+      const feedbackTitle = form.querySelector<HTMLElement>('[data-newsletter-feedback-title]');
+      const feedbackBody = form.querySelector<HTMLElement>('[data-newsletter-feedback-body]');
+
+      const errorMessages: Record<ContactSubmissionErrorCode, string> = {
+        validation: form.dataset.errValidation ?? '',
+        unconfigured: form.dataset.errUnconfigured ?? '',
+        timeout: form.dataset.errTimeout ?? '',
+        http: form.dataset.errHttp ?? '',
+        network: form.dataset.errNetwork ?? '',
+      };
+
+      const renderFeedback = (kind: 'success' | 'error', title: string, body: string) => {
+        if (!feedback || !feedbackTitle || !feedbackBody) return;
+        feedback.hidden = false;
+        feedback.className =
+          kind === 'success'
+            ? 'rounded-xl border border-success/30 bg-success/10 p-3.5 text-sm text-fg'
+            : 'rounded-xl border border-error/30 bg-error/10 p-3.5 text-sm text-fg';
+        feedbackTitle.textContent = title;
+        feedbackBody.textContent = body;
+      };
+
+      emailInput?.addEventListener('input', () => {
+        emailInput.removeAttribute('aria-invalid');
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!submitBtn || submitBtn.disabled) return;
+
+        const formData = new FormData(form);
+        const honeypot = String(formData.get('company_website') ?? '');
+        const payload: NewsletterSubscriptionPayload = {
+          email: String(formData.get('email') ?? ''),
+          locale: form.dataset.locale ?? 'en',
+          source: form.dataset.source,
+          honeypot,
+        };
+
+        submitBtn.disabled = true;
+        if (submitLabel && form.dataset.labelSubmitting) {
+          submitLabel.textContent = form.dataset.labelSubmitting;
+        }
+
+        const timeoutMs = Number.parseInt(form.dataset.timeoutMs ?? '10000', 10);
+        const result = await submitNewsletterSubscription(payload, {
+          baseUrl: form.dataset.baseUrl ?? '',
+          endpoint: form.dataset.endpoint ?? '',
+          timeoutMs: Number.isFinite(timeoutMs) ? timeoutMs : 10000,
+        });
+
+        submitBtn.disabled = false;
+        if (submitLabel && form.dataset.labelSubmit) {
+          submitLabel.textContent = form.dataset.labelSubmit;
+        }
+
+        if (result.ok) {
+          form.reset();
+          emailInput?.removeAttribute('aria-invalid');
+          renderFeedback(
+            'success',
+            form.dataset.msgSuccessTitle ?? '',
+            form.dataset.msgSuccessDesc ?? ''
+          );
+          return;
+        }
+
+        if (result.errorCode === 'validation') {
+          emailInput?.setAttribute('aria-invalid', 'true');
+          emailInput?.focus();
+        }
+
+        renderFeedback('error', errorMessages[result.errorCode] ?? '', '');
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initNewsletterForms);
+  initNewsletterForms();
+</script>

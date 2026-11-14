@@ -170,6 +170,24 @@
   "nav_projects": "Projects",
   "nav_resources": "Resources",
   "nav_rtl_support": "RTL & Localization",
+  "newsletter_email_label": "Email address",
+  "newsletter_email_placeholder": "you@company.com",
+  "newsletter_error_email": "Please enter a valid email address.",
+  "newsletter_error_http": "The external API rejected the request. Please try again later.",
+  "newsletter_error_network": "Unable to reach the external endpoint. Check your connection and try again.",
+  "newsletter_error_timeout": "The request timed out before the external API responded.",
+  "newsletter_error_unconfigured": "Subscriptions are unavailable right now. Please email us instead.",
+  "newsletter_fallback_cta": "Email us",
+  "newsletter_fallback_desc": "Newsletter sign-ups are not connected yet. Write to us by email to stay updated.",
+  "newsletter_kicker": "Updates & Releases",
+  "newsletter_submit": "Subscribe",
+  "newsletter_submitting": "Subscribing...",
+  "newsletter_subtitle": "Concise architecture updates and release notes, dispatched directly from the browser to your configured external endpoint.",
+  "newsletter_success_desc": "Your email address has been delivered to the configured newsletter endpoint.",
+  "newsletter_success_title": "Subscribed",
+  "newsletter_title": "Stay ahead with release notes",
+  "newsletter_unavailable_desc": "Newsletter sign-ups are not available yet. Please check back soon.",
+  "newsletter_unconfigured_notice": "Newsletter API endpoint not configured yet. Set PUBLIC_NEWSLETTER_API_URL (or api.endpoints.newsletter and api.baseUrl in app.config.json).",
   "position_ordinal": [
     {
       "declarations": [
@@ -187,11 +205,13 @@
       }
     }
   ],
+  "pricing_recommended": "Recommended",
   "projects_back": "Back to Projects",
   "projects_client": "Client",
   "projects_index_description": "Selected work: what we built, for whom, and what changed.",
   "projects_stack": "Stack",
   "projects_visit": "Visit project",
   "projects_year": "Year",
-  "site_description": "Production-grade, multi-lingual Astro v7 starter template with native RTL and LTR support."
+  "site_description": "Production-grade, multi-lingual Astro v7 starter template with native RTL and LTR support.",
+  "testimonials_rating_aria": "Rated {rating} out of 5 stars"
 }

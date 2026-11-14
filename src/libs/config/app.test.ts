@@ -45,13 +45,15 @@ describe('src/libs/config/app.ts', () => {
       expect(parsed).toEqual(defaultUiConfig);
     });
 
-    it('allows selectively toggling UI features off', () => {
+    it('allows selectively toggling UI features off, including showLanguageSwitcher for solo-locale sites', () => {
       const parsed = uiConfigSchema.parse({
         showSearch: false,
         stickyHeader: false,
+        showLanguageSwitcher: false,
       });
       expect(parsed.showSearch).toBe(false);
       expect(parsed.stickyHeader).toBe(false);
+      expect(parsed.showLanguageSwitcher).toBe(false);
       expect(parsed.showThemeToggle).toBe(true);
     });
 
@@ -120,6 +122,10 @@ describe('src/libs/config/app.ts', () => {
       const parsed: ApiConfig = apiConfigSchema.parse({});
       expect(parsed).toEqual(defaultApiConfig);
       expect(apiEndpointsSchema.parse({})).toEqual({ contact: '/contact' });
+      expect(apiEndpointsSchema.parse({ newsletter: '/newsletter' })).toEqual({
+        contact: '/contact',
+        newsletter: '/newsletter',
+      });
       expect(() => apiConfigSchema.parse({ timeoutMs: 200 })).toThrow();
       expect(() => apiConfigSchema.parse({ timeoutMs: 90000 })).toThrow();
     });

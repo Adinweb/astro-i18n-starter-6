@@ -51,6 +51,7 @@ import hero from '../../../assets/hero/hero-0.jpg';
 ```
 
 * `PageSection` renders a `w-full` band with `surface` / `spacing` / `border-*` props and wraps children in `.layout-container` unless `bleed` is set.
+* **10 Composable Corporate & Landing Blocks** live in `src/components/` (`LandingHeroSplit`, `BentoCapabilities`, `ProofStatsRow`, `FaqAccordion` + `src/libs/content/faq.ts`, `CtaBanner`, `PricingSection`, `TestimonialGrid`, `TeamSection`, `PartnerLogos`, `NewsletterBanner`). All 10 use semantic OKLCH tokens, CSS logical properties, `<Icon>`, `<Button>`, and ChronoTrig attributes. Note: pass `contained` to `<PricingSection>` when rendering it inside a `container: 'contained'` page (`pricing/*.mdx`) so it skips a redundant `<PageSection>` wrapper.
 * Reuse `.layout-container` (1280px) inside a band for aligned content; omit it for true edge-to-edge media.
 * For repeatable bespoke layouts shared by every locale, create `src/views/pages/<Name>.astro` and register it in the `PAGE_TEMPLATES` map of `src/views/PageView.astro`, then set `template: '<name>'` in frontmatter. The template receives `entry`, `locale`, `alternates`, `url`, and `schema`.
 * A canvas page must bring its own bottom spacing (`.layout-container`'s `pb-12 md:pb-16` only applies to contained pages) and must render **exactly one `<h1>`**.
@@ -119,6 +120,8 @@ Physical dynamic routes are consolidated into a single dispatcher file (`src/pag
   - Computes `lastmod` accurately from the latest modified/published date of each entry.
 * **Web App Manifest (`src/pages/site.webmanifest.ts`)**:
   - Generated dynamically using `app.config.json` brand colors and `DEFAULT_LOCALE` metadata.
+* **Dynamic Branded Open Graph Cards (`src/pages/og/[...slug].png.ts` & `src/libs/content/og-card.ts`)**:
+  - `src/libs/content/social.ts` (`getSocialCard`) switches behavior based on `brand.socialCardMode`: `'branded'` (default — generates deterministic `1200×630` RTL/LTR SVG→PNG cards matching the active brand palette and page title via `sharp`), `'artwork'` (cropped `entry.data.image`), or `'default'` (`/og-default.png`).
 * **Static Blog & Search Fallback Catalogs (`src/pages/api/*.json.ts`)**:
   - `/api/blog-posts/[locale].json` (plus combined `/api/blog-posts.json`): Build-time static JSON catalogs powering client-side cross-page taxonomy filtering on multi-page blogs.
   - `/api/search-dev/[locale].json` (plus combined `/api/search-dev.json`): Emits title, description, URL, and locale for every published route as a dev/offline search fallback.
@@ -138,8 +141,8 @@ Physical dynamic routes are consolidated into a single dispatcher file (`src/pag
 
 ### 6.3 Pure SSG External API Adapter (`src/libs/api/client.ts`)
 * This starter is **100% static SSG with zero backend**. Never add SSR routes or backend server directories.
-* Interactive forms (`src/components/ContactForm.astro`) post JSON payloads directly from the browser through `submitContactInquiry()` in `src/libs/api/client.ts` (helpers: `resolveApiEndpoint()`, `getInvalidContactFields()`, `validateContactPayload()`), resolving endpoints from `PUBLIC_CONTACT_API_URL`, `PUBLIC_API_BASE_URL`, or `app.config.json` (`api.baseUrl` + `api.endpoints.contact`) with `AbortController` timeout protection and honeypot spam filtering.
-* Without a resolved endpoint the form is **not rendered at all**. The panel then shows `contact_fallback_desc` plus a `mailto:` button when `site.contactEmail` is set, and `contact_unavailable_desc` ("inquiries are not available yet") when it is not — the copy must never promise an email channel the site does not have. `contact_unconfigured_notice` (which names `PUBLIC_CONTACT_API_URL`) is rendered in `import.meta.env.DEV` only.
+* Interactive forms (`src/components/ContactForm.astro` and `src/components/NewsletterBanner.astro`) post JSON payloads directly from the browser through `submitContactInquiry()` and `submitNewsletterSubscription()` in `src/libs/api/client.ts` (helpers: `resolveApiEndpoint()`, `getInvalidContactFields()`, `validateContactPayload()`, `validateNewsletterPayload()`), resolving endpoints from `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL`, `PUBLIC_API_BASE_URL`, or `app.config.json` (`api.baseUrl` + `api.endpoints.contact|newsletter`, plus optional `api.topics` localized topic options for `ContactForm`) with `AbortController` timeout protection and honeypot spam filtering.
+* Without a resolved endpoint the form is **not rendered at all**. Each panel then falls back to `*_fallback_desc` plus a `mailto:` button when `site.contactEmail` is set, and `*_unavailable_desc` when it is not — the copy must never promise an email channel the site does not have. Developer notices naming `PUBLIC_*_API_URL` are rendered in `import.meta.env.DEV` only.
 
 ---
 

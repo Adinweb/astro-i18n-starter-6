@@ -357,17 +357,12 @@ summary::-webkit-details-marker {
   pointer-events: auto !important;
 }
 
-:root[dir='rtl'] [data-mobile-panel],
-html[dir='rtl'] [data-mobile-panel] {
+:where([dir='rtl']) [data-mobile-panel] {
   transform: translateX(100%) !important;
 }
 
-[data-mobile-menu].is-open [data-mobile-panel] {
-  transform: translateX(0) !important;
-}
-
-:root[dir='rtl'] [data-mobile-menu].is-open [data-mobile-panel],
-html[dir='rtl'] [data-mobile-menu].is-open [data-mobile-panel] {
+[data-mobile-menu].is-open [data-mobile-panel],
+:where([dir='rtl']) [data-mobile-menu].is-open [data-mobile-panel] {
   transform: translateX(0) !important;
 }
 
@@ -394,10 +389,8 @@ html[dir='rtl'] [data-mobile-menu].is-open [data-mobile-panel] {
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  [data-cookie-banner]:not([hidden]) {
-    animation: cookie-card-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
+html:not([data-motion="reduced"]) [data-cookie-banner]:not([hidden]) {
+  animation: cookie-card-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @media print {
@@ -447,6 +440,7 @@ html[dir='rtl'] [data-mobile-menu].is-open [data-mobile-panel] {
   [data-related-posts],
   [data-booking-form],
   [data-contact-form],
+  [data-newsletter-banner],
   [data-page-header] nav,
   .code-copy-btn {
     display: none !important;

@@ -3,9 +3,12 @@ import {
   getInvalidContactFields,
   resolveApiEndpoint,
   submitContactInquiry,
+  submitNewsletterSubscription,
   validateContactPayload,
+  validateNewsletterPayload,
   type ContactInquiryPayload,
   type ContactSubmissionResult,
+  type NewsletterSubscriptionPayload,
   type SubmitContactOptions,
 } from './client';
 
@@ -140,6 +143,55 @@ describe('src/libs/api/client.ts', () => {
           fetchImpl: netFetch as unknown as typeof fetch,
         })
       ).toEqual({ ok: false, errorCode: 'network' });
+    });
+  });
+
+  describe('newsletter adapter', () => {
+    const validNewsletter: NewsletterSubscriptionPayload = {
+      email: 'team@example.com',
+      locale: 'en',
+      source: 'landing',
+    };
+
+    it('validates newsletter email addresses strictly', () => {
+      expect(validateNewsletterPayload(validNewsletter)).toBe(true);
+      expect(validateNewsletterPayload({ email: 'bad-email', locale: 'en' })).toBe(false);
+    });
+
+    it('silently ignores honeypot submissions and checks configuration', async () => {
+      const fetchSpy = vi.fn();
+      expect(
+        await submitNewsletterSubscription(
+          { ...validNewsletter, honeypot: 'https://bot.example.com' },
+          { endpoint: 'https://api.example.com/newsletter', fetchImpl: fetchSpy as unknown as typeof fetch }
+        )
+      ).toEqual({ ok: true, status: 200 });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      expect(
+        await submitNewsletterSubscription(validNewsletter, { baseUrl: 'https://api.example.com', endpoint: '' })
+      ).toEqual({ ok: false, errorCode: 'unconfigured' });
+    });
+
+    it('posts trimmed email with locale header on valid newsletter subscription', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+      const result = await submitNewsletterSubscription(
+        { ...validNewsletter, email: '  team@example.com  ' },
+        {
+          baseUrl: 'https://api.example.com',
+          endpoint: '/newsletter',
+          fetchImpl: fetchSpy as unknown as typeof fetch,
+        }
+      );
+
+      expect(result).toEqual({ ok: true, status: 200 });
+      const [calledUrl, init] = fetchSpy.mock.calls[0]!;
+      expect(calledUrl).toBe('https://api.example.com/newsletter');
+      expect(JSON.parse(init.body)).toEqual({
+        email: 'team@example.com',
+        locale: 'en',
+        source: 'landing',
+      });
     });
   });
 });

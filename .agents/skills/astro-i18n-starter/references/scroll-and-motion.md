@@ -9,8 +9,8 @@ This reference documents how to animate elements across Astro views, reusable co
 | File | Responsibility |
 | :--- | :--- |
 | `public/chronotrig.min.js` | Zero-dependency FastDOM CSS scroll engine. Observes `[data-trig]`, `[data-trig-pin]`, `[data-trig-stagger]`, and `[data-trig-timeline]`, adding `.trig` (plus `trig-up` / `trig-down`) as elements enter the viewport. |
-| `src/layouts/BaseLayout.astro` | Includes `<script is:inline src="/chronotrig.min.js"></script>` in `<head>` and imports `src/scripts/lenis` and `src/scripts/chronotrig`. |
-| `src/styles/chronotrig.css` | Scopes initial hidden entrance states strictly under `.js [data-trig]`. Employs CSS logical directions (`start`/`end`), handles stagger cascades, and flattens only for `@media print` and the explicit `html[data-motion="reduced"]` opt-out. |
+| `src/layouts/BaseLayout.astro` | Includes `<script is:inline src="/chronotrig.min.js"></script>` and `resolveMotion()` in `<head>` (checks `localStorage.motion`, falls back to OS `prefers-reduced-motion: reduce`, sets `html[data-motion]`), and imports `src/scripts/lenis` and `src/scripts/chronotrig`. |
+| `src/styles/chronotrig.css` | Scopes initial hidden entrance states strictly under `.js [data-trig]`. Employs CSS logical directions (`start`/`end`), handles stagger cascades, and flattens for `@media print` and `html[data-motion="reduced"]`. |
 | `src/scripts/chronotrig.ts` | Type-safe client coordinator. Automatically tags prose headings (`.prose > h2, h3`), coordinates View Transitions (`astro:page-load`), and exports `refreshChronoTrig()`. |
 | `src/scripts/lenis.ts` | Manages the singleton `Lenis` instance (`lerp: 0.085`), intercepts same-page `#hash` links in the capture phase with sticky-header offset (`-96px`), isolates nested scroll containers, and re-initializes across View Transitions. |
 
@@ -166,4 +166,4 @@ ChronoTrig supports sticky stage scrollytelling and multi-step keyframes:
 Lenis handles smooth mouse-wheel momentum scrolling, while ChronoTrig synchronizes animations on requestAnimationFrame:
 1. **Lenis Singleton (`src/scripts/lenis.ts`)**: Initializes with `lerp: 0.085`, `smoothWheel: true`, and sticky-header offset (`-96px`).
 2. **Nested Overlays**: Any modal, drawer, or scrollable panel (`overflow-y-auto`) must carry `data-lenis-prevent` so inner scrolling does not bleed into the outer page.
-3. **Reduced Motion**: Setting `document.documentElement.dataset.motion = 'reduced'` disables smooth wheel inertia and renders all `data-trig` elements instantaneously with `transform: none` and `opacity: 1`. The OS `prefers-reduced-motion` setting does **not** gate reveals: entrance animations run for every visitor on every viewport size, and only `data-motion="reduced"` or print flattens them.
+3. **Unified Reduced Motion (`resolveMotion()`)**: In `BaseLayout.astro`'s `<head>`, `resolveMotion()` checks `localStorage.getItem('motion')` (`'reduced' | 'full'`), otherwise honors the OS `(prefers-reduced-motion: reduce)` preference, and writes `html[data-motion]`. Setting `data-motion="reduced"` disables Lenis wheel inertia, flattens `[data-cookie-banner]` motion (`src/styles/global.css`), and renders all `[data-trig]` / `[data-trig-stagger]` elements instantaneously with `transform: none` and `opacity: 1` (alongside `@media print`).

@@ -137,3 +137,71 @@ export async function submitContactInquiry(
     globalThis.clearTimeout(timer);
   }
 }
+
+export interface NewsletterSubscriptionPayload {
+  email: string;
+  locale: string;
+  source?: string;
+  honeypot?: string;
+}
+
+export function validateNewsletterPayload(payload: NewsletterSubscriptionPayload): boolean {
+  return EMAIL_PATTERN.test(payload.email.trim());
+}
+
+export async function submitNewsletterSubscription(
+  payload: NewsletterSubscriptionPayload,
+  options: SubmitContactOptions = {}
+): Promise<ContactSubmissionResult> {
+  if (payload.honeypot && payload.honeypot.trim().length > 0) {
+    return { ok: true, status: 200 };
+  }
+
+  if (!validateNewsletterPayload(payload)) {
+    return { ok: false, errorCode: 'validation' };
+  }
+
+  const endpoint = options.endpoint?.trim() ?? '';
+  const targetUrl = endpoint ? resolveApiEndpoint(endpoint, options.baseUrl ?? '') : null;
+  if (!targetUrl) {
+    return { ok: false, errorCode: 'unconfigured' };
+  }
+
+  const fetchFn = options.fetchImpl ?? globalThis.fetch;
+  const timeoutMs = Math.max(1000, options.timeoutMs ?? 10000);
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetchFn(targetUrl, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-Client-Locale': payload.locale,
+      },
+      body: JSON.stringify({
+        email: payload.email.trim(),
+        locale: payload.locale,
+        ...(payload.source?.trim() ? { source: payload.source.trim() } : {}),
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return { ok: false, errorCode: 'http', status: response.status };
+    }
+
+    return { ok: true, status: response.status };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return { ok: false, errorCode: 'timeout' };
+    }
+    if (error instanceof Error && error.name === 'AbortError') {
+      return { ok: false, errorCode: 'timeout' };
+    }
+    return { ok: false, errorCode: 'network' };
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}

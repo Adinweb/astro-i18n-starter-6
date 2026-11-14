@@ -1,0 +1,166 @@
+---
+/**
+ * Composable customer testimonial grid inspired by PrebuiltUI testimonial cards,
+ * using OKLCH semantic tokens, CSS logical spacing, Tabler rating/quote icons,
+ * optional optimized `<Image>` avatars, and ChronoTrig staggered reveals.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import { formatNumber } from '@/i18n/format';
+import { DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n/locales';
+import * as m from '@/paraglide/messages';
+
+export interface TestimonialItem {
+  quote: string;
+  author: string;
+  role?: string;
+  company?: string;
+  rating?: number;
+  avatar?: ImageMetadata;
+  avatarAlt?: string;
+}
+
+interface Props {
+  id?: string;
+  eyebrow?: string;
+  heading?: string;
+  subheading?: string;
+  items: readonly TestimonialItem[];
+  locale?: Locale | string;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  eyebrow,
+  heading,
+  subheading,
+  items,
+  locale = DEFAULT_LOCALE,
+  surface = 'surface',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale: Locale = isLocale(locale) ? locale : DEFAULT_LOCALE;
+const cardSurface = surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const gridColsClass =
+  items.length <= 2 ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3';
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'A';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+}
+---
+
+<PageSection id={id} surface={surface} spacing={spacing}>
+  {
+    (eyebrow || heading || subheading) && (
+      <div class="max-w-2xl" data-trig>
+        {eyebrow && <p class="section-kicker">{eyebrow}</p>}
+        {heading && (
+          <h2 class="mt-2 text-2xl font-bold tracking-tight text-fg sm:text-3xl text-balance">
+            {heading}
+          </h2>
+        )}
+        {subheading && (
+          <p class="mt-3 text-base leading-relaxed text-muted text-pretty">
+            {subheading}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  <div
+    class:list={[
+      'grid gap-6',
+      (eyebrow || heading || subheading) && 'mt-8',
+      gridColsClass,
+    ]}
+    data-trig-stagger
+    data-trig-stagger-delay="0.06"
+  >
+    {
+      items.map((item) => {
+        const ratingValue =
+          item.rating !== undefined ? Math.min(5, Math.max(1, Math.round(item.rating))) : null;
+        const stars = ratingValue ? Array.from({ length: 5 }, (_, idx) => idx < ratingValue) : [];
+        const metaLine = [item.role, item.company].filter(Boolean).join(' · ');
+
+        return (
+          <figure
+            data-trig
+            class:list={[
+              'flex flex-col justify-between rounded-2xl border border-border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md sm:p-7',
+              cardSurface,
+            ]}
+          >
+            <div>
+              <div class="flex items-center justify-between gap-3">
+                {ratingValue !== null ? (
+                  <div
+                    class="flex items-center gap-0.5 text-warning"
+                    aria-label={m.testimonials_rating_aria(
+                      { rating: formatNumber(ratingValue, activeLocale) },
+                      { locale: activeLocale }
+                    )}
+                  >
+                    {stars.map((filled) => (
+                      <Icon
+                        name={filled ? 'star-filled' : 'star'}
+                        size={16}
+                        class={filled ? 'text-warning' : 'text-border'}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <span />
+                )}
+
+                <span
+                  class="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+                  aria-hidden="true"
+                >
+                  <Icon name="quote" size={16} />
+                </span>
+              </div>
+
+              <blockquote class="mt-4 text-sm leading-relaxed text-fg sm:text-base">
+                {item.quote}
+              </blockquote>
+            </div>
+
+            <figcaption class="mt-6 flex items-center gap-3 border-t border-border pt-4">
+              {item.avatar ? (
+                <Image
+                  src={item.avatar}
+                  alt={item.avatarAlt ?? item.author}
+                  widths={[80, 160]}
+                  sizes="40px"
+                  class="size-10 shrink-0 rounded-full border border-border object-cover"
+                />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  class="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-xs font-bold text-primary"
+                >
+                  {getInitials(item.author)}
+                </span>
+              )}
+
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-fg">{item.author}</p>
+                {metaLine && <p class="truncate text-xs text-muted">{metaLine}</p>}
+              </div>
+            </figcaption>
+          </figure>
+        );
+      })
+    }
+  </div>
+</PageSection>

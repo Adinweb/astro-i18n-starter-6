@@ -4,33 +4,30 @@ This document provides step-by-step verified playbooks for common architectural 
 
 ---
 
-## Playbook 1: Swapping the Default Locale
+## Playbook 1: Swapping the Default Locale & Single-Language Mode
 
-To switch the primary default (prefix-less) language of the site (e.g. from English to Persian `fa` or German `de`):
+To switch the primary default (prefix-less) language of the site (e.g. from English to Persian `fa`):
 
-1. **Update Locale Configuration**:
-   Open `src/i18n/locales.ts` and update `DEFAULT_LOCALE`:
-   ```typescript
-   export const DEFAULT_LOCALE: Locale = 'fa'; // Changed from 'en' to 'fa'
-   ```
+```bash
+pnpm run i18n:set-default fa
+```
 
-2. **Update Inlang Base Locale**:
-   Open `project.inlang/settings.json` and set:
-   ```json
-   "baseLocale": "fa"
-   ```
-
-3. **Recompile & Verify**:
-   Run the full verification suite:
+1. **What it updates automatically**:
+   - Sets `DEFAULT_LOCALE` in `src/i18n/locales.ts`.
+   - Sets `"baseLocale"` in `project.inlang/settings.json`.
+   - Recompiles Paraglide dictionaries (`src/paraglide/`).
+2. **Verify**:
    ```bash
-   pnpm messages:compile && pnpm test && pnpm build && pnpm smoke
+   pnpm run messages:compile && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke
    ```
+3. **Expected Outcome**:
+   - Persian (`fa`) instantly routes to prefix-less URLs (`/`, `/درباره-ما/`, `/blog/...`).
+   - English (`en`) routes to prefixed URLs (`/en/`, `/en/about/`, `/en/blog/first-post/`).
+   - Hreflang `x-default`, canonical URLs, and sitemap update seamlessly without moving a single file.
 
-4. **Expected Outcome**:
-   - Persian (`fa`) instantly routes to prefix-less URLs (`/`, `/درباره-ما`, `/blog/اولین-پست`).
-   - English (`en`) routes to prefixed URLs (`/en`, `/en/about`, `/en/blog/first-post`).
-   - Hreflang `x-default` automatically points to the Persian version.
-   - Language switcher, canonical URLs, and sitemap update seamlessly without moving a single file.
+### Single-Language Client Sites
+* **Recommended (zero structural changes)**: Set `"showLanguageSwitcher": false` under `"ui"` in `app.config.json` (plus `pnpm run i18n:set-default <locale>` if the root `/` site should use another locale). Both desktop `<LanguageSwitcher>` and the mobile drawer language grid hide cleanly while keeping all files intact.
+* **Optional strict solo archive (`i18n:solo`)**: Run `pnpm run i18n:solo <locale>` if you want alternate locale routes excluded from `dist/` and `sitemap.xml` (archives inactive dictionaries and `.mdx` files under `.locale-archive/`).
 
 ---
 
@@ -78,27 +75,32 @@ pnpm run doctor && pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run
 
 `content:new` delegates `pages` and `blog` to `new:page` / `new:post`; every other type receives the shared frontmatter, a generated cover, and `[TODO: …]` drafts for locales that are not translated yet. Full reference: `docs/CONTENT-TYPES-FA.md`.
 
-## Playbook 3: Adding or Adapting UI Components
+## Playbook 3: Composable Corporate Blocks & Client Rebranding
 
-1. **Tailwind Blocks RTL & Token Adaptation**:
-   When pasting Tailwind UI or external component code, adapt directions and utility colors:
+1. **Rapid Client Branding (`pnpm run site:init`)**:
+   Configure site identity, 6 OKLCH palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose`), Latin/RTL font pairings, branded OG card generation, and active content modules in one command:
+   ```bash
+   pnpm run site:init -- --name="Acme Studio" --preset=emerald --font=jakarta --rtl-font=noto-arabic --og-mode=branded --yes
+   ```
+
+2. **Start From the 10 Built-In Composable Blocks (`src/components/`)**:
+   Before building custom markup from scratch, check the starter's 10 verified RTL/LTR-safe corporate & landing components:
+   - `LandingHeroSplit.astro`, `BentoCapabilities.astro`, `ProofStatsRow.astro`, `FaqAccordion.astro`, `CtaBanner.astro`, `PricingSection.astro`, `TestimonialGrid.astro`, `TeamSection.astro`, `PartnerLogos.astro`, and `NewsletterBanner.astro`.
+   - Use `pnpm run new:page <key> -- --preset=landing` to scaffold a multi-locale landing page pre-wired with canvas layout and composable blocks.
+
+3. **Tailwind Blocks RTL & Token Adaptation**:
+   When pasting custom Tailwind UI or external component code, adapt directions and utility colors:
    ```bash
    pnpm run block:adapt -- --file=src/components/MyComponent.astro
    ```
 
-2. **Extract Copy to Compiled Messages**:
-   Extract plain text nodes to Paraglide message keys:
+4. **Extract Copy to Compiled Messages & Recompile**:
    ```bash
    pnpm run i18n:extract -- --target=src/components/MyComponent.astro --key=mycomp --auto-add --replace
+   pnpm run messages:compile
    ```
 
-3. **Fill Translations**:
-   Provide translations in `messages/de.json` and `messages/fa.json`, then compile:
-   ```bash
-   pnpm messages:compile
-   ```
-
-4. **Reach for `<Button>`, not a hand-rolled control**:
+5. **Reach for `<Button>`, not a hand-rolled control**:
    Every text button in the project is `src/components/Button.astro` — only its colour (`variant`), scale (`size`), label and icon change. It renders `<a>` for navigation and `<button>` for actions, adds the shared hover lift/press, and mirrors directional icons in RTL:
    ```astro
    <Button href={pricingHref} variant="primary" size="lg" icon="arrow-right">
@@ -276,7 +278,7 @@ pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run 
 * `BaseLayout.astro` synchronously adds `.js` on `<html class="js">` in `<head>`. `src/styles/chronotrig.css` scopes initial entrance offsets strictly under `.js [data-trig]` (preserving full layout geometry, zero CLS, and 100% visibility when JS is disabled or printed).
 * When an element enters the viewport, ChronoTrig adds `.trig`, animating `opacity: 1` and `transform: none` over `1.2s` (`1.1s` for stagger cards) with a `cubic-bezier(0.22, 1, 0.36, 1)` curve and a 56px bottom offset.
 * Reveals hold for `--trig-reveal-delay` (`180ms`, defined once at the top of `chronotrig.css`) before starting, so an entrance is not finished before the element is properly in view.
-* Reveals are **not** gated by the OS `prefers-reduced-motion` setting; `html[data-motion="reduced"]` and `@media print` are the only flattening paths.
+* Motion preference is resolved once in `BaseLayout.astro`'s `<head>` (`resolveMotion()`): it checks `localStorage.getItem('motion')` (`'reduced' | 'full'`), otherwise honors the OS `prefers-reduced-motion: reduce` setting, and writes `html[data-motion]`. `chronotrig.css`, `lenis.ts`, and `global.css` (`[data-cookie-banner]`) — alongside `@media print` — all flatten or disable motion cleanly whenever `data-motion="reduced"` is active.
 
 ### 2. Single Elements & RTL-Safe Directions
 * Add `data-trig` to any element, title, or card for a smooth bottom reveal.
@@ -300,7 +302,7 @@ Unlike `blog` entries (which always use `BlogPostView.astro` + `PageHero.astro`)
 * **Minimal Typographic Header (`hero: "minimal"`, `container: "contained" | "prose"`)**: Renders `PageHeader.astro` (breadcrumbs, accent rule, `<h1>`, description) above either a `1280px` `.layout-container` (`contained`) or a `72ch` editorial column (`prose`).
 * **Atmospheric Banner (`hero: "default"`)**: Renders the defocused full-bleed `PageHero.astro` + `HeroCopy.astro`.
 
-### 2. Connecting Forms to an External API (Zero Backend)
-This starter is **100% Pure SSG** and ships with no backend server. Client-side forms (`src/components/ContactForm.astro`) post directly to external/headless APIs through `src/libs/api/client.ts`:
-1. Set `PUBLIC_CONTACT_API_URL="https://api.example.com/v1/contact"` (or `PUBLIC_API_BASE_URL`) in `.env` / deployment environment variables, **or** set `api.baseUrl` and `api.endpoints.contact` in `app.config.json`.
-2. Embed `<ContactForm locale={locale} />` in any Astro view or MDX page. When no external endpoint is configured yet, the form displays a clear configuration notice and `submitContactInquiry()` returns `errorCode: 'unconfigured'` before any network request is made, so nothing is ever posted to a local route.
+### 2. Connecting Contact & Newsletter Forms to an External API (Zero Backend)
+This starter is **100% Pure SSG** and ships with no backend server. Both `src/components/ContactForm.astro` and `src/components/NewsletterBanner.astro` post directly to external/headless APIs through `src/libs/api/client.ts`:
+1. Set `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL` (or shared `PUBLIC_API_BASE_URL`) in `.env` / deployment environment variables, **or** configure `api.baseUrl` + `api.endpoints.contact|newsletter` (and optional `api.topics`) in `app.config.json`.
+2. Embed `<ContactForm locale={locale} />` or `<NewsletterBanner locale={locale} />` in any Astro view or MDX page. When no external endpoint is configured yet, neither form is rendered; visitors see a clean `mailto:` fallback (when `site.contactEmail` is set) or neutral unavailable notice, and `import.meta.env.DEV`-only setup notes guide developers without leaking env var names in production HTML.

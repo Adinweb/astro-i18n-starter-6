@@ -3,7 +3,7 @@
   "entry": [
     "src/pages/**/*.{astro,ts}",
     "src/content/**/*.mdx",
-    "src/components/{LandingHeroSplit,BentoCapabilities,ProofStatsRow,FaqAccordion,CtaBanner}.astro",
+    "src/components/{LandingHeroSplit,BentoCapabilities,ProofStatsRow,FaqAccordion,CtaBanner,PricingSection,TestimonialGrid,TeamSection,PartnerLogos,NewsletterBanner}.astro",
     "scripts/**/*.mjs",
     "src/**/*.test.ts"
   ],

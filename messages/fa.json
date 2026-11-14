@@ -170,6 +170,24 @@
   "nav_projects": "پروژه‌ها",
   "nav_resources": "منابع",
   "nav_rtl_support": "پشتیبانی RTL و بومی‌سازی",
+  "newsletter_email_label": "نشانی ایمیل",
+  "newsletter_email_placeholder": "you@company.com",
+  "newsletter_error_email": "لطفاً یک نشانی ایمیل معتبر وارد کنید.",
+  "newsletter_error_http": "سرویس API خارجی درخواست را نپذیرفت. لطفاً دقایقی دیگر دوباره تلاش کنید.",
+  "newsletter_error_network": "برقراری ارتباط با سرویس خارجی ممکن نشد. اتصال اینترنت خود را بررسی کنید.",
+  "newsletter_error_timeout": "مهلت پاسخ‌گویی سرویس API خارجی به پایان رسید.",
+  "newsletter_error_unconfigured": "ثبت‌نام خبرنامه در حال حاضر ممکن نیست؛ لطفاً ایمیل بزنید.",
+  "newsletter_fallback_cta": "ایمیل بزنید",
+  "newsletter_fallback_desc": "فرم خبرنامه هنوز به سرویس خارجی متصل نشده است. برای دریافت اطلاعیه‌ها ایمیل بزنید.",
+  "newsletter_kicker": "خبرنامه و به‌روزرسانی‌ها",
+  "newsletter_submit": "عضویت",
+  "newsletter_submitting": "در حال ثبت...",
+  "newsletter_subtitle": "گزارش‌های خلاصه معماری و انتشار نسخه‌های جدید، با ارسال مستقیم از مرورگر به سرویس خارجی معرفی‌شده شما.",
+  "newsletter_success_desc": "نشانی ایمیل شما به سرویس خبرنامه معرفی‌شده ارسال شد.",
+  "newsletter_success_title": "عضویت ثبت شد",
+  "newsletter_title": "از تازه‌ترین انتشارها باخبر بمانید",
+  "newsletter_unavailable_desc": "عضویت در خبرنامه هنوز در دسترس نیست. لطفاً بعداً سر بزنید.",
+  "newsletter_unconfigured_notice": "هنوز نقطه پایانی خبرنامه تنظیم نشده است. متغیر PUBLIC_NEWSLETTER_API_URL یا مقادیر api.endpoints.newsletter و api.baseUrl را در app.config.json تنظیم کنید.",
   "position_ordinal": [
     {
       "declarations": [
@@ -184,11 +202,13 @@
       }
     }
   ],
+  "pricing_recommended": "پیشنهادی",
   "projects_back": "بازگشت به پروژه‌ها",
   "projects_client": "کارفرما",
   "projects_index_description": "نمونه‌کارها: چه ساختیم، برای چه کسی، و چه چیزی تغییر کرد.",
   "projects_stack": "پشتهٔ فناوری",
   "projects_visit": "مشاهده پروژه",
   "projects_year": "سال",
-  "site_description": "قالب استارتر چندزبانه و سطح تولید Astro v7 با پشتیبانی بومی از راست‌به‌چپ و چپ‌به‌راست."
+  "site_description": "قالب استارتر چندزبانه و سطح تولید Astro v7 با پشتیبانی بومی از راست‌به‌چپ و چپ‌به‌راست.",
+  "testimonials_rating_aria": "امتیاز {rating} از ۵ ستاره"
 }

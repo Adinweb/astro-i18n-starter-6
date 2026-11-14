@@ -95,8 +95,9 @@ describe('ChronoTrig Integration & Lifecycle', () => {
     expect(onScrollSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('configures chronotrig.css with smooth bottom reveals that are not gated by OS motion preferences', () => {
+  it('configures chronotrig.css and BaseLayout.astro with unified data-motion reduced-motion support', () => {
     const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
+    const layout = fs.readFileSync(path.join(rootDir, 'src/layouts/BaseLayout.astro'), 'utf-8');
 
     // Bottom entrance state: starts well below the resting position and transparent
     expect(css).toContain('translate3d(0, 56px, 0)');
@@ -116,13 +117,14 @@ describe('ChronoTrig Integration & Lifecycle', () => {
     expect(css).toContain('[data-trig-direction="end"]');
     expect(css).toContain('[dir="rtl"]');
 
-    // Reveals play for every visitor: no OS-level or mobile-viewport blackout
-    expect(css).not.toContain('@media (prefers-reduced-motion: reduce)');
+    // CSS defers OS reduced-motion resolution to <head> `resolveMotion()` -> html[data-motion="reduced"]
     expect(css).not.toContain('@media (max-width: 639px)');
-
-    // Explicit opt-out and print flattening stay intact
     expect(css).toContain('html[data-motion="reduced"]');
     expect(css).toContain('@media print');
+
+    expect(layout).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
+    expect(layout).toContain("window.localStorage.getItem('motion')");
+    expect(layout).toContain('doc.documentElement.dataset.motion = motion');
   });
 
   it('replays grid reveals on filter changes but never on the initial render', () => {
@@ -144,8 +146,9 @@ describe('ChronoTrig Integration & Lifecycle', () => {
     expect(layout).toContain("import '@/scripts/chronotrig';");
   });
 
-  it('ensures global.css imports chronotrig.css', () => {
+  it('ensures global.css imports chronotrig.css and binds cookie banner animation to data-motion', () => {
     const globalCss = fs.readFileSync(path.join(rootDir, 'src/styles/global.css'), 'utf-8');
     expect(globalCss).toContain("@import './chronotrig.css';");
+    expect(globalCss).toContain('html:not([data-motion="reduced"]) [data-cookie-banner]:not([hidden])');
   });
 });

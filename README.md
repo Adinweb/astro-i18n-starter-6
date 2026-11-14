@@ -8,30 +8,32 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 
 ## ✨ Features
 
-* **Static-First Performance (Pure SSG, Zero Backend)**: 100% static HTML & JSON generation with no server runtime required. Interactive forms (`ContactForm.astro`) post directly from the client to external/headless APIs via `src/libs/api/client.ts` (`PUBLIC_CONTACT_API_URL`), alongside built-in TDDDG § 25 / GDPR cookie & script consent (`CookieConsent.astro`).
+* **Static-First Performance (Pure SSG, Zero Backend)**: 100% static HTML & JSON generation with no server runtime required. Interactive forms (`ContactForm.astro` and `NewsletterBanner.astro`) post directly from the client to external/headless APIs via `src/libs/api/client.ts` (`PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL`), alongside built-in TDDDG § 25 / GDPR cookie & script consent (`CookieConsent.astro`).
 * **Native RTL & LTR Support**: Ships out of the box with **English (`en`)** and **Persian / Farsi (`fa`)** active, plus pre-wired font/formatting rules and one-command CLI scaffolding (`pnpm run i18n:add-lang`) for **Arabic (`ar`)**, **German (`de`)**, **French (`fr`)**, and any other RTL/LTR language.
 * **CSS Logical Properties & Standard `1280px` Container**: Built with Tailwind CSS v4 using semantic tokens (`bg-surface`, `text-fg`, `border-border`), a unified `.layout-container` (`max-w-7xl` / `1280px`), and logical properties (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`).
-* **Clean Prefix-less Default Locale**: The default language has clean root URLs (`/`, `/about/`, `/blog/first-post/`), while other languages receive prefixes (`/fa/`, `/fa/درباره-ما/`, `/ar/من-نحن/`).
-* **Swappable Default Language**: Swap the default language at any time in `src/i18n/locales.ts` with zero file restructuring.
+* **Clean Prefix-less Default Locale & Easy Single-Language Option**: The default language has clean root URLs (`/`, `/about/`, `/blog/first-post/`), while other languages receive prefixes (`/fa/`, `/fa/درباره-ما/`, `/ar/من-نحن/`). For single-language client projects, simply set `ui.showLanguageSwitcher: false` in `app.config.json` (plus `pnpm run i18n:set-default <locale>` if needed) without modifying files—or optionally run `pnpm run i18n:solo <locale>` to prune alternate routes and archive inactive files.
+* **Swappable Default Language**: Swap the default language cleanly at any time via `pnpm run i18n:set-default <locale>` (or in `src/i18n/locales.ts` + `project.inlang/settings.json`) with zero file restructuring.
 * **Zero Route Collisions**: A single Lean Router Dispatcher (`src/pages/[...path].astro`) dynamically handles all localized pages, translated slugs, and index views.
 * **Compile-Time i18n via Paraglide**: Strongly typed translations with native ICU plurals and ordinals, compiled directly to tree-shakeable JS functions without runtime overhead.
 * **Symmetrical Content Collections**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs and cross-language alternate linking.
 * **Manageable Content Types**: `pages`, `blog` and `projects` are declared in `app.config.json` → `content.types`. `pnpm run content:enable|disable <type>` adds or removes a type's routes, sitemap entries and navigation links without touching a single content file, and `content:new` scaffolds an entry in any type.
+* **10 Composable Corporate & Landing Blocks**: Ready-to-use Astro components (`LandingHeroSplit`, `BentoCapabilities`, `ProofStatsRow`, `FaqAccordion`, `CtaBanner`, `PricingSection`, `TestimonialGrid`, `TeamSection`, `PartnerLogos`, `NewsletterBanner`) built with semantic OKLCH tokens, CSS logical properties, Paraglide i18n, and ChronoTrig scroll reveals — plus `pnpm run new:page <key> -- --preset=landing`.
 * **Configurable, Dead-Link-Free Navigation**: One `PAGE_ITEMS` list feeds the desktop header **and** the mobile drawer from a single builder, `ui.ctaPage` in `app.config.json` picks the header/drawer CTA target, and any entry whose page (or `#anchor`) no longer exists hides itself — `pnpm run link:check` fails the pipeline if an internal link or fragment resolves to nothing.
 * **Paginated Blog Index & Cross-Page Filtering**: Static paginated route set — one URL per page per locale (`/blog/`, `/blog/page/2/`, `/fa/blog/page/2/`) — with reciprocal `hreflang`, `rel="prev"` / `rel="next"`, and progressive cross-page taxonomy filtering powered by lightweight per-locale static catalogs (`/api/blog-posts/<locale>.json`).
 * **Persian-Aware Search Built-In**: Production static indexing with **Pagefind** (`scripts/index-pagefind.mjs`) enhanced with Perso-Arabic character normalization (`ي`/`ك` → `ی`/`ک`), punctuation token boundary isolation (`«...»`, `،`), client-side ZWNJ/space compound & numeral query expansion (`src/libs/search/persian.ts`), and per-locale JSON fallbacks (`/api/search-dev/<locale>.json`).
-* **SEO & Social Metadata**: Canonical URLs, hreflang plus `x-default`, Open Graph/Twitter cards, `WebSite`/`WebPage`/`CollectionPage`/`BlogPosting` + `BreadcrumbList` JSON-LD, a multilingual sitemap with `lastmod`, and per-locale Atom feeds (`/rss.xml` and `/rss/<locale>.xml`).
-* **Native Light & Dark Mode**: FOUC-free theme initialization with `prefers-color-scheme` detection, `localStorage` persistence, View Transition swap continuity, and oklch semantic tokens in `src/styles/global.css`.
+* **SEO & Branded Social Cards**: Canonical URLs, hreflang plus `x-default`, build-time deterministic branded PNG Open Graph cards (`/og/[...slug].png.ts` when `brand.socialCardMode === 'branded'`), Twitter cards, `WebSite`/`WebPage`/`CollectionPage`/`BlogPosting` + `BreadcrumbList` / `FAQPage` JSON-LD, a multilingual sitemap with `lastmod`, and per-locale Atom feeds (`/rss.xml` and `/rss/<locale>.xml`).
+* **Brand Theme & Typography Presets**: 6 curated OKLCH-safe palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose`), optional hex overrides, and curated Latin/RTL font pairings (`src/libs/config/theme.ts`), configurable in one command via `pnpm run site:init`.
+* **Native Light & Dark Mode**: FOUC-free theme initialization with `prefers-color-scheme` detection, `localStorage` persistence, View Transition swap continuity, and OKLCH semantic tokens in `src/styles/global.css`.
 * **Locale-Native Dates & Numerals**: Centralized `Intl` formatting (`src/i18n/format.ts`) with Solar Hijri (Jalali) dates and Persian numerals (`۰-۹`) for `fa`, Eastern Arabic numerals (`٠-٩`) for `ar`, and standard localized formatting for LTR locales.
 * **Rich Editorial UX & Print Stylesheet**: Automatic sticky/collapsible Table of Contents (`h2`/`h3`), taxonomy-scored Related Articles, chronological Newer/Older article navigation, localized `updatedAt` timestamps, one-click Copy Code buttons on `<pre>` blocks, and a clean `@media print` stylesheet.
-* **Accessible by Default**: Native `<dialog>` search (`⌘K`, `↑`/`↓`/`Enter`) and two-tab mobile slide-over drawer, exactly one `<h1>` per page, skip link, visible focus rings, and reduced-motion support.
+* **Accessible & Reduced-Motion Aware**: Native `<dialog>` search (`⌘K`, `↑`/`↓`/`Enter`), two-tab mobile slide-over drawer, single `<h1>` per page, skip link, visible focus rings, and unified OS `prefers-reduced-motion` + `data-motion` support across CSS reveals, Lenis smooth scrolling, and cookie banners.
 * **ChronoTrig Scroll Reveals & Smooth Scroll**: GPU-only entrance animations (`data-trig` scoped under `<html class="js">`, never `display: none`), RTL-mirrored logical directions (`data-trig-direction="start"` / `"end"`), harmonic staggered grids (`data-trig-stagger`), interactive filter replays, and accessible **Lenis** smooth scrolling.
-* **Flexible Page Canvas & Atmospheric Blog Heroes**: Static `pages` default to `hero: 'none'` and `container: 'canvas'` for complete design freedom (`<PageSection>`, `hero: 'minimal' | 'default'`, `container: 'contained' | 'prose'`, `flushTop`, or bespoke Astro templates via `template: '<name>'`), while `blog` posts share a full-bleed defocused `PageHero.astro` backdrop shaped by vertical scrims that read identically in LTR and RTL.
-* **Optimized Image Pipeline**: Every picture is served through Astro's image pipeline — WebP output, a responsive `srcset` with the right `sizes`, and an `og:image` cropped to the social ratio. A 263 KB hero PNG becomes a 7 KB WebP on a phone.
-* **Frosted-Glass Design System**: The header, its icon controls, the calls to action and every chip are defined once in `src/styles/global.css` and composed everywhere else, so the whole site speaks one visual language. The same file defines a DaisyUI-inspired semantic palette — `primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning` and `error`, each with an AA-contrast `-fg` partner — available as Tailwind utilities in both light and dark mode.
-* **Raster Brand Assets From Code**: `scripts/generate-assets.mjs` deterministically produces the app icons, the Open Graph image, and all hero/cover artwork with no image-editing dependency.
-* **Inline Tabler Icons**: Every icon is an `<Icon name="..." />` from `@tabler/icons-astro`, imported per icon so the build only contains the glyphs the site uses — no sprite request, no empty `<use>` tiles while an asset loads.
-* **Turnkey Developer CLI Suite**: Automation scripts to scaffold pages/posts, add/remove languages, adapt Tailwind blocks, extract translations, audit dictionary parity, and detect dead code.
+* **Flexible Page Canvas & Atmospheric Blog Heroes**: Static `pages` schema defaults to `hero: 'none'` and `container: 'canvas'` for complete design freedom (`<PageSection>`, `hero: 'minimal' | 'default'`, `container: 'contained' | 'prose'`, `flushTop`, or bespoke Astro templates via `template: '<name>'`), while `blog` posts share a full-bleed defocused `PageHero.astro` backdrop shaped by vertical scrims that read identically in LTR and RTL.
+* **Optimized Image Pipeline**: Every picture is served through Astro's image pipeline — WebP output, a responsive `srcset` with the right `sizes`, and optimized Open Graph social cards.
+* **Frosted-Glass Design System**: The header, its icon controls, buttons (`Button.astro`), and chips are defined once in `src/styles/global.css` alongside an AA-contrast OKLCH semantic palette (`primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, `error`).
+* **Raster Brand Assets From Code**: `scripts/generate-assets.mjs` deterministically produces the app icons, the default Open Graph image, and all hero/cover artwork with no image-editing dependency.
+* **Inline Tabler Icons**: 31 semantic icons rendered via `<Icon name="..." />` from `@tabler/icons-astro`, imported per icon so builds stay lean — no sprite request and no inline SVG duplication.
+* **Turnkey Developer CLI Suite**: 24 automation scripts for client onboarding (`site:init`), page/post scaffolding, content-type toggling, language management, Tailwind RTL adaptation, translation extraction, parity audits, link crawling, and dead-code checks.
 
 ---
 
@@ -171,10 +173,12 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 
 All application-level values that must stay in sync across the app and the CLI scripts live in [`app.config.json`](app.config.json):
 
-* **`site`** — name, short name, description (used by the web manifest; page/SEO descriptions come from the localized `site_description` message), `contactEmail` (the `mailto:` destination of the contact form's fallback; leave it empty and the panel says inquiries are unavailable instead of promising an email), default social card path and size.
-* **`brand`** — browser theme colours (`themeColor` and `darkThemeColor`), background colour, Apple touch icon, manifest icons.
+* **`site`** — name, short name, description (used by the web manifest; page/SEO descriptions come from the localized `site_description` message), `contactEmail` (the `mailto:` destination of the contact & newsletter fallbacks; leave it empty and panels show an unavailable notice instead of promising an email), default social card path and size.
+* **`brand`** — `defaultTheme`, OKLCH palette `preset` (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose`), optional hex overrides (`primaryColor`, `accentColor`), Latin `fontPreset` (`system`, `jakarta`, `manrope`, `outfit`, `editorial`), `rtlFontPreset` (`vazirmatn`, `noto-arabic`), `socialCardMode` (`branded`, `artwork`, `default`), `themeColor`, `darkThemeColor`, `backgroundColor`, Apple touch icon, and manifest icons.
+* **`ui`** — header/drawer flags including `ctaPage` and `showLanguageSwitcher` (set `showLanguageSwitcher: false` for single-language sites with zero structural changes).
 * **`blog.postsPerPage`** — how many posts one index page holds.
-* **`api`** — optional `baseUrl`, `timeoutMs`, and `endpoints.contact` for connecting client-side forms (`src/libs/api/client.ts`) to an external/headless backend (overridable via `PUBLIC_API_BASE_URL` and `PUBLIC_CONTACT_API_URL`). Without an endpoint the form is not rendered at all: the page shows a visitor-facing notice plus a `mailto:` button when `site.contactEmail` is set (`contact_unavailable_desc` replaces both when it is empty), and the developer-only setup note appears in `import.meta.env.DEV` only.
+* **`social`** — optional `github`, `twitter`, `linkedin`, `instagram`, and `telegram` URLs rendered in the footer Company column.
+* **`api`** — optional `baseUrl`, `timeoutMs`, `endpoints.contact`, `endpoints.newsletter`, and localized `topics` for connecting client-side forms (`src/libs/api/client.ts`) to external/headless backends (overridable via `PUBLIC_API_BASE_URL`, `PUBLIC_CONTACT_API_URL`, and `PUBLIC_NEWSLETTER_API_URL`). Without a configured endpoint neither form is rendered: visitors see a `mailto:` button when `site.contactEmail` is set (`*_unavailable_desc` otherwise), and dev setup hints appear in `import.meta.env.DEV` only.
 * **`server`** — dev host/port, also used as the local fallback site origin.
 
 [`src/libs/config/app.ts`](src/libs/config/app.ts) validates that file with Zod and exposes typed values (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, hero defaults, `absoluteUrl`). The asset generator, web manifest, and smoke tests read the same file. Browser scripts read the same JSON through [`src/libs/config/client.ts`](src/libs/config/client.ts), which shares its fallbacks with the schema via [`defaults.ts`](src/libs/config/defaults.ts) and never imports the validator — an import of `app.ts` from a client module would ship the whole Zod runtime (~93 kB) to every page. Framework-only settings remain in `astro.config.mjs`, and locale configuration in `src/i18n/locales.ts` + `project.inlang/settings.json`.
@@ -185,16 +189,19 @@ The two Paraglide plugins are declared in `project.inlang/settings.json` as path
 
 ## 🛠️ Developer CLI Suite
 
-All automation scripts run from the terminal using `pnpm run <command>`:
+All automation scripts run from the terminal using `pnpm run <command>` (or `npm run <command>`):
 
 | Command | Action | Example |
 | :--- | :--- | :--- |
-| `pnpm run new:page` | Scaffolds a new page across all locales | `pnpm run new:page contact -- --title="Contact Us"` |
+| `pnpm run site:init` | Interactive/headless client branding, palette, fonts, OG mode & modules wizard | `pnpm run site:init -- --name="Acme" --preset=emerald --yes` |
+| `pnpm run new:page` | Scaffolds a new page across all locales (`standard` or `landing` preset) | `pnpm run new:page offer -- --preset=landing --title="Product Launch"` |
 | `pnpm run new:post` | Scaffolds a new blog post across all locales | `pnpm run new:post ai-trends -- --title="AI Trends" --publish` |
 | `pnpm run remove:page` | Deletes a page and cleans dictionary navigation keys | `pnpm run remove:page contact -- --force` |
 | `pnpm run remove:post` | Deletes a blog post across all locales | `pnpm run remove:post ai-trends -- --force` |
 | `pnpm run i18n:add-lang` | Adds a new language, dictionary, and content files | `pnpm run i18n:add-lang -- es --name="Español" --with-content` |
 | `pnpm run i18n:remove-lang` | Removes a language and cleans associated files | `pnpm run i18n:remove-lang -- es --with-content --force` |
+| `pnpm run i18n:set-default` | Swaps the root prefix-less default locale cleanly | `pnpm run i18n:set-default fa` |
+| `pnpm run i18n:solo` | Optional: switches to strict solo locale and archives alternate files | `pnpm run i18n:solo fa` |
 | `pnpm run block:adapt` | Adapts external Tailwind HTML/JSX to logical RTL tokens | `pnpm run block:adapt -- --file=src/components/MyCard.astro` |
 | `pnpm run i18n:extract` | Extracts raw copy into Paraglide message keys | `pnpm run i18n:extract -- --target=src/components/MyCard.astro --key=card --auto-add --replace` |
 | `pnpm run i18n:add` | Adds a single translation key to all dictionaries | `pnpm run i18n:add -- --category=nav --key=docs --en="Docs" --fa="مستندات"` |
@@ -208,7 +215,7 @@ All automation scripts run from the terminal using `pnpm run <command>`:
 | `pnpm run smoke` | Runs HTML, SEO, feed, manifest and H1 assertions on `dist/` | `pnpm run smoke` |
 | `pnpm run knip` | Finds dead files, exports and dependencies | `pnpm run knip` |
 | `pnpm run assets:generate` | Regenerates PNG icons, the OG image, and all hero/cover artwork next to the content groups | `pnpm run assets:generate` |
-| `pnpm run verify:cli` | Runs every documented CLI workflow in a throwaway copy and prints a PASS/FAIL line per claim | `pnpm run verify:cli` |
+| `pnpm run verify:cli` | Runs every documented CLI workflow in a throwaway copy and prints a PASS/FAIL line per claim (90 checks) | `pnpm run verify:cli` |
 
 ---
 
@@ -324,21 +331,15 @@ The script automatically:
 * Generates `es.mdx` files for all existing pages and blog posts as drafts (`draft: true`); `--publish` does not override a `[TODO: ...]` placeholder title, so translate each file and flip its `draft` flag when it is ready.
 * Recompiles Paraglide messages.
 
-### 4. Swapping the Default Language
+### 4. Swapping the Default Language & Single-Language Mode
 To make Persian (`fa`) or Arabic (`ar`) the prefix-less default:
-1. In `src/i18n/locales.ts`:
-   ```typescript
-   export const DEFAULT_LOCALE: Locale = 'fa';
-   ```
-2. In `project.inlang/settings.json`:
-   ```json
-   "baseLocale": "fa"
-   ```
-3. Run verification:
-   ```bash
-   pnpm run messages:compile && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke
-   ```
+```bash
+pnpm run i18n:set-default fa
+```
 Persian instantly routes to `/`, `/درباره-ما`, `/قیمت‌گذاری`, while English routes to `/en`, `/en/about`, etc.
+
+**Single-language client deployment (no structural changes needed):**
+Set `"showLanguageSwitcher": false` under `"ui"` in `app.config.json` (plus `pnpm run i18n:set-default fa` if Persian should sit at `/`). All content folders and dictionaries stay intact without modifying code. (If you also want to exclude alternate routes from `dist/` and `sitemap.xml`, you may optionally run `pnpm run i18n:solo fa`, which archives unused files under `.locale-archive/`.)
 
 ### 5. Writing RTL-Compatible Components
 Always use logical properties instead of physical left/right classes:
@@ -407,7 +408,7 @@ Entrance animations are scoped strictly under `<html class="js">` (`src/styles/c
 * **RTL-aware horizontal vectors**: Always use `data-trig-direction="start"` / `"end"` instead of physical `left` / `right` so horizontal motion mirrors automatically in `fa` and `ar`.
 * **Staggered grids (`data-trig-stagger`)**: Put `data-trig-stagger` (optionally `data-trig-stagger-delay="0.08"`) on the parent grid/list and keep every card a **direct child**. ChronoTrig seeds `--stagger-index` / `--stagger-delay` and activates children via `.trig-stagger-active`.
 * **Interactive filter replays**: Filtering only toggles `card.hidden`, so reset the grid's reveal classes first (`replayGridReveals()` in `BlogIndexView.astro`) and then call `refreshChronoTrig()` from `@/scripts/chronotrig`; existing cards then replay alongside newly appended ones. Never replay on the initial render. Add `[data-card][hidden] { display: none !important; }` when toggling `card.hidden` on flex/grid cards.
-* **Motion preference**: Reveals run for every visitor (they are not gated by the OS `prefers-reduced-motion` setting). `data-motion="reduced"` on `<html>` and `@media print` flatten them instantly.
+* **Motion preference**: `BaseLayout.astro`'s `<head>` `resolveMotion()` checks `localStorage.motion` and otherwise honors OS `prefers-reduced-motion: reduce`, setting `html[data-motion="reduced"]`. `chronotrig.css`, `lenis.ts`, and `global.css` (`[data-cookie-banner]`) — alongside `@media print` — all flatten or disable motion cleanly when `data-motion="reduced"` is set.
 * **Lenis nested scroll isolation**: Add `data-lenis-prevent` to any scrollable modal, drawer, or overflow panel (`overflow-y-auto`).
 
 ---
@@ -420,7 +421,7 @@ Run the full quality assurance pipeline:
 # 1. TypeScript Strict Check
 pnpm run lint
 
-# 2. Vitest Unit Tests (paths, ICU, routes, and CLI helpers)
+# 2. Vitest Unit Tests (24 files, 245 tests: paths, ICU, routes, blocks, theme, OG, and CLI helpers)
 pnpm test
 
 # 3. i18n Parity, Placeholder, Content & Route Audit
@@ -441,7 +442,7 @@ pnpm run link:check
 # 7. Dead Code / Dependency Check
 pnpm run knip
 
-# 8. End-to-end check of every documented CLI workflow (82 claims)
+# 8. End-to-end check of every documented CLI workflow (90 claims)
 pnpm run verify:cli
 
 # Regenerate icons, the Open Graph image, and all hero/cover artwork

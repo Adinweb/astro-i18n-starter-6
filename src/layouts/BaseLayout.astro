@@ -143,6 +143,11 @@ const structuredData = schema ?? {
     <script is:inline>
       (function () {
         document.documentElement.classList.add('js');
+        if (typeof document !== 'undefined') {
+          document.addEventListener('astro:after-swap', function () {
+            document.documentElement.classList.add('js');
+          });
+        }
         if (typeof window !== 'undefined' && 'onscrollend' in window) {
           try {
             delete window.onscrollend;

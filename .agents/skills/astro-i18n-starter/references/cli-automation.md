@@ -16,11 +16,27 @@ npm run <command> -- [options]
 
 ## 2. Content Scaffolding & Updating
 
+### 2.0 Client Onboarding & Rebranding (`site:init`)
+```bash
+npm run site:init -- [--name="Acme Studio"] [--short-name="Acme"] [--desc="..."] [--author="..."] [--email="hello@acme.test"] \
+  [--preset=indigo|cobalt|emerald|amber|slate|rose] [--primary=#rrggbb] [--accent=#rrggbb] \
+  [--font=system|jakarta|manrope|outfit|editorial] [--rtl-font=vazirmatn|noto-arabic] \
+  [--og-mode=branded|artwork|default] [--default-theme=system|light|dark] \
+  [--default-locale=<code>] [--single-lang|--multi-lang] [--blog=true|false] [--projects=true|false] \
+  [--cta-page=<key>] [--github=...] [--twitter=...] [--linkedin=...] [--instagram=...] [--telegram=...] \
+  [--skip-assets] [--yes]
+```
+* Updates `app.config.json`, keeps `site_description` synchronized in the active default dictionary, optionally switches default/solo locale mode, and refreshes brand icons / `og-default.png` unless `--skip-assets` is passed. Runs interactively when stdin is a TTY or completely headlessly with `--yes`.
+
 ### 2.1 Static Pages (`new:page`)
 ```bash
-npm run new:page <page-key> -- [--title="<Title>"] [--desc="<Desc>"] [--from=<locale>] [--hero=none|minimal|default] [--container=canvas|contained|prose] [--image=<path>|none] [--publish] [--slug:<locale>="<native-slug>"]
+npm run new:page <page-key> -- [--title="<Title>"] [--desc="<Desc>"] [--from=<locale>] [--preset=standard|landing] [--hero=none|minimal|default] [--container=canvas|contained|prose] [--image=<path>|none] [--publish] [--slug:<locale>="<native-slug>"]
 ```
 * **Files Created**: `src/content/pages/<page-key>/<locale>.mdx` across all active locales in `src/i18n/locales.ts` (`en.mdx`, `fa.mdx` out of the box) + `./<page-key>.png`.
+* **Three Presentation Layers**:
+  - Content schema (`src/content.config.ts`): `hero: 'none'`, `container: 'canvas'`.
+  - Standard CLI scaffold (`--preset=standard`, default): `hero: 'default'`, `container: 'contained'`.
+  - Landing preset (`--preset=landing`): `hero: 'none'`, `container: 'canvas'`, `flushTop: true` — scaffolds an MDX landing page composed with `<LandingHeroSplit>`, `<ProofStatsRow>`, `<BentoCapabilities>`, `<FaqAccordion>`, and `<CtaBanner>`.
 * **Dictionary Key**: Automatically registers `nav_<page-key>` across all dictionaries in `messages/*.json` and prints the follow-up. The key is only a label — the page appears in a menu once it is added to `PAGE_ITEMS` (header + drawer) or to `getFooterNavigation` / `getLegalNavigation` in `src/libs/config/navigation.ts`.
 * **Publication State**:
   - Default: Only the source locale (`--from`, defaults to `DEFAULT_LOCALE`) is published (`draft: false`); other locales remain `draft: true` until translated.
@@ -89,6 +105,20 @@ npm run i18n:add-lang -- <locale> --name="<Display Name>" [--dir="ltr|rtl"] --wi
 ```bash
 npm run i18n:remove-lang -- <locale> --with-content --force
 ```
+
+### 4.3 Swapping Default Locale (`i18n:set-default`)
+```bash
+npm run i18n:set-default <locale> [--allow-draft]
+```
+* Updates `DEFAULT_LOCALE` in `src/i18n/locales.ts`, `baseLocale` in `project.inlang/settings.json`, and recompiles Paraglide messages so `<locale>` takes over root `/` URLs without prefix.
+
+### 4.4 Single-Language Client Mode (`ui.showLanguageSwitcher: false` or optional `i18n:solo`)
+* **Recommended zero-structural-change option**: Set `"showLanguageSwitcher": false` under `"ui"` in `app.config.json` (combined with `npm run i18n:set-default <locale>` if the root `/` site should use another locale such as `fa`). All existing files stay intact without touching routes or dictionaries.
+* **Optional strict solo archive (`i18n:solo`)**:
+  ```bash
+  npm run i18n:solo <locale> [--keep-content|--delete-content] [--allow-draft] [--force]
+  ```
+  Switches `DEFAULT_LOCALE`/`baseLocale` to `<locale>`, unregisters every other locale so alternate prefixes are omitted from `dist/` and `sitemap.xml`, and archives inactive dictionaries and `.mdx` files under `.locale-archive/<locale>/` (restorable cleanly with `i18n:add-lang`).
 
 ---
 

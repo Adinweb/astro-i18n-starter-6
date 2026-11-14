@@ -14,32 +14,29 @@ This skill coordinates workflows for developing, maintaining, and extending this
    - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
    - Content schemas: `src/content.config.ts`.
    - Content types (`pages`, `blog`, `projects`): `app.config.json` → `content.types`, validated by `src/libs/content/types.ts` (`enabled`, `base`, `index`, `paginated`, `feed`, `nav`). Toggle with `pnpm run content:enable|disable <type>`; never delete a collection to hide a section.
-   - Navigation slots: `src/libs/config/navigation.ts` (`PAGE_ITEMS` → `buildPrimaryNavigation` shared by the header **and** the drawer, plus `getFooterNavigation` / `getLegalNavigation`, all distributed by `getNavigationSlots`). The header/drawer CTA target is `ui.ctaPage` in `app.config.json`; a CTA or anchor whose target page is unpublished hides itself.
-   - Application, cookie & external API config: `app.config.json` -> `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`).
+   - Navigation slots: `src/libs/config/navigation.ts` (`PAGE_ITEMS` → `buildPrimaryNavigation` shared by the header **and** the drawer, plus `getFooterNavigation` / `getLegalNavigation`, all distributed by `getNavigationSlots`). The header/drawer CTA target is `ui.ctaPage` in `app.config.json` (hides itself if unpublished). Set `ui.showLanguageSwitcher: false` for single-language sites without structural deletion.
+   - Application, brand theme presets, cookie & external API config: `app.config.json` -> `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`) and `src/libs/config/theme.ts` + `theme-presets.json`.
    - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs`, `src/libs/search/persian.ts`, and `src/libs/search/client.ts`.
-   - Pure SSG External APIs (Zero Backend): `src/libs/api/client.ts` + `src/components/ContactForm.astro`. Never add a backend server or SSR endpoints; `/api/*.json` routes are static build-time catalogs only.
+   - Pure SSG External APIs (Zero Backend): `src/libs/api/client.ts` + `src/components/ContactForm.astro` + `src/components/NewsletterBanner.astro`. Never add a backend server or SSR endpoints; `/api/*.json` routes are static build-time catalogs only.
    - Semantic tokens & `.layout-container` (`1280px`): `src/styles/global.css`.
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
 2. **Lean Router Dispatcher**:
    - Centralized exclusively in `src/pages/[...path].astro` -> `src/views/`. Never create dynamic route files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
    - `pages` → `PageView`, `blog-entry` → `BlogPostView`, `blog-index` → `BlogIndexView`; every other enabled type (e.g. `projects`) uses the generic `CollectionIndexView` / `CollectionEntryView` with `routeType` `collection-index` / `collection-entry`.
-3. **Prefix-less Default Locale**:
-   - Default locale (`en`) has NO prefix (`/`, `/about/`, `/blog/first-post/`). Non-default locales (`fa` out of the box; `ar`, `de`, `fr`, etc. via `i18n:add-lang`) have prefixes (`/fa/درباره-ما/`).
+3. **Prefix-less Default Locale & Single-Language Option**:
+   - Default locale (`en` out of the box, swappable via `npm run i18n:set-default`) has NO prefix (`/`, `/about/`, `/blog/first-post/`). Non-default locales (`fa`, plus `ar`, `de`, `fr`, etc. via `i18n:add-lang`) have prefixes (`/fa/درباره-ما/`). For single-language launches without structural changes, set `ui.showLanguageSwitcher: false` in `app.config.json` (or optionally archive other locales with `npm run i18n:solo`).
 4. **RTL-Native Discipline**:
    - Always use CSS logical properties (`ms-`, `me-`, `ps-`, `pe-`, `start-*`, `end-*`, `text-start`, `text-end`, `border-s-*`, `border-e-*`). Never use physical directions.
-5. **Page Design Freedom (canvas pages)**:
-   - `pages` entries are not locked into one template: the schema defaults to `hero: 'none'` + `container: 'canvas'`, so MDX may compose arbitrary full-bleed bands (`<PageSection>`, `<section class="w-full …">`, custom hero with `<Image>`), opt into `hero: 'minimal'` / `hero: 'default'`, pick `container: 'contained' | 'prose'`, add `flushTop: true`, or delegate to a shared Astro view via `template: '<name>'` registered in `src/views/PageView.astro` → `PAGE_TEMPLATES`. `blog` posts are the opposite: they always render through `BlogPostView.astro` + `PageHero.astro`. Every page must still render exactly one `<h1>`.
+5. **Page Design Freedom (canvas pages & 10 composable blocks)**:
+   - `pages` entries are not locked into one template: the schema defaults to `hero: 'none'` + `container: 'canvas'`, so MDX may compose full-bleed bands (`<PageSection>`, our 10 corporate/landing blocks: `LandingHeroSplit`, `BentoCapabilities`, `ProofStatsRow`, `FaqAccordion`, `CtaBanner`, `PricingSection`, `TestimonialGrid`, `TeamSection`, `PartnerLogos`, `NewsletterBanner`), opt into `hero: 'minimal'` / `hero: 'default'`, pick `container: 'contained' | 'prose'`, add `flushTop: true`, or delegate to a shared Astro view via `template: '<name>'` registered in `src/views/PageView.astro` → `PAGE_TEMPLATES`. `blog` posts are the opposite: they always render through `BlogPostView.astro` + `PageHero.astro`. Every page must still render exactly one `<h1>`.
 6. **Idempotent Client Scripts**:
    - Guard DOM listeners in Astro components with `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';`.
 7. **Static Language Switching**:
    - Use `window.location.assign(target)` rather than client-side SPA view transitions so `<html lang dir>` and font stacks are fully applied.
-8. **ChronoTrig CSS Scroll Engine & Lenis Discipline**:
+8. **ChronoTrig CSS Scroll Engine, Lenis & Reduced Motion**:
    - **Zero CLS & Print/No-JS Safe**: Entrance states are strictly scoped under `.js [data-trig]`. When JavaScript is disabled or printed, all elements render with `opacity: 1` and `transform: none` immediately.
-   - **ChronoTrig Architecture**: Pinned sections (`data-trig-pin`), harmonic staggers (`data-trig-stagger`), and multi-step keyframe timelines (`data-trig-timeline`). Runtime managed in `src/scripts/chronotrig.ts` and styled via `src/styles/chronotrig.css`.
-   - **Logical RTL Directions**: Always use `data-trig-direction="start"` / `data-trig-direction="end"` (never physical `left`/`right`) so horizontal entrances mirror automatically in `fa` and `ar`.
-   - **Staggered Grids/Lists (`[data-trig-stagger]`)**: Put `data-trig-stagger` on the parent container. Children automatically compute `--stagger-delay` intervals and activate via `.trig-stagger-active`.
-   - **Dynamic DOM Refresh**: Call `refreshChronoTrig()` after dynamically appending cards. For filter changes (which only toggle `hidden`), first reset the grid's reveal classes (see `replayGridReveals()` in `BlogIndexView.astro`), then call `refreshChronoTrig()` — never on the initial render.
-   - **Lenis Isolation**: Keep `html { scroll-behavior: auto; }` and add `data-lenis-prevent` on nested scrollable overlays (`overflow-y-auto`).
+   - **Unified Motion Policy (`resolveMotion()`)**: `BaseLayout.astro`'s `<head>` checks `localStorage.motion` (`'reduced' | 'full'`), else honors OS `prefers-reduced-motion: reduce`, setting `html[data-motion]`. `chronotrig.css`, `lenis.ts`, and `global.css` (`[data-cookie-banner]`) all honor `html[data-motion="reduced"]`.
+   - **Logical RTL Directions & Staggers**: Always use `data-trig-direction="start"` / `data-trig-direction="end"`, put `data-trig-stagger` on parent grids, call `refreshChronoTrig()` after appending dynamic cards (or reset reveals first via `replayGridReveals()` on filter changes), keep `html { scroll-behavior: auto; }`, and add `data-lenis-prevent` on nested `overflow-y-auto` overlays.
 
 ---
 
@@ -49,12 +46,12 @@ To perform work in this repository, identify your specific task and read the ind
 
 | Task / Domain | Action / Reference File |
 | :--- | :--- |
-| **Content Pipeline, Search & Pure SSG APIs**<br>Collections schemas, content-type registry (enable/disable, generic collection views), page canvas / full-bleed composition, pure URL paths, lean router dispatcher, blog engine, pagination, Persian-aware Pagefind search, external API client, feeds & sitemaps | ➡️ Read `references/content-and-routing.md` |
-| **Multi-Menu Navigation**<br>Header dropdowns, mobile drawer tabs, 4-column footer, active states, slot resolvers | ➡️ Read `references/navigation.md` |
-| **CLI Automation Suite**<br>Scaffolding pages/posts/any content type, enabling & disabling content types, deleting content, language lifecycle, batch translations, asset generation, `doctor` / `content:status` / `link:check` | ➡️ Read `references/cli-automation.md` |
-| **RTL, Typography & Styling**<br>CSS logical properties, `.layout-container`, font stacks, LTR code block isolation, OKLCH tokens, SVG icon catalog | ➡️ Read `references/rtl-styling.md` |
-| **Smooth Scroll, ChronoTrig & Motion**<br>ChronoTrig CSS scroll engine, `data-trig` smooth bottom reveals, `data-trig-stagger` cascades, `data-trig-pin` sticky stages, RTL start/end vectors, and Lenis smooth-scroll rules | ➡️ Read `references/scroll-and-motion.md` |
-| **Testing, Linting & QA**<br>Paraglide compile, Vitest unit tests, i18n parity audit, production build, smoke tests, Knip | ➡️ Read `references/verification.md` |
+| **Content Pipeline, Search & Pure SSG APIs**<br>Collections schemas, content-type registry, composable landing/corporate blocks, pure URL paths, lean router dispatcher, blog engine, dynamic `/og/*.png` cards, Persian-aware Pagefind search, external API client (`ContactForm` + `NewsletterBanner`), feeds & sitemaps | ➡️ Read `references/content-and-routing.md` |
+| **Multi-Menu Navigation**<br>Header dropdowns, mobile drawer tabs, footer columns (with 5 social channels), active states, single-language `showLanguageSwitcher` flag, slot resolvers | ➡️ Read `references/navigation.md` |
+| **CLI Automation Suite**<br>Client onboarding (`site:init`), language default/solo modes, scaffolding pages (`--preset=landing`), posts & content types, deleting content, batch translations, asset generation, `doctor` / `content:status` / `link:check` | ➡️ Read `references/cli-automation.md` |
+| **RTL, Typography & Styling**<br>CSS logical properties, `.layout-container`, brand OKLCH/font presets (`theme.ts`), LTR code block isolation, semantic tokens, 31-icon Tabler catalog | ➡️ Read `references/rtl-styling.md` |
+| **Smooth Scroll, ChronoTrig & Motion**<br>ChronoTrig CSS scroll engine, `data-trig` reveals, `data-trig-stagger` cascades, OS `prefers-reduced-motion` + `data-motion` resolution, RTL start/end vectors, and Lenis rules | ➡️ Read `references/scroll-and-motion.md` |
+| **Testing, Linting & QA**<br>Paraglide compile, Vitest unit tests, i18n parity audit, production build, smoke tests, Knip, `verify:cli` | ➡️ Read `references/verification.md` |
 
 ---
 
@@ -64,12 +61,13 @@ All scripts support both `npm run` and `pnpm run`:
 
 ```bash
 npm run lint          # paraglide compile + astro check + tsc --noEmit
-npm test              # Vitest test suite (21 files, 222 tests)
+npm test              # Vitest test suite (24 files, 245 tests)
 npm run audit:i18n    # 6-stage i18n completeness, frontmatter & RTL parity audit
+npm run site:init     # Interactive/headless client branding, fonts, OG mode & module wizard
 npm run build         # Production SSG build + Persian-aware Pagefind indexing
 npm run smoke         # Post-build HTML, SEO, feed & pagination validation over dist/
 npm run doctor        # No-build health check (config, content types, dictionaries, content, SITE_URL)
 npm run link:check    # Crawl dist/ and report internal links or #anchors that resolve to nothing
 npm run content:list  # Content types, route bases, enable state and entry counts
-npm run verify:cli    # 82 end-to-end CLI workflow assertions in isolated sandbox
+npm run verify:cli    # 90 end-to-end CLI workflow assertions in isolated sandbox
 ```

@@ -40,6 +40,11 @@ export const SITE_ICONS = [
   'compass',
   'palette',
   'book-open',
+  'star',
+  'star-filled',
+  'quote',
+  'users',
+  'building',
   'file',
 ] as const;
 

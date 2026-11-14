@@ -1,8 +1,8 @@
 # راهنمای جامع Astro i18n Starter
 
 > استارتر چندزبانهٔ تولیدی و **۱۰۰٪ استاتیک (Pure SSG بدون نیاز به بک‌اند)** بر پایهٔ **Astro v7**
-> با پشتیبانی بومی **RTL/LTR**، طراحی آزاد صفحات (`pages`)، دسته‌بندی و صفحه‌بندی وبلاگ،
-> جستجوی **Pagefind** بهینه‌شده برای زبان فارسی، آداپتور فرم تماس برای APIهای خارجی، و ۱۵ ابزار خط فرمان.
+> با پشتیبانی بومی **RTL/LTR**، ۱۰ بلوک آماده برای سایت‌های شرکتی و لندینگ، دسته‌بندی و صفحه‌بندی وبلاگ،
+> جستجوی **Pagefind** بهینه‌شده برای زبان فارسی، آداپتور فرم تماس و خبرنامه برای APIهای خارجی، و ۲۴ ابزار خط فرمان.
 
 نسخهٔ ۵٫۱ — مرجع فنی کامل و راهنمای عملیاتی.
 
@@ -64,22 +64,22 @@
 
 | حوزه | قابلیت |
 | --- | --- |
-| **معماری Pure SSG** | خروجی ۱۰۰٪ استاتیک بدون نیاز به سرور بک‌اند؛ فرم تماس (`ContactForm.astro`) مستقیم به API خارجی متصل می‌شود (`src/libs/api/client.ts`) + مدیریت رضایت کوکی (`CookieConsent.astro`) |
-| **زبان‌ها** | انگلیسی (`en`) و فارسی (`fa`) به‌صورت پیش‌فرض فعال + آمادگی کامل فونت/فرمت و افزودن تک‌فرمانی زبان‌های دیگر (`ar`, `de`, `fr`, …) با `i18n:add-lang`، زبان پیش‌فرض بدون پیشوند، `og:locale` خودکار |
+| **معماری Pure SSG** | خروجی ۱۰۰٪ استاتیک بدون نیاز به سرور بک‌اند؛ فرم تماس (`ContactForm.astro`) و بنر خبرنامه (`NewsletterBanner.astro`) مستقیم به API خارجی متصل می‌شوند (`src/libs/api/client.ts`) + مدیریت رضایت کوکی (`CookieConsent.astro`) |
+| **زبان‌ها و حالت تک‌زبانه** | انگلیسی (`en`) و فارسی (`fa`) به‌صورت پیش‌فرض فعال + آمادگی کامل فونت/فرمت و افزودن تک‌فرمانی زبان‌های دیگر (`ar`, `de`, `fr`, …) با `i18n:add-lang`؛ برای سایت تک‌زبانه، صرفاً `ui.showLanguageSwitcher: false` (+ در صورت نیاز `i18n:set-default`) کافی است (و `i18n:solo` به‌صورت اختیاری مسیرهای اضافی را حذف می‌کند) |
 | **مسیریابی** | دیسپچر تک‌فایلی `[...path].astro` — بدون هیچ فایل مسیر پویا در `src/pages/` |
-| **محتوا و چیدمان آزاد** | دو کالکشن `pages` و `blog` با قرارداد `گروه/زبان.mdx`؛ مقالات وبلاگ قالب یکپارچه دارند ولی صفحات `pages` کاملاً آزادند (`hero: 'none' | 'minimal' | 'default'`، `container: 'canvas' | 'contained' | 'prose'`، `flushTop`، `template`) در ظرف استاندارد دسکتاپ `1280px` (`.layout-container`) |
-| **RTL** | خواص منطقی CSS (`ms-`, `pe-`, `start-`), فونت جداگانه برای فارسی/عربی، جداسازی `pre/code` به LTR، چرخاندن آیکون پیجر |
+| **محتوا و بلوک‌های آماده** | کالکشن‌های `pages`، `blog` و `projects` با قرارداد `گروه/زبان.mdx`؛ ۱۰ بلوک شرکتی/لندینگ آماده (`LandingHeroSplit`, `BentoCapabilities`, `ProofStatsRow`, `FaqAccordion`, `CtaBanner`, `PricingSection`, `TestimonialGrid`, `TeamSection`, `PartnerLogos`, `NewsletterBanner`) + `--preset=landing` |
+| **RTL** | خواص منطقی CSS (`ms-`, `pe-`, `start-`), فونت جداگانه برای فارسی/عربی (`theme.ts`)، جداسازی `pre/code` به LTR، چرخاندن آیکون پیجر |
 | **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی در کل مجموعهٔ مقالات (`/api/blog-posts/<locale>.json`)، صفحه‌بندی استاتیک، فهرست مطالب خودکار (TOC)، مقالات مرتبط و ناوبری مقالهٔ قبلی/بعدی، دکمهٔ کپی کد، زمان مطالعه و تاریخ به‌روزرسانی، استایل چاپ (`@media print`) |
-| **حالت نمایش** | حالت روشن و تیره (Dark Mode) بدون پرش (FOUC-free) با توکن‌های معنایی `oklch` و هماهنگ با View Transitions |
+| **برندینگ و تم** | راه‌اندازی سریع با `site:init`، ۶ پالت OKLCH آماده و فونت‌های لاتین/RTL (`src/libs/config/theme.ts`) + حالت روشن/تیره بدون پرش (FOUC-free) |
 | **فرمت بومی** | تقویم هجری شمسی برای فارسی (`fa-IR-u-ca-persian`) و ارقام بومی فارسی/عربی (`۰-۹` / `٠-٩`) از طریق `src/i18n/format.ts` |
 | **جستجوی فارسی بهینه‌شده** | ایندکس Pagefind با نرمال‌سازی حروف و علائم فارسی (`scripts/index-pagefind.mjs`) + بازسازی نیم‌فاصله، همزه و ارقام در سمت کاربر (`src/libs/search/persian.ts`) + فهرست `/api/search-dev/<locale>.json` به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K |
-| **SEO** | canonical، hreflang چندزبانه + `x-default`، Open Graph (`article:modified_time`)، Twitter Card، JSON-LD (`WebSite`, `WebPage`, `CollectionPage`, `BlogPosting`, `BreadcrumbList`)، sitemap با `lastmod` کامل، فیدهای Atom مجزا به ازای هر زبان (`/rss.xml` و `/rss/<locale>.xml`)، webmanifest آگاه از زبان و جهت |
-| **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک «نسخهٔ انگلیسی» |
-| **ابزار CLI** | ۲۱ اسکریپت برای ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا (روشن/خاموش/ساخت)، افزودن/حذف زبان، مدیریت کلید ترجمه، استخراج متن، تبدیل RTL، بررسی سلامت پروژه، خزش لینک‌ها، تولید تصاویر و ایندکس Pagefind |
-| **کیفیت** | TypeScript strict، `astro check`، ۲۱ فایل تست واحد Vitest (۲۲۲ تست)، ۸۲ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
+| **SEO و کارت OG برنددار** | canonical، hreflang چندزبانه + `x-default`، کارت PNG برنددار زمان بیلد (`/og/[...slug].png.ts` در حالت `branded`)، Twitter Card، JSON-LD (`WebSite`, `WebPage`, `CollectionPage`, `BlogPosting`, `BreadcrumbList`, `FAQPage`)، sitemap با `lastmod` کامل، فیدهای Atom مجزا (`/rss.xml` و `/rss/<locale>.xml`) |
+| **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک بازگشت به نسخهٔ زبان پیش‌فرض |
+| **ابزار CLI** | ۲۴ اسکریپت برای راه‌اندازی برند (`site:init`)، ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا، تعویض زبان پیش‌فرض و مدیریت زبان‌ها، استخراج متن، تبدیل RTL، بررسی سلامت پروژه، خزش لینک‌ها، تولید تصاویر و ایندکس Pagefind |
+| **کیفیت** | TypeScript strict، `astro check`، ۲۴ فایل تست واحد Vitest (۲۴۵ تست)، ۹۰ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
 | **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
-| **حرکت و اسکرول** | اسکرول نرم با **Lenis** + موتور **ChronoTrig** (`data-trig`) با پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`)، پلکانی‌سازی گروهی (`data-trig-stagger`) و سازگاری کامل با View Transitions |
-| **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، کنترل حرکت (`data-motion="reduced"`) |
+| **حرکت و اسکرول** | اسکرول نرم با **Lenis** + موتور **ChronoTrig** (`data-trig`) با پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`), پلکانی‌سازی گروهی (`data-trig-stagger`) و سازگاری کامل با View Transitions |
+| **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، پشتیبانی یکپارچه از `prefers-reduced-motion` سیستم و کلید `data-motion` روی `<html>` |
 
 ---
 
@@ -168,14 +168,17 @@ pnpm exec astro dev stop           # توقف سرور
 | `pnpm run new:post` | ساخت/ویرایش مقالهٔ وبلاگ |
 | `pnpm run remove:page` | حذف صفحه (یا فقط یک زبانش) |
 | `pnpm run remove:post` | حذف مقاله |
-| `pnpm run i18n:add-lang` | افزودن زبان جدید |
+| `pnpm run site:init` | راه‌اندازی سریع برند، پالت، فونت، ایمیل تماس و شبکه‌های اجتماعی مشتری |
+| `pnpm run i18n:add-lang` | افزودن زبان جدید (یا بازگردانی زبان بایگانی‌شده) |
 | `pnpm run i18n:remove-lang` | حذف زبان |
+| `pnpm run i18n:set-default` | تعویض زبان پیش‌فرض در `locales.ts` و `settings.json` |
+| `pnpm run i18n:solo` | (اختیاری) تک‌زبانه‌کردن ساختاری با حذف مسیرهای دیگر و بایگانی در `_archive/i18n` |
 | `pnpm run i18n:add` | افزودن یک کلید ترجمه |
 | `pnpm run i18n:add-batch` | افزودن گروهی کلیدها |
 | `pnpm run i18n:extract` | استخراج متن سخت‌کد از قالب |
 | `pnpm run block:adapt` | تبدیل بلوک Tailwind به خواص منطقی |
 | `pnpm run audit:i18n` | ممیزی چندزبانه (۶ مرحله) |
-| `pnpm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۸۲ ادعا) |
+| `pnpm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۹۰ ادعا) |
 | `pnpm run content:list` | فهرست انواع محتوا، مسیر و تعداد ورودی‌ها (`--json`) |
 | `pnpm run content:new` | ساخت گروه در هر نوع محتوا |
 | `pnpm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا (مسیرها، sitemap و ناوبری) |
@@ -205,45 +208,46 @@ SITE_URL=https://example.com pnpm run build
 ├── tsconfig.json            # TypeScript strict + alias `@/*` → `src/*`
 ├── vitest.config.ts         # Vitest: alias `@` و mock ماژول `astro:content`
 ├── .npmrc                   # تنظیمات npm/pnpm
-├── .env.example             # نمونهٔ متغیر محیطی (SITE_URL, PUBLIC_API_BASE_URL, PUBLIC_CONTACT_API_URL)
+├── .env.example             # نمونهٔ متغیر محیطی (SITE_URL, PUBLIC_API_BASE_URL, PUBLIC_CONTACT_API_URL, PUBLIC_NEWSLETTER_API_URL)
 ├── messages/                # فرهنگ لغت‌های زبان‌های فعال: en.json, fa.json (قابل گسترش با i18n:add-lang)
 ├── project.inlang/          # پیکربندی کامپایلر Paraglide (settings.json)
 ├── public/                  # chronotrig.min.js، favicon، آیکون‌ها، کارت OG پیش‌فرض
-├── scripts/                 # ۲۱ اسکریپت CLI، بررسی سلامت و ایندکس Pagefind (index-pagefind.mjs)
-│   └── lib/                 # کتابخانهٔ مشترک: locales, frontmatter, image-reference, content-stub,
-│                            # slug, validate, content-types, prompt, compile-messages
-├── .github/workflows/ci.yml # CI: lint → test → audit → build → smoke → knip → verify:cli
+├── scripts/                 # ۲۴ اسکریپت CLI، بررسی سلامت و ایندکس Pagefind (index-pagefind.mjs)
+│   └── lib/                 # کتابخانهٔ مشترک: locales, locale-mutations, frontmatter, image-reference,
+│                            # content-stub, slug, validate, content-types, prompt, compile-messages
+├── .github/workflows/ci.yml # CI: lint → test → audit → doctor → build → smoke → link:check → knip → verify:cli
 ├── .agents/skills/         # مهارت عملیاتی برای عامل‌های AI
 │   └── astro-i18n-starter/  # SKILL.md + references/
-├── docs/                   # GUIDE-FA.md (این راهنما)، PRD.md، PLAYBOOKS.md، SPIKE_RESULTS.md
+├── docs/                   # GUIDE-FA.md، GUIDE-HOMEPAGE-FA.md، CONTENT-TYPES-FA.md، PRD.md، PLAYBOOKS.md، SPIKE_RESULTS.md
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
-    ├── components/          # Icon, IconButton, ThemeToggle, LanguageSwitcher, PageHeader, PageHero,
-    │                        # PageSection, HeroCopy, HomeHero, BlogPostHeroContent, PostCard,
-    │                        # SearchModal, DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar
+    ├── components/          # ۲۹ کامپوننت شامل هستهٔ رابط و ۱۰ بلوک شرکتی/لندینگ (LandingHeroSplit,
+    │                        # BentoCapabilities, ProofStatsRow, FaqAccordion, CtaBanner, PricingSection,
+    │                        # TestimonialGrid, TeamSection, PartnerLogos, NewsletterBanner, ContactForm, ...)
     ├── content/
     │   ├── pages/<گروه>/    # صفحات ایستا: <locale>.mdx + <گروه>.png
     │   ├── blog/<گروه>/     # مقالات: <locale>.mdx + <گروه>.png
     │   └── projects/<گروه>/ # نمونه‌کارها: <locale>.mdx + <گروه>.png
-    ├── content.config.ts    # شمای Zod هر دو کالکشن (همراه با گزینه‌های چیدمان pages)
+    ├── content.config.ts    # شمای Zod هر سه کالکشن (همراه با گزینه‌های چیدمان pages)
     ├── i18n/
     │   ├── locales.ts       # SSOT زبان‌ها: LOCALES, DEFAULT_LOCALE, LOCALE_METADATA
     │   ├── format.ts        # فرمت بومی تاریخ (هجری شمسی برای fa) و اعداد (Intl)
     │   └── paths.ts         # localizeHref, localeHref, stripLocale, getPathname
     ├── layouts/BaseLayout.astro
     ├── libs/
-    │   ├── api/client.ts    # آداپتور Pure-SSG سمت کلاینت برای ارسال فرم به API خارجی
+    │   ├── api/client.ts    # آداپتور Pure-SSG سمت کلاینت برای ارسال فرم تماس و خبرنامه به API خارجی
     │   ├── config/
     │   │   ├── app.ts       # خواندن و اعتبارسنجی app.config.json
+    │   │   ├── theme.ts     # پالت‌های OKLCH، پیش‌تنظیم فونت و کارت OG (+ theme-presets.json)
     │   │   └── navigation.ts # ساخت ناوبری چندمنویی هدر/کشوی موبایل/فوتر
-    │   ├── content/         # entries, service, types (رجیستری انواع محتوا), feed, pagination, blog,
-    │   │                    # blog-catalog, taxonomy, social
+    │   ├── content/         # entries, service, types, feed, pagination, blog, blog-catalog, taxonomy, faq, social, og-card
     │   ├── cookies/         # مدل رضایت کوکی و مدیریت اسکریپت‌ها (model.ts, manager.ts)
     │   ├── search/          # client.ts + persian.ts (جستجوی Pagefind و فالبک با نرمال‌سازی فارسی)
-    │   └── ui/button.ts     # دستور کلاس دکمه‌ها؛ منبع مشترک Button.astro و رندرهای کلاینت
+    │   └── ui/              # button.ts (کلاس دکمه‌ها) + icons.ts (فهرست بستهٔ ۳۱ آیکون)
     ├── pages/               # فقط فایل‌های فیزیکی استاتیک
     │   ├── [...path].astro  # دیسپچر مسیریاب
     │   ├── 404.astro        # صفحهٔ ۴۰۴ locale-aware
+    │   ├── og/[...slug].png.ts # تولید کارت PNG برنددار در زمان بیلد (حالت socialCardMode: branded)
     │   ├── site.webmanifest.ts
     │   ├── rss.xml.ts       # فید Atom زبان پیش‌فرض
     │   ├── rss/[locale].xml.ts # فیدهای Atom سایر زبان‌ها
@@ -291,6 +295,7 @@ SITE_URL=https://example.com pnpm run build
     "shortName": "Astro i18n",
     "description": "Production-grade, multi-lingual Astro v7 starter template with native RTL and LTR support.",
     "author": "Astro Starter Team",
+    "contactEmail": "",
     "socialImage": {
       "path": "/og-default.png",
       "width": 1200,
@@ -299,6 +304,10 @@ SITE_URL=https://example.com pnpm run build
   },
   "brand": {
     "defaultTheme": "system",
+    "preset": "indigo",
+    "fontPreset": "system",
+    "rtlFontPreset": "vazirmatn",
+    "socialCardMode": "branded",
     "themeColor": "#4338ca",
     "darkThemeColor": "#0f172a",
     "backgroundColor": "#f8fafc",
@@ -348,7 +357,10 @@ SITE_URL=https://example.com pnpm run build
   },
   "social": {
     "github": "https://github.com",
-    "twitter": ""
+    "twitter": "",
+    "linkedin": "",
+    "instagram": "",
+    "telegram": ""
   },
   "api": {
     "baseUrl": "",
@@ -373,19 +385,23 @@ SITE_URL=https://example.com pnpm run build
 | --- | --- |
 | `site.name` / `shortName` / `description` | رشتهٔ غیرخالی |
 | `site.author` | رشتهٔ اختیاری (پیش‌فرض: `'Astro Starter Team'`) |
-| `site.contactEmail` | ایمیل معتبر یا رشتهٔ خالی (پیش‌فرض: `''`) — مقصد دکمهٔ `mailto:` وقتی API فرم تماس تنظیم نشده است |
+| `site.contactEmail` | ایمیل معتبر یا رشتهٔ خالی (پیش‌فرض: `''`) — مقصد دکمهٔ `mailto:` وقتی API فرم تماس/خبرنامه تنظیم نشده است |
 | `site.socialImage.path` | باید با `/` شروع شود |
 | `site.socialImage.width` / `height` | عدد صحیح مثبت |
 | `brand.defaultTheme` | یکی از `'system'`، `'light'` یا `'dark'` (پیش‌فرض: `'system'`) |
+| `brand.preset` | یکی از ۶ پالت آماده: `'indigo'`, `'cobalt'`, `'emerald'`, `'amber'`, `'slate'`, `'rose'` (در `src/libs/config/theme.ts`) |
+| `brand.primaryColor` / `accentColor` | hex شش‌رقمی اختیاری برای بازنویسی رنگ اصلی/تأکید پالت (که اتوماتیک به OKLCH تبدیل می‌شود) |
+| `brand.fontPreset` / `rtlFontPreset` | فونت لاتین (`system`, `jakarta`, `manrope`, `outfit`, `editorial`) و فونت RTL (`vazirmatn`, `noto-arabic`) |
+| `brand.socialCardMode` | حالت کارت اجتماعی: `'branded'` (کارت PNG برنددار برای هر مسیر)، `'artwork'` (تصویر هر گروه)، `'default'` (`og-default.png`) |
 | `brand.themeColor` / `backgroundColor` | hex شش‌رقمی (`#4338ca`) |
 | `brand.darkThemeColor` | hex شش‌رقمی اختیاری برای تم تیره |
 | `brand.icons` | آرایهٔ غیرخالی از `{ file, size, purpose }` |
-| `ui` | پرچم‌های بولین (`showSearch`, `showThemeToggle`, `showLanguageSwitcher`, `showTopLoadingBar`, `stickyHeader`) + `ui.ctaPage` (نام گروه صفحه‌ای که دکمهٔ CTA به آن می‌رود؛ پیش‌فرض `'pricing'`) |
+| `ui` | پرچم‌های بولین (`showSearch`, `showThemeToggle`, `showLanguageSwitcher`, `showTopLoadingBar`, `stickyHeader`) + `ui.ctaPage`؛ برای سایت‌های **تک‌زبانه**، تنظیم `ui.showLanguageSwitcher: false` بدون تغییر فایل‌های پروژه سوئیچر زبان را پنهان می‌کند |
 | `blog.postsPerPage` | عدد صحیح مثبت |
 | `blog` | پرچم‌های بولین نمایش (`showReadingTime`, `showTableOfContents`, `showRelatedPosts`) |
 | `cookies` | تنظیمات رضایت کوکی (`enabled`, `consentVersion`, `storageKey`, `expirationDays`) |
-| `social.github` / `twitter` | رشته‌های اختیاری آدرس شبکه‌های اجتماعی |
-| `api` | تنظیمات اختیاری API خارجی (`baseUrl`, `timeoutMs`, `endpoints.contact`) — قابل بازنویسی با `PUBLIC_API_BASE_URL` و `PUBLIC_CONTACT_API_URL` |
+| `social` | آدرس‌های اختیاری شبکه‌های اجتماعی: `github`, `twitter`, `linkedin`, `instagram`, `telegram` |
+| `api` | تنظیمات اختیاری API خارجی (`baseUrl`, `timeoutMs`, `endpoints.contact`, `endpoints.newsletter`, `topics`) — قابل بازنویسی با `PUBLIC_API_BASE_URL`، `PUBLIC_CONTACT_API_URL` و `PUBLIC_NEWSLETTER_API_URL` |
 | `server.port` | عدد صحیح بین ۱ و ۶۵۵۳۵ |
 | `server.host` | رشتهٔ غیرخالی (`0.0.0.0`) |
 
@@ -410,24 +426,21 @@ SITE_URL=https://example.com pnpm run build
 افزونه‌های درون‌یابی از `node_modules` خوانده می‌شوند (نه از CDN)، پس نسخهٔ آن‌ها با
 `pnpm-lock.yaml` قفل است و بیلد به شبکه نیاز ندارد.
 
-### تغییر رنگ برند
+### تغییر رنگ و هویت برند (تک‌فرمانی با `site:init`)
 
-دو رنگ `themeColor` و `backgroundColor` در `app.config.json` هستند، ولی رنگ اصلی
-UI از توکن خام `--theme-primary` در `src/styles/global.css` می‌آید (لایهٔ
-`@theme static inline` آن را به `--color-primary` و کلاس‌هایی مثل `bg-primary`
-نگاشت می‌کند). برای هماهنگی کامل این دو را با هم تغییر دهید:
+به جای تغییر دستی چندین فایل، با یک دستور تمام هویت برند، پالت، فونت و ایمیل تماس مشتری را تنظیم کنید:
 
-```css
-:root {
-  --theme-primary: oklch(50% 0.2 260);   /* ← رنگ اصلی */
-}
-
-:root[data-theme='dark'] {
-  --theme-primary: oklch(68% 0.17 260);
-}
+```bash
+pnpm run site:init \
+  --name="Acme Studio" \
+  --preset=indigo \
+  --font=jakarta \
+  --rtl-font=vazirmatn \
+  --email=hello@acme.example \
+  --social-card=branded
 ```
 
-و `brand.themeColor` / `brand.darkThemeColor` را در `app.config.json` هم‌رنگ کنید.
+`theme.ts` پالت انتخابی یا `brand.primaryColor`/`accentColor` در `app.config.json` را در `<head>` به متغیرهای `--theme-*` تبدیل می‌کند (و در `:root[data-theme='dark']` نسخهٔ تاریک سازگار با AA می‌سازد). همچنین در صورت نیاز به سفارشی‌سازی عمیق‌تر توکن‌ها، می‌توانید مستقیماً `:root` و `:root[data-theme='dark']` در `src/styles/global.css` را ویرایش کنید و `brand.themeColor` را هماهنگ نمایید.
 
 ### `tsconfig.json` و `vitest.config.ts`
 
@@ -493,21 +506,15 @@ withTrailingSlash('/blog');       // → "/blog/"  (برای صفحات canonica
 > نشان می‌دهند برابر بمانند؛ canonicalization کارِ `withTrailingSlash()` است.
 > مسیرهای فایلی (`/sitemap.xml`) اسلش انتهایی نمی‌گیرند.
 
-### عوض کردن زبان پیش‌فرض
+### عوض کردن زبان پیش‌فرض و راه‌اندازی سایت تک‌زبانه
 
-دو فایل را با هم عوض کنید:
+برای عوض کردن زبان پیش‌فرض با یک دستور:
 
-```ts
-// src/i18n/locales.ts
-export const DEFAULT_LOCALE: Locale = 'fa';
+```bash
+pnpm run i18n:set-default fa
 ```
 
-```json
-// project.inlang/settings.json
-{ "baseLocale": "fa" }
-```
-
-سپس:
+(یا تغییر دستی `DEFAULT_LOCALE` در `src/i18n/locales.ts` همراه با `"baseLocale"` در `project.inlang/settings.json`). سپس:
 
 ```bash
 pnpm run messages:compile && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke
@@ -515,7 +522,13 @@ pnpm run messages:compile && pnpm test && pnpm run audit:i18n && pnpm run build 
 
 نتیجه: فارسی به `/` و `/درباره-ما/` می‌رود و انگلیسی به `/en/`، `/en/about/`.
 
-> ⚠️ تعویض زبان پیش‌فرض یک تغییر **ساختاری** در URLهاست. قبل از انجام، برای
+#### تحویل پروژهٔ تک‌زبانه بدون تغییر ساختاری (پیشنهادی)
+از آن‌جا که خروجی پیش از استقرار بیلد می‌شود، برای یک سایت تک‌زبانه نیازی به تغییر ساختاری یا حذف فایل‌ها نیست:
+- صرفاً `"showLanguageSwitcher": false` را در `app.config.json` → `ui` تنظیم کنید تا منو و بخش زبان در هدر و کشوی موبایل پنهان شود.
+- اگر سایت مشتری فقط فارسی (یا هر زبان غیرپیش‌فرض دیگری) است، یک‌بار `pnpm run i18n:set-default fa` بزنید تا ریشهٔ `/` مستقیماً فارسی باشد.
+- *(اختیاری)* اگر می‌خواهید مسیرهای زبان دوم به‌کل در `dist/` و `sitemap.xml` تولید نشوند، دستور `pnpm run i18n:solo fa` زبان‌های دیگر را بایگانی (`_archive/i18n/`) و پیکربندی را تک‌زبانه می‌کند (بعداً با `i18n:add-lang` قابل بازگردانی است).
+
+> ⚠️ تعویض زبان پیش‌فرض یک تغییر **ساختاری** در URLهاست. قبل از انجام روی سایت زنده، برای
 > ریدایرکت‌های ۳۰۱ از سرور/CDN برنامه‌ریزی کنید.
 
 ### تعویض زبان در سمت کاربر
@@ -734,8 +747,9 @@ pnpm run new:page contact --title="Contact Us" --from=en --hero=minimal --contai
 | `--title="…"` | عنوان صفحه (در زبان مبدأ) |
 | `--desc="…"` / `--description="…"` | توضیح صفحه |
 | `--from=<locale>` / `--source=<locale>` | زبان مبدأ (پیش‌فرض: زبان پایه) |
-| `--hero=none\|minimal\|default` | نوع هدر صفحه (پیش‌فرض شِما: `none`) |
-| `--container=canvas\|contained\|prose` | نوع ظرف چیدمان صفحه (پیش‌فرض شِما: `canvas`) |
+| `--preset=standard\|landing` | پیش‌تنظیم صفحه: `standard` (`hero: default`, `container: contained`) یا `landing` (`hero: none`, `container: canvas`, `flushTop: true` همراه با بلوک‌های لندینگ آماده) |
+| `--hero=none\|minimal\|default` | نوع هدر صفحه (در شِمای MDX پیش‌فرض `none` و در `new:page --preset=standard` پیش‌فرض `default`) |
+| `--container=canvas\|contained\|prose` | نوع ظرف چیدمان صفحه (در شِمای MDX پیش‌فرض `canvas` و در `new:page --preset=standard` پیش‌فرض `contained`) |
 | `--publish` / `--draft=false` | انتشار زبان مبدأ و زبان‌هایی که عنوان/توضیح واقعی دارند (زبان‌های دارای `[TODO: …]` پیش‌نویس می‌مانند) |
 | `--draft` / `--draft=true` | ساخت به‌صورت پیش‌نویس |
 | `--no-draft` | معادل `--draft=false` |
@@ -996,7 +1010,7 @@ pnpm run link:check                   # خزش dist/ و گزارش لینک/لن
 pnpm run audit:i18n    # ۶ بخش: پیکربندی زبان، فرهنگ‌ها، محتوا، مسیرها، متن هاردکد، نگهبان RTL
 pnpm run smoke         # تست دود روی خروجی بیلدشده
 pnpm run knip          # فایل/اکسپورت/وابستگی مرده
-pnpm run verify:cli    # ۸۲ ادعا دربارهٔ گردش‌کارهای CLI
+pnpm run verify:cli    # ۹۰ ادعا دربارهٔ گردش‌کارهای CLI
 ```
 
 `verify:cli` پروژه را در یک پوشهٔ موقت کپی می‌کند، همهٔ فرمان‌های CLI را دقیقاً
@@ -1251,7 +1265,17 @@ pre, code, .math {
 | `LanguageSwitcher.astro` | `currentLocale`, `alternates` | تعویض زبان با بارگذاری کامل |
 | `SearchModal.astro` | `locale` | مودال جستجوی دسکتاپ (Pagefind در پروداکشن / fallback استاتیک) |
 | `DrawerSearch.astro` | `locale` | جستجوی درون کشوی موبایل هماهنگ با تب‌بندی کشو |
-| `ContactForm.astro` | `locale` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` (نشانی از `app.config.json` یا `PUBLIC_*` خوانده می‌شود)؛ بدون نشانی، فرم رندر نمی‌شود و پنل `mailto:` (از `site.contactEmail`) جای آن را می‌گیرد |
+| `ContactForm.astro` | `locale` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` (با پشتیبانی از `api.topics`)؛ بدون نشانی، فرم رندر نمی‌شود و پنل `mailto:` (از `site.contactEmail`) جای آن را می‌گیرد |
+| `NewsletterBanner.astro` | `id?`, `locale?`, `eyebrow?`, `title?`, `subtitle?`, `baseUrl?`, `endpoint?`, `timeoutMs?`, `source?`, `surface?`, `spacing?` | بنر اشتراک خبرنامه Pure-SSG متصل به `api.endpoints.newsletter` / `PUBLIC_NEWSLETTER_API_URL` یا نمایش پنل `mailto:` |
+| `LandingHeroSplit.astro` | `eyebrow?`, `title`, `description?`, `primaryCta`, `secondaryCta?`, `badge?`, `stats?`, `image?`, `imageAlt?` | هیروی دوتایی شرکتی/لندینگ با تصویر یا کارت آمار مقابل |
+| `BentoCapabilities.astro` | `id?`, `eyebrow?`, `heading`, `subheading?`, `items`, `surface?`, `spacing?` | شبکهٔ بنتو برای معرفی قابلیت‌ها و خدمات |
+| `ProofStatsRow.astro` | `id?`, `eyebrow?`, `heading?`, `stats`, `locale?`, `surface?`, `spacing?` | ردیف آمار و دستاوردها با قالب‌بندی بومی اعداد |
+| `PricingSection.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `tiers`, `locale?`, `contained?`, `surface?`, `spacing?` | کارت‌های قیمت‌گذاری با پلن پیشنهادی و قیمت‌گذاری بومی (`contained` برای MDX متنی) |
+| `TestimonialGrid.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `items`, `locale?`, `surface?`, `spacing?` | شبکهٔ نظرات مشتریان با امتیاز ستاره‌ای، نقل‌قول و آواتار بهینه |
+| `TeamSection.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `members`, `surface?`, `spacing?` | شبکهٔ اعضای تیم با تصویر/مونوگرام و لینک‌های شبکه‌های اجتماعی |
+| `PartnerLogos.astro` | `id?`, `eyebrow?`, `heading?`, `items`, `columns?`, `surface?`, `spacing?` | نوار اعتماد و لوگوی مشتریان/همکاران (۴، ۵ یا ۶ ستونی) |
+| `FaqAccordion.astro` | `id?`, `eyebrow?`, `heading`, `items`, `surface?`, `spacing?` | پرسش‌های متداول با پشتیبانی از `FAQPage` JSON-LD |
+| `CtaBanner.astro` | `id?`, `eyebrow?`, `heading`, `description?`, `primaryCta`, `secondaryCta?`, `surface?`, `spacing?` | بنر فراخوان پایانی (CTA) پیش از فوتر |
 | `CookieConsent.astro` | `locale` | بنر و مودال مدیریت رضایت کوکی و اسکریپت‌ها (TDDDG § 25 / GDPR) |
 | `Seo.astro` | `title`, `description?`, `locale`, `url`, `alternates`, `siteName?`, `image?`, `type?`, `publishedTime?`, `modifiedTime?`, `schema?`, `noindex?`, `prevUrl?`, `nextUrl?` | همهٔ متادیتای SEO |
 | `TopLoadingBar.astro` | — | نوار پیشرفت ناوبری |
@@ -1381,7 +1405,7 @@ refreshChronoTrig();
 
 * **Lenis (`src/scripts/lenis.ts`)**: با `lerp: 0.085` و `syncTouch: false` راه‌اندازی می‌شود، لینک‌های `#hash` هم‌صفحه را با آفست هدر ثابت (`-96px`) مدیریت می‌کند و در `astro:page-load` بازسازی می‌شود.
 * **پنل‌های اسکرول داخلی**: روی هر مودال/کشو/پنل با `overflow-y-auto` صفت `data-lenis-prevent` بگذارید.
-* **تنظیم حرکت**: انیمیشن‌های ورود برای همهٔ کاربران و در همهٔ اندازه‌های صفحه اجرا می‌شوند و به تنظیم سیستمی `prefers-reduced-motion` گره نخورده‌اند. تنها دو مسیر «تخت‌سازی» وجود دارد: صفت `data-motion="reduced"` روی `<html>` (برای کلید اختیاری کاهش حرکت) و `@media print`.
+* **تنظیم حرکت**: تابع `resolveMotion()` در `<head>` (در `BaseLayout.astro`) مقدار `localStorage.motion` یا در صورت نبود آن تنظیم سیستمی `(prefers-reduced-motion: reduce)` را می‌خواند و `data-motion="reduced" | "full"` را روی `<html>` می‌نشاند. ChronoTrig، Lenis و `[data-cookie-banner]` و `@media print` به‌صورت یکپارچه به آن احترام می‌گذارند.
 
 ### استایل متن محتوا — `src/styles/prose.css`
 
@@ -1409,8 +1433,8 @@ refreshChronoTrig();
 
 ### افزودن آیکون
 
-آیکون‌ها از بستهٔ `@tabler/icons-astro` (لایسنس MIT) می‌آیند و با نام معنایی از `src/libs/ui/icons.ts` صدا زده می‌شوند:
-`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link` · `arrow-right` · `shield` · `mail` · `layers` · و آیکون‌های ناوبری (`home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `file`).
+آیکون‌ها از بستهٔ `@tabler/icons-astro` (لایسنس MIT) می‌آیند و با ۳۱ نام معنایی از `src/libs/ui/icons.ts` صدا زده می‌شوند:
+`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link` · `arrow-right` · `shield` · `mail` · `layers` · `star` · `star-filled` · `quote` · `users` · `building` · و آیکون‌های ناوبری (`home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `file`).
 
 ```ts
 // ۱) نام تازه را به فهرست بسته اضافه کنید
@@ -1504,7 +1528,7 @@ export interface NavigationSlots {
   - **ستون ۱ (برند و مأموریت)**: نام برند، توضیح بومی سایت (`site_description`).
   - **ستون ۲ (صفحات / Pages)**: دقیقاً از `PAGE_ITEMS` ساخته می‌شود (خانه، درباره ما، ویژگی‌ها، قیمت‌گذاری)، پس افزودن/حذف صفحه در فوتر هم اثر می‌کند. خانه تنها لینکی است که حتی بدون صفحهٔ خانهٔ همان زبان (با `getHomeHref`) زنده می‌ماند.
   - **ستون ۳ (منابع / Resources)**: فقط یک لینک برای هر نوع محتوای قابل‌ناوبری (`getContentTypeNavItems`: وبلاگ، پروژه‌ها). لنگرهای `#rtl`/`#design` و «نمای کلی» متعلق به منوی هدر/کشو هستند، نه فوتر. هیچ لینک خارجی/قالبی در فوتر نیست.
-  - **ستون ۴ (شرکت / Company)**: فقط شبکه‌های اجتماعی `social.github` و `social.twitter` از `app.config.json`؛ هر کدام فقط وقتی مقدار داشته باشند. ستون خالی کلاً حذف می‌شود.
+  - **ستون ۴ (شرکت / Company)**: شبکه‌های اجتماعی `social.github`، `social.twitter`، `social.linkedin`، `social.instagram` و `social.telegram` از `app.config.json`؛ هر کدام فقط وقتی مقدار داشته باشند. ستون خالی کلاً حذف می‌شود.
 - **نوار پایین فوتر (Bottom Bar)**:
   - درج سال کپی‌رایت خودکار با تقویم هجری شمسی برای فارسی (`formatYear(currentYear, locale)`) و متن همه‌حقوق محفوظ است (`common_all_rights_reserved`).
   - پیوندهای حقوقی ثانویه (`legalNav`) شامل حریم خصوصی (`footer_legal_privacy`) و شرایط استفاده (`footer_legal_terms`) — هر دو لنگرهای صفحهٔ about هستند و اگر آن صفحه منتشر نشده باشد، نوار حقوقی خالی می‌ماند (هیچ `#privacy` مرده‌ای ساخته نمی‌شود).
@@ -1727,15 +1751,15 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 | محافظت از رقابت (Race-Condition) | شناسهٔ فزایندهٔ `requestId`؛ پاسخ‌های دیررس جستجوهای قبلی نادیده گرفته می‌شوند |
 | امنیت در برابر XSS | تبدیل مارک‌آپ خلاصه‌های Pagefind به متن ساده توسط `plainText()` و درج امن با `textContent` |
 
-### فرم تماس و اتصال به API خارجی (معماری Pure SSG بدون بک‌اند)
-این استارتر **۱۰۰٪ استاتیک (SSG)** است و هیچ سرور بک‌اند داخلی ندارد. برای فرم تماس (`src/components/ContactForm.astro`)، داده‌ها مستقیماً از مرورگر از طریق آداپتور نوع‌امن `src/libs/api/client.ts` (`submitContactInquiry` و کمکی‌های `resolveApiEndpoint` / `getInvalidContactFields` / `validateContactPayload`) با محافظت تایم‌اوت (`AbortController`) و فیلتر ضداسپم Honeypot به سرویس یا API خارجی شما ارسال می‌شوند:
-- نشانی API را در متغیر محیطی `PUBLIC_CONTACT_API_URL` (یا `PUBLIC_API_BASE_URL`) و یا در بخش `api` فایل `app.config.json` تنظیم کنید.
+### فرم تماس و خبرنامه (معماری Pure SSG بدون بک‌اند)
+این استارتر **۱۰۰٪ استاتیک (SSG)** است و هیچ سرور بک‌اند داخلی ندارد. برای فرم تماس (`src/components/ContactForm.astro`) و بنر اشتراک خبرنامه (`src/components/NewsletterBanner.astro`)، داده‌ها مستقیماً از مرورگر از طریق آداپتور نوع‌امن `src/libs/api/client.ts` (`submitContactInquiry` / `submitNewsletterSubscription` و کمکی‌های `resolveApiEndpoint` / `validateContactPayload` / `validateNewsletterPayload`) با محافظت تایم‌اوت (`AbortController`) و فیلتر ضداسپم Honeypot به سرویس یا API خارجی شما ارسال می‌شوند:
+- نشانی API را در متغیرهای محیطی `PUBLIC_CONTACT_API_URL`، `PUBLIC_NEWSLETTER_API_URL` (یا `PUBLIC_API_BASE_URL`) و یا در بخش `api` فایل `app.config.json` (`endpoints.contact`, `endpoints.newsletter`, `topics`) تنظیم کنید.
 - **بدون نشانی API، فرم اصلاً رندر نمی‌شود.** بازدیدکننده به‌جای فرم یک پنل کوتاه می‌بیند:
   - اگر `site.contactEmail` تنظیم شده باشد: پیام `contact_fallback_desc` («ایمیل بزنید…») + دکمهٔ `mailto:` (`contact_fallback_cta`).
-  - اگر خالی باشد: پیام بی‌طرف `contact_unavailable_desc` («فرم آنلاین هنوز در دسترس نیست») — بدون وعدهٔ ایمیلی که وجود ندارد و بدون دکمه.
+  - اگر خالی باشد: پیام بی‌طرف `contact_unavailable_desc` / `newsletter_unavailable_desc` — بدون وعدهٔ ایمیلی که وجود ندارد و بدون دکمه.
 
   دلیل: کنترل بفرست‌نشدنی بدتر از یک نشانی روشن است، و متن‌هایی مثل نام متغیر محیطی هرگز نباید به بازدیدکننده نشان داده شوند.
-- متن راهنمای توسعه‌دهنده (`contact_unconfigured_notice`) فقط در حالت `import.meta.env.DEV` رندر می‌شود؛ در بیلد پروداکشن از HTML حذف می‌شود.
+- متن راهنمای توسعه‌دهنده فقط در حالت `import.meta.env.DEV` رندر می‌شود؛ در بیلد پروداکشن از HTML حذف می‌شود.
 - `pnpm run doctor` اگر هیچ مقصدی (نه `api.baseUrl`/متغیرهای `PUBLIC_*` و نه `site.contactEmail`) تنظیم نشده باشد هشدار می‌دهد، چون در آن حالت سایت هیچ درخواستی دریافت نمی‌کند.
 
 ---
@@ -1758,18 +1782,16 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 `og:locale` با `Intl.Locale(htmlLang).maximize()` خودکار ساخته می‌شود
 (`en` → `en_US`، `fa` → `fa_IR`).
 
-### تصویر اجتماعی
+### تصویر اجتماعی (OG Card)
 
 ```ts
-// src/libs/content/social.ts
+// src/libs/content/social.ts و src/libs/content/og-card.ts
+// اگر brand.socialCardMode === 'branded' (پیش‌فرض)، route استاتیک `/og/[...slug].png.ts`
+// کارت ۱۲۰۰×۶۳۰ PNG برنددار هر صفحه/مقاله را در زمان بیلد تولید می‌کند؛
+// در حالت 'artwork' تصویر گروه با getSocialCard() برش می‌خورد و در 'default' از `/og-default.png` استفاده می‌شود.
 const card = await getSocialCard(entry.data.image);
 // → { url: 'https://…/og-….jpg', width: 1200, height: 630 }
 ```
-
-`getSocialCard()` artwork را به نسبت ۱٫۹۱:۱ برش می‌دهد و JPEG رمزنگاری می‌کند
-(کیفیت ۸۰) — کارتی با اندازهٔ دقیق مورد انتظار. صفحه‌های بدون artwork کارت
-پیش‌فرض سایت (`public/og-default.png`) را می‌گیرند، پس فراخوانی‌کننده هرگز
-لازم نیست fallback را خودش پیاده کند.
 
 ### endpointها
 
@@ -1779,6 +1801,7 @@ const card = await getSocialCard(entry.data.image);
 | `/rss.xml` | Atom | مقالات منتشرشدهٔ زبان پیش‌فرض با `category` |
 | `/rss/<locale>.xml` | Atom | مقالات منتشرشدهٔ همان زبان (غیرپیش‌فرض) |
 | `/robots.txt` | متن | `User-agent: *` / `Allow: /` / `Disallow: /api/` / `Sitemap: <مطلق>` |
+| `/og/[...slug].png` | PNG | کارت‌های OG برنددار هر مسیر در حالت `brand.socialCardMode === 'branded'` |
 | `/site.webmanifest` | JSON | از `app.config.json` + زبان پیش‌فرض ساخته می‌شود: نام، `short_name`، `lang`/`dir`، رنگ‌ها، آیکون‌ها، `display: standalone` |
 | `/api/search-dev/<locale>.json` و `/api/search-dev.json` | JSON | فهرست استاتیک fallback جستجو به تفکیک هر زبان و کل سایت |
 | `/api/blog-posts/<locale>.json` و `/api/blog-posts.json` | JSON | کاتالوگ استاتیک مقالات منتشرشده به تفکیک زبان برای فیلتر فراصفحه‌ای |
@@ -1815,7 +1838,7 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 | دیالوگ‌ها | `<dialog>` بومی با `showModal()`، بستن با ESC و کلیک بیرون |
 | فوکوس | `:focus-visible` با `outline: 2px solid var(--color-primary)` |
 | زبان و جهت | `lang` و `dir` روی `<html>`، `htmlLang` از `LOCALE_METADATA` |
-| کاهش حرکت | انیمیشن‌های ورود برای همه اجرا می‌شوند؛ `data-motion="reduced"` روی `<html>` آن‌ها را تخت می‌کند (نوار پیشرفت ناوبری به `prefers-reduced-motion` احترام می‌گذارد) |
+| کاهش حرکت | `resolveMotion()` از `localStorage.motion` یا `(prefers-reduced-motion: reduce)` سیستم می‌خواند و `data-motion="reduced" \| "full"` روی `<html>` می‌گذارد؛ ChronoTrig، Lenis، بنر کوکی و نوار پیشرفت هماهنگ به آن احترام می‌گذارند |
 | متن جایگزین | تصاویر تزئینی با `alt=""`؛ عنوان کارت اجتماعی = عنوان صفحه |
 
 ---
@@ -1824,12 +1847,12 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 
 ```bash
 pnpm run lint     # کامپایل پیام‌ها + astro check + tsc --noEmit
-pnpm test         # ۲۱ فایل تست واحد Vitest (۲۲۲ تست)
+pnpm test         # ۲۴ فایل تست واحد Vitest (۲۴۵ تست)
 pnpm run audit:i18n
 SITE_URL=https://example.com pnpm run build
 pnpm run smoke    # تست دود روی dist/
 pnpm run knip
-pnpm run verify:cli  # ۸۲ ادعا دربارهٔ گردش‌کارهای CLI
+pnpm run verify:cli  # ۹۰ ادعا دربارهٔ گردش‌کارهای CLI
 ```
 
 ### چه چیزی تست می‌شود
@@ -1844,20 +1867,23 @@ pnpm run verify:cli  # ۸۲ ادعا دربارهٔ گردش‌کارهای CLI
 | `src/libs/content/pagination.test.ts` | `paginate`، `clampPage`، `buildPageWindow` |
 | `src/libs/content/blog.test.ts` | فیلترها، مقایسهٔ وضعیت فیلتر (`areBlogFiltersEqual`)، زمان مطالعه، TOC و مقالات مرتبط |
 | `src/libs/content/taxonomy.test.ts` | برچسب دسته/برچسب و fallback |
+| `src/libs/content/og-card.test.ts` | رندر SVG کارت OG برنددار، شکستن خطوط و فرار از XSS |
 | `src/libs/content/scripts.test.ts` | توابع فرانت‌متر، CLI helperها، پارسر زبان |
 | `src/libs/config/app.test.ts` | اعتبارسنجی `app.config.json` و تنظیمات برند/وبلاگ/API/کوکی |
+| `src/libs/config/theme.test.ts` | پالت‌های OKLCH، رنگ‌های hex سفارشی، فونت‌ها و کنتراست AA |
 | `src/libs/config/navigation.test.ts` | اسلات‌های ناوبری چندمنویی هدر، کشوی موبایل و فوتر |
 | `src/libs/config/client.test.ts` | هم‌خوانی `CLIENT_COOKIE_CONFIG` با پیکربندی اعتبارسنجی‌شده و نبود import زمان اجرا از `app.ts` (به‌این‌ترتیب Zod به باندل مرورگر نمی‌رسد) |
 | `src/libs/config/astro-config.test.ts` | alias `astro/components` در `astro.config.mjs` (رفع `Unknown file extension ".astro"`) |
-| `src/libs/api/client.test.ts` | آداپتور Pure-SSG ارسال درخواست به API خارجی، تایم‌اوت و Honeypot |
+| `src/libs/api/client.test.ts` | آداپتور Pure-SSG ارسال درخواست تماس و خبرنامه به API خارجی، تایم‌اوت و Honeypot |
 | `src/libs/cookies/cookies.test.ts` | مدل رضایت کوکی، انقضا و مدیریت اسکریپت‌ها |
 | `src/libs/search/client.test.ts` | جستجوی کلاینت، نرمال‌سازی حروف/نیم‌فاصله/ارقام فارسی و ایندکسر Pagefind |
 | `src/scripts/lenis.test.ts` | اسکرول نرم، آفست لینک‌های `#hash` و ایزوله‌سازی پنل‌ها |
-| `src/scripts/chronotrig.test.ts` | قرارداد `.js [data-trig]`، جهت‌های منطقی RTL، پلکانی‌سازی، مکث `--trig-reveal-delay` و سازگاری Lenis |
+| `src/scripts/chronotrig.test.ts` | قرارداد `.js [data-trig]`، جهت‌های منطقی RTL، پلکانی‌سازی، مکث `--trig-reveal-delay`، `prefers-reduced-motion` و سازگاری Lenis |
 | `src/libs/ui/button.test.ts` | نگاشت `variant`/`size` به کلاس‌های `global.css`، حرکت هاور/فشرده‌سازی و اولویت `className` فراخوان |
 | `src/libs/ui/icons.test.ts` | یکتایی و kebab-case بودن `SITE_ICONS`، `resolveIconName`، آیکون‌های جهت‌دار RTL و پوشش آیکون‌های ناوبری |
+| `src/libs/ui/blocks.test.ts` | بلوک‌های آمادهٔ شرکتی/لندینگ (خواص منطقی، نبود `<svg>` خام، کلیدهای Paraglide و توکن‌های معنایی) |
 
-> **۲۱ فایل تست واحد (۲۲۲ تست).** ماژول `astro:content` در Vitest با
+> **۲۴ فایل تست واحد (۲۴۵ تست).** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -1872,8 +1898,8 @@ pnpm run verify:cli  # ۸۲ ادعا دربارهٔ گردش‌کارهای CLI
 | ۵. اسکنر متن هاردکد | هشدار دربارهٔ رشته‌های ترجمه‌نشده در قالب‌ها (هشدار، نه خطا) |
 | ۶. نگهبان RTL | نبود کلاس جهت‌دار فیزیکی (`ml-`, `pr-`, `text-left`, `left/right`) و بردارهای فیزیکی انیمیشن |
 
-خروجی واقعی روی این مخزن: ۲ زبان، ۱۵۸ کلید در همهٔ فرهنگ‌ها با placeholder
-یکسان، ۱۴۳ کلید استفاده‌شدهٔ ایستا، ۹ گروه محتوا، بدون برخورد مسیر و بدون
+خروجی واقعی روی این مخزن: ۲ زبان، ۱۸۴ کلید در همهٔ فرهنگ‌ها با placeholder
+یکسان، ۱۷۳ کلید استفاده‌شدهٔ ایستا، ۹ گروه محتوا، بدون برخورد مسیر و بدون
 هشدار متن هاردکد.
 
 ### تست دود — ۷ بخش روی `dist/`
@@ -1905,7 +1931,7 @@ pnpm run verify:cli  # ۸۲ ادعا دربارهٔ گردش‌کارهای CLI
 - Node 22 با cache pnpm، `pnpm install --frozen-lockfile`
 - `SITE_URL: https://example.com` به‌عنوان env
 - `timeout-minutes: 15`
-- ترتیب: lint → test → audit → build → smoke → knip → verify:cli
+- ترتیب: lint → test → audit → doctor → build → smoke → link:check → knip → verify:cli
 
 ---
 
@@ -2070,8 +2096,11 @@ dist/
 | `pnpm run new:post` | ساخت/ویرایش مقاله |
 | `pnpm run remove:page` | حذف صفحه |
 | `pnpm run remove:post` | حذف مقاله |
+| `pnpm run site:init` | راه‌اندازی سریع برند، پالت، فونت و ایمیل تماس |
 | `pnpm run i18n:add-lang` | افزودن زبان |
 | `pnpm run i18n:remove-lang` | حذف زبان |
+| `pnpm run i18n:set-default` | تعویض زبان پیش‌فرض |
+| `pnpm run i18n:solo` | (اختیاری) تک‌زبانه‌کردن ساختاری با بایگانی زبان‌های دیگر |
 | `pnpm run i18n:add` | افزودن کلید ترجمه |
 | `pnpm run i18n:add-batch` | افزودن گروهی کلید |
 | `pnpm run i18n:extract` | استخراج متن سخت‌کد |
@@ -2093,18 +2122,18 @@ dist/
 
 ## پیوست B — کلیدهای ترجمه
 
-۱۵۸ کلید ترجمه در `messages/en.json` (و یک کلید `$schema` که فقط متادیتای JSON Schema است). این فهرست گزیده است؛ منبع دقیق خود فایل و `pnpm run audit:i18n` است:
+۱۸۴ کلید ترجمه در `messages/en.json` (و یک کلید `$schema` که فقط متادیتای JSON Schema است). این فهرست دسته‌بندی‌شده است؛ منبع دقیق خود فایل و `pnpm run audit:i18n` است:
 
-### `common_*` (۲۴ کلید)
+### `common_*` (۲۵ کلید)
 
 `common_all_rights_reserved` · `common_back_home` · `common_back_to_blog` ·
 `common_breadcrumbs` · `common_change_language` · `common_close` ·
-`common_copied` · `common_copy_code` · `common_english_version_hint` ·
-`common_get_started` · `common_go_english_version` · `common_menu` ·
+`common_copied` · `common_copy_code` · `common_default_version_hint` ·
+`common_get_started` · `common_go_default_version` · `common_menu` ·
 `common_no_results` · `common_not_found_desc` · `common_not_found_title` ·
 `common_press_esc` · `common_published_on` · `common_search_placeholder` ·
-`common_skip_to_content` · `common_theme_dark` · `common_theme_light` ·
-`common_theme_toggle` · `common_type_to_search` · `common_updated_on`
+`common_search_results_count` · `common_skip_to_content` · `common_theme_dark` ·
+`common_theme_light` · `common_theme_toggle` · `common_type_to_search` · `common_updated_on`
 
 ### `blog_*` (۳۲ کلید)
 
@@ -2122,18 +2151,17 @@ dist/
 برچسب‌ها: `blog_tag_architecture` · `blog_tag_astro` · `blog_tag_i18n` ·
 `blog_tag_performance` · `blog_tag_release` · `blog_tag_rtl`
 
-### `drawer_*` (۲ کلید)
+### `contact_*` (۳۰ کلید) و `newsletter_*` (۱۸ کلید) و `cookie_*` (۳۹ کلید)
 
-`drawer_tab_nav` (ناوبری در تب کشوی موبایل) · `drawer_tab_search` (جستجو در تب کشوی موبایل)
+- `contact_*`: برچسب‌ها، خطاهای اعتبارسنجی، موضوعات، پیام ارسال موفق و پنل‌های جایگزین (`contact_fallback_*`، `contact_unavailable_desc`).
+- `newsletter_*`: تیتر، فیلد ایمیل، رضایت، وضعیت ارسال و خطاهای بنر خبرنامه (`NewsletterBanner.astro`).
+- `cookie_*`: بنر و مودال مدیریت رضایت کوکی و دسته‌بندی اسکریپت‌ها (`CookieConsent.astro`).
 
-### `footer_*` (۶ کلید)
+### `home_*` (۹ کلید) و `drawer_*` (۲ کلید) و `footer_*` (۶ کلید)
 
-`footer_col_pages` · `footer_col_resources` · `footer_col_company` ·
-`footer_col_legal` · `footer_legal_privacy` · `footer_legal_terms`
-
-ستون «صفحات» در فوتر از همان فهرست `PAGE_ITEMS` ساخته می‌شود که هدر و کشوی موبایل
-می‌خوانند؛ پس افزودن، تغییر نام یا حذف یک صفحه، فوتر را هم با خود می‌برد و
-`remove:page` هرگز کلید ناوبری‌ای را که فوتر هنوز صدا می‌زند پاک نمی‌کند.
+- `home_*`: متن‌های رابط صفحهٔ خانهٔ نمونه (`home_badge`، `home_hero_*`، `home_explore_content`، `home_cta_*`).
+- `drawer_*`: `drawer_tab_nav` · `drawer_tab_search`
+- `footer_*`: `footer_col_pages` · `footer_col_resources` · `footer_col_company` · `footer_col_legal` · `footer_legal_privacy` · `footer_legal_terms`
 
 ### `nav_*` (۱۱ کلید)
 
@@ -2147,17 +2175,14 @@ dist/
 `projects_stack` · `projects_visit` · `projects_year` — برچسب‌های نمای عمومی نوع‌های محتوا
 (در کنار `content_empty` که حالت خالی فهرست را نشان می‌دهد).
 
-### کلیدهای متفرقه و ICU
+### کلیدهای متفرقه و ICU (۶ کلید)
 
 | کلید | نوع / placeholder |
 | --- | --- |
 | `site_description` | شرح اصلی وب‌سایت در هدر، فوتر و متادیتا |
 | `content_empty` | حالت خالی فهرست یک نوع محتوا («هنوز چیزی منتشر نشده») |
-| `blog_read_time` | `{count}` — زمان مطالعه (ICU plural) |
-| `blog_filter_showing_page` | `{visible}` و `{total}` — «نمایش X از Y مقاله در این صفحه» |
-| `blog_filter_showing_all` | `{visible}` و `{total}` — «نمایش X از Y مقاله» |
-| `blog_pagination_page` | `{page}` — برچسب شمارهٔ صفحه |
-| `blog_pagination_status` | `{page}` و `{totalPages}` — «صفحهٔ ۲ از ۳» |
+| `pricing_recommended` | نشان پلن پیشنهادی در `PricingSection.astro` |
+| `testimonials_rating_aria` | `{rating}` و `{max}` — برچسب دسترس‌پذیری امتیاز ستاره‌ای در `TestimonialGrid.astro` |
 | `items_count` | ICU plural/select |
 | `position_ordinal` | ICU ordinal |
 
@@ -2198,11 +2223,15 @@ dist/
 
 `CLIENT_COOKIE_CONFIG` (پیکربندی امن برای مرورگر) · `COOKIE_CONFIG_DEFAULTS` (پیش‌فرض‌های مشترک طرح‌واره و کلاینت)
 
+### `src/libs/config/theme.ts`
+
+`THEME_PALETTES` · `FONT_PRESETS` · `RTL_FONT_PRESETS` · `resolveBrandTheme` · `renderThemeHeadStyle`
+
 ### `src/libs/api/client.ts` و `src/libs/search/*`
 
 | فایل | خروجی‌ها |
 | --- | --- |
-| `api/client.ts` | `resolveApiEndpoint` · `getInvalidContactFields` · `validateContactPayload` · `submitContactInquiry` |
+| `api/client.ts` | `resolveApiEndpoint` · `getInvalidContactFields` · `validateContactPayload` · `submitContactInquiry` · `validateNewsletterPayload` · `submitNewsletterSubscription` |
 | `search/client.ts` | `executeSearch` · `getPagefindInstance` · `plainText` |
 | `search/persian.ts` | `normalizePersianQuery` · `applyPersianZwnjCompounds` · `buildSearchQueryVariants` · `normalizeForFallbackMatch` · `matchesFallbackSearch` |
 
@@ -2227,6 +2256,8 @@ dist/
 | `pagination.ts` | `getPageCount` · `clampPage` · `paginate` · `buildPageWindow` · `PAGE_GAP` · `PageSlice` |
 | `blog.ts` | `parseBlogFilters` · `buildBlogFilterQuery` · `matchesBlogFilters` · `filterBlogPosts` · `hasActiveFilters` · `areBlogFiltersEqual` · `toggleBlogTag` · `getReadingTime` · `collectTaxonomyKeys` · `humanizeKey` · `NO_FILTERS` |
 | `taxonomy.ts` | `getCategoryLabel` · `getTagLabel` |
+| `faq.ts` | `buildFaqJsonLd` |
+| `og-card.ts` | `renderBrandedOgCardSvg` |
 | `social.ts` | `getSocialCard` · `SocialImage` |
 
 ### `src/scripts/*` (اسکرول نرم و انیمیشن‌های اسکرول)

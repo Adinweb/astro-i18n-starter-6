@@ -105,6 +105,7 @@ export type SocialConfig = z.infer<typeof socialConfigSchema>;
 
 export const apiEndpointsSchema = z.object({
   contact: z.string().default('/contact'),
+  newsletter: z.string().optional(),
 });
 
 const contactTopicSchema = z.object({
@@ -227,6 +228,9 @@ const siteConfigSchema = z.object({
 
 const envApiBaseUrl = (import.meta.env.PUBLIC_API_BASE_URL as string | undefined)?.trim();
 const envContactEndpoint = (import.meta.env.PUBLIC_CONTACT_API_URL as string | undefined)?.trim();
+const envNewsletterEndpoint = (
+  import.meta.env.PUBLIC_NEWSLETTER_API_URL as string | undefined
+)?.trim();
 
 export const siteConfig = siteConfigSchema.parse({
   // Astro injects `site` from astro.config.mjs into import.meta.env.SITE.
@@ -265,6 +269,9 @@ export const siteConfig = siteConfigSchema.parse({
     timeoutMs: appConfig.api.timeoutMs,
     endpoints: {
       contact: envContactEndpoint || appConfig.api.endpoints.contact,
+      ...(envNewsletterEndpoint || appConfig.api.endpoints.newsletter
+        ? { newsletter: envNewsletterEndpoint || appConfig.api.endpoints.newsletter }
+        : {}),
     },
     ...(appConfig.api.topics ? { topics: appConfig.api.topics } : {}),
   },
