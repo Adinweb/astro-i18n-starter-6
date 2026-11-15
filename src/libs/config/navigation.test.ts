@@ -63,7 +63,6 @@ describe('src/libs/config/navigation.ts', () => {
       expect(groups).toContain('about');
       expect(groups).toContain('features');
       expect(groups).toContain('pricing');
-      expect(groups).toContain('contact');
 
       const sampleConfig: NavItemConfig = {
         key: BLOG_ITEM.key,
@@ -227,7 +226,7 @@ describe('src/libs/config/navigation.ts', () => {
       const hrefs = [...headerItems, ...footer.flatMap((column) => column.items)].map(
         (item) => item.href ?? ''
       );
-      expect(hrefs.some((href) => href.includes('#iso-standards') || href.includes('#trustmark'))).toBe(false);
+      expect(hrefs.some((href) => href.includes('#rtl') || href.includes('#design'))).toBe(false);
 
       // The Resources menu survives as a single Overview link to the blog.
       const resources = (await getHeaderNavigation(DEFAULT_LOCALE, '/')).find((item) => item.key === 'resources');

@@ -57,10 +57,9 @@ export interface NavItemConfig {
  */
 export const PAGE_ITEMS = [
   { group: 'home', icon: 'home', label: (locale: Locale) => m.nav_home({}, { locale }) },
-  { group: 'features', icon: 'shield', label: (locale: Locale) => m.nav_features({}, { locale }) },
+  { group: 'features', icon: 'sparkles', label: (locale: Locale) => m.nav_features({}, { locale }) },
   { group: 'pricing', icon: 'tag', label: (locale: Locale) => m.nav_pricing({}, { locale }) },
   { group: 'about', icon: 'info', label: (locale: Locale) => m.nav_about({}, { locale }) },
-  { group: 'contact', icon: 'mail', label: (locale: Locale) => m.nav_contact({}, { locale }) },
 ] as const;
 
 export const BLOG_ITEM = {
@@ -168,17 +167,17 @@ async function buildResourcesItem(locale: Locale, currentUrl = ''): Promise<NavI
   const exploreChildren: NavItem[] = featuresHref
     ? [
         {
-          key: 'iso_standards',
-          label: m.nav_iso_standards({}, { locale }),
-          href: `${featuresHref}#iso-standards`,
-          icon: 'shield',
+          key: 'rtl_support',
+          label: m.nav_rtl_support({}, { locale }),
+          href: `${featuresHref}#rtl`,
+          icon: 'globe',
           active: false,
         },
         {
-          key: 'trustmark',
-          label: m.nav_trustmark({}, { locale }),
-          href: `${featuresHref}#trustmark`,
-          icon: 'sparkles',
+          key: 'design_system',
+          label: m.nav_design_system({}, { locale }),
+          href: `${featuresHref}#design`,
+          icon: 'palette',
           active: false,
         },
       ]

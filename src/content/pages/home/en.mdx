@@ -1,7 +1,7 @@
 ---
-title: "GermanCert — Independent ISO Certification & Trustmark"
+title: "Astro i18n Starter"
 slug: ""
-description: "German Cert Deutschland GmbH based in Tuntenhausen (Upper Bavaria): impartial management system audits under ISO 9001, ISO 14001, ISO 45001, and the GermanCert Trustmark."
+description: "Production-grade Astro v7 SSG starter with native RTL/LTR support, prefix-less default routing, compiled Paraglide i18n, and Pagefind search."
 image: "./home.png"
 template: "home"
 hero: "none"
@@ -10,12 +10,10 @@ flushTop: true
 draft: false
 ---
 
-## Bavarian Headquarters, International Reliability
+## Architecture Built for Multilingual Delivery
 
-Since 2022, **German Cert Deutschland GmbH** in Tuntenhausen (Upper Bavaria) has supported manufacturing, logistics, and service organizations with objective conformity assessment of their management systems.
+This starter combines Astro v7 static site generation with native bidirectional layout primitives, Paraglide compiled translations, and a Single Source of Truth configuration in `app.config.json`.
 
-Our governance model adheres strictly to **DIN EN ISO/IEC 17021-1** principles: documented impartiality, sector-qualified lead auditors, and evidence-based audit reporting without advisory conflicts of interest.
-
-- **Strict Independence:** Clear organizational separation between conformity assessment and consulting protects the credibility of every issued certificate.
-- **Transparent Audit Scoping:** Audit duration is calculated systematically from effective headcount, site structure, and applicable NACE risk classifications.
-- **Verifiable Credentials:** Clear certificate records and Trustmark documentation designed for procurement teams, OEM audits, and business partners.
+- **Prefix-less Default Locale:** The default language renders cleanly at `/` while secondary locales live under localized prefixes (`/fa/`, `/de/`, `/ar/`).
+- **Logical RTL/LTR Discipline:** Directional spacing, borders, gradients, and scroll animations mirror automatically between LTR and RTL scripts.
+- **Zero-Runtime Search & Feeds:** Static Pagefind indexing (with Perso-Arabic ZWNJ and numeral normalization), Atom 1.0 RSS feeds, and branded Open Graph cards generate at build time.

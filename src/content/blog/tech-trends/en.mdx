@@ -1,0 +1,26 @@
+---
+title: "Bidirectional Design & Perso-Arabic Search Patterns"
+slug: "tech-trends"
+description: "Practical patterns for CSS logical properties, reduced-motion respect, and ZWNJ-aware static search in RTL/LTR interfaces."
+publishedAt: 2026-03-04
+author: "Astro Starter Team"
+image: "./tech-trends.png"
+categories:
+  - design
+  - engineering
+tags:
+  - rtl
+  - astro
+  - performance
+draft: false
+---
+
+Delivering crisp bilingual experiences in English and Persian requires treating bidirectional typography and client-side search normalization as first-class architectural concerns rather than late CSS overrides.
+
+## Logical Styling & Motion Choreography
+
+All spacing, borders, and slide transitions rely on logical axes (`ms-*`, `me-*`, `start-*`, `end-*`, `text-start`). Horizontal reveal attributes like `data-trig-direction="start"` invert automatically between LTR and RTL documents, while `resolveMotion()` respects both explicit user preference and OS `prefers-reduced-motion`.
+
+## Perso-Arabic Pagefind Normalization
+
+Persian search queries frequently mix Arabic/Persian letter variants (`ي`/`ی`, `ك`/`ک`), Eastern numerals (`۱۲۳`), and zero-width non-joiners (ZWNJ). At build time, `scripts/index-pagefind.mjs` normalizes indexed tokens so static client search finds matches accurately across keyboards and dialects.

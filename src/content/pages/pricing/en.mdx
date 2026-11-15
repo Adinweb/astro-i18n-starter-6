@@ -1,7 +1,7 @@
 ---
-title: "Packages & Audit Scoping"
-slug: "packages"
-description: "Transparent conformity assessment tiers from GermanCert: single-standard ISO 9001/14001/45001 audits, integrated IMS programs, and the GermanCert Trustmark."
+title: "Pricing & Contact"
+slug: "pricing"
+description: "Simple starter tiers for static web delivery, multilingual scaling, and direct project inquiries."
 image: "./pricing.png"
 hero: "minimal"
 container: "contained"
@@ -9,65 +9,55 @@ draft: false
 ---
 
 import PricingSection from '@/components/PricingSection.astro';
-
-International audit duration follows **IAF MD 5** guidelines based on effective headcount within scope, number of operational sites, shift patterns, and NACE sector complexity. The tiers below outline our standard engagement scopes prior to formal calculation.
+import ContactForm from '@/components/ContactForm.astro';
 
 <PricingSection
   contained
   locale="en"
+  heading="Flexible Engagement Options"
+  subheading="Use the starter open-source foundation directly or tailor it with bespoke design systems and multilingual workflows."
   tiers={[
     {
-      eyebrow: '01 · Trustmark',
-      name: 'GermanCert Trustmark',
-      price: 'from €950',
-      period: '· initial evaluation',
-      description:
-        'Structured operational and compliance evaluation designed for SMEs, B2B suppliers, and digital organizations.',
+      eyebrow: '01 · Starter',
+      name: 'Open Starter',
+      price: '$0',
+      period: '/ forever',
+      description: 'Complete static Astro v7 foundation with RTL/LTR support, CLI generators, and Pagefind search.',
       features: [
-        'Process & documentation check across 5 governance pillars',
-        'Verification of legal transparency and data-handling readiness',
-        'Official GermanCert Trustmark verification record',
-        'Structured annual renewal review',
+        'Prefix-less default locale + bilingual scaffolding',
+        'OKLCH theme presets & branded OG card generation',
+        'Automated i18n, link, smoke, and CLI test suites',
       ],
-      cta: { label: 'Request Trustmark', href: '/en/contact/#contact-inquiry', icon: 'arrow-right' },
+      cta: { label: 'Read features', href: '/features/', icon: 'arrow-right' },
     },
     {
-      eyebrow: '02 · Single Standard',
-      name: 'ISO Single Certification',
-      price: 'from €2,400',
-      period: '· Stage 1 + 2',
+      eyebrow: '02 · Studio',
+      name: 'Custom Brand Launch',
+      price: '$1,200',
+      period: '/ project',
       featured: true,
-      description:
-        'Complete initial audit cycle for ISO 9001, ISO 14001, or ISO 45001 conducted under DIN EN ISO/IEC 17021-1.',
+      description: 'Tailored brand palette, custom landing sections, and content migration ready for production hosting.',
       features: [
-        'Stage 1 audit: documentation & system readiness review',
-        'Stage 2 audit: on-site conformity assessment by lead auditors',
-        'Three-year certificate valid across procurement & tenders',
-        'Predictable annual surveillance schedule (Years 1 & 2)',
+        'Custom brand preset, font stack, and OG cards',
+        'Multi-page landing architecture & headless form wiring',
+        'Full SEO, JSON-LD schema, and WCAG accessibility audit',
       ],
-      cta: { label: 'Request custom quote', href: '/en/contact/#contact-inquiry', icon: 'arrow-right' },
+      cta: { label: 'Start an inquiry', href: '#contact-inquiry', icon: 'mail' },
     },
     {
-      eyebrow: '03 · Combined Audit',
-      name: 'Integrated System (IMS)',
+      eyebrow: '03 · Scale',
+      name: 'Enterprise Multilingual',
       price: 'Custom',
-      period: '· Multi-Standard',
-      description:
-        'Coordinated auditing across two or three standards (ISO 9001 + 14001 + 45001) to reduce operational disruption.',
+      period: '/ scope',
+      description: 'Dedicated multi-region deployment with extended content types and automated CI pipelines.',
       features: [
-        'Unified review of shared leadership & internal audit controls',
-        'Audit-day synergy reductions aligned with IAF MD 5',
-        'Coordinated multi-site sampling methodology',
-        'Synchronized three-year cycle across all certifications',
+        'Unlimited RTL/LTR locales via CLI tooling',
+        'Custom collection schemas and catalog integrations',
+        'Ongoing performance & governance reviews',
       ],
-      cta: { label: 'Discuss IMS scope', href: '/en/contact/#contact-inquiry', icon: 'arrow-right' },
+      cta: { label: 'Contact team', href: '#contact-inquiry', icon: 'mail' },
     },
   ]}
 />
 
-## Information Needed for a Binding Proposal
-
-1. **Target Standard(s):** Single ISO standard (9001, 14001, or 45001), Integrated Management System (IMS), or GermanCert Trustmark.
-2. **Scope & Headcount:** Full-time equivalents (FTEs) operating within the defined certification boundary.
-3. **Site Footprint:** Single location or multi-site operations requiring coordinated sampling.
-4. **Target Timeline:** Preferred schedule window for Stage 1 readiness and Stage 2 on-site assessment.
+<ContactForm locale="en" />

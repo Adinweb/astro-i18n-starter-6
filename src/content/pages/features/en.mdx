@@ -1,70 +1,60 @@
 ---
-title: "Certifications & Trustmark"
-slug: "certifications"
-description: "Independent management system audits under ISO 9001, ISO 14001, and ISO 45001, alongside the GermanCert Trustmark verification program."
+title: "Platform Features"
+slug: "features"
+description: "Explore native RTL/LTR layout support, OKLCH brand theming presets, ChronoTrig scroll reveals, and multilingual Pagefind search."
 image: "./features.png"
 hero: "default"
 container: "contained"
 draft: false
 ---
 
-GermanCert evaluates organizational management systems against internationally recognized ISO frameworks using the structured two-stage conformity model (Stage 1 documentation readiness and Stage 2 on-site/implementation audit). Every engagement follows documented impartiality safeguards aligned with **DIN EN ISO/IEC 17021-1**.
+import BentoCapabilities from '@/components/BentoCapabilities.astro';
 
-<div class="not-prose my-10 grid gap-5 sm:grid-cols-2" data-trig-stagger data-trig-stagger-delay="0.08">
-  <div data-trig class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-    <p class="section-kicker tabular-nums">01 · ISO 9001:2015</p>
-    <h3 class="mt-2 text-lg font-bold text-fg">Quality Management Systems (QMS)</h3>
-    <p class="mt-2 text-sm leading-relaxed text-muted">
-      Process-based assessment of customer focus, supplier controls, risk-based thinking, traceability, and continual improvement across operations.
-    </p>
-  </div>
+<BentoCapabilities
+  locale="en"
+  heading="Everything Included Out of the Box"
+  subheading="Modular architecture engineered for fast client onboarding, strict type safety, and polished typography in every script."
+  numbered
+  items={[
+    {
+      indexLabel: '01 · Routing',
+      title: 'Prefix-less Default Locale',
+      description: 'Clean root URLs for your default language alongside localized slugs and reciprocal hreflang links for every secondary locale.',
+      icon: 'world',
+    },
+    {
+      indexLabel: '02 · Theming',
+      title: 'OKLCH Brand Presets',
+      description: 'Switch between curated color presets and font pairings from app.config.json or override brand tokens with a single command.',
+      icon: 'palette',
+    },
+    {
+      indexLabel: '03 · Motion',
+      title: 'ChronoTrig & Lenis',
+      description: 'Smooth inertia scrolling and viewport stagger reveals that honor prefers-reduced-motion and mirror in RTL.',
+      icon: 'sparkles',
+    },
+    {
+      indexLabel: '04 · Search',
+      title: 'Multilingual Pagefind',
+      description: 'Static client-side search with Perso-Arabic ZWNJ, Arabic/Persian character, and Eastern numeral normalization built right in.',
+      icon: 'search',
+    },
+  ]}
+/>
 
-  <div data-trig class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-    <p class="section-kicker tabular-nums">02 · ISO 14001:2015</p>
-    <h3 class="mt-2 text-lg font-bold text-fg">Environmental Management Systems (EMS)</h3>
-    <p class="mt-2 text-sm leading-relaxed text-muted">
-      Systematic verification of environmental aspects, resource efficiency, waste and emissions monitoring, and applicable regulatory compliance obligations.
-    </p>
-  </div>
+<section id="rtl" class="scroll-mt-28">
 
-  <div data-trig class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-    <p class="section-kicker tabular-nums">03 · ISO 45001:2018</p>
-    <h3 class="mt-2 text-lg font-bold text-fg">Occupational Health & Safety (OH&S)</h3>
-    <p class="mt-2 text-sm leading-relaxed text-muted">
-      Objective evaluation of hazard identification, risk controls, emergency preparedness, worker consultation, and workplace injury prevention.
-    </p>
-  </div>
+## Native RTL/LTR Architecture
 
-  <div data-trig class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-    <p class="section-kicker tabular-nums">04 · Trustmark</p>
-    <h3 class="mt-2 text-lg font-bold text-fg">GermanCert Trustmark Seal</h3>
-    <p class="mt-2 text-sm leading-relaxed text-muted">
-      Targeted verification of operational reliability, contractual transparency, and compliance posture for B2B vendors and digital commerce platforms.
-    </p>
-  </div>
-</div>
-
-<section id="iso-standards" class="scroll-mt-28">
-
-## ISO Management Systems & Integrated Audits (IMS)
-
-All three standards share ISO's **Harmonized Structure**, allowing organizations that operate unified Quality, Environmental, and Occupational Health & Safety systems to undergo a coordinated **Integrated Management System (IMS)** audit.
-
-- **Three-Year Certification Cycle:** Following successful Stage 1 and Stage 2 initial certification, annual surveillance audits verify continued effectiveness in years one and two before formal recertification.
-- **Sector-Qualified Audit Teams:** Lead auditors hold verified professional experience across industrial NACE scopes including precision manufacturing, logistics, engineering, and B2B services.
-- **Reduced Operational Overhead:** Auditing shared leadership reviews, internal audit programs, and corrective-action workflows in one coordinated schedule avoids duplicate interviews and unnecessary downtime.
+Directional styling relies exclusively on CSS logical properties (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`, and `text-start`). Code blocks remain strictly LTR for readability, while directional gradients (`bg-linear-to-r rtl:bg-linear-to-l`) and ChronoTrig slide offsets (`data-trig-direction="start"`) adapt automatically per locale.
 
 </section>
 
-<section id="trustmark" class="scroll-mt-28">
+<section id="design" class="scroll-mt-28">
 
-## The GermanCert Trustmark Program
+## Design System & Brand Tokens
 
-Before committing to a multi-standard ISO cycle, growing businesses and specialized B2B suppliers often need an immediate, credible verification signal for customers and procurement teams. The **GermanCert Trustmark** evaluates organizations across clear governance criteria:
-
-- **Service & Process Consistency:** Documented delivery standards, escalation paths, and structured customer complaint resolution.
-- **Compliance & Data Transparency:** Verified statutory disclosures, privacy practices, and clear contractual communication.
-- **Operational Continuity:** Evidence of risk preparedness and accountable supplier management.
-- **Traceable Seal Issuance:** Every issued Trustmark links to a documented assessment record and a defined annual review schedule.
+Semantic color roles live once in `src/styles/global.css` and resolve dynamically from `app.config.json` and `theme-presets.json`. Composable surface utilities (`.glass-surface`, `.layout-container`) and primitive UI controls (`<Button>`, `<IconButton>`, `<Icon>`) keep contrast, spacing, and typography consistent across every page.
 
 </section>

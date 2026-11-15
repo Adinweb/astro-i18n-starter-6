@@ -86,8 +86,8 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 ├── app.config.json            # Single source of truth for app, brand, blog, cookies, API & server values
 ├── messages/                  # Dictionaries for active locales (en.json, fa.json; extendable via i18n:add-lang)
 ├── project.inlang/            # Paraglide JS configuration & settings
-├── public/                    # Static assets that need a stable URL (favicons, browser icons, chronotrig.min.js)
-├── scripts/                   # Developer automation CLI, health checks & Pagefind indexing (21 tools)
+├── public/                    # Static assets (favicons, browser icons, chronotrig.min.js, chronotrig.esm.js)
+├── scripts/                   # Developer automation CLI, health checks & Pagefind indexing (24 tools)
 │   └── lib/                   # Shared prompt, frontmatter, validation, content-type & artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph (no page image of its own)
@@ -109,8 +109,9 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── SearchModal.astro  # Accessible search modal (Pagefind + Dev fallback)
 │   │   ├── CookieConsent.astro # TDDDG § 25 / GDPR cookie & script consent modal
 │   │   ├── ContactForm.astro  # Pure-SSG contact inquiry form posting to external APIs
-│   │   ├── Seo.astro          # Canonical links & reciprocal hreflang tags
-│   │   └── TopLoadingBar.astro # Page transition progress bar (reduced-motion aware)
+│   │   ├── Seo.astro          # Canonical links, reciprocal hreflang tags & OG card wiring
+│   │   ├── TopLoadingBar.astro # Page transition progress bar (reduced-motion aware)
+│   │   └── …                  # + 10 composable corporate/landing blocks (LandingHeroSplit … NewsletterBanner)
 │   ├── content/               # Multilingual Content Collections
 │   │   ├── pages/             # Static pages: home, about, features, pricing
 │   │   │   └── <group>/       # Holds <locale>.mdx files + group hero/OG artwork
@@ -127,20 +128,27 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   ├── libs/
 │   │   ├── api/client.ts      # Pure client-side HTTP adapter for external APIs
 │   │   ├── config/app.ts      # Validates app.config.json; typed site/brand/blog/api values
+│   │   ├── config/client.ts   # Browser-safe config mirror (no Zod runtime in client bundle)
+│   │   ├── config/defaults.ts # Shared defaults for client.ts and Zod schemas
+│   │   ├── config/theme.ts    # OKLCH palette & font preset resolver (+ theme-presets.json)
 │   │   ├── config/navigation.ts # Multi-menu header/drawer/footer/legal navigation builder
 │   │   ├── content/entries.ts # Entry IDs, draft filtering, locale selection & sorting
 │   │   ├── content/service.ts # Route resolution, slug alternates, feeds & breadcrumbs
 │   │   ├── content/types.ts   # Content-type registry: enabled/base/index/paginated/feed/nav + URL helpers
 │   │   ├── content/blog-catalog.ts # Serializer for static blog JSON catalogs
+│   │   ├── content/faq.ts     # FAQPage JSON-LD builder for FaqAccordion
 │   │   ├── content/feed.ts    # Per-locale Atom 1.0 feed builder
+│   │   ├── content/og-card.ts # Deterministic SVG→PNG branded Open Graph card renderer
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
-│   │   ├── content/social.ts  # Optimized og:image card
+│   │   ├── content/social.ts  # Social card resolver (branded / artwork / default)
 │   │   ├── cookies/           # Consent state model & multi-domain cookie/script manager
 │   │   ├── search/            # client.ts + persian.ts (Pagefind + ZWNJ/orthography search engine)
-│   │   └── ui/button.ts       # Button class recipe shared by Button.astro and client renderers
+│   │   ├── ui/button.ts       # Button class recipe shared by Button.astro and client renderers
+│   │   └── ui/icons.ts        # Closed 31-icon vocabulary (SITE_ICONS)
 │   ├── pages/
 │   │   ├── [...path].astro    # Lean Router Dispatcher
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
+│   │   ├── og/[...slug].png.ts # Build-time branded OG PNG route (socialCardMode: 'branded')
 │   │   ├── site.webmanifest.ts # Web app manifest generated from app.config.json
 │   │   ├── rss.xml.ts         # Default-locale Atom feed
 │   │   ├── rss/[locale].xml.ts # Non-default locale Atom feeds (/rss/fa.xml, etc.)
@@ -150,6 +158,8 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── api/blog-posts/[locale].json.ts # Per-locale static blog catalog
 │   │   ├── api/search-dev.json.ts # Combined locale-aware search fallback index
 │   │   └── api/search-dev/[locale].json.ts # Per-locale static search fallback index
+│   ├── types/
+│   │   └── tabler-icons-astro.d.ts # Types for per-icon deep imports in Icon.astro
 │   ├── paraglide/             # Generated Paraglide code (gitignored, do not edit)
 │   ├── scripts/
 │   │   ├── lenis.ts           # Accessible smooth scroll lifecycle (ClientRouter + anchor sync)

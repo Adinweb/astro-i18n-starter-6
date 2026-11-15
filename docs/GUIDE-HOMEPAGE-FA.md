@@ -70,7 +70,7 @@ pnpm run site:init \
   --font=jakarta \
   --rtl-font=vazirmatn \
   --email=hello@acme.example \
-  --social-card=branded
+  --og-mode=branded
 ```
 
 | چه چیزی | کجا |
@@ -170,10 +170,10 @@ flushTop: true
 ## ۴. مسیر A — متن و عکس را عوض کنید، هیرو بماند
 
 ۱. در `src/content/pages/home/en.mdx` خط `template: "home"` را نگه دارید.
-۲. هیروی دمو (اسپلیت ۱۲ ستونی در
+۲. هیروی دمو (`<HomeHero>` در
    [HomePageTemplate.astro](../src/views/pages/HomePageTemplate.astro)) با `title` و
-   `description` فرانت‌متر و سه آیتم داخل فایل پر می‌شود. برای مشتری، سه آیتم را در
-   همان فایل `.astro` با محتوای واقعی جایگزین کنید (یا مسیر C را ببینید).
+   `description` فرانت‌متر و سه کارت اثبات (`home_highlight_{1..3}_*`) پر می‌شود. برای مشتری،
+   کلیدهای ترجمه یا طراحی همان فایل `.astro` را با محتوای واقعی جایگزین کنید (یا مسیر C را ببینید).
 ۳. بدنهٔ MDX بعد از هیرو رندر می‌شود؛ آن را با بخش‌های زیر جایگزین کنید.
 ۴. `image: "./home.png"` را با عکس واقعی مشتری عوض کنید (بخش ۸).
 
@@ -548,7 +548,7 @@ import CtaBanner from '@/components/CtaBanner.astro';
 
 <CtaBanner
   id="contact"
-  heading="آمادهٔ شروع هستید؟"
+  title="آمادهٔ شروع هستید؟"
   description="پاسخ در کمتر از یک روز کاری."
   primaryCta={{ label: 'تماس با ما', href: 'mailto:hello@example.com', icon: 'mail' }}
 />

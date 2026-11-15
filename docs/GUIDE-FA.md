@@ -172,7 +172,7 @@ pnpm exec astro dev stop           # توقف سرور
 | `pnpm run i18n:add-lang` | افزودن زبان جدید (یا بازگردانی زبان بایگانی‌شده) |
 | `pnpm run i18n:remove-lang` | حذف زبان |
 | `pnpm run i18n:set-default` | تعویض زبان پیش‌فرض در `locales.ts` و `settings.json` |
-| `pnpm run i18n:solo` | (اختیاری) تک‌زبانه‌کردن ساختاری با حذف مسیرهای دیگر و بایگانی در `_archive/i18n` |
+| `pnpm run i18n:solo` | (اختیاری) تک‌زبانه‌کردن ساختاری با حذف مسیرهای دیگر و بایگانی در `.locale-archive/` |
 | `pnpm run i18n:add` | افزودن یک کلید ترجمه |
 | `pnpm run i18n:add-batch` | افزودن گروهی کلیدها |
 | `pnpm run i18n:extract` | استخراج متن سخت‌کد از قالب |
@@ -437,7 +437,7 @@ pnpm run site:init \
   --font=jakarta \
   --rtl-font=vazirmatn \
   --email=hello@acme.example \
-  --social-card=branded
+  --og-mode=branded
 ```
 
 `theme.ts` پالت انتخابی یا `brand.primaryColor`/`accentColor` در `app.config.json` را در `<head>` به متغیرهای `--theme-*` تبدیل می‌کند (و در `:root[data-theme='dark']` نسخهٔ تاریک سازگار با AA می‌سازد). همچنین در صورت نیاز به سفارشی‌سازی عمیق‌تر توکن‌ها، می‌توانید مستقیماً `:root` و `:root[data-theme='dark']` در `src/styles/global.css` را ویرایش کنید و `brand.themeColor` را هماهنگ نمایید.
@@ -526,7 +526,7 @@ pnpm run messages:compile && pnpm test && pnpm run audit:i18n && pnpm run build 
 از آن‌جا که خروجی پیش از استقرار بیلد می‌شود، برای یک سایت تک‌زبانه نیازی به تغییر ساختاری یا حذف فایل‌ها نیست:
 - صرفاً `"showLanguageSwitcher": false` را در `app.config.json` → `ui` تنظیم کنید تا منو و بخش زبان در هدر و کشوی موبایل پنهان شود.
 - اگر سایت مشتری فقط فارسی (یا هر زبان غیرپیش‌فرض دیگری) است، یک‌بار `pnpm run i18n:set-default fa` بزنید تا ریشهٔ `/` مستقیماً فارسی باشد.
-- *(اختیاری)* اگر می‌خواهید مسیرهای زبان دوم به‌کل در `dist/` و `sitemap.xml` تولید نشوند، دستور `pnpm run i18n:solo fa` زبان‌های دیگر را بایگانی (`_archive/i18n/`) و پیکربندی را تک‌زبانه می‌کند (بعداً با `i18n:add-lang` قابل بازگردانی است).
+- *(اختیاری)* اگر می‌خواهید مسیرهای زبان دوم به‌کل در `dist/` و `sitemap.xml` تولید نشوند، دستور `pnpm run i18n:solo fa` زبان‌های دیگر را بایگانی (`.locale-archive/`) و پیکربندی را تک‌زبانه می‌کند (بعداً با `i18n:add-lang` قابل بازگردانی است).
 
 > ⚠️ تعویض زبان پیش‌فرض یک تغییر **ساختاری** در URLهاست. قبل از انجام روی سایت زنده، برای
 > ریدایرکت‌های ۳۰۱ از سرور/CDN برنامه‌ریزی کنید.
@@ -1267,17 +1267,17 @@ pre, code, .math {
 | `DrawerSearch.astro` | `locale` | جستجوی درون کشوی موبایل هماهنگ با تب‌بندی کشو |
 | `ContactForm.astro` | `locale` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` (با پشتیبانی از `api.topics`)؛ بدون نشانی، فرم رندر نمی‌شود و پنل `mailto:` (از `site.contactEmail`) جای آن را می‌گیرد |
 | `NewsletterBanner.astro` | `id?`, `locale?`, `eyebrow?`, `title?`, `subtitle?`, `baseUrl?`, `endpoint?`, `timeoutMs?`, `source?`, `surface?`, `spacing?` | بنر اشتراک خبرنامه Pure-SSG متصل به `api.endpoints.newsletter` / `PUBLIC_NEWSLETTER_API_URL` یا نمایش پنل `mailto:` |
-| `LandingHeroSplit.astro` | `eyebrow?`, `title`, `description?`, `primaryCta`, `secondaryCta?`, `badge?`, `stats?`, `image?`, `imageAlt?` | هیروی دوتایی شرکتی/لندینگ با تصویر یا کارت آمار مقابل |
-| `BentoCapabilities.astro` | `id?`, `eyebrow?`, `heading`, `subheading?`, `items`, `surface?`, `spacing?` | شبکهٔ بنتو برای معرفی قابلیت‌ها و خدمات |
-| `ProofStatsRow.astro` | `id?`, `eyebrow?`, `heading?`, `stats`, `locale?`, `surface?`, `spacing?` | ردیف آمار و دستاوردها با قالب‌بندی بومی اعداد |
+| `LandingHeroSplit.astro` | `id?`, `eyebrow?`, `title`, `description?`, `primaryCta?`, `secondaryCta?`, `trustNote?`, `image?`, `imageAlt?`, `surface?` (`default`/`hero`/`subtle`) + اسلات `media` | هیروی دوتایی شرکتی/لندینگ با تصویر یا اسلات ویژوال مقابل |
+| `BentoCapabilities.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `items`, `locale?`, `numbered?`, `surface?`, `spacing?` | شبکهٔ بنتو برای معرفی قابلیت‌ها و خدمات |
+| `ProofStatsRow.astro` | `id?`, `eyebrow?`, `heading?`, `items`, `locale?`, `surface?`, `spacing?` | ردیف آمار و دستاوردها با قالب‌بندی بومی اعداد |
 | `PricingSection.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `tiers`, `locale?`, `contained?`, `surface?`, `spacing?` | کارت‌های قیمت‌گذاری با پلن پیشنهادی و قیمت‌گذاری بومی (`contained` برای MDX متنی) |
 | `TestimonialGrid.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `items`, `locale?`, `surface?`, `spacing?` | شبکهٔ نظرات مشتریان با امتیاز ستاره‌ای، نقل‌قول و آواتار بهینه |
 | `TeamSection.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `members`, `surface?`, `spacing?` | شبکهٔ اعضای تیم با تصویر/مونوگرام و لینک‌های شبکه‌های اجتماعی |
 | `PartnerLogos.astro` | `id?`, `eyebrow?`, `heading?`, `items`, `columns?`, `surface?`, `spacing?` | نوار اعتماد و لوگوی مشتریان/همکاران (۴، ۵ یا ۶ ستونی) |
-| `FaqAccordion.astro` | `id?`, `eyebrow?`, `heading`, `items`, `surface?`, `spacing?` | پرسش‌های متداول با پشتیبانی از `FAQPage` JSON-LD |
-| `CtaBanner.astro` | `id?`, `eyebrow?`, `heading`, `description?`, `primaryCta`, `secondaryCta?`, `surface?`, `spacing?` | بنر فراخوان پایانی (CTA) پیش از فوتر |
+| `FaqAccordion.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `items`, `emitSchema?`, `surface?`, `spacing?` | پرسش‌های متداول با پشتیبانی از `FAQPage` JSON-LD |
+| `CtaBanner.astro` | `id?`, `eyebrow?`, `title`, `description?`, `primaryCta`, `secondaryCta?`, `surface?` (`hero`/`surface`), `spacing?` | بنر فراخوان پایانی (CTA) پیش از فوتر |
 | `CookieConsent.astro` | `locale` | بنر و مودال مدیریت رضایت کوکی و اسکریپت‌ها (TDDDG § 25 / GDPR) |
-| `Seo.astro` | `title`, `description?`, `locale`, `url`, `alternates`, `siteName?`, `image?`, `type?`, `publishedTime?`, `modifiedTime?`, `schema?`, `noindex?`, `prevUrl?`, `nextUrl?` | همهٔ متادیتای SEO |
+| `Seo.astro` | `title`, `description?`, `locale`, `url`, `alternates`, `siteName?`, `image?`, `ogContext?`, `type?`, `publishedTime?`, `modifiedTime?`, `schema?`, `noindex?`, `prevUrl?`, `nextUrl?` | همهٔ متادیتای SEO |
 | `TopLoadingBar.astro` | — | نوار پیشرفت ناوبری |
 
 <a id="scroll-motion"></a>
@@ -1898,8 +1898,8 @@ pnpm run verify:cli  # ۹۰ ادعا دربارهٔ گردش‌کارهای CLI
 | ۵. اسکنر متن هاردکد | هشدار دربارهٔ رشته‌های ترجمه‌نشده در قالب‌ها (هشدار، نه خطا) |
 | ۶. نگهبان RTL | نبود کلاس جهت‌دار فیزیکی (`ml-`, `pr-`, `text-left`, `left/right`) و بردارهای فیزیکی انیمیشن |
 
-خروجی واقعی روی این مخزن: ۲ زبان، ۱۸۴ کلید در همهٔ فرهنگ‌ها با placeholder
-یکسان، ۱۷۳ کلید استفاده‌شدهٔ ایستا، ۹ گروه محتوا، بدون برخورد مسیر و بدون
+خروجی واقعی روی این مخزن: ۲ زبان، ۱۸۹ کلید در همهٔ فرهنگ‌ها با placeholder
+یکسان، ۱۷۸ کلید استفاده‌شدهٔ ایستا، ۹ گروه محتوا، بدون برخورد مسیر و بدون
 هشدار متن هاردکد.
 
 ### تست دود — ۷ بخش روی `dist/`
@@ -2122,7 +2122,7 @@ dist/
 
 ## پیوست B — کلیدهای ترجمه
 
-۱۸۴ کلید ترجمه در `messages/en.json` (و یک کلید `$schema` که فقط متادیتای JSON Schema است). این فهرست دسته‌بندی‌شده است؛ منبع دقیق خود فایل و `pnpm run audit:i18n` است:
+۱۸۹ کلید ترجمه در `messages/en.json` (و یک کلید `$schema` که فقط متادیتای JSON Schema است). این فهرست دسته‌بندی‌شده است؛ منبع دقیق خود فایل و `pnpm run audit:i18n` است:
 
 ### `common_*` (۲۵ کلید)
 
@@ -2157,9 +2157,9 @@ dist/
 - `newsletter_*`: تیتر، فیلد ایمیل، رضایت، وضعیت ارسال و خطاهای بنر خبرنامه (`NewsletterBanner.astro`).
 - `cookie_*`: بنر و مودال مدیریت رضایت کوکی و دسته‌بندی اسکریپت‌ها (`CookieConsent.astro`).
 
-### `home_*` (۹ کلید) و `drawer_*` (۲ کلید) و `footer_*` (۶ کلید)
+### `home_*` (۱۴ کلید) و `drawer_*` (۲ کلید) و `footer_*` (۶ کلید)
 
-- `home_*`: متن‌های رابط صفحهٔ خانهٔ نمونه (`home_badge`، `home_hero_*`، `home_explore_content`، `home_cta_*`).
+- `home_*`: متن‌های رابط صفحهٔ خانه (`home_badge`، `home_hero_*`، `home_highlight_{1..3}_{title,desc}`، `home_cta_*`).
 - `drawer_*`: `drawer_tab_nav` · `drawer_tab_search`
 - `footer_*`: `footer_col_pages` · `footer_col_resources` · `footer_col_company` · `footer_col_legal` · `footer_legal_privacy` · `footer_legal_terms`
 
@@ -2256,7 +2256,7 @@ dist/
 | `pagination.ts` | `getPageCount` · `clampPage` · `paginate` · `buildPageWindow` · `PAGE_GAP` · `PageSlice` |
 | `blog.ts` | `parseBlogFilters` · `buildBlogFilterQuery` · `matchesBlogFilters` · `filterBlogPosts` · `hasActiveFilters` · `areBlogFiltersEqual` · `toggleBlogTag` · `getReadingTime` · `collectTaxonomyKeys` · `humanizeKey` · `NO_FILTERS` |
 | `taxonomy.ts` | `getCategoryLabel` · `getTagLabel` |
-| `faq.ts` | `buildFaqJsonLd` |
+| `faq.ts` | `buildFaqSchema` |
 | `og-card.ts` | `renderBrandedOgCardSvg` |
 | `social.ts` | `getSocialCard` · `SocialImage` |
 

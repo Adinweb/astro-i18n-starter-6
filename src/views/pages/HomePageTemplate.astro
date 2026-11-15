@@ -1,27 +1,17 @@
 ---
 /**
- * GermanCert institutional homepage template (`template: "home"`) shared across
- * all active locales (`src/content/pages/home/<locale>.mdx`).
+ * Generic starter homepage template (`template: "home"`) shared across all
+ * active locales (`src/content/pages/home/<locale>.mdx`).
  *
- * Composes semantic blocks inside `BaseLayout` (`flushTop`, `canvas`) using
- * local `germancert` photography, locale-native formatting, and compile-time
- * Paraglide dictionaries.
+ * Uses `<HomeHero />`, `.prose-wide` MDX content, and `<CtaBanner />` with
+ * compile-time Paraglide messages and registry-driven content links.
  */
-import { Image } from 'astro:assets';
 import { render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
-import PartnerLogos from '@/components/PartnerLogos.astro';
-import BentoCapabilities from '@/components/BentoCapabilities.astro';
-import ProofStatsRow from '@/components/ProofStatsRow.astro';
+import HomeHero from '@/components/HomeHero.astro';
 import PageSection from '@/components/PageSection.astro';
-import TestimonialGrid from '@/components/TestimonialGrid.astro';
-import FaqAccordion from '@/components/FaqAccordion.astro';
 import CtaBanner from '@/components/CtaBanner.astro';
-import heroAuditImg from '@/assets/germancert/hero-audit.jpg';
-import hqTuntenhausenImg from '@/assets/germancert/hq-tuntenhausen.jpg';
-import { formatYear } from '@/i18n/format';
-import { LOCALES, type Locale } from '@/i18n/locales';
+import type { Locale } from '@/i18n/locales';
 import { siteConfig } from '@/libs/config/app';
 import { getBlogIndexHref, getPageUrl } from '@/libs/content/service';
 import type { SocialCardContext } from '@/libs/content/social';
@@ -48,139 +38,29 @@ const featuresHref =
   (await getPageUrl('features', locale)) ??
   blogHref ??
   getContentTypeIndexHref('pages', locale);
-const aboutHref = await getPageUrl('about', locale);
-const pricingHref = await getPageUrl('pricing', locale);
-const contactHref =
+const ctaHref =
   (await getPageUrl(siteConfig.ui.ctaPage, locale)) ??
-  (await getPageUrl('contact', locale)) ??
-  pricingHref ??
+  (await getPageUrl('pricing', locale)) ??
   featuresHref;
 
-const frameworkLogos = [
+const highlights = [
   {
-    name: 'ISO 9001:2015',
-    tagline: m.home_fw_9001({}, { locale }),
-    icon: 'shield',
-    href: `${featuresHref}#iso-standards`,
-  },
-  {
-    name: 'ISO 14001:2015',
-    tagline: m.home_fw_14001({}, { locale }),
+    key: 'rtl',
     icon: 'globe',
-    href: `${featuresHref}#iso-standards`,
+    title: m.home_highlight_1_title({}, { locale }),
+    description: m.home_highlight_1_desc({}, { locale }),
   },
   {
-    name: 'ISO 45001:2018',
-    tagline: m.home_fw_45001({}, { locale }),
-    icon: 'users',
-    href: `${featuresHref}#iso-standards`,
-  },
-  {
-    name: 'ISO/IEC 17021-1',
-    tagline: m.home_fw_17021({}, { locale }),
-    icon: 'book-open',
-    href: aboutHref ?? featuresHref,
-  },
-  {
-    name: 'Trustmark',
-    tagline: m.home_fw_trustmark({}, { locale }),
+    key: 'ssg',
     icon: 'sparkles',
-    href: `${featuresHref}#trustmark`,
-  },
-] as const;
-
-const capabilities = [
-  {
-    title: m.home_pillar_1_title({}, { locale }),
-    description: m.home_pillar_1_desc({}, { locale }),
-    icon: 'shield',
-    href: `${featuresHref}#iso-standards`,
-    wide: true,
+    title: m.home_highlight_2_title({}, { locale }),
+    description: m.home_highlight_2_desc({}, { locale }),
   },
   {
-    title: m.home_pillar_2_title({}, { locale }),
-    description: m.home_pillar_2_desc({}, { locale }),
-    icon: 'globe',
-    href: `${featuresHref}#iso-standards`,
-  },
-  {
-    title: m.home_pillar_3_title({}, { locale }),
-    description: m.home_pillar_3_desc({}, { locale }),
-    icon: 'users',
-    href: `${featuresHref}#iso-standards`,
-  },
-  {
-    title: m.home_pillar_4_title({}, { locale }),
-    description: m.home_pillar_4_desc({}, { locale }),
-    icon: 'sparkles',
-    href: `${featuresHref}#trustmark`,
-    wide: true,
-  },
-] as const;
-
-const stats = [
-  {
-    value: formatYear(2022, locale),
-    label: m.home_stat_1_label({}, { locale }),
-    context: m.home_stat_1_context({}, { locale }),
-  },
-  {
-    count: 3,
-    label: m.home_stat_2_label({}, { locale }),
-    context: m.home_stat_2_context({}, { locale }),
-  },
-  {
-    value: '17021-1',
-    label: m.home_stat_3_label({}, { locale }),
-    context: m.home_stat_3_context({}, { locale }),
-  },
-  {
-    count: LOCALES.length,
-    label: m.home_stat_4_label({}, { locale }),
-    context: m.home_stat_4_context({}, { locale }),
-  },
-] as const;
-
-const testimonials = [
-  {
-    quote: m.home_testimonial_1_quote({}, { locale }),
-    author: m.home_testimonial_1_author({}, { locale }),
-    role: m.home_testimonial_1_role({}, { locale }),
-    company: m.home_testimonial_1_company({}, { locale }),
-    rating: 5,
-  },
-  {
-    quote: m.home_testimonial_2_quote({}, { locale }),
-    author: m.home_testimonial_2_author({}, { locale }),
-    role: m.home_testimonial_2_role({}, { locale }),
-    company: m.home_testimonial_2_company({}, { locale }),
-    rating: 5,
-  },
-  {
-    quote: m.home_testimonial_3_quote({}, { locale }),
-    author: m.home_testimonial_3_author({}, { locale }),
-    role: m.home_testimonial_3_role({}, { locale }),
-    company: m.home_testimonial_3_company({}, { locale }),
-    rating: 5,
-  },
-] as const;
-
-const faqs = [
-  {
-    question: m.home_faq_1_q({}, { locale }),
-    answer: m.home_faq_1_a({}, { locale }),
-  },
-  {
-    question: m.home_faq_2_q({}, { locale }),
-    answer: m.home_faq_2_a({}, { locale }),
-  },
-  {
-    question: m.home_faq_3_q({}, { locale }),
-    answer: m.home_faq_3_a({}, { locale }),
-  },
-  {
-    question: m.home_faq_4_q({}, { locale }),
-    answer: m.home_faq_4_a({}, { locale }),
+    key: 'cli',
+    icon: 'layers',
+    title: m.home_highlight_3_title({}, { locale }),
+    description: m.home_highlight_3_desc({}, { locale }),
   },
 ] as const;
 ---
@@ -197,116 +77,35 @@ const faqs = [
   flushTop
   canvas
 >
-  <LandingHeroSplit
-    surface="hero"
-    eyebrow={m.home_cert_eyebrow({}, { locale })}
-    title={m.home_cert_title({}, { locale })}
+  <HomeHero
+    locale={locale}
     description={entry.data.description}
-    primaryCta={{
-      label: m.home_cert_cta_primary({}, { locale }),
-      href: contactHref,
-      icon: 'arrow-right',
-    }}
-    secondaryCta={{
-      label: m.home_cert_cta_secondary({}, { locale }),
-      href: featuresHref,
-    }}
-    trustNote={m.home_cert_trust_note({}, { locale })}
-    image={heroAuditImg}
-    imageAlt={m.home_cert_hero_image_alt({}, { locale })}
+    primaryHref={featuresHref}
+    secondaryHref={blogHref ?? undefined}
+    highlights={highlights}
   />
 
-  <PartnerLogos
-    id="frameworks"
-    eyebrow={m.home_frameworks_eyebrow({}, { locale })}
-    heading={m.home_frameworks_heading({}, { locale })}
-    items={frameworkLogos}
-    columns={5}
-    surface="subtle"
-    spacing="sm"
-  />
-
-  <BentoCapabilities
-    id="certifications"
-    eyebrow={m.home_pillars_eyebrow({}, { locale })}
-    heading={m.home_pillars_heading({}, { locale })}
-    subheading={m.home_pillars_subheading({}, { locale })}
-    items={capabilities}
-    locale={locale}
-    surface="default"
-    spacing="lg"
-  />
-
-  <ProofStatsRow
-    id="governance"
-    eyebrow={m.home_proof_eyebrow({}, { locale })}
-    heading={m.home_proof_heading({}, { locale })}
-    items={stats}
-    locale={locale}
-    surface="surface"
-    spacing="md"
-  />
-
-  <PageSection id="headquarters" surface="subtle" spacing="lg">
-    <div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
-      <div class="lg:col-span-6 prose prose-wide" data-trig>
-        <Content />
-      </div>
-
-      <figure class="lg:col-span-6" data-trig data-trig-delay="0.1">
-        <div class="overflow-hidden rounded-2xl border border-border bg-surface shadow-md">
-          <Image
-            src={hqTuntenhausenImg}
-            alt={m.home_hq_image_alt({}, { locale })}
-            widths={[640, 960, 1280]}
-            sizes="(min-width: 1024px) 46vw, 94vw"
-            class="aspect-[16/10] w-full object-cover"
-          />
-          <figcaption class="border-t border-border px-5 py-3.5 text-xs leading-relaxed text-muted">
-            {m.home_hq_caption({}, { locale })}
-          </figcaption>
-        </div>
-      </figure>
+  <PageSection surface="default" spacing="lg">
+    <div class="prose prose-wide" data-trig>
+      <Content />
     </div>
   </PageSection>
 
-  <TestimonialGrid
-    id="testimonials"
-    eyebrow={m.home_testimonials_eyebrow({}, { locale })}
-    heading={m.home_testimonials_heading({}, { locale })}
-    subheading={m.home_testimonials_subheading({}, { locale })}
-    items={testimonials}
-    locale={locale}
-    surface="surface"
-    spacing="lg"
-  />
-
-  <FaqAccordion
-    id="faq"
-    eyebrow={m.home_faq_eyebrow({}, { locale })}
-    heading={m.home_faq_heading({}, { locale })}
-    subheading={m.home_faq_subheading({}, { locale })}
-    items={faqs}
-    emitSchema
-    surface="default"
-    spacing="lg"
-  />
-
   <CtaBanner
-    id="audit-inquiry"
-    eyebrow={m.home_closing_eyebrow({}, { locale })}
-    title={m.home_closing_title({}, { locale })}
-    description={m.home_closing_desc({}, { locale })}
+    id="get-started"
+    eyebrow={m.home_badge({}, { locale })}
+    title={m.home_cta_title({}, { locale })}
+    description={m.home_cta_desc({}, { locale })}
     primaryCta={{
-      label: m.home_cert_cta_primary({}, { locale }),
-      href: contactHref,
+      label: m.home_cta_primary({}, { locale }),
+      href: ctaHref,
       icon: 'arrow-right',
     }}
     secondaryCta={
-      pricingHref || projectsHref
+      projectsHref
         ? {
-            label: m.home_closing_secondary({}, { locale }),
-            href: pricingHref ?? projectsHref!,
+            label: m.home_cta_secondary({}, { locale }),
+            href: projectsHref,
           }
         : undefined
     }
