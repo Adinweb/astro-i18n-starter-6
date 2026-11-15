@@ -12,8 +12,8 @@ import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import Button from '@/components/Button.astro';
 import type { Locale } from '@/i18n/locales';
-import { localizeHref } from '@/i18n/paths';
 import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
@@ -55,6 +55,15 @@ const {
 const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
 const usingDefaults = title === undefined;
 
+const [featuresHref, pricingHref, homeHref] =
+  usingDefaults && (primaryCta === undefined || secondaryCta === undefined)
+    ? await Promise.all([
+        getPageUrl('features', activeLocale),
+        getPageUrl('pricing', activeLocale),
+        getHomeHref(activeLocale),
+      ])
+    : [null, null, ''];
+
 const resolvedEyebrow =
   eyebrow === null
     ? undefined
@@ -71,7 +80,7 @@ const resolvedPrimaryCta =
       (usingDefaults
         ? {
             label: m.block_hero_primary_cta({}, { locale: activeLocale }),
-            href: localizeHref('/features', activeLocale),
+            href: featuresHref ?? homeHref,
             icon: 'arrow-right',
           }
         : undefined));
@@ -82,7 +91,7 @@ const resolvedSecondaryCta =
       (usingDefaults
         ? {
             label: m.block_hero_secondary_cta({}, { locale: activeLocale }),
-            href: localizeHref('/pricing', activeLocale),
+            href: pricingHref ?? homeHref,
           }
         : undefined));
 const resolvedTrustNote =

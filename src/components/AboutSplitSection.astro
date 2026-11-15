@@ -12,8 +12,8 @@ import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
-import { localizeHref } from '@/i18n/paths';
 import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
@@ -91,6 +91,11 @@ const resolvedHighlights =
       ]
     : []);
 
+const defaultCtaHref =
+  usingDefaults && primaryCta === undefined
+    ? ((await getPageUrl('features', activeLocale)) ?? (await getHomeHref(activeLocale)))
+    : '';
+
 const resolvedPrimaryCta =
   primaryCta === null
     ? undefined
@@ -98,7 +103,7 @@ const resolvedPrimaryCta =
       (usingDefaults
         ? {
             label: m.block_about_cta({}, { locale: activeLocale }),
-            href: localizeHref('/features', activeLocale),
+            href: defaultCtaHref,
             icon: 'arrow-right',
           }
         : undefined));

@@ -15,7 +15,7 @@ import PageSection from '@/components/PageSection.astro';
 import SectionHeader from '@/components/SectionHeader.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
-import { localizeHref } from '@/i18n/paths';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
@@ -104,66 +104,76 @@ const resolvedAnnualLabel = annualLabel ?? m.block_pricing_annual({}, { locale: 
 const resolvedSaveBadge = annualSaveBadge ?? m.block_pricing_save_badge({}, { locale: activeLocale });
 const recommendedLabel = m.pricing_recommended({}, { locale: activeLocale });
 
-const resolvedTiers: readonly PricingTier[] = tiers ?? [
-  {
-    name: m.block_pricing_t1_name({}, { locale: activeLocale }),
-    amount: 0,
-    annualAmount: 0,
-    currencyPrefix: '$',
-    period: perMonthLabel,
-    annualPeriod: perYearLabel,
-    description: m.block_pricing_t1_desc({}, { locale: activeLocale }),
-    features: [
-      m.block_pricing_t1_f1({}, { locale: activeLocale }),
-      m.block_pricing_t1_f2({}, { locale: activeLocale }),
-      m.block_pricing_t1_f3({}, { locale: activeLocale }),
-    ],
-    cta: {
-      label: m.block_pricing_t1_cta({}, { locale: activeLocale }),
-      href: localizeHref('/features', activeLocale),
-      icon: 'arrow-right',
+let resolvedTiers: readonly PricingTier[];
+if (tiers) {
+  resolvedTiers = tiers;
+} else {
+  const [featuresHref, pricingHref, homeHref] = await Promise.all([
+    getPageUrl('features', activeLocale),
+    getPageUrl('pricing', activeLocale),
+    getHomeHref(activeLocale),
+  ]);
+  resolvedTiers = [
+    {
+      name: m.block_pricing_t1_name({}, { locale: activeLocale }),
+      amount: 0,
+      annualAmount: 0,
+      currencyPrefix: '$',
+      period: perMonthLabel,
+      annualPeriod: perYearLabel,
+      description: m.block_pricing_t1_desc({}, { locale: activeLocale }),
+      features: [
+        m.block_pricing_t1_f1({}, { locale: activeLocale }),
+        m.block_pricing_t1_f2({}, { locale: activeLocale }),
+        m.block_pricing_t1_f3({}, { locale: activeLocale }),
+      ],
+      cta: {
+        label: m.block_pricing_t1_cta({}, { locale: activeLocale }),
+        href: featuresHref ?? homeHref,
+        icon: 'arrow-right',
+      },
     },
-  },
-  {
-    name: m.block_pricing_t2_name({}, { locale: activeLocale }),
-    amount: 49,
-    annualAmount: 470,
-    currencyPrefix: '$',
-    period: perMonthLabel,
-    annualPeriod: perYearLabel,
-    featured: true,
-    description: m.block_pricing_t2_desc({}, { locale: activeLocale }),
-    features: [
-      m.block_pricing_t2_f1({}, { locale: activeLocale }),
-      m.block_pricing_t2_f2({}, { locale: activeLocale }),
-      m.block_pricing_t2_f3({}, { locale: activeLocale }),
-    ],
-    cta: {
-      label: m.block_pricing_t2_cta({}, { locale: activeLocale }),
-      href: localizeHref('/pricing', activeLocale),
-      icon: 'arrow-right',
+    {
+      name: m.block_pricing_t2_name({}, { locale: activeLocale }),
+      amount: 49,
+      annualAmount: 470,
+      currencyPrefix: '$',
+      period: perMonthLabel,
+      annualPeriod: perYearLabel,
+      featured: true,
+      description: m.block_pricing_t2_desc({}, { locale: activeLocale }),
+      features: [
+        m.block_pricing_t2_f1({}, { locale: activeLocale }),
+        m.block_pricing_t2_f2({}, { locale: activeLocale }),
+        m.block_pricing_t2_f3({}, { locale: activeLocale }),
+      ],
+      cta: {
+        label: m.block_pricing_t2_cta({}, { locale: activeLocale }),
+        href: pricingHref ?? homeHref,
+        icon: 'arrow-right',
+      },
     },
-  },
-  {
-    name: m.block_pricing_t3_name({}, { locale: activeLocale }),
-    amount: 149,
-    annualAmount: 1430,
-    currencyPrefix: '$',
-    period: perMonthLabel,
-    annualPeriod: perYearLabel,
-    description: m.block_pricing_t3_desc({}, { locale: activeLocale }),
-    features: [
-      m.block_pricing_t3_f1({}, { locale: activeLocale }),
-      m.block_pricing_t3_f2({}, { locale: activeLocale }),
-      m.block_pricing_t3_f3({}, { locale: activeLocale }),
-    ],
-    cta: {
-      label: m.block_pricing_t3_cta({}, { locale: activeLocale }),
-      href: localizeHref('/pricing#contact-inquiry', activeLocale),
-      icon: 'mail',
+    {
+      name: m.block_pricing_t3_name({}, { locale: activeLocale }),
+      amount: 149,
+      annualAmount: 1430,
+      currencyPrefix: '$',
+      period: perMonthLabel,
+      annualPeriod: perYearLabel,
+      description: m.block_pricing_t3_desc({}, { locale: activeLocale }),
+      features: [
+        m.block_pricing_t3_f1({}, { locale: activeLocale }),
+        m.block_pricing_t3_f2({}, { locale: activeLocale }),
+        m.block_pricing_t3_f3({}, { locale: activeLocale }),
+      ],
+      cta: {
+        label: m.block_pricing_t3_cta({}, { locale: activeLocale }),
+        href: pricingHref ? `${pricingHref}#contact-inquiry` : homeHref,
+        icon: 'mail',
+      },
     },
-  },
-];
+  ];
+}
 
 const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
 const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';

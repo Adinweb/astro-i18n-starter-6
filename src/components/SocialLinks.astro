@@ -1,0 +1,194 @@
+---
+/**
+ * Reusable social channel links & share bar inspired by PrebuiltUI social-media components.
+ * Reads `siteConfig.social` automatically or accepts custom `items`, uses explicit Tabler
+ * `brand-*` icons (`<Icon>`), supports `icons` | `pills` | `cards` variants plus an
+ * optional copy-current-link share action, OKLCH styling, and Paraglide defaults.
+ */
+import Icon from '@/components/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { siteConfig } from '@/libs/config/app';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface SocialLinkItem {
+  name: string;
+  href: string;
+  icon: string;
+  handle?: string;
+}
+
+interface Props {
+  locale?: Locale | string;
+  items?: readonly SocialLinkItem[];
+  variant?: 'icons' | 'pills' | 'cards';
+  showShare?: boolean;
+  ariaLabel?: string;
+  class?: string;
+}
+
+const {
+  locale,
+  items,
+  variant = 'pills',
+  showShare = true,
+  ariaLabel,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const resolvedLabel = ariaLabel ?? m.block_social_label({}, { locale: activeLocale });
+const copyLabel = m.block_social_copy_link({}, { locale: activeLocale });
+const copiedLabel = m.common_copied({}, { locale: activeLocale });
+const shareLabel = m.block_social_share_label({}, { locale: activeLocale });
+const emptyText = m.block_social_empty({}, { locale: activeLocale });
+
+const configuredItems: SocialLinkItem[] = [];
+if (siteConfig.social.github) {
+  configuredItems.push({ name: 'GitHub', href: siteConfig.social.github, icon: 'brand-github' });
+}
+if (siteConfig.social.twitter) {
+  configuredItems.push({ name: 'X', href: siteConfig.social.twitter, icon: 'brand-x' });
+}
+if (siteConfig.social.linkedin) {
+  configuredItems.push({ name: 'LinkedIn', href: siteConfig.social.linkedin, icon: 'brand-linkedin' });
+}
+if (siteConfig.social.instagram) {
+  configuredItems.push({ name: 'Instagram', href: siteConfig.social.instagram, icon: 'brand-instagram' });
+}
+if (siteConfig.social.telegram) {
+  configuredItems.push({ name: 'Telegram', href: siteConfig.social.telegram, icon: 'brand-telegram' });
+}
+
+const resolvedItems: readonly SocialLinkItem[] =
+  items ??
+  (configuredItems.length > 0
+    ? configuredItems
+    : [
+        { name: 'GitHub', href: 'https://github.com', icon: 'brand-github', handle: '@studio' },
+        { name: 'X', href: 'https://x.com', icon: 'brand-x', handle: '@studio' },
+        { name: 'LinkedIn', href: 'https://linkedin.com', icon: 'brand-linkedin', handle: '/company/studio' },
+      ]);
+---
+
+<nav aria-label={resolvedLabel} data-social-links class:list={['not-prose', className]}>
+  {
+    resolvedItems.length === 0 ? (
+      <p class="text-xs text-muted">{emptyText}</p>
+    ) : variant === 'cards' ? (
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {resolvedItems.map((item) => (
+          <a
+            href={item.href}
+            target="_blank"
+            rel="noreferrer noopener"
+            aria-label={m.block_social_follow_on({ name: item.name }, { locale: activeLocale })}
+            class="group flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-3.5 transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-xs"
+          >
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-fg">
+                <Icon name={item.icon} size={18} />
+              </span>
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-fg">{item.name}</p>
+                {item.handle && <p dir="ltr" class="truncate text-xs text-muted text-start">{item.handle}</p>}
+              </div>
+            </div>
+            <Icon name="external-link" size={14} class="shrink-0 text-muted group-hover:text-primary" />
+          </a>
+        ))}
+
+        {showShare && (
+          <button
+            type="button"
+            data-social-copy
+            data-label-copy={copyLabel}
+            data-label-copied={copiedLabel}
+            class="group flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-dashed border-border bg-surface p-3.5 text-start transition-all hover:border-primary/50 hover:bg-surface-hover print:hidden"
+          >
+            <span class="flex min-w-0 items-center gap-3">
+              <span class="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-surface-hover text-fg">
+                <Icon name="share" size={18} />
+              </span>
+              <span class="min-w-0">
+                <span class="block text-sm font-semibold text-fg">{shareLabel}</span>
+                <span data-social-copy-label class="block text-xs text-muted">{copyLabel}</span>
+              </span>
+            </span>
+          </button>
+        )}
+      </div>
+    ) : (
+      <div class="flex flex-wrap items-center gap-2">
+        {resolvedItems.map((item) => (
+          <a
+            href={item.href}
+            target="_blank"
+            rel="noreferrer noopener"
+            aria-label={m.block_social_follow_on({ name: item.name }, { locale: activeLocale })}
+            class:list={[
+              'inline-flex items-center justify-center border border-border bg-surface text-fg transition-colors hover:border-primary/50 hover:bg-surface-hover hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+              variant === 'icons' ? 'size-10 rounded-full' : 'gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold',
+            ]}
+          >
+            <Icon name={item.icon} size={17} class="shrink-0" />
+            {variant === 'pills' && <span>{item.name}</span>}
+          </a>
+        ))}
+
+        {showShare && (
+          <button
+            type="button"
+            data-social-copy
+            data-label-copy={copyLabel}
+            data-label-copied={copiedLabel}
+            aria-label={copyLabel}
+            class:list={[
+              'inline-flex cursor-pointer items-center justify-center border border-border bg-surface text-muted transition-colors hover:border-primary/50 hover:bg-surface-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary print:hidden',
+              variant === 'icons' ? 'size-10 rounded-full' : 'gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold',
+            ]}
+          >
+            <Icon name="share" size={15} class="shrink-0" />
+            {variant === 'pills' && <span data-social-copy-label>{copyLabel}</span>}
+          </button>
+        )}
+      </div>
+    )
+  }
+</nav>
+
+<script>
+  function initSocialCopy() {
+    const buttons = document.querySelectorAll<HTMLButtonElement>('[data-social-copy]');
+
+    buttons.forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+
+      let resetTimer = 0;
+
+      btn.addEventListener('click', async () => {
+        const labelEl = btn.querySelector<HTMLElement>('[data-social-copy-label]');
+        const defaultText = btn.dataset.labelCopy ?? '';
+        const copiedText = btn.dataset.labelCopied ?? '';
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          if (labelEl) labelEl.textContent = copiedText;
+          if (btn.hasAttribute('aria-label')) btn.setAttribute('aria-label', copiedText);
+          btn.classList.add('border-primary/50', 'text-primary');
+          window.clearTimeout(resetTimer);
+          resetTimer = window.setTimeout(() => {
+            if (labelEl) labelEl.textContent = defaultText;
+            if (btn.hasAttribute('aria-label')) btn.setAttribute('aria-label', defaultText);
+            btn.classList.remove('border-primary/50', 'text-primary');
+          }, 1800);
+        } catch {
+          // Clipboard permissions may be blocked in restricted sandboxes.
+        }
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initSocialCopy);
+  initSocialCopy();
+</script>

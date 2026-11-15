@@ -6,7 +6,8 @@
 import Button from '@/components/Button.astro';
 import PageSection from '@/components/PageSection.astro';
 import type { Locale } from '@/i18n/locales';
-import { localizeHref } from '@/i18n/paths';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
+import { getContentType, getContentTypeIndexHref } from '@/libs/content/types';
 import { resolveComponentLocale } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
@@ -46,6 +47,16 @@ const {
 const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
 const usingDefaults = title === undefined;
 
+const [pricingHref, homeHref] =
+  primaryCta === undefined || (usingDefaults && secondaryCta === undefined)
+    ? await Promise.all([getPageUrl('pricing', activeLocale), getHomeHref(activeLocale)])
+    : [null, ''];
+
+const projectsType = getContentType('projects');
+const projectsHref = projectsType.enabled
+  ? getContentTypeIndexHref('projects', activeLocale)
+  : homeHref;
+
 const resolvedEyebrow =
   eyebrow === null
     ? undefined
@@ -60,7 +71,7 @@ const resolvedPrimaryCta =
     ? undefined
     : (primaryCta ?? {
         label: m.home_cta_primary({}, { locale: activeLocale }),
-        href: localizeHref('/pricing', activeLocale),
+        href: pricingHref ?? homeHref,
         icon: 'arrow-right',
       });
 const resolvedSecondaryCta =
@@ -70,7 +81,7 @@ const resolvedSecondaryCta =
       (usingDefaults
         ? {
             label: m.home_cta_secondary({}, { locale: activeLocale }),
-            href: localizeHref('/projects', activeLocale),
+            href: projectsHref,
           }
         : undefined));
 

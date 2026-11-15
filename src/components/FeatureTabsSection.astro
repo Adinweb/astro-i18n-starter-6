@@ -64,7 +64,7 @@ const {
 
 const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
 const usingDefaults = tabs === undefined;
-const instancePrefix = id ?? `tabs-${activeLocale}`;
+const instancePrefix = id ?? `tabs-${activeLocale}-${crypto.randomUUID().slice(0, 6)}`;
 
 const resolvedEyebrow = resolveOptionalHeader(
   eyebrow,
@@ -271,6 +271,8 @@ const panelSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface
 </PageSection>
 
 <script>
+  import { refreshChronoTrig } from '@/scripts/chronotrig';
+
   function initFeatureTabs() {
     const groups = document.querySelectorAll<HTMLElement>('[data-feature-tabs]');
 
@@ -317,6 +319,7 @@ const panelSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface
           panel.hidden = idx !== target;
         });
 
+        refreshChronoTrig();
         if (shouldFocus) triggers[target]?.focus();
       };
 

@@ -1,0 +1,203 @@
+---
+/**
+ * Reusable accessible input / textarea primitive inspired by PrebuiltUI input components.
+ * Supports leading `<Icon>`, optional password visibility toggle (`eye`/`eye-off`),
+ * `aria-invalid` error state + `aria-describedby` helper/error text, automatic `dir="ltr"`
+ * handling for emails/URLs in RTL pages, OKLCH tokens, and Paraglide defaults.
+ */
+import Icon from '@/components/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  id?: string;
+  name?: string;
+  locale?: Locale | string;
+  type?: 'text' | 'email' | 'password' | 'search' | 'url' | 'tel' | 'textarea';
+  label?: string;
+  placeholder?: string;
+  value?: string;
+  helper?: string | null;
+  error?: string;
+  icon?: string;
+  required?: boolean;
+  disabled?: boolean;
+  rows?: number;
+  dir?: 'ltr' | 'rtl' | 'auto';
+  class?: string;
+}
+
+const {
+  id,
+  name,
+  locale,
+  type = 'text',
+  label,
+  placeholder,
+  value,
+  helper,
+  error,
+  icon,
+  required = false,
+  disabled = false,
+  rows = 3,
+  dir,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = label === undefined && placeholder === undefined && helper === undefined;
+
+const resolvedLabel = label ?? m.block_input_default_label({}, { locale: activeLocale });
+const resolvedPlaceholder =
+  placeholder ?? (usingDefaults ? m.block_input_default_placeholder({}, { locale: activeLocale }) : undefined);
+const resolvedHelper =
+  helper === null
+    ? undefined
+    : (helper ?? (usingDefaults ? m.block_input_default_helper({}, { locale: activeLocale }) : undefined));
+
+const showPwLabel = m.block_auth_show_password({}, { locale: activeLocale });
+const hidePwLabel = m.block_auth_hide_password({}, { locale: activeLocale });
+
+const inputId = id ?? `input-${crypto.randomUUID().slice(0, 6)}`;
+const descId = error || resolvedHelper ? `${inputId}-desc` : undefined;
+const resolvedIcon = icon ?? (usingDefaults ? 'mail' : undefined);
+const isLtrField = dir ?? (type === 'email' || type === 'url' || type === 'tel' || type === 'password' ? 'ltr' : undefined);
+const isPassword = type === 'password';
+---
+
+<div data-ui-input-group class:list={['not-prose w-full space-y-1.5', className]}>
+  {
+    resolvedLabel && (
+      <label for={inputId} class="block text-xs font-semibold text-fg">
+        <span>{resolvedLabel}</span>
+        {required && <span class="ms-1 text-error">*</span>}
+      </label>
+    )
+  }
+
+  <div class="relative">
+    {
+      resolvedIcon && type !== 'textarea' && (
+        <span
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-y-0 start-3.5 flex items-center text-muted"
+        >
+          <Icon name={resolvedIcon} size={16} />
+        </span>
+      )
+    }
+
+    {
+      type === 'textarea' ? (
+        <textarea
+          id={inputId}
+          name={name}
+          rows={rows}
+          dir={isLtrField}
+          required={required}
+          disabled={disabled}
+          placeholder={resolvedPlaceholder}
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={descId}
+          class:list={[
+            'w-full rounded-xl border bg-bg px-3.5 py-2.5 text-sm text-fg placeholder:text-muted/70 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60',
+            error ? 'border-error focus:border-error' : 'border-border focus:border-primary',
+          ]}
+        >
+          {value}
+        </textarea>
+      ) : (
+        <input
+          id={inputId}
+          name={name}
+          type={type}
+          value={value}
+          dir={isLtrField}
+          required={required}
+          disabled={disabled}
+          placeholder={resolvedPlaceholder}
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={descId}
+          data-ui-input-el
+          class:list={[
+            'w-full rounded-xl border bg-bg py-2.5 text-sm text-fg placeholder:text-muted/70 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60',
+            resolvedIcon ? 'ps-10' : 'ps-3.5',
+            isPassword ? 'pe-11' : 'pe-3.5',
+            isLtrField === 'ltr' ? 'text-start rtl:text-end' : '',
+            error ? 'border-error focus:border-error' : 'border-border focus:border-primary',
+          ]}
+        />
+      )
+    }
+
+    {
+      isPassword && (
+        <button
+          type="button"
+          data-ui-input-pw-toggle
+          aria-pressed="false"
+          aria-label={showPwLabel}
+          data-label-show={showPwLabel}
+          data-label-hide={hidePwLabel}
+          class="absolute inset-y-0 end-2 my-auto inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+        >
+          <span data-pw-icon-show>
+            <Icon name="eye" size={16} />
+          </span>
+          <span data-pw-icon-hide hidden>
+            <Icon name="eye-off" size={16} />
+          </span>
+        </button>
+      )
+    }
+  </div>
+
+  {
+    error ? (
+      <p id={descId} class="text-xs font-medium text-error">
+        {error}
+      </p>
+    ) : (
+      resolvedHelper && (
+        <p id={descId} class="text-xs leading-relaxed text-muted">
+          {resolvedHelper}
+        </p>
+      )
+    )
+  }
+</div>
+
+<script>
+  function initUiInputs() {
+    const groups = document.querySelectorAll<HTMLElement>('[data-ui-input-group]');
+
+    groups.forEach((group) => {
+      if (group.dataset.bound === 'true') return;
+      group.dataset.bound = 'true';
+
+      const input = group.querySelector<HTMLInputElement>('[data-ui-input-el]');
+      const toggle = group.querySelector<HTMLButtonElement>('[data-ui-input-pw-toggle]');
+      if (!input || !toggle) return;
+
+      const iconShow = toggle.querySelector<HTMLElement>('[data-pw-icon-show]');
+      const iconHide = toggle.querySelector<HTMLElement>('[data-pw-icon-hide]');
+
+      toggle.addEventListener('click', () => {
+        const showing = input.type === 'text';
+        input.type = showing ? 'password' : 'text';
+        toggle.setAttribute('aria-pressed', String(!showing));
+        toggle.setAttribute(
+          'aria-label',
+          showing ? (toggle.dataset.labelShow ?? '') : (toggle.dataset.labelHide ?? '')
+        );
+        if (iconShow) iconShow.hidden = !showing;
+        if (iconHide) iconHide.hidden = showing;
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initUiInputs);
+  initUiInputs();
+</script>

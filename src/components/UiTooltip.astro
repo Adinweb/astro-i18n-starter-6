@@ -1,0 +1,82 @@
+---
+/**
+ * Accessible tooltip primitive inspired by PrebuiltUI tooltip components.
+ * Uses CSS logical placement (`top` | `bottom` | `start` | `end`), OKLCH surface/primary
+ * styling, `<Icon>`, `aria-describedby` + `role="tooltip"`, and Paraglide defaults.
+ */
+import Icon from '@/components/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  text?: string;
+  label?: string;
+  icon?: string;
+  placement?: 'top' | 'bottom' | 'start' | 'end';
+  variant?: 'neutral' | 'primary';
+  class?: string;
+}
+
+const {
+  id,
+  locale,
+  text,
+  label,
+  icon = 'info',
+  placement = 'top',
+  variant = 'neutral',
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const resolvedText = text ?? m.block_tooltip_default({}, { locale: activeLocale });
+const resolvedLabel = label ?? m.block_tooltip_trigger({}, { locale: activeLocale });
+const tooltipId = id ?? `tooltip-${crypto.randomUUID().slice(0, 6)}`;
+const hasCustomTrigger = Astro.slots.has('default');
+
+const PLACEMENTS = {
+  top: 'bottom-full start-1/2 mb-2.5 -translate-x-1/2 rtl:translate-x-1/2',
+  bottom: 'top-full start-1/2 mt-2.5 -translate-x-1/2 rtl:translate-x-1/2',
+  start: 'top-1/2 end-full me-2.5 -translate-y-1/2',
+  end: 'top-1/2 start-full ms-2.5 -translate-y-1/2',
+} as const;
+
+const VARIANTS = {
+  neutral: 'border-border bg-surface text-fg shadow-floating',
+  primary: 'border-primary bg-primary text-primary-fg shadow-floating',
+} as const;
+---
+
+<span class:list={['not-prose group/tooltip relative inline-flex', className]}>
+  {
+    hasCustomTrigger ? (
+      <span aria-describedby={tooltipId} class="inline-flex">
+        <slot />
+      </span>
+    ) : (
+      <button
+        type="button"
+        aria-describedby={tooltipId}
+        class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-1.5 text-xs font-semibold text-fg transition-colors hover:border-primary/50 hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        {icon && <Icon name={icon} size={14} class="text-primary" />}
+        <span>{resolvedLabel}</span>
+      </button>
+    )
+  }
+
+  <span
+    id={tooltipId}
+    role="tooltip"
+    class:list={[
+      'pointer-events-none invisible absolute z-30 w-max max-w-60 rounded-xl border px-3 py-1.5 text-center text-xs font-medium leading-snug opacity-0 transition-opacity duration-150 group-hover/tooltip:visible group-hover/tooltip:opacity-100 group-focus-within/tooltip:visible group-focus-within/tooltip:opacity-100 [[data-motion=reduced]_&]:transition-none',
+      PLACEMENTS[placement],
+      VARIANTS[variant],
+    ]}
+  >
+    {resolvedText}
+  </span>
+</span>

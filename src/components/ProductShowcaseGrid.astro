@@ -1,0 +1,371 @@
+---
+/**
+ * Composable e-commerce product catalog grid inspired by PrebuiltUI e-commerce cards.
+ * Features optimized Astro `<Image>` media or semantic placeholder art, discount/status
+ * `<UiBadge>`, localized pricing (`formatNumber`), interactive wishlist toggle, category
+ * filter chips with ChronoTrig cascade replay, OKLCH semantic tokens, and Paraglide defaults.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import UiBadge from '@/components/UiBadge.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface ProductItem {
+  title: string;
+  description: string;
+  category?: string;
+  badge?: string;
+  price: number;
+  compareAtPrice?: number;
+  currency?: string;
+  rating?: number;
+  reviewCount?: number;
+  image?: ImageMetadata;
+  alt?: string;
+  href?: string;
+  ctaLabel?: string;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  items?: readonly ProductItem[];
+  columns?: 2 | 3 | 4;
+  enableFilter?: boolean;
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale,
+  eyebrow,
+  heading,
+  subheading,
+  items,
+  columns = 3,
+  enableFilter = true,
+  contained = false,
+  surface = 'default',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = items === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_products_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_products_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_products_subheading({}, { locale: activeLocale })
+);
+
+const defaultCurrency = '$';
+const defaultHref = usingDefaults
+  ? ((await getPageUrl('pricing', activeLocale)) ?? (await getHomeHref(activeLocale)))
+  : '';
+const defaultCta = m.block_products_cta({}, { locale: activeLocale });
+
+const resolvedItems: readonly ProductItem[] = items ?? [
+  {
+    title: m.block_products_1_title({}, { locale: activeLocale }),
+    description: m.block_products_1_desc({}, { locale: activeLocale }),
+    category: m.block_products_1_cat({}, { locale: activeLocale }),
+    badge: m.block_products_1_badge({}, { locale: activeLocale }),
+    price: 79,
+    compareAtPrice: 99,
+    currency: defaultCurrency,
+    rating: 4.9,
+    reviewCount: 42,
+    image: DEFAULT_HERO_IMAGE,
+    href: defaultHref,
+    ctaLabel: defaultCta,
+  },
+  {
+    title: m.block_products_2_title({}, { locale: activeLocale }),
+    description: m.block_products_2_desc({}, { locale: activeLocale }),
+    category: m.block_products_2_cat({}, { locale: activeLocale }),
+    badge: m.block_products_2_badge({}, { locale: activeLocale }),
+    price: 129,
+    currency: defaultCurrency,
+    rating: 4.8,
+    reviewCount: 28,
+    image: DEFAULT_HERO_IMAGE,
+    href: defaultHref,
+    ctaLabel: defaultCta,
+  },
+  {
+    title: m.block_products_3_title({}, { locale: activeLocale }),
+    description: m.block_products_3_desc({}, { locale: activeLocale }),
+    category: m.block_products_3_cat({}, { locale: activeLocale }),
+    badge: m.block_products_3_badge({}, { locale: activeLocale }),
+    price: 49,
+    currency: defaultCurrency,
+    rating: 5,
+    reviewCount: 19,
+    href: defaultHref,
+    ctaLabel: defaultCta,
+  },
+];
+
+const categories = [...new Set(resolvedItems.map((i) => i.category).filter(Boolean))] as string[];
+const showFilters = enableFilter && categories.length > 1;
+const allLabel = m.block_products_all({}, { locale: activeLocale });
+
+const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const gridColsClass =
+  columns === 2
+    ? 'md:grid-cols-2'
+    : columns === 4
+      ? 'sm:grid-cols-2 xl:grid-cols-4'
+      : 'md:grid-cols-2 lg:grid-cols-3';
+---
+
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <div data-product-showcase>
+    <div class:list={[(hasHeader || showFilters) && 'flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between']}>
+      <SectionHeader
+        eyebrow={resolvedEyebrow}
+        heading={resolvedHeading}
+        subheading={resolvedSubheading}
+      />
+
+      {
+        showFilters && (
+          <div class="flex flex-wrap items-center gap-2 print:hidden" data-trig>
+            <button
+              type="button"
+              data-product-filter="__all__"
+              aria-pressed="true"
+              class="chip cursor-pointer border-primary bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-fg shadow-xs"
+            >
+              {allLabel}
+            </button>
+            {categories.map((cat) => (
+              <button
+                type="button"
+                data-product-filter={cat}
+                aria-pressed="false"
+                class="chip cursor-pointer px-3.5 py-1.5 text-xs font-semibold"
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )
+      }
+    </div>
+
+    <div
+      data-product-grid
+      class:list={['grid gap-5', (hasHeader || showFilters) && 'mt-8', gridColsClass]}
+      data-trig-stagger
+      data-trig-stagger-delay="0.06"
+    >
+      {
+        resolvedItems.map((item) => {
+          const currency = item.currency ?? defaultCurrency;
+          const formattedPrice = `${currency}${formatNumber(item.price, activeLocale)}`;
+          const formattedCompare =
+            item.compareAtPrice !== undefined
+              ? `${currency}${formatNumber(item.compareAtPrice, activeLocale)}`
+              : undefined;
+          const formattedRating =
+            item.rating !== undefined ? formatNumber(item.rating, activeLocale) : undefined;
+          const formattedReviews =
+            item.reviewCount !== undefined ? formatNumber(item.reviewCount, activeLocale) : undefined;
+
+          return (
+            <article
+              data-trig
+              data-product-card
+              data-category={item.category ?? ''}
+              class:list={[
+                'group flex flex-col overflow-hidden rounded-2xl border border-border shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md',
+                cardSurface,
+              ]}
+            >
+              <div class="relative aspect-[16/10] overflow-hidden bg-surface-hover/50">
+                {item.image ? (
+                  <Image
+                    src={item.image}
+                    alt={item.alt ?? item.title}
+                    widths={[480, 800]}
+                    sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 94vw"
+                    class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  />
+                ) : (
+                  <div class="flex h-full items-center justify-center bg-linear-to-br rtl:bg-linear-to-bl from-primary/15 via-surface-hover to-accent/15 text-primary">
+                    <Icon name="shopping-bag" size={38} />
+                  </div>
+                )}
+
+                {item.badge && (
+                  <div class="absolute top-3 start-3">
+                    <UiBadge label={item.badge} variant="accent" size="sm" />
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  data-product-wishlist
+                  aria-pressed="false"
+                  aria-label={m.block_products_wishlist_aria(
+                    { title: item.title },
+                    { locale: activeLocale }
+                  )}
+                  class="glass-control absolute top-3 end-3 size-9 cursor-pointer text-fg transition-colors hover:text-primary print:hidden"
+                >
+                  <Icon name="heart" size={16} />
+                </button>
+              </div>
+
+              <div class="flex flex-1 flex-col p-5 sm:p-6">
+                <div class="flex items-center justify-between gap-2 text-xs text-muted">
+                  {item.category && (
+                    <span class="font-semibold text-primary">{item.category}</span>
+                  )}
+                  {formattedRating && (
+                    <span class="ms-auto inline-flex items-center gap-1 font-medium tabular-nums text-fg">
+                      <Icon name="star-filled" size={14} class="text-accent" />
+                      <span>{formattedRating}</span>
+                      {formattedReviews && (
+                        <span class="text-muted">
+                          {m.block_products_reviews(
+                            { count: formattedReviews },
+                            { locale: activeLocale }
+                          )}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                <h3 class="mt-2.5 text-lg font-bold tracking-tight text-fg">
+                  {item.title}
+                </h3>
+                <p class="mt-1.5 flex-1 text-sm leading-relaxed text-muted">
+                  {item.description}
+                </p>
+
+                <div class="mt-5 flex items-center justify-between gap-3 border-t border-border/70 pt-4">
+                  <div class="flex items-baseline gap-2 tabular-nums">
+                    <span class="text-lg font-extrabold text-fg">{formattedPrice}</span>
+                    {formattedCompare && (
+                      <span class="text-xs text-muted line-through">{formattedCompare}</span>
+                    )}
+                  </div>
+
+                  {item.href && (
+                    <Button
+                      href={item.href}
+                      variant="primary"
+                      size="sm"
+                      icon="arrow-right"
+                      class="print:hidden"
+                    >
+                      {item.ctaLabel ?? defaultCta}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </article>
+          );
+        })
+      }
+    </div>
+  </div>
+</PageSection>
+
+<script>
+  import { refreshChronoTrig } from '@/scripts/chronotrig';
+
+  function initProductShowcases() {
+    const sections = document.querySelectorAll<HTMLElement>('[data-product-showcase]');
+
+    sections.forEach((section) => {
+      if (section.dataset.bound === 'true') return;
+      section.dataset.bound = 'true';
+
+      const filterBtns = Array.from(
+        section.querySelectorAll<HTMLButtonElement>('[data-product-filter]')
+      );
+      const grid = section.querySelector<HTMLElement>('[data-product-grid]');
+      const cards = Array.from(section.querySelectorAll<HTMLElement>('[data-product-card]'));
+
+      filterBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const selected = btn.dataset.productFilter ?? '__all__';
+
+          filterBtns.forEach((b) => {
+            const active = b === btn;
+            b.setAttribute('aria-pressed', String(active));
+            b.classList.toggle('border-primary', active);
+            b.classList.toggle('bg-primary', active);
+            b.classList.toggle('text-primary-fg', active);
+            b.classList.toggle('shadow-xs', active);
+          });
+
+          cards.forEach((card) => {
+            const cat = card.dataset.category ?? '';
+            card.hidden = selected !== '__all__' && cat !== selected;
+          });
+
+          if (grid && typeof window.chronoTrig !== 'undefined') {
+            grid.classList.remove('trig-stagger-active');
+            cards.forEach((card) =>
+              card.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active')
+            );
+            void grid.offsetHeight;
+          }
+          refreshChronoTrig();
+        });
+      });
+
+      const wishlistBtns = Array.from(
+        section.querySelectorAll<HTMLButtonElement>('[data-product-wishlist]')
+      );
+      wishlistBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const next = btn.getAttribute('aria-pressed') !== 'true';
+          btn.setAttribute('aria-pressed', String(next));
+          btn.classList.toggle('text-error', next);
+          btn.classList.toggle('border-error/40', next);
+          btn.classList.toggle('text-fg', !next);
+        });
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initProductShowcases);
+  initProductShowcases();
+</script>

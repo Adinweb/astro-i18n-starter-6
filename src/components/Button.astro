@@ -39,6 +39,8 @@ interface Props {
   disabled?: boolean;
   /** Opens a new tab and adds the matching `rel`. */
   external?: boolean;
+  /** Adds a subtle semantic OKLCH hover glow inspired by PrebuiltUI glowing buttons. */
+  glow?: boolean;
   class?: string;
   /** Anything else (`data-*`, `aria-*`, `id`, `rel`, …) lands on the element. */
   [attribute: string]: unknown;
@@ -55,11 +57,20 @@ const {
   type = 'button',
   disabled = false,
   external = false,
+  glow = false,
   class: className,
   ...rest
 } = Astro.props;
 
-const classes = buttonClasses({ variant, size, block, className });
+const glowClass = glow
+  ? 'relative overflow-hidden ring-1 ring-primary/30 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/35 hover:ring-primary/50'
+  : undefined;
+const classes = buttonClasses({
+  variant,
+  size,
+  block,
+  className: [glowClass, className].filter(Boolean).join(' '),
+});
 const directional = isDirectionalIcon(icon);
 const mirrors = flipIcon ?? directional;
 

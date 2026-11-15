@@ -98,6 +98,7 @@ const categories = [...new Set(resolvedItems.map((i) => i.category).filter(Boole
 const showFilters = enableFilter && categories.length > 1;
 const allLabel = m.block_gallery_all({}, { locale: activeLocale });
 const closeLabel = m.common_close({}, { locale: activeLocale });
+const dialogTitleId = `${id ?? `gallery-${crypto.randomUUID().slice(0, 6)}`}-dialog-title`;
 
 const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
 const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
@@ -225,11 +226,11 @@ const gridColsClass =
         <dialog
           data-gallery-dialog
           data-lenis-prevent
-          aria-labelledby="gallery-dialog-title"
+          aria-labelledby={dialogTitleId}
           class="m-auto w-[min(92vw,56rem)] overflow-hidden rounded-3xl border border-border bg-surface p-0 text-fg shadow-floating backdrop:bg-scrim backdrop:backdrop-blur-xs"
         >
           <div class="flex items-center justify-between gap-4 border-b border-border px-5 py-3.5 sm:px-6">
-            <p id="gallery-dialog-title" data-dialog-title class="truncate text-base font-bold text-fg" />
+            <p id={dialogTitleId} data-dialog-title class="truncate text-base font-bold text-fg" />
             <IconButton
               icon="close"
               label={closeLabel}
@@ -286,9 +287,12 @@ const gridColsClass =
             card.hidden = selected !== '__all__' && cat !== selected;
           });
 
-          if (grid) {
-            cards.forEach((card) => card.classList.remove('trig-active'));
+          if (grid && typeof window.chronoTrig !== 'undefined') {
             grid.classList.remove('trig-stagger-active');
+            cards.forEach((card) =>
+              card.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active')
+            );
+            void grid.offsetHeight;
           }
           refreshChronoTrig();
         });

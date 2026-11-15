@@ -79,6 +79,7 @@ const copy = {
 };
 
 const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-email-${activeLocale}`;
 ---
 
 <PageSection
@@ -179,7 +180,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
               </div>
 
               <label
-                for={`newsletter-email-${activeLocale}`}
+                for={emailInputId}
                 class="block text-xs font-semibold text-fg"
               >
                 {copy.emailLabel}
@@ -187,7 +188,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
 
               <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <input
-                  id={`newsletter-email-${activeLocale}`}
+                  id={emailInputId}
                   name="email"
                   type="email"
                   dir="ltr"

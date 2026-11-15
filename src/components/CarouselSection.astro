@@ -1,0 +1,353 @@
+---
+/**
+ * Composable interactive carousel showcase inspired by PrebuiltUI carousel sections.
+ * Supports RTL-mirrored navigation arrows and keyboard Left/Right controls, slide dots,
+ * localized slide counters (`formatNumber`), optional autoplay respecting `data-motion="reduced"`,
+ * `<Image>` optimization with `DEFAULT_HERO_IMAGE` fallback, and Paraglide defaults.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import Button from '@/components/Button.astro';
+import IconButton from '@/components/IconButton.astro';
+import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import UiBadge from '@/components/UiBadge.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface CarouselSlide {
+  badge?: string;
+  title: string;
+  description: string;
+  image?: ImageMetadata;
+  imageAlt?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  slides?: readonly CarouselSlide[];
+  autoplay?: boolean;
+  intervalMs?: number;
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale,
+  eyebrow,
+  heading,
+  subheading,
+  slides,
+  autoplay = false,
+  intervalMs = 6000,
+  contained = false,
+  surface = 'default',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = slides === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_carousel_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_carousel_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_carousel_subheading({}, { locale: activeLocale })
+);
+
+let resolvedSlides: readonly CarouselSlide[];
+if (slides) {
+  resolvedSlides = slides;
+} else {
+  const [homeHref, featuresHref, componentsHref, pricingHref] = await Promise.all([
+    getHomeHref(activeLocale),
+    getPageUrl('features', activeLocale),
+    getPageUrl('components', activeLocale),
+    getPageUrl('pricing', activeLocale),
+  ]);
+  resolvedSlides = [
+    {
+      badge: m.block_carousel_1_badge({}, { locale: activeLocale }),
+      title: m.block_carousel_1_title({}, { locale: activeLocale }),
+      description: m.block_carousel_1_desc({}, { locale: activeLocale }),
+      image: DEFAULT_HERO_IMAGE,
+      ctaLabel: m.block_carousel_1_cta({}, { locale: activeLocale }),
+      ctaHref: featuresHref ?? homeHref,
+    },
+    {
+      badge: m.block_carousel_2_badge({}, { locale: activeLocale }),
+      title: m.block_carousel_2_title({}, { locale: activeLocale }),
+      description: m.block_carousel_2_desc({}, { locale: activeLocale }),
+      image: DEFAULT_HERO_IMAGE,
+      ctaLabel: m.block_carousel_2_cta({}, { locale: activeLocale }),
+      ctaHref: componentsHref ?? homeHref,
+    },
+    {
+      badge: m.block_carousel_3_badge({}, { locale: activeLocale }),
+      title: m.block_carousel_3_title({}, { locale: activeLocale }),
+      description: m.block_carousel_3_desc({}, { locale: activeLocale }),
+      image: DEFAULT_HERO_IMAGE,
+      ctaLabel: m.block_carousel_3_cta({}, { locale: activeLocale }),
+      ctaHref: pricingHref ?? homeHref,
+    },
+  ];
+}
+
+const prevLabel = m.block_carousel_prev({}, { locale: activeLocale });
+const nextLabel = m.block_carousel_next({}, { locale: activeLocale });
+const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
+const totalCount = resolvedSlides.length;
+const totalFormatted = formatNumber(totalCount, activeLocale);
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+---
+
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <SectionHeader
+    eyebrow={resolvedEyebrow}
+    heading={resolvedHeading}
+    subheading={resolvedSubheading}
+  />
+
+  <div
+    data-carousel
+    data-autoplay={autoplay ? 'true' : 'false'}
+    data-interval={String(intervalMs)}
+    tabindex="0"
+    role="region"
+    aria-roledescription="carousel"
+    aria-label={resolvedHeading ?? resolvedEyebrow ?? m.block_carousel_eyebrow({}, { locale: activeLocale })}
+    class:list={[
+      'relative overflow-hidden rounded-3xl border border-border shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+      cardSurface,
+      hasHeader && 'mt-8',
+    ]}
+    data-trig
+  >
+    <div class="relative">
+      {
+        resolvedSlides.map((slide, idx) => {
+          const currentFormatted = formatNumber(idx + 1, activeLocale);
+          const slideImage = slide.image ?? DEFAULT_HERO_IMAGE;
+          return (
+            <article
+              data-carousel-slide={String(idx)}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={m.block_carousel_slide_status(
+                { current: currentFormatted, total: totalFormatted },
+                { locale: activeLocale }
+              )}
+              hidden={idx !== 0}
+              class="grid items-center gap-6 p-5 sm:p-8 lg:grid-cols-12 lg:gap-10"
+            >
+              <div class="lg:col-span-6">
+                <div class="overflow-hidden rounded-2xl border border-border bg-bg shadow-xs">
+                  <Image
+                    src={slideImage}
+                    alt={slide.imageAlt ?? slide.title}
+                    widths={[560, 920]}
+                    sizes="(min-width: 1024px) 44vw, 92vw"
+                    class="aspect-[16/10] w-full object-cover"
+                  />
+                </div>
+              </div>
+
+              <div class="lg:col-span-6">
+                <div class="flex items-center justify-between gap-3">
+                  {slide.badge && <UiBadge label={slide.badge} variant="primary" size="sm" />}
+                  <span class="font-mono text-xs font-semibold tabular-nums text-muted">
+                    {m.block_carousel_slide_status(
+                      { current: currentFormatted, total: totalFormatted },
+                      { locale: activeLocale }
+                    )}
+                  </span>
+                </div>
+
+                <h3 class="mt-4 text-xl font-bold tracking-tight text-fg sm:text-2xl text-balance">
+                  {slide.title}
+                </h3>
+                <p class="mt-3 text-sm leading-relaxed text-muted sm:text-base text-pretty">
+                  {slide.description}
+                </p>
+
+                {slide.ctaLabel && slide.ctaHref && (
+                  <div class="mt-6 print:hidden">
+                    <Button
+                      href={slide.ctaHref}
+                      variant="primary"
+                      size="md"
+                      icon="arrow-right"
+                    >
+                      {slide.ctaLabel}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </article>
+          );
+        })
+      }
+    </div>
+
+    {
+      totalCount > 1 && (
+        <div class="flex flex-wrap items-center justify-between gap-4 border-t border-border bg-surface-hover/30 px-5 py-3.5 sm:px-8 print:hidden">
+          <div class="flex items-center gap-2" role="tablist" aria-label={resolvedHeading ?? prevLabel}>
+            {resolvedSlides.map((_, idx) => {
+              const numLabel = formatNumber(idx + 1, activeLocale);
+              const active = idx === 0;
+              return (
+                <button
+                  type="button"
+                  role="tab"
+                  data-carousel-dot={String(idx)}
+                  aria-selected={active ? 'true' : 'false'}
+                  aria-label={m.block_carousel_dot_aria(
+                    { number: numLabel },
+                    { locale: activeLocale }
+                  )}
+                  class:list={[
+                    'h-2.5 cursor-pointer rounded-full transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                    active ? 'w-7 bg-primary' : 'w-2.5 bg-border hover:bg-primary/50',
+                  ]}
+                />
+              );
+            })}
+          </div>
+
+          <div class="flex items-center gap-2">
+            <IconButton
+              icon="chevron-left"
+              label={prevLabel}
+              size={18}
+              iconClass="rtl:rotate-180"
+              data-carousel-prev
+            />
+            <IconButton
+              icon="chevron-right"
+              label={nextLabel}
+              size={18}
+              iconClass="rtl:rotate-180"
+              data-carousel-next
+            />
+          </div>
+        </div>
+      )
+    }
+  </div>
+</PageSection>
+
+<script>
+  function initCarousels() {
+    const carousels = document.querySelectorAll<HTMLElement>('[data-carousel]');
+
+    carousels.forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const slides = Array.from(root.querySelectorAll<HTMLElement>('[data-carousel-slide]'));
+      const dots = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-carousel-dot]'));
+      const prevBtn = root.querySelector<HTMLButtonElement>('[data-carousel-prev]');
+      const nextBtn = root.querySelector<HTMLButtonElement>('[data-carousel-next]');
+
+      if (slides.length <= 1) return;
+
+      let activeIdx = 0;
+
+      const showSlide = (nextIdx: number) => {
+        const count = slides.length;
+        activeIdx = ((nextIdx % count) + count) % count;
+
+        slides.forEach((slide, idx) => {
+          slide.hidden = idx !== activeIdx;
+        });
+
+        dots.forEach((dot, idx) => {
+          const active = idx === activeIdx;
+          dot.setAttribute('aria-selected', String(active));
+          dot.classList.toggle('w-7', active);
+          dot.classList.toggle('bg-primary', active);
+          dot.classList.toggle('w-2.5', !active);
+          dot.classList.toggle('bg-border', !active);
+          dot.classList.toggle('hover:bg-primary/50', !active);
+        });
+      };
+
+      prevBtn?.addEventListener('click', () => showSlide(activeIdx - 1));
+      nextBtn?.addEventListener('click', () => showSlide(activeIdx + 1));
+
+      dots.forEach((dot, idx) => {
+        dot.addEventListener('click', () => showSlide(idx));
+      });
+
+      root.addEventListener('keydown', (event) => {
+        const isRtl = document.documentElement.dir === 'rtl';
+        const nextKey = isRtl ? 'ArrowLeft' : 'ArrowRight';
+        const prevKey = isRtl ? 'ArrowRight' : 'ArrowLeft';
+
+        if (event.key === nextKey) {
+          event.preventDefault();
+          showSlide(activeIdx + 1);
+        } else if (event.key === prevKey) {
+          event.preventDefault();
+          showSlide(activeIdx - 1);
+        } else if (event.key === 'Home') {
+          event.preventDefault();
+          showSlide(0);
+        } else if (event.key === 'End') {
+          event.preventDefault();
+          showSlide(slides.length - 1);
+        }
+      });
+
+      const autoplay = root.dataset.autoplay === 'true';
+      const reducedMotion = document.documentElement.dataset.motion === 'reduced';
+      const intervalMs = Math.max(2500, Number.parseInt(root.dataset.interval ?? '6000', 10) || 6000);
+
+      if (autoplay && !reducedMotion) {
+        let timer = window.setInterval(() => showSlide(activeIdx + 1), intervalMs);
+        const pause = () => {
+          window.clearInterval(timer);
+        };
+        const resume = () => {
+          window.clearInterval(timer);
+          timer = window.setInterval(() => showSlide(activeIdx + 1), intervalMs);
+        };
+        root.addEventListener('mouseenter', pause);
+        root.addEventListener('focusin', pause);
+        root.addEventListener('mouseleave', resume);
+        root.addEventListener('focusout', resume);
+      }
+    });
+  }
+
+  document.addEventListener('astro:page-load', initCarousels);
+  initCarousels();
+</script>

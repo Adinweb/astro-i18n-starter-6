@@ -26,9 +26,26 @@ const COMPOSABLE_SECTIONS = [
   'ImageGallerySection',
   'LatestPostsSection',
   'ContactSplitSection',
+  'CarouselSection',
+  'ProductShowcaseGrid',
+  'AuthFormCard',
 ] as const;
 
-const UI_PRIMITIVES = ['UiBadge', 'UiAlert', 'AvatarGroup'] as const;
+const UI_PRIMITIVES = [
+  'UiBadge',
+  'UiAlert',
+  'AvatarGroup',
+  'Breadcrumbs',
+  'UiPagination',
+  'UiModal',
+  'UiTooltip',
+  'UiProgress',
+  'UiSwitch',
+  'UiCheckbox',
+  'UiInput',
+  'UiDropdown',
+  'SocialLinks',
+] as const;
 
 const ALL_REUSABLE_COMPONENTS = [...COMPOSABLE_SECTIONS, ...UI_PRIMITIVES] as const;
 
@@ -36,7 +53,7 @@ const FORBIDDEN_PHYSICAL_CLASS =
   /^(?:-?m[lr]-|p[lr]-|-?(?:left|right)-|text-(?:left|right)$|border-[lr](?:$|-)|rounded-(?:[tb])?[lr](?:$|-))/;
 
 describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
-  it('all 22 reusable blocks/primitives exist and use RTL logical properties without raw <svg> blobs or hex colors', () => {
+  it('all 35 reusable blocks/primitives exist and use RTL logical properties without raw <svg> blobs or hex colors', () => {
     for (const component of ALL_REUSABLE_COMPONENTS) {
       const filePath = path.join(rootDir, `src/components/${component}.astro`);
       expect(fs.existsSync(filePath), `Missing component: ${component}`).toBe(true);
@@ -62,7 +79,7 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
     }
   });
 
-  it('all 19 section blocks declare data-trig viewport reveal attributes', () => {
+  it('all 22 section blocks declare data-trig viewport reveal attributes', () => {
     for (const block of COMPOSABLE_SECTIONS) {
       const source = fs.readFileSync(
         path.join(rootDir, `src/components/${block}.astro`),
@@ -72,7 +89,7 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
     }
   });
 
-  it('all 18 non-hero section blocks wrap via PageSection and never emit competing <h1> tags', () => {
+  it('all 21 non-hero section blocks wrap via PageSection and never emit competing <h1> tags', () => {
     for (const block of COMPOSABLE_SECTIONS) {
       if (block === 'LandingHeroSplit') continue;
       const source = fs.readFileSync(
@@ -84,7 +101,7 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
     }
   });
 
-  it('all 3 UI primitives never emit competing <h1> tags', () => {
+  it('all 13 UI primitives never emit competing <h1> tags', () => {
     for (const primitive of UI_PRIMITIVES) {
       const source = fs.readFileSync(
         path.join(rootDir, `src/components/${primitive}.astro`),

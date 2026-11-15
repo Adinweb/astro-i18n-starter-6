@@ -1,0 +1,169 @@
+---
+/**
+ * Accessible native `<dialog>` modal primitive inspired by PrebuiltUI modal components.
+ * Includes optional `<Button>` trigger, `data-lenis-prevent`, backdrop & Escape dismissal,
+ * `<IconButton>` close control, semantic header icons (`default` | `confirm` | `danger`),
+ * OKLCH tokens, and Paraglide defaults.
+ */
+import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
+import IconButton from '@/components/IconButton.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export type ModalVariant = 'default' | 'confirm' | 'danger';
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  variant?: ModalVariant;
+  triggerLabel?: string;
+  triggerVariant?: 'primary' | 'secondary' | 'hero' | 'ghost' | 'glass';
+  triggerIcon?: string;
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  class?: string;
+}
+
+const {
+  id,
+  locale,
+  variant = 'default',
+  triggerLabel,
+  triggerVariant = 'secondary',
+  triggerIcon,
+  title,
+  description,
+  confirmLabel,
+  cancelLabel,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const instanceId = id ?? `modal-${crypto.randomUUID().slice(0, 6)}`;
+const titleId = `${instanceId}-title`;
+
+const resolvedTrigger = triggerLabel ?? m.block_modal_trigger({}, { locale: activeLocale });
+const resolvedTitle = title ?? m.block_modal_title({}, { locale: activeLocale });
+const resolvedDesc = description ?? m.block_modal_desc({}, { locale: activeLocale });
+const resolvedConfirm = confirmLabel ?? m.block_modal_confirm({}, { locale: activeLocale });
+const resolvedCancel = cancelLabel ?? m.block_modal_cancel({}, { locale: activeLocale });
+const closeLabel = m.common_close({}, { locale: activeLocale });
+
+const VARIANTS: Record<ModalVariant, { icon: string; badgeClass: string }> = {
+  default: { icon: 'info', badgeClass: 'bg-primary/10 text-primary' },
+  confirm: { icon: 'circle-check', badgeClass: 'bg-success/10 text-success' },
+  danger: { icon: 'alert-triangle', badgeClass: 'bg-error/10 text-error' },
+};
+
+const style = VARIANTS[variant];
+const hasCustomFooter = Astro.slots.has('footer');
+const hasBodySlot = Astro.slots.has('default');
+---
+
+<div data-ui-modal-wrapper class:list={['not-prose inline-block', className]}>
+  <Button
+    type="button"
+    variant={triggerVariant}
+    size="md"
+    icon={triggerIcon}
+    data-ui-modal-open={instanceId}
+  >
+    {resolvedTrigger}
+  </Button>
+
+  <dialog
+    id={instanceId}
+    data-ui-modal-dialog
+    data-lenis-prevent
+    aria-labelledby={titleId}
+    class="m-auto w-[min(92vw,32rem)] overflow-hidden rounded-3xl border border-border bg-surface p-0 text-start text-fg shadow-floating backdrop:bg-scrim backdrop:backdrop-blur-xs"
+  >
+    <div class="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+      <div class="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          class:list={[
+            'mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-xl',
+            style.badgeClass,
+          ]}
+        >
+          <Icon name={style.icon} size={18} />
+        </span>
+        <div>
+          <h3 id={titleId} class="text-base font-bold tracking-tight text-fg">
+            {resolvedTitle}
+          </h3>
+        </div>
+      </div>
+
+      <IconButton
+        icon="close"
+        label={closeLabel}
+        size={18}
+        data-ui-modal-close
+      />
+    </div>
+
+    <div class="max-h-[60vh] overflow-y-auto px-5 py-4 text-sm leading-relaxed text-muted sm:px-6">
+      <p>{resolvedDesc}</p>
+      {hasBodySlot && <div class="mt-3 text-fg"><slot /></div>}
+    </div>
+
+    <div class="flex flex-wrap items-center justify-end gap-2.5 border-t border-border bg-surface-hover/30 px-5 py-3.5 sm:px-6 print:hidden">
+      {
+        hasCustomFooter ? (
+          <slot name="footer" />
+        ) : (
+          <>
+            <Button type="button" variant="ghost" size="sm" data-ui-modal-close>
+              {resolvedCancel}
+            </Button>
+            <Button
+              type="button"
+              variant={variant === 'danger' ? 'secondary' : 'primary'}
+              size="sm"
+              data-ui-modal-close
+              class={variant === 'danger' ? 'border-error/40 text-error hover:bg-error/10' : undefined}
+            >
+              {resolvedConfirm}
+            </Button>
+          </>
+        )
+      }
+    </div>
+  </dialog>
+</div>
+
+<script>
+  function initUiModals() {
+    const wrappers = document.querySelectorAll<HTMLElement>('[data-ui-modal-wrapper]');
+
+    wrappers.forEach((wrapper) => {
+      if (wrapper.dataset.bound === 'true') return;
+      wrapper.dataset.bound = 'true';
+
+      const openBtn = wrapper.querySelector<HTMLButtonElement>('[data-ui-modal-open]');
+      const dialog = wrapper.querySelector<HTMLDialogElement>('[data-ui-modal-dialog]');
+      if (!openBtn || !dialog) return;
+
+      openBtn.addEventListener('click', () => {
+        if (!dialog.open) dialog.showModal();
+      });
+
+      wrapper.querySelectorAll<HTMLElement>('[data-ui-modal-close]').forEach((btn) => {
+        btn.addEventListener('click', () => dialog.close());
+      });
+
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initUiModals);
+  initUiModals();
+</script>

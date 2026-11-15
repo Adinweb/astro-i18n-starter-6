@@ -1,0 +1,107 @@
+---
+/**
+ * Reusable accessible breadcrumbs navigation inspired by PrebuiltUI breadcrumbs.
+ * Supports `chevron` or `slash` separators, RTL chevron rotation (`rtl:rotate-180`),
+ * optional home icon on the first crumb, OKLCH tokens, and Paraglide defaults.
+ */
+import Icon from '@/components/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface BreadcrumbItem {
+  label: string;
+  href?: string;
+  icon?: string;
+}
+
+interface Props {
+  items?: readonly BreadcrumbItem[];
+  locale?: Locale | string;
+  separator?: 'chevron' | 'slash';
+  showHomeIcon?: boolean;
+  ariaLabel?: string;
+  class?: string;
+}
+
+const {
+  items,
+  locale,
+  separator = 'chevron',
+  showHomeIcon = true,
+  ariaLabel,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const resolvedLabel = ariaLabel ?? m.common_breadcrumbs({}, { locale: activeLocale });
+
+let resolvedItems: readonly BreadcrumbItem[];
+if (items) {
+  resolvedItems = items;
+} else {
+  const [homeHref, componentsHref] = await Promise.all([
+    getHomeHref(activeLocale),
+    getPageUrl('components', activeLocale),
+  ]);
+  resolvedItems = [
+    {
+      label: m.block_breadcrumbs_1({}, { locale: activeLocale }),
+      href: homeHref,
+      icon: 'home',
+    },
+    {
+      label: m.block_breadcrumbs_2({}, { locale: activeLocale }),
+      href: componentsHref ?? homeHref,
+    },
+    {
+      label: m.block_breadcrumbs_3({}, { locale: activeLocale }),
+    },
+  ];
+}
+---
+
+<nav aria-label={resolvedLabel} class:list={['not-prose', className]}>
+  <ol class="flex flex-wrap items-center gap-1.5 text-sm text-muted">
+    {
+      resolvedItems.map((item, idx) => {
+        const isLast = idx === resolvedItems.length - 1;
+        const iconName = item.icon ?? (idx === 0 && showHomeIcon ? 'home' : undefined);
+        return (
+          <li class="inline-flex items-center gap-1.5">
+            {idx > 0 && (
+              <span aria-hidden="true" class="inline-flex items-center text-muted/60">
+                {separator === 'slash' ? (
+                  <span class="px-0.5 text-xs select-none">/</span>
+                ) : (
+                  <Icon name="chevron-right" size={14} class="rtl:rotate-180" />
+                )}
+              </span>
+            )}
+            {item.href && !isLast ? (
+              <a
+                href={item.href}
+                class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 font-medium text-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                {iconName && <Icon name={iconName} size={14} class="shrink-0" />}
+                <span>{item.label}</span>
+              </a>
+            ) : (
+              <span
+                aria-current={isLast ? 'page' : undefined}
+                class:list={[
+                  'inline-flex items-center gap-1.5 rounded-lg px-2 py-1',
+                  isLast ? 'font-semibold text-fg' : 'text-muted',
+                ]}
+              >
+                {iconName && <Icon name={iconName} size={14} class="shrink-0" />}
+                <span>{item.label}</span>
+              </span>
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</nav>

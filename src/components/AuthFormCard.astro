@@ -1,0 +1,594 @@
+---
+/**
+ * Composable authentication card (login / sign-up) inspired by PrebuiltUI login-form sections.
+ * Follows the starter's Pure-SSG contract: renders an interactive form when connected to an
+ * external auth `endpoint` or when `preview={true}` is explicitly set for UI documentation,
+ * and falls back cleanly to a `mailto:` support card when unconfigured.
+ */
+import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import UiBadge from '@/components/UiBadge.astro';
+import { resolveApiEndpoint } from '@/libs/api/client';
+import { API_CONFIG, siteConfig } from '@/libs/config/app';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  mode?: 'login' | 'signup';
+  allowModeSwitch?: boolean;
+  showSocialButtons?: boolean;
+  /** External authentication API endpoint path or absolute URL. */
+  endpoint?: string;
+  /** Enables interactive UI validation demo on static documentation pages without a backend. */
+  preview?: boolean;
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale,
+  eyebrow,
+  heading,
+  subheading,
+  mode = 'login',
+  allowModeSwitch = true,
+  showSocialButtons = true,
+  endpoint,
+  preview = false,
+  contained = false,
+  surface = 'surface',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = heading === undefined && subheading === undefined && eyebrow === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_auth_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  mode === 'signup'
+    ? m.block_auth_signup_title({}, { locale: activeLocale })
+    : m.block_auth_login_title({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  mode === 'signup'
+    ? m.block_auth_signup_subtitle({}, { locale: activeLocale })
+    : m.block_auth_login_subtitle({}, { locale: activeLocale })
+);
+
+const resolvedEndpoint = endpoint
+  ? resolveApiEndpoint(endpoint, API_CONFIG.baseUrl)
+  : null;
+const isInteractive = resolvedEndpoint !== null || preview;
+const emailHref = siteConfig.contactEmail ? `mailto:${siteConfig.contactEmail}` : null;
+const isDev = import.meta.env.DEV;
+
+const instancePrefix = id ?? `auth-${activeLocale}-${crypto.randomUUID().slice(0, 6)}`;
+const copy = {
+  loginTab: m.block_auth_login_tab({}, { locale: activeLocale }),
+  signupTab: m.block_auth_signup_tab({}, { locale: activeLocale }),
+  loginTitle: m.block_auth_login_title({}, { locale: activeLocale }),
+  signupTitle: m.block_auth_signup_title({}, { locale: activeLocale }),
+  nameLabel: m.block_auth_name_label({}, { locale: activeLocale }),
+  namePlaceholder: m.block_auth_name_placeholder({}, { locale: activeLocale }),
+  emailLabel: m.block_auth_email_label({}, { locale: activeLocale }),
+  emailPlaceholder: m.block_auth_email_placeholder({}, { locale: activeLocale }),
+  passwordLabel: m.block_auth_password_label({}, { locale: activeLocale }),
+  passwordPlaceholder: m.block_auth_password_placeholder({}, { locale: activeLocale }),
+  remember: m.block_auth_remember({}, { locale: activeLocale }),
+  terms: m.block_auth_terms({}, { locale: activeLocale }),
+  forgot: m.block_auth_forgot({}, { locale: activeLocale }),
+  loginSubmit: m.block_auth_login_submit({}, { locale: activeLocale }),
+  signupSubmit: m.block_auth_signup_submit({}, { locale: activeLocale }),
+  submitting: m.block_auth_submitting({}, { locale: activeLocale }),
+  orContinue: m.block_auth_or_continue({}, { locale: activeLocale }),
+  socialGithub: m.block_auth_social_github({}, { locale: activeLocale }),
+  socialGoogle: m.block_auth_social_google({}, { locale: activeLocale }),
+  showPassword: m.block_auth_show_password({}, { locale: activeLocale }),
+  hidePassword: m.block_auth_hide_password({}, { locale: activeLocale }),
+  previewBadge: m.block_auth_preview_badge({}, { locale: activeLocale }),
+  previewSuccess: m.block_auth_preview_success({}, { locale: activeLocale }),
+  successMsg: m.block_auth_success({}, { locale: activeLocale }),
+  errValidation: m.block_auth_error_validation({}, { locale: activeLocale }),
+  errPassword: m.block_auth_error_password({}, { locale: activeLocale }),
+  errHttp: m.block_auth_error_http({}, { locale: activeLocale }),
+  errNetwork: m.block_auth_error_network({}, { locale: activeLocale }),
+  errTimeout: m.block_auth_error_timeout({}, { locale: activeLocale }),
+  errUnconfigured: m.block_auth_error_unconfigured({}, { locale: activeLocale }),
+  fallbackDesc: m.block_auth_fallback_desc({}, { locale: activeLocale }),
+  fallbackCta: m.block_auth_fallback_cta({}, { locale: activeLocale }),
+  unavailableDesc: m.block_auth_unavailable_desc({}, { locale: activeLocale }),
+  devNotice: m.block_auth_unconfigured_notice({}, { locale: activeLocale }),
+};
+
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+---
+
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <div class="mx-auto max-w-xl" data-auth-card data-mode={mode}>
+    <div class="text-center">
+      <SectionHeader
+        eyebrow={resolvedEyebrow}
+        heading={resolvedHeading}
+        subheading={resolvedSubheading}
+        align="center"
+      />
+    </div>
+
+    <div
+      class:list={[
+        'mt-8 rounded-3xl border border-border p-6 shadow-sm sm:p-8',
+        cardSurface,
+      ]}
+      data-trig
+    >
+      {
+        !isInteractive ? (
+          <div class="rounded-2xl border border-dashed border-border bg-bg p-6 text-center">
+            <span
+              class="inline-flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
+              aria-hidden="true"
+            >
+              <Icon name="lock" size={20} />
+            </span>
+            <p class="mt-4 text-sm leading-relaxed text-muted">
+              {emailHref ? copy.fallbackDesc : copy.unavailableDesc}
+            </p>
+            {emailHref && (
+              <Button
+                href={emailHref}
+                variant="primary"
+                size="md"
+                icon="mail"
+                iconPosition="start"
+                class="mt-5"
+              >
+                {copy.fallbackCta}
+              </Button>
+            )}
+            {isDev && (
+              <p class="mt-5 rounded-lg border border-border bg-surface p-3 text-xs leading-relaxed text-muted">
+                {copy.devNotice}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div>
+            {preview && !resolvedEndpoint && (
+              <div class="mb-5 flex justify-center">
+                <UiBadge label={copy.previewBadge} variant="info" size="sm" icon="info" />
+              </div>
+            )}
+
+            {allowModeSwitch && (
+              <div
+                role="tablist"
+                aria-label={copy.loginTitle}
+                class="mb-6 grid grid-cols-2 gap-2 rounded-2xl border border-border bg-surface-hover/50 p-1.5"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  data-auth-tab="login"
+                  aria-selected={mode === 'login' ? 'true' : 'false'}
+                  class:list={[
+                    'cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold transition-all sm:text-sm',
+                    mode === 'login'
+                      ? 'bg-primary text-primary-fg shadow-xs'
+                      : 'text-muted hover:text-fg',
+                  ]}
+                >
+                  {copy.loginTab}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  data-auth-tab="signup"
+                  aria-selected={mode === 'signup' ? 'true' : 'false'}
+                  class:list={[
+                    'cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold transition-all sm:text-sm',
+                    mode === 'signup'
+                      ? 'bg-primary text-primary-fg shadow-xs'
+                      : 'text-muted hover:text-fg',
+                  ]}
+                >
+                  {copy.signupTab}
+                </button>
+              </div>
+            )}
+
+            {showSocialButtons && (
+              <div>
+                <div class="grid gap-2.5 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="md"
+                    icon="brand-github"
+                    iconPosition="start"
+                    data-auth-social="github"
+                    class="w-full"
+                  >
+                    {copy.socialGithub}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="md"
+                    icon="shield"
+                    iconPosition="start"
+                    data-auth-social="sso"
+                    class="w-full"
+                  >
+                    {copy.socialGoogle}
+                  </Button>
+                </div>
+
+                <div class="my-6 flex items-center gap-3 text-xs font-medium text-muted">
+                  <span class="h-px flex-1 bg-border" />
+                  <span>{copy.orContinue}</span>
+                  <span class="h-px flex-1 bg-border" />
+                </div>
+              </div>
+            )}
+
+            <form
+              data-auth-form
+              data-endpoint={resolvedEndpoint ?? ''}
+              data-preview={preview ? 'true' : 'false'}
+              data-label-login={copy.loginSubmit}
+              data-label-signup={copy.signupSubmit}
+              data-label-submitting={copy.submitting}
+              data-msg-success={resolvedEndpoint ? copy.successMsg : copy.previewSuccess}
+              data-err-validation={copy.errValidation}
+              data-err-password={copy.errPassword}
+              data-err-http={copy.errHttp}
+              data-err-network={copy.errNetwork}
+              data-err-timeout={copy.errTimeout}
+              data-err-unconfigured={copy.errUnconfigured}
+              novalidate
+              class="space-y-4"
+            >
+              <div data-auth-signup-only hidden={mode !== 'signup'}>
+                <label for={`${instancePrefix}-name`} class="block text-xs font-semibold text-fg">
+                  {copy.nameLabel}
+                </label>
+                <div class="relative mt-1.5">
+                  <span
+                    aria-hidden="true"
+                    class="pointer-events-none absolute inset-y-0 start-3.5 flex items-center text-muted"
+                  >
+                    <Icon name="user" size={16} />
+                  </span>
+                  <input
+                    id={`${instancePrefix}-name`}
+                    name="name"
+                    type="text"
+                    autocomplete="name"
+                    placeholder={copy.namePlaceholder}
+                    class="w-full rounded-xl border border-border bg-bg ps-10 pe-3.5 py-2.5 text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label for={`${instancePrefix}-email`} class="block text-xs font-semibold text-fg">
+                  {copy.emailLabel}
+                </label>
+                <div class="relative mt-1.5">
+                  <span
+                    aria-hidden="true"
+                    class="pointer-events-none absolute inset-y-0 start-3.5 flex items-center text-muted"
+                  >
+                    <Icon name="mail" size={16} />
+                  </span>
+                  <input
+                    id={`${instancePrefix}-email`}
+                    name="email"
+                    type="email"
+                    dir="ltr"
+                    required
+                    autocomplete="email"
+                    placeholder={copy.emailPlaceholder}
+                    class="w-full rounded-xl border border-border bg-bg ps-10 pe-3.5 py-2.5 text-start text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error rtl:text-end"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between gap-2">
+                  <label for={`${instancePrefix}-password`} class="block text-xs font-semibold text-fg">
+                    {copy.passwordLabel}
+                  </label>
+                  {emailHref && (
+                    <a
+                      href={emailHref}
+                      data-auth-login-only
+                      hidden={mode !== 'login'}
+                      class="text-xs font-medium text-primary hover:underline"
+                    >
+                      {copy.forgot}
+                    </a>
+                  )}
+                </div>
+
+                <div class="relative mt-1.5">
+                  <span
+                    aria-hidden="true"
+                    class="pointer-events-none absolute inset-y-0 start-3.5 flex items-center text-muted"
+                  >
+                    <Icon name="lock" size={16} />
+                  </span>
+                  <input
+                    id={`${instancePrefix}-password`}
+                    name="password"
+                    type="password"
+                    dir="ltr"
+                    required
+                    minlength="8"
+                    autocomplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                    placeholder={copy.passwordPlaceholder}
+                    class="w-full rounded-xl border border-border bg-bg ps-10 pe-11 py-2.5 text-start text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error rtl:text-end"
+                  />
+                  <button
+                    type="button"
+                    data-auth-toggle-pw
+                    aria-pressed="false"
+                    aria-label={copy.showPassword}
+                    data-label-show={copy.showPassword}
+                    data-label-hide={copy.hidePassword}
+                    class="absolute inset-y-0 end-2 my-auto inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-hover hover:text-fg"
+                  >
+                    <span data-pw-icon-show>
+                      <Icon name="eye" size={16} />
+                    </span>
+                    <span data-pw-icon-hide hidden>
+                      <Icon name="eye-off" size={16} />
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <label
+                data-auth-login-only
+                hidden={mode !== 'login'}
+                class="flex cursor-pointer items-center gap-2.5 text-xs text-muted select-none"
+              >
+                <input
+                  type="checkbox"
+                  name="remember"
+                  class="size-4 rounded border-border accent-primary"
+                />
+                <span>{copy.remember}</span>
+              </label>
+
+              <label
+                data-auth-signup-only
+                hidden={mode !== 'signup'}
+                class="flex cursor-pointer items-center gap-2.5 text-xs text-muted select-none"
+              >
+                <input
+                  type="checkbox"
+                  name="terms"
+                  class="size-4 rounded border-border accent-primary"
+                />
+                <span>{copy.terms}</span>
+              </label>
+
+              <div
+                data-auth-feedback
+                role="status"
+                aria-live="polite"
+                hidden
+                class="rounded-xl border p-3.5 text-xs leading-relaxed"
+              />
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                icon="arrow-right"
+                data-auth-submit
+                class="w-full"
+              >
+                <span data-auth-submit-label>
+                  {mode === 'signup' ? copy.signupSubmit : copy.loginSubmit}
+                </span>
+              </Button>
+            </form>
+          </div>
+        )
+      }
+    </div>
+  </div>
+</PageSection>
+
+<script>
+  function initAuthCards() {
+    const cards = document.querySelectorAll<HTMLElement>('[data-auth-card]');
+
+    cards.forEach((card) => {
+      if (card.dataset.bound === 'true') return;
+      card.dataset.bound = 'true';
+
+      const form = card.querySelector<HTMLFormElement>('[data-auth-form]');
+      if (!form) return;
+
+      const tabs = Array.from(card.querySelectorAll<HTMLButtonElement>('[data-auth-tab]'));
+      const loginOnly = Array.from(card.querySelectorAll<HTMLElement>('[data-auth-login-only]'));
+      const signupOnly = Array.from(card.querySelectorAll<HTMLElement>('[data-auth-signup-only]'));
+      const submitBtn = form.querySelector<HTMLButtonElement>('[data-auth-submit]');
+      const submitLabel = form.querySelector<HTMLElement>('[data-auth-submit-label]');
+      const feedback = form.querySelector<HTMLElement>('[data-auth-feedback]');
+      const passwordInput = form.querySelector<HTMLInputElement>('input[name="password"]');
+      const togglePw = form.querySelector<HTMLButtonElement>('[data-auth-toggle-pw]');
+      const iconShow = togglePw?.querySelector<HTMLElement>('[data-pw-icon-show]');
+      const iconHide = togglePw?.querySelector<HTMLElement>('[data-pw-icon-hide]');
+
+      const setFeedback = (kind: 'success' | 'error', text: string) => {
+        if (!feedback) return;
+        feedback.hidden = false;
+        feedback.className =
+          kind === 'success'
+            ? 'rounded-xl border border-success/30 bg-success/10 p-3.5 text-xs leading-relaxed text-fg'
+            : 'rounded-xl border border-error/30 bg-error/10 p-3.5 text-xs leading-relaxed text-fg';
+        feedback.textContent = text;
+      };
+
+      const switchMode = (nextMode: 'login' | 'signup') => {
+        card.dataset.mode = nextMode;
+        tabs.forEach((tab) => {
+          const active = tab.dataset.authTab === nextMode;
+          tab.setAttribute('aria-selected', String(active));
+          tab.classList.toggle('bg-primary', active);
+          tab.classList.toggle('text-primary-fg', active);
+          tab.classList.toggle('shadow-xs', active);
+          tab.classList.toggle('text-muted', !active);
+          tab.classList.toggle('hover:text-fg', !active);
+        });
+        loginOnly.forEach((el) => {
+          el.hidden = nextMode !== 'login';
+        });
+        signupOnly.forEach((el) => {
+          el.hidden = nextMode !== 'signup';
+        });
+        if (submitLabel) {
+          submitLabel.textContent =
+            nextMode === 'signup'
+              ? (form.dataset.labelSignup ?? '')
+              : (form.dataset.labelLogin ?? '');
+        }
+        if (passwordInput) {
+          passwordInput.autocomplete = nextMode === 'signup' ? 'new-password' : 'current-password';
+        }
+        if (feedback) feedback.hidden = true;
+      };
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const next = tab.dataset.authTab === 'signup' ? 'signup' : 'login';
+          switchMode(next);
+        });
+      });
+
+      togglePw?.addEventListener('click', () => {
+        if (!passwordInput) return;
+        const showing = passwordInput.type === 'text';
+        passwordInput.type = showing ? 'password' : 'text';
+        togglePw.setAttribute('aria-pressed', String(!showing));
+        togglePw.setAttribute(
+          'aria-label',
+          showing ? (togglePw.dataset.labelShow ?? '') : (togglePw.dataset.labelHide ?? '')
+        );
+        if (iconShow) iconShow.hidden = !showing;
+        if (iconHide) iconHide.hidden = showing;
+      });
+
+      card.querySelectorAll<HTMLButtonElement>('[data-auth-social]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          setFeedback('success', form.dataset.msgSuccess ?? '');
+        });
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!submitBtn || submitBtn.disabled) return;
+
+        const formData = new FormData(form);
+        const email = String(formData.get('email') ?? '').trim();
+        const password = String(formData.get('password') ?? '');
+        const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+        if (!emailValid) {
+          setFeedback('error', form.dataset.errValidation ?? '');
+          return;
+        }
+        if (password.length < 8) {
+          setFeedback('error', form.dataset.errPassword ?? '');
+          return;
+        }
+
+        const endpoint = form.dataset.endpoint ?? '';
+        const isPreview = form.dataset.preview === 'true';
+
+        if (!endpoint) {
+          if (isPreview) {
+            setFeedback('success', form.dataset.msgSuccess ?? '');
+          } else {
+            setFeedback('error', form.dataset.errUnconfigured ?? '');
+          }
+          return;
+        }
+
+        submitBtn.disabled = true;
+        if (submitLabel && form.dataset.labelSubmitting) {
+          submitLabel.textContent = form.dataset.labelSubmitting;
+        }
+
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => controller.abort(), 10000);
+
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({
+              mode: card.dataset.mode ?? 'login',
+              name: String(formData.get('name') ?? ''),
+              email,
+              password,
+            }),
+            signal: controller.signal,
+          });
+          if (response.ok) {
+            setFeedback('success', form.dataset.msgSuccess ?? '');
+            form.reset();
+          } else {
+            setFeedback('error', form.dataset.errHttp ?? '');
+          }
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') {
+            setFeedback('error', form.dataset.errTimeout ?? '');
+          } else {
+            setFeedback('error', form.dataset.errNetwork ?? '');
+          }
+        } finally {
+          window.clearTimeout(timer);
+          submitBtn.disabled = false;
+          if (submitLabel) {
+            submitLabel.textContent =
+              card.dataset.mode === 'signup'
+                ? (form.dataset.labelSignup ?? '')
+                : (form.dataset.labelLogin ?? '');
+          }
+        }
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initAuthCards);
+  initAuthCards();
+</script>

@@ -21,6 +21,7 @@
  * from a server-rendered `<template>`, and the theme toggle renders both glyphs
  * for CSS to choose between, so client code never carries SVG paths of its own.
  */
+import IconAdjustmentsHorizontal from '@tabler/icons-astro/dist/esm/icons/adjustments-horizontal.mjs';
 import IconAlertCircle from '@tabler/icons-astro/dist/esm/icons/alert-circle.mjs';
 import IconAlertTriangle from '@tabler/icons-astro/dist/esm/icons/alert-triangle.mjs';
 import IconArrowRight from '@tabler/icons-astro/dist/esm/icons/arrow-right.mjs';
@@ -28,23 +29,34 @@ import IconAward from '@tabler/icons-astro/dist/esm/icons/award.mjs';
 import IconBell from '@tabler/icons-astro/dist/esm/icons/bell.mjs';
 import IconBolt from '@tabler/icons-astro/dist/esm/icons/bolt.mjs';
 import IconBook2 from '@tabler/icons-astro/dist/esm/icons/book-2.mjs';
+import IconBrandGithub from '@tabler/icons-astro/dist/esm/icons/brand-github.mjs';
+import IconBrandInstagram from '@tabler/icons-astro/dist/esm/icons/brand-instagram.mjs';
+import IconBrandLinkedin from '@tabler/icons-astro/dist/esm/icons/brand-linkedin.mjs';
+import IconBrandTelegram from '@tabler/icons-astro/dist/esm/icons/brand-telegram.mjs';
+import IconBrandX from '@tabler/icons-astro/dist/esm/icons/brand-x.mjs';
 import IconBuilding from '@tabler/icons-astro/dist/esm/icons/building.mjs';
 import IconCalendar from '@tabler/icons-astro/dist/esm/icons/calendar.mjs';
 import IconCheck from '@tabler/icons-astro/dist/esm/icons/check.mjs';
 import IconChevronDown from '@tabler/icons-astro/dist/esm/icons/chevron-down.mjs';
 import IconChevronLeft from '@tabler/icons-astro/dist/esm/icons/chevron-left.mjs';
 import IconChevronRight from '@tabler/icons-astro/dist/esm/icons/chevron-right.mjs';
+import IconChevronUp from '@tabler/icons-astro/dist/esm/icons/chevron-up.mjs';
 import IconCircleCheck from '@tabler/icons-astro/dist/esm/icons/circle-check.mjs';
 import IconClock from '@tabler/icons-astro/dist/esm/icons/clock.mjs';
 import IconCode from '@tabler/icons-astro/dist/esm/icons/code.mjs';
 import IconCompass from '@tabler/icons-astro/dist/esm/icons/compass.mjs';
 import IconCopy from '@tabler/icons-astro/dist/esm/icons/copy.mjs';
+import IconDotsVertical from '@tabler/icons-astro/dist/esm/icons/dots-vertical.mjs';
 import IconExternalLink from '@tabler/icons-astro/dist/esm/icons/external-link.mjs';
+import IconEyeOff from '@tabler/icons-astro/dist/esm/icons/eye-off.mjs';
+import IconEye from '@tabler/icons-astro/dist/esm/icons/eye.mjs';
 import IconFile from '@tabler/icons-astro/dist/esm/icons/file.mjs';
 import IconFolder from '@tabler/icons-astro/dist/esm/icons/folder.mjs';
+import IconHeart from '@tabler/icons-astro/dist/esm/icons/heart.mjs';
 import IconHome from '@tabler/icons-astro/dist/esm/icons/home.mjs';
 import IconInfoCircle from '@tabler/icons-astro/dist/esm/icons/info-circle.mjs';
 import IconLayoutGrid from '@tabler/icons-astro/dist/esm/icons/layout-grid.mjs';
+import IconLock from '@tabler/icons-astro/dist/esm/icons/lock.mjs';
 import IconMail from '@tabler/icons-astro/dist/esm/icons/mail.mjs';
 import IconMapPin from '@tabler/icons-astro/dist/esm/icons/map-pin.mjs';
 import IconMenu2 from '@tabler/icons-astro/dist/esm/icons/menu-2.mjs';
@@ -57,13 +69,16 @@ import IconPhoto from '@tabler/icons-astro/dist/esm/icons/photo.mjs';
 import IconQuote from '@tabler/icons-astro/dist/esm/icons/quote.mjs';
 import IconRocket from '@tabler/icons-astro/dist/esm/icons/rocket.mjs';
 import IconSearch from '@tabler/icons-astro/dist/esm/icons/search.mjs';
+import IconShare from '@tabler/icons-astro/dist/esm/icons/share.mjs';
 import IconShieldCheck from '@tabler/icons-astro/dist/esm/icons/shield-check.mjs';
+import IconShoppingBag from '@tabler/icons-astro/dist/esm/icons/shopping-bag.mjs';
 import IconSparkles from '@tabler/icons-astro/dist/esm/icons/sparkles.mjs';
 import IconStack2 from '@tabler/icons-astro/dist/esm/icons/stack-2.mjs';
 import IconStarFilled from '@tabler/icons-astro/dist/esm/icons/star-filled.mjs';
 import IconStar from '@tabler/icons-astro/dist/esm/icons/star.mjs';
 import IconSun from '@tabler/icons-astro/dist/esm/icons/sun.mjs';
 import IconTag from '@tabler/icons-astro/dist/esm/icons/tag.mjs';
+import IconUser from '@tabler/icons-astro/dist/esm/icons/user.mjs';
 import IconUsers from '@tabler/icons-astro/dist/esm/icons/users.mjs';
 import IconWorld from '@tabler/icons-astro/dist/esm/icons/world.mjs';
 import IconX from '@tabler/icons-astro/dist/esm/icons/x.mjs';
@@ -117,6 +132,21 @@ const ICONS: Record<IconName, TablerIcon> = {
   calendar: IconCalendar,
   photo: IconPhoto,
   minus: IconMinus,
+  eye: IconEye,
+  'eye-off': IconEyeOff,
+  'shopping-bag': IconShoppingBag,
+  heart: IconHeart,
+  share: IconShare,
+  'chevron-up': IconChevronUp,
+  'dots-vertical': IconDotsVertical,
+  lock: IconLock,
+  user: IconUser,
+  'adjustments-horizontal': IconAdjustmentsHorizontal,
+  'brand-github': IconBrandGithub,
+  'brand-x': IconBrandX,
+  'brand-linkedin': IconBrandLinkedin,
+  'brand-instagram': IconBrandInstagram,
+  'brand-telegram': IconBrandTelegram,
 };
 
 interface Props {

@@ -1,0 +1,132 @@
+---
+/**
+ * Accessible toggle switch primitive inspired by PrebuiltUI toggle-switch components.
+ * Emits `role="switch"` with `aria-checked`, RTL-safe thumb slide (`rtl:-translate-x-*`),
+ * optional hidden checkbox input for forms, size variants (`sm` | `md` | `lg`), OKLCH
+ * colors, and Paraglide defaults.
+ */
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  id?: string;
+  name?: string;
+  locale?: Locale | string;
+  label?: string;
+  description?: string | null;
+  checked?: boolean;
+  disabled?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+}
+
+const {
+  id,
+  name,
+  locale,
+  label,
+  description,
+  checked = false,
+  disabled = false,
+  size = 'md',
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = label === undefined && description === undefined;
+const resolvedLabel = label ?? m.block_switch_default_label({}, { locale: activeLocale });
+const resolvedDesc =
+  description === null
+    ? undefined
+    : (description ?? (usingDefaults ? m.block_switch_default_desc({}, { locale: activeLocale }) : undefined));
+
+const switchId = id ?? `switch-${crypto.randomUUID().slice(0, 6)}`;
+const labelId = `${switchId}-label`;
+
+const SIZES = {
+  sm: { track: 'h-5 w-9 p-0.5', thumb: 'size-4', onShift: 'translate-x-4 rtl:-translate-x-4' },
+  md: { track: 'h-6 w-11 p-0.5', thumb: 'size-5', onShift: 'translate-x-5 rtl:-translate-x-5' },
+  lg: { track: 'h-7 w-14 p-1', thumb: 'size-5', onShift: 'translate-x-7 rtl:-translate-x-7' },
+} as const;
+
+const dim = SIZES[size];
+---
+
+<div
+  data-ui-switch-root
+  data-shift-classes={dim.onShift}
+  class:list={[
+    'not-prose flex items-start justify-between gap-4 rounded-2xl border border-border bg-surface p-3.5 sm:p-4',
+    disabled && 'opacity-60',
+    className,
+  ]}
+>
+  <div class="min-w-0 flex-1">
+    <label id={labelId} for={switchId} class="block cursor-pointer text-sm font-semibold text-fg">
+      {resolvedLabel}
+    </label>
+    {resolvedDesc && <p class="mt-0.5 text-xs leading-relaxed text-muted">{resolvedDesc}</p>}
+  </div>
+
+  {name && <input type="checkbox" name={name} checked={checked} disabled={disabled} hidden data-ui-switch-input />}
+
+  <button
+    id={switchId}
+    type="button"
+    role="switch"
+    aria-checked={checked ? 'true' : 'false'}
+    aria-labelledby={labelId}
+    disabled={disabled}
+    data-ui-switch
+    class:list={[
+      'relative inline-flex shrink-0 cursor-pointer items-center rounded-full border border-transparent transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed',
+      dim.track,
+      checked ? 'bg-primary' : 'bg-border',
+    ]}
+  >
+    <span
+      aria-hidden="true"
+      data-ui-switch-thumb
+      class:list={[
+        'pointer-events-none inline-block rounded-full bg-bg shadow-xs transition-transform duration-200 [[data-motion=reduced]_&]:transition-none',
+        dim.thumb,
+        checked ? dim.onShift : '',
+      ]}
+    />
+  </button>
+</div>
+
+<script>
+  function initUiSwitches() {
+    const roots = document.querySelectorAll<HTMLElement>('[data-ui-switch-root]');
+
+    roots.forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const btn = root.querySelector<HTMLButtonElement>('[data-ui-switch]');
+      const thumb = root.querySelector<HTMLElement>('[data-ui-switch-thumb]');
+      const input = root.querySelector<HTMLInputElement>('[data-ui-switch-input]');
+      if (!btn || !thumb) return;
+
+      const shiftClasses = (root.dataset.shiftClasses ?? '').split(/\s+/).filter(Boolean);
+
+      btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        const next = btn.getAttribute('aria-checked') !== 'true';
+        btn.setAttribute('aria-checked', String(next));
+        btn.classList.toggle('bg-primary', next);
+        btn.classList.toggle('bg-border', !next);
+        shiftClasses.forEach((cls) => thumb.classList.toggle(cls, next));
+        if (input) {
+          input.checked = next;
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initUiSwitches);
+  initUiSwitches();
+</script>

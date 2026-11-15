@@ -10,7 +10,7 @@ import Icon from '@/components/Icon.astro';
 import IconButton from '@/components/IconButton.astro';
 import PageSection from '@/components/PageSection.astro';
 import type { Locale } from '@/i18n/locales';
-import { localizeHref } from '@/i18n/paths';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
@@ -50,6 +50,11 @@ const {
 const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
 const usingDefaults = message === undefined;
 
+const defaultHref =
+  usingDefaults && cta === undefined
+    ? ((await getPageUrl('features', activeLocale)) ?? (await getHomeHref(activeLocale)))
+    : '';
+
 const resolvedBadge =
   badge === null
     ? undefined
@@ -62,7 +67,7 @@ const resolvedCta =
       (usingDefaults
         ? {
             label: m.block_promo_cta({}, { locale: activeLocale }),
-            href: localizeHref('/features', activeLocale),
+            href: defaultHref,
             icon: 'arrow-right',
           }
         : undefined));

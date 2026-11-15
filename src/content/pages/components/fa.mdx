@@ -9,9 +9,12 @@ flushTop: true
 draft: false
 ---
 import AboutSplitSection from '@/components/AboutSplitSection.astro';
+import AuthFormCard from '@/components/AuthFormCard.astro';
 import AvatarGroup from '@/components/AvatarGroup.astro';
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import Button from '@/components/Button.astro';
+import CarouselSection from '@/components/CarouselSection.astro';
 import ComparisonTable from '@/components/ComparisonTable.astro';
 import ComponentDoc from '@/components/ComponentDoc.astro';
 import ContactSplitSection from '@/components/ContactSplitSection.astro';
@@ -29,13 +32,23 @@ import PageSection from '@/components/PageSection.astro';
 import PartnerLogos from '@/components/PartnerLogos.astro';
 import PricingSection from '@/components/PricingSection.astro';
 import ProcessSteps from '@/components/ProcessSteps.astro';
+import ProductShowcaseGrid from '@/components/ProductShowcaseGrid.astro';
 import PromoBanner from '@/components/PromoBanner.astro';
 import ProofStatsRow from '@/components/ProofStatsRow.astro';
 import SectionHeader from '@/components/SectionHeader.astro';
+import SocialLinks from '@/components/SocialLinks.astro';
 import TeamSection from '@/components/TeamSection.astro';
 import TestimonialGrid from '@/components/TestimonialGrid.astro';
 import UiAlert from '@/components/UiAlert.astro';
 import UiBadge from '@/components/UiBadge.astro';
+import UiCheckbox from '@/components/UiCheckbox.astro';
+import UiDropdown from '@/components/UiDropdown.astro';
+import UiInput from '@/components/UiInput.astro';
+import UiModal from '@/components/UiModal.astro';
+import UiPagination from '@/components/UiPagination.astro';
+import UiProgress from '@/components/UiProgress.astro';
+import UiSwitch from '@/components/UiSwitch.astro';
+import UiTooltip from '@/components/UiTooltip.astro';
 import heroVisual from './components.png';
 
 <LandingHeroSplit
@@ -60,7 +73,7 @@ import heroVisual from './components.png';
       <a href="#sec-proof" class="chip px-3.5 py-1.5 text-xs font-semibold">تعرفه، گالری و دیدگاه‌ها</a>
       <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">تماس و فراخوان</a>
     </div>
-    <span class="text-xs font-medium text-muted">۲۶ کامپوننت آماده و قابل ترکیب</span>
+    <span class="text-xs font-medium text-muted">۳۹ کامپوننت آماده و قابل ترکیب</span>
   </div>
 </PageSection>
 
@@ -77,11 +90,12 @@ import heroVisual from './components.png';
       { name: "size", type: "'sm' | 'md' | 'lg' | 'auto'", defaultVal: "'md'", description: "مقیاس فاصله داخلی و اندازه فونت دکمه." },
       { name: "icon", type: "IconName", description: "نام آیکون اختیاری از فهرست بسته SITE_ICONS." },
       { name: "iconPosition", type: "'start' | 'end'", defaultVal: "'end'", description: "محل قرارگیری آیکون بر اساس جهت خواندن صفحه." },
+      { name: "glow", type: "boolean", defaultVal: "false", description: "افزودن هاله و درخشش رنگی متناسب با رنگ اصلی پالت در حالت هاور." },
       { name: "block", type: "boolean", defaultVal: "false", description: "گسترش عرض دکمه به کل عرض ظرف والد." }
     ]}
     usage={`import Button from '@/components/Button.astro';
 
-<Button href="/fa/قیمت-گذاری" variant="primary" size="lg" icon="arrow-right">
+<Button href="/fa/قیمت-گذاری" variant="primary" size="lg" glow icon="arrow-right">
   مشاهده تعرفه‌ها
 </Button>
 <Button variant="secondary" icon="sparkles" iconPosition="start">
@@ -90,6 +104,7 @@ import heroVisual from './components.png';
   >
     <div class="flex flex-wrap items-center gap-3">
       <Button href="#doc-button" variant="primary" size="md" icon="arrow-right">اصلی (Primary)</Button>
+      <Button href="#doc-button" variant="primary" size="md" glow icon="sparkles" iconPosition="start">درخشان (Glow)</Button>
       <Button href="#doc-button" variant="secondary" size="md" icon="sparkles" iconPosition="start">ثانویه (Secondary)</Button>
       <Button variant="ghost" size="md" icon="code">شبح (Ghost)</Button>
       <Button variant="glass" size="md" icon="palette">شیشه‌ای (Glass)</Button>
@@ -107,7 +122,7 @@ import heroVisual from './components.png';
     name="IconButton"
     category="اجزای پایه UI"
     title="IconButton و Icon (دکمه آیکونی و نمایش آیکون)"
-    summary="IconButton دکمه مربعی/دایره‌ای استاندارد با نام دسترس‌پذیر الزامی (aria-label) می‌سازد و Icon آیکون‌های تبلر را از فهرست ۴۶تایی بسته رندر می‌کند."
+    summary="IconButton دکمه مربعی/دایره‌ای استاندارد با نام دسترس‌پذیر الزامی (aria-label) می‌سازد و Icon آیکون‌های تبلر را از فهرست ۶۱تایی بسته رندر می‌کند."
     propsList={[
       { name: "label", type: "string", required: true, description: "عنوان دسترس‌پذیر الزامی برای aria-label و title." },
       { name: "icon", type: "IconName", description: "نام آیکون ثبت‌شده در src/libs/ui/icons.ts." },
@@ -234,6 +249,304 @@ import IconButton from '@/components/IconButton.astro';
     <div class="flex flex-wrap items-center justify-between gap-6">
       <AvatarGroup size="md" />
       <AvatarGroup size="sm" extraCount={120} rating={null} label="مورد استفاده در پروژه‌های دو‌زبانه" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-breadcrumbs"
+    surface="surface"
+    name="Breadcrumbs"
+    category="ناوبری و بازشوها"
+    title="Breadcrumbs (مسیر راهنما)"
+    summary="مسیر سلسله‌مراتبی دسترس‌پذیر با جداکننده فلش یا اسلش، چرخش خودکار آیکون در راست‌چین (rtl:rotate-180) و مقادیر پیش‌فرض دو‌زبانه."
+    propsList={[
+      { name: "items", type: "BreadcrumbItem[]", defaultVal: "۳ مسیر نمونه", description: "فهرست مرتب‌شده پیوندها با ساختار { label, href?, icon? }." },
+      { name: "separator", type: "'chevron' | 'slash'", defaultVal: "'chevron'", description: "جداکننده بین بخش‌های مسیر." },
+      { name: "showHomeIcon", type: "boolean", defaultVal: "true", description: "افزودن خودکار آیکون خانه به نخستین مورد." }
+    ]}
+    usage={`import Breadcrumbs from '@/components/Breadcrumbs.astro';
+
+<Breadcrumbs
+  items={[
+    { label: "خانه", href: "/fa/" },
+    { label: "کامپوننت‌ها", href: "/fa/کامپوننت‌ها" },
+    { label: "مسیر راهنما" }
+  ]}
+/>`}
+  >
+    <div class="space-y-4">
+      <Breadcrumbs separator="chevron" />
+      <Breadcrumbs separator="slash" showHomeIcon={false} />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-pagination"
+    name="UiPagination"
+    category="ناوبری و بازشوها"
+    title="UiPagination (صفحه‌بندی)"
+    summary="صفحه‌بندی شماره‌دار و فشرده مبتنی بر buildPageWindow() و formatNumber() با اعداد بومی فارسی/انگلیسی و فلش‌های آینه‌شده در RTL."
+    propsList={[
+      { name: "currentPage / totalPages", type: "number", defaultVal: "3 / 8", description: "شماره صفحه فعال و مجموع کل صفحات." },
+      { name: "variant", type: "'rounded' | 'square' | 'compact'", defaultVal: "'rounded'", description: "سبک نمایش دکمه‌های صفحه." },
+      { name: "hrefTemplate", type: "string", description: "الگوی نشانی اختیاری برای مسیرهای استاتیک (مانند '/fa/blog/page/{page}/')؛ در نبود آن دکمه‌های <button> رندر می‌شوند." },
+      { name: "interactive", type: "boolean", defaultVal: "true", description: "تغییر وضعیت زنده در مستندات و پیش‌نمایش." }
+    ]}
+    usage={`import UiPagination from '@/components/UiPagination.astro';
+
+<UiPagination currentPage={3} totalPages={8} variant="rounded" />`}
+  >
+    <div class="flex flex-col gap-5">
+      <UiPagination currentPage={3} totalPages={8} variant="rounded" />
+      <UiPagination currentPage={2} totalPages={6} variant="square" />
+      <UiPagination currentPage={3} totalPages={8} variant="compact" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-modal"
+    surface="surface"
+    name="UiModal"
+    category="ناوبری و بازشوها"
+    title="UiModal (پنجره دیالوگ)"
+    summary="پنجره مودال استاندارد بر پایه تگ بومی <dialog> همراه با ایزوله‌سازی اسکرول Lenis، بسته‌شدن با پس‌زمینه یا Escape و حالت‌های تایید/هشدار."
+    propsList={[
+      { name: "variant", type: "'default' | 'confirm' | 'danger'", defaultVal: "'default'", description: "آیکون معنایی سرصفحه و رنگ دکمه تایید." },
+      { name: "triggerLabel", type: "string", defaultVal: "m.block_modal_trigger", description: "عنوان دکمه بازکننده دیالوگ." },
+      { name: "title / description", type: "string", description: "تیتر و متن اصلی درون پنجره." },
+      { name: "footer", type: "slot", description: "اسلات اختیاری برای سفارشی‌سازی دکمه‌های پایین مودال." }
+    ]}
+    usage={`import UiModal from '@/components/UiModal.astro';
+
+<UiModal variant="confirm" triggerLabel="باز کردن تاییدیه" title="انتشار نسخه جدید؟">
+  تمام فایل‌های استاتیک بررسی شده و آماده انتشار هستند.
+</UiModal>`}
+  >
+    <div class="flex flex-wrap items-center gap-3">
+      <UiModal id="demo-modal-default" variant="default" />
+      <UiModal
+        id="demo-modal-confirm"
+        variant="confirm"
+        triggerVariant="primary"
+        triggerIcon="circle-check"
+        triggerLabel="مودال تایید"
+        title="آماده انتشار تغییرات"
+      />
+      <UiModal
+        id="demo-modal-danger"
+        variant="danger"
+        triggerIcon="alert-triangle"
+        triggerLabel="مودال هشدار"
+        title="بایگانی پیش‌نویس بلااستفاده؟"
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-tooltip"
+    name="UiTooltip"
+    category="ناوبری و بازشوها"
+    title="UiTooltip (توضیح شناور)"
+    summary="راهنمای شناور با هاور و فوکوس صفحه‌کلید، جایگذاری منطقی (top، bottom، start، end) و هماهنگی با کاهش حرکت."
+    propsList={[
+      { name: "text", type: "string", defaultVal: "m.block_tooltip_default", description: "متن راهنمای نمایش‌داده‌شده در حباب." },
+      { name: "placement", type: "'top' | 'bottom' | 'start' | 'end'", defaultVal: "'top'", description: "جهت منطقی که در RTL آینه می‌شود." },
+      { name: "variant", type: "'neutral' | 'primary'", defaultVal: "'neutral'", description: "طیف رنگی زمینه راهنما." }
+    ]}
+    usage={`import UiTooltip from '@/components/UiTooltip.astro';
+
+<UiTooltip placement="top" text="در حالت RTL به‌صورت خودکار آینه می‌شود" />`}
+  >
+    <div class="flex flex-wrap items-center justify-center gap-4 py-6">
+      <UiTooltip placement="top" label="بالا (Top)" />
+      <UiTooltip placement="bottom" variant="primary" label="پایین اصلی" />
+      <UiTooltip placement="start" label="جهت ابتدا (Start)" />
+      <UiTooltip placement="end" label="جهت انتها (End)" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-progress"
+    surface="surface"
+    name="UiProgress"
+    category="بازخورد و کنترل‌ها"
+    title="UiProgress (نوار و حلقه پیشرفت)"
+    summary="نشانگر پیشرفت در سه حالت خطی (bar)، حلقه CSS با conic-gradient (بدون SVG خام) و مراحل پیوسته (steps) همراه با ارقام بومی."
+    propsList={[
+      { name: "value / max", type: "number", defaultVal: "68 / 100", description: "مقدار فعلی و سقف پیشرفت." },
+      { name: "variant", type: "'bar' | 'ring' | 'steps'", defaultVal: "'bar'", description: "سبک نمایشی نشانگر پیشرفت." },
+      { name: "tone", type: "'primary' | 'success' | 'info' | 'warning' | 'error'", defaultVal: "'primary'", description: "رنگ معنایی پرشدن نشانگر." },
+      { name: "steps / currentStep", type: "string[] / number", description: "برچسب مراحل و گام فعال در حالت steps." }
+    ]}
+    usage={`import UiProgress from '@/components/UiProgress.astro';
+
+<UiProgress variant="bar" value={76} tone="primary" />
+<UiProgress variant="ring" value={88} tone="success" />
+<UiProgress variant="steps" currentStep={3} />`}
+  >
+    <div class="space-y-8">
+      <div class="grid gap-6 md:grid-cols-2">
+        <div class="space-y-4">
+          <UiProgress variant="bar" value={76} tone="primary" />
+          <UiProgress variant="bar" value={92} tone="success" size="sm" label="بهینه‌سازی تصاویر" />
+        </div>
+        <div class="flex flex-wrap items-center justify-around gap-4">
+          <UiProgress variant="ring" value={75} tone="primary" size="md" label="سازگاری هسته" />
+          <UiProgress variant="ring" value={94} tone="success" size="md" label="امتیاز استاتیک" />
+        </div>
+      </div>
+      <UiProgress variant="steps" currentStep={3} />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-switch"
+    name="UiSwitch"
+    category="فرم‌ها و کنترل‌ها"
+    title="UiSwitch (کلید تغییر وضعیت)"
+    summary="کلید تغییر وضعیت دسترس‌پذیر با نقش role='switch'، سه اندازه sm/md/lg، حرکت آینه‌شده دکمه در RTL و همگام‌سازی اختیاری با ورودی فرم."
+    propsList={[
+      { name: "label / description", type: "string", defaultVal: "مقادیر پیش‌فرض بومی", description: "عنوان و توضیح کوتاه کلید." },
+      { name: "checked / disabled", type: "boolean", defaultVal: "false", description: "وضعیت اولیه فعال بودن و غیرفعال‌سازی." },
+      { name: "size", type: "'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "ابعاد ریل و دکمه لغزنده." },
+      { name: "name", type: "string", description: "ایجاد فیلد مخفی همگام برای ارسال در فرم‌ها." }
+    ]}
+    usage={`import UiSwitch from '@/components/UiSwitch.astro';
+
+<UiSwitch label="کاهش انیمیشن" checked size="md" />`}
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      <UiSwitch id="demo-switch-on" checked size="md" />
+      <UiSwitch
+        id="demo-switch-off"
+        size="sm"
+        label="بررسی سخت‌گیرانه پیوندها"
+        description="اعتبارسنجی تمامی انکرها و نشانی‌های داخلی هنگام بیلد تولیدی."
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-checkbox"
+    surface="surface"
+    name="UiCheckbox"
+    category="فرم‌ها و کنترل‌ها"
+    title="UiCheckbox (چک‌باکس)"
+    summary="چک‌باکس سفارشی با پشتیبانی از حالت خطی ساده یا کارت قابل انتخاب، وضعیت میانی (indeterminate) و حالت غیرفعال."
+    propsList={[
+      { name: "variant", type: "'default' | 'card'", defaultVal: "'default'", description: "چینش ردیف ساده یا کارت دارای کادر تعاملی." },
+      { name: "checked / indeterminate", type: "boolean", defaultVal: "false", description: "وضعیت انتخاب یا نیمه‌انتخاب." },
+      { name: "label / description", type: "string", defaultVal: "مقادیر پیش‌فرض بومی", description: "عنوان گزینه و متن راهنما." }
+    ]}
+    usage={`import UiCheckbox from '@/components/UiCheckbox.astro';
+
+<UiCheckbox variant="card" checked label="فعال‌سازی اعلان‌ها" />`}
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="space-y-3 rounded-2xl border border-border bg-surface p-4">
+        <UiCheckbox id="demo-cb-1" checked />
+        <UiCheckbox id="demo-cb-2" indeterminate label="همگام‌سازی جزئی زبان‌ها" description={null} />
+      </div>
+      <UiCheckbox
+        id="demo-cb-card"
+        variant="card"
+        checked
+        label="گزینه انتخابی کارتی"
+        description="با انتخاب‌شدن، حاشیه و پس‌زمینه کارت به‌طور خودکار برجسته می‌شود."
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-input"
+    name="UiInput"
+    category="فرم‌ها و کنترل‌ها"
+    title="UiInput (فیلد ورودی)"
+    summary="فیلد ورودی سازگار با تم برای متون، ایمیل، رمز عبور (با کلید نمایش/مخفی‌سازی)، جستجو، URL و textarea همراه با جهت چپ‌چین خودکار برای شناسه‌های فنی."
+    propsList={[
+      { name: "type", type: "'text' | 'email' | 'password' | 'search' | 'url' | 'tel' | 'textarea'", defaultVal: "'text'", description: "نوع کنترل ورودی HTML." },
+      { name: "label / placeholder / helper", type: "string", defaultVal: "مقادیر پیش‌فرض بومی", description: "برچسب، راهنمای داخل فیلد و متن توضیح متصل با aria-describedby." },
+      { name: "error", type: "string", description: "نمایش پیام خطا و تنظیم aria-invalid='true'." },
+      { name: "icon", type: "IconName", description: "آیکون اختیاری در ابتدای فیلد." }
+    ]}
+    usage={`import UiInput from '@/components/UiInput.astro';
+
+<UiInput type="email" icon="mail" label="ایمیل" placeholder="you@domain.com" />
+<UiInput type="password" icon="lock" label="رمز عبور" />`}
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      <UiInput id="demo-input-email" type="email" />
+      <UiInput
+        id="demo-input-password"
+        type="password"
+        icon="lock"
+        label="کلید دسترسی / رمز عبور"
+        placeholder="••••••••••••"
+        helper={null}
+      />
+      <UiInput
+        id="demo-input-search"
+        type="search"
+        icon="search"
+        label="فیلتر سریع"
+        placeholder="جستجو در کامپوننت‌ها..."
+        helper={null}
+      />
+      <UiInput
+        id="demo-input-error"
+        type="url"
+        icon="globe"
+        label="نقطه پایانی خارجی"
+        value="invalid-url"
+        error="لطفاً یک نشانی کامل با https:// وارد کنید."
+        helper={null}
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-dropdown"
+    surface="surface"
+    name="UiDropdown"
+    category="ناوبری و بازشوها"
+    title="UiDropdown (منوی کشویی)"
+    summary="منوی اکشن دسترس‌پذیر با پشتیبانی کامل از صفحه‌کلید (ArrowUp/Down، Home، End، Escape)، تراز منطقی start/end و نشانگر یا خط جداکننده."
+    propsList={[
+      { name: "label / icon", type: "string", defaultVal: "m.block_dropdown_default_label", description: "متن و آیکون دکمه بازکننده منو." },
+      { name: "items", type: "DropdownMenuItem[]", defaultVal: "۳ گزینه نمونه", description: "آرایه گزینه‌ها با { label, href?, icon?, badge?, danger?, dividerBefore? }." },
+      { name: "align", type: "'start' | 'end'", defaultVal: "'start'", description: "تراز منو نسبت به جهت خواندن صفحه." }
+    ]}
+    usage={`import UiDropdown from '@/components/UiDropdown.astro';
+
+<UiDropdown align="start" variant="secondary" />`}
+  >
+    <div class="flex flex-wrap items-center gap-4 pb-8">
+      <UiDropdown id="demo-dropdown-start" align="start" variant="secondary" />
+      <UiDropdown id="demo-dropdown-primary" align="start" variant="primary" label="دسترسی سریع" icon="compass" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-social-links"
+    name="SocialLinks"
+    category="ناوبری و بازشوها"
+    title="SocialLinks (شبکه‌های اجتماعی و اشتراک)"
+    summary="نمایش کانال‌های اجتماعی متصل به siteConfig.social در سه حالت آیکونی، قرصی و کارتی به همراه دکمه کپی پیوند صفحه."
+    propsList={[
+      { name: "variant", type: "'icons' | 'pills' | 'cards'", defaultVal: "'pills'", description: "نحوه نمایش لینک‌ها: دایره‌ای، دکمه‌ای یا کارتی." },
+      { name: "showShare", type: "boolean", defaultVal: "true", description: "نمایش دکمه کپی لینک برای اشتراک‌گذاری." },
+      { name: "items", type: "SocialLinkItem[]", defaultVal: "siteConfig.social", description: "لیست اختیاری شبکه‌ها برای بازنویسی تنظیمات app.config.json." }
+    ]}
+    usage={`import SocialLinks from '@/components/SocialLinks.astro';
+
+<SocialLinks variant="pills" showShare />`}
+  >
+    <div class="space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <SocialLinks variant="pills" />
+        <SocialLinks variant="icons" />
+      </div>
+      <SocialLinks variant="cards" />
     </div>
   </ComponentDoc>
 
@@ -385,7 +698,7 @@ import heroImg from './cover.png';
 <AboutSplitSection
   mediaPosition="start"
   stats={[
-    { label: "کامپوننت‌ها", count: 26, suffix: "+" },
+    { label: "کامپوننت‌ها", count: 39, suffix: "+" },
     { label: "زبان‌ها", count: 2 }
   ]}
 />`}
@@ -394,7 +707,7 @@ import heroImg from './cover.png';
       contained
       mediaPosition="end"
       stats={[
-        { label: "بلوک آماده", count: 26, suffix: "+" },
+        { label: "بلوک آماده", count: 39, suffix: "+" },
         { label: "پالت رنگ", count: 6 },
         { label: "سرور زمان اجرا", count: 0 }
       ]}
@@ -581,6 +894,43 @@ import heroImg from './cover.png';
   </ComponentDoc>
 
   <ComponentDoc
+    id="doc-carousel"
+    surface="surface"
+    name="CarouselSection"
+    category="رسانه و فروشگاه"
+    title="CarouselSection (اسلایدر تعاملی)"
+    summary="اسلایدر واکنش‌گرا با ناوبری صفحه‌کلید (آینه‌شده در RTL)، نقاط پیمایش، شمارنده بومی با formatNumber() و توقف خودکار در حالت کاهش حرکت."
+    propsList={[
+      { name: "slides", type: "CarouselSlide[]", defaultVal: "۳ اسلاید نمونه", description: "آرایه { title, description, badge?, image?, ctaLabel?, ctaHref? }." },
+      { name: "autoplay", type: "boolean", defaultVal: "false", description: "پخش خودکار اسلایدها (در حالت reduced-motion غیرفعال می‌ماند)." },
+      { name: "intervalMs", type: "number", defaultVal: "6000", description: "فاصله زمانی تغییر اسلاید بر حسب میلی‌ثانیه." }
+    ]}
+    usage={`import CarouselSection from '@/components/CarouselSection.astro';
+
+<CarouselSection autoplay={false} surface="default" />`}
+  >
+    <CarouselSection contained eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-products"
+    name="ProductShowcaseGrid"
+    category="رسانه و فروشگاه"
+    title="ProductShowcaseGrid (کارت‌های محصول فروشگاهی)"
+    summary="کارت‌های کاتالوگ فروشگاهی همراه با برچسب تخفیف، امتیاز ستاره‌ای و قیمت بومی، فیلتر دسته‌بندی با انیمیشن ChronoTrig و دکمه علاقه‌مندی."
+    propsList={[
+      { name: "items", type: "ProductItem[]", defaultVal: "۳ محصول نمونه", description: "کارت محصول با { title, description, price, compareAtPrice?, currency?, category?, rating?, reviewCount?, image? }." },
+      { name: "columns", type: "2 | 3 | 4", defaultVal: "3", description: "تعداد ستون‌های شبکه در دسکتاپ." },
+      { name: "enableFilter", type: "boolean", defaultVal: "true", description: "نمایش فیلتر دسته‌بندی هنگام وجود ۲ دسته یا بیشتر." }
+    ]}
+    usage={`import ProductShowcaseGrid from '@/components/ProductShowcaseGrid.astro';
+
+<ProductShowcaseGrid columns={3} enableFilter />`}
+  >
+    <ProductShowcaseGrid contained columns={3} enableFilter eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
     id="doc-latest-posts"
     surface="surface"
     name="LatestPostsSection & PostCard"
@@ -657,8 +1007,28 @@ import heroImg from './cover.png';
   </ComponentDoc>
 
   <ComponentDoc
-    id="doc-newsletter"
+    id="doc-auth-card"
     surface="surface"
+    name="AuthFormCard"
+    category="فرم‌ها و تبدیل"
+    title="AuthFormCard (فرم ورود و ثبت‌نام)"
+    summary="کارت احراز هویت منطبق با SSG شامل تب‌های ورود/ثبت‌نام، کلید نمایش رمز عبور، اتصال به سرویس خارجی یا نمایش راهنمای ایمیل پشتیبانی."
+    propsList={[
+      { name: "mode", type: "'login' | 'signup'", defaultVal: "'login'", description: "حالت پیش‌فرض ورود یا ایجاد حساب." },
+      { name: "endpoint", type: "string", description: "نشانی API خارجی احراز هویت؛ در نبود آن و preview، جایگزین ایمیل نمایش می‌دهد." },
+      { name: "preview", type: "boolean", defaultVal: "false", description: "فعال‌سازی اعتبارسنجی سمت کلاینت برای صفحات مستندات." },
+      { name: "showSocialButtons", type: "boolean", defaultVal: "true", description: "نمایش دکمه‌های ورود با GitHub و SSO." }
+    ]}
+    usage={`import AuthFormCard from '@/components/AuthFormCard.astro';
+
+<AuthFormCard endpoint="https://api.example.com/auth" mode="login" />
+<AuthFormCard preview mode="login" />`}
+  >
+    <AuthFormCard id="demo-auth-card" contained preview eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-newsletter"
     name="NewsletterBanner"
     category="فرم‌ها و تبدیل"
     title="NewsletterBanner (بنر عضویت خبرنامه)"
@@ -677,6 +1047,7 @@ import heroImg from './cover.png';
 
   <ComponentDoc
     id="doc-cta-banner"
+    surface="surface"
     name="CtaBanner"
     category="فرم‌ها و تبدیل"
     title="CtaBanner (بنر فراخوان پایانی)"

@@ -1,0 +1,388 @@
+---
+/**
+ * Reusable accessible pagination bar inspired by PrebuiltUI pagination components.
+ * Uses the starter's `buildPageWindow()` + `PAGE_GAP` helpers and `formatNumber()` for
+ * locale-native numerals (`fa`/`ar` digits). Renders `<a href>` links when
+ * `hrefTemplate` is supplied for multi-page routes, or `<button type="button">`
+ * controls when used as an interactive in-page pager.
+ */
+import Icon from '@/components/Icon.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { buildPageWindow, PAGE_GAP } from '@/libs/content/pagination';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  locale?: Locale | string;
+  currentPage?: number;
+  totalPages?: number;
+  variant?: 'rounded' | 'square' | 'compact';
+  hrefTemplate?: string;
+  interactive?: boolean;
+  ariaLabel?: string;
+  class?: string;
+}
+
+const {
+  locale,
+  currentPage = 3,
+  totalPages = 8,
+  variant = 'rounded',
+  hrefTemplate,
+  interactive = true,
+  ariaLabel,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const safeTotal = Math.max(1, Math.trunc(totalPages));
+const safeCurrent = Math.min(Math.max(1, Math.trunc(currentPage)), safeTotal);
+const windowEntries = buildPageWindow(safeCurrent, safeTotal, 1);
+
+const resolvedLabel = ariaLabel ?? m.blog_pagination_label({}, { locale: activeLocale });
+const prevLabel = m.blog_pagination_previous({}, { locale: activeLocale });
+const nextLabel = m.blog_pagination_next({}, { locale: activeLocale });
+const shapeClass = variant === 'square' ? 'rounded-xl' : 'rounded-full';
+const hasHref = Boolean(hrefTemplate);
+const buildHref = (page: number) => (hrefTemplate ? hrefTemplate.replace('{page}', String(page)) : undefined);
+
+const statusLabels = Array.from({ length: safeTotal }, (_, index) =>
+  m.blog_pagination_status(
+    {
+      page: formatNumber(index + 1, activeLocale),
+      totalPages: formatNumber(safeTotal, activeLocale),
+    },
+    { locale: activeLocale }
+  )
+);
+const statusText = statusLabels[safeCurrent - 1] ?? '';
+---
+
+<nav
+  aria-label={resolvedLabel}
+  data-ui-pagination
+  data-interactive={interactive ? 'true' : 'false'}
+  data-current-page={String(safeCurrent)}
+  data-total-pages={String(safeTotal)}
+  data-status-labels={variant === 'compact' ? JSON.stringify(statusLabels) : undefined}
+  class:list={['not-prose flex flex-wrap items-center gap-2', className]}
+>
+  {
+    variant === 'compact' ? (
+      <div class="inline-flex items-center gap-3 rounded-full border border-border bg-surface px-2.5 py-1.5 shadow-xs">
+        {hasHref ? (
+          <a
+            href={safeCurrent > 1 ? buildHref(safeCurrent - 1) : undefined}
+            aria-disabled={safeCurrent <= 1 ? 'true' : undefined}
+            data-page-prev
+            class:list={[
+              'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+              safeCurrent <= 1
+                ? 'pointer-events-none text-muted/45'
+                : 'text-fg hover:bg-surface-hover',
+            ]}
+          >
+            <Icon name="chevron-left" size={14} class="rtl:rotate-180" />
+            <span>{prevLabel}</span>
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled={safeCurrent <= 1}
+            aria-disabled={safeCurrent <= 1 ? 'true' : undefined}
+            data-page-prev
+            class:list={[
+              'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+              safeCurrent <= 1
+                ? 'cursor-default text-muted/45'
+                : 'cursor-pointer text-fg hover:bg-surface-hover',
+            ]}
+          >
+            <Icon name="chevron-left" size={14} class="rtl:rotate-180" />
+            <span>{prevLabel}</span>
+          </button>
+        )}
+
+        <span class="px-1 text-xs font-medium tabular-nums text-muted" data-page-status>
+          {statusText}
+        </span>
+
+        {hasHref ? (
+          <a
+            href={safeCurrent < safeTotal ? buildHref(safeCurrent + 1) : undefined}
+            aria-disabled={safeCurrent >= safeTotal ? 'true' : undefined}
+            data-page-next
+            class:list={[
+              'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+              safeCurrent >= safeTotal
+                ? 'pointer-events-none text-muted/45'
+                : 'text-fg hover:bg-surface-hover',
+            ]}
+          >
+            <span>{nextLabel}</span>
+            <Icon name="chevron-right" size={14} class="rtl:rotate-180" />
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled={safeCurrent >= safeTotal}
+            aria-disabled={safeCurrent >= safeTotal ? 'true' : undefined}
+            data-page-next
+            class:list={[
+              'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+              safeCurrent >= safeTotal
+                ? 'cursor-default text-muted/45'
+                : 'cursor-pointer text-fg hover:bg-surface-hover',
+            ]}
+          >
+            <span>{nextLabel}</span>
+            <Icon name="chevron-right" size={14} class="rtl:rotate-180" />
+          </button>
+        )}
+      </div>
+    ) : (
+      <ul class="flex flex-wrap items-center gap-1.5">
+        <li>
+          {hasHref ? (
+            <a
+              href={safeCurrent > 1 ? buildHref(safeCurrent - 1) : undefined}
+              aria-label={prevLabel}
+              aria-disabled={safeCurrent <= 1 ? 'true' : undefined}
+              data-page-prev
+              class:list={[
+                'inline-flex h-9 items-center gap-1 border border-border bg-surface px-3 text-xs font-semibold transition-colors',
+                shapeClass,
+                safeCurrent <= 1
+                  ? 'pointer-events-none text-muted/45'
+                  : 'text-fg hover:border-primary/50 hover:bg-surface-hover',
+              ]}
+            >
+              <Icon name="chevron-left" size={15} class="rtl:rotate-180" />
+              <span class="hidden sm:inline">{prevLabel}</span>
+            </a>
+          ) : (
+            <button
+              type="button"
+              aria-label={prevLabel}
+              disabled={safeCurrent <= 1}
+              aria-disabled={safeCurrent <= 1 ? 'true' : undefined}
+              data-page-prev
+              class:list={[
+                'inline-flex h-9 items-center gap-1 border border-border bg-surface px-3 text-xs font-semibold transition-colors',
+                shapeClass,
+                safeCurrent <= 1
+                  ? 'cursor-default text-muted/45'
+                  : 'cursor-pointer text-fg hover:border-primary/50 hover:bg-surface-hover',
+              ]}
+            >
+              <Icon name="chevron-left" size={15} class="rtl:rotate-180" />
+              <span class="hidden sm:inline">{prevLabel}</span>
+            </button>
+          )}
+        </li>
+
+        {windowEntries.map((entry) =>
+          entry === PAGE_GAP ? (
+            <li aria-hidden="true" class="px-1.5 text-sm text-muted select-none">
+              …
+            </li>
+          ) : (
+            <li>
+              {hasHref ? (
+                <a
+                  href={buildHref(entry)}
+                  data-page-num={String(entry)}
+                  aria-current={entry === safeCurrent ? 'page' : undefined}
+                  aria-label={m.blog_pagination_page(
+                    { page: formatNumber(entry, activeLocale) },
+                    { locale: activeLocale }
+                  )}
+                  class:list={[
+                    'inline-flex size-9 items-center justify-center border text-xs font-semibold tabular-nums transition-colors',
+                    shapeClass,
+                    entry === safeCurrent
+                      ? 'border-primary bg-primary text-primary-fg shadow-xs'
+                      : 'border-border bg-surface text-fg hover:border-primary/50 hover:bg-surface-hover',
+                  ]}
+                >
+                  {formatNumber(entry, activeLocale)}
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  data-page-num={String(entry)}
+                  aria-current={entry === safeCurrent ? 'page' : undefined}
+                  aria-label={m.blog_pagination_page(
+                    { page: formatNumber(entry, activeLocale) },
+                    { locale: activeLocale }
+                  )}
+                  class:list={[
+                    'inline-flex size-9 cursor-pointer items-center justify-center border text-xs font-semibold tabular-nums transition-colors',
+                    shapeClass,
+                    entry === safeCurrent
+                      ? 'border-primary bg-primary text-primary-fg shadow-xs'
+                      : 'border-border bg-surface text-fg hover:border-primary/50 hover:bg-surface-hover',
+                  ]}
+                >
+                  {formatNumber(entry, activeLocale)}
+                </button>
+              )}
+            </li>
+          )
+        )}
+
+        <li>
+          {hasHref ? (
+            <a
+              href={safeCurrent < safeTotal ? buildHref(safeCurrent + 1) : undefined}
+              aria-label={nextLabel}
+              aria-disabled={safeCurrent >= safeTotal ? 'true' : undefined}
+              data-page-next
+              class:list={[
+                'inline-flex h-9 items-center gap-1 border border-border bg-surface px-3 text-xs font-semibold transition-colors',
+                shapeClass,
+                safeCurrent >= safeTotal
+                  ? 'pointer-events-none text-muted/45'
+                  : 'text-fg hover:border-primary/50 hover:bg-surface-hover',
+              ]}
+            >
+              <span class="hidden sm:inline">{nextLabel}</span>
+              <Icon name="chevron-right" size={15} class="rtl:rotate-180" />
+            </a>
+          ) : (
+            <button
+              type="button"
+              aria-label={nextLabel}
+              disabled={safeCurrent >= safeTotal}
+              aria-disabled={safeCurrent >= safeTotal ? 'true' : undefined}
+              data-page-next
+              class:list={[
+                'inline-flex h-9 items-center gap-1 border border-border bg-surface px-3 text-xs font-semibold transition-colors',
+                shapeClass,
+                safeCurrent >= safeTotal
+                  ? 'cursor-default text-muted/45'
+                  : 'cursor-pointer text-fg hover:border-primary/50 hover:bg-surface-hover',
+              ]}
+            >
+              <span class="hidden sm:inline">{nextLabel}</span>
+              <Icon name="chevron-right" size={15} class="rtl:rotate-180" />
+            </button>
+          )}
+        </li>
+      </ul>
+    )
+  }
+</nav>
+
+<script>
+  function initUiPaginations() {
+    const pagers = document.querySelectorAll<HTMLElement>('[data-ui-pagination][data-interactive="true"]');
+
+    pagers.forEach((nav) => {
+      if (nav.dataset.bound === 'true') return;
+      nav.dataset.bound = 'true';
+
+      const numControls = Array.from(nav.querySelectorAll<HTMLElement>('[data-page-num]'));
+      const prevBtn = nav.querySelector<HTMLElement>('[data-page-prev]');
+      const nextBtn = nav.querySelector<HTMLElement>('[data-page-next]');
+      const statusEl = nav.querySelector<HTMLElement>('[data-page-status]');
+      const totalPages = Math.max(1, Number(nav.dataset.totalPages ?? '1'));
+      let statusLabels: string[] = [];
+      if (nav.dataset.statusLabels) {
+        try {
+          statusLabels = JSON.parse(nav.dataset.statusLabels) as string[];
+        } catch {
+          statusLabels = [];
+        }
+      }
+
+      const updateDisabled = (el: HTMLElement | null, disabled: boolean) => {
+        if (!el) return;
+        if (disabled) {
+          el.setAttribute('aria-disabled', 'true');
+        } else {
+          el.removeAttribute('aria-disabled');
+        }
+        if (el instanceof HTMLButtonElement) {
+          el.disabled = disabled;
+          el.classList.toggle('cursor-default', disabled);
+          el.classList.toggle('cursor-pointer', !disabled);
+        } else {
+          el.classList.toggle('pointer-events-none', disabled);
+        }
+        el.classList.toggle('text-muted/45', disabled);
+        el.classList.toggle('text-fg', !disabled);
+      };
+
+      const setActive = (targetPage: number) => {
+        const clamped = Math.min(Math.max(1, targetPage), totalPages);
+        nav.dataset.currentPage = String(clamped);
+
+        if (numControls.length > 0) {
+          numControls.forEach((control) => {
+            const num = Number(control.dataset.pageNum ?? '0');
+            const active = num === clamped;
+            if (active) {
+              control.setAttribute('aria-current', 'page');
+            } else {
+              control.removeAttribute('aria-current');
+            }
+            control.classList.toggle('border-primary', active);
+            control.classList.toggle('bg-primary', active);
+            control.classList.toggle('text-primary-fg', active);
+            control.classList.toggle('shadow-xs', active);
+            control.classList.toggle('border-border', !active);
+            control.classList.toggle('bg-surface', !active);
+            control.classList.toggle('text-fg', !active);
+          });
+          const minPage = Number(numControls[0]?.dataset.pageNum ?? '1');
+          const maxPage = Number(numControls[numControls.length - 1]?.dataset.pageNum ?? '1');
+          updateDisabled(prevBtn, clamped <= minPage);
+          updateDisabled(nextBtn, clamped >= maxPage);
+        } else {
+          if (statusEl && statusLabels[clamped - 1]) {
+            statusEl.textContent = statusLabels[clamped - 1];
+          }
+          updateDisabled(prevBtn, clamped <= 1);
+          updateDisabled(nextBtn, clamped >= totalPages);
+        }
+      };
+
+      numControls.forEach((control) => {
+        control.addEventListener('click', (event) => {
+          event.preventDefault();
+          const num = Number(control.dataset.pageNum ?? '1');
+          setActive(num);
+        });
+      });
+
+      prevBtn?.addEventListener('click', (event) => {
+        event.preventDefault();
+        const current = Number(nav.dataset.currentPage ?? '1');
+        if (numControls.length > 0) {
+          const idx = numControls.findIndex((c) => Number(c.dataset.pageNum) === current);
+          if (idx > 0) setActive(Number(numControls[idx - 1].dataset.pageNum));
+        } else if (current > 1) {
+          setActive(current - 1);
+        }
+      });
+
+      nextBtn?.addEventListener('click', (event) => {
+        event.preventDefault();
+        const current = Number(nav.dataset.currentPage ?? '1');
+        if (numControls.length > 0) {
+          const idx = numControls.findIndex((c) => Number(c.dataset.pageNum) === current);
+          if (idx < 0) return;
+          const nextEl = numControls[idx + 1];
+          if (nextEl) setActive(Number(nextEl.dataset.pageNum));
+        } else if (current < totalPages) {
+          setActive(current + 1);
+        }
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initUiPaginations);
+  initUiPaginations();
+</script>

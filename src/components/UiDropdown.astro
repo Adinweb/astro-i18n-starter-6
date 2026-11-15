@@ -1,0 +1,290 @@
+---
+/**
+ * Accessible dropdown menu primitive inspired by PrebuiltUI dropdown-menu components.
+ * Supports `role="menu"` / `role="menuitem"`, keyboard ArrowDown/ArrowUp/Home/End/Escape
+ * navigation, click-outside dismissal, CSS logical `align` (`start` | `end`), OKLCH styling,
+ * and Paraglide defaults.
+ */
+import Icon from '@/components/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface DropdownMenuItem {
+  label: string;
+  href?: string;
+  icon?: string;
+  badge?: string;
+  danger?: boolean;
+  dividerBefore?: boolean;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  label?: string;
+  icon?: string;
+  items?: readonly DropdownMenuItem[];
+  align?: 'start' | 'end';
+  variant?: 'secondary' | 'primary' | 'ghost';
+  class?: string;
+}
+
+const {
+  id,
+  locale,
+  label,
+  icon = 'adjustments-horizontal',
+  items,
+  align = 'start',
+  variant = 'secondary',
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const resolvedLabel = label ?? m.block_dropdown_default_label({}, { locale: activeLocale });
+
+let resolvedItems: readonly DropdownMenuItem[];
+if (items) {
+  resolvedItems = items;
+} else {
+  const [homeHref, componentsHref, featuresHref, pricingHref] = await Promise.all([
+    getHomeHref(activeLocale),
+    getPageUrl('components', activeLocale),
+    getPageUrl('features', activeLocale),
+    getPageUrl('pricing', activeLocale),
+  ]);
+  resolvedItems = [
+    {
+      label: m.block_dropdown_item_1({}, { locale: activeLocale }),
+      href: componentsHref ?? homeHref,
+      icon: 'palette',
+    },
+    {
+      label: m.block_dropdown_item_2({}, { locale: activeLocale }),
+      href: featuresHref ?? homeHref,
+      icon: 'sparkles',
+    },
+    {
+      label: m.block_dropdown_item_3({}, { locale: activeLocale }),
+      href: pricingHref ?? homeHref,
+      icon: 'tag',
+      dividerBefore: true,
+    },
+  ];
+}
+
+const menuId = id ?? `dropdown-${crypto.randomUUID().slice(0, 6)}`;
+
+const TRIGGER_VARIANTS = {
+  secondary: 'border border-border bg-surface text-fg hover:border-primary/50 hover:bg-surface-hover',
+  primary: 'border border-transparent bg-primary text-primary-fg hover:opacity-95',
+  ghost: 'border border-transparent bg-transparent text-fg hover:bg-surface-hover',
+} as const;
+---
+
+<div data-ui-dropdown class:list={['not-prose relative inline-block', className]}>
+  <button
+    type="button"
+    aria-haspopup="menu"
+    aria-expanded="false"
+    aria-controls={menuId}
+    data-ui-dropdown-trigger
+    class:list={[
+      'inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:text-sm',
+      TRIGGER_VARIANTS[variant],
+    ]}
+  >
+    {icon && <Icon name={icon} size={16} class="shrink-0" />}
+    <span>{resolvedLabel}</span>
+    <Icon
+      name="chevron-down"
+      size={15}
+      data-ui-dropdown-chevron
+      class="shrink-0 transition-transform duration-200 [[data-motion=reduced]_&]:transition-none"
+    />
+  </button>
+
+  <div
+    id={menuId}
+    role="menu"
+    hidden
+    data-ui-dropdown-menu
+    class:list={[
+      'absolute top-full z-40 mt-2 min-w-56 overflow-hidden rounded-2xl border border-border bg-surface p-1.5 text-start shadow-floating',
+      align === 'end' ? 'end-0' : 'start-0',
+    ]}
+  >
+    {
+      resolvedItems.map((item) => (
+        <>
+          {item.dividerBefore && <div role="separator" class="my-1 h-px bg-border" />}
+          {item.href ? (
+            <a
+              href={item.href}
+              role="menuitem"
+              tabindex="-1"
+              data-ui-dropdown-item
+              class:list={[
+                'flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-xs font-medium transition-colors focus:outline-none focus-visible:bg-surface-hover sm:text-sm',
+                item.danger
+                  ? 'text-error hover:bg-error/10'
+                  : 'text-fg hover:bg-surface-hover',
+              ]}
+            >
+              <span class="flex min-w-0 items-center gap-2.5">
+                {item.icon && (
+                  <Icon
+                    name={item.icon}
+                    size={16}
+                    class:list={['shrink-0', item.danger ? 'text-error' : 'text-primary']}
+                  />
+                )}
+                <span class="truncate">{item.label}</span>
+              </span>
+              {item.badge && (
+                <span class="rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-semibold text-muted">
+                  {item.badge}
+                </span>
+              )}
+            </a>
+          ) : (
+            <button
+              type="button"
+              role="menuitem"
+              tabindex="-1"
+              data-ui-dropdown-item
+              class:list={[
+                'flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-start text-xs font-medium transition-colors focus:outline-none focus-visible:bg-surface-hover sm:text-sm',
+                item.danger
+                  ? 'text-error hover:bg-error/10'
+                  : 'text-fg hover:bg-surface-hover',
+              ]}
+            >
+              <span class="flex min-w-0 items-center gap-2.5">
+                {item.icon && (
+                  <Icon
+                    name={item.icon}
+                    size={16}
+                    class:list={['shrink-0', item.danger ? 'text-error' : 'text-primary']}
+                  />
+                )}
+                <span class="truncate">{item.label}</span>
+              </span>
+              {item.badge && (
+                <span class="rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-semibold text-muted">
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          )}
+        </>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  function closeDropdown(root: HTMLElement, restoreFocus = false) {
+    const trigger = root.querySelector<HTMLButtonElement>('[data-ui-dropdown-trigger]');
+    const menu = root.querySelector<HTMLElement>('[data-ui-dropdown-menu]');
+    const chevron = root.querySelector<HTMLElement>('[data-ui-dropdown-chevron]');
+    if (!trigger || !menu || menu.hidden) return;
+    menu.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+    chevron?.classList.remove('rotate-180');
+    if (restoreFocus) trigger.focus();
+  }
+
+  function bindGlobalDropdownListeners() {
+    if (document.documentElement.dataset.uiDropdownGlobal === 'true') return;
+    document.documentElement.dataset.uiDropdownGlobal = 'true';
+
+    document.addEventListener('click', (event) => {
+      const target = event.target as Node | null;
+      document.querySelectorAll<HTMLElement>('[data-ui-dropdown]').forEach((root) => {
+        if (!target || !root.contains(target)) closeDropdown(root, false);
+      });
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      document.querySelectorAll<HTMLElement>('[data-ui-dropdown]').forEach((root) => {
+        const menu = root.querySelector<HTMLElement>('[data-ui-dropdown-menu]');
+        if (menu && !menu.hidden) {
+          closeDropdown(root, root.contains(document.activeElement));
+        }
+      });
+    });
+  }
+
+  function initUiDropdowns() {
+    bindGlobalDropdownListeners();
+    const dropdowns = document.querySelectorAll<HTMLElement>('[data-ui-dropdown]');
+
+    dropdowns.forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const trigger = root.querySelector<HTMLButtonElement>('[data-ui-dropdown-trigger]');
+      const menu = root.querySelector<HTMLElement>('[data-ui-dropdown-menu]');
+      const chevron = root.querySelector<HTMLElement>('[data-ui-dropdown-chevron]');
+      const items = Array.from(root.querySelectorAll<HTMLElement>('[data-ui-dropdown-item]'));
+      if (!trigger || !menu) return;
+
+      const setOpen = (open: boolean, focusFirst = false) => {
+        if (open) {
+          document.querySelectorAll<HTMLElement>('[data-ui-dropdown]').forEach((other) => {
+            if (other !== root) closeDropdown(other, false);
+          });
+        }
+        menu.hidden = !open;
+        trigger.setAttribute('aria-expanded', String(open));
+        chevron?.classList.toggle('rotate-180', open);
+        if (open && focusFirst && items.length > 0) {
+          items[0]?.focus();
+        }
+      };
+
+      trigger.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+        setOpen(!isOpen, false);
+      });
+
+      trigger.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          setOpen(true, true);
+        }
+      });
+
+      items.forEach((item, idx) => {
+        item.addEventListener('click', () => setOpen(false, false));
+        item.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            setOpen(false, false);
+            trigger.focus();
+          } else if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            items[(idx + 1) % items.length]?.focus();
+          } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            items[(idx - 1 + items.length) % items.length]?.focus();
+          } else if (event.key === 'Home') {
+            event.preventDefault();
+            items[0]?.focus();
+          } else if (event.key === 'End') {
+            event.preventDefault();
+            items[items.length - 1]?.focus();
+          }
+        });
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initUiDropdowns);
+  initUiDropdowns();
+</script>

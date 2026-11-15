@@ -61,6 +61,21 @@ export const SITE_ICONS = [
   'calendar',
   'photo',
   'minus',
+  'eye',
+  'eye-off',
+  'shopping-bag',
+  'heart',
+  'share',
+  'chevron-up',
+  'dots-vertical',
+  'lock',
+  'user',
+  'adjustments-horizontal',
+  'brand-github',
+  'brand-x',
+  'brand-linkedin',
+  'brand-instagram',
+  'brand-telegram',
 ] as const;
 
 export type IconName = (typeof SITE_ICONS)[number];

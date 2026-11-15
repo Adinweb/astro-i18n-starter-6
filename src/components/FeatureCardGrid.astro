@@ -10,7 +10,7 @@ import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
 import SectionHeader from '@/components/SectionHeader.astro';
 import type { Locale } from '@/i18n/locales';
-import { localizeHref } from '@/i18n/paths';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
@@ -76,32 +76,42 @@ const resolvedSubheading = resolveOptionalHeader(
 
 const defaultCtaLabel = m.block_cards_cta({}, { locale: activeLocale });
 
-const resolvedItems: readonly FeatureCardItem[] = items ?? [
-  {
-    badge: m.block_cards_1_badge({}, { locale: activeLocale }),
-    title: m.block_cards_1_title({}, { locale: activeLocale }),
-    description: m.block_cards_1_desc({}, { locale: activeLocale }),
-    icon: 'layers',
-    href: localizeHref('/features', activeLocale),
-    ctaLabel: defaultCtaLabel,
-  },
-  {
-    badge: m.block_cards_2_badge({}, { locale: activeLocale }),
-    title: m.block_cards_2_title({}, { locale: activeLocale }),
-    description: m.block_cards_2_desc({}, { locale: activeLocale }),
-    icon: 'palette',
-    href: localizeHref('/features#design', activeLocale),
-    ctaLabel: defaultCtaLabel,
-  },
-  {
-    badge: m.block_cards_3_badge({}, { locale: activeLocale }),
-    title: m.block_cards_3_title({}, { locale: activeLocale }),
-    description: m.block_cards_3_desc({}, { locale: activeLocale }),
-    icon: 'globe',
-    href: localizeHref('/features#rtl', activeLocale),
-    ctaLabel: defaultCtaLabel,
-  },
-];
+let resolvedItems: readonly FeatureCardItem[];
+if (items) {
+  resolvedItems = items;
+} else {
+  const [featuresHref, homeHref] = await Promise.all([
+    getPageUrl('features', activeLocale),
+    getHomeHref(activeLocale),
+  ]);
+  const fallbackHref = featuresHref ?? homeHref;
+  resolvedItems = [
+    {
+      badge: m.block_cards_1_badge({}, { locale: activeLocale }),
+      title: m.block_cards_1_title({}, { locale: activeLocale }),
+      description: m.block_cards_1_desc({}, { locale: activeLocale }),
+      icon: 'layers',
+      href: fallbackHref,
+      ctaLabel: defaultCtaLabel,
+    },
+    {
+      badge: m.block_cards_2_badge({}, { locale: activeLocale }),
+      title: m.block_cards_2_title({}, { locale: activeLocale }),
+      description: m.block_cards_2_desc({}, { locale: activeLocale }),
+      icon: 'palette',
+      href: featuresHref ? `${featuresHref}#design` : homeHref,
+      ctaLabel: defaultCtaLabel,
+    },
+    {
+      badge: m.block_cards_3_badge({}, { locale: activeLocale }),
+      title: m.block_cards_3_title({}, { locale: activeLocale }),
+      description: m.block_cards_3_desc({}, { locale: activeLocale }),
+      icon: 'globe',
+      href: featuresHref ? `${featuresHref}#rtl` : homeHref,
+      ctaLabel: defaultCtaLabel,
+    },
+  ];
+}
 
 const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
 const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
