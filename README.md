@@ -27,7 +27,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Locale-Native Dates & Numerals**: Centralized `Intl` formatting (`src/i18n/format.ts`) with Solar Hijri (Jalali) dates and Persian numerals (`۰-۹`) for `fa`, Eastern Arabic numerals (`٠-٩`) for `ar`, and standard localized formatting for LTR locales.
 * **Rich Editorial UX & Print Stylesheet**: Automatic sticky/collapsible Table of Contents (`h2`/`h3`), taxonomy-scored Related Articles, chronological Newer/Older article navigation, localized `updatedAt` timestamps, one-click Copy Code buttons on `<pre>` blocks, and a clean `@media print` stylesheet.
 * **Accessible & Reduced-Motion Aware**: Native `<dialog>` search (`⌘K`, `↑`/`↓`/`Enter`), two-tab mobile slide-over drawer, single `<h1>` per page, skip link, visible focus rings, and unified OS `prefers-reduced-motion` + `data-motion` support across CSS reveals, Lenis smooth scrolling, and cookie banners.
-* **ChronoTrig Scroll Reveals & Smooth Scroll**: GPU-only entrance animations (`data-trig` scoped under `<html class="js">`, never `display: none`), RTL-mirrored logical directions (`data-trig-direction="start"` / `"end"`), harmonic staggered grids (`data-trig-stagger`), interactive filter replays, and accessible **Lenis** smooth scrolling.
+* **ChronoTrig v5.2.0 Scroll Reveals & Smooth Scroll**: GPU-only entrance animations (`data-trig` + `data-trig-once="true"` scoped under `<html class="js">`, never `display: none`), modern reveal presets (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.trig-delay-*`), RTL-mirrored logical directions (`data-trig-direction="start"` / `"end"`), harmonic stagger modes (`linear`, `wave`, `center`, `reverse`), pinned sections (`[data-trig-pin]`), multi-step timelines (`[data-trig-timeline]`), interactive filter replays, and accessible **Lenis** smooth scrolling.
 * **Flexible Page Canvas & Atmospheric Blog Heroes**: Static `pages` schema defaults to `hero: 'none'` and `container: 'canvas'` for complete design freedom (`<PageSection>`, `hero: 'minimal' | 'default'`, `container: 'contained' | 'prose'`, `flushTop`, or bespoke Astro templates via `template: '<name>'`), while `blog` posts share a full-bleed defocused `PageHero.astro` backdrop shaped by vertical scrims that read identically in LTR and RTL.
 * **Optimized Image Pipeline**: Every picture is served through Astro's image pipeline — WebP output, a responsive `srcset` with the right `sizes`, and optimized Open Graph social cards.
 * **Frosted-Glass Design System**: The header, its icon controls, buttons (`Button.astro`), and chips are defined once in `src/styles/global.css` alongside an AA-contrast OKLCH semantic palette (`primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, `error`).
@@ -162,12 +162,12 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   └── tabler-icons-astro.d.ts # Types for per-icon deep imports in Icon.astro
 │   ├── paraglide/             # Generated Paraglide code (gitignored, do not edit)
 │   ├── scripts/
-│   │   ├── lenis.ts           # Accessible smooth scroll lifecycle (ClientRouter + anchor sync)
-│   │   └── chronotrig.ts      # ChronoTrig coordinator (setupChronoTrig + refreshChronoTrig)
-│   ├── styles/
-│   │   ├── global.css         # Tailwind v4 @theme static inline + .layout-container + semantic palette + glass
+│   │   ├── lenis.ts           # Accessible smooth scroll lifecycle (ClientRouter + anchor sync + trigScroll)
+│   │   └── chronotrig.ts      # ChronoTrig v5.2.0 coordinator (setupChronoTrig + refreshChronoTrig)
+│   ├── styles/                # Global & prose stylesheets
+│   │   ├── global.css         # Tailwind v4 @theme static inline + .layout-container + overflow-x: clip + semantic palette + glass
 │   │   ├── prose.css          # Article formatting with RTL isolation for code blocks
-│   │   └── chronotrig.css     # .js [data-trig] entrance vectors, staggers, delay token & print/opt-out flattening
+│   │   └── chronotrig.css     # ChronoTrig v5.2.0 .js [data-trig] presets, modifiers, staggers, pins & print/opt-out flattening
 │   └── views/
 │       ├── PageView.astro     # Flexible static page renderer (canvas / contained / prose / custom template)
 │       ├── BlogIndexView.astro # Blog listing page
@@ -411,14 +411,15 @@ Icon-only controls go through one component, so their size, shape and accessible
 
 The glass palette is tokenised (`--color-glass`, `--color-glass-control`, `--color-glass-border`, `--color-glass-hover`), so the translucency of the whole site is tuned from one place.
 
-### 7. ChronoTrig Scroll Reveals, Staggering & Filtered Replays
+### 7. ChronoTrig v5.2.0 Scroll Reveals, Harmonic Staggers, Pins & Timelines
 Entrance animations are scoped strictly under `<html class="js">` (`src/styles/chronotrig.css` + `src/scripts/chronotrig.ts`), never `display: none` or unscoped `opacity-0`, ensuring zero layout shift (CLS = 0) and 100% visibility when JavaScript is disabled or printed:
 
-* **Single elements**: Add `data-trig` to any section, card or heading. In `.mdx` content, `.prose h2/h3/h4` are tagged automatically. A reveal travels 56px, runs `1.2s` on `cubic-bezier(0.22, 1, 0.36, 1)`, and holds for `--trig-reveal-delay` (`180ms`) first so the entrance is noticeable.
-* **RTL-aware horizontal vectors**: Always use `data-trig-direction="start"` / `"end"` instead of physical `left` / `right` so horizontal motion mirrors automatically in `fa` and `ar`.
-* **Staggered grids (`data-trig-stagger`)**: Put `data-trig-stagger` (optionally `data-trig-stagger-delay="0.08"`) on the parent grid/list and keep every card a **direct child**. ChronoTrig seeds `--stagger-index` / `--stagger-delay` and activates children via `.trig-stagger-active`.
-* **Interactive filter replays**: Filtering only toggles `card.hidden`, so reset the grid's reveal classes first (`replayGridReveals()` in `BlogIndexView.astro`) and then call `refreshChronoTrig()` from `@/scripts/chronotrig`; existing cards then replay alongside newly appended ones. Never replay on the initial render. Add `[data-card][hidden] { display: none !important; }` when toggling `card.hidden` on flex/grid cards.
-* **Motion preference**: `BaseLayout.astro`'s `<head>` `resolveMotion()` checks `localStorage.motion` and otherwise honors OS `prefers-reduced-motion: reduce`, setting `html[data-motion="reduced"]`. `chronotrig.css`, `lenis.ts`, and `global.css` (`[data-cookie-banner]`) — alongside `@media print` — all flatten or disable motion cleanly when `data-motion="reduced"` is set.
+* **Single elements & reveal-once**: Add `data-trig` (optionally `data-trig-once="true"` to trigger once and unobserve cleanly) plus optional v5.2.0 presets/modifiers (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, `.trig-delay-100`..`1000`, `.trig-duration-*`, `.trig-ease-*`). In `.mdx` content, `.prose h2/h3/h4` are tagged automatically. Default reveals travel 56px over `1.2s` (`cubic-bezier(0.22, 1, 0.36, 1)`) after a `--trig-reveal-delay` (`180ms`) hold.
+* **RTL-aware horizontal vectors**: Always use `data-trig-direction="start"` / `"end"` or `.clipStart` instead of physical `left` / `right` so horizontal motion mirrors automatically in `fa` and `ar`.
+* **Harmonic staggered grids (`data-trig-stagger`)**: Put `data-trig-stagger` (plus optional `data-trig-stagger-mode="linear|wave|center|reverse"`, `data-trig-stagger-delay="0.08"`, `data-trig-once="true"`) on the parent grid/list. ChronoTrig targets `[data-trig-stagger-item], :scope > *`, seeds `--stagger-index` / `--stagger-delay` / `--stagger-total`, and activates children via `.trig-stagger-active`.
+* **Pinned stages & timelines**: Use `[data-trig-pin]` (`data-trig-pin-distance`, `data-trig-pin-horizontal="true"` + `[data-trig-pin-track]`, `data-trig-pin-media`) and `[data-trig-timeline]`. `src/styles/global.css` sets `body { overflow-x: clip; }` (never `overflow-x: hidden`) so `position: sticky` inside pinned containers never breaks.
+* **Interactive filter replays**: Filtering only toggles `card.hidden`, so reset the grid's reveal classes first (`replayGridReveals()` in `BlogIndexView.astro`) and then call `refreshChronoTrig()` from `@/scripts/chronotrig` (invokes `window.chronoTrig.refresh()`); existing cards then replay alongside newly appended ones. Never replay on the initial render. Add `[data-card][hidden] { display: none !important; }` when toggling `card.hidden` on flex/grid cards.
+* **Motion preference**: `BaseLayout.astro`'s `<head>` `resolveMotion()` checks `localStorage.motion` and otherwise honors OS `prefers-reduced-motion: reduce`, setting `html[data-motion="reduced"]`. `chronotrig.css`, `lenis.ts` (syncing via `trigScroll?.()`), `global.css`, ChronoTrig's live `respectReducedMotion` watcher (`body.chronotrig-mobile-disabled`), and `@media print` all flatten or disable motion cleanly.
 * **Lenis nested scroll isolation**: Add `data-lenis-prevent` to any scrollable modal, drawer, or overflow panel (`overflow-y-auto`).
 
 ---

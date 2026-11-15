@@ -272,25 +272,27 @@ pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run 
 
 ---
 
-## Playbook 7: Implementing Viewport Reveals, Staggered Grids & ChronoTrig Motion
+## Playbook 7: Implementing Viewport Reveals, Staggered Grids & ChronoTrig v5.2.0 Motion
 
-### 1. The ChronoTrig Reveal Contract
+### 1. The ChronoTrig v5.2.0 Reveal Contract
 * Never hide elements with `display: none` / `hidden` or unscoped Tailwind `opacity-0` for scroll entrance.
 * `BaseLayout.astro` synchronously adds `.js` on `<html class="js">` in `<head>`. `src/styles/chronotrig.css` scopes initial entrance offsets strictly under `.js [data-trig]` (preserving full layout geometry, zero CLS, and 100% visibility when JS is disabled or printed).
 * When an element enters the viewport, ChronoTrig adds `.trig`, animating `opacity: 1` and `transform: none` over `1.2s` (`1.1s` for stagger cards) with a `cubic-bezier(0.22, 1, 0.36, 1)` curve and a 56px bottom offset.
+* Add `data-trig-once="true"` on `[data-trig]` or `[data-trig-stagger]` when the reveal should play once, release `will-change: auto`, and unobserve cleanly.
 * Reveals hold for `--trig-reveal-delay` (`180ms`, defined once at the top of `chronotrig.css`) before starting, so an entrance is not finished before the element is properly in view.
-* Motion preference is resolved once in `BaseLayout.astro`'s `<head>` (`resolveMotion()`): it checks `localStorage.getItem('motion')` (`'reduced' | 'full'`), otherwise honors the OS `prefers-reduced-motion: reduce` setting, and writes `html[data-motion]`. `chronotrig.css`, `lenis.ts`, and `global.css` (`[data-cookie-banner]`) — alongside `@media print` — all flatten or disable motion cleanly whenever `data-motion="reduced"` is active.
+* Motion preference is resolved once in `BaseLayout.astro`'s `<head>` (`resolveMotion()`): it checks `localStorage.getItem('motion')` (`'reduced' | 'full'`), otherwise honors the OS `prefers-reduced-motion: reduce` setting, and writes `html[data-motion]`. `chronotrig.css`, `lenis.ts` (syncing via `trigScroll?.()`), `global.css`, ChronoTrig's live `respectReducedMotion` watcher (`body.chronotrig-mobile-disabled`), and `@media print` all flatten reveals, timelines, and `[data-trig-pin]` containers cleanly.
 
-### 2. Single Elements & RTL-Safe Directions
-* Add `data-trig` to any element, title, or card for a smooth bottom reveal.
-* For split columns or directional entrances, use `data-trig-direction="start"` and `data-trig-direction="end"` so horizontal entrances mirror automatically in RTL (`fa` and `ar`).
+### 2. Single Elements, Presets & RTL-Safe Directions
+* Add `data-trig` to any element, title, or card for a smooth bottom reveal, optionally paired with v5.2.0 presets/modifiers (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, `.trig-delay-100`..`1000`, `.trig-duration-*`, `.trig-ease-*`, `.trig-reactive-*`). Avoid non-existent attributes like `data-trig-delay`.
+* For split columns or directional entrances, use `data-trig-direction="start"` and `data-trig-direction="end"` or `.clipStart` so horizontal entrances mirror automatically in RTL (`fa` and `ar`).
 
-### 3. Harmonic Stagger Grids (`data-trig-stagger`)
-* Add `data-trig-stagger data-trig-stagger-delay="0.08"` to the parent grid or list container.
-* ChronoTrig automatically computes `--stagger-index`, `--stagger-delay`, and activates child items via `.trig-stagger-active`.
+### 3. Harmonic Stagger Grids (`data-trig-stagger`), Pins & Timelines
+* Add `data-trig-stagger data-trig-stagger-delay="0.08"` (plus optional `data-trig-stagger-mode="linear|wave|center|reverse"` and `data-trig-once="true"`) to the parent grid or list container.
+* ChronoTrig v5.2.0 targets `[data-trig-stagger-item], :scope > *`, computes `--stagger-index`, `--stagger-delay`, and `--stagger-total` natively (clamping delays `<= 0.04s` in lightweight mobile mode), and activates child items via `.trig-stagger-active`.
+* For pinned scrollytelling (`[data-trig-pin]`, `data-trig-pin-distance`, `data-trig-pin-horizontal="true"` + `[data-trig-pin-track]`, `data-trig-pin-media`) and multi-step `[data-trig-timeline]` waypoints, ensure ancestor wrappers never use `overflow-x: hidden` (`src/styles/global.css` uses `overflow-x: clip` on `body`).
 
 ### 4. Dynamic Filtering, Re-scans & Filter Replays
-* When dynamically appending cards in client scripts, call `refreshChronoTrig()` from `@/scripts/chronotrig` to re-scan and observe the new elements.
+* When dynamically appending cards in client scripts, call `refreshChronoTrig()` from `@/scripts/chronotrig` (which calls `window.chronoTrig.refresh()` to re-measure viewport, tracks, and observers; use `trigScroll?.()` instead of removed `onScroll()` inside scroll handlers).
 * A filter change is different: hiding cards leaves the surviving ones with `.trig`, so they would appear without animating. Reset the grid first (`replayGridReveals()` in `BlogIndexView.astro`), force a reflow, then call `refreshChronoTrig()` — and skip that replay on the initial render, otherwise the page entrance restarts.
 
 ---

@@ -1329,43 +1329,53 @@ pre, code, .math {
 
 این مکث برای همهٔ عناصر `[data-trig]` و همچنین کارت‌های پلکانی (به‌صورت `calc(var(--stagger-delay) + var(--trig-reveal-delay))`) اعمال می‌شود. برای کم/زیاد کردن آن فقط همین یک متغیر را تغییر دهید.
 
-#### ۲. المان‌های تکی: صفت `data-trig`
+#### ۲. المان‌های تکی، `data-trig-once` و پریست‌های آماده (ChronoTrig v5.2.0)
 
 کافی است صفت `data-trig` را روی هر بخش، کارت یا عنوان قرار دهید:
 
 ```astro
-<div class="max-w-3xl" data-trig>
+<!-- انیمیشن یک‌باره (پس از اجرا متوقف می‌شود و سربار اسکرول به صفر می‌رسد) -->
+<div class="max-w-3xl fadeInUpSm" data-trig data-trig-once="true">
   <h1 class="text-4xl font-extrabold text-fg">عنوان اصلی</h1>
   <p class="mt-4 text-muted">متن توضیحی</p>
 </div>
 ```
 
-در فایل‌های محتوای `.mdx` نیازی به کار دستی نیست؛ `src/scripts/chronotrig.ts` در تابع `setupChronoTrig()` عنوان‌های `.prose h2/h3/h4` را به‌طور خودکار با `data-trig` علامت‌گذاری می‌کند. می‌توانید با `data-prose-reveal` هر بلوک دیگری از محتوا را هم وارد چرخه کنید.
+* بدون `data-trig-once="true"` انیمیشن هنگام ورود/خروج دوباره پخش می‌شود؛ با `data-trig-once="true"` یک‌بار اجرا شده، `will-change` آزاد می‌شود و از `IntersectionObserver` خارج می‌گردد.
+* در فایل‌های محتوای `.mdx` عنوان‌های `.prose h2/h3/h4` به‌طور خودکار توسط `setupChronoTrig()` در `src/scripts/chronotrig.ts` علامت‌گذاری می‌شوند.
+* **پریست‌ها و اصلاحگرهای آماده در `src/styles/chronotrig.css`**: کلاس‌های `.fadeInUpSm`، `.blurIn` (در موبایل به‌صورت خودکار به `.fadeInUpSm` بدون بلور تبدیل می‌شود)، `.clipUp`، `.clipStart`، `.fadeIn`، `.fadeInDown`، `.zoomIn`، `.zoomOut`، `.trig-directional` و اصلاحگرهای `.trig-delay-100..1000`، `.trig-duration-300..2000`، `.trig-ease-*` و `.trig-reactive-*` همگی زیر `.js [data-trig]` ایزوله هستند تا بدون JS یا در چاپ صفحه‌پرش (CLS) صفر باشد.
 
 #### ۳. جهت‌های منطقی آگاه از RTL (`start` و `end`)
 
-برای انیمیشن‌های افقی هرگز از `left` / `right` استفاده نکنید؛ از `data-trig-direction` با مقادیر منطقی استفاده کنید تا در `fa` و `ar` به‌طور خودکار آینه شود:
+برای انیمیشن‌های افقی هرگز از `left` / `right` استفاده نکنید؛ از `data-trig-direction` با مقادیر منطقی یا کلاس `.clipStart` استفاده کنید تا در `fa` و `ar` به‌طور خودکار آینه شود:
 
 ```astro
 <aside data-trig data-trig-direction="start" class="p-6">از ابتدای خواندن</aside>
-<aside data-trig data-trig-direction="end" class="p-6">از انتهای خواندن</aside>
+<aside data-trig data-trig-direction="end" class="trig-delay-100 p-6">از انتهای خواندن</aside>
 ```
 
 `chronotrig.css` این جهت‌ها را با `:where([dir="rtl"])` معکوس می‌کند، پس هیچ کلاس فیزیکی لازم نیست.
 
-#### ۴. چیدمان پلکانی (`data-trig-stagger`)
+#### ۴. چیدمان پلکانی هماهنگ (`data-trig-stagger`)، بخش‌های پین‌شده (`data-trig-pin`) و تایم‌لاین (`data-trig-timeline`)
 
-صفت `data-trig-stagger` را روی **ظرف والد** بگذارید و کارت‌ها را **فرزند مستقیم** آن قرار دهید:
+صفت `data-trig-stagger` را روی **ظرف والد** بگذارید و کارت‌ها را فرزند مستقیم (`:scope > *`) یا دارای `[data-trig-stagger-item]` / `.trig-stagger-item` قرار دهید:
 
 ```astro
-<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-trig-stagger data-trig-stagger-delay="0.06">
+<div
+  class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+  data-trig-stagger
+  data-trig-stagger-mode="center"
+  data-trig-stagger-delay="0.06"
+  data-trig-once="true"
+>
   <div data-trig class="card">کارت ۱</div>
   <div data-trig class="card">کارت ۲</div>
   <div data-trig class="card">کارت ۳</div>
 </div>
 ```
 
-ChronoTrig برای هر فرزند `--stagger-index` و `--stagger-delay` را محاسبه می‌کند و ظرف را با `.trig-stagger-active` فعال می‌کند. کارت‌های پلکانی از مدت `1.1s` و جابه‌جایی `44px` استفاده می‌کنند.
+* ChronoTrig v5.2.0 حالت‌های `data-trig-stagger-mode` شامل `linear`، `wave`، `center` و `reverse` را پشتیبانی می‌کند و `--stagger-index`، `--stagger-delay` و `--stagger-total` را محاسبه کرده و آیتم‌ها را با `.trig-stagger-active` فعال می‌سازد (در حالت موبایل `lightweight` تأخیر به حداکثر `0.04s` محدود می‌شود). کارت‌های پلکانی از مدت `1.1s` و جابه‌جایی `44px` استفاده می‌کنند.
+* **بخش‌های پین‌شده و تایم‌لاین**: با `[data-trig-pin]` (`data-trig-pin-distance`، `data-trig-pin-horizontal="true"` + `[data-trig-pin-track]`، `data-trig-pin-media`) و `[data-trig-timeline]` می‌توانید صحنه‌های چسبان و انیمیشن‌های چندمرحله‌ای بسازید. برای اینکه `position: sticky` از کار نیفتد، در `src/styles/global.css` روی `body` از `overflow-x: clip` (و نه `overflow-x: hidden`) استفاده شده است.
 
 > **نکته:** کارت‌هایی که با `card.hidden = true` پنهان می‌شوند باید استایل `[data-post-card][hidden] { display: none !important; }` داشته باشند، چون کلاس‌های `flex` / `grid` در Tailwind رفتار پیش‌فرض `[hidden]` را خنثی می‌کنند.
 
@@ -1419,9 +1429,9 @@ refreshChronoTrig();
 
 #### ۷. هماهنگی با Lenis و تنظیم حرکت
 
-* **Lenis (`src/scripts/lenis.ts`)**: با `lerp: 0.085` و `syncTouch: false` راه‌اندازی می‌شود، لینک‌های `#hash` هم‌صفحه را با آفست هدر ثابت (`-96px`) مدیریت می‌کند و در `astro:page-load` بازسازی می‌شود.
+* **Lenis (`src/scripts/lenis.ts`)**: با `lerp: 0.085` و `syncTouch: false` راه‌اندازی می‌شود، در رویداد اسکرول با `window.chronoTrig.trigScroll?.()` همگام می‌شود، لینک‌های `#hash` هم‌صفحه را با آفست هدر ثابت (`-96px`) مدیریت می‌کند و در `astro:page-load` بازسازی می‌شود.
 * **پنل‌های اسکرول داخلی**: روی هر مودال/کشو/پنل با `overflow-y-auto` صفت `data-lenis-prevent` بگذارید.
-* **تنظیم حرکت**: تابع `resolveMotion()` در `<head>` (در `BaseLayout.astro`) مقدار `localStorage.motion` یا در صورت نبود آن تنظیم سیستمی `(prefers-reduced-motion: reduce)` را می‌خواند و `data-motion="reduced" | "full"` را روی `<html>` می‌نشاند. ChronoTrig، Lenis و `[data-cookie-banner]` و `@media print` به‌صورت یکپارچه به آن احترام می‌گذارند.
+* **تنظیم حرکت**: تابع `resolveMotion()` در `<head>` (در `BaseLayout.astro`) مقدار `localStorage.motion` یا در صورت نبود آن تنظیم سیستمی `(prefers-reduced-motion: reduce)` را می‌خواند و `data-motion="reduced" | "full"` را روی `<html>` می‌نشاند. ChronoTrig v5.2.0 (`respectReducedMotion` + `body.chronotrig-mobile-disabled`)، `chronotrig.css`، Lenis و `[data-cookie-banner]` و `@media print` به‌صورت یکپارچه به آن احترام می‌گذارند.
 
 ### استایل متن محتوا — `src/styles/prose.css`
 
@@ -2040,7 +2050,7 @@ dist/
 | `Unknown file extension ".astro"` در سرور توسعه | سرور توسعه قبل از `pnpm install` بالا آمده و `node_modules` عوض شده است | سرور را ری‌استارت کنید: `pnpm exec astro dev stop` و بعد `pnpm exec astro dev --background` |
 | `Missing <locale>.mdx` در خروجی ممیزی | گروه محتوا در همهٔ زبان‌ها ترجمه نشده | هشدار است و بیلد را نمی‌شکند؛ با `pnpm run new:page <key> --update` یا `--slug:<locale>=…` تکمیلش کنید |
 | اسکرول چرخ ماوس داخل مودال یا پنل کار نمی‌کند | Lenis رویداد چرخ ماوس را برای کل صفحه می‌گیرد | صفت `data-lenis-prevent` را به ظرف دارای `overflow-y-auto` اضافه کنید |
-| آیتم‌های داخل `[data-trig-stagger]` هم‌زمان باز می‌شوند | کارت‌ها فرزند مستقیم ظرف نیستند | کارت‌ها را فرزند مستقیم (`:scope > *`) ظرف `data-trig-stagger` قرار دهید |
+| آیتم‌های داخل `[data-trig-stagger]` هم‌زمان باز می‌شوند | کارت‌ها فرزند مستقیم یا دارای `[data-trig-stagger-item]` نیستند | کارت‌ها را فرزند مستقیم (`:scope > *`) قرار دهید یا صفت `data-trig-stagger-item` به آن‌ها بدهید |
 | کارت‌ها پس از فیلتر شدن یا تعویض تب بدون انیمیشن ظاهر می‌شوند | کارت‌ها کلاس `.trig` را از قبل دارند | پیش از `refreshChronoTrig()` تابع `replayGridReveals()` را صدا بزنید |
 | انیمیشن افقی در فارسی از جهت برعکس می‌آید | استفاده از `left` یا `right` | از جهت‌های منطقی `data-trig-direction="start"` و `"end"` استفاده کنید |
 
@@ -2086,7 +2096,7 @@ dist/
 | تعریف دوبارهٔ `.cta` در کامپوننت | دکمهٔ متنی را با `<Button variant="…" size="…" icon="…">` بسازید |
 | `<button>` دستی با `<Icon>` | `IconButton` |
 | `hidden` / `display: none` یا `opacity-0` مستقیم برای انیمیشن اسکرول | صفت `data-trig` (محصور در `.js` روی GPU) |
-| کارتِ غیرفرزند مستقیم داخل `[data-trig-stagger]` | کارت‌ها را فرزند مستقیم ظرف قرار دهید (`:scope > *`) |
+| کارتِ غیرفرزند مستقیم بدون `data-trig-stagger-item` داخل `[data-trig-stagger]` | کارت‌ها را فرزند مستقیم ظرف (`:scope > *`) قرار دهید یا `data-trig-stagger-item` بگذارید |
 | حذف دستی کلاس‌ها در فیلترها/تب‌ها | فراخوانی `replayGridReveals()` و سپس `refreshChronoTrig()` |
 | `data-trig-direction="left"` / `"right"` در ستون‌های متقارن | `"start"` / `"end"` برای قرینه‌شدن خودکار در RTL |
 | پنل اسکرول‌پذیر بدون `data-lenis-prevent` | افزودن `data-lenis-prevent` روی ظرف‌های `overflow-y-auto` |
@@ -2281,7 +2291,7 @@ dist/
 | فایل | خروجی‌ها | کاربرد |
 | --- | --- | --- |
 | `lenis.ts` | `initLenis()` · `destroyLenis()` · `getLenis()` | راه‌اندازی، پاک‌سازی در View Transitions و دسترسی به نمونهٔ فعال `Lenis` |
-| `chronotrig.ts` | `setupChronoTrig()` · `refreshChronoTrig()` | علامت‌گذاری خودکار عنوان‌های `.prose`، هماهنگی با `astro:page-load` و اسکن مجدد پس از تزریق یا فیلتر پویا |
+| `chronotrig.ts` | `setupChronoTrig()` · `refreshChronoTrig()` | تایپ‌های ChronoTrig v5.2.0، علامت‌گذاری عنوان‌های `.prose` و `[data-trig-once]`، هماهنگی `astro:page-load` و `refresh()` پس از تزریق یا فیلتر پویا |
 
 ### `scripts/lib/locales.mjs`
 

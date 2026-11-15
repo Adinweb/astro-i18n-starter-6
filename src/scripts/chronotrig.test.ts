@@ -7,7 +7,7 @@ import { setupChronoTrig, refreshChronoTrig } from './chronotrig';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
 
-describe('ChronoTrig Integration & Lifecycle', () => {
+describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -38,9 +38,10 @@ describe('ChronoTrig Integration & Lifecycle', () => {
     expect(remove).toHaveBeenCalledWith('js');
   });
 
-  it('auto-tags prose headings and [data-prose-reveal] with data-trig, invoking scan & onScroll', () => {
+  it('auto-tags prose headings and [data-prose-reveal] with data-trig, invoking v5.2.0 refresh()', () => {
+    const refreshSpy = vi.fn();
     const scanSpy = vi.fn();
-    const onScrollSpy = vi.fn();
+    const trigScrollSpy = vi.fn();
 
     const mockElements: Array<{
       tagName: string;
@@ -63,20 +64,20 @@ describe('ChronoTrig Integration & Lifecycle', () => {
     ];
 
     const mockDocument = {
-      querySelectorAll: vi.fn().mockReturnValue(mockElements),
+      querySelectorAll: vi.fn((selector: string) => {
+        if (selector.includes('.prose')) return mockElements;
+        return [];
+      }),
       addEventListener: vi.fn(),
       readyState: 'complete',
     };
 
     const mockWindow = {
       chronoTrig: {
+        refresh: refreshSpy,
         scan: scanSpy,
-        onScroll: onScrollSpy,
-        onResize: vi.fn(),
-        destroy: vi.fn(),
-        refresh: vi.fn(),
+        trigScroll: trigScrollSpy,
         isMobile: vi.fn().mockReturnValue(false),
-        options: {},
       },
     };
 
@@ -85,18 +86,55 @@ describe('ChronoTrig Integration & Lifecycle', () => {
 
     setupChronoTrig();
 
-    // The first element did not have data-trig, so setAttribute should be called
     expect(mockElements[0].setAttribute).toHaveBeenCalledWith('data-trig', '');
-    // The second element already had data-trig, so setAttribute should not be called again
     expect(mockElements[1].setAttribute).not.toHaveBeenCalled();
 
-    // ChronoTrig scan and onScroll should be dispatched
-    expect(scanSpy).toHaveBeenCalledTimes(1);
-    expect(onScrollSpy).toHaveBeenCalledTimes(1);
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+    expect(scanSpy).not.toHaveBeenCalled();
   });
 
-  it('configures chronotrig.css and BaseLayout.astro with unified data-motion reduced-motion support', () => {
+  it('propagates data-trig and data-trig-once to stagger children without overwriting engine stagger modes', () => {
+    const refreshSpy = vi.fn();
+    const setPropertySpy = vi.fn();
+
+    const staggerChild = {
+      hasAttribute: vi.fn((attr: string) => attr === 'data-trig-stagger-item'),
+      setAttribute: vi.fn(),
+      style: { setProperty: setPropertySpy },
+    };
+
+    const staggerContainer = {
+      getAttribute: vi.fn((attr: string) => (attr === 'data-trig-once' ? 'true' : 'wave')),
+      querySelectorAll: vi.fn().mockReturnValue([staggerChild]),
+    };
+
+    const mockDocument = {
+      querySelectorAll: vi.fn((selector: string) => {
+        if (selector === '[data-trig-stagger]') return [staggerContainer];
+        return [];
+      }),
+      addEventListener: vi.fn(),
+      readyState: 'complete',
+    };
+
+    (globalThis as Record<string, unknown>).document = mockDocument;
+    (globalThis as Record<string, unknown>).window = {
+      chronoTrig: { refresh: refreshSpy },
+    };
+
+    setupChronoTrig();
+
+    expect(staggerContainer.querySelectorAll).toHaveBeenCalledWith('[data-trig-stagger-item], :scope > *');
+    expect(staggerChild.setAttribute).toHaveBeenCalledWith('data-trig', '');
+    expect(staggerChild.setAttribute).toHaveBeenCalledWith('data-trig-once', 'true');
+    // Must not overwrite engine-computed wave/center/reverse delays
+    expect(setPropertySpy).not.toHaveBeenCalled();
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('configures chronotrig.css, global.css, and BaseLayout.astro for v5.2.0 features & accessibility', () => {
     const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
+    const globalCss = fs.readFileSync(path.join(rootDir, 'src/styles/global.css'), 'utf-8');
     const layout = fs.readFileSync(path.join(rootDir, 'src/layouts/BaseLayout.astro'), 'utf-8');
 
     // Bottom entrance state: starts well below the resting position and transparent
@@ -112,6 +150,15 @@ describe('ChronoTrig Integration & Lifecycle', () => {
     expect(css).toContain('.js [data-trig].trig');
     expect(css).toContain('transform: none');
 
+    // v5.2.0 modern presets, utility modifiers, stagger items, and timeline/pin flattening
+    expect(css).toContain('.fadeInUpSm');
+    expect(css).toContain('.blurIn');
+    expect(css).toContain('.clipUp');
+    expect(css).toContain('.trig-delay-100');
+    expect(css).toContain('[data-trig-stagger-item]');
+    expect(css).toContain('[data-trig-timeline]');
+    expect(css).toContain('body.chronotrig-mobile-disabled');
+
     // RTL logical direction support
     expect(css).toContain('[data-trig-direction="start"]');
     expect(css).toContain('[data-trig-direction="end"]');
@@ -122,6 +169,12 @@ describe('ChronoTrig Integration & Lifecycle', () => {
     expect(css).toContain('html[data-motion="reduced"]');
     expect(css).toContain('@media print');
 
+    // Sticky [data-trig-pin] sections require overflow-x: clip rather than overflow-x: hidden on body
+    expect(globalCss).toMatch(/body\s*\{[^}]*overflow-x:\s*clip/);
+    expect(globalCss).not.toMatch(/body\s*\{[^}]*overflow-x:\s*hidden/);
+    expect(globalCss).toContain("@import './chronotrig.css';");
+    expect(globalCss).toContain('html:not([data-motion="reduced"]) [data-cookie-banner]:not([hidden])');
+
     expect(layout).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
     expect(layout).toContain("window.localStorage.getItem('motion')");
     expect(layout).toContain('doc.documentElement.dataset.motion = motion');
@@ -130,11 +183,8 @@ describe('ChronoTrig Integration & Lifecycle', () => {
   it('replays grid reveals on filter changes but never on the initial render', () => {
     const view = fs.readFileSync(path.join(rootDir, 'src/views/BlogIndexView.astro'), 'utf-8');
 
-    // Guarded helper: never strip reveal classes without an engine to re-trigger them
     expect(view).toContain('const replayGridReveals = () =>');
     expect(view).toContain("typeof window.chronoTrig === 'undefined'");
-
-    // Applied in both render paths, but skipped for the first paint
     expect(view).toContain('if (replay) replayGridReveals();');
     expect(view).toContain('render({ updateUrl: false, replay: false })');
   });
@@ -146,9 +196,9 @@ describe('ChronoTrig Integration & Lifecycle', () => {
     expect(layout).toContain("import '@/scripts/chronotrig';");
   });
 
-  it('ensures global.css imports chronotrig.css and binds cookie banner animation to data-motion', () => {
-    const globalCss = fs.readFileSync(path.join(rootDir, 'src/styles/global.css'), 'utf-8');
-    expect(globalCss).toContain("@import './chronotrig.css';");
-    expect(globalCss).toContain('html:not([data-motion="reduced"]) [data-cookie-banner]:not([hidden])');
+  it('syncs Lenis scroll callback with ChronoTrig v5.2.0 trigScroll() instead of missing onScroll()', () => {
+    const lenisSrc = fs.readFileSync(path.join(rootDir, 'src/scripts/lenis.ts'), 'utf-8');
+    expect(lenisSrc).toContain('window.chronoTrig.trigScroll?.()');
+    expect(lenisSrc).not.toContain('window.chronoTrig.onScroll');
   });
 });

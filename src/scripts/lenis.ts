@@ -145,7 +145,7 @@ export function initLenis(): void {
 
   lenis.on('scroll', () => {
     if (typeof window !== 'undefined' && window.chronoTrig) {
-      window.chronoTrig.onScroll();
+      window.chronoTrig.trigScroll?.();
     }
   });
 

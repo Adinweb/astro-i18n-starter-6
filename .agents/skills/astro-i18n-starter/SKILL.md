@@ -33,10 +33,10 @@ This skill coordinates workflows for developing, maintaining, and extending this
    - Guard DOM listeners in Astro components with `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';`.
 7. **Static Language Switching**:
    - Use `window.location.assign(target)` rather than client-side SPA view transitions so `<html lang dir>` and font stacks are fully applied.
-8. **ChronoTrig CSS Scroll Engine, Lenis & Reduced Motion**:
-   - **Zero CLS & Print/No-JS Safe**: Entrance states are strictly scoped under `.js [data-trig]`. When JavaScript is disabled or printed, all elements render with `opacity: 1` and `transform: none` immediately.
-   - **Unified Motion Policy (`resolveMotion()`)**: `BaseLayout.astro`'s `<head>` checks `localStorage.motion` (`'reduced' | 'full'`), else honors OS `prefers-reduced-motion: reduce`, setting `html[data-motion]`. `chronotrig.css`, `lenis.ts`, and `global.css` (`[data-cookie-banner]`) all honor `html[data-motion="reduced"]`.
-   - **Logical RTL Directions & Staggers**: Always use `data-trig-direction="start"` / `data-trig-direction="end"`, put `data-trig-stagger` on parent grids, call `refreshChronoTrig()` after appending dynamic cards (or reset reveals first via `replayGridReveals()` on filter changes), keep `html { scroll-behavior: auto; }`, and add `data-lenis-prevent` on nested `overflow-y-auto` overlays.
+8. **ChronoTrig v5.2.0 CSS Scroll Engine, Lenis & Reduced Motion**:
+   - **Zero CLS & Print/No-JS Safe**: Entrance states are strictly scoped under `.js [data-trig]`. When JavaScript is disabled or printed, all elements render with `opacity: 1` and `transform: none` immediately. Supports `data-trig-once="true"` (unobserves and frees `will-change`), v5.2.0 presets (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`), and utility modifiers (`.trig-delay-*`, `.trig-duration-*`, `.trig-ease-*`).
+   - **Unified Motion Policy (`resolveMotion()`)**: `BaseLayout.astro`'s `<head>` checks `localStorage.motion` (`'reduced' | 'full'`), else honors OS `prefers-reduced-motion: reduce`, setting `html[data-motion]`. `chronotrig.css`, `lenis.ts`, `global.css`, and ChronoTrig's live `respectReducedMotion` watcher flatten reveals, timelines, and `[data-trig-pin]` containers cleanly.
+   - **Logical RTL Directions, Harmonic Staggers, Pins & Timelines**: Use `data-trig-direction="start|end"`, put `data-trig-stagger` (`data-trig-stagger-mode="linear|wave|center|reverse"`) on parent grids, call `refreshChronoTrig()` (uses `window.chronoTrig.refresh()`) after appending dynamic cards (or reset reveals first via `replayGridReveals()` on filter changes), keep `overflow-x: clip` on `body` and parents around `[data-trig-pin]`, keep `html { scroll-behavior: auto; }`, sync Lenis via `trigScroll?.()`, and add `data-lenis-prevent` on nested `overflow-y-auto` overlays.
 
 ---
 
@@ -49,8 +49,8 @@ To perform work in this repository, identify your specific task and read the ind
 | **Content Pipeline, Search & Pure SSG APIs**<br>Collections schemas, content-type registry, composable landing/corporate blocks, pure URL paths, lean router dispatcher, blog engine, dynamic `/og/*.png` cards, Persian-aware Pagefind search, external API client (`ContactForm` + `NewsletterBanner`), feeds & sitemaps | ➡️ Read `references/content-and-routing.md` |
 | **Multi-Menu Navigation**<br>Header dropdowns, mobile drawer tabs, footer columns (with 5 social channels), active states, single-language `showLanguageSwitcher` flag, slot resolvers | ➡️ Read `references/navigation.md` |
 | **CLI Automation Suite**<br>Client onboarding (`site:init`), language default/solo modes, scaffolding pages (`--preset=landing`), posts & content types, deleting content, batch translations, asset generation, `doctor` / `content:status` / `link:check` | ➡️ Read `references/cli-automation.md` |
-| **RTL, Typography & Styling**<br>CSS logical properties, `.layout-container`, brand OKLCH/font presets (`theme.ts`), LTR code block isolation, semantic tokens, 46-icon Tabler catalog | ➡️ Read `references/rtl-styling.md` |
-| **Smooth Scroll, ChronoTrig & Motion**<br>ChronoTrig CSS scroll engine, `data-trig` reveals, `data-trig-stagger` cascades, OS `prefers-reduced-motion` + `data-motion` resolution, RTL start/end vectors, and Lenis rules | ➡️ Read `references/scroll-and-motion.md` |
+| **RTL, Typography & Styling**<br>CSS logical properties, `.layout-container`, brand OKLCH/font presets (`theme.ts`), LTR code block isolation, semantic tokens, Tabler icon catalog | ➡️ Read `references/rtl-styling.md` |
+| **Smooth Scroll, ChronoTrig v5.2.0 & Motion**<br>ChronoTrig v5.2.0 reveals & presets, `data-trig-once`, harmonic stagger modes, pinned sections (`overflow-x: clip`), keyframe timelines, continuous vars, `prefers-reduced-motion` + `data-motion` resolution, RTL start/end vectors, and Lenis rules | ➡️ Read `references/scroll-and-motion.md` |
 | **Testing, Linting & QA**<br>Paraglide compile, Vitest unit tests, i18n parity audit, production build, smoke tests, Knip, `verify:cli` | ➡️ Read `references/verification.md` |
 
 ---

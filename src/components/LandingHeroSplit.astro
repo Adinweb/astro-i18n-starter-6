@@ -205,7 +205,7 @@ const isHeroSurface = surface === 'hero';
 
       {
         hasMedia && (
-          <div class="lg:col-span-6" data-trig data-trig-direction="end" data-trig-delay="0.12">
+          <div class="lg:col-span-6 trig-delay-100" data-trig data-trig-direction="end">
             {Astro.slots.has('media') ? (
               <slot name="media" />
             ) : (
