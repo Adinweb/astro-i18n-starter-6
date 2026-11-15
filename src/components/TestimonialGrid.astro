@@ -2,14 +2,18 @@
 /**
  * Composable customer testimonial grid inspired by PrebuiltUI testimonial cards,
  * using OKLCH semantic tokens, CSS logical spacing, Tabler rating/quote icons,
- * optional optimized `<Image>` avatars, and ChronoTrig staggered reveals.
+ * optional optimized `<Image>` avatars, shared initials fallback, and ChronoTrig
+ * staggered reveals. Accepts optional props with full localized defaults.
  */
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
 import { formatNumber } from '@/i18n/format';
-import { DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n/locales';
+import type { Locale } from '@/i18n/locales';
+import { getInitials } from '@/libs/ui/initials';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
 export interface TestimonialItem {
@@ -24,11 +28,12 @@ export interface TestimonialItem {
 
 interface Props {
   id?: string;
-  eyebrow?: string;
-  heading?: string;
-  subheading?: string;
-  items: readonly TestimonialItem[];
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  items?: readonly TestimonialItem[];
   locale?: Locale | string;
+  contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'sm' | 'md' | 'lg';
 }
@@ -39,54 +44,82 @@ const {
   heading,
   subheading,
   items,
-  locale = DEFAULT_LOCALE,
+  locale,
+  contained = false,
   surface = 'surface',
   spacing = 'md',
 } = Astro.props;
 
-const activeLocale: Locale = isLocale(locale) ? locale : DEFAULT_LOCALE;
-const cardSurface = surface === 'surface' ? 'bg-bg' : 'bg-surface';
-const gridColsClass =
-  items.length <= 2 ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3';
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = items === undefined;
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return 'A';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
-}
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_testimonials_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_testimonials_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_testimonials_subheading({}, { locale: activeLocale })
+);
+
+const resolvedItems: readonly TestimonialItem[] = items ?? [
+  {
+    quote: m.block_testimonials_1_quote({}, { locale: activeLocale }),
+    author: m.block_testimonials_1_author({}, { locale: activeLocale }),
+    role: m.block_testimonials_1_role({}, { locale: activeLocale }),
+    rating: 5,
+  },
+  {
+    quote: m.block_testimonials_2_quote({}, { locale: activeLocale }),
+    author: m.block_testimonials_2_author({}, { locale: activeLocale }),
+    role: m.block_testimonials_2_role({}, { locale: activeLocale }),
+    rating: 5,
+  },
+  {
+    quote: m.block_testimonials_3_quote({}, { locale: activeLocale }),
+    author: m.block_testimonials_3_author({}, { locale: activeLocale }),
+    role: m.block_testimonials_3_role({}, { locale: activeLocale }),
+    rating: 5,
+  },
+];
+
+const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const gridColsClass =
+  resolvedItems.length <= 2 ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3';
 ---
 
-<PageSection id={id} surface={surface} spacing={spacing}>
-  {
-    (eyebrow || heading || subheading) && (
-      <div class="max-w-2xl" data-trig>
-        {eyebrow && <p class="section-kicker">{eyebrow}</p>}
-        {heading && (
-          <h2 class="mt-2 text-2xl font-bold tracking-tight text-fg sm:text-3xl text-balance">
-            {heading}
-          </h2>
-        )}
-        {subheading && (
-          <p class="mt-3 text-base leading-relaxed text-muted text-pretty">
-            {subheading}
-          </p>
-        )}
-      </div>
-    )
-  }
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <SectionHeader
+    eyebrow={resolvedEyebrow}
+    heading={resolvedHeading}
+    subheading={resolvedSubheading}
+  />
 
   <div
     class:list={[
       'grid gap-6',
-      (eyebrow || heading || subheading) && 'mt-8',
+      hasHeader && 'mt-8',
       gridColsClass,
     ]}
     data-trig-stagger
     data-trig-stagger-delay="0.06"
   >
     {
-      items.map((item) => {
+      resolvedItems.map((item) => {
         const ratingValue =
           item.rating !== undefined ? Math.min(5, Math.max(1, Math.round(item.rating))) : null;
         const stars = ratingValue ? Array.from({ length: 5 }, (_, idx) => idx < ratingValue) : [];

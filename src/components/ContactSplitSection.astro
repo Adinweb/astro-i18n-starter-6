@@ -1,0 +1,162 @@
+---
+/**
+ * Split contact section inspired by PrebuiltUI contact blocks, pairing
+ * localized direct contact channels on the start column with the starter's
+ * Pure-SSG `<ContactForm embedded />` (external endpoint + mailto fallback) on
+ * the end column. Accepts optional overrides with full Paraglide defaults.
+ */
+import ContactForm from '@/components/ContactForm.astro';
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import type { Locale } from '@/i18n/locales';
+import { siteConfig } from '@/libs/config/app';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface ContactChannel {
+  label: string;
+  value: string;
+  href?: string;
+  icon?: string;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  channels?: readonly ContactChannel[];
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id = 'contact-inquiry',
+  locale,
+  eyebrow,
+  heading,
+  subheading,
+  channels,
+  contained = false,
+  surface = 'default',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = channels === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_contact_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_contact_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_contact_subheading({}, { locale: activeLocale })
+);
+
+const defaultChannels: ContactChannel[] = [
+  ...(siteConfig.contactEmail
+    ? [
+        {
+          label: m.block_contact_email_label({}, { locale: activeLocale }),
+          value: siteConfig.contactEmail,
+          href: `mailto:${siteConfig.contactEmail}`,
+          icon: 'mail',
+        },
+      ]
+    : []),
+  {
+    label: m.block_contact_hours_label({}, { locale: activeLocale }),
+    value: m.block_contact_hours_value({}, { locale: activeLocale }),
+    icon: 'clock',
+  },
+  {
+    label: m.block_contact_location_label({}, { locale: activeLocale }),
+    value: m.block_contact_location_value({}, { locale: activeLocale }),
+    icon: 'map-pin',
+  },
+  {
+    label: m.block_contact_response_label({}, { locale: activeLocale }),
+    value: m.block_contact_response_value({}, { locale: activeLocale }),
+    icon: 'circle-check',
+  },
+];
+
+const resolvedChannels = channels ?? defaultChannels;
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+---
+
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <div class="grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
+    <div class="lg:col-span-5" data-trig data-trig-direction="start">
+      <SectionHeader
+        eyebrow={resolvedEyebrow}
+        heading={resolvedHeading}
+        subheading={resolvedSubheading}
+      />
+
+      {
+        resolvedChannels.length > 0 && (
+          <ul class="mt-8 space-y-3">
+            {resolvedChannels.map((item) => (
+              <li
+                class:list={[
+                  'flex items-start gap-3.5 rounded-2xl border border-border p-4 transition-colors hover:border-primary/40',
+                  cardSurface,
+                ]}
+              >
+                <span
+                  aria-hidden="true"
+                  class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                >
+                  <Icon name={item.icon ?? 'mail'} size={18} />
+                </span>
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold text-muted">{item.label}</p>
+                  {item.href ? (
+                    <a
+                      href={item.href}
+                      class="mt-0.5 block truncate text-sm font-bold text-fg transition-colors hover:text-primary"
+                    >
+                      {item.value}
+                    </a>
+                  ) : (
+                    <p class="mt-0.5 text-sm font-semibold text-fg">{item.value}</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+
+    <div
+      data-trig
+      data-trig-direction="end"
+      data-trig-delay="0.1"
+      class:list={[
+        'rounded-3xl border border-border p-6 shadow-xs sm:p-8 lg:col-span-7',
+        cardSurface,
+      ]}
+    >
+      <ContactForm locale={activeLocale} embedded />
+    </div>
+  </div>
+</PageSection>

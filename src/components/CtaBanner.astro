@@ -1,11 +1,16 @@
 ---
 /**
- * Focused closing conversion banner for canvas landing pages.
+ * Focused closing conversion banner inspired by PrebuiltUI CTA sections.
+ * Supports optional overrides with full Paraglide defaults in active locale.
  */
-import PageSection from '@/components/PageSection.astro';
 import Button from '@/components/Button.astro';
+import PageSection from '@/components/PageSection.astro';
+import type { Locale } from '@/i18n/locales';
+import { localizeHref } from '@/i18n/paths';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
 
-interface CtaAction {
+export interface CtaAction {
   label: string;
   href: string;
   icon?: string;
@@ -14,30 +19,70 @@ interface CtaAction {
 
 interface Props {
   id?: string;
-  eyebrow?: string;
-  title: string;
-  description?: string;
-  primaryCta: CtaAction;
-  secondaryCta?: CtaAction;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  title?: string;
+  description?: string | null;
+  primaryCta?: CtaAction | null;
+  secondaryCta?: CtaAction | null;
+  contained?: boolean;
   surface?: 'hero' | 'surface';
   spacing?: 'sm' | 'md' | 'lg';
 }
 
 const {
   id,
+  locale,
   eyebrow,
   title,
   description,
   primaryCta,
   secondaryCta,
+  contained = false,
   surface = 'hero',
   spacing = 'md',
 } = Astro.props;
 
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = title === undefined;
+
+const resolvedEyebrow =
+  eyebrow === null
+    ? undefined
+    : (eyebrow ?? (usingDefaults ? m.home_badge({}, { locale: activeLocale }) : undefined));
+const resolvedTitle = title ?? m.home_cta_title({}, { locale: activeLocale });
+const resolvedDescription =
+  description === null
+    ? undefined
+    : (description ?? (usingDefaults ? m.home_cta_desc({}, { locale: activeLocale }) : undefined));
+const resolvedPrimaryCta =
+  primaryCta === null
+    ? undefined
+    : (primaryCta ?? {
+        label: m.home_cta_primary({}, { locale: activeLocale }),
+        href: localizeHref('/pricing', activeLocale),
+        icon: 'arrow-right',
+      });
+const resolvedSecondaryCta =
+  secondaryCta === null
+    ? undefined
+    : (secondaryCta ??
+      (usingDefaults
+        ? {
+            label: m.home_cta_secondary({}, { locale: activeLocale }),
+            href: localizeHref('/projects', activeLocale),
+          }
+        : undefined));
+
 const isHero = surface === 'hero';
 ---
 
-<PageSection id={id} spacing={spacing}>
+<PageSection
+  id={id}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
   <div
     data-trig
     class:list={[
@@ -59,60 +104,64 @@ const isHero = surface === 'hero';
     <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
       <div class="max-w-2xl">
         {
-          eyebrow && (
+          resolvedEyebrow && (
             <p
               class:list={[
                 'text-xs font-semibold uppercase tracking-[0.14em] rtl:tracking-normal',
                 isHero ? 'text-accent print:text-primary' : 'text-primary',
               ]}
             >
-              {eyebrow}
+              {resolvedEyebrow}
             </p>
           )
         }
 
         <h2 class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl text-balance">
-          {title}
+          {resolvedTitle}
         </h2>
 
         {
-          description && (
+          resolvedDescription && (
             <p
               class:list={[
                 'mt-3 text-base leading-relaxed text-pretty',
                 isHero ? 'text-hero-fg/85 print:text-muted' : 'text-muted',
               ]}
             >
-              {description}
+              {resolvedDescription}
             </p>
           )
         }
       </div>
 
-      <div class="flex shrink-0 flex-wrap items-center gap-3 print:hidden">
-        <Button
-          href={primaryCta.href}
-          variant="primary"
-          size="lg"
-          icon={primaryCta.icon ?? 'arrow-right'}
-          external={primaryCta.external}
-        >
-          {primaryCta.label}
-        </Button>
+      {
+        (resolvedPrimaryCta || resolvedSecondaryCta) && (
+          <div class="flex shrink-0 flex-wrap items-center gap-3 print:hidden">
+            {resolvedPrimaryCta && (
+              <Button
+                href={resolvedPrimaryCta.href}
+                variant="primary"
+                size="lg"
+                icon={resolvedPrimaryCta.icon ?? 'arrow-right'}
+                external={resolvedPrimaryCta.external}
+              >
+                {resolvedPrimaryCta.label}
+              </Button>
+            )}
 
-        {
-          secondaryCta && (
-            <Button
-              href={secondaryCta.href}
-              variant={isHero ? 'hero' : 'secondary'}
-              size="lg"
-              external={secondaryCta.external}
-            >
-              {secondaryCta.label}
-            </Button>
-          )
-        }
-      </div>
+            {resolvedSecondaryCta && (
+              <Button
+                href={resolvedSecondaryCta.href}
+                variant={isHero ? 'hero' : 'secondary'}
+                size="lg"
+                external={resolvedSecondaryCta.external}
+              >
+                {resolvedSecondaryCta.label}
+              </Button>
+            )}
+          </div>
+        )
+      }
     </div>
   </div>
 </PageSection>

@@ -59,6 +59,7 @@ export const PAGE_ITEMS = [
   { group: 'home', icon: 'home', label: (locale: Locale) => m.nav_home({}, { locale }) },
   { group: 'features', icon: 'sparkles', label: (locale: Locale) => m.nav_features({}, { locale }) },
   { group: 'pricing', icon: 'tag', label: (locale: Locale) => m.nav_pricing({}, { locale }) },
+  { group: 'components', icon: 'layout-grid', label: (locale: Locale) => m.nav_components({}, { locale }) },
   { group: 'about', icon: 'info', label: (locale: Locale) => m.nav_about({}, { locale }) },
 ] as const;
 

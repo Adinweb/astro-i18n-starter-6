@@ -1,14 +1,17 @@
 ---
 /**
- * Composable capability / feature Bento grid for client landing pages.
- *
- * Automatically switches between an asymmetric 6-column Bento layout when any
- * card sets `wide: true` and a clean symmetric grid when all cards match weight.
+ * Composable capability / feature Bento grid inspired by PrebuiltUI feature
+ * sections. Automatically switches between an asymmetric 6-column Bento layout
+ * when any card sets `wide: true` and a clean symmetric grid otherwise.
+ * Supports optional props with full localized defaults.
  */
-import PageSection from '@/components/PageSection.astro';
 import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
 
 export interface BentoItem {
   title: string;
@@ -21,12 +24,13 @@ export interface BentoItem {
 
 interface Props {
   id?: string;
-  eyebrow?: string;
-  heading?: string;
-  subheading?: string;
-  items: readonly BentoItem[];
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  items?: readonly BentoItem[];
   locale?: Locale | string;
   numbered?: boolean;
+  contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'sm' | 'md' | 'lg';
 }
@@ -37,46 +41,88 @@ const {
   heading,
   subheading,
   items,
-  locale = 'en',
+  locale,
   numbered = true,
+  contained = false,
   surface = 'default',
   spacing = 'md',
 } = Astro.props;
 
-const hasAsymmetric = items.some((item) => item.wide);
-const cardSurface = surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = items === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_bento_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_bento_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_bento_subheading({}, { locale: activeLocale })
+);
+
+const resolvedItems: readonly BentoItem[] = items ?? [
+  {
+    title: m.block_bento_1_title({}, { locale: activeLocale }),
+    description: m.block_bento_1_desc({}, { locale: activeLocale }),
+    icon: 'globe',
+    wide: true,
+  },
+  {
+    title: m.block_bento_2_title({}, { locale: activeLocale }),
+    description: m.block_bento_2_desc({}, { locale: activeLocale }),
+    icon: 'palette',
+  },
+  {
+    title: m.block_bento_3_title({}, { locale: activeLocale }),
+    description: m.block_bento_3_desc({}, { locale: activeLocale }),
+    icon: 'code',
+  },
+  {
+    title: m.block_bento_4_title({}, { locale: activeLocale }),
+    description: m.block_bento_4_desc({}, { locale: activeLocale }),
+    icon: 'rocket',
+    wide: true,
+  },
+];
+
+const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
+const hasAsymmetric = resolvedItems.some((item) => item.wide);
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
 ---
 
-<PageSection id={id} surface={surface} spacing={spacing}>
-  {
-    (eyebrow || heading || subheading) && (
-      <div class="max-w-2xl" data-trig>
-        {eyebrow && <p class="section-kicker">{eyebrow}</p>}
-        {heading && (
-          <h2 class="mt-2 text-2xl font-bold tracking-tight text-fg sm:text-3xl text-balance">
-            {heading}
-          </h2>
-        )}
-        {subheading && (
-          <p class="mt-3 text-base leading-relaxed text-muted text-pretty">
-            {subheading}
-          </p>
-        )}
-      </div>
-    )
-  }
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <SectionHeader
+    eyebrow={resolvedEyebrow}
+    heading={resolvedHeading}
+    subheading={resolvedSubheading}
+  />
 
   <div
     class:list={[
-      'mt-8 grid grid-cols-1 gap-5',
+      'grid grid-cols-1 gap-5',
+      hasHeader && 'mt-8',
       hasAsymmetric ? 'md:grid-cols-6' : 'sm:grid-cols-2 lg:grid-cols-3',
     ]}
     data-trig-stagger
     data-trig-stagger-delay="0.06"
   >
     {
-      items.map((item, idx) => {
-        const displayIndex = item.indexLabel ?? (numbered ? formatNumber(idx + 1, locale) : null);
+      resolvedItems.map((item, idx) => {
+        const displayIndex =
+          item.indexLabel ?? (numbered ? formatNumber(idx + 1, activeLocale) : null);
         return (
           <article
             data-trig

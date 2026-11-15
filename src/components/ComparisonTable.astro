@@ -1,0 +1,199 @@
+---
+/**
+ * Responsive accessible capability / plan comparison table inspired by PrebuiltUI
+ * comparison matrices. Uses OKLCH semantic tokens, CSS logical text alignment,
+ * crisp `<Icon>` boolean indicators with screen-reader labels, tabular numerals,
+ * and full Paraglide defaults.
+ */
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface ComparisonColumn {
+  label: string;
+  featured?: boolean;
+}
+
+export type ComparisonCell = boolean | string | number;
+
+export interface ComparisonRow {
+  feature: string;
+  values: readonly ComparisonCell[];
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  featureColumnLabel?: string;
+  columns?: readonly ComparisonColumn[];
+  rows?: readonly ComparisonRow[];
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale,
+  eyebrow,
+  heading,
+  subheading,
+  featureColumnLabel,
+  columns,
+  rows,
+  contained = false,
+  surface = 'default',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = columns === undefined && rows === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_compare_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_compare_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_compare_subheading({}, { locale: activeLocale })
+);
+
+const yesLabel = m.block_compare_yes({}, { locale: activeLocale });
+const noLabel = m.block_compare_no({}, { locale: activeLocale });
+const resolvedFeatureHeader =
+  featureColumnLabel ?? m.block_compare_feature_col({}, { locale: activeLocale });
+
+const resolvedColumns: readonly ComparisonColumn[] = columns ?? [
+  { label: m.block_pricing_t1_name({}, { locale: activeLocale }) },
+  { label: m.block_pricing_t2_name({}, { locale: activeLocale }), featured: true },
+  { label: m.block_pricing_t3_name({}, { locale: activeLocale }) },
+];
+
+const resolvedRows: readonly ComparisonRow[] = rows ?? [
+  {
+    feature: m.block_compare_r1({}, { locale: activeLocale }),
+    values: [true, true, true],
+  },
+  {
+    feature: m.block_compare_r2({}, { locale: activeLocale }),
+    values: [true, true, true],
+  },
+  {
+    feature: m.block_compare_r3({}, { locale: activeLocale }),
+    values: [false, m.block_compare_v_included({}, { locale: activeLocale }), m.block_compare_v_unlimited({}, { locale: activeLocale })],
+  },
+  {
+    feature: m.block_compare_r4({}, { locale: activeLocale }),
+    values: [false, true, m.block_compare_v_custom({}, { locale: activeLocale })],
+  },
+];
+
+const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
+const tableSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+---
+
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <SectionHeader
+    eyebrow={resolvedEyebrow}
+    heading={resolvedHeading}
+    subheading={resolvedSubheading}
+  />
+
+  <div
+    data-trig
+    class:list={[
+      'overflow-x-auto rounded-2xl border border-border shadow-xs',
+      hasHeader && 'mt-8',
+      tableSurface,
+    ]}
+  >
+    <table class="w-full min-w-[36rem] border-collapse text-start text-sm">
+      <thead>
+        <tr class="border-b border-border bg-surface-hover/50">
+          <th
+            scope="col"
+            class="px-5 py-4 text-start font-bold text-fg sm:px-6"
+          >
+            {resolvedFeatureHeader}
+          </th>
+          {
+            resolvedColumns.map((col) => (
+              <th
+                scope="col"
+                class:list={[
+                  'px-5 py-4 text-center font-bold sm:px-6',
+                  col.featured ? 'bg-primary/8 text-primary' : 'text-fg',
+                ]}
+              >
+                {col.label}
+              </th>
+            ))
+          }
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border">
+        {
+          resolvedRows.map((row) => (
+            <tr class="transition-colors hover:bg-surface-hover/35">
+              <th
+                scope="row"
+                class="px-5 py-4 text-start font-medium text-fg sm:px-6"
+              >
+                {row.feature}
+              </th>
+              {resolvedColumns.map((col, colIdx) => {
+                const cell = row.values[colIdx];
+                return (
+                  <td
+                    class:list={[
+                      'px-5 py-4 text-center tabular-nums sm:px-6',
+                      col.featured && 'bg-primary/5',
+                    ]}
+                  >
+                    {cell === true ? (
+                      <span class="inline-flex items-center justify-center text-success">
+                        <Icon name="circle-check" size={18} />
+                        <span class="sr-only">{yesLabel}</span>
+                      </span>
+                    ) : cell === false || cell === undefined ? (
+                      <span class="inline-flex items-center justify-center text-muted/60">
+                        <Icon name="minus" size={18} />
+                        <span class="sr-only">{noLabel}</span>
+                      </span>
+                    ) : typeof cell === 'number' ? (
+                      <span class="font-semibold text-fg">
+                        {formatNumber(cell, activeLocale)}
+                      </span>
+                    ) : (
+                      <span class="font-medium text-fg">{cell}</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</PageSection>

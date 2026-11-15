@@ -9,9 +9,10 @@
 import Button from '@/components/Button.astro';
 import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
-import { DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n/locales';
+import { type Locale } from '@/i18n/locales';
 import { resolveApiEndpoint } from '@/libs/api/client';
 import { API_CONFIG, siteConfig } from '@/libs/config/app';
+import { resolveComponentLocale } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
 interface Props {
@@ -24,13 +25,14 @@ interface Props {
   endpoint?: string;
   timeoutMs?: number;
   source?: string;
+  contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'sm' | 'md' | 'lg';
 }
 
 const {
   id,
-  locale = DEFAULT_LOCALE,
+  locale,
   eyebrow,
   title,
   subtitle,
@@ -38,11 +40,12 @@ const {
   endpoint,
   timeoutMs,
   source = 'newsletter-banner',
+  contained = false,
   surface = 'surface',
   spacing = 'md',
 } = Astro.props;
 
-const activeLocale: Locale = isLocale(locale) ? locale : DEFAULT_LOCALE;
+const activeLocale: Locale = resolveComponentLocale(locale, Astro.url.pathname);
 const effectiveBaseUrl = baseUrl ?? API_CONFIG.baseUrl;
 const effectiveEndpoint = endpoint ?? API_CONFIG.endpoints.newsletter ?? '';
 const resolvedEndpoint = effectiveEndpoint
@@ -75,10 +78,16 @@ const copy = {
   devNotice: m.newsletter_unconfigured_notice({}, { locale: activeLocale }),
 };
 
-const cardSurface = surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
 ---
 
-<PageSection id={id} surface={surface} spacing={spacing}>
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
   <div
     data-newsletter-banner
     data-trig

@@ -1,0 +1,187 @@
+---
+/**
+ * Composable numbered workflow / "How it works" steps section inspired by
+ * PrebuiltUI feature workflow sections. Automatically localizes step numbers
+ * via `formatNumber`, supports `cards` and `timeline` layouts, and provides
+ * full Paraglide defaults.
+ */
+import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface ProcessStep {
+  title: string;
+  description: string;
+  icon?: string;
+  stepLabel?: string;
+}
+
+export interface ProcessCta {
+  label: string;
+  href: string;
+  icon?: string;
+  external?: boolean;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  steps?: readonly ProcessStep[];
+  variant?: 'cards' | 'timeline';
+  cta?: ProcessCta;
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale,
+  eyebrow,
+  heading,
+  subheading,
+  steps,
+  variant = 'cards',
+  cta,
+  contained = false,
+  surface = 'surface',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = steps === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_steps_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_steps_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_steps_subheading({}, { locale: activeLocale })
+);
+
+const resolvedSteps: readonly ProcessStep[] = steps ?? [
+  {
+    title: m.block_steps_1_title({}, { locale: activeLocale }),
+    description: m.block_steps_1_desc({}, { locale: activeLocale }),
+    icon: 'palette',
+  },
+  {
+    title: m.block_steps_2_title({}, { locale: activeLocale }),
+    description: m.block_steps_2_desc({}, { locale: activeLocale }),
+    icon: 'layout-grid',
+  },
+  {
+    title: m.block_steps_3_title({}, { locale: activeLocale }),
+    description: m.block_steps_3_desc({}, { locale: activeLocale }),
+    icon: 'globe',
+  },
+  {
+    title: m.block_steps_4_title({}, { locale: activeLocale }),
+    description: m.block_steps_4_desc({}, { locale: activeLocale }),
+    icon: 'rocket',
+  },
+];
+
+const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const gridColsClass =
+  resolvedSteps.length <= 2
+    ? 'sm:grid-cols-2'
+    : resolvedSteps.length === 3
+      ? 'lg:grid-cols-3'
+      : 'sm:grid-cols-2 lg:grid-cols-4';
+---
+
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <SectionHeader
+    eyebrow={resolvedEyebrow}
+    heading={resolvedHeading}
+    subheading={resolvedSubheading}
+  />
+
+  <ol
+    class:list={['grid gap-6', hasHeader && 'mt-8', gridColsClass]}
+    data-trig-stagger
+    data-trig-stagger-delay="0.06"
+  >
+    {
+      resolvedSteps.map((step, idx) => {
+        const numberText = step.stepLabel ?? formatNumber(idx + 1, activeLocale);
+        return (
+          <li
+            data-trig
+            class:list={[
+              'relative flex flex-col justify-between rounded-2xl border border-border p-6 transition duration-200 hover:border-primary/40 hover:shadow-md',
+              cardSurface,
+            ]}
+          >
+            <div>
+              <div class="flex items-center gap-3">
+                <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-extrabold tabular-nums text-primary-fg shadow-xs">
+                  {numberText}
+                </span>
+
+                {variant === 'timeline' && idx < resolvedSteps.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    class="hidden h-px flex-1 bg-border lg:block"
+                  />
+                )}
+
+                {step.icon && (
+                  <span
+                    aria-hidden="true"
+                    class="ms-auto inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-hover/70 text-primary"
+                  >
+                    <Icon name={step.icon} size={18} />
+                  </span>
+                )}
+              </div>
+
+              <h3 class="mt-5 text-lg font-bold tracking-tight text-fg">{step.title}</h3>
+              <p class="mt-2 text-sm leading-relaxed text-muted">{step.description}</p>
+            </div>
+          </li>
+        );
+      })
+    }
+  </ol>
+
+  {
+    cta && (
+      <div class="mt-8 flex justify-start print:hidden" data-trig>
+        <Button
+          href={cta.href}
+          variant="primary"
+          size="lg"
+          icon={cta.icon ?? 'arrow-right'}
+          external={cta.external}
+        >
+          {cta.label}
+        </Button>
+      </div>
+    )
+  }
+</PageSection>

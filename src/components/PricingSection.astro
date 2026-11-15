@@ -1,18 +1,22 @@
 ---
 /**
  * Composable pricing tier cards inspired by PrebuiltUI pricing sections,
- * authored in the starter's OKLCH semantic tokens, CSS logical properties,
- * `Button` / `Icon` primitives, Paraglide labels, and ChronoTrig staggers.
+ * authored in OKLCH semantic tokens, CSS logical properties, `Button`/`Icon`
+ * primitives, Paraglide labels, and ChronoTrig staggers.
  *
- * Works both on full-bleed `container: "canvas"` pages (`contained = false`,
- * wrapped in `<PageSection>`) and inside `container: "contained"` prose pages
- * (`contained = true`, skipping nested `.layout-container` gutters).
+ * Supports optional monthly/annual billing toggle (`billingToggle={true}`) and
+ * provides complete localized defaults when `tiers` is omitted. Works both on
+ * `container: "canvas"` pages (`contained = false`) and inside `.prose-wide`
+ * pages (`contained = true`).
  */
 import Button from '@/components/Button.astro';
 import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
 import { formatNumber } from '@/i18n/format';
-import { DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n/locales';
+import type { Locale } from '@/i18n/locales';
+import { localizeHref } from '@/i18n/paths';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
 export interface PricingTierCta {
@@ -27,9 +31,12 @@ export interface PricingTier {
   name: string;
   price?: string;
   amount?: number;
+  annualPrice?: string;
+  annualAmount?: number;
   currencyPrefix?: string;
   currencySuffix?: string;
   period?: string;
+  annualPeriod?: string;
   description?: string;
   features: readonly string[];
   cta: PricingTierCta;
@@ -39,11 +46,16 @@ export interface PricingTier {
 
 interface Props {
   id?: string;
-  eyebrow?: string;
-  heading?: string;
-  subheading?: string;
-  tiers: readonly PricingTier[];
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  tiers?: readonly PricingTier[];
   locale?: Locale | string;
+  billingToggle?: boolean;
+  defaultBilling?: 'monthly' | 'annual';
+  monthlyLabel?: string;
+  annualLabel?: string;
+  annualSaveBadge?: string;
   contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'sm' | 'md' | 'lg';
@@ -55,53 +67,210 @@ const {
   heading,
   subheading,
   tiers,
-  locale = DEFAULT_LOCALE,
+  locale,
+  billingToggle = false,
+  defaultBilling = 'monthly',
+  monthlyLabel,
+  annualLabel,
+  annualSaveBadge,
   contained = false,
   surface = 'default',
   spacing = 'md',
 } = Astro.props;
 
-const activeLocale: Locale = isLocale(locale) ? locale : DEFAULT_LOCALE;
-const recommendedLabel = m.pricing_recommended({}, { locale: activeLocale });
-const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = tiers === undefined;
 
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_pricing_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_pricing_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_pricing_subheading({}, { locale: activeLocale })
+);
+
+const perMonthLabel = m.block_pricing_per_month({}, { locale: activeLocale });
+const perYearLabel = m.block_pricing_per_year({}, { locale: activeLocale });
+const resolvedMonthlyLabel = monthlyLabel ?? m.block_pricing_monthly({}, { locale: activeLocale });
+const resolvedAnnualLabel = annualLabel ?? m.block_pricing_annual({}, { locale: activeLocale });
+const resolvedSaveBadge = annualSaveBadge ?? m.block_pricing_save_badge({}, { locale: activeLocale });
+const recommendedLabel = m.pricing_recommended({}, { locale: activeLocale });
+
+const resolvedTiers: readonly PricingTier[] = tiers ?? [
+  {
+    name: m.block_pricing_t1_name({}, { locale: activeLocale }),
+    amount: 0,
+    annualAmount: 0,
+    currencyPrefix: '$',
+    period: perMonthLabel,
+    annualPeriod: perYearLabel,
+    description: m.block_pricing_t1_desc({}, { locale: activeLocale }),
+    features: [
+      m.block_pricing_t1_f1({}, { locale: activeLocale }),
+      m.block_pricing_t1_f2({}, { locale: activeLocale }),
+      m.block_pricing_t1_f3({}, { locale: activeLocale }),
+    ],
+    cta: {
+      label: m.block_pricing_t1_cta({}, { locale: activeLocale }),
+      href: localizeHref('/features', activeLocale),
+      icon: 'arrow-right',
+    },
+  },
+  {
+    name: m.block_pricing_t2_name({}, { locale: activeLocale }),
+    amount: 49,
+    annualAmount: 470,
+    currencyPrefix: '$',
+    period: perMonthLabel,
+    annualPeriod: perYearLabel,
+    featured: true,
+    description: m.block_pricing_t2_desc({}, { locale: activeLocale }),
+    features: [
+      m.block_pricing_t2_f1({}, { locale: activeLocale }),
+      m.block_pricing_t2_f2({}, { locale: activeLocale }),
+      m.block_pricing_t2_f3({}, { locale: activeLocale }),
+    ],
+    cta: {
+      label: m.block_pricing_t2_cta({}, { locale: activeLocale }),
+      href: localizeHref('/pricing', activeLocale),
+      icon: 'arrow-right',
+    },
+  },
+  {
+    name: m.block_pricing_t3_name({}, { locale: activeLocale }),
+    amount: 149,
+    annualAmount: 1430,
+    currencyPrefix: '$',
+    period: perMonthLabel,
+    annualPeriod: perYearLabel,
+    description: m.block_pricing_t3_desc({}, { locale: activeLocale }),
+    features: [
+      m.block_pricing_t3_f1({}, { locale: activeLocale }),
+      m.block_pricing_t3_f2({}, { locale: activeLocale }),
+      m.block_pricing_t3_f3({}, { locale: activeLocale }),
+    ],
+    cta: {
+      label: m.block_pricing_t3_cta({}, { locale: activeLocale }),
+      href: localizeHref('/pricing#contact-inquiry', activeLocale),
+      icon: 'mail',
+    },
+  },
+];
+
+const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
 const gridColsClass =
-  tiers.length === 2
+  resolvedTiers.length === 2
     ? 'md:grid-cols-2'
-    : tiers.length >= 4
+    : resolvedTiers.length >= 4
       ? 'md:grid-cols-2 xl:grid-cols-4'
       : 'lg:grid-cols-3';
+
+function formatTierPrice(
+  explicit: string | undefined,
+  amount: number | undefined,
+  prefix: string | undefined,
+  suffix: string | undefined
+): string {
+  if (explicit !== undefined) return explicit;
+  if (amount === undefined) return '';
+  return `${prefix ?? ''}${formatNumber(amount, activeLocale)}${suffix ?? ''}`;
+}
 ---
 
-{
-  contained ? (
-    <section id={id} class:list={['not-prose my-10', id && 'scroll-mt-28']}>
-      {(eyebrow || heading || subheading) && (
-        <div class="mb-8 max-w-2xl" data-trig>
-          {eyebrow && <p class="section-kicker">{eyebrow}</p>}
-          {heading && (
-            <h2 class="mt-2 text-2xl font-bold tracking-tight text-fg sm:text-3xl text-balance">
-              {heading}
-            </h2>
-          )}
-          {subheading && (
-            <p class="mt-3 text-base leading-relaxed text-muted text-pretty">
-              {subheading}
-            </p>
-          )}
-        </div>
-      )}
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <div data-pricing-section>
+    <div class:list={[(hasHeader || billingToggle) && 'flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between']}>
+      <SectionHeader
+        eyebrow={resolvedEyebrow}
+        heading={resolvedHeading}
+        subheading={resolvedSubheading}
+      />
 
-      <div
-        class:list={['grid gap-6', gridColsClass]}
-        data-trig-stagger
-        data-trig-stagger-delay="0.08"
-      >
-        {tiers.map((tier) => {
+      {
+        billingToggle && (
+          <div class="inline-flex shrink-0 items-center gap-3 self-start rounded-full border border-border bg-surface p-1.5 sm:self-auto" data-trig>
+            <button
+              type="button"
+              data-billing-choice="monthly"
+              aria-pressed={defaultBilling === 'monthly' ? 'true' : 'false'}
+              class:list={[
+                'cursor-pointer rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors',
+                defaultBilling === 'monthly'
+                  ? 'bg-primary text-primary-fg shadow-xs'
+                  : 'text-muted hover:text-fg',
+              ]}
+            >
+              {resolvedMonthlyLabel}
+            </button>
+
+            <button
+              type="button"
+              data-billing-choice="annual"
+              aria-pressed={defaultBilling === 'annual' ? 'true' : 'false'}
+              class:list={[
+                'inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors',
+                defaultBilling === 'annual'
+                  ? 'bg-primary text-primary-fg shadow-xs'
+                  : 'text-muted hover:text-fg',
+              ]}
+            >
+              <span>{resolvedAnnualLabel}</span>
+              <span class="rounded-full bg-accent/20 px-2 py-0.5 text-[10px] font-bold text-fg">
+                {resolvedSaveBadge}
+              </span>
+            </button>
+          </div>
+        )
+      }
+    </div>
+
+    <div
+      class:list={[
+        'grid gap-6',
+        (hasHeader || billingToggle) && 'mt-8',
+        gridColsClass,
+      ]}
+      data-trig-stagger
+      data-trig-stagger-delay="0.08"
+    >
+      {
+        resolvedTiers.map((tier) => {
           const badgeText = tier.badge ?? (tier.featured ? recommendedLabel : undefined);
-          const displayPrice =
-            tier.price ??
-            `${tier.currencyPrefix ?? ''}${tier.amount !== undefined ? formatNumber(tier.amount, activeLocale) : ''}${tier.currencySuffix ?? ''}`;
+          const monthlyPrice = formatTierPrice(
+            tier.price,
+            tier.amount,
+            tier.currencyPrefix,
+            tier.currencySuffix
+          );
+          const annualPrice =
+            tier.annualPrice !== undefined || tier.annualAmount !== undefined
+              ? formatTierPrice(
+                  tier.annualPrice,
+                  tier.annualAmount,
+                  tier.currencyPrefix,
+                  tier.currencySuffix
+                )
+              : monthlyPrice;
+          const monthlyPeriod = tier.period ?? '';
+          const annualPeriod = tier.annualPeriod ?? monthlyPeriod;
+          const initialPrice = defaultBilling === 'annual' ? annualPrice : monthlyPrice;
+          const initialPeriod = defaultBilling === 'annual' ? annualPeriod : monthlyPeriod;
+
           return (
             <article
               data-trig
@@ -131,11 +300,24 @@ const gridColsClass =
                   )}
                 </div>
 
-                {(displayPrice || tier.period) && (
+                {(initialPrice || initialPeriod) && (
                   <p class="mt-4 flex flex-wrap items-baseline gap-1.5 text-3xl font-extrabold tracking-tight tabular-nums text-fg">
-                    <span>{displayPrice}</span>
-                    {tier.period && (
-                      <span class="text-sm font-normal text-muted">{tier.period}</span>
+                    <span
+                      data-tier-price
+                      data-monthly-price={monthlyPrice}
+                      data-annual-price={annualPrice}
+                    >
+                      {initialPrice}
+                    </span>
+                    {(monthlyPeriod || annualPeriod) && (
+                      <span
+                        data-tier-period
+                        data-monthly-period={monthlyPeriod}
+                        data-annual-period={annualPeriod}
+                        class="text-sm font-normal text-muted"
+                      >
+                        {initialPeriod}
+                      </span>
                     )}
                   </p>
                 )}
@@ -172,113 +354,57 @@ const gridColsClass =
               </Button>
             </article>
           );
-        })}
-      </div>
-    </section>
-  ) : (
-    <PageSection id={id} surface={surface} spacing={spacing}>
-      {(eyebrow || heading || subheading) && (
-        <div class="max-w-2xl" data-trig>
-          {eyebrow && <p class="section-kicker">{eyebrow}</p>}
-          {heading && (
-            <h2 class="mt-2 text-2xl font-bold tracking-tight text-fg sm:text-3xl text-balance">
-              {heading}
-            </h2>
-          )}
-          {subheading && (
-            <p class="mt-3 text-base leading-relaxed text-muted text-pretty">
-              {subheading}
-            </p>
-          )}
-        </div>
-      )}
+        })
+      }
+    </div>
+  </div>
+</PageSection>
 
-      <div
-        class:list={[
-          'grid gap-6',
-          (eyebrow || heading || subheading) && 'mt-8',
-          gridColsClass,
-        ]}
-        data-trig-stagger
-        data-trig-stagger-delay="0.08"
-      >
-        {tiers.map((tier) => {
-          const badgeText = tier.badge ?? (tier.featured ? recommendedLabel : undefined);
-          const displayPrice =
-            tier.price ??
-            `${tier.currencyPrefix ?? ''}${tier.amount !== undefined ? formatNumber(tier.amount, activeLocale) : ''}${tier.currencySuffix ?? ''}`;
-          return (
-            <article
-              data-trig
-              class:list={[
-                'flex flex-col justify-between rounded-2xl border p-6 transition duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-7',
-                cardSurface,
-                tier.featured
-                  ? 'border-primary/60 ring-1 ring-primary/20 shadow-xs hover:border-primary'
-                  : 'border-border hover:border-primary/40',
-              ]}
-            >
-              <div>
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    {tier.eyebrow && (
-                      <p class="section-kicker tabular-nums">{tier.eyebrow}</p>
-                    )}
-                    <h3 class:list={['text-xl font-bold text-fg', tier.eyebrow && 'mt-2']}>
-                      {tier.name}
-                    </h3>
-                  </div>
+<script>
+  function initPricingToggles() {
+    const sections = document.querySelectorAll<HTMLElement>('[data-pricing-section]');
 
-                  {badgeText && (
-                    <span class="inline-flex shrink-0 items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
-                      {badgeText}
-                    </span>
-                  )}
-                </div>
+    sections.forEach((section) => {
+      if (section.dataset.bound === 'true') return;
+      section.dataset.bound = 'true';
 
-                {(displayPrice || tier.period) && (
-                  <p class="mt-4 flex flex-wrap items-baseline gap-1.5 text-3xl font-extrabold tracking-tight tabular-nums text-fg">
-                    <span>{displayPrice}</span>
-                    {tier.period && (
-                      <span class="text-sm font-normal text-muted">{tier.period}</span>
-                    )}
-                  </p>
-                )}
+      const buttons = section.querySelectorAll<HTMLButtonElement>('[data-billing-choice]');
+      if (buttons.length === 0) return;
 
-                {tier.description && (
-                  <p class="mt-3 text-sm leading-relaxed text-muted">{tier.description}</p>
-                )}
+      const prices = section.querySelectorAll<HTMLElement>('[data-tier-price]');
+      const periods = section.querySelectorAll<HTMLElement>('[data-tier-period]');
 
-                <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
-                  {tier.features.map((feature) => (
-                    <li class="flex items-start gap-2.5">
-                      <span
-                        class="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
-                        aria-hidden="true"
-                      >
-                        <Icon name="check" size={13} />
-                      </span>
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+      const setBilling = (mode: 'monthly' | 'annual') => {
+        buttons.forEach((btn) => {
+          const active = btn.dataset.billingChoice === mode;
+          btn.setAttribute('aria-pressed', String(active));
+          btn.classList.toggle('bg-primary', active);
+          btn.classList.toggle('text-primary-fg', active);
+          btn.classList.toggle('shadow-xs', active);
+          btn.classList.toggle('text-muted', !active);
+          btn.classList.toggle('hover:text-fg', !active);
+        });
 
-              <Button
-                href={tier.cta.href}
-                variant={tier.featured ? 'primary' : 'secondary'}
-                size="lg"
-                block
-                icon={tier.cta.icon}
-                external={tier.cta.external}
-                class="mt-8 print:hidden"
-              >
-                {tier.cta.label}
-              </Button>
-            </article>
-          );
-        })}
-      </div>
-    </PageSection>
-  )
-}
+        prices.forEach((el) => {
+          const next = mode === 'annual' ? el.dataset.annualPrice : el.dataset.monthlyPrice;
+          if (next !== undefined) el.textContent = next;
+        });
+
+        periods.forEach((el) => {
+          const next = mode === 'annual' ? el.dataset.annualPeriod : el.dataset.monthlyPeriod;
+          if (next !== undefined) el.textContent = next;
+        });
+      };
+
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const choice = btn.dataset.billingChoice === 'annual' ? 'annual' : 'monthly';
+          setBilling(choice);
+        });
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initPricingToggles);
+  initPricingToggles();
+</script>

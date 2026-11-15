@@ -124,7 +124,7 @@ Every text button is `<Button>`: colour from `variant` (`primary`/`secondary`/`h
 14. `shield` — privacy and cookie consent (`shield-check`)
 15. `mail` — contact and inquiry notice
 16. `layers` — architecture and Resources markers (`stack-2`)
-17. `home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `star`, `star-filled`, `quote`, `users`, `building`, `file` — navigation, ratings, quotes, team, and partner emblem icons (31 total); an unknown name resolves to `file`
+17. `home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `star`, `star-filled`, `quote`, `users`, `building`, `alert-circle`, `alert-triangle`, `circle-check`, `bell`, `bolt`, `clock`, `map-pin`, `phone`, `rocket`, `code`, `award`, `layout-grid`, `calendar`, `photo`, `minus`, `file` — navigation, status, UI blocks, ratings, quotes, team, and partner emblem icons (46 total); an unknown name resolves to `file`
 
 ### Navigation Icons:
 The mobile drawer renders one icon tile per row, so every navigation entry carries an `icon` from this catalog (`NavItem.icon` in `src/libs/config/navigation.ts`; a row without one falls back to `file`):

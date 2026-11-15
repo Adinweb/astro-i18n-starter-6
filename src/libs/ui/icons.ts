@@ -46,6 +46,21 @@ export const SITE_ICONS = [
   'users',
   'building',
   'file',
+  'alert-circle',
+  'alert-triangle',
+  'circle-check',
+  'bell',
+  'bolt',
+  'clock',
+  'map-pin',
+  'phone',
+  'rocket',
+  'code',
+  'award',
+  'layout-grid',
+  'calendar',
+  'photo',
+  'minus',
 ] as const;
 
 export type IconName = (typeof SITE_ICONS)[number];

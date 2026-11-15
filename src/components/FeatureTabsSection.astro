@@ -1,0 +1,350 @@
+---
+/**
+ * Accessible interactive tabs showcase inspired by PrebuiltUI tab sections.
+ * Supports keyboard ArrowLeft/ArrowRight navigation (automatically mirrored for
+ * RTL documents), Home/End keys, optional pill or underline tab strips, media
+ * preview or semantic artwork frame, idempotent View Transitions binding, and
+ * full Paraglide defaults.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import type { Locale } from '@/i18n/locales';
+import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface FeatureTabCta {
+  label: string;
+  href: string;
+  icon?: string;
+  external?: boolean;
+}
+
+export interface FeatureTabItem {
+  id?: string;
+  label: string;
+  icon?: string;
+  title: string;
+  description: string;
+  highlights?: readonly string[];
+  cta?: FeatureTabCta;
+  image?: ImageMetadata | null;
+  imageAlt?: string;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  tabs?: readonly FeatureTabItem[];
+  variant?: 'pills' | 'underline';
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale,
+  eyebrow,
+  heading,
+  subheading,
+  tabs,
+  variant = 'pills',
+  contained = false,
+  surface = 'default',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = tabs === undefined;
+const instancePrefix = id ?? `tabs-${activeLocale}`;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_tabs_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_tabs_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_tabs_subheading({}, { locale: activeLocale })
+);
+
+const resolvedTabs: readonly FeatureTabItem[] = tabs ?? [
+  {
+    id: 'design-system',
+    label: m.block_tabs_1_label({}, { locale: activeLocale }),
+    icon: 'palette',
+    title: m.block_tabs_1_title({}, { locale: activeLocale }),
+    description: m.block_tabs_1_desc({}, { locale: activeLocale }),
+    highlights: [
+      m.block_tabs_1_h1({}, { locale: activeLocale }),
+      m.block_tabs_1_h2({}, { locale: activeLocale }),
+    ],
+    image: DEFAULT_HERO_IMAGE,
+  },
+  {
+    id: 'localization',
+    label: m.block_tabs_2_label({}, { locale: activeLocale }),
+    icon: 'globe',
+    title: m.block_tabs_2_title({}, { locale: activeLocale }),
+    description: m.block_tabs_2_desc({}, { locale: activeLocale }),
+    highlights: [
+      m.block_tabs_2_h1({}, { locale: activeLocale }),
+      m.block_tabs_2_h2({}, { locale: activeLocale }),
+    ],
+    image: DEFAULT_HERO_IMAGE,
+  },
+  {
+    id: 'performance',
+    label: m.block_tabs_3_label({}, { locale: activeLocale }),
+    icon: 'bolt',
+    title: m.block_tabs_3_title({}, { locale: activeLocale }),
+    description: m.block_tabs_3_desc({}, { locale: activeLocale }),
+    highlights: [
+      m.block_tabs_3_h1({}, { locale: activeLocale }),
+      m.block_tabs_3_h2({}, { locale: activeLocale }),
+    ],
+    image: DEFAULT_HERO_IMAGE,
+  },
+];
+
+const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
+const panelSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+---
+
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <SectionHeader
+    eyebrow={resolvedEyebrow}
+    heading={resolvedHeading}
+    subheading={resolvedSubheading}
+  />
+
+  <div data-feature-tabs data-variant={variant} class:list={[hasHeader && 'mt-8']}>
+    <div
+      role="tablist"
+      aria-label={resolvedHeading ?? resolvedEyebrow ?? m.block_tabs_eyebrow({}, { locale: activeLocale })}
+      class:list={[
+        'flex flex-wrap items-center gap-2',
+        variant === 'underline' ? 'border-b border-border pb-2' : '',
+      ]}
+      data-trig
+    >
+      {
+        resolvedTabs.map((tab, idx) => {
+          const isActive = idx === 0;
+          const tabSlug = tab.id ?? `item-${idx}`;
+          const tabId = `${instancePrefix}-tab-${tabSlug}`;
+          const panelId = `${instancePrefix}-panel-${tabSlug}`;
+
+          return (
+            <button
+              id={tabId}
+              type="button"
+              role="tab"
+              aria-selected={isActive ? 'true' : 'false'}
+              aria-controls={panelId}
+              tabindex={isActive ? 0 : -1}
+              data-tab-trigger={String(idx)}
+              class:list={[
+                'inline-flex cursor-pointer items-center gap-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                variant === 'underline'
+                  ? 'border-b-2 px-4 py-2.5 -mb-2.5'
+                  : 'rounded-full border px-4 py-2',
+                variant === 'underline'
+                  ? isActive
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted hover:text-fg'
+                  : isActive
+                    ? 'border-primary bg-primary text-primary-fg shadow-xs'
+                    : 'border-border bg-surface text-muted hover:border-primary/40 hover:text-fg',
+              ]}
+            >
+              {tab.icon && <Icon name={tab.icon} size={16} class="shrink-0" />}
+              <span>{tab.label}</span>
+            </button>
+          );
+        })
+      }
+    </div>
+
+    <div class="mt-6" data-trig>
+      {
+        resolvedTabs.map((tab, idx) => {
+          const isActive = idx === 0;
+          const tabSlug = tab.id ?? `item-${idx}`;
+          const tabId = `${instancePrefix}-tab-${tabSlug}`;
+          const panelId = `${instancePrefix}-panel-${tabSlug}`;
+          const showMedia = Boolean(tab.image);
+
+          return (
+            <div
+              id={panelId}
+              role="tabpanel"
+              aria-labelledby={tabId}
+              tabindex={0}
+              hidden={!isActive}
+              data-tab-panel={String(idx)}
+              class:list={[
+                'rounded-3xl border border-border p-6 sm:p-8 lg:p-10',
+                panelSurface,
+              ]}
+            >
+              <div class:list={['grid items-center gap-8', showMedia ? 'lg:grid-cols-12' : 'max-w-3xl']}>
+                <div class:list={[showMedia && 'lg:col-span-6']}>
+                  <h3 class="text-xl font-bold tracking-tight text-fg sm:text-2xl text-balance">
+                    {tab.title}
+                  </h3>
+                  <p class="mt-3 text-sm leading-relaxed text-muted sm:text-base">
+                    {tab.description}
+                  </p>
+
+                  {tab.highlights && tab.highlights.length > 0 && (
+                    <ul class="mt-5 space-y-2.5 text-sm text-fg">
+                      {tab.highlights.map((item) => (
+                        <li class="flex items-start gap-2.5">
+                          <span
+                            aria-hidden="true"
+                            class="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                          >
+                            <Icon name="circle-check" size={14} />
+                          </span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {tab.cta && (
+                    <div class="mt-6 print:hidden">
+                      <Button
+                        href={tab.cta.href}
+                        variant="primary"
+                        size="md"
+                        icon={tab.cta.icon ?? 'arrow-right'}
+                        external={tab.cta.external}
+                      >
+                        {tab.cta.label}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {showMedia && tab.image && (
+                  <div class="lg:col-span-6">
+                    <div class="overflow-hidden rounded-2xl border border-border bg-bg shadow-sm">
+                      <Image
+                        src={tab.image}
+                        alt={tab.imageAlt ?? tab.title}
+                        widths={[560, 880]}
+                        sizes="(min-width: 1024px) 42vw, 90vw"
+                        class="aspect-[16/10] w-full object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })
+      }
+    </div>
+  </div>
+</PageSection>
+
+<script>
+  function initFeatureTabs() {
+    const groups = document.querySelectorAll<HTMLElement>('[data-feature-tabs]');
+
+    groups.forEach((group) => {
+      if (group.dataset.bound === 'true') return;
+      group.dataset.bound = 'true';
+
+      const variant = group.dataset.variant ?? 'pills';
+      const triggers = Array.from(
+        group.querySelectorAll<HTMLButtonElement>('[data-tab-trigger]')
+      );
+      const panels = Array.from(group.querySelectorAll<HTMLElement>('[data-tab-panel]'));
+      if (triggers.length === 0 || triggers.length !== panels.length) return;
+
+      const activate = (nextIndex: number, shouldFocus = false) => {
+        const count = triggers.length;
+        const target = ((nextIndex % count) + count) % count;
+
+        triggers.forEach((btn, idx) => {
+          const active = idx === target;
+          btn.setAttribute('aria-selected', String(active));
+          btn.setAttribute('tabindex', active ? '0' : '-1');
+
+          if (variant === 'underline') {
+            btn.classList.toggle('border-primary', active);
+            btn.classList.toggle('text-primary', active);
+            btn.classList.toggle('border-transparent', !active);
+            btn.classList.toggle('text-muted', !active);
+            btn.classList.toggle('hover:text-fg', !active);
+          } else {
+            btn.classList.toggle('border-primary', active);
+            btn.classList.toggle('bg-primary', active);
+            btn.classList.toggle('text-primary-fg', active);
+            btn.classList.toggle('shadow-xs', active);
+            btn.classList.toggle('border-border', !active);
+            btn.classList.toggle('bg-surface', !active);
+            btn.classList.toggle('text-muted', !active);
+            btn.classList.toggle('hover:border-primary/40', !active);
+            btn.classList.toggle('hover:text-fg', !active);
+          }
+        });
+
+        panels.forEach((panel, idx) => {
+          panel.hidden = idx !== target;
+        });
+
+        if (shouldFocus) triggers[target]?.focus();
+      };
+
+      triggers.forEach((btn, idx) => {
+        btn.addEventListener('click', () => activate(idx, false));
+        btn.addEventListener('keydown', (event) => {
+          const isRtl = document.documentElement.dir === 'rtl';
+          const forwardKey = isRtl ? 'ArrowLeft' : 'ArrowRight';
+          const backwardKey = isRtl ? 'ArrowRight' : 'ArrowLeft';
+
+          if (event.key === forwardKey) {
+            event.preventDefault();
+            activate(idx + 1, true);
+          } else if (event.key === backwardKey) {
+            event.preventDefault();
+            activate(idx - 1, true);
+          } else if (event.key === 'Home') {
+            event.preventDefault();
+            activate(0, true);
+          } else if (event.key === 'End') {
+            event.preventDefault();
+            activate(triggers.length - 1, true);
+          }
+        });
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initFeatureTabs);
+  initFeatureTabs();
+</script>

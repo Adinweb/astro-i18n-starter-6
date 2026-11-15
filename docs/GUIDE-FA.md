@@ -1,7 +1,7 @@
 # راهنمای جامع Astro i18n Starter
 
 > استارتر چندزبانهٔ تولیدی و **۱۰۰٪ استاتیک (Pure SSG بدون نیاز به بک‌اند)** بر پایهٔ **Astro v7**
-> با پشتیبانی بومی **RTL/LTR**، ۱۰ بلوک آماده برای سایت‌های شرکتی و لندینگ، دسته‌بندی و صفحه‌بندی وبلاگ،
+> با پشتیبانی بومی **RTL/LTR**، ۲۲ بلوک آماده (الهام‌گرفته از PrebuiltUI) برای سایت‌های شرکتی و لندینگ، دسته‌بندی و صفحه‌بندی وبلاگ،
 > جستجوی **Pagefind** بهینه‌شده برای زبان فارسی، آداپتور فرم تماس و خبرنامه برای APIهای خارجی، و ۲۴ ابزار خط فرمان.
 
 نسخهٔ ۵٫۱ — مرجع فنی کامل و راهنمای عملیاتی.
@@ -67,7 +67,7 @@
 | **معماری Pure SSG** | خروجی ۱۰۰٪ استاتیک بدون نیاز به سرور بک‌اند؛ فرم تماس (`ContactForm.astro`) و بنر خبرنامه (`NewsletterBanner.astro`) مستقیم به API خارجی متصل می‌شوند (`src/libs/api/client.ts`) + مدیریت رضایت کوکی (`CookieConsent.astro`) |
 | **زبان‌ها و حالت تک‌زبانه** | انگلیسی (`en`) و فارسی (`fa`) به‌صورت پیش‌فرض فعال + آمادگی کامل فونت/فرمت و افزودن تک‌فرمانی زبان‌های دیگر (`ar`, `de`, `fr`, …) با `i18n:add-lang`؛ برای سایت تک‌زبانه، صرفاً `ui.showLanguageSwitcher: false` (+ در صورت نیاز `i18n:set-default`) کافی است (و `i18n:solo` به‌صورت اختیاری مسیرهای اضافی را حذف می‌کند) |
 | **مسیریابی** | دیسپچر تک‌فایلی `[...path].astro` — بدون هیچ فایل مسیر پویا در `src/pages/` |
-| **محتوا و بلوک‌های آماده** | کالکشن‌های `pages`، `blog` و `projects` با قرارداد `گروه/زبان.mdx`؛ ۱۰ بلوک شرکتی/لندینگ آماده (`LandingHeroSplit`, `BentoCapabilities`, `ProofStatsRow`, `FaqAccordion`, `CtaBanner`, `PricingSection`, `TestimonialGrid`, `TeamSection`, `PartnerLogos`, `NewsletterBanner`) + `--preset=landing` |
+| **محتوا و بلوک‌های آماده** | کالکشن‌های `pages`، `blog` و `projects` با قرارداد `گروه/زبان.mdx`؛ ۱۹ بلوک سکشن شرکتی/لندینگ + ۳ پریمیتیو رابط (`UiBadge`, `UiAlert`, `AvatarGroup`) با مقادیر پیش‌فرض دو‌زبانه + `--preset=landing` |
 | **RTL** | خواص منطقی CSS (`ms-`, `pe-`, `start-`), فونت جداگانه برای فارسی/عربی (`theme.ts`)، جداسازی `pre/code` به LTR، چرخاندن آیکون پیجر |
 | **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی در کل مجموعهٔ مقالات (`/api/blog-posts/<locale>.json`)، صفحه‌بندی استاتیک، فهرست مطالب خودکار (TOC)، مقالات مرتبط و ناوبری مقالهٔ قبلی/بعدی، دکمهٔ کپی کد، زمان مطالعه و تاریخ به‌روزرسانی، استایل چاپ (`@media print`) |
 | **برندینگ و تم** | راه‌اندازی سریع با `site:init`، ۶ پالت OKLCH آماده و فونت‌های لاتین/RTL (`src/libs/config/theme.ts`) + حالت روشن/تیره بدون پرش (FOUC-free) |
@@ -221,9 +221,12 @@ SITE_URL=https://example.com pnpm run build
 ├── docs/                   # GUIDE-FA.md، GUIDE-HOMEPAGE-FA.md، CONTENT-TYPES-FA.md، PRD.md، PLAYBOOKS.md، SPIKE_RESULTS.md
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
-    ├── components/          # ۲۹ کامپوننت شامل هستهٔ رابط و ۱۰ بلوک شرکتی/لندینگ (LandingHeroSplit,
-    │                        # BentoCapabilities, ProofStatsRow, FaqAccordion, CtaBanner, PricingSection,
-    │                        # TestimonialGrid, TeamSection, PartnerLogos, NewsletterBanner, ContactForm, ...)
+    ├── components/          # ۴۲ کامپوننت شامل هستهٔ رابط، ۳ پریمیتیو (UiBadge, UiAlert, AvatarGroup)
+    │                        # و ۱۹ بلوک سکشن شرکتی/لندینگ (LandingHeroSplit, PromoBanner, PartnerLogos,
+    │                        # AboutSplitSection, BentoCapabilities, FeatureTabsSection, ProcessSteps,
+    │                        # FeatureCardGrid, ProofStatsRow, ComparisonTable, PricingSection, TestimonialGrid,
+    │                        # ImageGallerySection, LatestPostsSection, TeamSection, FaqAccordion,
+    │                        # ContactSplitSection, NewsletterBanner, CtaBanner, ...)
     ├── content/
     │   ├── pages/<گروه>/    # صفحات ایستا: <locale>.mdx + <گروه>.png
     │   ├── blog/<گروه>/     # مقالات: <locale>.mdx + <گروه>.png
@@ -243,7 +246,7 @@ SITE_URL=https://example.com pnpm run build
     │   ├── content/         # entries, service, types, feed, pagination, blog, blog-catalog, taxonomy, faq, social, og-card
     │   ├── cookies/         # مدل رضایت کوکی و مدیریت اسکریپت‌ها (model.ts, manager.ts)
     │   ├── search/          # client.ts + persian.ts (جستجوی Pagefind و فالبک با نرمال‌سازی فارسی)
-    │   └── ui/              # button.ts (کلاس دکمه‌ها) + icons.ts (فهرست بستهٔ ۳۱ آیکون)
+    │   └── ui/              # button.ts (کلاس دکمه‌ها) + icons.ts (فهرست بستهٔ ۴۶ آیکون) + locale.ts + initials.ts
     ├── pages/               # فقط فایل‌های فیزیکی استاتیک
     │   ├── [...path].astro  # دیسپچر مسیریاب
     │   ├── 404.astro        # صفحهٔ ۴۰۴ locale-aware
@@ -1266,16 +1269,29 @@ pre, code, .math {
 | `SearchModal.astro` | `locale` | مودال جستجوی دسکتاپ (Pagefind در پروداکشن / fallback استاتیک) |
 | `DrawerSearch.astro` | `locale` | جستجوی درون کشوی موبایل هماهنگ با تب‌بندی کشو |
 | `ContactForm.astro` | `locale` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` (با پشتیبانی از `api.topics`)؛ بدون نشانی، فرم رندر نمی‌شود و پنل `mailto:` (از `site.contactEmail`) جای آن را می‌گیرد |
-| `NewsletterBanner.astro` | `id?`, `locale?`, `eyebrow?`, `title?`, `subtitle?`, `baseUrl?`, `endpoint?`, `timeoutMs?`, `source?`, `surface?`, `spacing?` | بنر اشتراک خبرنامه Pure-SSG متصل به `api.endpoints.newsletter` / `PUBLIC_NEWSLETTER_API_URL` یا نمایش پنل `mailto:` |
-| `LandingHeroSplit.astro` | `id?`, `eyebrow?`, `title`, `description?`, `primaryCta?`, `secondaryCta?`, `trustNote?`, `image?`, `imageAlt?`, `surface?` (`default`/`hero`/`subtle`) + اسلات `media` | هیروی دوتایی شرکتی/لندینگ با تصویر یا اسلات ویژوال مقابل |
-| `BentoCapabilities.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `items`, `locale?`, `numbered?`, `surface?`, `spacing?` | شبکهٔ بنتو برای معرفی قابلیت‌ها و خدمات |
-| `ProofStatsRow.astro` | `id?`, `eyebrow?`, `heading?`, `items`, `locale?`, `surface?`, `spacing?` | ردیف آمار و دستاوردها با قالب‌بندی بومی اعداد |
-| `PricingSection.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `tiers`, `locale?`, `contained?`, `surface?`, `spacing?` | کارت‌های قیمت‌گذاری با پلن پیشنهادی و قیمت‌گذاری بومی (`contained` برای MDX متنی) |
-| `TestimonialGrid.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `items`, `locale?`, `surface?`, `spacing?` | شبکهٔ نظرات مشتریان با امتیاز ستاره‌ای، نقل‌قول و آواتار بهینه |
-| `TeamSection.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `members`, `surface?`, `spacing?` | شبکهٔ اعضای تیم با تصویر/مونوگرام و لینک‌های شبکه‌های اجتماعی |
-| `PartnerLogos.astro` | `id?`, `eyebrow?`, `heading?`, `items`, `columns?`, `surface?`, `spacing?` | نوار اعتماد و لوگوی مشتریان/همکاران (۴، ۵ یا ۶ ستونی) |
-| `FaqAccordion.astro` | `id?`, `eyebrow?`, `heading?`, `subheading?`, `items`, `emitSchema?`, `surface?`, `spacing?` | پرسش‌های متداول با پشتیبانی از `FAQPage` JSON-LD |
-| `CtaBanner.astro` | `id?`, `eyebrow?`, `title`, `description?`, `primaryCta`, `secondaryCta?`, `surface?` (`hero`/`surface`), `spacing?` | بنر فراخوان پایانی (CTA) پیش از فوتر |
+| `SectionHeader.astro` | `eyebrow?`, `heading?`, `subheading?`, `align?`, `class?` | سرستون مشترک و DRY برای بلوک‌های سکشن |
+| `UiBadge.astro` | `label?`, `locale?`, `variant?`, `size?`, `icon?`, `href?`, `external?`, `class?` | نشان معنایی وضعیتی/برچسبی در ۸ نقش رنگی |
+| `UiAlert.astro` | `id?`, `locale?`, `variant?`, `title?`, `description?`, `icon?`, `action?`, `dismissible?`, `class?` | هشدار/اعلان با حاشیهٔ کامل منطقی و دکمهٔ بستن |
+| `AvatarGroup.astro` | `locale?`, `items?`, `extraCount?`, `label?`, `rating?`, `size?`, `class?` | پشتهٔ آواتار هم‌پوشان با امتیاز ستاره‌ای و شمارش بومی |
+| `NewsletterBanner.astro` | `id?`, `locale?`, `eyebrow?`, `title?`, `subtitle?`, `baseUrl?`, `endpoint?`, `timeoutMs?`, `source?`, `contained?`, `surface?`, `spacing?` | بنر اشتراک خبرنامه Pure-SSG متصل به `api.endpoints.newsletter` / `PUBLIC_NEWSLETTER_API_URL` یا نمایش پنل `mailto:` |
+| `LandingHeroSplit.astro` | `id?`, `locale?`, `eyebrow?`, `title?`, `description?`, `primaryCta?`, `secondaryCta?`, `trustNote?`, `image?`, `imageAlt?`, `surface?` (`default`/`hero`/`subtle`) + اسلات `media` | هیروی دوتایی شرکتی/لندینگ با تصویر یا اسلات ویژوال مقابل (با پیش‌فرض‌های بومی) |
+| `PromoBanner.astro` | `id?`, `locale?`, `badge?`, `message?`, `icon?`, `cta?`, `variant?`, `dismissible?`, `contained?`, `spacing?` | نوار اطلاع‌رسانی یا معرفی نسخهٔ تازه با حافظهٔ بستن در نشست |
+| `PartnerLogos.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `columns?`, `contained?`, `surface?`, `spacing?` | نوار اعتماد و لوگوی مشتریان/همکاران (۴، ۵ یا ۶ ستونی) |
+| `AboutSplitSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `highlights?`, `stats?`, `primaryCta?`, `secondaryCta?`, `image?`, `imageAlt?`, `mediaPosition?`, `contained?`, `surface?`, `spacing?` | بخش «درباره ما» دوستونه با فهرست نکات، آمار و جابه‌جایی جهت تصویر (`start`/`end`) |
+| `BentoCapabilities.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `numbered?`, `contained?`, `surface?`, `spacing?` | شبکهٔ بنتو برای معرفی قابلیت‌ها و خدمات |
+| `FeatureTabsSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `tabs?`, `variant?` (`pills`/`underline`), `contained?`, `surface?`, `spacing?` | تب‌های تعاملی دسترس‌پذیر WAI-ARIA با ناوبری صفحه‌کلید منطبق با RTL |
+| `ProcessSteps.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `steps?`, `variant?` (`cards`/`timeline`), `cta?`, `contained?`, `surface?`, `spacing?` | مراحل گام‌به‌گام اجرا با شماره‌گذاری بومی |
+| `FeatureCardGrid.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `columns?`, `contained?`, `surface?`, `spacing?` | گرید کارت‌های ویترینی با تصویر/آیکن، نشان، برچسب و لینک |
+| `ProofStatsRow.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `contained?`, `surface?`, `spacing?` | ردیف آمار و دستاوردها با قالب‌بندی بومی اعداد |
+| `ComparisonTable.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `columns?`, `rows?`, `contained?`, `surface?`, `spacing?` | جدول مقایسهٔ طرح‌ها/ویژگی‌ها با آیکن‌های بولی دسترس‌پذیر |
+| `PricingSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `tiers?`, `billingToggle?`, `defaultBilling?`, `contained?`, `surface?`, `spacing?` | کارت‌های قیمت‌گذاری با سوییچ ماهانه/سالانه، پلن پیشنهادی و قیمت بومی |
+| `TestimonialGrid.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `contained?`, `surface?`, `spacing?` | شبکهٔ نظرات مشتریان با امتیاز ستاره‌ای، نقل‌قول و آواتار بهینه |
+| `ImageGallerySection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `columns?`, `enableFilter?`, `enableLightbox?`, `contained?`, `surface?`, `spacing?` | گالری تصاویر با فیلتر دسته‌بندی و پیش‌نمایش تمام‌صفحه (`<dialog>`) |
+| `LatestPostsSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `limit?`, `category?`, `items?`, `viewAllHref?`, `contained?`, `surface?`, `spacing?` | نمایش خودکار آخرین مقاله‌های منتشرشدهٔ وبلاگ زبان جاری (با بازاستفاده از `PostCard`) |
+| `TeamSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `members?`, `contained?`, `surface?`, `spacing?` | شبکهٔ اعضای تیم با تصویر/مونوگرام و لینک‌های شبکه‌های اجتماعی |
+| `FaqAccordion.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `openFirst?`, `emitSchema?`, `contained?`, `surface?`, `spacing?` | پرسش‌های متداول با پشتیبانی از `FAQPage` JSON-LD |
+| `ContactSplitSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `channels?`, `highlights?`, `contained?`, `surface?`, `spacing?` | ترکیب اطلاعات تماس و فرم Pure-SSG (`ContactForm embedded`) |
+| `CtaBanner.astro` | `id?`, `locale?`, `eyebrow?`, `title?`, `description?`, `primaryCta?`, `secondaryCta?`, `contained?`, `surface?` (`hero`/`surface`), `spacing?` | بنر فراخوان پایانی (CTA) پیش از فوتر |
 | `CookieConsent.astro` | `locale` | بنر و مودال مدیریت رضایت کوکی و اسکریپت‌ها (TDDDG § 25 / GDPR) |
 | `Seo.astro` | `title`, `description?`, `locale`, `url`, `alternates`, `siteName?`, `image?`, `ogContext?`, `type?`, `publishedTime?`, `modifiedTime?`, `schema?`, `noindex?`, `prevUrl?`, `nextUrl?` | همهٔ متادیتای SEO |
 | `TopLoadingBar.astro` | — | نوار پیشرفت ناوبری |
@@ -1433,8 +1449,8 @@ refreshChronoTrig();
 
 ### افزودن آیکون
 
-آیکون‌ها از بستهٔ `@tabler/icons-astro` (لایسنس MIT) می‌آیند و با ۳۱ نام معنایی از `src/libs/ui/icons.ts` صدا زده می‌شوند:
-`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link` · `arrow-right` · `shield` · `mail` · `layers` · `star` · `star-filled` · `quote` · `users` · `building` · و آیکون‌های ناوبری (`home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `file`).
+آیکون‌ها از بستهٔ `@tabler/icons-astro` (لایسنس MIT) می‌آیند و با ۴۶ نام معنایی از `src/libs/ui/icons.ts` صدا زده می‌شوند:
+`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link` · `arrow-right` · `shield` · `mail` · `layers` · `star` · `star-filled` · `quote` · `users` · `building` · `alert-circle` · `alert-triangle` · `circle-check` · `bell` · `bolt` · `clock` · `map-pin` · `phone` · `rocket` · `code` · `award` · `layout-grid` · `calendar` · `photo` · `minus` · و آیکون‌های ناوبری (`home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `file`).
 
 ```ts
 // ۱) نام تازه را به فهرست بسته اضافه کنید

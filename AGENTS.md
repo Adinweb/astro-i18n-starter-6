@@ -25,7 +25,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs` (build-time Pagefind normalization), `src/libs/search/persian.ts` (ZWNJ/orthography/numeral query expansion & fallback folding), and `src/libs/search/client.ts`.
    - External API & Consent (Pure SSG, Zero Backend): `src/libs/api/client.ts` (`ContactForm.astro` and `NewsletterBanner.astro` post directly to external/headless endpoints configured via `app.config.json` `api` or `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL` / `PUBLIC_NEWSLETTER_API_URL`) and `src/libs/cookies/` (`CookieConsent.astro`). A site without a configured endpoint renders **no form**: `*_fallback_desc` + a `mailto:` button come from `site.contactEmail`, `*_unavailable_desc` replaces them when that address is empty (never promise an email channel the site does not have), and the developer setup note is `import.meta.env.DEV`-only, so visitors never read environment-variable names. Never add SSR servers or backend folders.
    - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
-   - Icons: the closed 31-icon name list in `src/libs/ui/icons.ts` (`SITE_ICONS`, `resolveIconName`) and the Tabler registry in `src/components/Icon.astro`. Names are semantic; templates never carry raw `<svg>`, and client code clones server-rendered icons instead of writing paths.
+   - Icons: the closed 46-icon name list in `src/libs/ui/icons.ts` (`SITE_ICONS`, `resolveIconName`) and the Tabler registry in `src/components/Icon.astro`. Names are semantic; templates never carry raw `<svg>`, and client code clones server-rendered icons instead of writing paths.
 2. **Lean Router Dispatcher Pattern**:
    - Never create dynamic routing files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
    - All dynamic routing flows exclusively through `src/pages/[...path].astro`, which dispatches to views in `src/views/` (`PageView`, `BlogIndexView`, `BlogPostView`, and the generic `CollectionIndexView` / `CollectionEntryView` used by registry-driven types such as `projects`). `/api/*.json` endpoints are strictly build-time static JSON catalogs.
@@ -76,7 +76,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph fallback
 │   ├── components/            # Core UI & chrome (Icon, IconButton, Button, HomeHero, ThemeToggle, LanguageSwitcher, DrawerNavLink, PageHeader, PageHero, PageSection, HeroCopy, BlogPostHeroContent, PostCard, SearchModal, DrawerSearch, CookieConsent, ContactForm, Seo, TopLoadingBar)
-│   │                          # + 10 composable corporate/landing blocks (LandingHeroSplit, BentoCapabilities, ProofStatsRow, FaqAccordion, CtaBanner, PricingSection, TestimonialGrid, TeamSection, PartnerLogos, NewsletterBanner)
+│   │                          # + 19 composable section blocks & 3 UI primitives (LandingHeroSplit, PromoBanner, PartnerLogos, AboutSplitSection, BentoCapabilities, FeatureTabsSection, ProcessSteps, FeatureCardGrid, ProofStatsRow, ComparisonTable, PricingSection, TestimonialGrid, ImageGallerySection, LatestPostsSection, TeamSection, FaqAccordion, ContactSplitSection, NewsletterBanner, CtaBanner, UiBadge, UiAlert, AvatarGroup)
 │   ├── content/               # Symmetrical content collections:
 │   │   ├── pages/<group>/     # Static pages (<locale>.mdx per active locale + hero artwork)
 │   │   ├── blog/<group>/      # Blog posts with localized slugs (+ cover artwork)
@@ -104,7 +104,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── cookies/           # TDDDG § 25 / GDPR consent model & multi-domain script gatekeeper
 │   │   ├── search/            # client.ts + persian.ts (Pagefind & dev fallback with Persian ZWNJ/orthography expansion)
 │   │   ├── ui/button.ts       # The button class recipe (`buttonClasses`) behind Button.astro and client renderers
-│   │   └── ui/icons.ts        # The closed 31-icon vocabulary (SITE_ICONS) shared by Icon.astro, navigation and tests
+│   │   └── ui/icons.ts        # The closed 46-icon vocabulary (SITE_ICONS) shared by Icon.astro, navigation and tests
 │   ├── pages/                 # Minimal physical pages:
 │   │   ├── [...path].astro    # Lean Router Dispatcher
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
@@ -259,9 +259,10 @@ Icons come from `@tabler/icons-astro`; nothing else renders an `<svg>` in a temp
 5. **Verify:** `pnpm run doctor && pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke && pnpm run link:check`.
    Full details: `docs/CONTENT-TYPES-FA.md`.
 
-### Playbook H: Composable Corporate & Landing Page Blocks
-10 reusable Astro blocks live under `src/components/` (registered in `knip.json` and guarded by `src/libs/ui/blocks.test.ts`), covering PrebuiltUI-adapted corporate patterns rebuilt with OKLCH tokens, CSS logical properties, `<Icon>`, `<Button>`, `PageSection`, `formatNumber`, and ChronoTrig (`data-trig` / `data-trig-stagger`):
-- `LandingHeroSplit.astro` (emits page `<h1>` when replacing hero), `BentoCapabilities.astro`, `ProofStatsRow.astro`, `FaqAccordion.astro` (with `FAQPage` JSON-LD), `CtaBanner.astro`, `PricingSection.astro` (`contained` prop when nested inside `.prose-wide`), `TestimonialGrid.astro`, `TeamSection.astro`, `PartnerLogos.astro`, and `NewsletterBanner.astro` (Pure-SSG external API + `site.contactEmail` fallback).
+### Playbook H: Composable Corporate, Landing & UI Blocks (PrebuiltUI-Adapted)
+22 reusable Astro components (19 section blocks + 3 UI primitives, plus shared `SectionHeader.astro`, `src/libs/ui/locale.ts`, and `src/libs/ui/initials.ts`) live under `src/components/` (registered in `knip.json` and guarded by `src/libs/ui/blocks.test.ts`), rebuilt with OKLCH tokens, CSS logical properties, `<Icon>`, `<Button>`, `PageSection`, `formatNumber`/`formatDate`, ChronoTrig (`data-trig` / `data-trig-stagger`), optional `locale` (auto-falling back to URL prefix), and full Paraglide defaults:
+- **Hero & Structural Sections (19):** `LandingHeroSplit.astro` (emits page `<h1>` when replacing hero), `PromoBanner.astro`, `PartnerLogos.astro`, `AboutSplitSection.astro`, `BentoCapabilities.astro`, `FeatureTabsSection.astro` (RTL-aware keyboard tabs), `ProcessSteps.astro`, `FeatureCardGrid.astro`, `ProofStatsRow.astro`, `ComparisonTable.astro`, `PricingSection.astro` (monthly/annual `billingToggle` + `contained` prop), `TestimonialGrid.astro`, `ImageGallerySection.astro` (category filter + `<dialog>` lightbox), `LatestPostsSection.astro` (live `blog` query or custom `items`), `TeamSection.astro`, `FaqAccordion.astro` (`FAQPage` JSON-LD), `ContactSplitSection.astro` (pairs info channels with `<ContactForm embedded />`), `NewsletterBanner.astro` (Pure-SSG external API + `site.contactEmail` fallback), and `CtaBanner.astro`.
+- **UI Primitives (3):** `UiBadge.astro`, `UiAlert.astro`, and `AvatarGroup.astro`.
 - On custom landing pages (`hero: "none"`, `container: "canvas"`, `flushTop: true` — or `pnpm run new:page <key> --preset=landing`), compose blocks directly in MDX or shared `src/views/pages/*.astro` templates, ensuring exactly one `<h1>` per page.
 
 ---

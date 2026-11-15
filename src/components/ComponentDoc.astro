@@ -1,0 +1,246 @@
+---
+/**
+ * Reusable documentation wrapper for presenting a live component example alongside
+ * a concise explanation, key prop table, and copyable Astro/MDX usage snippet.
+ * Uses semantic OKLCH tokens, CSS logical properties, and compiled Paraglide UI labels.
+ */
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import UiBadge from '@/components/UiBadge.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface ComponentPropDoc {
+  name: string;
+  type?: string;
+  defaultVal?: string;
+  required?: boolean;
+  description: string;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  name: string;
+  category: string;
+  title: string;
+  summary: string;
+  propsList?: readonly ComponentPropDoc[];
+  usage?: string;
+  surface?: 'default' | 'surface' | 'subtle';
+  framed?: boolean;
+}
+
+const {
+  id,
+  locale,
+  name,
+  category,
+  title,
+  summary,
+  propsList = [],
+  usage,
+  surface = 'default',
+  framed = true,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const hasPreview = Astro.slots.has('default');
+
+const labels = {
+  preview: m.doc_component_preview({}, { locale: activeLocale }),
+  props: m.doc_component_props({}, { locale: activeLocale }),
+  usage: m.doc_component_usage({}, { locale: activeLocale }),
+  required: m.doc_component_required({}, { locale: activeLocale }),
+  prop: m.doc_component_prop({}, { locale: activeLocale }),
+  type: m.doc_component_type({}, { locale: activeLocale }),
+  defaultVal: m.doc_component_default({}, { locale: activeLocale }),
+  desc: m.doc_component_desc({}, { locale: activeLocale }),
+  copy: m.common_copy_code({}, { locale: activeLocale }),
+  copied: m.common_copied({}, { locale: activeLocale }),
+};
+
+const cardSurface = surface === 'surface' ? 'bg-bg' : 'bg-surface';
+---
+
+<PageSection id={id} surface={surface} spacing="md" borderTop>
+  <div class="space-y-6">
+    <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between" data-trig>
+      <div class="max-w-3xl">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <UiBadge label={category} variant="primary" size="sm" icon="layers" />
+          <code
+            dir="ltr"
+            class="inline-flex items-center rounded-full border border-border bg-surface px-3 py-0.5 font-mono text-xs font-semibold text-fg"
+          >
+            {`<${name} />`}
+          </code>
+        </div>
+        <h2 class="mt-3 text-2xl font-bold tracking-tight text-fg sm:text-3xl text-balance">
+          {title}
+        </h2>
+        <p class="mt-2 text-base leading-relaxed text-muted text-pretty">
+          {summary}
+        </p>
+      </div>
+    </header>
+
+    {
+      hasPreview && (
+        <div class="space-y-2.5" data-trig>
+          <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
+            <Icon name="sparkles" size={14} class="text-primary" />
+            <span>{labels.preview}</span>
+          </div>
+          {framed ? (
+            <div
+              class:list={[
+                'overflow-hidden rounded-3xl border border-border p-5 shadow-xs sm:p-7 lg:p-8',
+                surface === 'surface' ? 'bg-bg' : 'bg-surface/40',
+              ]}
+            >
+              <slot />
+            </div>
+          ) : (
+            <slot />
+          )}
+        </div>
+      )
+    }
+
+    <div class:list={['grid gap-6', propsList.length > 0 && usage ? 'lg:grid-cols-12' : '']}>
+      {
+        propsList.length > 0 && (
+          <div
+            class:list={[
+              'overflow-hidden rounded-2xl border border-border shadow-xs',
+              cardSurface,
+              usage ? 'lg:col-span-7' : '',
+            ]}
+            data-trig
+          >
+            <div class="flex items-center gap-2 border-b border-border px-4 py-3 sm:px-5">
+              <Icon name="code" size={16} class="text-primary" />
+              <h3 class="text-sm font-bold text-fg">{labels.props}</h3>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse text-start text-xs sm:text-sm">
+                <thead>
+                  <tr class="border-b border-border bg-surface-hover/50 text-muted">
+                    <th scope="col" class="px-4 py-2.5 text-start font-semibold">
+                      {labels.prop}
+                    </th>
+                    <th scope="col" class="px-4 py-2.5 text-start font-semibold">
+                      {labels.type}
+                    </th>
+                    <th scope="col" class="px-4 py-2.5 text-start font-semibold">
+                      {labels.defaultVal}
+                    </th>
+                    <th scope="col" class="px-4 py-2.5 text-start font-semibold">
+                      {labels.desc}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  {propsList.map((prop) => (
+                    <tr class="align-top transition-colors hover:bg-surface-hover/30">
+                      <td class="whitespace-nowrap px-4 py-3">
+                        <code dir="ltr" class="font-mono text-xs font-semibold text-primary">
+                          {prop.name}
+                        </code>
+                        {prop.required && (
+                          <span class="ms-1.5 inline-flex rounded-full bg-error/10 px-2 py-0.5 text-[10px] font-semibold text-error">
+                            {labels.required}
+                          </span>
+                        )}
+                      </td>
+                      <td class="whitespace-nowrap px-4 py-3">
+                        <code dir="ltr" class="font-mono text-xs text-fg">
+                          {prop.type ?? 'string'}
+                        </code>
+                      </td>
+                      <td class="whitespace-nowrap px-4 py-3">
+                        <code dir="ltr" class="font-mono text-xs text-muted">
+                          {prop.defaultVal ?? '—'}
+                        </code>
+                      </td>
+                      <td class="min-w-[14rem] px-4 py-3 leading-relaxed text-muted">
+                        {prop.description}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        usage && (
+          <div
+            class:list={[
+              'flex flex-col overflow-hidden rounded-2xl border border-border shadow-xs',
+              cardSurface,
+              propsList.length > 0 ? 'lg:col-span-5' : '',
+            ]}
+            data-trig
+            data-trig-delay="0.06"
+          >
+            <div class="flex items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-5">
+              <div class="flex items-center gap-2">
+                <Icon name="file" size={16} class="text-primary" />
+                <h3 class="text-sm font-bold text-fg">{labels.usage}</h3>
+              </div>
+              <button
+                type="button"
+                data-doc-copy
+                data-label-copy={labels.copy}
+                data-label-copied={labels.copied}
+                data-code={usage}
+                class="ghost-control inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold cursor-pointer print:hidden"
+              >
+                <Icon name="copy" size={14} />
+                <span data-doc-copy-label>{labels.copy}</span>
+              </button>
+            </div>
+            <pre
+              dir="ltr"
+              class="flex-1 overflow-x-auto bg-bg/70 p-4 font-mono text-xs leading-relaxed text-fg sm:p-5"
+            ><code dir="ltr">{usage}</code></pre>
+          </div>
+        )
+      }
+    </div>
+  </div>
+</PageSection>
+
+<script>
+  function initDocCopyButtons() {
+    const buttons = document.querySelectorAll<HTMLButtonElement>('[data-doc-copy]');
+    buttons.forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+
+      btn.addEventListener('click', async () => {
+        const code = btn.dataset.code ?? '';
+        const labelEl = btn.querySelector<HTMLElement>('[data-doc-copy-label]');
+        const copyText = btn.dataset.labelCopy ?? '';
+        const copiedText = btn.dataset.labelCopied ?? '';
+        try {
+          await navigator.clipboard.writeText(code);
+          if (labelEl) labelEl.textContent = copiedText;
+          window.setTimeout(() => {
+            if (labelEl) labelEl.textContent = copyText;
+          }, 1800);
+        } catch {
+          // Clipboard permission may be restricted inside some preview sandboxes.
+        }
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initDocCopyButtons);
+  initDocCopyButtons();
+</script>

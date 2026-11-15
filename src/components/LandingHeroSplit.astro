@@ -1,15 +1,23 @@
 ---
 /**
- * Composable asymmetric split hero band for `container: "canvas"` landing pages.
+ * Composable asymmetric split hero band inspired by PrebuiltUI hero sections
+ * for `container: "canvas"` landing pages.
  *
- * Uses logical CSS properties only so LTR and RTL reading flows mirror
- * seamlessly. Emits exactly one `<h1>` element for the page.
+ * Uses OKLCH semantic tokens and CSS logical properties only so LTR and RTL
+ * reading flows mirror seamlessly. Accepts optional customization props with
+ * full Paraglide-localized defaults so dropping `<LandingHeroSplit />` works
+ * immediately out of the box. Emits the sole `<h1>` for the page.
  */
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import Button from '@/components/Button.astro';
+import type { Locale } from '@/i18n/locales';
+import { localizeHref } from '@/i18n/paths';
+import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
 
-interface CtaAction {
+export interface HeroCtaAction {
   label: string;
   href: string;
   icon?: string;
@@ -18,19 +26,21 @@ interface CtaAction {
 
 interface Props {
   id?: string;
-  eyebrow?: string;
-  title: string;
-  description?: string;
-  primaryCta?: CtaAction;
-  secondaryCta?: CtaAction;
-  trustNote?: string;
-  image?: ImageMetadata;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  title?: string;
+  description?: string | null;
+  primaryCta?: HeroCtaAction | null;
+  secondaryCta?: HeroCtaAction | null;
+  trustNote?: string | null;
+  image?: ImageMetadata | null;
   imageAlt?: string;
   surface?: 'default' | 'hero' | 'subtle';
 }
 
 const {
   id,
+  locale,
   eyebrow,
   title,
   description,
@@ -42,7 +52,47 @@ const {
   surface = 'default',
 } = Astro.props;
 
-const hasMedia = Boolean(image) || Astro.slots.has('media');
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = title === undefined;
+
+const resolvedEyebrow =
+  eyebrow === null
+    ? undefined
+    : (eyebrow ?? (usingDefaults ? m.block_hero_eyebrow({}, { locale: activeLocale }) : undefined));
+const resolvedTitle = title ?? m.block_hero_title({}, { locale: activeLocale });
+const resolvedDescription =
+  description === null
+    ? undefined
+    : (description ?? (usingDefaults ? m.block_hero_desc({}, { locale: activeLocale }) : undefined));
+const resolvedPrimaryCta =
+  primaryCta === null
+    ? undefined
+    : (primaryCta ??
+      (usingDefaults
+        ? {
+            label: m.block_hero_primary_cta({}, { locale: activeLocale }),
+            href: localizeHref('/features', activeLocale),
+            icon: 'arrow-right',
+          }
+        : undefined));
+const resolvedSecondaryCta =
+  secondaryCta === null
+    ? undefined
+    : (secondaryCta ??
+      (usingDefaults
+        ? {
+            label: m.block_hero_secondary_cta({}, { locale: activeLocale }),
+            href: localizeHref('/pricing', activeLocale),
+          }
+        : undefined));
+const resolvedTrustNote =
+  trustNote === null
+    ? undefined
+    : (trustNote ?? (usingDefaults ? m.block_hero_trust({}, { locale: activeLocale }) : undefined));
+
+const resolvedImage =
+  image === null ? undefined : (image ?? (usingDefaults ? DEFAULT_HERO_IMAGE : undefined));
+const hasMedia = Boolean(resolvedImage) || Astro.slots.has('media');
 const isHeroSurface = surface === 'hero';
 ---
 
@@ -69,16 +119,16 @@ const isHeroSurface = surface === 'hero';
 
   <div class="layout-container">
     <div class:list={[hasMedia ? 'grid items-center gap-10 lg:grid-cols-12 lg:gap-12' : 'max-w-3xl']}>
-      <div class:list={[hasMedia && 'lg:col-span-6']} data-trig>
+      <div class:list={[hasMedia && 'lg:col-span-6']} data-trig data-trig-direction="start">
         {
-          eyebrow && (
+          resolvedEyebrow && (
             <p
               class:list={[
                 'text-xs font-semibold uppercase tracking-[0.14em] rtl:tracking-normal',
                 isHeroSurface ? 'text-accent print:text-primary' : 'text-primary',
               ]}
             >
-              {eyebrow}
+              {resolvedEyebrow}
             </p>
           )
         }
@@ -86,44 +136,44 @@ const isHeroSurface = surface === 'hero';
         <h1
           class="mt-3 text-[clamp(2.25rem,4vw,3.75rem)] font-extrabold leading-[1.08] tracking-tight text-balance"
         >
-          {title}
+          {resolvedTitle}
         </h1>
 
         {
-          description && (
+          resolvedDescription && (
             <p
               class:list={[
                 'mt-5 max-w-xl text-base leading-relaxed text-pretty sm:text-lg',
                 isHeroSurface ? 'text-hero-fg/88 print:text-muted' : 'text-muted',
               ]}
             >
-              {description}
+              {resolvedDescription}
             </p>
           )
         }
 
         {
-          (primaryCta || secondaryCta) && (
+          (resolvedPrimaryCta || resolvedSecondaryCta) && (
             <div class="mt-8 flex flex-wrap items-center gap-3 print:hidden">
-              {primaryCta && (
+              {resolvedPrimaryCta && (
                 <Button
-                  href={primaryCta.href}
+                  href={resolvedPrimaryCta.href}
                   variant="primary"
                   size="lg"
-                  icon={primaryCta.icon ?? 'arrow-right'}
-                  external={primaryCta.external}
+                  icon={resolvedPrimaryCta.icon ?? 'arrow-right'}
+                  external={resolvedPrimaryCta.external}
                 >
-                  {primaryCta.label}
+                  {resolvedPrimaryCta.label}
                 </Button>
               )}
-              {secondaryCta && (
+              {resolvedSecondaryCta && (
                 <Button
-                  href={secondaryCta.href}
+                  href={resolvedSecondaryCta.href}
                   variant={isHeroSurface ? 'hero' : 'secondary'}
                   size="lg"
-                  external={secondaryCta.external}
+                  external={resolvedSecondaryCta.external}
                 >
-                  {secondaryCta.label}
+                  {resolvedSecondaryCta.label}
                 </Button>
               )}
             </div>
@@ -131,14 +181,14 @@ const isHeroSurface = surface === 'hero';
         }
 
         {
-          trustNote && (
+          resolvedTrustNote && (
             <p
               class:list={[
                 'mt-4 text-xs leading-relaxed',
                 isHeroSurface ? 'text-hero-fg/75 print:text-muted' : 'text-muted',
               ]}
             >
-              {trustNote}
+              {resolvedTrustNote}
             </p>
           )
         }
@@ -146,11 +196,11 @@ const isHeroSurface = surface === 'hero';
 
       {
         hasMedia && (
-          <div class="lg:col-span-6" data-trig data-trig-delay="0.12">
+          <div class="lg:col-span-6" data-trig data-trig-direction="end" data-trig-delay="0.12">
             {Astro.slots.has('media') ? (
               <slot name="media" />
             ) : (
-              image && (
+              resolvedImage && (
                 <div
                   class:list={[
                     'overflow-hidden rounded-2xl border shadow-floating',
@@ -158,8 +208,8 @@ const isHeroSurface = surface === 'hero';
                   ]}
                 >
                   <Image
-                    src={image}
-                    alt={imageAlt}
+                    src={resolvedImage}
+                    alt={imageAlt || resolvedTitle}
                     widths={[640, 960, 1280]}
                     sizes="(min-width: 1024px) 46vw, 94vw"
                     class="aspect-[16/10] w-full object-cover"

@@ -3,7 +3,7 @@
   "entry": [
     "src/pages/**/*.{astro,ts}",
     "src/content/**/*.mdx",
-    "src/components/{HomeHero,LandingHeroSplit,BentoCapabilities,ProofStatsRow,FaqAccordion,CtaBanner,PricingSection,TestimonialGrid,TeamSection,PartnerLogos,NewsletterBanner}.astro",
+    "src/components/{HomeHero,SectionHeader,ComponentDoc,UiBadge,UiAlert,AvatarGroup,LandingHeroSplit,BentoCapabilities,ProofStatsRow,FaqAccordion,CtaBanner,PricingSection,TestimonialGrid,TeamSection,PartnerLogos,NewsletterBanner,PromoBanner,AboutSplitSection,ProcessSteps,FeatureTabsSection,ComparisonTable,FeatureCardGrid,ImageGallerySection,LatestPostsSection,ContactSplitSection}.astro",
     "scripts/**/*.mjs",
     "src/**/*.test.ts"
   ],

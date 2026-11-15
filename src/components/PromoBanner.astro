@@ -1,0 +1,216 @@
+---
+/**
+ * Announcement / promotional banner strip inspired by PrebuiltUI banners &
+ * promotional bars. Supports semantic theme variants (`primary`, `hero`,
+ * `surface`, `accent`), optional dismiss toggle, `<Icon>`, `<Button>`, and full
+ * Paraglide-localized defaults.
+ */
+import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
+import IconButton from '@/components/IconButton.astro';
+import PageSection from '@/components/PageSection.astro';
+import type { Locale } from '@/i18n/locales';
+import { localizeHref } from '@/i18n/paths';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface PromoBannerCta {
+  label: string;
+  href: string;
+  icon?: string;
+  external?: boolean;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  badge?: string | null;
+  message?: string;
+  icon?: string;
+  cta?: PromoBannerCta | null;
+  variant?: 'primary' | 'hero' | 'surface' | 'accent';
+  dismissible?: boolean;
+  contained?: boolean;
+  spacing?: 'none' | 'sm' | 'md';
+}
+
+const {
+  id,
+  locale,
+  badge,
+  message,
+  icon = 'sparkles',
+  cta,
+  variant = 'hero',
+  dismissible = false,
+  contained = false,
+  spacing = 'sm',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = message === undefined;
+
+const resolvedBadge =
+  badge === null
+    ? undefined
+    : (badge ?? (usingDefaults ? m.block_promo_badge({}, { locale: activeLocale }) : undefined));
+const resolvedMessage = message ?? m.block_promo_message({}, { locale: activeLocale });
+const resolvedCta =
+  cta === null
+    ? undefined
+    : (cta ??
+      (usingDefaults
+        ? {
+            label: m.block_promo_cta({}, { locale: activeLocale }),
+            href: localizeHref('/features', activeLocale),
+            icon: 'arrow-right',
+          }
+        : undefined));
+const dismissLabel = m.block_promo_dismiss({}, { locale: activeLocale });
+
+const VARIANTS = {
+  primary: 'border-primary/25 bg-primary text-primary-fg',
+  hero: 'border-hero-fg/15 bg-hero-base text-hero-fg print:border-border print:bg-bg print:text-fg',
+  surface: 'border-border bg-surface text-fg',
+  accent: 'border-accent/30 bg-accent/15 text-fg',
+} as const;
+
+const isDarkSurface = variant === 'primary' || variant === 'hero';
+---
+
+<PageSection
+  id={id}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-6' : 'print:hidden'}
+>
+  <div
+    data-promo-banner={id ?? 'default'}
+    data-trig
+    role="region"
+    aria-label={resolvedBadge ?? resolvedMessage}
+    class:list={[
+      'relative overflow-hidden rounded-2xl border px-4 py-3.5 shadow-xs sm:px-6',
+      VARIANTS[variant],
+    ]}
+  >
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2.5 sm:gap-3">
+        {icon && (
+          <span
+            aria-hidden="true"
+            class:list={[
+              'inline-flex size-8 shrink-0 items-center justify-center rounded-xl',
+              variant === 'primary'
+                ? 'bg-primary-fg/15 text-primary-fg'
+                : variant === 'hero'
+                  ? 'bg-hero-fg/10 text-accent print:bg-primary/10 print:text-primary'
+                  : 'bg-primary/10 text-primary',
+            ]}
+          >
+            <Icon name={icon} size={17} />
+          </span>
+        )}
+
+        {resolvedBadge && (
+          <span
+            class:list={[
+              'inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider rtl:tracking-normal',
+              variant === 'primary'
+                ? 'bg-primary-fg/20 text-primary-fg'
+                : variant === 'hero'
+                  ? 'bg-accent text-accent-fg'
+                  : 'border border-primary/25 bg-primary/10 text-primary',
+            ]}
+          >
+            {resolvedBadge}
+          </span>
+        )}
+
+        <p
+          class:list={[
+            'text-sm font-medium leading-snug',
+            variant === 'primary'
+              ? 'text-primary-fg'
+              : variant === 'hero'
+                ? 'text-hero-fg/92 print:text-fg'
+                : 'text-fg',
+          ]}
+        >
+          {resolvedMessage}
+        </p>
+      </div>
+
+      <div class="flex shrink-0 items-center gap-2 print:hidden">
+        {
+          resolvedCta && (
+            <Button
+              href={resolvedCta.href}
+              variant={variant === 'primary' ? 'secondary' : isDarkSurface ? 'hero' : 'primary'}
+              size="sm"
+              icon={resolvedCta.icon ?? 'arrow-right'}
+              external={resolvedCta.external}
+            >
+              {resolvedCta.label}
+            </Button>
+          )
+        }
+
+        {
+          dismissible && (
+            <IconButton
+              icon="close"
+              label={dismissLabel}
+              size={16}
+              data-promo-dismiss
+              class={
+                isDarkSurface
+                  ? 'text-current/80 hover:bg-current/15 hover:text-current'
+                  : undefined
+              }
+            />
+          )
+        }
+      </div>
+    </div>
+  </div>
+</PageSection>
+
+{
+  dismissible && (
+    <script>
+      function initPromoBanners() {
+        const banners = document.querySelectorAll<HTMLElement>('[data-promo-banner]');
+        banners.forEach((banner) => {
+          const storageKey = `promo-dismissed:${banner.dataset.promoBanner ?? 'default'}`;
+          try {
+            if (window.sessionStorage.getItem(storageKey) === 'true') {
+              banner.closest('section')?.setAttribute('hidden', '');
+              banner.hidden = true;
+              return;
+            }
+          } catch {
+            // sessionStorage may be blocked in strict environments; proceed silently.
+          }
+
+          const closeBtn = banner.querySelector<HTMLButtonElement>('[data-promo-dismiss]');
+          if (!closeBtn || closeBtn.dataset.bound === 'true') return;
+          closeBtn.dataset.bound = 'true';
+
+          closeBtn.addEventListener('click', () => {
+            banner.hidden = true;
+            banner.closest('section')?.setAttribute('hidden', '');
+            try {
+              window.sessionStorage.setItem(storageKey, 'true');
+            } catch {
+              // ignore storage errors
+            }
+          });
+        });
+      }
+
+      document.addEventListener('astro:page-load', initPromoBanners);
+      initPromoBanners();
+    </script>
+  )
+}

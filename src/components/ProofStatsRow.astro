@@ -5,8 +5,11 @@
  * and render with `tabular-nums` alignment.
  */
 import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
 
 export interface StatItem {
   value?: string;
@@ -19,10 +22,11 @@ export interface StatItem {
 
 interface Props {
   id?: string;
-  eyebrow?: string;
-  heading?: string;
-  items: readonly StatItem[];
+  eyebrow?: string | null;
+  heading?: string | null;
+  items?: readonly StatItem[];
   locale?: Locale | string;
+  contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'sm' | 'md' | 'lg';
 }
@@ -32,32 +36,73 @@ const {
   eyebrow,
   heading,
   items,
-  locale = 'en',
+  locale,
+  contained = false,
   surface = 'surface',
   spacing = 'md',
 } = Astro.props;
 
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = items === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_stats_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_stats_heading({}, { locale: activeLocale })
+);
+
+const resolvedItems: readonly StatItem[] = items ?? [
+  {
+    count: 22,
+    suffix: '+',
+    label: m.block_stats_1_label({}, { locale: activeLocale }),
+    context: m.block_stats_1_context({}, { locale: activeLocale }),
+  },
+  {
+    count: 6,
+    label: m.block_stats_2_label({}, { locale: activeLocale }),
+    context: m.block_stats_2_context({}, { locale: activeLocale }),
+  },
+  {
+    count: 100,
+    suffix: '%',
+    label: m.block_stats_3_label({}, { locale: activeLocale }),
+    context: m.block_stats_3_context({}, { locale: activeLocale }),
+  },
+  {
+    count: 0,
+    label: m.block_stats_4_label({}, { locale: activeLocale }),
+    context: m.block_stats_4_context({}, { locale: activeLocale }),
+  },
+];
+
 const gridColsClass =
-  items.length <= 2
+  resolvedItems.length <= 2
     ? 'sm:grid-cols-2'
-    : items.length === 3
+    : resolvedItems.length === 3
       ? 'sm:grid-cols-3'
       : 'sm:grid-cols-2 lg:grid-cols-4';
 ---
 
-<PageSection id={id} surface={surface} spacing={spacing} borderTop borderBottom>
-  {
-    (eyebrow || heading) && (
-      <div class="mb-8 max-w-2xl" data-trig>
-        {eyebrow && <p class="section-kicker">{eyebrow}</p>}
-        {heading && (
-          <h2 class="mt-2 text-2xl font-bold tracking-tight text-fg sm:text-3xl text-balance">
-            {heading}
-          </h2>
-        )}
-      </div>
-    )
-  }
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'sm' : spacing}
+  bleed={contained}
+  borderTop
+  borderBottom
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <SectionHeader
+    eyebrow={resolvedEyebrow}
+    heading={resolvedHeading}
+    class={resolvedEyebrow || resolvedHeading ? 'mb-8' : undefined}
+  />
 
   <dl
     class:list={['grid gap-8', gridColsClass]}
@@ -65,10 +110,10 @@ const gridColsClass =
     data-trig-stagger-delay="0.06"
   >
     {
-      items.map((item) => {
+      resolvedItems.map((item) => {
         const displayValue =
           item.value ??
-          `${item.prefix ?? ''}${item.count !== undefined ? formatNumber(item.count, locale) : ''}${item.suffix ?? ''}`;
+          `${item.prefix ?? ''}${item.count !== undefined ? formatNumber(item.count, activeLocale) : ''}${item.suffix ?? ''}`;
         return (
           <div
             data-trig

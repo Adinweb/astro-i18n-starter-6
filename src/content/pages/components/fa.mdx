@@ -1,0 +1,699 @@
+---
+title: "کامپوننت‌ها"
+slug: "کامپوننت‌ها"
+description: "پیش‌نمایش زنده و تعاملی، راهنمای استفاده و فهرست Propهای تمام کامپوننت‌های آماده در این تمپلیت استارتر."
+image: "./components.png"
+hero: "none"
+container: "canvas"
+flushTop: true
+draft: false
+---
+import AboutSplitSection from '@/components/AboutSplitSection.astro';
+import AvatarGroup from '@/components/AvatarGroup.astro';
+import BentoCapabilities from '@/components/BentoCapabilities.astro';
+import Button from '@/components/Button.astro';
+import ComparisonTable from '@/components/ComparisonTable.astro';
+import ComponentDoc from '@/components/ComponentDoc.astro';
+import ContactSplitSection from '@/components/ContactSplitSection.astro';
+import CtaBanner from '@/components/CtaBanner.astro';
+import FaqAccordion from '@/components/FaqAccordion.astro';
+import FeatureCardGrid from '@/components/FeatureCardGrid.astro';
+import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
+import Icon from '@/components/Icon.astro';
+import IconButton from '@/components/IconButton.astro';
+import ImageGallerySection from '@/components/ImageGallerySection.astro';
+import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
+import LatestPostsSection from '@/components/LatestPostsSection.astro';
+import NewsletterBanner from '@/components/NewsletterBanner.astro';
+import PageSection from '@/components/PageSection.astro';
+import PartnerLogos from '@/components/PartnerLogos.astro';
+import PricingSection from '@/components/PricingSection.astro';
+import ProcessSteps from '@/components/ProcessSteps.astro';
+import PromoBanner from '@/components/PromoBanner.astro';
+import ProofStatsRow from '@/components/ProofStatsRow.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import TeamSection from '@/components/TeamSection.astro';
+import TestimonialGrid from '@/components/TestimonialGrid.astro';
+import UiAlert from '@/components/UiAlert.astro';
+import UiBadge from '@/components/UiBadge.astro';
+import heroVisual from './components.png';
+
+<LandingHeroSplit
+  id="hero-landing"
+  surface="hero"
+  eyebrow="کتابخانه کامپوننت‌ها"
+  title="بلوک‌ها و اجزای آماده رابط کاربری"
+  description="تمامی کامپوننت‌ها به‌صورت خودکار با پالت رنگی OKLCH برند، حالت روشن و تاریک و چیدمان راست‌چین/چپ‌چین هماهنگ می‌شوند و هم با مقادیر پیش‌فرض و هم با پراپ‌های دلخواه کار می‌کنند."
+  primaryCta={{ label: "اجزای پایه UI", href: "#sec-primitives", icon: "arrow-right" }}
+  secondaryCta={{ label: "بخش‌های صفحه", href: "#sec-hero" }}
+  trustNote="تمام پراپ‌های محتوا اختیاری هستند · پیش‌فرض‌های Paraglide · چیدمان منطقی CSS"
+  image={heroVisual}
+  imageAlt="کتابخانه کامپوننت‌های استارتر"
+/>
+
+<PageSection id="catalog-nav" surface="surface" spacing="sm" borderBottom>
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="#sec-primitives" class="chip px-3.5 py-1.5 text-xs font-semibold">اجزای پایه UI</a>
+      <a href="#sec-hero" class="chip px-3.5 py-1.5 text-xs font-semibold">هیرو و بنرها</a>
+      <a href="#sec-features" class="chip px-3.5 py-1.5 text-xs font-semibold">امکانات و مراحل</a>
+      <a href="#sec-proof" class="chip px-3.5 py-1.5 text-xs font-semibold">تعرفه، گالری و دیدگاه‌ها</a>
+      <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">تماس و فراخوان</a>
+    </div>
+    <span class="text-xs font-medium text-muted">۲۶ کامپوننت آماده و قابل ترکیب</span>
+  </div>
+</PageSection>
+
+<div id="sec-primitives" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-button"
+    name="Button"
+    category="اجزای پایه UI"
+    title="Button (دکمه و لینک فراخوان)"
+    summary="کامپوننت چندریختی دکمه که در صورت داشتن href به عنوان <a> و در غیر این صورت <button> رندر می‌شود. آیکون‌های جهت‌دار به‌صورت خودکار در RTL آینه می‌شوند."
+    propsList={[
+      { name: "href", type: "string", description: "در صورت ارسال، تگ خروجی را به لینک <a> تبدیل می‌کند." },
+      { name: "variant", type: "'primary' | 'secondary' | 'hero' | 'ghost' | 'glass'", defaultVal: "'primary'", description: "سبک ظاهری مبتنی بر متغیرهای معنایی OKLCH." },
+      { name: "size", type: "'sm' | 'md' | 'lg' | 'auto'", defaultVal: "'md'", description: "مقیاس فاصله داخلی و اندازه فونت دکمه." },
+      { name: "icon", type: "IconName", description: "نام آیکون اختیاری از فهرست بسته SITE_ICONS." },
+      { name: "iconPosition", type: "'start' | 'end'", defaultVal: "'end'", description: "محل قرارگیری آیکون بر اساس جهت خواندن صفحه." },
+      { name: "block", type: "boolean", defaultVal: "false", description: "گسترش عرض دکمه به کل عرض ظرف والد." }
+    ]}
+    usage={`import Button from '@/components/Button.astro';
+
+<Button href="/fa/قیمت-گذاری" variant="primary" size="lg" icon="arrow-right">
+  مشاهده تعرفه‌ها
+</Button>
+<Button variant="secondary" icon="sparkles" iconPosition="start">
+  دکمه اکشن
+</Button>`}
+  >
+    <div class="flex flex-wrap items-center gap-3">
+      <Button href="#doc-button" variant="primary" size="md" icon="arrow-right">اصلی (Primary)</Button>
+      <Button href="#doc-button" variant="secondary" size="md" icon="sparkles" iconPosition="start">ثانویه (Secondary)</Button>
+      <Button variant="ghost" size="md" icon="code">شبح (Ghost)</Button>
+      <Button variant="glass" size="md" icon="palette">شیشه‌ای (Glass)</Button>
+      <Button variant="primary" size="sm">کوچک</Button>
+      <Button variant="primary" size="lg" icon="rocket">بزرگ</Button>
+      <span class="inline-flex rounded-full bg-hero-base p-1.5">
+        <Button href="#doc-button" variant="hero" size="sm" icon="arrow-right">روی پس‌زمینه هیرو</Button>
+      </span>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-icon-button"
+    surface="surface"
+    name="IconButton"
+    category="اجزای پایه UI"
+    title="IconButton و Icon (دکمه آیکونی و نمایش آیکون)"
+    summary="IconButton دکمه مربعی/دایره‌ای استاندارد با نام دسترس‌پذیر الزامی (aria-label) می‌سازد و Icon آیکون‌های تبلر را از فهرست ۴۶تایی بسته رندر می‌کند."
+    propsList={[
+      { name: "label", type: "string", required: true, description: "عنوان دسترس‌پذیر الزامی برای aria-label و title." },
+      { name: "icon", type: "IconName", description: "نام آیکون ثبت‌شده در src/libs/ui/icons.ts." },
+      { name: "variant", type: "'glass' | 'ghost'", defaultVal: "'glass'", description: "نمای شیشه‌ای برای هدر یا ساده برای پنل‌ها." },
+      { name: "size", type: "number", defaultVal: "18", description: "اندازه آیکون درون دکمه بر حسب پیکسل." }
+    ]}
+    usage={`import Icon from '@/components/Icon.astro';
+import IconButton from '@/components/IconButton.astro';
+
+<IconButton icon="search" label="جستجو" variant="glass" />
+<IconButton icon="bell" label="اعلان‌ها" variant="ghost" />
+<Icon name="sparkles" size={20} class="text-primary" />`}
+  >
+    <div class="flex flex-wrap items-center justify-between gap-6">
+      <div class="flex flex-wrap items-center gap-3">
+        <IconButton icon="search" label="نمونه جستجو" variant="glass" />
+        <IconButton icon="bell" label="نمونه اعلان" variant="ghost" />
+        <IconButton icon="sun" label="نمونه پوسته" variant="glass" />
+        <IconButton icon="copy" label="نمونه کپی" variant="ghost" />
+      </div>
+      <div class="flex flex-wrap items-center gap-3 text-primary">
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="sparkles" size={18} /></span>
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="globe" size={18} /></span>
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="shield" size={18} /></span>
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="rocket" size={18} /></span>
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="palette" size={18} /></span>
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="award" size={18} /></span>
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-ui-badge"
+    name="UiBadge"
+    category="اجزای پایه UI"
+    title="UiBadge (نشان وضعیت و برچسب)"
+    summary="نشان فشرده با ۸ رنگ معنایی سیستم تم و پشتیبانی از آیکون و لینک‌شدن خودکار در صورت دریافت href."
+    propsList={[
+      { name: "label", type: "string", defaultVal: "m.block_badge_default", description: "متن نشان؛ در نبود مقدار از پیش‌فرض بومی استفاده می‌شود." },
+      { name: "variant", type: "'primary' | 'secondary' | 'accent' | 'neutral' | 'info' | 'success' | 'warning' | 'error'", defaultVal: "'primary'", description: "نقش رنگی معنایی." },
+      { name: "size", type: "'sm' | 'md'", defaultVal: "'md'", description: "اندازه نشان و پدینگ." },
+      { name: "icon", type: "IconName", description: "آیکون اختیاری پیش از متن." },
+      { name: "href", type: "string", description: "در صورت ارسال، نشان به تگ <a> تعاملی تبدیل می‌شود." }
+    ]}
+    usage={`import UiBadge from '@/components/UiBadge.astro';
+
+<UiBadge label="آماده انتشار" variant="success" icon="circle-check" />
+<UiBadge label="نسخه ۵.۱" variant="info" size="sm" href="#doc-ui-badge" />`}
+  >
+    <div class="flex flex-wrap items-center gap-2.5">
+      <UiBadge variant="primary" icon="sparkles" />
+      <UiBadge label="ثانویه" variant="secondary" icon="layers" />
+      <UiBadge label="تاکیدی" variant="accent" icon="bolt" />
+      <UiBadge label="خنثی" variant="neutral" />
+      <UiBadge label="اطلاع‌رسانی" variant="info" icon="info" />
+      <UiBadge label="موفق" variant="success" icon="circle-check" />
+      <UiBadge label="هشدار" variant="warning" icon="alert-triangle" />
+      <UiBadge label="خطا" variant="error" icon="alert-circle" />
+      <UiBadge label="لینک کوچک" variant="primary" size="sm" icon="external-link" href="#doc-ui-badge" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-ui-alert"
+    surface="surface"
+    name="UiAlert"
+    category="اجزای پایه UI"
+    title="UiAlert (جعبه پیام و هشدار)"
+    summary="کارت اعلان دسترس‌پذیر با نقش‌های ARIA متناسب، آیکون معنایی، دکمه اکشن اختیاری و قابلیت بسته‌شدن تعاملی."
+    propsList={[
+      { name: "variant", type: "'info' | 'success' | 'warning' | 'error' | 'neutral'", defaultVal: "'info'", description: "نوع وضعیت و رنگ‌بندی معنایی." },
+      { name: "title", type: "string", defaultVal: "m.block_alert_default_title", description: "تیتر اصلی پیام." },
+      { name: "description", type: "string | null", defaultVal: "m.block_alert_default_desc", description: "متن توضیح؛ با ارسال null مخفی می‌شود." },
+      { name: "action", type: "AlertAction", description: "دکمه اکشن با ساختار { label, href, icon?, external? }." },
+      { name: "dismissible", type: "boolean", defaultVal: "false", description: "دکمه بستن پیام را فعال می‌کند." }
+    ]}
+    usage={`import UiAlert from '@/components/UiAlert.astro';
+
+<UiAlert
+  variant="success"
+  title="بیلد تایید شد"
+  description="تمام بررسی‌های چندزبانگی، RTL و لینک‌ها موفق بود."
+  dismissible
+/>`}
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      <UiAlert variant="info" dismissible />
+      <UiAlert
+        variant="success"
+        title="خروجی استاتیک آماده است"
+        description="تصاویر، فونت‌ها و مسیرهای دو‌زبانه بدون نیاز به سرور رندر شده‌اند."
+        action={{ label: "مشاهده بخش‌ها", href: "#sec-features" }}
+      />
+      <UiAlert
+        variant="warning"
+        title="وضعیت انتشار صفحه"
+        description="تا زمانی که مقدار draft در frontmatter برابر false نشود، صفحه در خروجی نهایی منتشر نمی‌شود."
+      />
+      <UiAlert
+        variant="error"
+        title="بررسی نقطه پایانی API"
+        description="پیش از فعال‌سازی فرم آنلاین، مقدار PUBLIC_CONTACT_API_URL را تنظیم کنید."
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-avatar-group"
+    name="AvatarGroup"
+    category="اجزای پایه UI"
+    title="AvatarGroup (گروه آواتار و امتیاز)"
+    summary="پشته آواتارهای هم‌پوشان با حاشیه منطقی (-ms-2.5)، ساخت حروف اول خودکار، شمارشگر فارسی/انگلیسی و امتیاز ستاره‌ای."
+    propsList={[
+      { name: "items", type: "AvatarItem[]", defaultVal: "۴ عضو نمونه", description: "آرایه { name, image?, alt? }؛ در نبود تصویر از getInitials() استفاده می‌شود." },
+      { name: "extraCount", type: "number", defaultVal: "24", description: "نشانگر تعداد بیشتر (+۲۴) با قالب‌بندی بومی عدد." },
+      { name: "rating", type: "number | null", defaultVal: "5", description: "امتیاز ۱ تا ۵ ستاره؛ با ارسال null حذف می‌شود." },
+      { name: "label", type: "string | null", defaultVal: "m.block_avatar_trust_label", description: "متن توضیح کنار گروه آواتارها." },
+      { name: "size", type: "'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "قطر دایره آواتارها." }
+    ]}
+    usage={`import AvatarGroup from '@/components/AvatarGroup.astro';
+
+<AvatarGroup extraCount={40} rating={5} size="md" />`}
+  >
+    <div class="flex flex-wrap items-center justify-between gap-6">
+      <AvatarGroup size="md" />
+      <AvatarGroup size="sm" extraCount={120} rating={null} label="مورد استفاده در پروژه‌های دو‌زبانه" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-section-header"
+    surface="surface"
+    name="SectionHeader & PageSection"
+    category="ساختار صفحه"
+    title="SectionHeader و PageSection"
+    summary="PageSection نوارهای تمام‌عرض را با پس‌زمینه معنایی و ترازبندی ۱۲۸۰px می‌سازد و SectionHeader تایپوگرافی استاندارد سرعنوان هر بخش را یکپارچه نگه می‌دارد."
+    propsList={[
+      { name: "surface", type: "'default' | 'surface' | 'subtle'", defaultVal: "'default'", description: "رنگ پس‌زمینه نوار در PageSection." },
+      { name: "spacing", type: "'none' | 'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "ریتم فاصله عمودی بالا و پایین بخش." },
+      { name: "bleed", type: "boolean", defaultVal: "false", description: "حذف کانتینر میانی هنگام قرارگیری درون کادرهای تو‌در‌تو." },
+      { name: "eyebrow / heading / subheading", type: "string", description: "عنوان فرعی، تیتر H2 و زیرنویس در SectionHeader." },
+      { name: "align", type: "'start' | 'center'", defaultVal: "'start'", description: "تراز ابتدایی یا وسط‌چین متن سرعنوان." }
+    ]}
+    usage={`import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+
+<PageSection surface="subtle" spacing="md" borderTop>
+  <SectionHeader
+    eyebrow="معماری"
+    heading="ریتم عمودی هماهنگ"
+    subheading="تراز خودکار با گرید استاندارد سایت."
+  />
+</PageSection>`}
+  >
+    <div class="grid gap-6 md:grid-cols-2">
+      <div class="rounded-2xl border border-border bg-surface p-6">
+        <SectionHeader
+          eyebrow="تراز ابتدا (Start)"
+          heading="سرعنوان منطقی راست‌چین/چپ‌چین"
+          subheading="در فارسی راست‌چین و در انگلیسی چپ‌چین می‌شود."
+        />
+      </div>
+      <div class="rounded-2xl border border-border bg-surface/60 p-6">
+        <SectionHeader
+          align="center"
+          eyebrow="وسط‌چین (Center)"
+          heading="سرعنوان متمرکز"
+          subheading="مناسب برای بخش تعرفه‌ها، دیدگاه‌ها و پرسش‌های متداول."
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+</div>
+
+<div id="sec-hero" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-hero-split"
+    name="LandingHeroSplit & HomeHero"
+    category="هیرو و بنرها"
+    title="LandingHeroSplit و HomeHero"
+    summary="LandingHeroSplit بخش هیروی دوستونه بالای همین صفحه را می‌سازد و HomeHero برای صفحه اصلی طراحی شده است. هر دو تگ یکتای <h1> صفحه را صادر می‌کنند."
+    propsList={[
+      { name: "surface", type: "'default' | 'hero' | 'subtle'", defaultVal: "'default'", description: "انتخاب پس‌زمینه عادی یا بوم تیره کنتراست‌بالای هیرو." },
+      { name: "title", type: "string", defaultVal: "m.block_hero_title", description: "تیتر اصلی <h1> صفحه." },
+      { name: "eyebrow / description / trustNote", type: "string | null", description: "متن‌های مکمل؛ با null مقادیر پیش‌فرض پنهان می‌شوند." },
+      { name: "primaryCta / secondaryCta", type: "HeroCtaAction | null", description: "دکمه‌های فراخوان که با کامپوننت <Button> رندر می‌شوند." },
+      { name: "image", type: "ImageMetadata | null", defaultVal: "DEFAULT_HERO_IMAGE", description: "تصویر بهینه Astro در ستون مقابل یا استفاده از slot='media'." }
+    ]}
+    usage={`import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
+import heroImg from './cover.png';
+
+<LandingHeroSplit
+  surface="hero"
+  eyebrow="معرفی پلتفرم"
+  title="وب‌سایت خود را سریع‌تر منتشر کنید"
+  primaryCta={{ label: "شروع کنید", href: "/fa/قیمت-گذاری" }}
+  image={heroImg}
+/>`}
+  >
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <p class="text-sm text-muted">
+        برای حفظ ساختار استاندارد یک تگ <code dir="ltr" class="font-mono text-xs font-semibold text-fg">&lt;h1&gt;</code> یکتا در هر صفحه، نمونه زنده <code dir="ltr" class="font-mono text-xs font-semibold text-fg">&lt;LandingHeroSplit surface="hero" /&gt;</code> در بالای همین صفحه رندر شده است.
+      </p>
+      <Button href="#hero-landing" variant="secondary" size="sm" icon="arrow-right">
+        مشاهده هیروی زنده در بالا
+      </Button>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-promo-banner"
+    surface="surface"
+    name="PromoBanner"
+    category="هیرو و بنرها"
+    title="PromoBanner (نوار اطلاعیه و پیشنهاد)"
+    summary="نوار اطلاع‌رسانی با ۴ تم آماده، برچسب کوتاه، آیکون، دکمه اکشن و دکمه بستن با ذخیره وضعیت در Session."
+    propsList={[
+      { name: "variant", type: "'primary' | 'hero' | 'surface' | 'accent'", defaultVal: "'hero'", description: "تم رنگی نوار و تنظیم خودکار کنتراست دکمه‌ها." },
+      { name: "badge", type: "string | null", defaultVal: "m.block_promo_badge", description: "برچسب ابتدای نوار؛ با null حذف می‌شود." },
+      { name: "message", type: "string", defaultVal: "m.block_promo_message", description: "متن پیام اطلاعیه." },
+      { name: "cta", type: "PromoBannerCta | null", defaultVal: "لینک ویژگی‌ها", description: "دکمه کوچک فراخوان." },
+      { name: "dismissible", type: "boolean", defaultVal: "false", description: "نمایش دکمه بستن و ذخیره در sessionStorage." }
+    ]}
+    usage={`import PromoBanner from '@/components/PromoBanner.astro';
+
+<PromoBanner
+  id="release-bar"
+  variant="primary"
+  dismissible
+/>`}
+  >
+    <div class="space-y-3">
+      <PromoBanner id="demo-promo-hero" contained variant="hero" dismissible />
+      <PromoBanner id="demo-promo-primary" contained variant="primary" />
+      <PromoBanner id="demo-promo-accent" contained variant="accent" badge="نکته" message="هنگام استفاده درون کادرهای دیگر، پراپ contained را فعال کنید." cta={null} />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-partner-logos"
+    name="PartnerLogos"
+    category="هیرو و بنرها"
+    title="PartnerLogos (لوگوها و نشان‌های همکاران)"
+    summary="ردیف واکنش‌گرا برای نمایش همکاران یا اکوسیستم فنی با آیکون، نام برند و برچسب دسته‌بندی."
+    propsList={[
+      { name: "items", type: "PartnerItem[]", defaultVal: "۵ همکار نمونه", description: "فهرست آیتم‌ها با { name, tagline?, icon?, href? }." },
+      { name: "columns", type: "4 | 5 | 6", defaultVal: "5", description: "تعداد ستون‌ها در نمایشگر دسکتاپ." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "جلوگیری از فاصله افقی مضاعف درون کانتینرها." }
+    ]}
+    usage={`import PartnerLogos from '@/components/PartnerLogos.astro';
+
+<PartnerLogos columns={5} surface="subtle" />`}
+  >
+    <PartnerLogos contained eyebrow={null} heading={null} />
+  </ComponentDoc>
+</div>
+
+<div id="sec-features" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-about-split"
+    surface="surface"
+    name="AboutSplitSection"
+    category="امکانات و محتوا"
+    title="AboutSplitSection (بخش معرفی دوستونه)"
+    summary="طرح‌بندی دوستونه با قابلیت جابه‌جایی جایگاه تصویر (start/end)، فهرست نکات کلیدی، آمار عددی و دو دکمه فراخوان."
+    propsList={[
+      { name: "mediaPosition", type: "'start' | 'end'", defaultVal: "'end'", description: "چینش ستون تصویر در ابتدا یا انتهای ردیف." },
+      { name: "highlights", type: "string[]", defaultVal: "۳ مورد پیش‌فرض", description: "فهرست تیک‌دار نکات برجسته." },
+      { name: "stats", type: "AboutStat[]", description: "آمار کوتاه { label, value?, count?, suffix? } با فرمت بومی ارقام." },
+      { name: "image", type: "ImageMetadata | null", defaultVal: "DEFAULT_HERO_IMAGE", description: "تصویر بهینه یا استفاده از slot='media'." },
+      { name: "primaryCta / secondaryCta", type: "AboutCtaAction | null", description: "دکمه‌های اصلی و ثانویه بخش." }
+    ]}
+    usage={`import AboutSplitSection from '@/components/AboutSplitSection.astro';
+
+<AboutSplitSection
+  mediaPosition="start"
+  stats={[
+    { label: "کامپوننت‌ها", count: 26, suffix: "+" },
+    { label: "زبان‌ها", count: 2 }
+  ]}
+/>`}
+  >
+    <AboutSplitSection
+      contained
+      mediaPosition="end"
+      stats={[
+        { label: "بلوک آماده", count: 26, suffix: "+" },
+        { label: "پالت رنگ", count: 6 },
+        { label: "سرور زمان اجرا", count: 0 }
+      ]}
+    />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-bento"
+    name="BentoCapabilities"
+    category="امکانات و محتوا"
+    title="BentoCapabilities (شبکه بنتو قابلیت‌ها)"
+    summary="چیدمان نامتقارن Bento با پشتیبانی از کارت‌های تمام‌عرض (wide)، شماره‌گذاری بومی و قاب آیکون."
+    propsList={[
+      { name: "items", type: "BentoItem[]", defaultVal: "۴ کارت پیش‌فرض", description: "شامل { title, description, icon?, wide? } برای هر کارت." },
+      { name: "numbered", type: "boolean", defaultVal: "true", description: "نمایش شماره‌گذاری ۰۱، ۰۲ در گوشه کارت‌ها." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "حذف حاشیه اضافه در چیدمان‌های تو‌در‌تو." }
+    ]}
+    usage={`import BentoCapabilities from '@/components/BentoCapabilities.astro';
+
+<BentoCapabilities
+  items={[
+    { wide: true, icon: "sparkles", title: "معماری ماژولار", description: "..." },
+    { icon: "globe", title: "دوجهته بومی", description: "..." }
+  ]}
+/>`}
+  >
+    <BentoCapabilities contained eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-feature-tabs"
+    surface="surface"
+    name="FeatureTabsSection"
+    category="امکانات و محتوا"
+    title="FeatureTabsSection (تب‌های تعاملی قابلیت‌ها)"
+    summary="جابه‌جایی بین تب‌ها با پشتیبانی کامل از کلیدهای جهت‌نما در RTL و LTR، در دو سبک قرصی (pills) و خط زیرین (underline)."
+    propsList={[
+      { name: "tabs", type: "FeatureTabItem[]", defaultVal: "۳ تب پیش‌فرض", description: "آرایه { id, label, title, description, icon?, highlights?, badge? }." },
+      { name: "variant", type: "'pills' | 'underline'", defaultVal: "'pills'", description: "سبک ظاهری نوار انتخاب تب‌ها." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "تنظیم bleed برای قرارگیری داخل کادرهای دیگر." }
+    ]}
+    usage={`import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
+
+<FeatureTabsSection variant="pills" />`}
+  >
+    <FeatureTabsSection contained variant="pills" />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-process-steps"
+    name="ProcessSteps"
+    category="امکانات و محتوا"
+    title="ProcessSteps (مراحل انجام کار)"
+    summary="نمایش فرآیندهای چندمرحله‌ای در دو حالت کارت‌های مجزا یا تایم‌لاین افقی متصل، با شماره‌گذاری خودکار بومی."
+    propsList={[
+      { name: "steps", type: "ProcessStep[]", defaultVal: "۴ مرحله پیش‌فرض", description: "آرایه مراحل با { title, description, icon? }." },
+      { name: "variant", type: "'cards' | 'timeline'", defaultVal: "'cards'", description: "انتخاب بین چیدمان کارتی و خط زمانی متصل." },
+      { name: "cta", type: "ProcessCtaAction", description: "دکمه اختیاری در کنار سرعنوان." }
+    ]}
+    usage={`import ProcessSteps from '@/components/ProcessSteps.astro';
+
+<ProcessSteps variant="timeline" />`}
+  >
+    <ProcessSteps contained variant="timeline" />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-feature-cards"
+    surface="surface"
+    name="FeatureCardGrid"
+    category="امکانات و محتوا"
+    title="FeatureCardGrid (شبکه کارت‌های چندمنظوره)"
+    summary="شبکه ۲، ۳ یا ۴ ستونه با تصویر کاور یا قاب آیکون، برچسب دسته‌بندی، تگ‌ها و لینک کل کارت."
+    propsList={[
+      { name: "items", type: "FeatureCardItem[]", defaultVal: "۳ کارت نمونه", description: "ساختار { title, description, badge?, icon?, image?, tags?, href?, ctaLabel? }." },
+      { name: "columns", type: "2 | 3 | 4", defaultVal: "3", description: "تعداد ستون‌ها در صفحه نمایش بزرگ." },
+      { name: "aspect", type: "'16/9' | '4/3'", defaultVal: "'16/9'", description: "نسبت ابعاد بخش رسانه بالای کارت." }
+    ]}
+    usage={`import FeatureCardGrid from '@/components/FeatureCardGrid.astro';
+
+<FeatureCardGrid columns={3} aspect="16/9" />`}
+  >
+    <FeatureCardGrid contained columns={3} eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-proof-stats"
+    name="ProofStatsRow"
+    category="امکانات و محتوا"
+    title="ProofStatsRow (ردیف شاخص‌ها و آمار)"
+    summary="نمایش شاخص‌های کلیدی عملکرد به صورت ارقام هم‌عرض (tabular-nums) و قالب‌بندی بومی فارسی/انگلیسی."
+    propsList={[
+      { name: "items", type: "ProofStatItem[]", defaultVal: "۴ شاخص نمونه", description: "آرایه { label, value?, count?, prefix?, suffix?, context? }." },
+      { name: "eyebrow / heading", type: "string | null", description: "سرعنوان اختیاری بالای کارت‌های آمار." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "حذف حاشیه‌های تکراری هنگام استفاده داخل کانتینر." }
+    ]}
+    usage={`import ProofStatsRow from '@/components/ProofStatsRow.astro';
+
+<ProofStatsRow
+  items={[
+    { count: 100, suffix: "%", label: "استاتیک", context: "بدون سرور زمان اجرا" }
+  ]}
+/>`}
+  >
+    <ProofStatsRow contained eyebrow={null} heading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-comparison-table"
+    surface="surface"
+    name="ComparisonTable"
+    category="امکانات و محتوا"
+    title="ComparisonTable (جدول مقایسه امکانات)"
+    summary="جدول مقایسه واکنش‌گرا با رندر خودکار آیکون تایید/عدم‌پشتیبانی برای مقادیر بولین، متن دلخواه و برجسته‌سازی ستون پیشنهادی."
+    propsList={[
+      { name: "columns", type: "ComparisonColumn[]", description: "تعریف ستون‌ها با { key, name, subtitle?, highlighted?, badge? }." },
+      { name: "rows", type: "ComparisonRow[]", description: "ردیف‌های مقایسه با { feature, note?, values: Record<string, boolean | string> }." },
+      { name: "featureColumnLabel", type: "string", defaultVal: "m.block_compare_feature_col", description: "عنوان ستون اول جدول." }
+    ]}
+    usage={`import ComparisonTable from '@/components/ComparisonTable.astro';
+
+<ComparisonTable surface="subtle" />`}
+  >
+    <ComparisonTable contained eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+</div>
+
+<div id="sec-proof" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-pricing"
+    name="PricingSection"
+    category="تعرفه و اعتبار اجتماعی"
+    title="PricingSection (بخش تعرفه و پلن‌ها)"
+    summary="کارت‌های قیمت‌گذاری با پلن برجسته پیشنهادی، فهرست امکانات و دکمه تعاملی جابه‌جایی بین صورتحساب ماهانه و سالانه."
+    propsList={[
+      { name: "tiers", type: "PricingTier[]", defaultVal: "۳ پلن پیش‌فرض", description: "مشخصات هر پلن شامل monthlyPrice، annualPrice، features[]، badge و cta." },
+      { name: "billingToggle", type: "boolean", defaultVal: "false", description: "فعال‌سازی کلید تعاملی تغییر دوره ماهانه/سالانه." },
+      { name: "defaultBilling", type: "'monthly' | 'annual'", defaultVal: "'monthly'", description: "حالت پیش‌فرض دوره صورتحساب." },
+      { name: "annualSaveBadge", type: "string", defaultVal: "m.block_pricing_save_badge", description: "نشان تخفیف کنار گزینه سالانه." }
+    ]}
+    usage={`import PricingSection from '@/components/PricingSection.astro';
+
+<PricingSection billingToggle defaultBilling="monthly" />`}
+  >
+    <PricingSection contained billingToggle defaultBilling="monthly" eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-testimonials"
+    surface="surface"
+    name="TestimonialGrid"
+    category="تعرفه و اعتبار اجتماعی"
+    title="TestimonialGrid (دیدگاه مشتریان)"
+    summary="کارت‌های نقل‌قول و بازخورد کاربران همراه با امتیاز ۵ ستاره، آواتار حروف اول یا تصویر، و عنوان شغلی."
+    propsList={[
+      { name: "items", type: "TestimonialItem[]", defaultVal: "۳ دیدگاه پیش‌فرض", description: "آرایه { quote, author, role?, rating?, avatar? }." },
+      { name: "eyebrow / heading / subheading", type: "string | null", description: "متن سرعنوان بخش با مقادیر پیش‌فرض بومی." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "نمایش یکپارچه درون کادرهای والد." }
+    ]}
+    usage={`import TestimonialGrid from '@/components/TestimonialGrid.astro';
+
+<TestimonialGrid surface="subtle" />`}
+  >
+    <TestimonialGrid contained eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-gallery"
+    name="ImageGallerySection"
+    category="رسانه و گالری"
+    title="ImageGallerySection (گالری تصاویر با فیلتر و پیش‌نمایش)"
+    summary="نمایشگر تصاویر واکنش‌گرا مجهز به فیلتر دسته‌بندی آنی، به‌روزرسانی انیمیشن ChronoTrig و مودال بزرگ‌نمایی دسترس‌پذیر (<dialog>)."
+    propsList={[
+      { name: "items", type: "GalleryItem[]", defaultVal: "۳ تصویر نمونه", description: "آرایه { title, caption?, category?, image?, alt? }." },
+      { name: "columns", type: "2 | 3 | 4", defaultVal: "3", description: "تعداد ستون‌ها در دسکتاپ." },
+      { name: "enableFilter", type: "boolean", defaultVal: "true", description: "نمایش چیپ‌های فیلتر هنگام وجود بیش از یک دسته." },
+      { name: "enableLightbox", type: "boolean", defaultVal: "true", description: "فعال‌سازی دکمه و مودال نمایش بزرگ تصویر." }
+    ]}
+    usage={`import ImageGallerySection from '@/components/ImageGallerySection.astro';
+
+<ImageGallerySection columns={3} enableFilter enableLightbox />`}
+  >
+    <ImageGallerySection contained columns={3} enableFilter enableLightbox />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-latest-posts"
+    surface="surface"
+    name="LatestPostsSection & PostCard"
+    category="محتوا و وبلاگ"
+    title="LatestPostsSection و PostCard (تازه‌ترین مقالات)"
+    summary="به‌صورت خودکار مقالات منتشرشده وبلاگ در زبان فعال را فراخوانی و با PostCard رندر می‌کند و امکان دریافت لیست دلخواه items را نیز دارد."
+    propsList={[
+      { name: "limit", type: "number", defaultVal: "3", description: "حداکثر تعداد مقالات دریافتی از کالکشن blog." },
+      { name: "category", type: "string", description: "فیلتر اختیاری بر اساس شناسه دسته‌بندی." },
+      { name: "items", type: "BlogPreviewItem[]", description: "آرایه سفارشی کارت‌ها برای جایگزینی کوئری خودکار." },
+      { name: "viewAllHref / viewAllLabel", type: "string | null", defaultVal: "صفحه وبلاگ", description: "دکمه مشاهده همه مطالب؛ با null مخفی می‌شود." }
+    ]}
+    usage={`import LatestPostsSection from '@/components/LatestPostsSection.astro';
+
+<LatestPostsSection limit={3} surface="default" />`}
+  >
+    <LatestPostsSection contained limit={3} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-team"
+    name="TeamSection"
+    category="تعرفه و اعتبار اجتماعی"
+    title="TeamSection (معرفی اعضای تیم)"
+    summary="کارت‌های ۴ ستونه معرفی اعضا با تصویر پرتره بهینه یا حروف اول نام، سمت، بیوگرافی کوتاه و لینک اختیاری."
+    propsList={[
+      { name: "members", type: "TeamMember[]", defaultVal: "۴ عضو نمونه", description: "آرایه { name, role, bio?, image?, linkLabel?, linkHref? }." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "حذف ظرف خارجی اضافه هنگام تو‌در‌تو بودن." }
+    ]}
+    usage={`import TeamSection from '@/components/TeamSection.astro';
+
+<TeamSection surface="subtle" />`}
+  >
+    <TeamSection contained eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-faq"
+    surface="surface"
+    name="FaqAccordion"
+    category="محتوا و مستندات"
+    title="FaqAccordion (آکاردئون پرسش‌های متداول)"
+    summary="آکاردئون استاندارد با تگ بومی <details>/<summary> بدون نیاز به جاوااسکریپت و تزریق اختیاری داده‌های ساختاریافته FAQPage."
+    propsList={[
+      { name: "items", type: "FaqItem[]", defaultVal: "۳ پرسش نمونه", description: "آرایه پرسش و پاسخ { question, answer }." },
+      { name: "openFirst", type: "boolean", defaultVal: "true", description: "باز نگه داشتن اولین پرسش در بارگذاری اولیه." },
+      { name: "emitSchema", type: "boolean", defaultVal: "true", description: "تولید خودکار اسکیمای سئو JSON-LD نوع FAQPage." }
+    ]}
+    usage={`import FaqAccordion from '@/components/FaqAccordion.astro';
+
+<FaqAccordion openFirst emitSchema={true} />`}
+  >
+    <FaqAccordion contained openFirst emitSchema={false} eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+</div>
+
+<div id="sec-conversion" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-contact-split"
+    name="ContactSplitSection & ContactForm"
+    category="فرم‌ها و تبدیل"
+    title="ContactSplitSection و ContactForm (بخش تماس دوستونه)"
+    summary="ترکیب کارت‌های راه ارتباطی با فرم <ContactForm embedded />؛ کاملاً سازگار با SSG که در صورت نبود API پیکربندی‌شده جایگزین ایمیل مستقیم نمایش می‌دهد."
+    propsList={[
+      { name: "channels", type: "ContactChannel[]", defaultVal: "ایمیل، ساعات کار و موقعیت", description: "کارت‌های اطلاعات تماس در ستون آغازین." },
+      { name: "eyebrow / heading / subheading", type: "string | null", description: "سرعنوان بالای فهرست راه‌های ارتباطی." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "کنترل استفاده از PageSection داخلی." }
+    ]}
+    usage={`import ContactSplitSection from '@/components/ContactSplitSection.astro';
+
+<ContactSplitSection id="contact" surface="default" />`}
+  >
+    <ContactSplitSection id="demo-contact-split" contained />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-newsletter"
+    surface="surface"
+    name="NewsletterBanner"
+    category="فرم‌ها و تبدیل"
+    title="NewsletterBanner (بنر عضویت خبرنامه)"
+    summary="بخش جذب ایمیل منطبق با معماری Pure-SSG با اتصال مستقیم به سرویس API خارجی یا نمایش لینک ایمیل جایگزین."
+    propsList={[
+      { name: "eyebrow / title / subtitle", type: "string", defaultVal: "متن‌های newsletter_*", description: "تیتر و توضیحات کادر خبرنامه." },
+      { name: "endpoint / baseUrl", type: "string", defaultVal: "app.config.json", description: "بازنویسی اختیاری نشانی سرویس خارجی ثبت ایمیل." },
+      { name: "source", type: "string", defaultVal: "'newsletter-banner'", description: "شناسه منبع ارسال‌شده در درخواست API." }
+    ]}
+    usage={`import NewsletterBanner from '@/components/NewsletterBanner.astro';
+
+<NewsletterBanner source="footer-signup" />`}
+  >
+    <NewsletterBanner id="demo-newsletter" contained />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-cta-banner"
+    name="CtaBanner"
+    category="فرم‌ها و تبدیل"
+    title="CtaBanner (بنر فراخوان پایانی)"
+    summary="کارت پایانی متمرکز با قابلیت انتخاب تم تیره هیرو یا روشن سطحی و پشتیبانی از دو دکمه اکشن."
+    propsList={[
+      { name: "surface", type: "'hero' | 'surface'", defaultVal: "'hero'", description: "پس‌زمینه تیره با جلوه برند یا سطح روشن." },
+      { name: "title / description / eyebrow", type: "string | null", defaultVal: "متن‌های home_cta_*", description: "تیتر، توضیح و برچسب بالای فراخوان." },
+      { name: "primaryCta / secondaryCta", type: "CtaAction | null", description: "لینک‌های اکشن رندرشده توسط <Button>." }
+    ]}
+    usage={`import CtaBanner from '@/components/CtaBanner.astro';
+
+<CtaBanner
+  surface="hero"
+  title="آماده شروع پروژه هستید؟"
+  primaryCta={{ label: "شروع کنید", href: "/fa/قیمت-گذاری" }}
+/>`}
+  >
+    <CtaBanner id="demo-cta-banner" contained surface="hero" />
+  </ComponentDoc>
+</div>

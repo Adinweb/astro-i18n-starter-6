@@ -17,7 +17,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Compile-Time i18n via Paraglide**: Strongly typed translations with native ICU plurals and ordinals, compiled directly to tree-shakeable JS functions without runtime overhead.
 * **Symmetrical Content Collections**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs and cross-language alternate linking.
 * **Manageable Content Types**: `pages`, `blog` and `projects` are declared in `app.config.json` → `content.types`. `pnpm run content:enable|disable <type>` adds or removes a type's routes, sitemap entries and navigation links without touching a single content file, and `content:new` scaffolds an entry in any type.
-* **10 Composable Corporate & Landing Blocks**: Ready-to-use Astro components (`LandingHeroSplit`, `BentoCapabilities`, `ProofStatsRow`, `FaqAccordion`, `CtaBanner`, `PricingSection`, `TestimonialGrid`, `TeamSection`, `PartnerLogos`, `NewsletterBanner`) built with semantic OKLCH tokens, CSS logical properties, Paraglide i18n, and ChronoTrig scroll reveals — plus `pnpm run new:page <key> -- --preset=landing`.
+* **22 Composable Corporate, Landing & UI Blocks (PrebuiltUI-Adapted)**: 19 section blocks (`LandingHeroSplit`, `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection`, `LatestPostsSection`, `TeamSection`, `FaqAccordion`, `ContactSplitSection`, `NewsletterBanner`, `CtaBanner`) plus 3 reusable UI primitives (`UiBadge`, `UiAlert`, `AvatarGroup`), all built with semantic OKLCH tokens, CSS logical properties, Paraglide i18n with full localized defaults, and ChronoTrig scroll reveals — plus `pnpm run new:page <key> -- --preset=landing`.
 * **Configurable, Dead-Link-Free Navigation**: One `PAGE_ITEMS` list feeds the desktop header **and** the mobile drawer from a single builder, `ui.ctaPage` in `app.config.json` picks the header/drawer CTA target, and any entry whose page (or `#anchor`) no longer exists hides itself — `pnpm run link:check` fails the pipeline if an internal link or fragment resolves to nothing.
 * **Paginated Blog Index & Cross-Page Filtering**: Static paginated route set — one URL per page per locale (`/blog/`, `/blog/page/2/`, `/fa/blog/page/2/`) — with reciprocal `hreflang`, `rel="prev"` / `rel="next"`, and progressive cross-page taxonomy filtering powered by lightweight per-locale static catalogs (`/api/blog-posts/<locale>.json`).
 * **Persian-Aware Search Built-In**: Production static indexing with **Pagefind** (`scripts/index-pagefind.mjs`) enhanced with Perso-Arabic character normalization (`ي`/`ك` → `ی`/`ک`), punctuation token boundary isolation (`«...»`, `،`), client-side ZWNJ/space compound & numeral query expansion (`src/libs/search/persian.ts`), and per-locale JSON fallbacks (`/api/search-dev/<locale>.json`).
@@ -32,7 +32,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Optimized Image Pipeline**: Every picture is served through Astro's image pipeline — WebP output, a responsive `srcset` with the right `sizes`, and optimized Open Graph social cards.
 * **Frosted-Glass Design System**: The header, its icon controls, buttons (`Button.astro`), and chips are defined once in `src/styles/global.css` alongside an AA-contrast OKLCH semantic palette (`primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, `error`).
 * **Raster Brand Assets From Code**: `scripts/generate-assets.mjs` deterministically produces the app icons, the default Open Graph image, and all hero/cover artwork with no image-editing dependency.
-* **Inline Tabler Icons**: 31 semantic icons rendered via `<Icon name="..." />` from `@tabler/icons-astro`, imported per icon so builds stay lean — no sprite request and no inline SVG duplication.
+* **Inline Tabler Icons**: 46 semantic icons rendered via `<Icon name="..." />` from `@tabler/icons-astro`, imported per icon so builds stay lean — no sprite request and no inline SVG duplication.
 * **Turnkey Developer CLI Suite**: 24 automation scripts for client onboarding (`site:init`), page/post scaffolding, content-type toggling, language management, Tailwind RTL adaptation, translation extraction, parity audits, link crawling, and dead-code checks.
 
 ---
@@ -111,7 +111,7 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── ContactForm.astro  # Pure-SSG contact inquiry form posting to external APIs
 │   │   ├── Seo.astro          # Canonical links, reciprocal hreflang tags & OG card wiring
 │   │   ├── TopLoadingBar.astro # Page transition progress bar (reduced-motion aware)
-│   │   └── …                  # + 10 composable corporate/landing blocks (LandingHeroSplit … NewsletterBanner)
+│   │   └── …                  # + 19 section blocks & 3 UI primitives (LandingHeroSplit … ContactSplitSection, UiBadge, UiAlert, AvatarGroup)
 │   ├── content/               # Multilingual Content Collections
 │   │   ├── pages/             # Static pages: home, about, features, pricing
 │   │   │   └── <group>/       # Holds <locale>.mdx files + group hero/OG artwork
@@ -144,7 +144,7 @@ This compiles Paraglide messages, builds all static HTML pages into `dist/`, and
 │   │   ├── cookies/           # Consent state model & multi-domain cookie/script manager
 │   │   ├── search/            # client.ts + persian.ts (Pagefind + ZWNJ/orthography search engine)
 │   │   ├── ui/button.ts       # Button class recipe shared by Button.astro and client renderers
-│   │   └── ui/icons.ts        # Closed 31-icon vocabulary (SITE_ICONS)
+│   │   └── ui/icons.ts        # Closed 46-icon vocabulary (SITE_ICONS)
 │   ├── pages/
 │   │   ├── [...path].astro    # Lean Router Dispatcher
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
@@ -431,7 +431,7 @@ Run the full quality assurance pipeline:
 # 1. TypeScript Strict Check
 pnpm run lint
 
-# 2. Vitest Unit Tests (24 files, 245 tests: paths, ICU, routes, blocks, theme, OG, and CLI helpers)
+# 2. Vitest Unit Tests (24 files, 247 tests: paths, ICU, routes, blocks, theme, OG, and CLI helpers)
 pnpm test
 
 # 3. i18n Parity, Placeholder, Content & Route Audit

@@ -427,25 +427,34 @@ flushTop: true
 
 ---
 
-## ۷. بلوک‌های آماده (کامپوننت‌های شرکتی و لندینگ)
+## ۷. بلوک‌های آماده (کامپوننت‌های شرکتی، لندینگ و رابط کاربری)
 
-به جای کپی کردن HTML خام، از **۱۰ بلوک آمادهٔ پروژه** استفاده کنید. همهٔ آن‌ها با
-توکن‌های OKLCH، خواص منطقی CSS، Paraglide i18n، آیکون‌های `<Icon>` و انیمیشن‌های
-ChronoTrig (`data-trig` / `data-trig-stagger`) ساخته شده‌اند و در صفحات `canvas` (و در
-`PricingSection` با `contained` حتی داخل صفحات متنی) کار می‌کنند:
+به جای کپی کردن HTML خام، از **۲۲ بلوک آمادهٔ پروژه** (۱۹ بلوک سکشن + ۳ پریمیتیو رابط کاربری، الهام‌گرفته از PrebuiltUI) استفاده کنید. همهٔ آن‌ها با توکن‌های OKLCH، خواص منطقی CSS، Paraglide i18n، آیکون‌های `<Icon>` و انیمیشن‌های ChronoTrig (`data-trig` / `data-trig-stagger`) ساخته شده‌اند، حتی **بدون پاس دادن prop** با متن‌های بومی کار می‌کنند و با `contained` داخل صفحات متنی هم قابل استفاده‌اند:
 
 | کامپوننت | کاربرد در لندینگ / سایت شرکتی |
 | --- | --- |
 | `LandingHeroSplit.astro` | هیروی دو‌ستونه همراه کارت/ویژوال مقابل |
+| `PromoBanner.astro` | نوار اطلاع‌رسانی / معرفی انتشار تازه با قابلیت بستن |
 | `PartnerLogos.astro` | نوار اعتماد و لوگوی مشتریان/همکاران |
+| `AboutSplitSection.astro` | معرفی شرکت/تیم به صورت دوستونه با فهرست نکات و آمار |
 | `BentoCapabilities.astro` | شبکهٔ بنتو برای معرفی قابلیت‌ها و خدمات |
+| `FeatureTabsSection.astro` | تب‌های تعاملی WAI-ARIA برای معرفی امکانات با تصویر |
+| `ProcessSteps.astro` | مراحل گام‌به‌گام همکاری یا راه‌اندازی با شماره‌گذاری بومی |
+| `FeatureCardGrid.astro` | شبکهٔ کارت‌های ویترینی برای خدمات، نمونه‌کار یا ماژول‌ها |
 | `ProofStatsRow.astro` | ردیف آمار و ارقام اثبات‌شده (با ارقام بومی) |
-| `PricingSection.astro` | کارت‌های تعرفه و پلن‌ها (با نشان پلن پیشنهادی و قیمت بومی) |
+| `ComparisonTable.astro` | جدول مقایسهٔ طرح‌ها و ویژگی‌ها |
+| `PricingSection.astro` | کارت‌های تعرفه و پلن‌ها (با سوییچ ماهانه/سالانه، نشان پلن پیشنهادی و قیمت بومی) |
 | `TestimonialGrid.astro` | شبکهٔ نظرات مشتریان با امتیاز ستاره‌ای و نقل‌قول |
+| `ImageGallerySection.astro` | گالری دسته‌بندی‌شده با فیلتر و پیش‌نمایش `<dialog>` |
+| `LatestPostsSection.astro` | نمایش خودکار آخرین مقاله‌های وبلاگ زبان جاری (یا آیتم دلخواه) |
 | `TeamSection.astro` | معرفی اعضای تیم و مدیران با تصویر یا مونوگرام و لینک شبکه‌ها |
 | `FaqAccordion.astro` | پرسش‌های متداول با خروجی `FAQPage` JSON-LD |
+| `ContactSplitSection.astro` | بخش تماس دوستونه شامل کانال‌های ارتباطی و `ContactForm` |
 | `NewsletterBanner.astro` | بنر خبرنامه Pure-SSG متصل به API خارجی یا `mailto:` |
 | `CtaBanner.astro` | بنر فراخوان پایانی (CTA) پیش از فوتر |
+| `UiBadge.astro` | پریمیتیو نشان وضعیتی/برچسبی در ۸ نقش رنگی معنایی |
+| `UiAlert.astro` | پریمیتیو کارت اعلان/هشدار با دکمهٔ اقدام و بستن |
+| `AvatarGroup.astro` | پریمیتیو پشتهٔ آواتار هم‌پوشان با امتیاز و برچسب اعتماد |
 
 ### ۷.۱ هیرو و نوار لوگوی مشتریان (`LandingHeroSplit` + `PartnerLogos`)
 
@@ -560,9 +569,11 @@ import CtaBanner from '@/components/CtaBanner.astro';
   کلاس‌های `.cta`، `.btn-secondary`، `.btn-hero-secondary`، `.chip` و `.glass-surface` یک‌جا در `global.css` تعریف شده‌اند؛ در کامپوننت‌ها دوباره نسازید.
 - فقط یک `<h1>` در کل صفحه (تست smoke تعدادش را چک می‌کند).
 - هیچ کلاس فیزیکی (`ml-`، `pr-`، `text-left`، `left-`) ننویسید؛ همیشه `ms-`، `pe-`، `text-start`، `start-*`.
-- آیکون فقط با `<Icon name="…" />`. ۳۱ نام ثبت‌شده عبارت‌اند از: `search`، `globe`، `close`، `check`،
+- آیکون فقط با `<Icon name="…" />`. ۴۶ نام ثبت‌شده عبارت‌اند از: `search`، `globe`، `close`، `check`،
   `menu`، `chevron-left`، `chevron-right`، `chevron-down`، `sun`، `moon`، `copy`، `external-link`، `arrow-right`،
-  `shield`، `mail`، `layers`، `star`، `star-filled`، `quote`، `users`، `building` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
+  `shield`، `mail`، `layers`، `star`، `star-filled`، `quote`، `users`، `building`، `alert-circle`، `alert-triangle`،
+  `circle-check`، `bell`، `bolt`، `clock`، `map-pin`، `phone`، `rocket`، `code`، `award`، `layout-grid`، `calendar`،
+  `photo`، `minus` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
   `folder`، `compass`، `palette`، `book-open`، `file`. آیکون جدید: نام را در [icons.ts](../src/libs/ui/icons.ts) ثبت و در رجیستری [Icon.astro](../src/components/Icon.astro) با import تک‌فایلی وصل کنید (هرگز از barrel بستهٔ `@tabler/icons-astro` import نکنید).
 - متن دکمه‌های مشترک را با `m.common_…` از Paraglide بگیرید، نه رشتهٔ ثابت.
 

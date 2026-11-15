@@ -1,0 +1,94 @@
+---
+/**
+ * Reusable semantic status / tag badge inspired by PrebuiltUI badge components.
+ * Uses OKLCH theme roles, CSS logical properties, `<Icon>`, and compiled Paraglide
+ * defaults. Renders as `<a>` when `href` is given or `<span>` otherwise.
+ */
+import Icon from '@/components/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export type BadgeVariant =
+  | 'primary'
+  | 'secondary'
+  | 'accent'
+  | 'neutral'
+  | 'info'
+  | 'success'
+  | 'warning'
+  | 'error';
+
+interface Props {
+  label?: string;
+  locale?: Locale | string;
+  variant?: BadgeVariant;
+  size?: 'sm' | 'md';
+  icon?: string;
+  href?: string;
+  external?: boolean;
+  class?: string;
+}
+
+const {
+  label,
+  locale,
+  variant = 'primary',
+  size = 'md',
+  icon,
+  href,
+  external,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const resolvedLabel = label ?? m.block_badge_default({}, { locale: activeLocale });
+const isExternal = external ?? (href ? /^https?:\/\//i.test(href) : false);
+
+const VARIANTS: Record<BadgeVariant, string> = {
+  primary: 'border-primary/25 bg-primary/10 text-primary',
+  secondary: 'border-secondary/25 bg-secondary/10 text-secondary',
+  accent: 'border-accent/35 bg-accent/15 text-fg',
+  neutral: 'border-border bg-surface text-muted',
+  info: 'border-info/30 bg-info/10 text-info',
+  success: 'border-success/30 bg-success/10 text-success',
+  warning: 'border-warning/40 bg-warning/15 text-fg',
+  error: 'border-error/30 bg-error/10 text-error',
+};
+
+const SIZES = {
+  sm: 'px-2.5 py-0.5 text-[11px] gap-1',
+  md: 'px-3 py-1 text-xs gap-1.5',
+} as const;
+---
+
+{
+  href ? (
+    <a
+      href={href}
+      target={isExternal ? '_blank' : undefined}
+      rel={isExternal ? 'noreferrer noopener' : undefined}
+      class:list={[
+        'inline-flex items-center rounded-full border font-semibold transition-colors hover:border-primary/50',
+        VARIANTS[variant],
+        SIZES[size],
+        className,
+      ]}
+    >
+      {icon && <Icon name={icon} size={size === 'sm' ? 13 : 14} class="shrink-0" />}
+      <span>{resolvedLabel}</span>
+    </a>
+  ) : (
+    <span
+      class:list={[
+        'inline-flex items-center rounded-full border font-semibold',
+        VARIANTS[variant],
+        SIZES[size],
+        className,
+      ]}
+    >
+      {icon && <Icon name={icon} size={size === 'sm' ? 13 : 14} class="shrink-0" />}
+      <span>{resolvedLabel}</span>
+    </span>
+  )
+}

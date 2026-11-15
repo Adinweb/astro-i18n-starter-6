@@ -15,9 +15,12 @@ interface Props {
   href: string;
   /** Loads the cover eagerly; use only for the first card above the fold. */
   priority?: boolean;
+  /** Heading level used for card titles (`h2` on blog index, `h3` inside sections with an `h2`). */
+  headingTag?: 'h2' | 'h3';
 }
 
-const { post, locale, href, priority = false } = Astro.props;
+const { post, locale, href, priority = false, headingTag = 'h2' } = Astro.props;
+const HeadingTag = headingTag;
 
 const { title, description, image, categories, tags, publishedAt } = post.data;
 // `image` is the metadata Astro resolved from the entry's frontmatter.
@@ -76,14 +79,14 @@ const hiddenTagCount = tags.length - visibleTags.length;
   </div>
 
   <div class="flex flex-1 flex-col gap-2.5 p-5">
-    <h2 class="line-clamp-2 text-lg font-bold leading-snug tracking-tight text-fg">
+    <HeadingTag class="line-clamp-2 text-lg font-bold leading-snug tracking-tight text-fg">
       <a
         href={href}
         class="transition-colors after:absolute after:inset-0 hover:text-primary focus-visible:outline-none"
       >
         {title}
       </a>
-    </h2>
+    </HeadingTag>
 
     {description && <p class="line-clamp-2 text-sm leading-relaxed text-muted">{description}</p>}
 

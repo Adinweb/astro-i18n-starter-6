@@ -27,8 +27,8 @@ This skill coordinates workflows for developing, maintaining, and extending this
    - Default locale (`en` out of the box, swappable via `npm run i18n:set-default`) has NO prefix (`/`, `/about/`, `/blog/first-post/`). Non-default locales (`fa`, plus `ar`, `de`, `fr`, etc. via `i18n:add-lang`) have prefixes (`/fa/درباره-ما/`). For single-language launches without structural changes, set `ui.showLanguageSwitcher: false` in `app.config.json` (or optionally archive other locales with `npm run i18n:solo`).
 4. **RTL-Native Discipline**:
    - Always use CSS logical properties (`ms-`, `me-`, `ps-`, `pe-`, `start-*`, `end-*`, `text-start`, `text-end`, `border-s-*`, `border-e-*`). Never use physical directions.
-5. **Page Design Freedom (canvas pages & 10 composable blocks)**:
-   - `pages` entries are not locked into one template: the schema defaults to `hero: 'none'` + `container: 'canvas'`, so MDX may compose full-bleed bands (`<PageSection>`, our 10 corporate/landing blocks: `LandingHeroSplit`, `BentoCapabilities`, `ProofStatsRow`, `FaqAccordion`, `CtaBanner`, `PricingSection`, `TestimonialGrid`, `TeamSection`, `PartnerLogos`, `NewsletterBanner`), opt into `hero: 'minimal'` / `hero: 'default'`, pick `container: 'contained' | 'prose'`, add `flushTop: true`, or delegate to a shared Astro view via `template: '<name>'` registered in `src/views/PageView.astro` → `PAGE_TEMPLATES`. `blog` posts are the opposite: they always render through `BlogPostView.astro` + `PageHero.astro`. Every page must still render exactly one `<h1>`.
+5. **Page Design Freedom (canvas pages & 22 PrebuiltUI-adapted blocks)**:
+   - `pages` entries are not locked into one template: the schema defaults to `hero: 'none'` + `container: 'canvas'`, so MDX may compose full-bleed bands (`<PageSection>` plus our 19 section blocks — `LandingHeroSplit`, `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection`, `LatestPostsSection`, `TeamSection`, `FaqAccordion`, `ContactSplitSection`, `NewsletterBanner`, `CtaBanner` — and 3 UI primitives: `UiBadge`, `UiAlert`, `AvatarGroup`, all with `locale` URL auto-fallback and localized defaults), opt into `hero: 'minimal'` / `hero: 'default'`, pick `container: 'contained' | 'prose'`, add `flushTop: true`, or delegate to a shared Astro view via `template: '<name>'` registered in `src/views/PageView.astro` → `PAGE_TEMPLATES`. `blog` posts are the opposite: they always render through `BlogPostView.astro` + `PageHero.astro`. Every page must still render exactly one `<h1>`.
 6. **Idempotent Client Scripts**:
    - Guard DOM listeners in Astro components with `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';`.
 7. **Static Language Switching**:
@@ -49,7 +49,7 @@ To perform work in this repository, identify your specific task and read the ind
 | **Content Pipeline, Search & Pure SSG APIs**<br>Collections schemas, content-type registry, composable landing/corporate blocks, pure URL paths, lean router dispatcher, blog engine, dynamic `/og/*.png` cards, Persian-aware Pagefind search, external API client (`ContactForm` + `NewsletterBanner`), feeds & sitemaps | ➡️ Read `references/content-and-routing.md` |
 | **Multi-Menu Navigation**<br>Header dropdowns, mobile drawer tabs, footer columns (with 5 social channels), active states, single-language `showLanguageSwitcher` flag, slot resolvers | ➡️ Read `references/navigation.md` |
 | **CLI Automation Suite**<br>Client onboarding (`site:init`), language default/solo modes, scaffolding pages (`--preset=landing`), posts & content types, deleting content, batch translations, asset generation, `doctor` / `content:status` / `link:check` | ➡️ Read `references/cli-automation.md` |
-| **RTL, Typography & Styling**<br>CSS logical properties, `.layout-container`, brand OKLCH/font presets (`theme.ts`), LTR code block isolation, semantic tokens, 31-icon Tabler catalog | ➡️ Read `references/rtl-styling.md` |
+| **RTL, Typography & Styling**<br>CSS logical properties, `.layout-container`, brand OKLCH/font presets (`theme.ts`), LTR code block isolation, semantic tokens, 46-icon Tabler catalog | ➡️ Read `references/rtl-styling.md` |
 | **Smooth Scroll, ChronoTrig & Motion**<br>ChronoTrig CSS scroll engine, `data-trig` reveals, `data-trig-stagger` cascades, OS `prefers-reduced-motion` + `data-motion` resolution, RTL start/end vectors, and Lenis rules | ➡️ Read `references/scroll-and-motion.md` |
 | **Testing, Linting & QA**<br>Paraglide compile, Vitest unit tests, i18n parity audit, production build, smoke tests, Knip, `verify:cli` | ➡️ Read `references/verification.md` |
 
@@ -61,7 +61,7 @@ All scripts support both `npm run` and `pnpm run`:
 
 ```bash
 npm run lint          # paraglide compile + astro check + tsc --noEmit
-npm test              # Vitest test suite (24 files, 245 tests)
+npm test              # Vitest test suite (24 files, 247 tests)
 npm run audit:i18n    # 6-stage i18n completeness, frontmatter & RTL parity audit
 npm run site:init     # Interactive/headless client branding, fonts, OG mode & module wizard
 npm run build         # Production SSG build + Persian-aware Pagefind indexing

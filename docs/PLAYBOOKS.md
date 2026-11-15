@@ -83,9 +83,10 @@ pnpm run doctor && pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run
    pnpm run site:init -- --name="Acme Studio" --preset=emerald --font=jakarta --rtl-font=noto-arabic --og-mode=branded --yes
    ```
 
-2. **Start From the 10 Built-In Composable Blocks (`src/components/`)**:
-   Before building custom markup from scratch, check the starter's 10 verified RTL/LTR-safe corporate & landing components:
-   - `LandingHeroSplit.astro`, `BentoCapabilities.astro`, `ProofStatsRow.astro`, `FaqAccordion.astro`, `CtaBanner.astro`, `PricingSection.astro`, `TestimonialGrid.astro`, `TeamSection.astro`, `PartnerLogos.astro`, and `NewsletterBanner.astro`.
+2. **Start From the 22 Built-In PrebuiltUI-Adapted Blocks (`src/components/`)**:
+   Before building custom markup from scratch, check the starter's 19 RTL/LTR-safe section blocks and 3 UI primitives — all work with zero props using localized Paraglide defaults (`locale` auto-detects from URL) or custom overrides:
+   - **Sections (19):** `LandingHeroSplit.astro`, `PromoBanner.astro`, `PartnerLogos.astro`, `AboutSplitSection.astro`, `BentoCapabilities.astro`, `FeatureTabsSection.astro`, `ProcessSteps.astro`, `FeatureCardGrid.astro`, `ProofStatsRow.astro`, `ComparisonTable.astro`, `PricingSection.astro`, `TestimonialGrid.astro`, `ImageGallerySection.astro`, `LatestPostsSection.astro`, `TeamSection.astro`, `FaqAccordion.astro`, `ContactSplitSection.astro`, `NewsletterBanner.astro`, and `CtaBanner.astro`.
+   - **UI Primitives (3):** `UiBadge.astro`, `UiAlert.astro`, and `AvatarGroup.astro`.
    - Use `pnpm run new:page <key> -- --preset=landing` to scaffold a multi-locale landing page pre-wired with canvas layout and composable blocks.
 
 3. **Tailwind Blocks RTL & Token Adaptation**:

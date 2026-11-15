@@ -1,0 +1,245 @@
+---
+/**
+ * Composable 2-column About / Feature split showcase inspired by PrebuiltUI
+ * about sections. Supports optimized `<Image>` media (with starter fallback) or
+ * custom `media` slot, logical start/end placement, checklist highlights, inline
+ * stats formatted with `formatNumber`, CTAs, and localized defaults.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { localizeHref } from '@/i18n/paths';
+import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface AboutStat {
+  label: string;
+  value?: string;
+  count?: number;
+  suffix?: string;
+}
+
+export interface AboutCtaAction {
+  label: string;
+  href: string;
+  icon?: string;
+  external?: boolean;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string;
+  description?: string | null;
+  highlights?: readonly string[];
+  stats?: readonly AboutStat[];
+  primaryCta?: AboutCtaAction | null;
+  secondaryCta?: AboutCtaAction | null;
+  image?: ImageMetadata | null;
+  imageAlt?: string;
+  mediaPosition?: 'start' | 'end';
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale,
+  eyebrow,
+  heading,
+  description,
+  highlights,
+  stats,
+  primaryCta,
+  secondaryCta,
+  image,
+  imageAlt = '',
+  mediaPosition = 'end',
+  contained = false,
+  surface = 'default',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = heading === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_about_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = heading ?? m.block_about_heading({}, { locale: activeLocale });
+const resolvedDescription =
+  description === null
+    ? undefined
+    : (description ?? (usingDefaults ? m.block_about_desc({}, { locale: activeLocale }) : undefined));
+
+const resolvedHighlights =
+  highlights ??
+  (usingDefaults
+    ? [
+        m.block_about_h1({}, { locale: activeLocale }),
+        m.block_about_h2({}, { locale: activeLocale }),
+        m.block_about_h3({}, { locale: activeLocale }),
+      ]
+    : []);
+
+const resolvedPrimaryCta =
+  primaryCta === null
+    ? undefined
+    : (primaryCta ??
+      (usingDefaults
+        ? {
+            label: m.block_about_cta({}, { locale: activeLocale }),
+            href: localizeHref('/features', activeLocale),
+            icon: 'arrow-right',
+          }
+        : undefined));
+
+const resolvedImage =
+  image === null ? undefined : (image ?? DEFAULT_HERO_IMAGE);
+const hasMedia = Boolean(resolvedImage) || Astro.slots.has('media');
+const mediaFirst = mediaPosition === 'start';
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+---
+
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <div class:list={[hasMedia ? 'grid items-center gap-10 lg:grid-cols-12 lg:gap-12' : 'max-w-3xl']}>
+    <div
+      data-trig
+      data-trig-direction={mediaFirst ? 'end' : 'start'}
+      class:list={[hasMedia && 'lg:col-span-6', mediaFirst && hasMedia && 'lg:order-2']}
+    >
+      {resolvedEyebrow && <p class="section-kicker">{resolvedEyebrow}</p>}
+
+      <h2
+        class:list={[
+          'text-2xl font-bold tracking-tight text-fg sm:text-3xl lg:text-4xl text-balance',
+          resolvedEyebrow && 'mt-2',
+        ]}
+      >
+        {resolvedHeading}
+      </h2>
+
+      {
+        resolvedDescription && (
+          <p class="mt-4 text-base leading-relaxed text-muted text-pretty">
+            {resolvedDescription}
+          </p>
+        )
+      }
+
+      {
+        resolvedHighlights.length > 0 && (
+          <ul class="mt-6 space-y-3 text-sm text-fg">
+            {resolvedHighlights.map((item) => (
+              <li class="flex items-start gap-2.5">
+                <span
+                  aria-hidden="true"
+                  class="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                >
+                  <Icon name="circle-check" size={15} />
+                </span>
+                <span class="leading-relaxed">{item}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+
+      {
+        stats && stats.length > 0 && (
+          <dl class="mt-7 grid grid-cols-2 gap-4 border-t border-border pt-6 sm:grid-cols-3">
+            {stats.map((stat) => {
+              const displayValue =
+                stat.value ??
+                `${stat.count !== undefined ? formatNumber(stat.count, activeLocale) : ''}${stat.suffix ?? ''}`;
+              return (
+                <div>
+                  <dt class="text-xs font-medium text-muted">{stat.label}</dt>
+                  <dd class="mt-1 text-2xl font-extrabold tracking-tight text-primary tabular-nums">
+                    {displayValue}
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+        )
+      }
+
+      {
+        (resolvedPrimaryCta || secondaryCta) && (
+          <div class="mt-8 flex flex-wrap items-center gap-3 print:hidden">
+            {resolvedPrimaryCta && (
+              <Button
+                href={resolvedPrimaryCta.href}
+                variant="primary"
+                size="lg"
+                icon={resolvedPrimaryCta.icon ?? 'arrow-right'}
+                external={resolvedPrimaryCta.external}
+              >
+                {resolvedPrimaryCta.label}
+              </Button>
+            )}
+            {secondaryCta && (
+              <Button
+                href={secondaryCta.href}
+                variant="secondary"
+                size="lg"
+                icon={secondaryCta.icon}
+                external={secondaryCta.external}
+              >
+                {secondaryCta.label}
+              </Button>
+            )}
+          </div>
+        )
+      }
+    </div>
+
+    {
+      hasMedia && (
+        <div
+          data-trig
+          data-trig-direction={mediaFirst ? 'start' : 'end'}
+          data-trig-delay="0.1"
+          class:list={['lg:col-span-6', mediaFirst && 'lg:order-1']}
+        >
+          {Astro.slots.has('media') ? (
+            <slot name="media" />
+          ) : (
+            resolvedImage && (
+              <div
+                class:list={[
+                  'overflow-hidden rounded-3xl border border-border p-2 shadow-floating',
+                  cardSurface,
+                ]}
+              >
+                <Image
+                  src={resolvedImage}
+                  alt={imageAlt || resolvedHeading}
+                  widths={[640, 960, 1280]}
+                  sizes="(min-width: 1024px) 46vw, 94vw"
+                  class="aspect-[4/3] w-full rounded-2xl object-cover"
+                />
+              </div>
+            )
+          )}
+        </div>
+      )
+    }
+  </div>
+</PageSection>

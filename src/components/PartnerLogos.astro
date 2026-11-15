@@ -2,12 +2,15 @@
 /**
  * Composable partner / client trust strip inspired by PrebuiltUI logo clouds.
  * Renders clean emblem/image tiles without raw inline SVG blobs, preserving
- * WCAG contrast and logical alignment in both LTR and RTL locales.
+ * WCAG contrast, logical alignment, and localized default tiles in LTR and RTL.
  */
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
 
 export interface PartnerLogoItem {
   name: string;
@@ -21,25 +24,71 @@ export interface PartnerLogoItem {
 
 interface Props {
   id?: string;
-  eyebrow?: string;
-  heading?: string;
-  items: readonly PartnerLogoItem[];
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  items?: readonly PartnerLogoItem[];
   columns?: 4 | 5 | 6;
+  contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'sm' | 'md' | 'lg';
 }
 
 const {
   id,
+  locale,
   eyebrow,
   heading,
   items,
   columns = 5,
+  contained = false,
   surface = 'subtle',
   spacing = 'sm',
 } = Astro.props;
 
-const cardSurface = surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = items === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_partners_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_partners_heading({}, { locale: activeLocale })
+);
+
+const resolvedItems: readonly PartnerLogoItem[] = items ?? [
+  {
+    name: m.block_partners_1_name({}, { locale: activeLocale }),
+    tagline: m.block_partners_1_tag({}, { locale: activeLocale }),
+    icon: 'globe',
+  },
+  {
+    name: m.block_partners_2_name({}, { locale: activeLocale }),
+    tagline: m.block_partners_2_tag({}, { locale: activeLocale }),
+    icon: 'palette',
+  },
+  {
+    name: m.block_partners_3_name({}, { locale: activeLocale }),
+    tagline: m.block_partners_3_tag({}, { locale: activeLocale }),
+    icon: 'bolt',
+  },
+  {
+    name: m.block_partners_4_name({}, { locale: activeLocale }),
+    tagline: m.block_partners_4_tag({}, { locale: activeLocale }),
+    icon: 'building',
+  },
+  {
+    name: m.block_partners_5_name({}, { locale: activeLocale }),
+    tagline: m.block_partners_5_tag({}, { locale: activeLocale }),
+    icon: 'compass',
+  },
+];
+
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
 const gridColsClass =
   columns === 4
     ? 'grid-cols-2 sm:grid-cols-4'
@@ -48,14 +97,22 @@ const gridColsClass =
       : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5';
 ---
 
-<PageSection id={id} surface={surface} spacing={spacing} borderTop borderBottom>
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'sm' : spacing}
+  bleed={contained}
+  borderTop
+  borderBottom
+  class={contained ? 'not-prose my-10' : undefined}
+>
   {
-    (eyebrow || heading) && (
+    (resolvedEyebrow || resolvedHeading) && (
       <div class="mb-6 text-center" data-trig>
-        {eyebrow && <p class="section-kicker">{eyebrow}</p>}
-        {heading && (
+        {resolvedEyebrow && <p class="section-kicker">{resolvedEyebrow}</p>}
+        {resolvedHeading && (
           <h2 class="mt-1.5 text-lg font-bold tracking-tight text-fg sm:text-xl text-balance">
-            {heading}
+            {resolvedHeading}
           </h2>
         )}
       </div>
@@ -68,7 +125,7 @@ const gridColsClass =
     data-trig-stagger-delay="0.04"
   >
     {
-      items.map((item) => {
+      resolvedItems.map((item) => {
         const isExternal = item.external ?? (item.href ? /^https?:\/\//i.test(item.href) : false);
         return (
           <li data-trig>
