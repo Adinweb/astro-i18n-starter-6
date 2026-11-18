@@ -194,4 +194,68 @@ describe('src/libs/api/client.ts', () => {
       });
     });
   });
+
+  describe('serverless form providers & Turnstile guard', () => {
+    it('formats Web3Forms submissions with access_key and resolves endpoint automatically', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+      const result = await submitContactInquiry(validPayload, {
+        provider: 'web3forms',
+        accessKey: 'w3f-test-key',
+        fetchImpl: fetchSpy as unknown as typeof fetch,
+      });
+
+      expect(result).toEqual({ ok: true, status: 200 });
+      const [calledUrl, init] = fetchSpy.mock.calls[0]!;
+      expect(calledUrl).toBe('https://api.web3forms.com/submit');
+      const sent = JSON.parse(init.body);
+      expect(sent.access_key).toBe('w3f-test-key');
+      expect(sent.name).toBe('Sara Rad');
+      expect(sent.subject).toContain('architecture');
+    });
+
+    it('returns unconfigured for web3forms without an accessKey', async () => {
+      const result = await submitContactInquiry(validPayload, {
+        provider: 'web3forms',
+        accessKey: '',
+      });
+      expect(result).toEqual({ ok: false, errorCode: 'unconfigured' });
+    });
+
+    it('sends standard JSON payloads for Formspree, Basin, and webhook providers', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+      await submitContactInquiry(validPayload, {
+        provider: 'formspree',
+        endpoint: 'https://formspree.io/f/xyz123',
+        fetchImpl: fetchSpy as unknown as typeof fetch,
+      });
+      const [, init] = fetchSpy.mock.calls[0]!;
+      const body = JSON.parse(init.body);
+      expect(body._subject).toContain('architecture');
+      expect(body.email).toBe('sara@example.com');
+    });
+
+    it('enforces Turnstile token when requireTurnstile is enabled', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+      const missingToken = await submitContactInquiry(validPayload, {
+        endpoint: 'https://api.example.com/contact',
+        requireTurnstile: true,
+        fetchImpl: fetchSpy as unknown as typeof fetch,
+      });
+      expect(missingToken).toEqual({ ok: false, errorCode: 'turnstile' });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      const withToken = await submitContactInquiry(
+        { ...validPayload, turnstileToken: 'cf-token-123' },
+        {
+          endpoint: 'https://api.example.com/contact',
+          requireTurnstile: true,
+          fetchImpl: fetchSpy as unknown as typeof fetch,
+        }
+      );
+      expect(withToken).toEqual({ ok: true, status: 200 });
+      expect(JSON.parse(fetchSpy.mock.calls[0]![1].body).cfTurnstileToken).toBe(
+        'cf-token-123'
+      );
+    });
+  });
 });

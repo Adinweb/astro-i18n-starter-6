@@ -10,7 +10,7 @@ import Button from '@/components/Button.astro';
 import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
 import { type Locale } from '@/i18n/locales';
-import { resolveApiEndpoint } from '@/libs/api/client';
+import { resolveFormEndpoint } from '@/libs/api/client';
 import { API_CONFIG, siteConfig } from '@/libs/config/app';
 import { resolveComponentLocale } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
@@ -46,11 +46,16 @@ const {
 } = Astro.props;
 
 const activeLocale: Locale = resolveComponentLocale(locale, Astro.url.pathname);
+const effectiveProvider = API_CONFIG.provider;
 const effectiveBaseUrl = baseUrl ?? API_CONFIG.baseUrl;
 const effectiveEndpoint = endpoint ?? API_CONFIG.endpoints.newsletter ?? '';
-const resolvedEndpoint = effectiveEndpoint
-  ? resolveApiEndpoint(effectiveEndpoint, effectiveBaseUrl)
-  : null;
+const effectiveAccessKey = API_CONFIG.accessKey;
+const resolvedEndpoint =
+  effectiveProvider === 'web3forms'
+    ? resolveFormEndpoint(effectiveProvider, effectiveEndpoint, effectiveBaseUrl, effectiveAccessKey)
+    : effectiveEndpoint
+      ? resolveFormEndpoint(effectiveProvider, effectiveEndpoint, effectiveBaseUrl, effectiveAccessKey)
+      : null;
 const isConfigured = resolvedEndpoint !== null;
 const effectiveTimeout = timeoutMs ?? API_CONFIG.timeoutMs;
 
@@ -151,8 +156,10 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
             <form
               data-newsletter-form-el
               data-locale={activeLocale}
+              data-provider={effectiveProvider}
               data-base-url={effectiveBaseUrl}
               data-endpoint={effectiveEndpoint}
+              data-access-key={effectiveAccessKey}
               data-timeout-ms={String(effectiveTimeout)}
               data-source={source}
               data-label-submit={copy.submit}
@@ -232,6 +239,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
   import {
     submitNewsletterSubscription,
     type ContactSubmissionErrorCode,
+    type FormProvider,
     type NewsletterSubscriptionPayload,
   } from '@/libs/api/client';
 
@@ -251,6 +259,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
 
       const errorMessages: Record<ContactSubmissionErrorCode, string> = {
         validation: form.dataset.errValidation ?? '',
+        turnstile: form.dataset.errValidation ?? '',
         unconfigured: form.dataset.errUnconfigured ?? '',
         timeout: form.dataset.errTimeout ?? '',
         http: form.dataset.errHttp ?? '',
@@ -291,9 +300,12 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
         }
 
         const timeoutMs = Number.parseInt(form.dataset.timeoutMs ?? '10000', 10);
+        const provider = (form.dataset.provider as FormProvider | undefined) ?? 'custom';
         const result = await submitNewsletterSubscription(payload, {
+          provider,
           baseUrl: form.dataset.baseUrl ?? '',
           endpoint: form.dataset.endpoint ?? '',
+          accessKey: form.dataset.accessKey ?? '',
           timeoutMs: Number.isFinite(timeoutMs) ? timeoutMs : 10000,
         });
 

@@ -123,7 +123,7 @@ grid.append(...newCards);
 refreshChronoTrig();
 ```
 
-When a client-side filter only toggles `card.hidden`, reset the grid's reveal classes first, then call `refreshChronoTrig()` (`replayGridReveals()` in `src/views/BlogIndexView.astro`):
+When a client-side filter only toggles `card.hidden`, reset the grid's reveal classes first, then call `refreshChronoTrig()` (`replayGridReveals()` in `src/views/BlogIndexView.astro`, and collection filter handlers in `src/views/CollectionIndexView.astro`):
 
 ```typescript
 // User-triggered filter/tab change only — never on the initial render.

@@ -5,8 +5,9 @@ import { getLocaleMeta, LOCALES, LOCALE_METADATA, type Locale } from '@/i18n/loc
 import { formatYear } from '@/i18n/format';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { getNavigationSlots } from '@/libs/config/navigation';
-import { absoluteUrl, siteConfig } from '@/libs/config/app';
+import { absoluteUrl, BUSINESS_CONFIG, siteConfig, SOCIAL_CONFIG } from '@/libs/config/app';
 import { buildBrandThemeCss } from '@/libs/config/theme';
+import { buildOrganizationSchema } from '@/libs/content/schema';
 import type { SocialCardContext } from '@/libs/content/social';
 import * as m from '@/paraglide/messages';
 import Seo from '@/components/Seo.astro';
@@ -20,6 +21,7 @@ import Button from '@/components/Button.astro';
 import Icon from '@/components/Icon.astro';
 import DrawerNavLink from '@/components/DrawerNavLink.astro';
 import DrawerSearch from '@/components/DrawerSearch.astro';
+import DevThemePreview from '@/components/DevThemePreview.astro';
 import LayoutHooks from '@client/LayoutHooks.astro';
 import '@/styles/global.css';
 import '@/styles/prose.css';
@@ -111,14 +113,36 @@ const currentYear = new Date().getFullYear();
 const effectiveShowSearch = showSearch && siteConfig.ui.showSearch;
 const effectiveShowCookies = siteConfig.cookies.enabled;
 
-const structuredData = schema ?? {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: siteName,
-  url: absoluteUrl(homeHref),
-  description: m.site_description({}, { locale }),
-  inLanguage: meta.htmlLang,
-};
+const brandLogo = siteConfig.logo;
+const hasLightLogo = Boolean(brandLogo?.light?.trim());
+const hasDarkLogo = Boolean(brandLogo?.dark?.trim());
+const hasAnyLogo = hasLightLogo || hasDarkLogo;
+const logoAlt = brandLogo?.alt?.trim() || siteName;
+const showBrandText = !hasAnyLogo || brandLogo?.showText !== false;
+const logoAbsoluteUrl = brandLogo?.light?.trim()
+  ? absoluteUrl(brandLogo.light.trim())
+  : absoluteUrl(`/${siteConfig.icons[0]?.file ?? 'icon-512.png'}`);
+
+const structuredData = schema ?? [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: siteName,
+    url: absoluteUrl(homeHref),
+    description: m.site_description({}, { locale }),
+    inLanguage: meta.htmlLang,
+  },
+  buildOrganizationSchema({
+    name: siteName,
+    url: absoluteUrl(homeHref),
+    description: m.site_description({}, { locale }),
+    email: siteConfig.contactEmail || undefined,
+    logoUrl: logoAbsoluteUrl,
+    inLanguage: meta.htmlLang,
+    business: BUSINESS_CONFIG,
+    social: SOCIAL_CONFIG,
+  }),
+];
 ---
 
 <!doctype html>
@@ -284,7 +308,32 @@ const structuredData = schema ?? {
             data-brand-link
             class="flex min-w-0 items-center gap-2 font-bold text-base tracking-tight transition-colors hover:text-primary sm:text-lg"
           >
-            <span class="truncate">{siteName}</span>
+            {
+              hasLightLogo && brandLogo && (
+                <img
+                  src={brandLogo.light}
+                  alt={showBrandText ? '' : logoAlt}
+                  width={brandLogo.width}
+                  height={brandLogo.height}
+                  class="brand-logo-light h-7 w-auto shrink-0 object-contain sm:h-8"
+                  data-has-dark={hasDarkLogo ? 'true' : undefined}
+                  decoding="async"
+                />
+              )
+            }
+            {
+              hasDarkLogo && brandLogo && (
+                <img
+                  src={brandLogo.dark}
+                  alt={showBrandText ? '' : logoAlt}
+                  width={brandLogo.width}
+                  height={brandLogo.height}
+                  class="brand-logo-dark h-7 w-auto shrink-0 object-contain sm:h-8"
+                  decoding="async"
+                />
+              )
+            }
+            {showBrandText && <span class="truncate">{siteName}</span>}
             <LayoutHooks slot="brand-badge" locale={locale} url={url} />
           </a>
 
@@ -493,9 +542,34 @@ const structuredData = schema ?? {
           <a
             href={homeHref}
             data-brand-link
-            class="truncate font-bold text-lg tracking-tight hover:text-primary transition-colors"
+            class="flex min-w-0 items-center gap-2 font-bold text-lg tracking-tight hover:text-primary transition-colors"
           >
-            {siteName}
+            {
+              hasLightLogo && brandLogo && (
+                <img
+                  src={brandLogo.light}
+                  alt={showBrandText ? '' : logoAlt}
+                  width={brandLogo.width}
+                  height={brandLogo.height}
+                  class="brand-logo-light h-7 w-auto shrink-0 object-contain"
+                  data-has-dark={hasDarkLogo ? 'true' : undefined}
+                  decoding="async"
+                />
+              )
+            }
+            {
+              hasDarkLogo && brandLogo && (
+                <img
+                  src={brandLogo.dark}
+                  alt={showBrandText ? '' : logoAlt}
+                  width={brandLogo.width}
+                  height={brandLogo.height}
+                  class="brand-logo-dark h-7 w-auto shrink-0 object-contain"
+                  decoding="async"
+                />
+              )
+            }
+            {showBrandText && <span class="truncate">{siteName}</span>}
           </a>
           <IconButton
             icon="close"
@@ -764,9 +838,34 @@ const structuredData = schema ?? {
             <a
               href={homeHref}
               data-brand-link
-              class="font-bold text-base tracking-tight hover:text-primary transition-colors inline-block"
+              class="inline-flex items-center gap-2 font-bold text-base tracking-tight hover:text-primary transition-colors"
             >
-              {siteName}
+              {
+                hasLightLogo && brandLogo && (
+                  <img
+                    src={brandLogo.light}
+                    alt={showBrandText ? '' : logoAlt}
+                    width={brandLogo.width}
+                    height={brandLogo.height}
+                    class="brand-logo-light h-7 w-auto shrink-0 object-contain"
+                    data-has-dark={hasDarkLogo ? 'true' : undefined}
+                    decoding="async"
+                  />
+                )
+              }
+              {
+                hasDarkLogo && brandLogo && (
+                  <img
+                    src={brandLogo.dark}
+                    alt={showBrandText ? '' : logoAlt}
+                    width={brandLogo.width}
+                    height={brandLogo.height}
+                    class="brand-logo-dark h-7 w-auto shrink-0 object-contain"
+                    decoding="async"
+                  />
+                )
+              }
+              {showBrandText && <span>{siteName}</span>}
             </a>
             <p data-footer-tagline class="text-xs text-muted leading-relaxed max-w-xs">
               {m.site_description({}, { locale })}
@@ -850,6 +949,7 @@ const structuredData = schema ?? {
         <CookieConsent locale={locale} privacyHref={privacyHref} termsHref={termsHref} />
       )
     }
+    {import.meta.env.DEV && <DevThemePreview locale={locale} />}
 
     <!--
       Icons a script has to place later. The code-copy button is built at

@@ -87,9 +87,21 @@ describe('src/libs/config/theme.ts', () => {
     expect(css).toContain('--theme-primary-fg:');
     expect(css).toContain('--font-sans:');
     expect(css).toContain('--font-display:');
-    expect(css).toContain('Fraunces');
+    expect(css).toContain('Fraunces Variable');
     expect(css).toContain('--font-fa:');
     expect(css).toContain('--font-ar:');
     expect(css).toContain('Noto Sans Arabic');
+  });
+
+  it('supports commercial Persian RTL font presets (IRANSansX, Yekan Bakh, Peyda) with Vazirmatn fallback', () => {
+    for (const preset of ['iransans', 'yekan-bakh', 'peyda'] as const) {
+      const css = buildBrandThemeCss({
+        preset: 'indigo',
+        themeColor: '#4338ca',
+        rtlFontPreset: preset,
+      });
+      expect(css).toContain('--font-fa:');
+      expect(css).toContain('Vazirmatn Variable');
+    }
   });
 });

@@ -1,0 +1,25 @@
+# Static hosting security & caching headers (Cloudflare Pages / Netlify)
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/pagefind/*
+  Cache-Control: public, max-age=604800
+
+/og/*
+  Cache-Control: public, max-age=86400
+
+/chronotrig.min.js
+  Cache-Control: public, max-age=604800
+
+/*.png
+  Cache-Control: public, max-age=2592000
+
+/*.ico
+  Cache-Control: public, max-age=2592000

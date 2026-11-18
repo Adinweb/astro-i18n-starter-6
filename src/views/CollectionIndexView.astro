@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import Icon from '@/components/Icon.astro';
 import PageHeader from '@/components/PageHeader.astro';
 import UiPagination from '@/components/UiPagination.astro';
 import {
@@ -27,11 +28,9 @@ import * as m from '@/paraglide/messages';
 /**
  * Listing page of a content type declared in `content.types`.
  *
- * The view is deliberately generic: it only relies on the shared entry
- * contract (title, slug, description, image, draft) plus the optional project
- * fields the card shows when present. Type-specific chrome (feeds, filters,
- * taxonomy) stays in its own view, which is why the blog keeps
- * `BlogIndexView.astro`.
+ * Supports optional interactive filtering by category, technology stack, and
+ * keyword search using locale-native numbers (`formatNumber`) alongside
+ * pagination.
  */
 interface Props {
   contentType: ContentTypeKey;
@@ -64,8 +63,6 @@ const pageStatus = m.blog_pagination_status(
 );
 const title = page > 1 ? `${baseTitle} — ${pageStatus}` : baseTitle;
 
-// The section label is the type's localized name, so the trail reads
-// "Home → Projects" instead of falling back to the raw route segment.
 const breadcrumbs = getBreadcrumbs(url, locale, {
   home: m.nav_home({}, { locale }),
   homeHref: await getHomeHref(locale),
@@ -74,9 +71,6 @@ const breadcrumbs = getBreadcrumbs(url, locale, {
   current: page > 1 ? pageStatus : baseTitle,
 });
 
-// Only published entries of this locale belong on the listing: the route
-// builder counts exactly the same set, so the slice below can never disagree
-// with the pagination it was given.
 const published = (await getCollection(contentType as 'projects')).filter((entry) => {
   if (entry.data.draft) return false;
   return parseContentEntryId(entry.id).locale === locale;
@@ -90,6 +84,15 @@ published.sort(
 
 const start = (page - 1) * perPage;
 const pageEntries = published.slice(start, start + perPage);
+
+const categories = [...new Set(pageEntries.flatMap((entry) => entry.data.categories ?? []))].sort(
+  (a, b) => a.localeCompare(b, locale)
+);
+const stacks = [...new Set(pageEntries.flatMap((entry) => entry.data.stack ?? []))].sort((a, b) =>
+  a.localeCompare(b, locale)
+);
+const showFilters = pageEntries.length > 1 || categories.length > 0 || stacks.length > 0;
+
 const pageHref = (target: number) => getCollectionPageHref(type.base, target, locale);
 const previousHref = page > 1 ? pageHref(page - 1) : undefined;
 const nextHref = page < totalPages ? pageHref(page + 1) : undefined;
@@ -118,6 +121,8 @@ const ogContext: SocialCardContext = {
   kicker: siteConfig.name,
   locale,
 };
+
+const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T__' }, { locale });
 ---
 
 <BaseLayout
@@ -138,55 +143,192 @@ const ogContext: SocialCardContext = {
     pageEntries.length === 0 ? (
       <p class="mt-10 text-sm text-muted">{m.content_empty({}, { locale })}</p>
     ) : (
-      <ul
-        class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-        data-trig-stagger
-        data-trig-stagger-delay="0.08"
+      <div
+        data-collection-root
+        data-locale={locale}
+        data-total={String(pageEntries.length)}
+        data-count-template={countTemplate}
       >
-        {pageEntries.map((entry) => {
-          const href = getContentTypeEntryHref(contentType, entry.data.slug, locale);
-          return (
-            <li data-trig>
-              <a
-                href={href}
-                class="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface transition-colors hover:border-primary/50 hover:bg-surface-hover"
+        {showFilters && (
+          <div class="mt-8 space-y-4 rounded-2xl border border-border bg-surface/70 p-4 sm:p-5" data-pagefind-ignore>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="relative flex-1 sm:max-w-sm">
+                <Icon
+                  name="search"
+                  size={16}
+                  class="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted"
+                />
+                <input
+                  type="search"
+                  data-collection-search
+                  aria-label={m.collection_search_label({}, { locale })}
+                  placeholder={m.collection_search_placeholder({}, { locale })}
+                  class="w-full rounded-xl border border-border bg-bg py-2 ps-9 pe-3 text-sm text-fg placeholder:text-muted focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              <div class="flex items-center gap-3 text-xs text-muted">
+                <span data-collection-count>
+                  {m.collection_showing_count(
+                    {
+                      visible: formatNumber(pageEntries.length, locale),
+                      total: formatNumber(pageEntries.length, locale),
+                    },
+                    { locale }
+                  )}
+                </span>
+                <button
+                  type="button"
+                  data-collection-clear
+                  hidden
+                  class="inline-flex items-center gap-1 font-semibold text-primary hover:underline cursor-pointer"
+                >
+                  <Icon name="close" size={12} />
+                  <span>{m.collection_filter_clear({}, { locale })}</span>
+                </button>
+              </div>
+            </div>
+
+            {categories.length > 0 && (
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-muted">
+                  <Icon name="filter" size={13} />
+                  <span>{m.collection_filter_category({}, { locale })}:</span>
+                </span>
+                <button
+                  type="button"
+                  data-collection-category=""
+                  aria-pressed="true"
+                  class="chip cursor-pointer border-primary bg-primary/10 text-primary"
+                >
+                  {m.collection_filter_all({}, { locale })}
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    type="button"
+                    data-collection-category={cat}
+                    aria-pressed="false"
+                    class="chip cursor-pointer transition-colors hover:border-primary/40"
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {stacks.length > 0 && (
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-muted">
+                  <Icon name="tag" size={13} />
+                  <span>{m.collection_filter_stack({}, { locale })}:</span>
+                </span>
+                <button
+                  type="button"
+                  data-collection-stack=""
+                  aria-pressed="true"
+                  class="chip cursor-pointer border-primary bg-primary/10 text-primary"
+                >
+                  {m.collection_filter_all({}, { locale })}
+                </button>
+                {stacks.map((tech) => (
+                  <button
+                    type="button"
+                    data-collection-stack={tech}
+                    aria-pressed="false"
+                    class="chip cursor-pointer transition-colors hover:border-primary/40"
+                  >
+                    {tech}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <ul
+          data-collection-grid
+          class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          data-trig-stagger
+          data-trig-stagger-delay="0.08"
+        >
+          {pageEntries.map((entry) => {
+            const href = getContentTypeEntryHref(contentType, entry.data.slug, locale);
+            const entryCategories = entry.data.categories ?? [];
+            const entryStack = entry.data.stack ?? [];
+            const searchHaystack = [
+              entry.data.title,
+              entry.data.description,
+              entry.data.client,
+              entry.data.year ? String(entry.data.year) : '',
+              ...entryCategories,
+              ...entryStack,
+            ]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase();
+
+            return (
+              <li
+                data-trig
+                data-collection-card
+                data-categories={JSON.stringify(entryCategories)}
+                data-stack={JSON.stringify(entryStack)}
+                data-search={searchHaystack}
               >
-                {entry.data.image && (
-                  <div class="aspect-video overflow-hidden bg-surface-hover">
-                    <Image
-                      src={entry.data.image}
-                      alt=""
-                      widths={[400, 640, 900]}
-                      sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw"
-                      class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    />
+                <a
+                  href={href}
+                  class="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface transition-colors hover:border-primary/50 hover:bg-surface-hover"
+                >
+                  {entry.data.image && (
+                    <div class="aspect-video overflow-hidden bg-surface-hover">
+                      <Image
+                        src={entry.data.image}
+                        alt=""
+                        widths={[400, 640, 900]}
+                        sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw"
+                        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      />
+                    </div>
+                  )}
+                  <div class="flex flex-1 flex-col gap-2 p-5">
+                    <h2 class="text-lg font-semibold tracking-tight text-fg transition-colors group-hover:text-primary">
+                      {entry.data.title}
+                    </h2>
+                    {entry.data.description && (
+                      <p class="line-clamp-3 text-sm leading-relaxed text-muted">
+                        {entry.data.description}
+                      </p>
+                    )}
+                    {entryStack.length > 0 && (
+                      <div class="mt-2 flex flex-wrap gap-1.5">
+                        {entryStack.slice(0, 3).map((tech) => (
+                          <span class="rounded-md border border-border/80 bg-bg/70 px-2 py-0.5 text-[11px] font-medium text-muted">
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {(entry.data.client || entry.data.year) && (
+                      <p class="mt-auto pt-3 text-xs text-muted">
+                        {[
+                          entry.data.client,
+                          entry.data.year ? formatYear(entry.data.year, locale) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    )}
                   </div>
-                )}
-                <div class="flex flex-1 flex-col gap-2 p-5">
-                  <h2 class="text-lg font-semibold tracking-tight text-fg transition-colors group-hover:text-primary">
-                    {entry.data.title}
-                  </h2>
-                  {entry.data.description && (
-                    <p class="line-clamp-3 text-sm leading-relaxed text-muted">
-                      {entry.data.description}
-                    </p>
-                  )}
-                  {(entry.data.client || entry.data.year) && (
-                    <p class="mt-auto pt-3 text-xs text-muted">
-                      {[
-                        entry.data.client,
-                        entry.data.year ? formatYear(entry.data.year, locale) : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
-                  )}
-                </div>
-              </a>
-            </li>
-          );
-        })}
-      </ul>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+
+        <p data-collection-empty hidden class="mt-10 text-center text-sm text-muted">
+          {m.collection_filter_empty({}, { locale })}
+        </p>
+      </div>
     )
   }
 
@@ -206,3 +348,123 @@ const ogContext: SocialCardContext = {
     )
   }
 </BaseLayout>
+
+<script>
+  import { formatNumber } from '@/i18n/format';
+  import { refreshChronoTrig } from '@/scripts/chronotrig';
+
+  function bindCollectionFilters() {
+    document.querySelectorAll<HTMLElement>('[data-collection-root]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const locale = root.dataset.locale || document.documentElement.lang || 'en';
+      const total = Number(root.dataset.total || '0');
+      const countTemplate = root.dataset.countTemplate || '__V__ / __T__';
+      const searchInput = root.querySelector<HTMLInputElement>('[data-collection-search]');
+      const countEl = root.querySelector<HTMLElement>('[data-collection-count]');
+      const clearBtn = root.querySelector<HTMLButtonElement>('[data-collection-clear]');
+      const emptyEl = root.querySelector<HTMLElement>('[data-collection-empty]');
+      const grid = root.querySelector<HTMLElement>('[data-collection-grid]');
+      const cards = [...root.querySelectorAll<HTMLElement>('[data-collection-card]')];
+      const catButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-collection-category]')];
+      const stackButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-collection-stack]')];
+
+      let activeCategory = '';
+      let activeStack = '';
+      let query = '';
+
+      const parseList = (raw: string | undefined): string[] => {
+        if (!raw) return [];
+        try {
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      };
+
+      const syncChipStyles = (buttons: HTMLButtonElement[], current: string, attrKey: string) => {
+        buttons.forEach((btn) => {
+          const val = (btn.getAttribute(attrKey) ?? '').trim();
+          const active = val === current;
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+          btn.classList.toggle('border-primary', active);
+          btn.classList.toggle('bg-primary/10', active);
+          btn.classList.toggle('text-primary', active);
+        });
+      };
+
+      const applyFilters = () => {
+        const needle = query.trim().toLowerCase();
+        let visibleCount = 0;
+
+        cards.forEach((card) => {
+          const cats = parseList(card.dataset.categories);
+          const stack = parseList(card.dataset.stack);
+          const haystack = card.dataset.search || '';
+
+          const matchesCat = !activeCategory || cats.includes(activeCategory);
+          const matchesStack = !activeStack || stack.includes(activeStack);
+          const matchesSearch = !needle || haystack.includes(needle);
+          const show = matchesCat && matchesStack && matchesSearch;
+
+          card.classList.toggle('hidden', !show);
+          if (show) visibleCount += 1;
+        });
+
+        if (countEl) {
+          countEl.textContent = countTemplate
+            .replace('__V__', formatNumber(visibleCount, locale))
+            .replace('__T__', formatNumber(total, locale));
+        }
+        const hasFilter = Boolean(activeCategory || activeStack || needle);
+        if (clearBtn) clearBtn.hidden = !hasFilter;
+        if (emptyEl) emptyEl.hidden = visibleCount > 0;
+        if (grid) {
+          grid.querySelectorAll('[data-trig]').forEach((item) => {
+            item.classList.remove('trig-active');
+          });
+          refreshChronoTrig();
+        }
+      };
+
+      catButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeCategory = (btn.dataset.collectionCategory ?? '').trim();
+          syncChipStyles(catButtons, activeCategory, 'data-collection-category');
+          applyFilters();
+        });
+      });
+
+      stackButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeStack = (btn.dataset.collectionStack ?? '').trim();
+          syncChipStyles(stackButtons, activeStack, 'data-collection-stack');
+          applyFilters();
+        });
+      });
+
+      searchInput?.addEventListener('input', () => {
+        query = searchInput.value;
+        applyFilters();
+      });
+
+      clearBtn?.addEventListener('click', () => {
+        activeCategory = '';
+        activeStack = '';
+        query = '';
+        if (searchInput) searchInput.value = '';
+        syncChipStyles(catButtons, '', 'data-collection-category');
+        syncChipStyles(stackButtons, '', 'data-collection-stack');
+        applyFilters();
+      });
+    });
+  }
+
+  if (document.documentElement.dataset.collectionFilterBound !== 'true') {
+    document.documentElement.dataset.collectionFilterBound = 'true';
+    document.addEventListener('astro:page-load', bindCollectionFilters);
+  }
+  bindCollectionFilters();
+</script>

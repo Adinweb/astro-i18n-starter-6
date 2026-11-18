@@ -121,7 +121,10 @@ Physical dynamic routes are consolidated into a single dispatcher file (`src/pag
 * **Web App Manifest (`src/pages/site.webmanifest.ts`)**:
   - Generated dynamically using `app.config.json` brand colors and `DEFAULT_LOCALE` metadata.
 * **Dynamic Branded Open Graph Cards (`src/pages/og/[...slug].png.ts` & `src/libs/content/og-card.ts`)**:
-  - `src/libs/content/social.ts` (`getSocialCard`) switches behavior based on `brand.socialCardMode`: `'branded'` (default — generates deterministic `1200×630` RTL/LTR SVG→PNG cards matching the active brand palette and page title via `sharp`), `'artwork'` (cropped `entry.data.image`), or `'default'` (`/og-default.png`).
+  - `src/libs/content/social.ts` (`getSocialCard`) switches behavior based on `brand.socialCardMode`: `'branded'` (shipped `app.config.json` default — `renderBrandedOgSvg()` generates deterministic `1200×630` RTL/LTR SVG→PNG cards matching the active brand palette and page title via `sharp`, setting explicit `direction="rtl" unicode-bidi="embed"` and `text-anchor="start"` anchored on the right edge for Persian/Arabic cursive shaping), `'artwork'` (cropped `entry.data.image`), or `'default'` (`/og-default.png`).
+* **Corporate & LocalBusiness Structured Data (`src/libs/content/schema.ts`)**:
+  - `buildOrganizationSchema()`, `buildServiceSchema()`, and `collectSocialProfiles()` build Schema.org JSON-LD (`Organization`, `LocalBusiness`, `ProfessionalService`, `MedicalBusiness`, `Store`, `Service`) from `app.config.json` → `business` + `social`, injected automatically by `BaseLayout.astro`.
+* **Git-Based Editing (`.pages.yml`)**: Pre-configured Pages CMS schema mapping `pages`, `blog`, and `projects` collections plus media uploads.
 * **Static Blog & Search Fallback Catalogs (`src/pages/api/*.json.ts`)**:
   - `/api/blog-posts/[locale].json` (plus combined `/api/blog-posts.json`): Build-time static JSON catalogs powering client-side cross-page taxonomy filtering on multi-page blogs.
   - `/api/search-dev/[locale].json` (plus combined `/api/search-dev.json`): Emits title, description, URL, and locale for every published route as a dev/offline search fallback.
@@ -139,9 +142,11 @@ Physical dynamic routes are consolidated into a single dispatcher file (`src/pag
 * `src/libs/search/persian.ts` normalizes queries (`normalizePersianQuery`), reconstructs productive Persian ZWNJ (`\u200C`) compounds (`applyPersianZwnjCompounds`: e.g. `صفحه بندی` → `صفحه‌بندی`, `راست به چپ` → `راست‌به‌چپ`), generates up to 4 prioritized query variants (`buildSearchQueryVariants` covering ZWNJ/space forms, `ارایه` ↔ `ارائه` hamza variants, and `۰-۹` ↔ `0-9` numerals), and provides ZWNJ-agnostic fallback matching (`matchesFallbackSearch`).
 * `src/libs/search/client.ts` (`executeSearch`) queries `/pagefind/pagefind.js` in production across all generated query variants concurrently (deduplicating by handle ID and canonical URL), strips `\u200A` from excerpts via `plainText()`, and falls back cleanly to `/api/search-dev/<locale>.json` in development.
 
-### 6.3 Pure SSG External API Adapter (`src/libs/api/client.ts`)
+### 6.3 Pure SSG External & Serverless API Adapter (`src/libs/api/client.ts`)
 * This starter is **100% static SSG with zero backend**. Never add SSR routes or backend server directories.
-* Interactive forms (`src/components/ContactForm.astro` and `src/components/NewsletterBanner.astro`) post JSON payloads directly from the browser through `submitContactInquiry()` and `submitNewsletterSubscription()` in `src/libs/api/client.ts` (helpers: `resolveApiEndpoint()`, `getInvalidContactFields()`, `validateContactPayload()`, `validateNewsletterPayload()`), resolving endpoints from `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL`, `PUBLIC_API_BASE_URL`, or `app.config.json` (`api.baseUrl` + `api.endpoints.contact|newsletter`, plus optional `api.topics` localized topic options for `ContactForm`) with `AbortController` timeout protection and honeypot spam filtering.
+* Interactive forms (`src/components/ContactForm.astro` and `src/components/NewsletterBanner.astro`) post JSON payloads directly from the browser through `submitContactInquiry()` and `submitNewsletterSubscription()` in `src/libs/api/client.ts` (helpers: `FormProvider`, `resolveFormEndpoint()`, `resolveApiEndpoint()`, `getInvalidContactFields()`, `validateContactPayload()`, `validateNewsletterPayload()`).
+* Supported providers (`api.provider`): `'custom' | 'web3forms' | 'formspree' | 'basin' | 'webhook'`. When `provider === 'web3forms'` and `api.accessKey` / `PUBLIC_WEB3FORMS_KEY` is provided, `resolveFormEndpoint()` automatically targets `https://api.web3forms.com/submit`. Endpoints also resolve from `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL`, `PUBLIC_API_BASE_URL`, or `app.config.json` (`api.baseUrl` + `api.endpoints.contact|newsletter`, plus optional `api.topics`). Optional Cloudflare Turnstile verification (`api.turnstileSiteKey` or `PUBLIC_TURNSTILE_SITE_KEY`) works alongside `AbortController` timeout protection and honeypot spam filtering.
+* `ContactSplitSection.astro` consumes `BUSINESS_CONFIG` (`phone`, `whatsapp`, `telegram`, `address`, `workingHours`, `mapEmbedUrl`, `geo`) to render optional Phone/WhatsApp/Telegram quick-action links and a privacy-first click-to-load lazy map embed alongside `<ContactForm embedded />`.
 * Without a resolved endpoint the form is **not rendered at all**. Each panel then falls back to `*_fallback_desc` plus a `mailto:` button when `site.contactEmail` is set, and `*_unavailable_desc` when it is not — the copy must never promise an email channel the site does not have. Developer notices naming `PUBLIC_*_API_URL` are rendered in `import.meta.env.DEV` only.
 
 ---
@@ -191,13 +196,13 @@ Helpers exported from the same module — use these instead of hardcoding a segm
 
 A disabled blog registers **no** routes at all (not even an empty `/blog/`). `getBreadcrumbs()` matches the first URL segment against the enabled indexed types, so a new collection gets `Home → Section → Entry` for free.
 
-### 7.3 Views
+### 7.3 Views & Interactive Filtering
 
-`CollectionIndexView.astro` loads the collection itself, filters `draft` and locale via `parseContentEntryId`, sorts by `year` then title, and renders a staggered card grid, an empty state (`content_empty`) and an optional pager. It passes the type's localized label as the breadcrumb section, so the trail reads `Home → Projects` rather than the raw route segment.
+`CollectionIndexView.astro` loads the collection itself, filters `draft` and locale via `parseContentEntryId`, sorts by `year` then title, and renders a staggered card grid, an empty state (`content_empty`) and an optional pager. On client render (`[data-collection-root]`), progressive controls allow filtering by category, tech `stack`, and keyword search, updating visible counts via `formatNumber`, offering `collection_filter_clear` / `collection_filter_empty`, and replaying card animations via `refreshChronoTrig()`. It passes the type's localized label as the breadcrumb section, so the trail reads `Home → Projects` rather than the raw route segment.
 
 `CollectionEntryView.astro` renders the hero (with a breadcrumb prelude inside `HeroCopy`'s `prelude` slot, matching `BlogPostHeroContent`), the prose body, optional project meta (`client`, `year`, `stack`, `link`) and a `CreativeWork` + `BreadcrumbList` JSON-LD pair (`year` is serialized as an ISO `dateCreated: '<year>-01-01'`, because schema.org rejects a bare four-digit year). The visible trail and the structured data must stay in sync: if a view emits `BreadcrumbList`, it must render the same breadcrumbs.
 
-Neither view knows about taxonomy, TOC, related posts or feeds: that chrome stays in the blog views, so adding a collection never drags blog complexity along.
+Neither view knows about blog taxonomy/TOC/related-posts/feeds: collection filtering stays local to the collection index, so adding a collection never drags blog complexity along.
 
 ### 7.4 Adding a fourth client collection / content type (zero core edits)
 

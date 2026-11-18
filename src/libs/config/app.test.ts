@@ -3,21 +3,25 @@ import {
   siteConfig,
   appConfig,
   appConfigSchema,
+  brandLogoSchema,
   themeModeSchema,
   uiConfigSchema,
   blogConfigSchema,
   cookieConfigSchema,
   socialConfigSchema,
+  businessConfigSchema,
   apiEndpointsSchema,
   apiConfigSchema,
   defaultUiConfig,
   defaultSocialConfig,
+  defaultBusinessConfig,
   defaultApiConfig,
   POSTS_PER_PAGE,
   UI_CONFIG,
   BLOG_CONFIG,
   COOKIE_CONFIG,
   SOCIAL_CONFIG,
+  BUSINESS_CONFIG,
   API_CONFIG,
   type ApiConfig,
   type BlogConfig,
@@ -146,6 +150,36 @@ describe('src/libs/config/app.ts', () => {
     });
   });
 
+  describe('businessConfigSchema & brandLogoSchema', () => {
+    it('provides corporate defaults and validates optional local SEO details', () => {
+      expect(businessConfigSchema.parse({})).toEqual(defaultBusinessConfig);
+      const parsed = businessConfigSchema.parse({
+        type: 'MedicalBusiness',
+        legalName: 'Clinic GmbH',
+        phone: '+49 89 123456',
+        whatsapp: '+49 170 123456',
+        telegram: '@clinic_support',
+        geo: { lat: 48.1351, lng: 11.582 },
+      });
+      expect(parsed.type).toBe('MedicalBusiness');
+      expect(parsed.geo?.lat).toBe(48.1351);
+      expect(BUSINESS_CONFIG).toEqual(siteConfig.business);
+    });
+
+    it('validates light/dark logo configuration', () => {
+      const parsed = brandLogoSchema.parse({
+        light: '/logo-light.svg',
+        dark: '/logo-dark.svg',
+        alt: 'Acme Corp',
+        width: 120,
+        height: 32,
+        showText: false,
+      });
+      expect(parsed.light).toBe('/logo-light.svg');
+      expect(parsed.showText).toBe(false);
+    });
+  });
+
   describe('siteConfig and direct exports', () => {
     it('exposes validated site metadata and configuration objects', () => {
       expect(siteConfig.name).toBe(appConfig.site.name);
@@ -154,12 +188,14 @@ describe('src/libs/config/app.ts', () => {
       expect(siteConfig.blog).toBeDefined();
       expect(siteConfig.cookies).toBeDefined();
       expect(siteConfig.social).toBeDefined();
+      expect(siteConfig.business).toBeDefined();
       expect(siteConfig.api).toBeDefined();
       expect(POSTS_PER_PAGE).toBe(appConfig.blog.postsPerPage);
       expect(UI_CONFIG).toEqual(siteConfig.ui);
       expect(BLOG_CONFIG).toEqual(siteConfig.blog);
       expect(COOKIE_CONFIG).toEqual(siteConfig.cookies);
       expect(SOCIAL_CONFIG).toEqual(siteConfig.social);
+      expect(BUSINESS_CONFIG).toEqual(siteConfig.business);
       expect(API_CONFIG).toEqual(siteConfig.api);
     });
   });

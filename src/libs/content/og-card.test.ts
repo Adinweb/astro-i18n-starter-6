@@ -57,8 +57,10 @@ describe('src/libs/content/og-card.ts & faq.ts', () => {
       kicker: 'معرفی',
       locale: 'fa',
     });
-    expect(rtlSvg).toContain('text-anchor="end"');
-    expect(rtlSvg).toContain('Noto Sans Arabic');
+    expect(rtlSvg).toContain('text-anchor="start"');
+    expect(rtlSvg).toContain('direction="rtl"');
+    expect(rtlSvg).toContain('unicode-bidi="embed"');
+    expect(rtlSvg).toContain('Noto Naskh Arabic');
   });
 
   it('rasterizes branded OG cards to genuine 1200x630 PNG buffers', async () => {

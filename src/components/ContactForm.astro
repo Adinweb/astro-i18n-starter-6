@@ -3,7 +3,7 @@ import Icon from '@/components/Icon.astro';
 import Button from '@/components/Button.astro';
 import UiInput from '@/components/UiInput.astro';
 import { DEFAULT_LOCALE, type Locale } from '@/i18n/locales';
-import { resolveApiEndpoint } from '@/libs/api/client';
+import { resolveFormEndpoint } from '@/libs/api/client';
 import { API_CONFIG, siteConfig } from '@/libs/config/app';
 import * as m from '@/paraglide/messages';
 
@@ -16,8 +16,14 @@ interface Props {
 
 const { id, locale, embedded = false } = Astro.props;
 
-const resolvedEndpoint = resolveApiEndpoint(API_CONFIG.endpoints.contact, API_CONFIG.baseUrl);
+const resolvedEndpoint = resolveFormEndpoint(
+  API_CONFIG.provider,
+  API_CONFIG.endpoints.contact,
+  API_CONFIG.baseUrl,
+  API_CONFIG.accessKey
+);
 const isConfigured = resolvedEndpoint !== null;
+const turnstileSiteKey = API_CONFIG.turnstileSiteKey.trim();
 
 // Two audiences read this component. A visitor gets a form or a mailto button,
 // never an environment variable name; the developer note below is rendered in
@@ -44,6 +50,7 @@ const copy = {
   successTitle: m.contact_success_title({}, { locale }),
   successDesc: m.contact_success_desc({}, { locale }),
   errValidation: m.contact_error_validation({}, { locale }),
+  errTurnstile: m.contact_error_turnstile({}, { locale }),
   errName: m.contact_error_name({}, { locale }),
   errEmail: m.contact_error_email({}, { locale }),
   errTopic: m.contact_error_topic({}, { locale }),
@@ -107,12 +114,6 @@ const topicOptions = API_CONFIG.topics?.length
             >
               <Icon name="mail" size={20} />
             </span>
-            <!--
-              The fallback copy promises an email reply, so it only makes sense
-              next to the mailto button: a site with neither an endpoint nor
-              `site.contactEmail` says plainly that inquiries are unavailable
-              instead of pointing at a mailbox that does not exist.
-            -->
             <p class="mt-4 text-sm leading-relaxed text-muted">
               {emailHref ? copy.fallbackDesc : copy.unavailableDesc}
             </p>
@@ -138,20 +139,22 @@ const topicOptions = API_CONFIG.topics?.length
       }
 
       {
-        /* An unconnected endpoint means no form at all: a control that cannot
-           submit is worse than a clear address to write to. */
         isConfigured && (
       <form
         data-contact-form-el
         data-locale={locale}
+        data-provider={API_CONFIG.provider}
         data-base-url={API_CONFIG.baseUrl}
         data-endpoint={API_CONFIG.endpoints.contact}
+        data-access-key={API_CONFIG.accessKey}
+        data-turnstile-site-key={turnstileSiteKey}
         data-timeout-ms={String(API_CONFIG.timeoutMs)}
         data-label-submit={copy.submit}
         data-label-submitting={copy.submitting}
         data-msg-success-title={copy.successTitle}
         data-msg-success-desc={copy.successDesc}
         data-err-validation={copy.errValidation}
+        data-err-turnstile={copy.errTurnstile}
         data-err-name={copy.errName}
         data-err-email={copy.errEmail}
         data-err-topic={copy.errTopic}
@@ -248,6 +251,10 @@ const topicOptions = API_CONFIG.topics?.length
           fieldErrorName="message"
         />
 
+        {turnstileSiteKey && (
+          <div data-turnstile-container class="min-h-[65px]" />
+        )}
+
         <div
           data-contact-feedback
           role="status"
@@ -283,7 +290,38 @@ const topicOptions = API_CONFIG.topics?.length
     submitContactInquiry,
     type ContactInquiryPayload,
     type ContactSubmissionErrorCode,
+    type FormProvider,
   } from '@/libs/api/client';
+
+  type TurnstileApi = {
+    render: (container: HTMLElement, options: Record<string, unknown>) => string;
+    reset: (widgetId?: string) => void;
+    getResponse: (widgetId?: string) => string | undefined;
+  };
+
+  function ensureTurnstileLoaded(): Promise<TurnstileApi | null> {
+    const win = window as unknown as { turnstile?: TurnstileApi; __turnstilePromise?: Promise<TurnstileApi | null> };
+    if (win.turnstile) return Promise.resolve(win.turnstile);
+    if (win.__turnstilePromise) return win.__turnstilePromise;
+
+    win.__turnstilePromise = new Promise((resolve) => {
+      const existing = document.querySelector<HTMLScriptElement>('script[data-turnstile-script]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(win.turnstile ?? null), { once: true });
+        existing.addEventListener('error', () => resolve(null), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.dataset.turnstileScript = 'true';
+      script.onload = () => resolve(win.turnstile ?? null);
+      script.onerror = () => resolve(null);
+      document.head.appendChild(script);
+    });
+    return win.__turnstilePromise;
+  }
 
   function initContactForms() {
     const forms = document.querySelectorAll<HTMLFormElement>('[data-contact-form-el]');
@@ -297,10 +335,34 @@ const topicOptions = API_CONFIG.topics?.length
       const feedback = form.querySelector<HTMLElement>('[data-contact-feedback]');
       const feedbackTitle = form.querySelector<HTMLElement>('[data-contact-feedback-title]');
       const feedbackBody = form.querySelector<HTMLElement>('[data-contact-feedback-body]');
+      const turnstileContainer = form.querySelector<HTMLElement>('[data-turnstile-container]');
+      const turnstileSiteKey = form.dataset.turnstileSiteKey?.trim() ?? '';
+      let turnstileWidgetId: string | null = null;
+      let turnstileToken = '';
+
+      if (turnstileSiteKey && turnstileContainer) {
+        ensureTurnstileLoaded().then((api) => {
+          if (!api || !turnstileContainer.isConnected || turnstileWidgetId !== null) return;
+          const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+          turnstileWidgetId = api.render(turnstileContainer, {
+            sitekey: turnstileSiteKey,
+            theme,
+            language: form.dataset.locale ?? 'auto',
+            callback: (token: string) => {
+              turnstileToken = token;
+            },
+            'expired-callback': () => {
+              turnstileToken = '';
+            },
+          });
+        });
+      }
+
       const fieldNames = ['name', 'email', 'topic', 'message'] as const;
 
       const errorMessages: Record<ContactSubmissionErrorCode, string> = {
         validation: form.dataset.errValidation ?? '',
+        turnstile: form.dataset.errTurnstile ?? form.dataset.errValidation ?? '',
         unconfigured: form.dataset.errUnconfigured ?? '',
         timeout: form.dataset.errTimeout ?? '',
         http: form.dataset.errHttp ?? '',
@@ -359,6 +421,12 @@ const topicOptions = API_CONFIG.topics?.length
 
         const formData = new FormData(form);
         const honeypot = String(formData.get('company_website') ?? '');
+        const winTurnstile = (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+        const resolvedToken =
+          turnstileToken ||
+          (turnstileWidgetId !== null ? winTurnstile?.getResponse(turnstileWidgetId) ?? '' : '') ||
+          String(formData.get('cf-turnstile-response') ?? '');
+
         const payload: ContactInquiryPayload = {
           name: String(formData.get('name') ?? ''),
           email: String(formData.get('email') ?? ''),
@@ -366,6 +434,7 @@ const topicOptions = API_CONFIG.topics?.length
           message: String(formData.get('message') ?? ''),
           locale: form.dataset.locale ?? 'en',
           honeypot,
+          ...(resolvedToken ? { turnstileToken: resolvedToken } : {}),
         };
 
         if (!honeypot.trim()) {
@@ -398,9 +467,13 @@ const topicOptions = API_CONFIG.topics?.length
         }
 
         const timeoutMs = Number.parseInt(form.dataset.timeoutMs ?? '10000', 10);
+        const provider = (form.dataset.provider as FormProvider | undefined) ?? 'custom';
         const result = await submitContactInquiry(payload, {
+          provider,
           baseUrl: form.dataset.baseUrl ?? '',
           endpoint: form.dataset.endpoint ?? '/contact',
+          accessKey: form.dataset.accessKey ?? '',
+          requireTurnstile: Boolean(turnstileSiteKey),
           timeoutMs: Number.isFinite(timeoutMs) ? timeoutMs : 10000,
         });
 
@@ -412,6 +485,8 @@ const topicOptions = API_CONFIG.topics?.length
         if (result.ok) {
           form.reset();
           clearInvalidState();
+          turnstileToken = '';
+          if (turnstileWidgetId !== null) winTurnstile?.reset(turnstileWidgetId);
           renderFeedback(
             'success',
             form.dataset.msgSuccessTitle ?? '',

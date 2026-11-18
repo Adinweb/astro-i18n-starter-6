@@ -75,12 +75,13 @@ npm run upstream:check && npm run doctor && npm run lint && npm test && npm run 
 
 ## Playbook 3: Composable Corporate Blocks & Client Rebranding
 
-1. **Rapid Client Branding (`npm run site:init`)**:
-   Configure site identity, 6 OKLCH palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose`), Latin/RTL font pairings, branded OG card generation, and active content modules in `client/config.json` with one command:
+1. **Rapid Client Branding & Blueprints (`npm run site:init` + `DevThemePreview`)**:
+   Configure site identity, industry blueprint (`corporate`, `agency`, `portfolio`, `medical`), 6 OKLCH palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose`), optional Light/Dark `brand.logo`, Latin/RTL font pairings (`vazirmatn`, `noto-arabic`, `iransans`, `yekan-bakh`, `peyda` with commercial `@font-face` hooks in `client/styles.css`), branded OG card generation, and active content modules in `client/config.json` with one command:
    ```bash
-   npm run site:init -- --name="Acme Studio" --preset=emerald --font=jakarta --rtl-font=noto-arabic --og-mode=branded --yes
+   npm run site:init -- --name="Acme Studio" --blueprint=agency --rtl-font=vazirmatn --og-mode=branded --yes
    ```
-   Need optional demo pages, posts, and projects to preview or copy blocks from? Run `npm run starter:seed` (and `npm run starter:seed -- --clean --yes` to strip demo items cleanly).
+   While running `npm run dev`, open the floating **DEV Theme Studio** (`src/components/DevThemePreview.astro`, strictly excluded from production builds) to preview light/dark mode, palettes, custom primary/accent hex overrides, and Latin/RTL fonts live, then copy the generated JSON snippet straight into `client/config.json`.
+   Need optional demo pages, posts, and projects to preview or copy blocks from? Run `npm run starter:seed -- --blueprint=corporate` (and `npm run starter:seed -- --clean --yes` to strip demo items cleanly).
 
 2. **Start From the 22 Built-In PrebuiltUI-Adapted Blocks (`src/components/`)**:
    Before building custom markup from scratch, check the starter's 19 RTL/LTR-safe section blocks and 3 UI primitives — all work with zero props using localized Paraglide defaults (`locale` auto-detects from URL) or custom overrides:
@@ -304,7 +305,13 @@ Unlike `blog` entries (which always use `BlogPostView.astro` + `PageHero.astro`)
 * **Minimal Typographic Header (`hero: "minimal"`, `container: "contained" | "prose"`)**: Renders `PageHeader.astro` (breadcrumbs, accent rule, `<h1>`, description) above either a `1280px` `.layout-container` (`contained`) or a `72ch` editorial column (`prose`).
 * **Atmospheric Banner (`hero: "default"`)**: Renders the defocused full-bleed `PageHero.astro` + `HeroCopy.astro`.
 
-### 2. Connecting Contact & Newsletter Forms to an External API (Zero Backend)
-This starter is **100% Pure SSG** and ships with no backend server. Both `src/components/ContactForm.astro` and `src/components/NewsletterBanner.astro` post directly to external/headless APIs through `src/libs/api/client.ts`:
-1. Set `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL` (or shared `PUBLIC_API_BASE_URL`) in `.env` / deployment environment variables, **or** configure `api.baseUrl` + `api.endpoints.contact|newsletter` (and optional `api.topics`) in `client/config.json`.
-2. Embed `<ContactForm locale={locale} />` or `<NewsletterBanner locale={locale} />` in any Astro view or MDX page. When no external endpoint is configured yet, neither form is rendered; visitors see a clean `mailto:` fallback (when `site.contactEmail` is set) or neutral unavailable notice, and `import.meta.env.DEV`-only setup notes guide developers without leaking env var names in production HTML.
+### 2. Connecting Contact & Newsletter Forms to Serverless / External APIs (Zero Backend)
+This starter is **100% Pure SSG** and ships with no backend server. Both `src/components/ContactForm.astro` and `src/components/NewsletterBanner.astro` post directly to external/serverless providers through `src/libs/api/client.ts`:
+1. Configure `api.provider` in `client/config.json` (`'custom' | 'web3forms' | 'formspree' | 'basin' | 'webhook'`), optional `accessKey` / `PUBLIC_WEB3FORMS_KEY` (when using `web3forms`, `resolveFormEndpoint()` automatically targets `https://api.web3forms.com/submit`), and optional Cloudflare Turnstile `turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY` alongside `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL`, or `PUBLIC_API_BASE_URL` in `.env` / deployment environment variables.
+2. Optionally populate `business` (`type`, `legalName`, `phone`, `whatsapp`, `telegram`, `address`, `city`, `country`, `workingHours`, `mapEmbedUrl`, `geo`) in `client/config.json`. `BaseLayout.astro` emits `Organization` / `LocalBusiness` JSON-LD via `src/libs/content/schema.ts`, and `ContactSplitSection.astro` pairs `<ContactForm embedded />` with instant Phone/WhatsApp/Telegram quick-action buttons and a click-to-load lazy map embed.
+3. Without JavaScript or without a configured endpoint, neither form renders; visitors see a clean `mailto:` fallback (when `site.contactEmail` is set) or neutral unavailable notice, and `import.meta.env.DEV`-only setup notes guide developers without leaking env var names in production HTML.
+
+### 3. Collection Filtering, Git CMS & Production Deployment Artifacts
+* **Generic Collection Filtering**: `CollectionIndexView.astro` (`projects`, etc.) supports progressive category, tech `stack`, and keyword search filtering with locale-native `formatNumber` counters and ChronoTrig reveal replays.
+* **Git-Based Editing**: `.pages.yml` ships pre-configured for Pages CMS (`pages`, `blog`, `projects`, and media).
+* **Production Headers & Caching**: Use `public/_headers` (Cloudflare Pages / Netlify security & cache headers) or `docs/deploy/nginx.conf` (Nginx gzip, immutable `/_astro/*` cache, localized `/404.html` handler) when deploying `dist/`.

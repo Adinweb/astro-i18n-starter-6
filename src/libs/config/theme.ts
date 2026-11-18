@@ -19,10 +19,17 @@ export const FONT_PRESET_KEYS = [
 ] as const;
 type FontPresetKey = (typeof FONT_PRESET_KEYS)[number];
 
-export const RTL_FONT_PRESET_KEYS = ['vazirmatn', 'noto-arabic'] as const;
+export const RTL_FONT_PRESET_KEYS = [
+  'vazirmatn',
+  'noto-arabic',
+  'iransans',
+  'yekan-bakh',
+  'peyda',
+] as const;
 type RtlFontPresetKey = (typeof RTL_FONT_PRESET_KEYS)[number];
 
 export const SOCIAL_CARD_MODES = ['branded', 'artwork', 'default'] as const;
+export const THEME_PRESETS = presets;
 
 export interface BrandThemeInput {
   preset?: BrandPresetKey;

@@ -16,6 +16,7 @@ import readline from 'node:readline';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { readMergedConfig, writeClientConfig } from './lib/config.mjs';
+import { applyBlueprintToConfig, VALID_BLUEPRINTS } from './lib/blueprints.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
 import { readLocaleConfig } from './lib/locales.mjs';
 import { switchDefaultLocale, switchToSingleLocale } from './lib/locale-mutations.mjs';
@@ -50,6 +51,7 @@ Identity:
   --email="<contact@domain>"     Public contact email (empty clears it)
 
 Brand & Typography:
+  --blueprint=<${VALID_BLUEPRINTS.join('|')}>
   --preset=<${VALID_PRESETS.join('|')}>
   --primary=<#rrggbb>            Override primary brand hex
   --accent=<#rrggbb>             Override accent hex
@@ -108,6 +110,7 @@ for (const arg of args) {
     else if (key === 'desc' || key === 'description') opts.desc = val;
     else if (key === 'author') opts.author = val;
     else if (key === 'email') opts.email = val;
+    else if (key === 'blueprint') opts.blueprint = val;
     else if (key === 'preset') opts.preset = val;
     else if (key === 'primary') opts.primary = val;
     else if (key === 'accent') opts.accent = val;
@@ -128,6 +131,15 @@ for (const arg of args) {
 }
 
 const config = readMergedConfig(rootDir);
+if (opts.blueprint !== undefined) {
+  if (!VALID_BLUEPRINTS.includes(opts.blueprint)) {
+    console.error(
+      `❌ Invalid --blueprint "${opts.blueprint}". Valid: ${VALID_BLUEPRINTS.join(', ')}.`
+    );
+    process.exit(1);
+  }
+  applyBlueprintToConfig(config, opts.blueprint, { rootPresets: themePresets });
+}
 const localeConfig = readLocaleConfig(rootDir);
 const registeredLocales = localeConfig.locales;
 const currentDefaultLocale = localeConfig.defaultLocale || registeredLocales[0];

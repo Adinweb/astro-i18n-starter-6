@@ -19,14 +19,15 @@ npm run <command> -- [options]
 ### 2.0 Client Onboarding & Rebranding (`site:init`)
 ```bash
 npm run site:init -- [--name="Acme Studio"] [--short-name="Acme"] [--desc="..."] [--author="..."] [--email="hello@acme.test"] \
+  [--blueprint=corporate|agency|portfolio|medical] \
   [--preset=indigo|cobalt|emerald|amber|slate|rose] [--primary=#rrggbb] [--accent=#rrggbb] \
-  [--font=system|jakarta|manrope|outfit|editorial] [--rtl-font=vazirmatn|noto-arabic] \
+  [--font=system|jakarta|manrope|outfit|editorial] [--rtl-font=vazirmatn|noto-arabic|iransans|yekan-bakh|peyda] \
   [--og-mode=branded|artwork|default] [--default-theme=system|light|dark] \
   [--default-locale=<code>] [--single-lang|--multi-lang] [--blog=true|false] [--projects=true|false] \
   [--cta-page=<key>] [--github=...] [--twitter=...] [--linkedin=...] [--instagram=...] [--telegram=...] \
   [--skip-assets] [--yes]
 ```
-* Updates `client/config.json` (sparse diff against `app.config.json`), keeps `site_description` synchronized in `client/messages/<targetLocale>.json`, optionally switches default/solo locale mode in `client/locales.json`, and refreshes brand icons / `og-default.png` unless `--skip-assets` is passed. Runs interactively when stdin is a TTY or completely headlessly with `--yes`.
+* Updates `client/config.json` (sparse diff against `app.config.json`), applies optional industry `--blueprint` presets (`corporate`, `agency`, `portfolio`, `medical` from `scripts/lib/blueprints.mjs` for palette, typography, `business.type`, `ui.ctaPage`, and modules), keeps `site_description` synchronized in `client/messages/<targetLocale>.json`, optionally switches default/solo locale mode in `client/locales.json`, and refreshes brand icons / `og-default.png` unless `--skip-assets` is passed. Runs interactively when stdin is a TTY or completely headlessly with `--yes`.
 
 ### 2.1 Static Pages (`new:page`)
 ```bash
@@ -185,7 +186,7 @@ npm run content:enable projects
 
 ### 6.3 Starter Demo Package (`starter:seed`) & Upstream Check (`upstream:check`)
 ```bash
-npm run starter:seed                 # Seed optional starter-kit/ pages, posts, projects, assets & nav
+npm run starter:seed [-- --blueprint=corporate|agency|portfolio|medical] # Seed optional starter-kit/ pages, posts, projects & blueprint config
 npm run starter:seed -- --clean --yes # Remove seeded demo items and return to clean minimal base state
 npm run upstream:check               # Verify two-tier config, messages, locales, and core/client hooks
 ```

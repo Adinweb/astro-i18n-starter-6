@@ -32,6 +32,15 @@ const brandIconSchema = z.object({
   purpose: z.string().min(1),
 });
 
+export const brandLogoSchema = z.object({
+  light: z.string().optional().default(''),
+  dark: z.string().optional().default(''),
+  alt: z.string().optional().default(''),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+  showText: z.boolean().default(true),
+});
+
 export const themeModeSchema = z.enum(['system', 'light', 'dark']);
 export type ThemeMode = z.infer<typeof themeModeSchema>;
 
@@ -102,6 +111,30 @@ export const socialConfigSchema = z.object({
 });
 export type SocialConfig = z.infer<typeof socialConfigSchema>;
 
+export const businessConfigSchema = z.object({
+  type: z
+    .enum(['Organization', 'LocalBusiness', 'ProfessionalService', 'MedicalBusiness', 'Store'])
+    .default('Organization'),
+  legalName: z.string().optional().default(''),
+  phone: z.string().optional().default(''),
+  whatsapp: z.string().optional().default(''),
+  telegram: z.string().optional().default(''),
+  address: z.string().optional().default(''),
+  city: z.string().optional().default(''),
+  country: z.string().optional().default(''),
+  workingHours: z.string().optional().default(''),
+  mapEmbedUrl: z.string().optional().default(''),
+  geo: z
+    .object({
+      lat: z.number(),
+      lng: z.number(),
+    })
+    .optional(),
+});
+export type BusinessConfig = z.infer<typeof businessConfigSchema>;
+
+const formProviderSchema = z.enum(['custom', 'web3forms', 'formspree', 'basin', 'webhook']);
+
 export const apiEndpointsSchema = z.object({
   contact: z.string().default('/contact'),
   newsletter: z.string().optional(),
@@ -114,7 +147,10 @@ const contactTopicSchema = z.object({
 });
 
 export const apiConfigSchema = z.object({
+  provider: formProviderSchema.default('custom'),
   baseUrl: z.string().default(''),
+  accessKey: z.string().optional().default(''),
+  turnstileSiteKey: z.string().optional().default(''),
   timeoutMs: z.number().int().min(1000).max(60000).default(10000),
   endpoints: apiEndpointsSchema.default({ contact: '/contact' }),
   topics: z.array(contactTopicSchema).optional(),
@@ -138,8 +174,24 @@ export const defaultSocialConfig: SocialConfig = {
   telegram: '',
 };
 
+export const defaultBusinessConfig: BusinessConfig = {
+  type: 'Organization',
+  legalName: '',
+  phone: '',
+  whatsapp: '',
+  telegram: '',
+  address: '',
+  city: '',
+  country: '',
+  workingHours: '',
+  mapEmbedUrl: '',
+};
+
 export const defaultApiConfig: ApiConfig = {
+  provider: 'custom',
   baseUrl: '',
+  accessKey: '',
+  turnstileSiteKey: '',
   timeoutMs: 10000,
   endpoints: {
     contact: '/contact',
@@ -173,6 +225,7 @@ export const appConfigSchema = z.object({
     fontPreset: z.enum(FONT_PRESET_KEYS).default('system'),
     rtlFontPreset: z.enum(RTL_FONT_PRESET_KEYS).default('vazirmatn'),
     socialCardMode: z.enum(SOCIAL_CARD_MODES).default('artwork'),
+    logo: brandLogoSchema.optional(),
     themeColor: hexColor,
     darkThemeColor: hexColor.optional(),
     backgroundColor: hexColor,
@@ -187,6 +240,7 @@ export const appConfigSchema = z.object({
   content: contentConfigSchema.default({ types: {} }),
   cookies: cookieConfigSchema.default(COOKIE_CONFIG_DEFAULTS),
   social: socialConfigSchema.default(defaultSocialConfig),
+  business: businessConfigSchema.default(defaultBusinessConfig),
   api: apiConfigSchema.default(defaultApiConfig),
   server: z.object({
     host: z.string().min(1),
@@ -215,6 +269,7 @@ const siteConfigSchema = z.object({
   fontPreset: z.enum(FONT_PRESET_KEYS),
   rtlFontPreset: z.enum(RTL_FONT_PRESET_KEYS),
   socialCardMode: z.enum(SOCIAL_CARD_MODES),
+  logo: brandLogoSchema.optional(),
   themeColor: hexColor,
   darkThemeColor: hexColor,
   backgroundColor: hexColor,
@@ -227,6 +282,7 @@ const siteConfigSchema = z.object({
   blog: blogConfigSchema,
   cookies: cookieConfigSchema,
   social: socialConfigSchema,
+  business: businessConfigSchema,
   api: apiConfigSchema,
 });
 
@@ -235,6 +291,8 @@ const envContactEndpoint = (import.meta.env.PUBLIC_CONTACT_API_URL as string | u
 const envNewsletterEndpoint = (
   import.meta.env.PUBLIC_NEWSLETTER_API_URL as string | undefined
 )?.trim();
+const envWeb3FormsKey = (import.meta.env.PUBLIC_WEB3FORMS_KEY as string | undefined)?.trim();
+const envTurnstileSiteKey = (import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string | undefined)?.trim();
 
 export const siteConfig = siteConfigSchema.parse({
   // Astro injects `site` from astro.config.mjs into import.meta.env.SITE.
@@ -253,6 +311,7 @@ export const siteConfig = siteConfigSchema.parse({
   fontPreset: appConfig.brand.fontPreset,
   rtlFontPreset: appConfig.brand.rtlFontPreset,
   socialCardMode: appConfig.brand.socialCardMode,
+  ...(appConfig.brand.logo ? { logo: appConfig.brand.logo } : {}),
   /** Browser chrome colour; mirrors `--color-primary` in `src/styles/global.css`. */
   themeColor: appConfig.brand.themeColor,
   /** Browser chrome colour in dark mode; mirrors dark `--color-bg`. */
@@ -268,8 +327,12 @@ export const siteConfig = siteConfigSchema.parse({
   blog: appConfig.blog,
   cookies: appConfig.cookies,
   social: appConfig.social,
+  business: appConfig.business,
   api: {
+    provider: appConfig.api.provider,
     baseUrl: envApiBaseUrl || appConfig.api.baseUrl,
+    accessKey: envWeb3FormsKey || appConfig.api.accessKey,
+    turnstileSiteKey: envTurnstileSiteKey || appConfig.api.turnstileSiteKey,
     timeoutMs: appConfig.api.timeoutMs,
     endpoints: {
       contact: envContactEndpoint || appConfig.api.endpoints.contact,
@@ -298,11 +361,14 @@ export const BLOG_CONFIG = siteConfig.blog;
  */
 export const CONTENT_CONFIG = appConfig.content;
 
-/** Direct export for TDDDG §25 / DSGVO cookie consent configuration. */
+/** Direct export for TDDDG § 25 / DSGVO cookie consent configuration. */
 export const COOKIE_CONFIG = siteConfig.cookies;
 
 /** Direct export for external social links. */
 export const SOCIAL_CONFIG = siteConfig.social;
+
+/** Direct export for corporate/business metadata & contact details. */
+export const BUSINESS_CONFIG = siteConfig.business;
 
 /** Direct export for external headless/microservice API endpoints. */
 export const API_CONFIG = siteConfig.api;

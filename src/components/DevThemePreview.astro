@@ -1,0 +1,418 @@
+---
+/**
+ * DEV-only live theme preview & client config generator.
+ *
+ * Rendered exclusively when `import.meta.env.DEV` is true so zero bytes ship in
+ * production builds. Lets agencies preview light/dark mode, the 6 OKLCH brand
+ * palettes, custom primary colors, Latin fonts, and Persian/RTL fonts live,
+ * then copy a sparse `client/config.json` snippet in one click.
+ */
+import Icon from '@/components/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { siteConfig } from '@/libs/config/app';
+import {
+  BRAND_PRESET_KEYS,
+  FONT_PRESET_KEYS,
+  RTL_FONT_PRESET_KEYS,
+  THEME_PRESETS,
+} from '@/libs/config/theme';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const initialPreset = siteConfig.preset ?? 'indigo';
+const initialPrimary =
+  siteConfig.primaryColor ??
+  THEME_PRESETS.palettes[initialPreset]?.primary ??
+  THEME_PRESETS.palettes.indigo.primary;
+const initialFont = siteConfig.fontPreset ?? 'system';
+const initialRtlFont = siteConfig.rtlFontPreset ?? 'vazirmatn';
+---
+
+<aside
+  data-dev-theme-preview
+  data-initial-preset={initialPreset}
+  data-initial-primary={initialPrimary}
+  data-initial-font={initialFont}
+  data-initial-rtl-font={initialRtlFont}
+  data-initial-theme={siteConfig.defaultTheme}
+  data-copy-label={m.dev_theme_copy_config({}, { locale })}
+  data-copied-label={m.dev_theme_copied({}, { locale })}
+  aria-label={m.dev_theme_title({}, { locale })}
+  class="fixed bottom-4 end-4 z-[60] max-w-[calc(100vw-2rem)]"
+>
+  <button
+    type="button"
+    data-dev-theme-toggle
+    aria-expanded="false"
+    aria-controls="dev-theme-preview-panel"
+    class="glass-control inline-flex items-center gap-2 rounded-full border border-border px-3.5 py-2 text-xs font-semibold text-fg shadow-lg transition-all hover:border-primary/50 hover:text-primary cursor-pointer"
+  >
+    <Icon name="wand" size={15} class="text-primary" />
+    <span>{m.dev_theme_open({}, { locale })}</span>
+  </button>
+
+  <div
+    id="dev-theme-preview-panel"
+    data-dev-theme-panel
+    data-lenis-prevent
+    hidden
+    class="mt-2 w-80 max-h-[80vh] overflow-y-auto rounded-2xl border border-border bg-surface p-4 text-xs text-fg shadow-2xl"
+  >
+    <div class="flex items-center justify-between gap-2 border-b border-border pb-3">
+      <div class="flex items-center gap-2 font-bold text-sm">
+        <Icon name="wand" size={16} class="text-primary" />
+        <span>{m.dev_theme_title({}, { locale })}</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          data-dev-theme-reset
+          title={m.dev_theme_reset({}, { locale })}
+          aria-label={m.dev_theme_reset({}, { locale })}
+          class="inline-flex size-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-hover hover:text-fg cursor-pointer"
+        >
+          <Icon name="refresh" size={14} />
+        </button>
+        <button
+          type="button"
+          data-dev-theme-close
+          title={m.common_close({}, { locale })}
+          aria-label={m.common_close({}, { locale })}
+          class="inline-flex size-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-hover hover:text-fg cursor-pointer"
+        >
+          <Icon name="close" size={14} />
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-3.5 space-y-4">
+      <div>
+        <span class="mb-1.5 block font-semibold text-muted">{m.dev_theme_mode({}, { locale })}</span>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            data-dev-mode-btn="light"
+            class="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-bg/60 px-2.5 py-1.5 font-medium transition-colors hover:border-primary/50 cursor-pointer"
+          >
+            <Icon name="sun" size={13} />
+            <span>{m.common_theme_light({}, { locale })}</span>
+          </button>
+          <button
+            type="button"
+            data-dev-mode-btn="dark"
+            class="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-bg/60 px-2.5 py-1.5 font-medium transition-colors hover:border-primary/50 cursor-pointer"
+          >
+            <Icon name="moon" size={13} />
+            <span>{m.common_theme_dark({}, { locale })}</span>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <span class="mb-1.5 block font-semibold text-muted">{m.dev_theme_palette({}, { locale })}</span>
+        <div class="grid grid-cols-3 gap-1.5">
+          {BRAND_PRESET_KEYS.map((key) => {
+            const spec = THEME_PRESETS.palettes[key];
+            return (
+              <button
+                type="button"
+                data-dev-preset-btn={key}
+                data-preset-primary={spec.primary}
+                class:list={[
+                  'flex items-center gap-1.5 rounded-lg border px-2 py-1.5 font-medium capitalize transition-colors cursor-pointer text-start',
+                  key === initialPreset
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-bg/60 text-fg hover:border-primary/40',
+                ]}
+              >
+                <span
+                  aria-hidden="true"
+                  class="size-3 shrink-0 rounded-full border border-border/60"
+                  style={`background-color: ${spec.primary}`}
+                />
+                <span class="truncate">{key}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3">
+        <label for="dev-theme-primary-picker" class="font-semibold text-muted">
+          {m.dev_theme_custom_color({}, { locale })}
+        </label>
+        <div class="flex items-center gap-2">
+          <code data-dev-primary-readout lang="en" dir="ltr" class="text-[11px] text-muted">
+            {initialPrimary}
+          </code>
+          <input
+            id="dev-theme-primary-picker"
+            type="color"
+            data-dev-primary-input
+            value={initialPrimary}
+            class="h-7 w-10 cursor-pointer rounded border border-border bg-transparent p-0.5"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label for="dev-theme-latin-font" class="mb-1 block font-semibold text-muted">
+          {m.dev_theme_latin_font({}, { locale })}
+        </label>
+        <select
+          id="dev-theme-latin-font"
+          data-dev-latin-select
+          class="w-full rounded-lg border border-border bg-bg px-2.5 py-1.5 text-xs text-fg focus:border-primary focus:outline-none"
+        >
+          {FONT_PRESET_KEYS.map((key) => (
+            <option value={key} selected={key === initialFont}>
+              {key}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label for="dev-theme-rtl-font" class="mb-1 block font-semibold text-muted">
+          {m.dev_theme_rtl_font({}, { locale })}
+        </label>
+        <select
+          id="dev-theme-rtl-font"
+          data-dev-rtl-select
+          class="w-full rounded-lg border border-border bg-bg px-2.5 py-1.5 text-xs text-fg focus:border-primary focus:outline-none"
+        >
+          {RTL_FONT_PRESET_KEYS.map((key) => (
+            <option value={key} selected={key === initialRtlFont}>
+              {key}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <button
+        type="button"
+        data-dev-copy-btn
+        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 font-semibold text-primary-fg transition-opacity hover:opacity-90 cursor-pointer"
+      >
+        <Icon name="copy" size={14} />
+        <span data-dev-copy-label>{m.dev_theme_copy_config({}, { locale })}</span>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<script>
+  import {
+    resolveBrandTheme,
+    THEME_PRESETS,
+    type BrandThemeInput,
+  } from '@/libs/config/theme';
+
+  const THEME_TOKEN_KEYS = [
+    '--theme-primary',
+    '--theme-primary-fg',
+    '--theme-secondary',
+    '--theme-secondary-fg',
+    '--theme-accent',
+    '--theme-accent-fg',
+    '--theme-shadow-floating',
+    '--font-sans',
+    '--font-display',
+    '--font-fa',
+    '--font-ar',
+  ];
+
+  function initDevThemePreview() {
+    const root = document.querySelector<HTMLElement>('[data-dev-theme-preview]');
+    if (!root || root.dataset.bound === 'true') return;
+    root.dataset.bound = 'true';
+
+    const toggleBtn = root.querySelector<HTMLButtonElement>('[data-dev-theme-toggle]');
+    const closeBtn = root.querySelector<HTMLButtonElement>('[data-dev-theme-close]');
+    const resetBtn = root.querySelector<HTMLButtonElement>('[data-dev-theme-reset]');
+    const panel = root.querySelector<HTMLElement>('[data-dev-theme-panel]');
+    const presetButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-dev-preset-btn]')];
+    const modeButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-dev-mode-btn]')];
+    const primaryInput = root.querySelector<HTMLInputElement>('[data-dev-primary-input]');
+    const primaryReadout = root.querySelector<HTMLElement>('[data-dev-primary-readout]');
+    const latinSelect = root.querySelector<HTMLSelectElement>('[data-dev-latin-select]');
+    const rtlSelect = root.querySelector<HTMLSelectElement>('[data-dev-rtl-select]');
+    const copyBtn = root.querySelector<HTMLButtonElement>('[data-dev-copy-btn]');
+    const copyLabelEl = root.querySelector<HTMLElement>('[data-dev-copy-label]');
+
+    const defaults = {
+      preset: (root.dataset.initialPreset || 'indigo') as NonNullable<BrandThemeInput['preset']>,
+      primary: root.dataset.initialPrimary || '',
+      fontPreset: (root.dataset.initialFont || 'system') as NonNullable<BrandThemeInput['fontPreset']>,
+      rtlFontPreset: (root.dataset.initialRtlFont || 'vazirmatn') as NonNullable<
+        BrandThemeInput['rtlFontPreset']
+      >,
+    };
+
+    let state = {
+      preset: defaults.preset,
+      primaryColor: '',
+      fontPreset: defaults.fontPreset,
+      rtlFontPreset: defaults.rtlFontPreset,
+    };
+
+    const syncModeButtons = () => {
+      const currentMode = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+      modeButtons.forEach((btn) => {
+        const active = btn.dataset.devModeBtn === currentMode;
+        btn.classList.toggle('border-primary', active);
+        btn.classList.toggle('bg-primary/10', active);
+        btn.classList.toggle('text-primary', active);
+      });
+    };
+
+    const applyPreview = () => {
+      const resolved = resolveBrandTheme({
+        preset: state.preset,
+        themeColor: defaults.primary,
+        ...(state.primaryColor ? { primaryColor: state.primaryColor } : {}),
+        fontPreset: state.fontPreset,
+        rtlFontPreset: state.rtlFontPreset,
+      });
+
+      const docStyle = document.documentElement.style;
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      const tokens = isDark ? resolved.dark : resolved.light;
+
+      THEME_TOKEN_KEYS.forEach((key) => docStyle.removeProperty(key));
+      Object.entries(tokens).forEach(([key, value]) => docStyle.setProperty(key, value));
+
+      if (state.fontPreset !== 'system') {
+        docStyle.setProperty('--font-sans', resolved.fonts.sans);
+        docStyle.setProperty('--font-display', resolved.fonts.display);
+      }
+      if (state.rtlFontPreset !== 'vazirmatn') {
+        docStyle.setProperty('--font-fa', resolved.fonts.fa);
+        docStyle.setProperty('--font-ar', resolved.fonts.fa);
+      }
+
+      presetButtons.forEach((btn) => {
+        const active = !state.primaryColor && btn.dataset.devPresetBtn === state.preset;
+        btn.classList.toggle('border-primary', active);
+        btn.classList.toggle('bg-primary/10', active);
+        btn.classList.toggle('text-primary', active);
+      });
+
+      const displayHex = state.primaryColor || resolved.primaryHex;
+      if (primaryInput) primaryInput.value = displayHex;
+      if (primaryReadout) primaryReadout.textContent = displayHex;
+      if (latinSelect) latinSelect.value = state.fontPreset;
+      if (rtlSelect) rtlSelect.value = state.rtlFontPreset;
+      syncModeButtons();
+    };
+
+    const setPanelOpen = (open: boolean) => {
+      if (!panel || !toggleBtn) return;
+      panel.hidden = !open;
+      toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+
+    toggleBtn?.addEventListener('click', () => {
+      setPanelOpen(Boolean(panel?.hidden));
+    });
+    closeBtn?.addEventListener('click', () => setPanelOpen(false));
+
+    modeButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.devModeBtn === 'dark' ? 'dark' : 'light';
+        document.documentElement.dataset.theme = target;
+        try {
+          window.localStorage.setItem('theme', target);
+        } catch (_) {}
+        applyPreview();
+      });
+    });
+
+    presetButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.devPresetBtn as NonNullable<BrandThemeInput['preset']> | undefined;
+        if (!key) return;
+        state.preset = key;
+        state.primaryColor = '';
+        applyPreview();
+      });
+    });
+
+    primaryInput?.addEventListener('input', () => {
+      state.primaryColor = primaryInput.value.toLowerCase();
+      applyPreview();
+    });
+
+    latinSelect?.addEventListener('change', () => {
+      state.fontPreset = latinSelect.value as NonNullable<BrandThemeInput['fontPreset']>;
+      applyPreview();
+    });
+
+    rtlSelect?.addEventListener('change', () => {
+      state.rtlFontPreset = rtlSelect.value as NonNullable<BrandThemeInput['rtlFontPreset']>;
+      applyPreview();
+    });
+
+    resetBtn?.addEventListener('click', () => {
+      state = {
+        preset: defaults.preset,
+        primaryColor: '',
+        fontPreset: defaults.fontPreset,
+        rtlFontPreset: defaults.rtlFontPreset,
+      };
+      THEME_TOKEN_KEYS.forEach((key) => document.documentElement.style.removeProperty(key));
+      const paletteHex =
+        THEME_PRESETS.palettes[defaults.preset]?.primary ?? defaults.primary;
+      if (primaryInput) primaryInput.value = paletteHex;
+      if (primaryReadout) primaryReadout.textContent = paletteHex;
+      applyPreview();
+    });
+
+    let copyTimer = 0;
+    copyBtn?.addEventListener('click', async () => {
+      const themeHex =
+        state.primaryColor || THEME_PRESETS.palettes[state.preset]?.primary || defaults.primary;
+      const snippet = {
+        brand: {
+          preset: state.preset,
+          ...(state.primaryColor ? { primaryColor: state.primaryColor } : {}),
+          fontPreset: state.fontPreset,
+          rtlFontPreset: state.rtlFontPreset,
+          themeColor: themeHex,
+        },
+      };
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(snippet, null, 2));
+        if (copyLabelEl) {
+          copyLabelEl.textContent = root.dataset.copiedLabel || 'Copied!';
+          window.clearTimeout(copyTimer);
+          copyTimer = window.setTimeout(() => {
+            if (copyLabelEl) {
+              copyLabelEl.textContent = root.dataset.copyLabel || 'Copy config';
+            }
+          }, 1800);
+        }
+      } catch (_) {}
+    });
+
+    const themeObserver = new MutationObserver(() => {
+      if (!panel?.hidden) applyPreview();
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+    document.addEventListener('astro:before-swap', () => themeObserver.disconnect(), { once: true });
+    syncModeButtons();
+  }
+
+  if (document.documentElement.dataset.devThemeBound !== 'true') {
+    document.documentElement.dataset.devThemeBound = 'true';
+    document.addEventListener('astro:page-load', initDevThemePreview);
+  }
+  initDevThemePreview();
+</script>

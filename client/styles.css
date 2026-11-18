@@ -1,4 +1,37 @@
 /* Client custom CSS overrides & utility rules.
  * Imported after src/styles/global.css and src/styles/prose.css.
  * Override `--theme-*` custom properties or add brand styles here without touching `src/styles/`.
+ *
+ * Commercial Persian Font Scaffolding:
+ * Place licensed `.woff2` files in `public/fonts/`, uncomment the matching `@font-face`
+ * rule below, and set `"rtlFontPreset": "iransans"` (or `"yekan-bakh"` / `"peyda"`) in `client/config.json`.
  */
+
+/*
+@font-face {
+  font-family: 'IRANSansX';
+  src: url('/fonts/IRANSansXVF.woff2') format('woff2-variations'),
+       url('/fonts/IRANSansX-Regular.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Yekan Bakh';
+  src: url('/fonts/YekanBakh-VF.woff2') format('woff2-variations'),
+       url('/fonts/YekanBakh-Regular.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Peyda';
+  src: url('/fonts/PeydaWebVF.woff2') format('woff2-variations'),
+       url('/fonts/PeydaWeb-Regular.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+*/

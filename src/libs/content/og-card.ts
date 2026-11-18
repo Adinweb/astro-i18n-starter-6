@@ -158,15 +158,17 @@ export function renderBrandedOgSvg(
 
   const marginX = 88;
   const textX = isRtl ? width - marginX : marginX;
-  const textAnchor = isRtl ? 'end' : 'start';
+  const textAnchor = 'start';
   const accentX = isRtl ? width - marginX - 6 : marginX;
   const kickerTextX = isRtl ? textX - 20 : textX + 20;
   const glowPrimaryCx = isRtl ? Math.round(width * 0.18) : Math.round(width * 0.82);
   const glowAccentCx = isRtl ? Math.round(width * 0.76) : Math.round(width * 0.24);
 
   const fontFamily = isRtl
-    ? "'Noto Sans Arabic', 'Vazirmatn', 'Noto Kufi Arabic', 'Tahoma', sans-serif"
+    ? "'Noto Naskh Arabic', 'Noto Sans Arabic', 'Vazirmatn', 'Noto Kufi Arabic', 'Tahoma', sans-serif"
     : "'Noto Sans', 'Liberation Sans', 'DejaVu Sans', sans-serif";
+
+  const rtlTextAttrs = isRtl ? ` direction="rtl" unicode-bidi="embed" xml:lang="${escapeXml(meta.htmlLang)}"` : '';
 
   const titleMaxChars = isRtl ? 28 : 26;
   const subtitleMaxChars = isRtl ? 52 : 54;
@@ -187,7 +189,7 @@ export function renderBrandedOgSvg(
   const glowAId = 'og-glow-a';
   const glowBId = 'og-glow-b';
 
-  const kickerTspan = `<text x="${kickerTextX}" y="124" text-anchor="${textAnchor}" font-family="${fontFamily}" font-size="22" font-weight="600" letter-spacing="${isRtl ? '0' : '2'}" fill="${brightAccentHex}">${escapeXml(isRtl ? kickerText : kickerText.toUpperCase())}</text>`;
+  const kickerTspan = `<text x="${kickerTextX}" y="124" text-anchor="${textAnchor}"${rtlTextAttrs} font-family="${fontFamily}" font-size="22" font-weight="600" letter-spacing="${isRtl ? '0' : '2'}" fill="${brightAccentHex}">${escapeXml(isRtl ? kickerText : kickerText.toUpperCase())}</text>`;
 
   const titleMarkup = titleLines
     .map(
@@ -198,7 +200,7 @@ export function renderBrandedOgSvg(
 
   const subtitleMarkup =
     subtitleLines.length > 0
-      ? `<text x="${textX}" y="${subtitleStartY}" text-anchor="${textAnchor}" font-family="${fontFamily}" font-size="28" font-weight="400" fill="#cbd5e1">${subtitleLines
+      ? `<text x="${textX}" y="${subtitleStartY}" text-anchor="${textAnchor}"${rtlTextAttrs} font-family="${fontFamily}" font-size="28" font-weight="400" fill="#cbd5e1">${subtitleLines
           .map(
             (line, index) =>
               `<tspan x="${textX}" dy="${index === 0 ? 0 : subtitleLineHeight}">${escapeXml(line)}</tspan>`
@@ -239,11 +241,11 @@ export function renderBrandedOgSvg(
   <rect x="${accentX}" y="96" width="6" height="40" rx="3" fill="${resolvedTheme.accentHex}" />
   ${kickerTspan}
 
-  <text x="${textX}" y="${titleStartY}" text-anchor="${textAnchor}" font-family="${fontFamily}" font-size="54" font-weight="700" fill="#f8fafc">${titleMarkup}</text>
+  <text x="${textX}" y="${titleStartY}" text-anchor="${textAnchor}"${rtlTextAttrs} font-family="${fontFamily}" font-size="54" font-weight="700" fill="#f8fafc">${titleMarkup}</text>
   ${subtitleMarkup}
 
   <line x1="${marginX}" y1="528" x2="${width - marginX}" y2="528" stroke="#ffffff" stroke-opacity="0.16" stroke-width="1" />
-  <text x="${siteFooterX}" y="572" text-anchor="${textAnchor}" font-family="${fontFamily}" font-size="24" font-weight="600" fill="#e2e8f0">${escapeXml(siteName)}</text>
+  <text x="${siteFooterX}" y="572" text-anchor="${textAnchor}"${rtlTextAttrs} font-family="${fontFamily}" font-size="24" font-weight="600" fill="#e2e8f0">${escapeXml(siteName)}</text>
   <text x="${localeX}" y="572" text-anchor="${localeAnchor}" font-family="'Noto Sans', 'Liberation Sans', sans-serif" font-size="18" font-weight="500" fill="#94a3b8">${escapeXml(localeBadgeText)}</text>
 </svg>`;
 }

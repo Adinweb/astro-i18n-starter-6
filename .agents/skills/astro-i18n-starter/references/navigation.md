@@ -58,6 +58,7 @@ const { header, drawer, footer, legal } = await getNavigationSlots(locale, url);
 All four slots are resolved concurrently via `Promise.all` to maintain maximum build performance. The header and the drawer come from a single `buildPrimaryNavigation` pass (`CLIENT_PAGE_ITEMS` → page links → content-type links → extras/Resources dropdown), so the two menus cannot drift apart and the page lookups run once.
 
 ### 2.2 Desktop Header Navigation (`getHeaderNavigation`)
+* **Brand Identity (`brand.logo`)**: Header, mobile drawer, and footer render an optional Light/Dark image or SVG logo from `app.config.json` / `client/config.json` → `brand.logo` (`light`, `dark`, `alt`, `width`, `height`, `showText`), falling back cleanly to `{siteName}` text.
 * **Purpose**: Primary desktop navbar in `BaseLayout.astro`.
 * **Dropdowns (`NavItem.children`)**: Rendered using CSS peer/group states (`group-hover:block group-focus-within:block`).
 * **Sub-dropdowns**: Multi-level submenus render with logical directional indicators (`Icon name="chevron-right"` with `class="rtl:rotate-180"`).

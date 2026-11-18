@@ -61,24 +61,26 @@ npm run dev                       # http://localhost:3000  (نه ۴۳۲۱)
 
 ### ۲.۲ هویت برند و تک‌زبانه‌کردن (قبل از طراحی صفحه)
 
-سریع‌ترین راه تنظیم هویت برند، پالت، فونت و ایمیل تماس یک مشتری در `client/config.json`، اجرای دستور `site:init` است (به‌جای ویرایش دستی چندین فایل):
+سریع‌ترین راه تنظیم هویت برند، بلوپرینت صنعتی (`corporate`, `agency`, `portfolio`, `medical`)، پالت، فونت و ایمیل تماس یک مشتری در `client/config.json`، اجرای دستور `site:init` است (به‌جای ویرایش دستی چندین فایل):
 
 ```bash
 npm run site:init -- \
   --name="Acme Studio" \
-  --preset=indigo \
-  --font=jakarta \
+  --blueprint=agency \
   --rtl-font=vazirmatn \
   --email=hello@acme.example \
   --og-mode=branded \
   --yes
 ```
 
+> هنگام اجرای `npm run dev`، پنل شناور **DEV Theme Studio (`DevThemePreview.astro`)** در گوشهٔ صفحه نمایش داده می‌شود تا پالت‌ها، رنگ hex دلخواه و فونت‌های لاتین/RTL را زنده پیش‌نمایش ببینید و JSON آمادهٔ `client/config.json` را کپی کنید (این پنل در بیلد تولیدی هیچ بایتی ندارد).
+
 | چه چیزی | کجا |
 | --- | --- |
 | نام، توضیح، author، ایمیل تماس، تصویر اجتماعی | [client/config.json](../client/config.json) (بازنویسی روی [app.config.json](../app.config.json)) → `site` |
-| پالت برند، فونت لاتین/RTL، حالت کارت اجتماعی | `brand` در `client/config.json` (`preset`، `fontPreset`، `rtlFontPreset`، `socialCardMode`) و [theme.ts](../src/libs/config/theme.ts) |
-| توکن‌های دقیق OKLCH و استایل‌های سفارشی مشتری | [client/styles.css](../client/styles.css) (و مقادیر پایه در [src/styles/global.css](../src/styles/global.css)) |
+| پالت برند، لوگوی روشن/تیره (`brand.logo`)، فونت لاتین/RTL، کارت اجتماعی | `brand` در `client/config.json` (`preset`، `logo`، `fontPreset`، `rtlFontPreset`: از `vazirmatn`/`noto-arabic` تا `iransans`/`yekan-bakh`/`peyda`) و [theme.ts](../src/libs/config/theme.ts) |
+| مشخصات شرکت/کلینیک، تلفن، واتساپ، تلگرام، نقشه و ساعات کاری | `business` در `client/config.json` (اسکیمای `Organization`/`LocalBusiness` و بلوک `ContactSplitSection`) |
+| توکن‌های دقیق OKLCH، فونت‌های تجاری فارسی و استایل‌های مشتری | [client/styles.css](../client/styles.css) (و مقادیر پایه در [src/styles/global.css](../src/styles/global.css)) |
 | لوگو/فاوآیکون/PWA | `public/` + `brand` در پیکربندی کلاینت، سپس `npm run assets:generate` |
 | فونت اختصاصی هر زبان و زبان‌های فعال | [client/locales.json](../client/locales.json) (`src/i18n/locales.ts` آن را بازتوزیع می‌کند) |
 | متن دکمه‌ها و ناوبری | [client/messages/en.json](../client/messages/en.json) و `fa.json` (بازنویسی روی `messages/core/*.json`؛ هرگز در قالب هاردکد نشود) |
@@ -92,8 +94,8 @@ npm run site:init -- \
 این پروژه به‌طور پیش‌فرض با **وضعیت پایهٔ تمیز (Clean Base State)** شروع می‌شود (فقط صفحهٔ خانه در `en` و `fa`)؛ بنابراین برای مشتری نیازی به پاک‌سازی دستی نیست. اگر برای مشاهدهٔ نمونه صفحات، ۶ مقاله و ۴ نمونه‌کار دمو را با دستور زیر تزریق کرده‌اید:
 
 ```bash
-npm run starter:seed                  # تزریق صفحات، مقالات و پروژه‌های دمو
-npm run starter:seed -- --clean --yes # بازگشت به وضعیت پایهٔ تمیز و حذف داده‌های دمو
+npm run starter:seed -- --blueprint=corporate # تزریق دمو + اعمال پیش‌تنظیم صنعتی در client/config.json
+npm run starter:seed -- --clean --yes         # بازگشت به وضعیت پایهٔ تمیز و حذف داده‌های دمو
 ```
 
 و یا اگر بخشی از صفحات/مقاله‌ها را دستی اضافه کرده‌اید و می‌خواهید حذف کنید:
@@ -449,8 +451,8 @@ flushTop: true
 | `LatestPostsSection.astro` | نمایش خودکار آخرین مقاله‌های وبلاگ زبان جاری (یا آیتم دلخواه) |
 | `TeamSection.astro` | معرفی اعضای تیم و مدیران با تصویر یا مونوگرام و لینک شبکه‌ها |
 | `FaqAccordion.astro` | پرسش‌های متداول با خروجی `FAQPage` JSON-LD |
-| `ContactSplitSection.astro` | بخش تماس دوستونه شامل کانال‌های ارتباطی و `ContactForm` |
-| `NewsletterBanner.astro` | بنر خبرنامه Pure-SSG متصل به API خارجی یا `mailto:` |
+| `ContactSplitSection.astro` | بخش تماس دوستونه با دکمه‌های تماس سریع (تلفن/واتساپ/تلگرام)، نقشهٔ تنبل و `ContactForm` (پشتیبانی از Web3Forms/Formspree/Basin/Webhook و Turnstile) |
+| `NewsletterBanner.astro` | بنر خبرنامه Pure-SSG متصل به API خارجی/بدون سرور یا `mailto:` |
 | `CtaBanner.astro` | بنر فراخوان پایانی (CTA) پیش از فوتر |
 | `UiBadge.astro` | پریمیتیو نشان وضعیتی/برچسبی در ۸ نقش رنگی معنایی |
 | `UiAlert.astro` | پریمیتیو کارت اعلان/هشدار با دکمهٔ اقدام و بستن |
@@ -569,11 +571,11 @@ import CtaBanner from '@/components/CtaBanner.astro';
   کلاس‌های `.cta`، `.btn-secondary`، `.btn-hero-secondary`، `.chip` و `.glass-surface` یک‌جا در `global.css` تعریف شده‌اند؛ در کامپوننت‌ها دوباره نسازید.
 - فقط یک `<h1>` در کل صفحه (تست smoke تعدادش را چک می‌کند).
 - هیچ کلاس فیزیکی (`ml-`، `pr-`، `text-left`، `left-`) ننویسید؛ همیشه `ms-`، `pe-`، `text-start`، `start-*`.
-- آیکون فقط با `<Icon name="…" />`. ۶۱ نام هسته در [icons.ts](../src/libs/ui/icons.ts) ثبت شده‌اند: `search`، `globe`، `close`، `check`،
+- آیکون فقط با `<Icon name="…" />`. ۶۶ نام هسته در [icons.ts](../src/libs/ui/icons.ts) ثبت شده‌اند: `search`، `globe`، `close`، `check`،
   `menu`، `chevron-left`، `chevron-right`، `chevron-down`، `chevron-up`، `sun`، `moon`، `copy`، `external-link`، `arrow-right`،
   `shield`، `mail`، `layers`، `star`، `star-filled`، `quote`، `users`، `user`، `building`، `alert-circle`، `alert-triangle`،
-  `circle-check`، `bell`، `bolt`، `clock`، `map-pin`، `phone`، `rocket`، `code`، `award`، `layout-grid`، `calendar`،
-  `photo`، `minus`، `eye`، `eye-off`، `shopping-bag`، `heart`، `share`، `dots-vertical`، `lock`، `adjustments-horizontal`، آیکون‌های شبکهٔ اجتماعی `brand-github`، `brand-x`، `brand-linkedin`، `brand-instagram`، `brand-telegram` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
+  `circle-check`، `bell`، `bolt`، `clock`، `map-pin`، `map`، `phone`، `rocket`، `code`، `award`، `layout-grid`، `calendar`،
+  `photo`، `minus`، `eye`، `eye-off`، `shopping-bag`، `heart`، `share`، `filter`، `refresh`، `wand`، `dots-vertical`، `lock`، `adjustments-horizontal`، آیکون‌های شبکهٔ اجتماعی `brand-github`، `brand-x`، `brand-linkedin`، `brand-instagram`، `brand-telegram`، `brand-whatsapp` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
   `folder`، `compass`، `palette`، `book-open`، `file`.
   آیکون جدید مشتری: نام را در [client/icons.ts](../client/icons.ts) ثبت و در [client/ClientIcons.astro](../client/ClientIcons.astro) با import تک‌فایلی از `@tabler/icons-astro/dist/esm/icons/<name>.mjs` وصل کنید تا نیازی به ویرایش هسته نباشد (هرگز از barrel بستهٔ `@tabler/icons-astro` import نکنید).
 - متن دکمه‌های مشترک را با `m.common_…` از Paraglide بگیرید، نه رشتهٔ ثابت.
@@ -667,8 +669,7 @@ import * as m from '@/paraglide/messages';
 - `title` و `description` فرانت‌متر → `<title>`، توضیح متا، OG و Twitter.
 - canonical و `hreflang` (شامل `x-default`) خودکار از `alternates` ساخته می‌شوند؛ دست نزنید.
 - تصویر OG: همان `image` ورودی، با کارت بهینه‌شده‌ای که `src/libs/content/social.ts` می‌سازد.
-- در صفحهٔ خانه، `WebSite`/`WebPage` از `PageView` می‌آید؛ اگر قالب اختصاصی ساختید،
-  `schema` را به `BaseLayout` پاس بدهید (در نمونهٔ بخش ۶ انجام شده).
+- در صفحهٔ خانه، `WebSite`/`WebPage` از `PageView` و `Organization`/`LocalBusiness` به‌طور خودکار از `BaseLayout` + `src/libs/content/schema.ts` می‌آیند (و `buildServiceSchema` برای صفحات خدمات آماده است)؛ اگر قالب اختصاصی ساختید، `schema` را به `BaseLayout` پاس بدهید (در نمونهٔ بخش ۶ انجام شده).
 - **یک `<h1>`**، سلسلهٔ درست `h2`/`h3`، و هر `section` با `aria-labelledby` یا عنوان.
 - لینک‌ها متن توصیفی داشته باشند؛ «بیشتر» تنها کافی نیست.
 - دکمهٔ آیکونی: `<IconButton icon="…" label="…" />` — نه `<button>` دست‌ساز.
@@ -681,7 +682,7 @@ import * as m from '@/paraglide/messages';
 ```bash
 npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
 npm run lint           # messages + astro check + tsc (خطای تایپ/شمای محتوا اینجا گیر می‌افتد)
-npm test               # ۲۴ فایل تست واحد (۲۵۰ تست)
+npm test               # ۲۵ فایل تست واحد (۲۶۰ تست)
 npm run audit:i18n     # هم‌ترازی زبان‌ها، کلیدها، مسیرها، RTL
 npm run doctor         # بررسی سلامت پروژه بدون بیلد
 npm run build          # Astro + Pagefind
@@ -710,12 +711,13 @@ npm run verify:cli     # ۹۵ ادعای CLI در محیط ایزوله
 | مورد | کجا | چرا |
 | --- | --- | --- |
 | `SITE_URL` روی دامنهٔ نهایی | محیط بیلد | canonical/sitemap/RSS |
-| نام، توضیح، author، ایمیل تماس، شبکه‌های اجتماعی | `client/config.json` (یا `npm run site:init`) | متادیتا و فوتر |
+| نام، توضیح، لوگو (`brand.logo`)، پروفایل `business` | `client/config.json` (یا `npm run site:init`) | متادیتا، فوتر و اسکیمای LocalBusiness |
 | تحویل تک‌زبانه (در صورت نیاز مشتری) | `ui.showLanguageSwitcher: false` در `client/config.json` + در صورت نیاز `i18n:set-default` | حذف دکمهٔ تعویض زبان بدون تغییر ساختاری |
 | تصویر OG و فاوآیکون | `public/` + `brand.socialCardMode` + `site.socialImage` | اشتراک‌گذاری و PWA |
 | تنظیم کوکی و رضایت | `cookies` در `client/config.json` / `app.config.json` | انطباق GDPR/TDDDG |
-| فرم تماس و خبرنامه | `api.baseUrl` / `api.endpoints` یا `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL` / `PUBLIC_NEWSLETTER_API_URL` | اتصال به سرویس ایمیل/CRM |
+| فرم تماس و خبرنامه | `api.provider` (`web3forms`/`formspree`/`basin`/`webhook`/`custom`)، `turnstileSiteKey` یا متغیرهای `PUBLIC_*` | اتصال به سرویس بدون سرور/CRM + ضداسپم |
 | صفحات حقوقی | `privacy`، `terms` در `client/navigation.ts` | الزام قانونی |
+| ویرایش محتوا و هدرهای استقرار | `.pages.yml` + `public/_headers` + `docs/deploy/nginx.conf` | پنل گیت Pages CMS و کش/امنیت پروداکشن |
 | پاک‌سازی محتوای دمو (در صورت seed) | `npm run starter:seed -- --clean --yes` یا `remove:page`/`remove:post` | جلوگیری از محتوای گمراه‌کننده |
 | بازبینی لایسنس | `LICENSE` | حقوق استفاده برای مشتری |
 

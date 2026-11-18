@@ -92,8 +92,23 @@
     "instagram": "",
     "telegram": ""
   },
+  "business": {
+    "type": "Organization",
+    "legalName": "",
+    "phone": "",
+    "whatsapp": "",
+    "telegram": "",
+    "address": "",
+    "city": "",
+    "country": "",
+    "workingHours": "",
+    "mapEmbedUrl": ""
+  },
   "api": {
+    "provider": "custom",
     "baseUrl": "",
+    "accessKey": "",
+    "turnstileSiteKey": "",
     "timeoutMs": 10000,
     "endpoints": {
       "contact": "/contact"

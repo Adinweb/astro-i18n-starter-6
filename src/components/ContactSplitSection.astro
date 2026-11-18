@@ -1,16 +1,16 @@
 ---
 /**
- * Split contact section inspired by PrebuiltUI contact blocks, pairing
- * localized direct contact channels on the start column with the starter's
- * Pure-SSG `<ContactForm embedded />` (external endpoint + mailto fallback) on
- * the end column. Accepts optional overrides with full Paraglide defaults.
+ * Split contact section pairing localized direct contact channels, optional
+ * quick-messaging buttons (Phone / WhatsApp / Telegram), and a privacy-first
+ * lazy-loaded map embed with the starter's Pure-SSG `<ContactForm embedded />`.
  */
+import Button from '@/components/Button.astro';
 import ContactForm from '@/components/ContactForm.astro';
 import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
 import SectionHeader from '@/components/SectionHeader.astro';
 import type { Locale } from '@/i18n/locales';
-import { siteConfig } from '@/libs/config/app';
+import { BUSINESS_CONFIG, siteConfig } from '@/libs/config/app';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
@@ -28,6 +28,12 @@ interface Props {
   heading?: string | null;
   subheading?: string | null;
   channels?: readonly ContactChannel[];
+  phone?: string;
+  whatsapp?: string;
+  telegram?: string;
+  mapEmbedUrl?: string;
+  showQuickActions?: boolean;
+  showMap?: boolean;
   contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'sm' | 'md' | 'lg';
@@ -40,6 +46,12 @@ const {
   heading,
   subheading,
   channels,
+  phone,
+  whatsapp,
+  telegram,
+  mapEmbedUrl,
+  showQuickActions = true,
+  showMap = true,
   contained = false,
   surface = 'default',
   spacing = 'md',
@@ -64,7 +76,55 @@ const resolvedSubheading = resolveOptionalHeader(
   m.block_contact_subheading({}, { locale: activeLocale })
 );
 
+const resolvedPhone = (phone ?? BUSINESS_CONFIG.phone ?? '').trim();
+const resolvedWhatsapp = (whatsapp ?? BUSINESS_CONFIG.whatsapp ?? '').trim();
+const resolvedTelegram = (telegram ?? BUSINESS_CONFIG.telegram ?? '').trim();
+
+const addressParts = [
+  BUSINESS_CONFIG.address?.trim(),
+  BUSINESS_CONFIG.city?.trim(),
+  BUSINESS_CONFIG.country?.trim(),
+].filter(Boolean);
+const resolvedLocation =
+  addressParts.length > 0
+    ? addressParts.join(' · ')
+    : m.block_contact_location_value({}, { locale: activeLocale });
+const resolvedHours =
+  BUSINESS_CONFIG.workingHours?.trim() ||
+  m.block_contact_hours_value({}, { locale: activeLocale });
+
+const geoEmbedUrl = BUSINESS_CONFIG.geo
+  ? `https://www.openstreetmap.org/export/embed.html?bbox=${BUSINESS_CONFIG.geo.lng - 0.01},${BUSINESS_CONFIG.geo.lat - 0.01},${BUSINESS_CONFIG.geo.lng + 0.01},${BUSINESS_CONFIG.geo.lat + 0.01}&layer=mapnik&marker=${BUSINESS_CONFIG.geo.lat},${BUSINESS_CONFIG.geo.lng}`
+  : '';
+const resolvedMapUrl = (mapEmbedUrl ?? BUSINESS_CONFIG.mapEmbedUrl ?? geoEmbedUrl).trim();
+
+function toTelHref(value: string): string {
+  const cleaned = value.replace(/[^+\d]/g, '');
+  return `tel:${cleaned || value}`;
+}
+
+function toWhatsappHref(value: string): string {
+  if (/^https?:\/\//i.test(value)) return value;
+  const digits = value.replace(/[^\d]/g, '');
+  return digits ? `https://wa.me/${digits}` : value;
+}
+
+function toTelegramHref(value: string): string {
+  if (/^https?:\/\//i.test(value)) return value;
+  return `https://t.me/${value.replace(/^@/, '')}`;
+}
+
 const defaultChannels: ContactChannel[] = [
+  ...(resolvedPhone
+    ? [
+        {
+          label: m.block_contact_phone_label({}, { locale: activeLocale }),
+          value: resolvedPhone,
+          href: toTelHref(resolvedPhone),
+          icon: 'phone',
+        },
+      ]
+    : []),
   ...(siteConfig.contactEmail
     ? [
         {
@@ -77,12 +137,12 @@ const defaultChannels: ContactChannel[] = [
     : []),
   {
     label: m.block_contact_hours_label({}, { locale: activeLocale }),
-    value: m.block_contact_hours_value({}, { locale: activeLocale }),
+    value: resolvedHours,
     icon: 'clock',
   },
   {
     label: m.block_contact_location_label({}, { locale: activeLocale }),
-    value: m.block_contact_location_value({}, { locale: activeLocale }),
+    value: resolvedLocation,
     icon: 'map-pin',
   },
   {
@@ -90,6 +150,39 @@ const defaultChannels: ContactChannel[] = [
     value: m.block_contact_response_value({}, { locale: activeLocale }),
     icon: 'circle-check',
   },
+];
+
+const quickLinks = [
+  ...(resolvedPhone
+    ? [
+        {
+          label: m.block_contact_phone_label({}, { locale: activeLocale }),
+          href: toTelHref(resolvedPhone),
+          icon: 'phone',
+          external: false,
+        },
+      ]
+    : []),
+  ...(resolvedWhatsapp
+    ? [
+        {
+          label: m.block_contact_whatsapp_label({}, { locale: activeLocale }),
+          href: toWhatsappHref(resolvedWhatsapp),
+          icon: 'brand-whatsapp',
+          external: true,
+        },
+      ]
+    : []),
+  ...(resolvedTelegram
+    ? [
+        {
+          label: m.block_contact_telegram_label({}, { locale: activeLocale }),
+          href: toTelegramHref(resolvedTelegram),
+          icon: 'brand-telegram',
+          external: true,
+        },
+      ]
+    : []),
 ];
 
 const resolvedChannels = channels ?? defaultChannels;
@@ -145,6 +238,76 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
           </ul>
         )
       }
+
+      {
+        showQuickActions && quickLinks.length > 0 && (
+          <div class="mt-6 rounded-2xl border border-border p-4" data-quick-contact>
+            <p class="text-xs font-semibold text-muted">
+              {m.block_contact_quick_title({}, { locale: activeLocale })}
+            </p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              {quickLinks.map((action) => (
+                <Button
+                  href={action.href}
+                  variant="secondary"
+                  size="sm"
+                  icon={action.icon}
+                  iconPosition="start"
+                  target={action.external ? '_blank' : undefined}
+                  rel={action.external ? 'noopener noreferrer' : undefined}
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )
+      }
+
+      {
+        showMap && resolvedMapUrl && (
+          <div
+            data-map-embed-root
+            data-map-src={resolvedMapUrl}
+            data-map-title={m.block_contact_map_title({}, { locale: activeLocale })}
+            class:list={[
+              'mt-6 overflow-hidden rounded-2xl border border-border',
+              cardSurface,
+            ]}
+          >
+            <div
+              data-map-placeholder
+              class="flex flex-col items-center justify-center gap-3 px-6 py-8 text-center"
+            >
+              <span
+                aria-hidden="true"
+                class="inline-flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
+              >
+                <Icon name="map" size={20} />
+              </span>
+              <div class="space-y-1">
+                <p class="text-sm font-bold text-fg">
+                  {m.block_contact_map_title({}, { locale: activeLocale })}
+                </p>
+                <p class="max-w-xs text-xs leading-relaxed text-muted">
+                  {m.block_contact_map_desc({}, { locale: activeLocale })}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                icon="map-pin"
+                iconPosition="start"
+                data-load-map
+              >
+                {m.block_contact_map_load({}, { locale: activeLocale })}
+              </Button>
+            </div>
+            <div data-map-frame-slot class="hidden aspect-video w-full" />
+          </div>
+        )
+      }
     </div>
 
     <div
@@ -160,3 +323,37 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
     </div>
   </div>
 </PageSection>
+
+<script>
+  function bindLazyContactMaps() {
+    document.querySelectorAll<HTMLElement>('[data-map-embed-root]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const loadBtn = root.querySelector<HTMLButtonElement>('[data-load-map]');
+      const placeholder = root.querySelector<HTMLElement>('[data-map-placeholder]');
+      const frameSlot = root.querySelector<HTMLElement>('[data-map-frame-slot]');
+      const mapSrc = root.dataset.mapSrc;
+      const mapTitle = root.dataset.mapTitle || 'Location map';
+
+      loadBtn?.addEventListener('click', () => {
+        if (!mapSrc || !frameSlot) return;
+        const iframe = document.createElement('iframe');
+        iframe.src = mapSrc;
+        iframe.title = mapTitle;
+        iframe.loading = 'lazy';
+        iframe.referrerPolicy = 'no-referrer-when-downgrade';
+        iframe.className = 'h-full w-full border-0';
+        frameSlot.replaceChildren(iframe);
+        frameSlot.classList.remove('hidden');
+        placeholder?.classList.add('hidden');
+      });
+    });
+  }
+
+  if (document.documentElement.dataset.contactMapBound !== 'true') {
+    document.documentElement.dataset.contactMapBound = 'true';
+    document.addEventListener('astro:page-load', bindLazyContactMaps);
+  }
+  bindLazyContactMaps();
+</script>

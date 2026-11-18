@@ -168,6 +168,10 @@ export default defineConfig({
     format: 'directory',
   },
   compressHTML: true,
+  prefetch: {
+    prefetchAll: false,
+    defaultStrategy: 'hover',
+  },
   integrations: [mdx()],
   vite: {
     plugins: [tailwindcss()],

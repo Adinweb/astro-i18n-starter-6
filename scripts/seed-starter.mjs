@@ -3,11 +3,13 @@
  * Seeds or cleans the optional `starter-kit/` demo package into `src/content/` and `client/`.
  *
  * Usage:
- *   npm run starter:seed -- [--all|--pages|--blog|--projects|--assets|--nav|--messages] [--clean] [--force] [--yes]
+ *   npm run starter:seed -- [--all|--pages|--blog|--projects|--assets|--nav|--messages] [--blueprint=corporate|agency|portfolio|medical] [--clean] [--force] [--yes]
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { applyBlueprintToConfig, VALID_BLUEPRINTS } from './lib/blueprints.mjs';
+import { readMergedConfig, writeClientConfig } from './lib/config.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
 import {
   readClientLocales,
@@ -21,7 +23,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const starterDir = path.join(rootDir, 'starter-kit');
 
-const args = new Set(process.argv.slice(2));
+const rawArgs = process.argv.slice(2);
+const args = new Set(rawArgs);
+const blueprintArg = rawArgs.find((arg) => arg.startsWith('--blueprint='));
+const blueprintKey = blueprintArg ? blueprintArg.slice('--blueprint='.length).trim() : null;
 const isClean = args.has('--clean');
 const force = args.has('--force') || args.has('--yes');
 
@@ -213,6 +218,21 @@ if (wantMessages) {
 
 if (wantNav) {
   fs.copyFileSync(path.join(starterDir, 'navigation.ts'), path.join(rootDir, 'client', 'navigation.ts'));
+}
+
+if (blueprintKey) {
+  if (!VALID_BLUEPRINTS.includes(blueprintKey)) {
+    console.error(
+      `❌ Invalid --blueprint "${blueprintKey}". Valid: ${VALID_BLUEPRINTS.join(', ')}.`
+    );
+    process.exit(1);
+  }
+  const presetsPath = path.join(rootDir, 'src', 'libs', 'config', 'theme-presets.json');
+  const rootPresets = JSON.parse(fs.readFileSync(presetsPath, 'utf-8'));
+  const merged = readMergedConfig(rootDir);
+  applyBlueprintToConfig(merged, blueprintKey, { rootPresets });
+  writeClientConfig(merged, { rootDir, sparse: true });
+  console.log(`✅ Applied blueprint "${blueprintKey}" to client/config.json.`);
 }
 
 compileMessages(rootDir);

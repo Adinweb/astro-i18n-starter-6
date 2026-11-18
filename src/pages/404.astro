@@ -136,13 +136,13 @@ const i18nData = Object.fromEntries(
   noPagefind
 >
   <div class="text-center py-20 px-4 max-w-xl mx-auto">
-    <p id="not-found-code" class="text-7xl font-extrabold text-primary mb-4 tracking-tight tabular-nums">
+    <p id="not-found-code" data-hero-kicker class="text-7xl font-extrabold text-primary mb-4 tracking-tight tabular-nums">
       {formatNumber(404, locale)}
     </p>
-    <h1 class="text-3xl font-bold text-fg mb-4" id="not-found-title">
+    <h1 class="text-3xl font-bold text-fg mb-4" id="not-found-title" data-hero-title>
       {m.common_not_found_title({}, { locale })}
     </h1>
-    <p class="text-muted max-w-md mx-auto mb-8 text-base leading-relaxed" id="not-found-desc">
+    <p class="text-muted max-w-md mx-auto mb-8 text-base leading-relaxed" id="not-found-desc" data-hero-subtitle>
       {m.common_not_found_desc({}, { locale })}
     </p>
 

@@ -68,6 +68,11 @@ const CORE_SITE_ICONS = [
   'brand-linkedin',
   'brand-instagram',
   'brand-telegram',
+  'brand-whatsapp',
+  'filter',
+  'map',
+  'refresh',
+  'wand',
 ] as const;
 
 export type CoreIconName = (typeof CORE_SITE_ICONS)[number];
