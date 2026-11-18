@@ -48,6 +48,9 @@ jobs:
       - name: i18n audit
         run: pnpm run audit:i18n
 
+      - name: Upstream contract check
+        run: pnpm run upstream:check
+
       - name: Project health (doctor)
         run: pnpm run doctor
 

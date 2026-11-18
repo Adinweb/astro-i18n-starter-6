@@ -83,9 +83,14 @@ import IconUsers from '@tabler/icons-astro/dist/esm/icons/users.mjs';
 import IconWorld from '@tabler/icons-astro/dist/esm/icons/world.mjs';
 import IconX from '@tabler/icons-astro/dist/esm/icons/x.mjs';
 import type { TablerIcon } from '@tabler/icons-astro/dist/esm/icons/*.mjs';
-import { resolveIconName, type IconName } from '@/libs/ui/icons';
+import ClientIcons from '@client/ClientIcons.astro';
+import {
+  isClientIconName,
+  resolveCoreIconName,
+  type CoreIconName,
+} from '@/libs/ui/icons';
 
-const ICONS: Record<IconName, TablerIcon> = {
+const CORE_ICONS: Record<CoreIconName, TablerIcon> = {
   search: IconSearch,
   globe: IconWorld,
   close: IconX,
@@ -168,13 +173,28 @@ const {
   'aria-label': ariaLabel,
 } = Astro.props;
 
-const IconComponent = ICONS[resolveIconName(name)];
+const isClient = isClientIconName(name);
+const IconComponent = isClient ? undefined : CORE_ICONS[resolveCoreIconName(name)];
 ---
 
-<IconComponent
-  size={size}
-  class={className}
-  aria-hidden={ariaLabel ? undefined : ariaHidden}
-  aria-label={ariaLabel}
-  role={ariaLabel ? 'img' : 'presentation'}
-/>
+{
+  isClient ? (
+    <ClientIcons
+      name={name}
+      size={size}
+      class={className}
+      aria-hidden={ariaHidden}
+      aria-label={ariaLabel}
+    />
+  ) : (
+    IconComponent && (
+      <IconComponent
+        size={size}
+        class={className}
+        aria-hidden={ariaLabel ? undefined : ariaHidden}
+        aria-label={ariaLabel}
+        role={ariaLabel ? 'img' : 'presentation'}
+      />
+    )
+  )
+}

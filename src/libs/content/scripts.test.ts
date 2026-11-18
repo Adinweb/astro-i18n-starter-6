@@ -25,6 +25,10 @@ import {
 } from '../../../scripts/lib/frontmatter.mjs';
 import { parseLocaleConfig, readLocaleConfig } from '../../../scripts/lib/locales.mjs';
 import {
+  deepMergeConfig,
+  diffSparseConfig,
+} from '../../../scripts/lib/config.mjs';
+import {
   compileMessages,
   findParaglideBin,
 } from '../../../scripts/lib/compile-messages.mjs';
@@ -465,29 +469,55 @@ export const LOCALE_METADATA = {
     expect(parsed.metadata['pt-br']?.dir).toBe('ltr');
   });
 
-  it('describes the locales this project actually builds', () => {
+  it('describes the locales this project actually builds from client/locales.json', () => {
     const config = readLocaleConfig();
-    const settings = JSON.parse(
+    const clientLocales = JSON.parse(
       fs.readFileSync(
-        path.join(process.cwd(), 'project.inlang', 'settings.json'),
+        path.join(process.cwd(), 'client', 'locales.json'),
         'utf-8'
       )
     );
-    expect(config.locales).toEqual(settings.locales);
-    expect(config.defaultLocale).toBe(settings.baseLocale);
+    expect(config.locales).toEqual(clientLocales.locales);
+    expect(config.defaultLocale).toBe(clientLocales.defaultLocale);
     for (const locale of config.locales) {
       expect(['ltr', 'rtl']).toContain(config.metadata[locale].dir);
     }
   });
 });
 
+describe('Two-tier configuration helpers (scripts/lib/config.mjs)', () => {
+  it('deep-merges client overrides onto upstream core config without mutating inputs', () => {
+    const core = { site: { name: 'Core', author: 'Team' }, blog: { postsPerPage: 9 } };
+    const override = { site: { name: 'Acme' } };
+    const merged = deepMergeConfig(core, override);
+
+    expect(merged).toEqual({
+      site: { name: 'Acme', author: 'Team' },
+      blog: { postsPerPage: 9 },
+    });
+    expect(core.site.name).toBe('Core');
+  });
+
+  it('computes minimal sparse diffs against core config', () => {
+    const core = { site: { name: 'Core', author: 'Team' }, ui: { showSearch: true } };
+    const next = { site: { name: 'Acme', author: 'Team' }, ui: { showSearch: true } };
+    expect(diffSparseConfig(core, next)).toEqual({ site: { name: 'Acme' } });
+    expect(diffSparseConfig(core, core)).toEqual({});
+  });
+});
+
 describe('Paraglide CLI helper (scripts/lib/compile-messages.mjs)', () => {
   it(
-    'compiles messages directly under Node without requiring pnpm on PATH',
+    'merges core + client dictionaries into .paraglide-work and compiles without pnpm on PATH',
     () => {
       const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astro-paraglide-compile-'));
       try {
-        fs.cpSync(path.join(process.cwd(), 'project.inlang'), path.join(tempDir, 'project.inlang'), {
+        fs.mkdirSync(path.join(tempDir, 'client'), { recursive: true });
+        fs.copyFileSync(
+          path.join(process.cwd(), 'client', 'locales.json'),
+          path.join(tempDir, 'client', 'locales.json')
+        );
+        fs.cpSync(path.join(process.cwd(), 'client', 'messages'), path.join(tempDir, 'client', 'messages'), {
           recursive: true,
         });
         fs.cpSync(path.join(process.cwd(), 'messages'), path.join(tempDir, 'messages'), {
@@ -504,6 +534,7 @@ describe('Paraglide CLI helper (scripts/lib/compile-messages.mjs)', () => {
           else process.env.PARAGLIDE_BIN = prevBin;
         }
 
+        expect(fs.existsSync(path.join(tempDir, '.paraglide-work', 'project.inlang', 'settings.json'))).toBe(true);
         expect(fs.existsSync(path.join(tempDir, 'src', 'paraglide', 'messages.js'))).toBe(true);
       } finally {
         fs.rmSync(tempDir, { recursive: true, force: true });
@@ -518,10 +549,21 @@ describe('CLI --sync-frontmatter propagation (new-page.mjs & new-post.mjs)', () 
 
   beforeEach(() => {
     sandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astro-sync-fm-'));
-    fs.mkdirSync(path.join(sandboxDir, 'project.inlang'), { recursive: true });
+    fs.mkdirSync(path.join(sandboxDir, 'client'), { recursive: true });
     fs.writeFileSync(
-      path.join(sandboxDir, 'project.inlang', 'settings.json'),
-      JSON.stringify({ baseLocale: 'en', locales: ['en', 'fa'] }, null, 2),
+      path.join(sandboxDir, 'client', 'locales.json'),
+      JSON.stringify(
+        {
+          defaultLocale: 'en',
+          locales: ['en', 'fa'],
+          metadata: {
+            en: { dir: 'ltr', htmlLang: 'en', name: 'English', fontFamily: 'var(--font-sans)' },
+            fa: { dir: 'rtl', htmlLang: 'fa', name: 'فارسی', fontFamily: 'var(--font-fa)' },
+          },
+        },
+        null,
+        2
+      ),
       'utf-8'
     );
   });

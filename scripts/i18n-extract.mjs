@@ -4,6 +4,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import MagicString from 'magic-string';
 import { compileMessages } from './lib/compile-messages.mjs';
+import { readLocaleConfig } from './lib/locales.mjs';
+import {
+  readClientMessages,
+  readMergedMessages,
+  stripSchema,
+  writeClientMessages,
+} from './lib/merge-messages.mjs';
 
 const args = process.argv.slice(2);
 let targetPath = '';
@@ -27,7 +34,9 @@ for (const arg of args) {
 }
 
 if (!targetPath) {
-  console.error('Usage: pnpm run i18n:extract -- --target=<file-or-dir> --key=<namespace> [--auto-add] [--replace] [--dry-run]');
+  console.error(
+    'Usage: npm run i18n:extract -- --target=<file-or-dir> --key=<namespace> [--auto-add] [--replace] [--dry-run]'
+  );
   process.exit(1);
 }
 
@@ -52,18 +61,15 @@ if (fs.statSync(resolvedTarget).isDirectory()) {
   filesToProcess.push(resolvedTarget);
 }
 
-const inlangSettings = JSON.parse(
-  fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
-);
-const LOCALES = inlangSettings.locales;
-const BASE_LOCALE = inlangSettings.baseLocale || 'en';
+const localeConfig = readLocaleConfig(rootDir);
+const LOCALES = localeConfig.locales;
+const BASE_LOCALE = localeConfig.defaultLocale || 'en';
 
-const dictsByLocale = {};
+const mergedByLocale = {};
+const clientByLocale = {};
 for (const loc of LOCALES) {
-  const locPath = path.join(rootDir, 'messages', `${loc}.json`);
-  if (fs.existsSync(locPath)) {
-    dictsByLocale[loc] = JSON.parse(fs.readFileSync(locPath, 'utf-8'));
-  }
+  mergedByLocale[loc] = stripSchema(readMergedMessages(loc, rootDir));
+  clientByLocale[loc] = stripSchema(readClientMessages(loc, rootDir));
 }
 
 let extractedCount = 0;
@@ -72,7 +78,6 @@ for (const file of filesToProcess) {
   const content = fs.readFileSync(file, 'utf-8');
   const s = new MagicString(content);
 
-  // Split frontmatter and template if .astro or .mdx
   let templateStart = 0;
   let hasFrontmatter = false;
   let frontmatterEnd = 0;
@@ -87,14 +92,11 @@ for (const file of filesToProcess) {
   }
 
   const templateContent = content.slice(templateStart);
-
-  // Exclude <script> and <style> blocks so JS/CSS comparisons (`>` / `<`) are never rewritten.
   const excludedRanges = [];
   for (const blockMatch of templateContent.matchAll(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi)) {
     excludedRanges.push([blockMatch.index, blockMatch.index + blockMatch[0].length]);
   }
 
-  // Match text nodes: >text<
   const textNodeRegex = />([^<>{}\r\n]+)</g;
   let mNode;
   const replacements = [];
@@ -136,29 +138,24 @@ for (const file of filesToProcess) {
 
     for (const r of replacements) {
       extractedCount++;
-      const baseDictionary = dictsByLocale[BASE_LOCALE];
+      const baseDictionary = mergedByLocale[BASE_LOCALE];
       const keyExists = Boolean(baseDictionary && baseDictionary[r.key]);
 
       if (autoAdd) {
         if (baseDictionary && !keyExists) {
           for (const loc of LOCALES) {
-            if (!dictsByLocale[loc]) continue;
-            dictsByLocale[loc][r.key] =
-              loc === BASE_LOCALE ? r.text : `[TODO: ${loc}] ${r.text}`;
+            const val = loc === BASE_LOCALE ? r.text : `[TODO: ${loc}] ${r.text}`;
+            clientByLocale[loc][r.key] = val;
+            mergedByLocale[loc][r.key] = val;
           }
           const prefix = dryRun ? '[dry-run] Would create key' : '+ Key created';
           console.log(`  ${prefix}: ${r.key} = "${r.text}" across locales: ${LOCALES.join(', ')}`);
         }
       } else if (replace && !keyExists) {
-        // Rewriting the template with a key that does not exist produces code
-        // that compiles but fails `astro check`. Say so instead of silently
-        // leaving a broken reference behind.
         missingKeys.push(r.key);
       }
 
       if (replace) {
-        // Prefer the file's own locale variable so extracted calls remain
-        // locale-correct instead of silently falling back to the default.
         const call = /\bconst\s+locale\b|\{[^}]*\blocale\b[^}]*\}\s*=\s*Astro\.props/.test(
           content
         )
@@ -173,9 +170,9 @@ for (const file of filesToProcess) {
     if (missingKeys.length > 0) {
       const preview = missingKeys.slice(0, 5).join(', ') + (missingKeys.length > 5 ? ', …' : '');
       console.warn(
-        `⚠️ ${missingKeys.length} extracted key(s) are missing from messages/${BASE_LOCALE}.json: ${preview}`
+        `⚠️ ${missingKeys.length} extracted key(s) are missing from merged ${BASE_LOCALE} dictionary: ${preview}`
       );
-      console.warn('   Re-run with --auto-add to create them; otherwise `pnpm run lint` will fail.');
+      console.warn('   Re-run with --auto-add to create them; otherwise `npm run lint` will fail.');
     }
 
     if (replace) {
@@ -205,18 +202,10 @@ for (const file of filesToProcess) {
 }
 
 if (autoAdd && !dryRun && extractedCount > 0) {
-  const sortKeys = (obj) => {
-    const sorted = {};
-    Object.keys(obj).sort().forEach((k) => (sorted[k] = obj[k]));
-    return sorted;
-  };
-
   for (const loc of LOCALES) {
-    if (!dictsByLocale[loc]) continue;
-    const locPath = path.join(rootDir, 'messages', `${loc}.json`);
-    fs.writeFileSync(locPath, JSON.stringify(sortKeys(dictsByLocale[loc]), null, 2) + '\n', 'utf-8');
+    writeClientMessages(loc, clientByLocale[loc], rootDir);
   }
-  console.log(`✅ Saved new dictionary keys across active messages/*.json files`);
+  console.log('✅ Saved new dictionary keys across client/messages/*.json files');
   compileMessages(rootDir);
 }
 

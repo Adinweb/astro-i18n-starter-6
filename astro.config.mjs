@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
@@ -37,12 +38,11 @@ if (isBuild) {
 }
 const mode = isBuild ? 'production' : 'development';
 
-// Application-level values live in one file (see src/libs/config/app.ts).
-// It is read here rather than imported so the dev server, the fallback site
+import { readMergedConfig } from './scripts/lib/config.mjs';
+// Application-level values live in one merged config (`app.config.json` + `client/config.json`).
+// It is read here rather than imported via TS so the dev server, the fallback site
 // origin, and the app all share the same port.
-const appConfig = JSON.parse(
-  fs.readFileSync(new URL('./app.config.json', import.meta.url), 'utf-8')
-);
+const appConfig = readMergedConfig(path.dirname(fileURLToPath(import.meta.url)));
 const { host: serverHost, port: serverPort } = appConfig.server;
 const fallbackSite = `http://localhost:${serverPort}`;
 

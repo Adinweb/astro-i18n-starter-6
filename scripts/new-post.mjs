@@ -7,6 +7,7 @@ import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
 import { postStub, stripLeadingHeading } from './lib/content-stub.mjs';
 import { findPlaceholderSlugs, placeholderSlugNotice, resolveSlug } from './lib/slug.mjs';
 import { collectionError, entryKeyError } from './lib/validate.mjs';
+import { readLocaleConfig } from './lib/locales.mjs';
 import {
   escapeRegex,
   parseFrontmatter,
@@ -207,11 +208,8 @@ Update / Sync Options:
 
   const targetDir = path.join(colDir, groupSlug);
 
-  const inlangSettings = JSON.parse(
-    fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
-  );
-  const LOCALES = inlangSettings.locales;
-  const defaultLocale = inlangSettings.baseLocale || 'en';
+  const { locales: LOCALES, defaultLocale: cfgDefaultLocale } = readLocaleConfig(rootDir);
+  const defaultLocale = cfgDefaultLocale || 'en';
   if (fromLocale && !LOCALES.includes(fromLocale)) {
     console.error(
       `❌ Unknown source locale "${fromLocale}". Registered locales: ${LOCALES.join(', ')}.`

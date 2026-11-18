@@ -1,24 +1,23 @@
 import { CONTENT_CONFIG } from '@/libs/config/app';
 import { LOCALES, type Locale } from '@/i18n/locales';
 import { localizeHref } from '@/i18n/paths';
+import { humanizeKey } from '@/libs/content/blog';
+import { CLIENT_CONTENT_TYPES, clientCollections } from '@client/content';
 import * as m from '@/paraglide/messages';
 
 /**
  * The content-type registry: the single source of truth for which collections
  * exist, which of them are switched on, and which route segment each one owns.
  *
- * `app.config.json` holds the values; this module validates them once and
- * exposes typed helpers. The route builder, the navigation, the sitemap and the
- * Node CLIs all read the same registry, so disabling a type in one place
- * removes its routes, its sitemap entries, its navigation link and its
- * scaffolding command together.
- *
- * A content type is a content collection directory (`src/content/<key>/`) whose
- * entries follow the shared `<group>/<locale>.mdx` contract. `pages` is the page
- * system itself: it always owns the root and cannot be disabled.
+ * Built-in types (`pages`, `blog`, `projects`) combine dynamically with custom
+ * collections exported from `client/content.ts` and configured in `client/config.json`.
  */
-const CONTENT_TYPE_KEYS = ['pages', 'blog', 'projects'] as const;
-export type ContentTypeKey = (typeof CONTENT_TYPE_KEYS)[number];
+const BUILT_IN_TYPES = ['pages', 'blog', 'projects'] as const;
+const KNOWN_CONTENT_TYPE_KEYS: string[] = [
+  ...new Set([...BUILT_IN_TYPES, ...Object.keys(clientCollections)]),
+];
+
+export type ContentTypeKey = (typeof BUILT_IN_TYPES)[number] | (string & {});
 
 export interface ContentTypeConfig {
   key: ContentTypeKey;
@@ -57,24 +56,21 @@ const BASE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function readConfig(): ContentTypeConfig[] {
   const configured = CONTENT_CONFIG.types;
-  const unknown = Object.keys(configured).filter(
-    (key) => !(CONTENT_TYPE_KEYS as readonly string[]).includes(key)
-  );
+  const knownSet = new Set(KNOWN_CONTENT_TYPE_KEYS);
+  const unknown = Object.keys(configured).filter((key) => !knownSet.has(key));
   if (unknown.length > 0) {
     throw new Error(
-      `[ContentTypes] Unknown content type(s) in app.config.json: ${unknown.join(', ')}. ` +
-        `Known types: ${CONTENT_TYPE_KEYS.join(', ')}. Add the collection to ` +
-        'src/content.config.ts and the key to CONTENT_TYPE_KEYS first.'
+      `[ContentTypes] Unknown content type(s) in config: ${unknown.join(', ')}. ` +
+        `Known types: ${KNOWN_CONTENT_TYPE_KEYS.join(', ')}. Register custom collections ` +
+        'in client/content.ts first.'
     );
   }
 
   const seenBases = new Map<string, ContentTypeKey>();
   const types: ContentTypeConfig[] = [];
 
-  for (const key of CONTENT_TYPE_KEYS) {
+  for (const key of KNOWN_CONTENT_TYPE_KEYS) {
     const settings = configured[key];
-    // A type that is absent from app.config.json keeps its declared defaults
-    // unless it is `pages`, which every site needs.
     const enabled = settings ? settings.enabled : key === 'pages';
     const base = key === 'pages' ? '' : (settings?.base ?? key);
     const index = key === 'pages' ? false : (settings?.index ?? true);
@@ -106,7 +102,15 @@ function readConfig(): ContentTypeConfig[] {
       seenBases.set(base, key);
     }
 
-    types.push({ key, base, enabled, index, paginated: settings?.paginated ?? false, feed: settings?.feed ?? false, nav: settings?.nav ?? true });
+    types.push({
+      key,
+      base,
+      enabled,
+      index,
+      paginated: settings?.paginated ?? false,
+      feed: settings?.feed ?? false,
+      nav: settings?.nav ?? true,
+    });
   }
 
   return types;
@@ -152,8 +156,13 @@ export function getContentTypeEntryHref(
   return localizeHref(`/${base}/${slug}`, locale);
 }
 
+type MessageCatalog = Record<string, ((params: Record<string, never>, opts: { locale: Locale }) => string) | undefined>;
+
 /** Localized menu label of a type. */
 export function getContentTypeLabel(key: ContentTypeKey, locale: Locale): string {
+  const clientLabel = CLIENT_CONTENT_TYPES[key]?.label;
+  if (clientLabel) return clientLabel(locale);
+
   switch (key) {
     case 'pages':
       return m.nav_home({}, { locale });
@@ -161,11 +170,19 @@ export function getContentTypeLabel(key: ContentTypeKey, locale: Locale): string
       return m.nav_blog({}, { locale });
     case 'projects':
       return m.nav_projects({}, { locale });
+    default: {
+      const catalog = m as unknown as MessageCatalog;
+      const fn = catalog[`nav_${key}`];
+      return typeof fn === 'function' ? fn({}, { locale }) : humanizeKey(key);
+    }
   }
 }
 
 /** Localized description shown under a type's index heading. */
 export function getContentTypeDescription(key: ContentTypeKey, locale: Locale): string {
+  const clientDesc = CLIENT_CONTENT_TYPES[key]?.description;
+  if (clientDesc) return clientDesc(locale);
+
   switch (key) {
     case 'pages':
       return m.site_description({}, { locale });
@@ -173,5 +190,10 @@ export function getContentTypeDescription(key: ContentTypeKey, locale: Locale): 
       return m.blog_index_description({}, { locale });
     case 'projects':
       return m.projects_index_description({}, { locale });
+    default: {
+      const catalog = m as unknown as MessageCatalog;
+      const fn = catalog[`${key}_index_description`];
+      return typeof fn === 'function' ? fn({}, { locale }) : m.site_description({}, { locale });
+    }
   }
 }

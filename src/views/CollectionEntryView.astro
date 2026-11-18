@@ -8,6 +8,7 @@ import {
   buildBreadcrumbSchema,
   getBreadcrumbs,
   getHomeHref,
+  type GenericCollectionEntry,
 } from '@/libs/content/service';
 import {
   getContentTypeIndexHref,
@@ -30,15 +31,15 @@ import * as m from '@/paraglide/messages';
  */
 interface Props {
   contentType: ContentTypeKey;
-  entry: CollectionEntry<'projects'>;
+  entry: GenericCollectionEntry;
   locale: Locale;
   alternates: Partial<Record<Locale, string>>;
   url: string;
 }
 
 const { contentType, entry, locale, alternates, url } = Astro.props;
-const { Content } = await render(entry);
-const { title, description, image, client, year, link, stack } = entry.data;
+const { Content } = await render(entry as CollectionEntry<'projects'>);
+const { title, description, image, client, year, link, stack = [] } = entry.data;
 
 const typeLabel = getContentTypeLabel(contentType, locale);
 const indexHref = getContentTypeIndexHref(contentType, locale);

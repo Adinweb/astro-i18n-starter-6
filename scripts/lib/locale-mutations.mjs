@@ -1,16 +1,20 @@
 /**
- * Shared mutation helpers for registered locales (`project.inlang/settings.json`,
- * `src/i18n/locales.ts`, `messages/<locale>.json`, and content files).
+ * Shared mutation helpers for registered locales (`client/locales.json`,
+ * `client/messages/<locale>.json`, and content files).
  *
- * Used by `set-default-language.mjs`, `remove-language.mjs`,
- * `set-language-mode.mjs`, and `site-init.mjs` so locale switching and pruning
- * share one validated code path.
+ * Never modifies upstream core files (`src/i18n/locales.ts`, `messages/core/`).
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { compileMessages } from './compile-messages.mjs';
-import { escapeRegex, parseFrontmatter } from './frontmatter.mjs';
-import { LOCALES_SOURCE_PATH, parseLocaleConfig } from './locales.mjs';
+import { parseFrontmatter } from './frontmatter.mjs';
+import { readLocaleConfig, writeLocaleConfig, localeConfigPathFor } from './locales.mjs';
+import {
+  readClientMessages,
+  readCoreMessages,
+  readMergedMessages,
+  stripSchema,
+} from './merge-messages.mjs';
 
 export function resolveHomeFile(rootDir, locale) {
   const homeDir = path.join(rootDir, 'src', 'content', 'pages', 'home');
@@ -22,53 +26,46 @@ export function resolveHomeFile(rootDir, locale) {
 }
 
 /**
- * Validates and switches the project's default (`DEFAULT_LOCALE` / `baseLocale`) language.
+ * Validates and switches the project's default (`defaultLocale`) language in `client/locales.json`.
  */
 export function switchDefaultLocale(
   targetLocale,
   { rootDir = process.cwd(), allowDraftHome = false, compile = true } = {}
 ) {
-  const inlangPath = path.join(rootDir, 'project.inlang', 'settings.json');
-  const localesPath =
-    rootDir === path.resolve(path.dirname(LOCALES_SOURCE_PATH), '..', '..')
-      ? LOCALES_SOURCE_PATH
-      : path.join(rootDir, 'src', 'i18n', 'locales.ts');
-
-  if (!fs.existsSync(inlangPath)) {
-    throw new Error('Missing project.inlang/settings.json.');
-  }
-  if (!fs.existsSync(localesPath)) {
-    throw new Error('Missing src/i18n/locales.ts.');
+  const localesFile = localeConfigPathFor(rootDir);
+  if (!fs.existsSync(localesFile)) {
+    throw new Error('Missing client/locales.json.');
   }
 
-  const inlangRaw = fs.readFileSync(inlangPath, 'utf-8');
-  const inlangSettings = JSON.parse(inlangRaw);
-  let localesSource = fs.readFileSync(localesPath, 'utf-8');
-  const localeConfig = parseLocaleConfig(localesSource);
+  const localeConfig = readLocaleConfig(rootDir);
 
-  if (!inlangSettings.locales.includes(targetLocale) || !localeConfig.locales.includes(targetLocale)) {
+  if (!localeConfig.locales.includes(targetLocale)) {
     throw new Error(
-      `Locale "${targetLocale}" is not registered. Registered locales: ${inlangSettings.locales.join(', ')}`
+      `Locale "${targetLocale}" is not registered. Registered locales: ${localeConfig.locales.join(', ')}`
     );
   }
 
   if (!localeConfig.metadata[targetLocale]) {
-    throw new Error(`LOCALE_METADATA in src/i18n/locales.ts is missing "${targetLocale}".`);
+    throw new Error(`client/locales.json metadata is missing "${targetLocale}".`);
   }
 
-  const dictPath = path.join(rootDir, 'messages', `${targetLocale}.json`);
-  if (!fs.existsSync(dictPath)) {
-    throw new Error(`Missing dictionary file: messages/${targetLocale}.json.`);
+  const hasCore = Object.keys(stripSchema(readCoreMessages(targetLocale, rootDir))).length > 0;
+  const clientDictPath = path.join(rootDir, 'client', 'messages', `${targetLocale}.json`);
+  if (!hasCore && !fs.existsSync(clientDictPath)) {
+    throw new Error(
+      `Missing dictionary file: client/messages/${targetLocale}.json (and no messages/core/${targetLocale}.json exists).`
+    );
   }
-  const dict = JSON.parse(fs.readFileSync(dictPath, 'utf-8'));
+
+  const mergedDict = readMergedMessages(targetLocale, rootDir);
   const warnings = [];
   if (
-    typeof dict.site_description !== 'string' ||
-    !dict.site_description.trim() ||
-    /^\[TODO:/i.test(dict.site_description)
+    typeof mergedDict.site_description !== 'string' ||
+    !mergedDict.site_description.trim() ||
+    /^\[TODO:/i.test(mergedDict.site_description)
   ) {
     warnings.push(
-      `messages/${targetLocale}.json "site_description" is empty or untranslated ([TODO]).`
+      `Dictionary for "${targetLocale}" has an empty or untranslated ([TODO]) "site_description".`
     );
   }
 
@@ -88,26 +85,15 @@ export function switchDefaultLocale(
     }
   }
 
-  const alreadyDefault =
-    inlangSettings.baseLocale === targetLocale && localeConfig.defaultLocale === targetLocale;
+  const alreadyDefault = localeConfig.defaultLocale === targetLocale;
 
   if (!alreadyDefault) {
-    if (inlangSettings.baseLocale !== targetLocale) {
-      inlangSettings.baseLocale = targetLocale;
-      const eol = inlangRaw.includes('\r\n') ? '\r\n' : '\n';
-      fs.writeFileSync(
-        inlangPath,
-        JSON.stringify(inlangSettings, null, 2).split('\n').join(eol) + eol,
-        'utf-8'
-      );
-    }
-
-    const defaultPattern = /(export const DEFAULT_LOCALE\s*:\s*Locale\s*=\s*)['"][^'"]+['"]/;
-    if (!defaultPattern.test(localesSource)) {
-      throw new Error('Could not locate DEFAULT_LOCALE declaration in src/i18n/locales.ts.');
-    }
-    localesSource = localesSource.replace(defaultPattern, `$1'${targetLocale}'`);
-    fs.writeFileSync(localesPath, localesSource, 'utf-8');
+    localeConfig.defaultLocale = targetLocale;
+    localeConfig.locales = [
+      targetLocale,
+      ...localeConfig.locales.filter((loc) => loc !== targetLocale),
+    ];
+    writeLocaleConfig(localeConfig, rootDir);
   }
 
   if (compile && !alreadyDefault) {
@@ -122,71 +108,67 @@ export function switchDefaultLocale(
 }
 
 /**
- * Unregisters a non-default locale from `settings.json`, `src/i18n/locales.ts`,
- * and `messages/<locale>.json`, optionally deleting or archiving its content files.
+ * Unregisters a non-default locale from `client/locales.json` and
+ * `client/messages/<locale>.json`, optionally deleting or archiving its content files.
+ * Upstream `messages/core/<locale>.json` is never modified.
  */
 export function unregisterLocale(
   langCode,
   { rootDir = process.cwd(), deleteContent = false, archiveContent = false, compile = true } = {}
 ) {
-  const inlangPath = path.join(rootDir, 'project.inlang', 'settings.json');
-  const localesPath = path.join(rootDir, 'src', 'i18n', 'locales.ts');
-  const inlangRaw = fs.readFileSync(inlangPath, 'utf-8');
-  const inlangSettings = JSON.parse(inlangRaw);
-  const baseLocale = inlangSettings.baseLocale || 'en';
+  const localesFile = localeConfigPathFor(rootDir);
+  if (!fs.existsSync(localesFile)) {
+    throw new Error('Missing client/locales.json.');
+  }
 
-  if (!inlangSettings.locales.includes(langCode)) {
-    throw new Error(
-      `Locale "${langCode}" is not registered in project.inlang/settings.json.`
-    );
+  const localeConfig = readLocaleConfig(rootDir);
+  const baseLocale = localeConfig.defaultLocale || 'en';
+
+  if (!localeConfig.locales.includes(langCode)) {
+    throw new Error(`Locale "${langCode}" is not registered in client/locales.json.`);
   }
   if (langCode === baseLocale) {
     throw new Error(`Cannot remove base/default locale "${langCode}".`);
   }
-  if (inlangSettings.locales.length <= 1) {
+  if (localeConfig.locales.length <= 1) {
     throw new Error('Cannot remove the only remaining locale.');
   }
 
-  inlangSettings.locales = inlangSettings.locales.filter((l) => l !== langCode);
-  const eol = inlangRaw.includes('\r\n') ? '\r\n' : '\n';
-  fs.writeFileSync(
-    inlangPath,
-    JSON.stringify(inlangSettings, null, 2).split('\n').join(eol) + eol,
-    'utf-8'
+  const nextLocales = localeConfig.locales.filter((l) => l !== langCode);
+  const nextMetadata = { ...localeConfig.metadata };
+  delete nextMetadata[langCode];
+
+  writeLocaleConfig(
+    {
+      defaultLocale: localeConfig.defaultLocale,
+      locales: nextLocales,
+      metadata: nextMetadata,
+    },
+    rootDir
   );
 
   const archiveBaseDir = path.join(rootDir, '.locale-archive', langCode);
-  const dictPath = path.join(rootDir, 'messages', `${langCode}.json`);
+  const clientDictPath = path.join(rootDir, 'client', 'messages', `${langCode}.json`);
   let deletedDictionary = false;
   let archivedDictionary = false;
-  if (fs.existsSync(dictPath)) {
+  if (fs.existsSync(clientDictPath)) {
     if (!deleteContent && archiveContent) {
       fs.mkdirSync(archiveBaseDir, { recursive: true });
-      fs.copyFileSync(dictPath, path.join(archiveBaseDir, 'messages.json'));
+      fs.copyFileSync(clientDictPath, path.join(archiveBaseDir, 'messages.json'));
       archivedDictionary = true;
     }
-    fs.unlinkSync(dictPath);
+    fs.unlinkSync(clientDictPath);
     deletedDictionary = true;
-  }
-
-  if (fs.existsSync(localesPath)) {
-    let localesCode = fs.readFileSync(localesPath, 'utf-8');
-    localesCode = localesCode.replace(
-      /export const LOCALES = \[(.*?)\] as const;/s,
-      (_match, p1) => {
-        const remaining = p1
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s && s !== `'${langCode}'` && s !== `"${langCode}"`);
-        return `export const LOCALES = [${remaining.join(', ')}] as const;`;
-      }
+  } else if (!deleteContent && archiveContent) {
+    // Archive sparse client state so restoration can cleanly recreate client/messages/<locale>.json
+    const currentClient = readClientMessages(langCode, rootDir);
+    fs.mkdirSync(archiveBaseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(archiveBaseDir, 'messages.json'),
+      `${JSON.stringify({ $schema: 'https://inlang.com/schema/inlang-message-format', ...stripSchema(currentClient) }, null, 2)}\n`,
+      'utf-8'
     );
-    const metaRegex = new RegExp(
-      `\\r?\\n  ['"]?${escapeRegex(langCode)}['"]?:\\s*\\{[\\s\\S]*?^  \\},?`,
-      'm'
-    );
-    localesCode = localesCode.replace(metaRegex, '');
-    fs.writeFileSync(localesPath, localesCode, 'utf-8');
+    archivedDictionary = true;
   }
 
   const deletedContentFiles = [];
@@ -256,9 +238,8 @@ export function switchToSingleLocale(
     compile: false,
   });
 
-  const inlangPath = path.join(rootDir, 'project.inlang', 'settings.json');
-  const inlangSettings = JSON.parse(fs.readFileSync(inlangPath, 'utf-8'));
-  const otherLocales = inlangSettings.locales.filter((loc) => loc !== targetLocale);
+  const localeConfig = readLocaleConfig(rootDir);
+  const otherLocales = localeConfig.locales.filter((loc) => loc !== targetLocale);
 
   const removedLocales = [];
   const deletedContentFiles = [];

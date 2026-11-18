@@ -1,6 +1,7 @@
 import { defineCollection, type ImageFunction } from 'astro:content';
 import { z } from 'astro/zod';
 import { glob } from 'astro/loaders';
+import { clientCollections } from '../client/content';
 
 /**
  * Slugs may contain Unicode letters, digits, combining marks, and the
@@ -56,10 +57,8 @@ const baseSchema = ({ image }: { image: ImageFunction }) =>
   });
 
 /**
- * Collections are static here by design: Astro needs their schemas at build
- * time. Which of them are actually routed, listed, linked or scaffolded is
- * decided by the content-type registry in `app.config.json` (`content.types`),
- * so disabling a type never needs a schema edit.
+ * Collections combine built-in core collections (`pages`, `blog`, `projects`)
+ * with client-defined collections in `client/content.ts`.
  */
 export const collections = {
   pages: defineCollection({
@@ -87,10 +86,10 @@ export const collections = {
          */
         flushTop: z.boolean().default(false),
         /**
-         * Optional named `.astro` template in `src/views/pages/` mapped by
-         * `PageView.astro` for DRY bespoke page designs shared across locales.
+         * Optional named `.astro` template in `src/views/pages/` or `client/templates/`
+         * mapped by `PageView.astro` for DRY bespoke page designs shared across locales.
          */
-        template: z.enum(['home']).optional(),
+        template: z.string().min(1).optional(),
       }),
   }),
   blog: defineCollection({
@@ -139,4 +138,5 @@ export const collections = {
         stack: z.array(z.string().min(1)).default([]),
       }),
   }),
+  ...clientCollections,
 };

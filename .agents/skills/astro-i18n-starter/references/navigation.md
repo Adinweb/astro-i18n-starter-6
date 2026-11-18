@@ -6,7 +6,7 @@ This reference documents the multi-menu navigation system, menu slot resolvers, 
 
 ## 1. Architectural Model & Data Contracts
 
-All navigation data structures and resolvers live in `src/libs/config/navigation.ts`.
+All navigation data structures and resolvers live in `src/libs/config/navigation.ts`, reading client-owned items from `client/navigation.ts` (`CLIENT_PAGE_ITEMS`, `getClientPrimaryExtras`, `getClientFooterColumns`, `getClientLegalNavigation`).
 
 ### Core Interfaces
 
@@ -55,13 +55,13 @@ export interface NavItemConfig {
 const { header, drawer, footer, legal } = await getNavigationSlots(locale, url);
 ```
 `url` is also the page's canonical URL, so a view whose canonical is not the page it renders under passes `activeUrl` to `BaseLayout` instead: the 404 document keeps its home canonical for SEO but opts out of active highlighting with `activeUrl={null}`.
-All four slots are resolved concurrently via `Promise.all` to maintain maximum build performance. The header and the drawer come from a single `buildPrimaryNavigation` pass (`PAGE_ITEMS` → page links → content-type links → the Resources dropdown), so the two menus cannot drift apart and the page lookups run once.
+All four slots are resolved concurrently via `Promise.all` to maintain maximum build performance. The header and the drawer come from a single `buildPrimaryNavigation` pass (`CLIENT_PAGE_ITEMS` → page links → content-type links → extras/Resources dropdown), so the two menus cannot drift apart and the page lookups run once.
 
 ### 2.2 Desktop Header Navigation (`getHeaderNavigation`)
 * **Purpose**: Primary desktop navbar in `BaseLayout.astro`.
 * **Dropdowns (`NavItem.children`)**: Rendered using CSS peer/group states (`group-hover:block group-focus-within:block`).
 * **Sub-dropdowns**: Multi-level submenus render with logical directional indicators (`Icon name="chevron-right"` with `class="rtl:rotate-180"`).
-* **CTA Button**: `m.common_get_started`, pointing at the page group named by `ui.ctaPage` in `app.config.json` (`'pricing'` by default). `getPageUrl` returns `null` for an unpublished page, so the CTA hides itself instead of linking to a 404.
+* **CTA Button**: `m.common_get_started`, pointing at the page group named by `ui.ctaPage` in merged `app.config.json` / `client/config.json` (`'pricing'` by default). `getPageUrl` returns `null` for an unpublished page, so the CTA hides itself instead of linking to a 404.
 
 ### 2.3 Mobile Slide-Over Drawer (`getDrawerNavigation`)
 * **Same list as the header**: `getDrawerNavigation` returns the shared primary navigation.
@@ -80,11 +80,11 @@ All four slots are resolved concurrently via `Promise.all` to maintain maximum b
 
 ### 2.4 Multi-Column Footer (`getFooterNavigation`)
 Renders a semantic responsive grid: a brand & mission block (title + `m.site_description`) followed by up to three `FooterColumn` data sets:
-* **Pages** (`footer_col_pages`): derived from `PAGE_ITEMS` — the same list the header and the drawer read — so adding, renaming or removing a page changes the footer with it. The home page is the one link that always stays, as a localized fallback.
+* **Pages** (`footer_col_pages`): derived from `CLIENT_PAGE_ITEMS` (`client/navigation.ts`) — the same list the header and the drawer read — so adding, renaming or removing a page changes the footer with it. The home page is the one link that always stays, as a localized fallback.
 * **Resources**: one link per navigable content type (`getContentTypeNavItems`, so Blog and Projects follow the registry — `nav: false` drops the link). Nothing here points at a template's external homepage.
-* **Company**: all configured social links from `app.config.json` (`social.github`, `twitter`, `linkedin`, `instagram`, `telegram`), each rendered only when populated (if none are configured, the column is omitted).
+* **Company**: all configured social links from merged `app.config.json` / `client/config.json` (`social.github`, `twitter`, `linkedin`, `instagram`, `telegram`), each rendered only when populated (if none are configured, the column is omitted).
 
-Every entry is skipped when its page is missing or unpublished in the locale, and empty columns are dropped, so the footer of a fresh client project never ships an empty or dead column entry. Page groups are named **only** in `PAGE_ITEMS`: `remove:page` can therefore never delete a `nav_<key>` message the footer still calls.
+Every entry is skipped when its page is missing or unpublished in the locale, and empty columns are dropped, so the footer of a fresh client project never ships an empty or dead column entry. Page groups are named **only** in `CLIENT_PAGE_ITEMS`: `remove:page` can therefore never delete a `nav_<key>` message the footer still calls.
 
 ### 2.5 Bottom Legal Bar (`getLegalNavigation`)
 * Localized copyright year using Solar Hijri for Persian (`formatYear(currentYear, locale)`).
@@ -131,12 +131,12 @@ export function getContentTypeNavItems(locale: Locale, currentUrl = ''): NavItem
 ## 5. Extending Navigation Menus
 
 To add a new page or custom link:
-1. Ensure the page exists under `src/content/pages/<page-key>/` (`npm run new:page <page-key>` scaffolds it and registers `nav_<key>`).
-2. Add one entry to `PAGE_ITEMS` in `src/libs/config/navigation.ts` — the single list the header **and** the drawer read, so a page is never added twice:
+1. Ensure the page exists under `src/content/pages/<page-key>/` (`npm run new:page <page-key>` scaffolds it and registers `nav_<key>` in `client/messages/`).
+2. Add one entry to `CLIENT_PAGE_ITEMS` in `client/navigation.ts` — the single list the header **and** the drawer read, so a page is never added twice:
    ```ts
    { group: 'contact', icon: 'mail', label: (locale: Locale) => m.nav_contact({}, { locale }) },
    ```
-   `icon` names an entry of `src/libs/ui/icons.ts`; the mobile drawer shows it in the row's tile, and a missing entry simply falls back to `file`.
-3. For a footer-only link, extend `getFooterNavigation`; for a legal link, `getLegalNavigation`.
+   `icon` names an entry of `src/libs/ui/icons.ts` or `client/icons.ts`; the mobile drawer shows it in the row's tile, and a missing entry simply falls back to `file`.
+3. For extra dropdowns/anchors, footer-only columns, or legal links, edit `getClientPrimaryExtras`, `getClientFooterColumns`, and `getClientLegalNavigation` in `client/navigation.ts`.
 4. Use compiled Paraglide message functions for labels (`m.nav_<key>({}, { locale })`).
 5. Run `npm test` and `npm run lint` to verify active state and TypeScript types.

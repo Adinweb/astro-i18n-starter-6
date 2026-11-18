@@ -2,30 +2,33 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LOCALES_SOURCE_PATH, readLocaleConfig } from './lib/locales.mjs';
+import { localeConfigPathFor, readLocaleConfig } from './lib/locales.mjs';
 import { parseFrontmatter } from './lib/frontmatter.mjs';
 import { readContentTypes } from './lib/content-types.mjs';
+import { readMergedConfig } from './lib/config.mjs';
+import {
+  readClientMessages,
+  readCoreMessages,
+  readMergedMessages,
+  stripSchema,
+} from './lib/merge-messages.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 
-const settings = JSON.parse(
-  fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
-);
-const LOCALES = settings.locales;
-const BASE_LOCALE = settings.baseLocale || 'en';
+const localeConfig = readLocaleConfig(rootDir);
+const LOCALES = localeConfig.locales;
+const BASE_LOCALE = localeConfig.defaultLocale || 'en';
 
-// Content types own top-level route segments; a page slug must never shadow
-// one of them. Read from the same config the router uses.
-const appConfig = JSON.parse(fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8'));
-const CONTENT_TYPES = readContentTypes(appConfig);
+const appConfig = readMergedConfig(rootDir);
+const CONTENT_TYPES = readContentTypes(appConfig, rootDir);
 const CONTENT_TYPE_MAP = new Map(CONTENT_TYPES.map((type) => [type.key, type]));
 const ENABLED_CONTENT_BASES = CONTENT_TYPES.filter(
   (type) => type.key !== 'pages' && type.enabled && type.base
 ).map((type) => type.base);
 
 if (!LOCALES.includes(BASE_LOCALE)) {
-  console.error(`❌ FATAL: baseLocale "${BASE_LOCALE}" is not listed in locales.`);
+  console.error(`❌ FATAL: defaultLocale "${BASE_LOCALE}" is not listed in client/locales.json locales.`);
   process.exit(1);
 }
 
@@ -40,13 +43,9 @@ function fatal(message) {
 console.log('🔍 Running i18n Audit Suite...\n');
 
 // ---------------------------------------------------------------------------
-// 1. Locale configuration parity
-//
-// `project.inlang/settings.json` drives Paraglide; `src/i18n/locales.ts`
-// drives routing and metadata. They must describe the same language set, or
-// content and URLs silently disagree about which locales exist.
+// 1. Locale configuration validation (`client/locales.json`)
 // ---------------------------------------------------------------------------
-console.log('--- 1. Locale Configuration Parity ---');
+console.log('--- 1. Locale Configuration (`client/locales.json`) ---');
 
 let localeConfigOk = true;
 const recordLocaleFatal = (message) => {
@@ -54,76 +53,55 @@ const recordLocaleFatal = (message) => {
   fatal(message);
 };
 
-if (!fs.existsSync(LOCALES_SOURCE_PATH)) {
-  recordLocaleFatal('Missing src/i18n/locales.ts');
+const localesJsonPath = localeConfigPathFor(rootDir);
+if (!fs.existsSync(localesJsonPath)) {
+  recordLocaleFatal('Missing client/locales.json');
 } else {
-  const { locales: tsLocales, defaultLocale, metadata } = readLocaleConfig();
+  const { locales, defaultLocale, metadata } = localeConfig;
 
-  if (tsLocales.length === 0) {
-    recordLocaleFatal('Could not read LOCALES from src/i18n/locales.ts');
-  } else if (JSON.stringify(tsLocales) !== JSON.stringify(LOCALES)) {
-    recordLocaleFatal(
-      `source LOCALES [${tsLocales.join(', ')}] differ from project.inlang locales [${LOCALES.join(', ')}]`
-    );
+  if (locales.length === 0) {
+    recordLocaleFatal('client/locales.json "locales" array is empty');
+  }
+  if (!defaultLocale || !locales.includes(defaultLocale)) {
+    recordLocaleFatal(`defaultLocale (${defaultLocale ?? 'missing'}) must be in locales`);
   }
 
-  if (defaultLocale !== BASE_LOCALE) {
-    recordLocaleFatal(
-      `DEFAULT_LOCALE (${defaultLocale ?? 'missing'}) differs from baseLocale (${BASE_LOCALE})`
-    );
-  }
-
-  for (const locale of LOCALES) {
+  for (const locale of locales) {
     const meta = metadata[locale];
     if (!meta) {
-      recordLocaleFatal(`LOCALE_METADATA is missing "${locale}"`);
+      recordLocaleFatal(`client/locales.json metadata is missing "${locale}"`);
       continue;
     }
     if (!meta.dir || !['ltr', 'rtl'].includes(meta.dir)) {
-      recordLocaleFatal(`LOCALE_METADATA["${locale}"].dir must be "ltr" or "rtl"`);
+      recordLocaleFatal(`client/locales.json metadata["${locale}"].dir must be "ltr" or "rtl"`);
     }
     if (!meta.htmlLang?.trim()) {
-      recordLocaleFatal(`LOCALE_METADATA["${locale}"].htmlLang is empty`);
+      recordLocaleFatal(`client/locales.json metadata["${locale}"].htmlLang is empty`);
     }
     if (!meta.name?.trim()) {
-      recordLocaleFatal(`LOCALE_METADATA["${locale}"].name is empty`);
+      recordLocaleFatal(`client/locales.json metadata["${locale}"].name is empty`);
     }
     if (!meta.fontFamily?.trim()) {
-      recordLocaleFatal(`LOCALE_METADATA["${locale}"].fontFamily is empty`);
+      recordLocaleFatal(`client/locales.json metadata["${locale}"].fontFamily is empty`);
     }
   }
 
-  const extraMetadata = Object.keys(metadata).filter((locale) => !LOCALES.includes(locale));
+  const extraMetadata = Object.keys(metadata).filter((locale) => !locales.includes(locale));
   if (extraMetadata.length) {
-    recordLocaleFatal(`LOCALE_METADATA defines unregistered locales: ${extraMetadata.join(', ')}`);
+    recordLocaleFatal(
+      `client/locales.json metadata defines unregistered locales: ${extraMetadata.join(', ')}`
+    );
   }
 
   if (localeConfigOk) {
-    console.log(
-      `✅ project.inlang/settings.json and src/i18n/locales.ts agree on ${LOCALES.length} locales.`
-    );
+    console.log(`✅ client/locales.json defines ${LOCALES.length} valid locale(s) (default: ${BASE_LOCALE}).`);
   }
 }
 
 // ---------------------------------------------------------------------------
-// 2. Dictionary parity: keys, placeholder signatures, and empty values
+// 2. Two-tier dictionary parity: `messages/core/` + `client/messages/`
 // ---------------------------------------------------------------------------
 console.log('\n--- 2. Dictionary Parity ---');
-const messagesDir = path.join(rootDir, 'messages');
-const dictionaries = {};
-
-for (const locale of LOCALES) {
-  const filePath = path.join(messagesDir, `${locale}.json`);
-  if (!fs.existsSync(filePath)) {
-    fatal(`Missing dictionary file: messages/${locale}.json`);
-    continue;
-  }
-  try {
-    dictionaries[locale] = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  } catch (error) {
-    fatal(`Failed to parse messages/${locale}.json: ${error.message}`);
-  }
-}
 
 function messageKeys(dictionary) {
   return Object.keys(dictionary).filter((key) => !key.startsWith('$'));
@@ -154,6 +132,55 @@ function placeholderSignature(value) {
   return [...names].sort().join(',');
 }
 
+// Check upstream core dictionary parity across its own files (`messages/core/*.json`)
+const coreMessagesDir = path.join(rootDir, 'messages', 'core');
+if (fs.existsSync(coreMessagesDir)) {
+  const coreFiles = fs
+    .readdirSync(coreMessagesDir)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => f.replace(/\.json$/, ''))
+    .sort();
+  const coreDicts = {};
+  for (const loc of coreFiles) {
+    try {
+      coreDicts[loc] = readCoreMessages(loc, rootDir);
+    } catch (error) {
+      fatal(`Failed to parse messages/core/${loc}.json: ${error.message}`);
+    }
+  }
+  const coreRefLocale = coreDicts.en ? 'en' : coreFiles[0];
+  const coreRef = coreRefLocale ? coreDicts[coreRefLocale] : null;
+  if (coreRef) {
+    const coreRefKeys = messageKeys(coreRef);
+    for (const loc of coreFiles) {
+      const dict = coreDicts[loc];
+      if (!dict) continue;
+      const keys = messageKeys(dict);
+      const keySet = new Set(keys);
+      const missing = coreRefKeys.filter((k) => !keySet.has(k));
+      if (missing.length) fatal(`messages/core/${loc}.json is missing keys: ${missing.join(', ')}`);
+      const extra = keys.filter((k) => !coreRefKeys.includes(k));
+      if (extra.length) fatal(`messages/core/${loc}.json has extra keys: ${extra.join(', ')}`);
+    }
+  }
+}
+
+// Build merged dictionaries for all active client locales
+const dictionaries = {};
+for (const locale of LOCALES) {
+  const hasCore = Object.keys(stripSchema(readCoreMessages(locale, rootDir))).length > 0;
+  const clientFilePath = path.join(rootDir, 'client', 'messages', `${locale}.json`);
+  if (!hasCore && !fs.existsSync(clientFilePath)) {
+    fatal(`Missing dictionary file: client/messages/${locale}.json`);
+    continue;
+  }
+  try {
+    dictionaries[locale] = readMergedMessages(locale, rootDir);
+  } catch (error) {
+    fatal(`Failed to load merged dictionary for "${locale}": ${error.message}`);
+  }
+}
+
 const baseDictionary = dictionaries[BASE_LOCALE];
 if (baseDictionary) {
   const baseKeys = messageKeys(baseDictionary);
@@ -166,23 +193,23 @@ if (baseDictionary) {
     const keySet = new Set(keys);
 
     const missing = baseKeys.filter((key) => !keySet.has(key));
-    if (missing.length) fatal(`${locale}.json is missing keys: ${missing.join(', ')}`);
+    if (missing.length) fatal(`Merged ${locale} dictionary is missing keys: ${missing.join(', ')}`);
 
     const extra = keys.filter((key) => !baseKeys.includes(key));
-    if (extra.length) fatal(`${locale}.json has extra keys: ${extra.join(', ')}`);
+    if (extra.length) fatal(`Merged ${locale} dictionary has extra keys: ${extra.join(', ')}`);
 
     for (const key of baseKeys) {
       if (!(key in dictionary)) continue;
       const value = dictionary[key];
       if (typeof value === 'string' && value.trim() === '') {
-        fatal(`${locale}.json has an empty value for "${key}"`);
+        fatal(`Merged ${locale} dictionary has an empty value for "${key}"`);
       }
 
       const expected = placeholderSignature(baseDictionary[key]);
       const actual = placeholderSignature(value);
       if (expected !== actual) {
         fatal(
-          `${locale}.json placeholders for "${key}" differ from ${BASE_LOCALE}.json ` +
+          `Merged ${locale} dictionary placeholders for "${key}" differ from ${BASE_LOCALE} ` +
             `(expected {${expected}}, got {${actual}})`
         );
       }
@@ -190,19 +217,20 @@ if (baseDictionary) {
   }
 
   if (!hasFatal) {
-    console.log(`✅ Keys and placeholders in parity across ${LOCALES.length} locales (${baseKeys.length} keys).`);
+    console.log(
+      `✅ Merged core + client dictionaries in parity across ${LOCALES.length} locales (${baseKeys.length} keys).`
+    );
   }
 
-  // Every `m.key(...)` call must resolve to a compiled dictionary entry.
-  const usageDir = path.join(rootDir, 'src');
+  // Every `m.key(...)` call across `src/` and `client/` must resolve to a compiled dictionary entry.
   const usedKeys = new Map();
-  const walk = (dir) => {
+  const walkUsage = (dir) => {
     if (!fs.existsSync(dir)) return;
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (entry.name === 'paraglide') continue;
-        walk(fullPath);
+        walkUsage(fullPath);
       } else if (/\.(astro|ts|tsx|js)$/.test(entry.name)) {
         const content = fs.readFileSync(fullPath, 'utf-8');
         for (const match of content.matchAll(/\bm\.([A-Za-z_][A-Za-z0-9_]*)\s*\(/g)) {
@@ -211,30 +239,34 @@ if (baseDictionary) {
       }
     }
   };
-  walk(usageDir);
+  walkUsage(path.join(rootDir, 'src'));
+  walkUsage(path.join(rootDir, 'client'));
 
   const missingUsage = [...usedKeys].filter(([key]) => !(key in baseDictionary));
   if (missingUsage.length) {
     for (const [key, file] of missingUsage) {
-      fatal(`Message "${key}" used in ${file} is not defined in ${BASE_LOCALE}.json`);
+      fatal(`Message "${key}" used in ${file} is not defined in merged ${BASE_LOCALE} dictionary`);
     }
   } else {
     console.log(`✅ All ${usedKeys.size} statically referenced message keys exist.`);
   }
 
-  // Dynamic prefix families (`nav_<group>`, `blog_category_<key>`, `blog_tag_<key>`)
-  // are resolved via computed lookups in navigation.ts and taxonomy.ts.
+  // Flag orphaned client-owned keys (skip dynamic prefix families & overrides of core keys).
   const dynamicPrefixPattern = /^(?:nav_|blog_category_|blog_tag_)/;
-  const unusedKeys = baseKeys.filter(
-    (key) => !usedKeys.has(key) && !dynamicPrefixPattern.test(key)
+  const baseCoreKeys = new Set(messageKeys(readCoreMessages(BASE_LOCALE, rootDir)));
+  const baseClientKeys = messageKeys(readClientMessages(BASE_LOCALE, rootDir));
+  const unusedClientKeys = baseClientKeys.filter(
+    (key) => !usedKeys.has(key) && !dynamicPrefixPattern.test(key) && !baseCoreKeys.has(key)
   );
-  if (unusedKeys.length > 0) {
-    for (const key of unusedKeys) {
-      console.warn(`⚠️ [WARN] Unused dictionary key "${key}" (no static m.${key}(...) call in src/)`);
+  if (unusedClientKeys.length > 0) {
+    for (const key of unusedClientKeys) {
+      console.warn(
+        `⚠️ [WARN] Unused client dictionary key "${key}" in client/messages/${BASE_LOCALE}.json`
+      );
       warningCount += 1;
     }
   } else {
-    console.log('✅ No orphaned dictionary keys detected.');
+    console.log('✅ No orphaned client dictionary keys detected.');
   }
 }
 
@@ -277,10 +309,6 @@ if (!fs.existsSync(contentDir)) {
 
       for (const locale of LOCALES) {
         if (!localeFile(groupDir, locale)) {
-          // A group may exist in fewer languages than the site has: a blog
-          // post that was only written in English is a normal case, and the
-          // route builder, the navigation and the language switcher all cope
-          // with it. It is reported, but it must not break the build.
           const message = `Missing ${locale}.mdx for src/content/${collection}/${group.name}`;
           console.warn(`⚠️ [WARN] ${message}`);
           warningCount += 1;
@@ -313,14 +341,8 @@ if (!fs.existsSync(contentDir)) {
 // ---------------------------------------------------------------------------
 console.log('\n--- 4. Slug & Route Guard ---');
 
-/**
- * Top-level route bases that page slugs must not shadow. Derived from the
- * physical files in `src/pages/`, so adding an endpoint (or the 404 page) is
- * protected without touching this audit.
- */
 function deriveReservedRouteBases() {
   const pagesDir = path.join(rootDir, 'src', 'pages');
-  // The blog index, static build output folders, and non-default locale prefixes must never be shadowed by a page slug.
   const reserved = new Set([
     'page',
     'pagefind',
@@ -345,7 +367,6 @@ function deriveReservedRouteBases() {
 const RESERVED_ROUTE_BASES = deriveReservedRouteBases();
 const SLUG_PATTERN = /^[\p{L}\p{N}\p{M}]+(?:[\u200C\u200D-][\p{L}\p{N}\p{M}]+)*$/u;
 const TAXONOMY_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-// The formats Astro's image pipeline accepts as input.
 const IMAGE_EXTENSIONS = new Set([
   'jpeg',
   'jpg',
@@ -473,9 +494,6 @@ for (const { collection, group, groupDir } of groups) {
       slugFatal = true;
     }
 
-    // The `image` field is a path relative to the content file: Astro's
-    // `image()` helper resolves it, checks that the file exists and hands the
-    // entry ready-made image metadata.
     const image = frontmatter.image;
     if (image) {
       if (!image.startsWith('./') && !image.startsWith('../')) {
@@ -490,7 +508,7 @@ for (const { collection, group, groupDir } of groups) {
           slugFatal = true;
         } else if (!IMAGE_EXTENSIONS.has(path.extname(asset).slice(1).toLowerCase())) {
           fatal(
-            `Image "${image}" in ${relative} is not a format Astro can optimize (${IMAGE_EXTENSIONS.join(', ')})`
+            `Image "${image}" in ${relative} is not a format Astro can optimize (${[...IMAGE_EXTENSIONS].join(', ')})`
           );
           slugFatal = true;
         }
@@ -528,7 +546,6 @@ for (const locale of LOCALES) {
     }
   }
 
-  // Enabled indexed collection bases are registered once per locale by the content service.
   for (const type of CONTENT_TYPES) {
     if (type.key !== 'pages' && type.enabled && type.index && type.base) {
       addRoute(type.base, `generated ${type.key} index`);
@@ -541,7 +558,7 @@ if (!slugFatal) {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Unextracted text scanner (warnings only)
+// 5. Unextracted text scanner (warnings only, scans `src/` and `client/`)
 // ---------------------------------------------------------------------------
 console.log('\n--- 5. Unextracted Text Scanner (Warnings) ---');
 const skippedTemplatePatterns = [/©/, /^[0-9]+$/, /^[\s|·/–—↑←→]+$/];
@@ -561,7 +578,10 @@ function scanAstro(dir) {
   return files;
 }
 
-for (const file of scanAstro(path.join(rootDir, 'src'))) {
+for (const file of [
+  ...scanAstro(path.join(rootDir, 'src')),
+  ...scanAstro(path.join(rootDir, 'client')),
+]) {
   const content = fs.readFileSync(file, 'utf-8');
   const template = content.replace(/^---[\s\S]*?---/, '');
 
@@ -589,7 +609,7 @@ if (warningCount === 0) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. RTL Logical Property & Reveal Vector Guard (AGENTS.md Rules 4 & 10)
+// 6. RTL Logical Property & Reveal Vector Guard (`src/` and `client/`)
 // ---------------------------------------------------------------------------
 console.log('\n--- 6. RTL Logical Property Guard ---');
 const FORBIDDEN_PHYSICAL_CLASS =
@@ -616,7 +636,10 @@ function scanRtlSources(dir) {
 }
 
 let rtlViolations = 0;
-for (const file of scanRtlSources(path.join(rootDir, 'src'))) {
+for (const file of [
+  ...scanRtlSources(path.join(rootDir, 'src')),
+  ...scanRtlSources(path.join(rootDir, 'client')),
+]) {
   const raw = fs.readFileSync(file, 'utf-8');
   const source = file.endsWith('.mdx') ? raw.replace(/```[\s\S]*?```/g, '') : raw;
   const relative = path.relative(rootDir, file);

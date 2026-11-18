@@ -20,8 +20,10 @@ import Button from '@/components/Button.astro';
 import Icon from '@/components/Icon.astro';
 import DrawerNavLink from '@/components/DrawerNavLink.astro';
 import DrawerSearch from '@/components/DrawerSearch.astro';
+import LayoutHooks from '@client/LayoutHooks.astro';
 import '@/styles/global.css';
 import '@/styles/prose.css';
+import '@client/styles.css';
 
 interface Props {
   title: string;
@@ -251,6 +253,7 @@ const structuredData = schema ?? {
       prevUrl={prevUrl}
       nextUrl={nextUrl}
     />
+    <LayoutHooks slot="head" locale={locale} url={url} />
   </head>
   <body
     data-copy-label={m.common_copy_code({}, { locale })}
@@ -282,6 +285,7 @@ const structuredData = schema ?? {
             class="flex min-w-0 items-center gap-2 font-bold text-base tracking-tight transition-colors hover:text-primary sm:text-lg"
           >
             <span class="truncate">{siteName}</span>
+            <LayoutHooks slot="brand-badge" locale={locale} url={url} />
           </a>
 
           <nav
@@ -444,6 +448,8 @@ const structuredData = schema ?? {
                 )
               }
             </div>
+
+            <LayoutHooks slot="header-actions" locale={locale} url={url} />
 
             <IconButton
               icon="menu"
@@ -750,6 +756,7 @@ const structuredData = schema ?? {
 
     <footer class="border-t border-border bg-surface mt-auto pt-12 pb-8">
       <div class="layout-container">
+        <LayoutHooks slot="footer-top" locale={locale} url={url} />
         <!-- Multi-Column Footer Navigation Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 pb-10 border-b border-border/80">
           <!-- Column 1: Brand & Tagline -->
@@ -833,6 +840,7 @@ const structuredData = schema ?? {
             )
           }
         </div>
+        <LayoutHooks slot="footer-bottom" locale={locale} url={url} />
       </div>
     </footer>
 

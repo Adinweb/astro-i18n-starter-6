@@ -2,19 +2,16 @@
 /**
  * Switches the project into single-language (solo) mode on the chosen locale.
  *
- * The chosen locale becomes `DEFAULT_LOCALE` / `baseLocale`, and every other
- * registered locale is unregistered. By default (`--keep-content`), removed
- * dictionaries and `.mdx` content files are safely archived under
- * `.locale-archive/<locale>/` so `audit:i18n` and `astro build` pass cleanly
- * while allowing instant restoration via `pnpm run i18n:add-lang <locale>`.
+ * Updates `client/locales.json` and optionally archives removed locale overrides
+ * and `.mdx` content files under `.locale-archive/<locale>/`.
  *
  * Usage:
- *   pnpm run i18n:solo <locale-code> [--keep-content|--delete-content] [--allow-draft] [--force]
+ *   npm run i18n:solo -- <locale-code> [--keep-content|--delete-content] [--allow-draft] [--force]
  */
 import fs from 'node:fs';
-import path from 'node:path';
 import { askYesNo, confirmDeletion } from './lib/prompt.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
+import { localeConfigPathFor, readLocaleConfig } from './lib/locales.mjs';
 import { switchToSingleLocale } from './lib/locale-mutations.mjs';
 
 const args = process.argv.slice(2);
@@ -32,20 +29,20 @@ if (args.includes('--delete-content') || args.includes('--with-content')) {
 
 if (wantsHelp || !targetLocale) {
   console.log(
-    'Usage: pnpm run i18n:solo <locale-code> [--keep-content|--delete-content] [--allow-draft] [--force]'
+    'Usage: npm run i18n:solo -- <locale-code> [--keep-content|--delete-content] [--allow-draft] [--force]'
   );
   process.exit(wantsHelp ? 0 : 1);
 }
 
 const rootDir = process.cwd();
-const inlangPath = path.join(rootDir, 'project.inlang', 'settings.json');
-if (!fs.existsSync(inlangPath)) {
-  console.error('❌ Missing project.inlang/settings.json.');
+const localesPath = localeConfigPathFor(rootDir);
+if (!fs.existsSync(localesPath)) {
+  console.error('❌ Missing client/locales.json.');
   process.exit(1);
 }
 
-const inlangSettings = JSON.parse(fs.readFileSync(inlangPath, 'utf-8'));
-const otherLocales = inlangSettings.locales.filter((loc) => loc !== targetLocale);
+const localeConfig = readLocaleConfig(rootDir);
+const otherLocales = localeConfig.locales.filter((loc) => loc !== targetLocale);
 
 if (!keepContent && otherLocales.length > 0) {
   if (!force && !process.stdin.isTTY) {
@@ -56,7 +53,7 @@ if (!keepContent && otherLocales.length > 0) {
     process.exit(1);
   }
   const confirmed = await confirmDeletion({
-    question: `⚠️ Permanently delete dictionaries and content files for [${otherLocales.join(', ')}]? (y/n) [default: n]: `,
+    question: `⚠️ Permanently delete client dictionaries and content files for [${otherLocales.join(', ')}]? (y/n) [default: n]: `,
     force,
   });
   if (!confirmed) {
@@ -96,16 +93,14 @@ try {
   }
 
   if (result.defaultChanged) {
-    console.log(`✅ Switched DEFAULT_LOCALE / baseLocale to "${targetLocale}".`);
+    console.log(`✅ Switched defaultLocale to "${targetLocale}" in client/locales.json.`);
   }
   if (result.removedLocales.length > 0) {
-    console.log(
-      `✅ Unregistered locale(s): ${result.removedLocales.join(', ')}.`
-    );
+    console.log(`✅ Unregistered locale(s): ${result.removedLocales.join(', ')}.`);
   }
   if (keepContent && result.archivedContentFiles.length > 0) {
     console.log(
-      `📦 Archived ${result.archivedContentFiles.length} content file(s) and dictionary backup(s) under .locale-archive/.`
+      `📦 Archived ${result.archivedContentFiles.length} content file(s) and client dictionary backup(s) under .locale-archive/.`
     );
   } else if (!keepContent && result.deletedContentFiles.length > 0) {
     console.log(`🗑️ Deleted ${result.deletedContentFiles.length} content file(s).`);
@@ -113,7 +108,7 @@ try {
   console.log(
     `🎉 Site is now configured in single-language mode (${result.meta.name ?? targetLocale}, dir=${result.meta.dir ?? 'ltr'})!`
   );
-  console.log('   Next: run `pnpm run audit:i18n && pnpm run build && pnpm run smoke` to verify.');
+  console.log('   Next: run `npm run audit:i18n && npm run build && npm run smoke` to verify.');
 } catch (error) {
   console.error('❌', error instanceof Error ? error.message : String(error));
   process.exit(1);

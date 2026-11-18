@@ -3,6 +3,7 @@
 @import '@fontsource-variable/noto-sans-arabic';
 @import 'lenis/dist/lenis.css';
 @import 'tailwindcss';
+@source "../../client";
 @import './chronotrig.css';
 
 /*

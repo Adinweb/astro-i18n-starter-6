@@ -1,0 +1,38 @@
+---
+/**
+ * Client icon renderer extension point.
+ * Import per-icon modules from `@tabler/icons-astro/dist/esm/icons/<name>.mjs`
+ * and add them to `ICONS` matching names declared in `client/icons.ts`.
+ */
+interface Props {
+  name: string;
+  size?: number | string;
+  class?: string;
+  'aria-hidden'?: boolean | 'true' | 'false';
+  'aria-label'?: string;
+}
+
+const ICONS: Record<string, any> = {};
+
+const {
+  name,
+  size = 20,
+  class: className = '',
+  'aria-hidden': ariaHidden = true,
+  'aria-label': ariaLabel,
+} = Astro.props;
+
+const IconComponent = ICONS[name];
+---
+
+{
+  IconComponent && (
+    <IconComponent
+      size={size}
+      class={className}
+      aria-hidden={ariaLabel ? undefined : ariaHidden}
+      aria-label={ariaLabel}
+      role={ariaLabel ? 'img' : 'presentation'}
+    />
+  )
+}

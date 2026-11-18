@@ -26,18 +26,18 @@ npm run site:init -- [--name="Acme Studio"] [--short-name="Acme"] [--desc="..."]
   [--cta-page=<key>] [--github=...] [--twitter=...] [--linkedin=...] [--instagram=...] [--telegram=...] \
   [--skip-assets] [--yes]
 ```
-* Updates `app.config.json`, keeps `site_description` synchronized in the active default dictionary, optionally switches default/solo locale mode, and refreshes brand icons / `og-default.png` unless `--skip-assets` is passed. Runs interactively when stdin is a TTY or completely headlessly with `--yes`.
+* Updates `client/config.json` (sparse diff against `app.config.json`), keeps `site_description` synchronized in `client/messages/<targetLocale>.json`, optionally switches default/solo locale mode in `client/locales.json`, and refreshes brand icons / `og-default.png` unless `--skip-assets` is passed. Runs interactively when stdin is a TTY or completely headlessly with `--yes`.
 
 ### 2.1 Static Pages (`new:page`)
 ```bash
 npm run new:page <page-key> -- [--title="<Title>"] [--desc="<Desc>"] [--from=<locale>] [--preset=standard|landing] [--hero=none|minimal|default] [--container=canvas|contained|prose] [--image=<path>|none] [--publish] [--slug:<locale>="<native-slug>"]
 ```
-* **Files Created**: `src/content/pages/<page-key>/<locale>.mdx` across all active locales in `src/i18n/locales.ts` (`en.mdx`, `fa.mdx` out of the box) + `./<page-key>.png`.
+* **Files Created**: `src/content/pages/<page-key>/<locale>.mdx` across all active locales in `client/locales.json` (`en.mdx`, `fa.mdx` out of the box) + `./<page-key>.png`.
 * **Three Presentation Layers**:
   - Content schema (`src/content.config.ts`): `hero: 'none'`, `container: 'canvas'`.
   - Standard CLI scaffold (`--preset=standard`, default): `hero: 'default'`, `container: 'contained'`.
   - Landing preset (`--preset=landing`): `hero: 'none'`, `container: 'canvas'`, `flushTop: true` — scaffolds an MDX landing page composed with `<LandingHeroSplit>`, `<ProofStatsRow>`, `<BentoCapabilities>`, `<FaqAccordion>`, and `<CtaBanner>`.
-* **Dictionary Key**: Automatically registers `nav_<page-key>` across all dictionaries in `messages/*.json` and prints the follow-up. The key is only a label — the page appears in a menu once it is added to `PAGE_ITEMS` (header + drawer) or to `getFooterNavigation` / `getLegalNavigation` in `src/libs/config/navigation.ts`.
+* **Dictionary Key**: Automatically registers `nav_<page-key>` across `client/messages/*.json` and prints the follow-up. The key is only a label — the page appears in a menu once it is added to `CLIENT_PAGE_ITEMS` (header + drawer) or to `getClientFooterColumns` / `getClientLegalNavigation` in `client/navigation.ts`.
 * **Publication State**:
   - Default: Only the source locale (`--from`, defaults to `DEFAULT_LOCALE`) is published (`draft: false`); other locales remain `draft: true` until translated.
   - `--publish` / `--draft=false`: Publishes locales that have real translations. Locales retaining `[TODO: ...]` placeholders remain drafts. The body is still the localized "content coming soon" sentence, so the command warns and `npm run smoke` fails while that sentence is in `dist/`.
@@ -76,7 +76,7 @@ npm run remove:page <page-key> -- --locale=fa --force
 ```
 * When `--locale` is used, the navigation key **remains** in dictionaries to maintain invariant key parity across all languages.
 * In non-interactive environments (CI), `--force` (or `-y` / `--yes`) is mandatory.
-* A whole-group removal deletes `nav_<key>` and recompiles Paraglide. Because the footer's pages column is derived from `PAGE_ITEMS`, the remaining step is removing the group's `PAGE_ITEMS` entry: the command scans `src/` for surviving `m.nav_<key>(` calls and lists the files to fix, so a dangling key fails loudly here instead of breaking the next build with an undefined message.
+* A whole-group removal deletes `nav_<key>` and recompiles Paraglide. Because the footer's pages column is derived from `CLIENT_PAGE_ITEMS` (`client/navigation.ts`), the remaining step is removing the group's entry there: the command scans `src/` and `client/` for surviving `m.nav_<key>(` calls and lists the files to fix, so a dangling key fails loudly here instead of breaking the next build with an undefined message.
 
 ### 3.2 Removing Posts (`remove:post`)
 ```bash
@@ -95,11 +95,10 @@ npm run remove:post <group-slug> -- --locale=fa --force
 ```bash
 npm run i18n:add-lang -- <locale> --name="<Display Name>" [--dir="ltr|rtl"] --with-content --from=en
 ```
-* Updates `project.inlang/settings.json`.
-* Creates `messages/<locale>.json` with parity placeholders.
-* Updates `src/i18n/locales.ts` (`LOCALES`, `LOCALE_METADATA`).
+* Updates `client/locales.json` (`locales`, `metadata`).
+* Creates `client/messages/<locale>.json` (preserving core fallback behavior).
 * Generates `<locale>.mdx` files across all pages and blog posts.
-* Runs Paraglide compilation.
+* Merges core + client dictionaries into `.paraglide-work/` and runs Paraglide compilation.
 
 ### 4.2 Removing a Language (`i18n:remove-lang`)
 ```bash
@@ -110,15 +109,15 @@ npm run i18n:remove-lang -- <locale> --with-content --force
 ```bash
 npm run i18n:set-default <locale> [--allow-draft]
 ```
-* Updates `DEFAULT_LOCALE` in `src/i18n/locales.ts`, `baseLocale` in `project.inlang/settings.json`, and recompiles Paraglide messages so `<locale>` takes over root `/` URLs without prefix.
+* Updates `defaultLocale` and ordering in `client/locales.json`, and recompiles Paraglide messages so `<locale>` takes over root `/` URLs without prefix.
 
 ### 4.4 Single-Language Client Mode (`ui.showLanguageSwitcher: false` or optional `i18n:solo`)
-* **Recommended zero-structural-change option**: Set `"showLanguageSwitcher": false` under `"ui"` in `app.config.json` (combined with `npm run i18n:set-default <locale>` if the root `/` site should use another locale such as `fa`). All existing files stay intact without touching routes or dictionaries.
+* **Recommended zero-structural-change option**: Set `"ui": { "showLanguageSwitcher": false }` in `client/config.json` (combined with `npm run i18n:set-default <locale>` if the root `/` site should use another locale such as `fa`). All existing files stay intact without touching routes or dictionaries.
 * **Optional strict solo archive (`i18n:solo`)**:
   ```bash
   npm run i18n:solo <locale> [--keep-content|--delete-content] [--allow-draft] [--force]
   ```
-  Switches `DEFAULT_LOCALE`/`baseLocale` to `<locale>`, unregisters every other locale so alternate prefixes are omitted from `dist/` and `sitemap.xml`, and archives inactive dictionaries and `.mdx` files under `.locale-archive/<locale>/` (restorable cleanly with `i18n:add-lang`).
+  Switches `defaultLocale` to `<locale>` in `client/locales.json`, unregisters every other locale so alternate prefixes are omitted from `dist/` and `sitemap.xml`, and archives inactive client dictionaries and `.mdx` files under `.locale-archive/<locale>/` (restorable cleanly with `i18n:add-lang`).
 
 ---
 
@@ -165,7 +164,7 @@ node scripts/index-pagefind.mjs [--site=dist]
 
 ## 6. Content-Type Management (`content:*`)
 
-Every command reads the registry from `app.config.json` through `scripts/lib/content-types.mjs`, so the CLI and the build can never disagree about which collections exist.
+Every command reads merged config (`app.config.json` + `client/config.json`) and custom client collections (`client/content.ts`) through `scripts/lib/content-types.mjs`, so the CLI and the build can never disagree about which collections exist.
 
 ### 6.1 Inspect (`content:list`)
 ```bash
@@ -179,12 +178,19 @@ Prints each type's route base, enable state, `index`/`paginated`/`nav` flags, gr
 npm run content:disable projects
 npm run content:enable projects
 ```
-* Flips `content.types.<type>.enabled` and rewrites `app.config.json` with its own indentation and line endings, so the diff is one line.
+* Writes sparse overrides (`content.types.<type>.enabled`) to `client/config.json` without mutating upstream `app.config.json`.
 * A disabled type loses its index/entry routes, sitemap entries, navigation links and the home-page CTA on the next build. **Content files are never touched**, so re-enabling restores the section.
 * `pages` is refused (it owns the home page); unknown keys are refused with the list of known types.
 * Static `/api/blog-posts.json` and `/rss.xml` keep working when `blog` is disabled, deliberately, so external consumers do not break.
 
-### 6.3 Scaffold any type (`content:new`)
+### 6.3 Starter Demo Package (`starter:seed`) & Upstream Check (`upstream:check`)
+```bash
+npm run starter:seed                 # Seed optional starter-kit/ pages, posts, projects, assets & nav
+npm run starter:seed -- --clean --yes # Remove seeded demo items and return to clean minimal base state
+npm run upstream:check               # Verify two-tier config, messages, locales, and core/client hooks
+```
+
+### 6.4 Scaffold any type (`content:new`)
 ```bash
 npm run content:new <type> <slug> -- [--title="<Title>"] [--desc="<Desc>"] \
   [--from=<locale>] [--slug:<locale>="<native-slug>"] [--image=cover.png|none] [--publish]

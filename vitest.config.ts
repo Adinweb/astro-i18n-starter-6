@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@client': path.resolve(__dirname, './client'),
       'astro:content': path.resolve(__dirname, './src/test/astro-content-mock.ts'),
     },
   },

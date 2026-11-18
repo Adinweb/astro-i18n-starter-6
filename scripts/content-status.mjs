@@ -12,11 +12,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  KNOWN_TYPES,
   contentDirFor,
   contentTypeKeyError,
   countTodos,
   countWords,
+  getKnownTypes,
   groupDirs,
   readContentTypes,
   rootDir,
@@ -40,6 +40,7 @@ if (typeFilter) {
 
 const { locales, defaultLocale } = readLocaleConfig();
 const WORDS_PER_MINUTE = 200;
+const knownTypes = getKnownTypes(rootDir);
 
 function entryFile(groupDir, locale) {
   for (const extension of ['mdx', 'md']) {
@@ -52,7 +53,7 @@ function entryFile(groupDir, locale) {
 const report = [];
 
 for (const type of readContentTypes()) {
-  if (!KNOWN_TYPES.includes(type.key)) continue;
+  if (!knownTypes.includes(type.key)) continue;
   if (typeFilter && type.key !== typeFilter) continue;
 
   const dir = contentDirFor(type.key);

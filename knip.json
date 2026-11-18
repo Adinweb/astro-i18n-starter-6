@@ -3,18 +3,21 @@
   "entry": [
     "src/pages/**/*.{astro,ts}",
     "src/content/**/*.mdx",
+    "client/**/*.{astro,ts}",
     "src/components/{HomeHero,SectionHeader,ComponentDoc,UiBadge,UiAlert,AvatarGroup,Breadcrumbs,UiPagination,UiModal,UiTooltip,UiProgress,UiSwitch,UiCheckbox,UiInput,UiDropdown,SocialLinks,LandingHeroSplit,BentoCapabilities,ProofStatsRow,FaqAccordion,CtaBanner,PricingSection,TestimonialGrid,TeamSection,PartnerLogos,NewsletterBanner,PromoBanner,AboutSplitSection,ProcessSteps,FeatureTabsSection,ComparisonTable,FeatureCardGrid,ImageGallerySection,LatestPostsSection,ContactSplitSection,CarouselSection,ProductShowcaseGrid,AuthFormCard}.astro",
     "scripts/**/*.mjs",
     "src/**/*.test.ts"
   ],
   "project": [
     "src/**/*.{astro,ts,tsx,js,mdx,css}",
+    "client/**/*.{astro,ts,tsx,js,mdx,css}",
     "scripts/**/*.mjs"
   ],
   "ignore": [
     "src/test/**"
   ],
   "ignoreDependencies": [
+    "@inlang/paraglide-js",
     "@inlang/plugin-message-format",
     "@inlang/plugin-m-function-matcher"
   ]

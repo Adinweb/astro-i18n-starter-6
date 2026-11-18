@@ -1,8 +1,10 @@
-export const LOCALES = ['en', 'fa'] as const;
+import clientLocales from '../../client/locales.json';
 
-export type Locale = (typeof LOCALES)[number];
+export type Locale = import('@/paraglide/runtime').Locale;
 
-export const DEFAULT_LOCALE: Locale = 'en';
+export const LOCALES = clientLocales.locales as readonly Locale[];
+
+export const DEFAULT_LOCALE: Locale = clientLocales.defaultLocale as Locale;
 
 export function isLocale(value: string): value is Locale {
   return (LOCALES as readonly string[]).includes(value);
@@ -15,20 +17,8 @@ export interface LocaleMeta {
   fontFamily: string;
 }
 
-export const LOCALE_METADATA = {
-  en: {
-    dir: 'ltr',
-    htmlLang: 'en',
-    name: 'English',
-    fontFamily: 'var(--font-sans)',
-  },
-  fa: {
-    dir: 'rtl',
-    htmlLang: 'fa',
-    name: 'فارسی',
-    fontFamily: 'var(--font-fa)',
-  },
-} satisfies Record<Locale, LocaleMeta>;
+export const LOCALE_METADATA: Record<Locale, LocaleMeta> =
+  clientLocales.metadata as Record<Locale, LocaleMeta>;
 
 export function getLocaleMeta(locale: Locale): LocaleMeta {
   return LOCALE_METADATA[locale];

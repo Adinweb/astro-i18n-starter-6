@@ -20,7 +20,7 @@ const wantsJson = process.argv.includes('--json');
 const { locales, defaultLocale } = readLocaleConfig();
 
 if (locales.length === 0) {
-  console.error('❌ Could not read LOCALES from src/i18n/locales.ts');
+  console.error('❌ Could not read locales from client/locales.json');
   process.exit(1);
 }
 
@@ -75,7 +75,7 @@ if (wantsJson) {
   process.exit(0);
 }
 
-console.log('📦 Content types (app.config.json → content.types)\n');
+console.log('📦 Content types (app.config.json + client/config.json → content.types)\n');
 
 const pad = (value, width) => String(value).padEnd(width);
 const keyWidth = Math.max(6, ...report.map((type) => type.key.length));

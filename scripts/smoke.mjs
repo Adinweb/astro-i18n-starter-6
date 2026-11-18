@@ -3,19 +3,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLocaleConfig } from './lib/locales.mjs';
+import { readMergedConfig } from './lib/config.mjs';
 import { contentStub, postStub } from './lib/content-stub.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const distDir = path.resolve(rootDir, 'dist');
-const appConfig = JSON.parse(
-  fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8')
-);
+const appConfig = readMergedConfig(rootDir);
 
 console.log('🧪 Starting Smoke Test Suite over dist/ ...\n');
 
 if (!fs.existsSync(distDir)) {
-  console.error('❌ dist/ directory not found! Run "pnpm build" first.');
+  console.error('❌ dist/ directory not found! Run "npm run build" first.');
   process.exit(1);
 }
 
@@ -68,18 +67,13 @@ function htmlAttributes(html) {
   return attributes;
 }
 
-const settings = JSON.parse(
-  fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
-);
-const LOCALES = settings.locales;
-const DEFAULT_LOCALE = settings.baseLocale || 'en';
-
 /**
- * Text direction per locale, read from `src/i18n/locales.ts` (the SSOT). The
- * smoke test must not keep a second list of RTL languages that can drift from
- * the metadata the site is built with.
+ * Locales and direction metadata are read directly from `client/locales.json` (SSOT).
  */
-const { metadata: LOCALE_METADATA } = readLocaleConfig();
+const localeConfig = readLocaleConfig(rootDir);
+const LOCALES = localeConfig.locales;
+const DEFAULT_LOCALE = localeConfig.defaultLocale || 'en';
+const LOCALE_METADATA = localeConfig.metadata;
 const LOCALE_DIRECTIONS = Object.fromEntries(
   Object.entries(LOCALE_METADATA).map(([locale, meta]) => [locale, meta.dir])
 );
@@ -97,12 +91,35 @@ const blogIndex = blogEnabled && blogType.index !== false;
 const blogPaginated = blogIndex && blogType.paginated !== false;
 const blogFeed = blogEnabled && blogType.feed === true;
 
+/** Published (non-draft) posts of one locale, counted from the content source. */
+function countPublishedPosts(locale) {
+  const blogRootDir = path.join(rootDir, 'src', 'content', 'blog');
+  if (!fs.existsSync(blogRootDir)) return 0;
+
+  let total = 0;
+  for (const group of fs.readdirSync(blogRootDir, { withFileTypes: true })) {
+    if (!group.isDirectory()) continue;
+
+    const file = path.join(blogRootDir, group.name, `${locale}.mdx`);
+    if (!fs.existsSync(file)) continue;
+
+    const raw = fs.readFileSync(file, 'utf-8');
+    const frontmatter = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (frontmatter && /^\s*draft:\s*true\s*$/m.test(frontmatter[1])) continue;
+
+    total += 1;
+  }
+  return total;
+}
+
+const totalPublishedPosts = LOCALES.reduce((sum, locale) => sum + countPublishedPosts(locale), 0);
+
 // A locale without a direction is a configuration error, not a default: the
 // direction checks below would silently pass on a page whose `dir` is wrong.
 for (const locale of LOCALES) {
   assert(
     LOCALE_DIRECTIONS[locale] === 'ltr' || LOCALE_DIRECTIONS[locale] === 'rtl',
-    `Locale "${locale}" declares a direction in src/i18n/locales.ts`
+    `Locale "${locale}" declares a direction in client/locales.json`
   );
 }
 
@@ -338,13 +355,20 @@ if (sitemap) {
       `Sitemap includes hreflang="${locale}"`
     );
   }
-  assert(sitemap.includes('<lastmod>'), 'Sitemap includes lastmod timestamps');
-  if (blogIndex) {
+  if (totalPublishedPosts > 0) {
+    assert(sitemap.includes('<lastmod>'), 'Sitemap includes lastmod timestamps');
+    if (blogIndex) {
+      assert(
+        new RegExp(`<loc>[^<]*\\/${blogBase}\\/<\\/loc>[\\s\\S]*?<lastmod>[^<]+<\\/lastmod>[\\s\\S]*?<\\/url>`).test(
+          sitemap
+        ),
+        'Sitemap emits lastmod timestamps for blog index routes'
+      );
+    }
+  } else {
     assert(
-      new RegExp(`<loc>[^<]*\\/${blogBase}\\/<\\/loc>[\\s\\S]*?<lastmod>[^<]+<\\/lastmod>[\\s\\S]*?<\\/url>`).test(
-        sitemap
-      ),
-      'Sitemap emits lastmod timestamps for blog index routes'
+      sitemap.includes('<urlset') && sitemap.includes('<url>'),
+      'Sitemap emits valid URL entries when no dated entries exist'
     );
   }
 }
@@ -353,7 +377,13 @@ if (blogFeed) {
   assert(fs.existsSync(path.join(distDir, 'rss.xml')), 'dist/rss.xml exists');
   const rss = readHtml('rss.xml');
   if (rss) {
-    assert(rss.includes('<feed') && rss.includes('<entry'), 'RSS feed contains entries');
+    const defaultPostCount = countPublishedPosts(DEFAULT_LOCALE);
+    assert(
+      rss.includes('<feed') && (defaultPostCount === 0 || rss.includes('<entry')),
+      defaultPostCount > 0
+        ? 'RSS feed contains entries'
+        : 'RSS feed builds valid empty Atom feed when no default-locale posts exist'
+    );
     assert(
       rss.includes(`xml:lang="${htmlLangFor(DEFAULT_LOCALE)}"`),
       `Default RSS feed declares xml:lang="${htmlLangFor(DEFAULT_LOCALE)}"`
@@ -396,18 +426,18 @@ const manifest = readHtml('site.webmanifest');
 if (manifest) {
   try {
     const data = JSON.parse(manifest);
-    assert(data.name === appConfig.site.name, 'Manifest name matches app.config.json');
+    assert(data.name === appConfig.site.name, 'Manifest name matches merged site config');
     assert(
       data.short_name === appConfig.site.shortName,
-      'Manifest short_name matches app.config.json'
+      'Manifest short_name matches merged site config'
     );
     assert(
       data.theme_color === appConfig.brand.themeColor,
-      'Manifest theme_color matches app.config.json'
+      'Manifest theme_color matches merged site config'
     );
     assert(
       data.background_color === appConfig.brand.backgroundColor,
-      'Manifest background_color matches app.config.json'
+      'Manifest background_color matches merged site config'
     );
     assert(
       data.lang === (LOCALE_METADATA[DEFAULT_LOCALE]?.htmlLang ?? DEFAULT_LOCALE) &&
@@ -416,7 +446,7 @@ if (manifest) {
     );
     assert(
       Array.isArray(data.icons) && data.icons.length === appConfig.brand.icons.length,
-      'Manifest icons match app.config.json'
+      'Manifest icons match merged site config'
     );
     assert(
       appConfig.brand.icons.every((icon) =>
@@ -424,7 +454,7 @@ if (manifest) {
           (entry) => entry.src === `/${icon.file}` && entry.sizes === `${icon.size}x${icon.size}`
         )
       ),
-      'Manifest icon files and sizes match app.config.json'
+      'Manifest icon files and sizes match merged site config'
     );
   } catch {
     assert(false, 'Manifest is valid JSON');
@@ -590,8 +620,10 @@ if (blogCatalog) {
     const items = JSON.parse(blogCatalog);
     if (blogEnabled) {
       assert(
-        Array.isArray(items) && items.length > 0,
-        'Static blog catalog contains published post entries'
+        Array.isArray(items) && (totalPublishedPosts === 0 ? items.length === 0 : items.length > 0),
+        totalPublishedPosts > 0
+          ? 'Static blog catalog contains published post entries'
+          : 'Static blog catalog is valid empty array when no posts exist'
       );
       assert(
         items.every(
@@ -785,27 +817,6 @@ assert(
 // 7. Blog pagination: generated page routes, pager markup and rel=prev/next
 // ---------------------------------------------------------------------------
 const postsPerPage = appConfig.blog.postsPerPage;
-
-/** Published (non-draft) posts of one locale, counted from the content source. */
-function countPublishedPosts(locale) {
-  const blogRoot = path.join(rootDir, 'src', 'content', 'blog');
-  if (!fs.existsSync(blogRoot)) return 0;
-
-  let total = 0;
-  for (const group of fs.readdirSync(blogRoot, { withFileTypes: true })) {
-    if (!group.isDirectory()) continue;
-
-    const file = path.join(blogRoot, group.name, `${locale}.mdx`);
-    if (!fs.existsSync(file)) continue;
-
-    const raw = fs.readFileSync(file, 'utf-8');
-    const frontmatter = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-    if (frontmatter && /^\s*draft:\s*true\s*$/m.test(frontmatter[1])) continue;
-
-    total += 1;
-  }
-  return total;
-}
 
 /** The public URL of one page of a locale's blog index. */
 function expectedBlogPath(locale, page) {

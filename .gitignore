@@ -31,3 +31,5 @@ coverage/
 
 # paraglide generated files
 src/paraglide/
+.paraglide-work/
+.locale-archive/

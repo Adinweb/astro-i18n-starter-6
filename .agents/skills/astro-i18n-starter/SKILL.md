@@ -9,26 +9,27 @@ This skill coordinates workflows for developing, maintaining, and extending this
 
 ## Core Directives & Prime Invariants
 
-1. **One Source of Truth (SSOT)**:
-   - Locales & directions: `src/i18n/locales.ts` and `project.inlang/settings.json`.
+1. **One Source of Truth (SSOT) & Three-Tier Separation**:
+   - **Core (`src/`, `app.config.json`, `messages/core/`, `scripts/`)** vs **Client Workspace (`client/`)** vs **Optional Demo (`starter-kit/`)**. Client changes live in `client/` so upstream updates merge cleanly.
+   - Locales & directions: `client/locales.json` (exposed by `src/i18n/locales.ts`).
    - Paths & URLs: `src/i18n/paths.ts` (`localizeHref`, `localeHref`, `stripLocale`).
-   - Content schemas: `src/content.config.ts`.
-   - Content types (`pages`, `blog`, `projects`): `app.config.json` → `content.types`, validated by `src/libs/content/types.ts` (`enabled`, `base`, `index`, `paginated`, `feed`, `nav`). Toggle with `pnpm run content:enable|disable <type>`; never delete a collection to hide a section.
-   - Navigation slots: `src/libs/config/navigation.ts` (`PAGE_ITEMS` → `buildPrimaryNavigation` shared by the header **and** the drawer, plus `getFooterNavigation` / `getLegalNavigation`, all distributed by `getNavigationSlots`). The header/drawer CTA target is `ui.ctaPage` in `app.config.json` (hides itself if unpublished). Set `ui.showLanguageSwitcher: false` for single-language sites without structural deletion.
-   - Application, brand theme presets, cookie & external API config: `app.config.json` -> `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`) and `src/libs/config/theme.ts` + `theme-presets.json`.
+   - Content schemas: `src/content.config.ts` (spreads `clientCollections` from `client/content.ts`).
+   - Content types (`pages`, `blog`, `projects`, plus client collections): `app.config.json` merged with `client/config.json` → `content.types`, validated by `src/libs/content/types.ts` (and `CLIENT_CONTENT_TYPES` in `client/content.ts`). Toggle with `npm run content:enable|disable <type>`; never delete a collection to hide a section.
+   - Navigation slots: `client/navigation.ts` (`CLIENT_PAGE_ITEMS`, `getClientPrimaryExtras`, `getClientFooterColumns`, `getClientLegalNavigation`) distributed via `src/libs/config/navigation.ts` (`getNavigationSlots`). The header/drawer CTA target is `ui.ctaPage` in merged config (hides itself if unpublished). Set `ui.showLanguageSwitcher: false` in `client/config.json` for single-language sites without structural deletion.
+   - Application, brand theme presets, cookie & external API config: `app.config.json` + `client/config.json` -> `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`) and `src/libs/config/theme.ts` + `theme-presets.json`.
    - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs`, `src/libs/search/persian.ts`, and `src/libs/search/client.ts`.
    - Pure SSG External APIs (Zero Backend): `src/libs/api/client.ts` + `src/components/ContactForm.astro` + `src/components/NewsletterBanner.astro`. Never add a backend server or SSR endpoints; `/api/*.json` routes are static build-time catalogs only.
-   - Semantic tokens & `.layout-container` (`1280px`): `src/styles/global.css`.
-   - UI copy: Compiled Paraglide messages (`import * as m from '@/paraglide/messages'`). Never hardcode UI text.
+   - Semantic tokens & `.layout-container` (`1280px`): `src/styles/global.css` + client CSS tokens in `client/styles.css`.
+   - UI copy: Two-tier Paraglide dictionaries (`messages/core/*.json` + `client/messages/*.json`) merged into `.paraglide-work/` and compiled to `@/paraglide/messages`. Never hardcode UI text.
 2. **Lean Router Dispatcher**:
    - Centralized exclusively in `src/pages/[...path].astro` -> `src/views/`. Never create dynamic route files (`[lang].astro`, `[slug].astro`) under `src/pages/`.
    - `pages` → `PageView`, `blog-entry` → `BlogPostView`, `blog-index` → `BlogIndexView`; every other enabled type (e.g. `projects`) uses the generic `CollectionIndexView` / `CollectionEntryView` with `routeType` `collection-index` / `collection-entry`.
 3. **Prefix-less Default Locale & Single-Language Option**:
-   - Default locale (`en` out of the box, swappable via `npm run i18n:set-default`) has NO prefix (`/`, `/about/`, `/blog/first-post/`). Non-default locales (`fa`, plus `ar`, `de`, `fr`, etc. via `i18n:add-lang`) have prefixes (`/fa/درباره-ما/`). For single-language launches without structural changes, set `ui.showLanguageSwitcher: false` in `app.config.json` (or optionally archive other locales with `npm run i18n:solo`).
+   - Default locale (`en` out of the box, swappable via `npm run i18n:set-default`) has NO prefix (`/`, `/about/`, `/blog/first-post/`). Non-default locales (`fa`, plus `ar`, `de`, `fr`, etc. via `i18n:add-lang`) have prefixes (`/fa/درباره-ما/`). For single-language launches without structural changes, set `ui.showLanguageSwitcher: false` in `client/config.json` (or optionally archive other locales with `npm run i18n:solo`).
 4. **RTL-Native Discipline**:
    - Always use CSS logical properties (`ms-`, `me-`, `ps-`, `pe-`, `start-*`, `end-*`, `text-start`, `text-end`, `border-s-*`, `border-e-*`). Never use physical directions.
 5. **Page Design Freedom (canvas pages & 22 PrebuiltUI-adapted blocks)**:
-   - `pages` entries are not locked into one template: the schema defaults to `hero: 'none'` + `container: 'canvas'`, so MDX may compose full-bleed bands (`<PageSection>` plus our 19 section blocks — `LandingHeroSplit`, `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection`, `LatestPostsSection`, `TeamSection`, `FaqAccordion`, `ContactSplitSection`, `NewsletterBanner`, `CtaBanner` — and 3 UI primitives: `UiBadge`, `UiAlert`, `AvatarGroup`, all with `locale` URL auto-fallback and localized defaults), opt into `hero: 'minimal'` / `hero: 'default'`, pick `container: 'contained' | 'prose'`, add `flushTop: true`, or delegate to a shared Astro view via `template: '<name>'` registered in `src/views/PageView.astro` → `PAGE_TEMPLATES`. `blog` posts are the opposite: they always render through `BlogPostView.astro` + `PageHero.astro`. Every page must still render exactly one `<h1>`.
+   - `pages` entries are not locked into one template: the schema defaults to `hero: 'none'` + `container: 'canvas'`, so MDX may compose full-bleed bands (`<PageSection>` plus our 19 section blocks — `LandingHeroSplit`, `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection`, `LatestPostsSection`, `TeamSection`, `FaqAccordion`, `ContactSplitSection`, `NewsletterBanner`, `CtaBanner` — and 3 UI primitives: `UiBadge`, `UiAlert`, `AvatarGroup`, all with `locale` URL auto-fallback and localized defaults), opt into `hero: 'minimal'` / `hero: 'default'`, pick `container: 'contained' | 'prose'`, add `flushTop: true`, or delegate to a shared Astro view via `template: '<name>'` registered in `client/templates/index.ts` → `CLIENT_PAGE_TEMPLATES` (or core templates in `src/views/PageView.astro`). `blog` posts are the opposite: they always render through `BlogPostView.astro` + `PageHero.astro`. Every page must still render exactly one `<h1>`.
 6. **Idempotent Client Scripts**:
    - Guard DOM listeners in Astro components with `if (el.dataset.bound === 'true') return; el.dataset.bound = 'true';`.
 7. **Static Language Switching**:
@@ -60,14 +61,16 @@ To perform work in this repository, identify your specific task and read the ind
 All scripts support both `npm run` and `pnpm run`:
 
 ```bash
-npm run lint          # paraglide compile + astro check + tsc --noEmit
-npm test              # Vitest test suite (24 files, 247 tests)
-npm run audit:i18n    # 6-stage i18n completeness, frontmatter & RTL parity audit
-npm run site:init     # Interactive/headless client branding, fonts, OG mode & module wizard
-npm run build         # Production SSG build + Persian-aware Pagefind indexing
-npm run smoke         # Post-build HTML, SEO, feed & pagination validation over dist/
-npm run doctor        # No-build health check (config, content types, dictionaries, content, SITE_URL)
-npm run link:check    # Crawl dist/ and report internal links or #anchors that resolve to nothing
-npm run content:list  # Content types, route bases, enable state and entry counts
-npm run verify:cli    # 90 end-to-end CLI workflow assertions in isolated sandbox
+npm run lint           # paraglide compile + astro check + tsc --noEmit
+npm test               # Vitest test suite (unit, config, navigation, CLI, blocks)
+npm run upstream:check # Verify core/client separation, hooks, and message/locale parity
+npm run starter:seed   # Install (or --clean) optional demo pages, posts, projects & nav
+npm run audit:i18n     # 6-stage i18n completeness, frontmatter & RTL parity audit (src/ + client/)
+npm run site:init      # Interactive/headless client branding, fonts, OG mode & module wizard
+npm run build          # Production SSG build + Persian-aware Pagefind indexing
+npm run smoke          # Post-build HTML, SEO, feed & pagination validation over dist/
+npm run doctor         # No-build health check (config, content types, dictionaries, content, SITE_URL)
+npm run link:check     # Crawl dist/ and report internal links or #anchors that resolve to nothing
+npm run content:list   # Content types, route bases, enable state and entry counts
+npm run verify:cli     # End-to-end CLI workflow assertions in isolated sandbox
 ```

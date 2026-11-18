@@ -16,9 +16,9 @@ src/content/{collection}/{group}/{locale}.mdx
   - `hero`: `'none' | 'minimal' | 'default' | boolean` (defaults to `'none'` — no forced hero banner).
   - `container`: `'canvas' | 'contained' | 'prose'` (defaults to `'canvas'` — unconstrained `<main>` canvas; `'contained'` uses `.layout-container` (`1280px`) + `.prose-wide`; `'prose'` uses a `72ch` editorial column. Named `container` so it never collides with `@astrojs/mdx`'s reserved `layout` import property).
   - `flushTop`: `boolean` (defaults to `false`; removes header top padding when `hero: 'none'` so custom full-bleed heroes sit under the floating glass header).
-  - `template`: optional key mapped in `src/views/PageView.astro` to a view in `src/views/pages/` (e.g., `'home'`) to render a shared bespoke `.astro` page template across all locales while sourcing localized copy/SEO from MDX.
+  - `template`: optional key mapped in `client/templates/index.ts` (`CLIENT_PAGE_TEMPLATES`) or core `src/views/PageView.astro` to render a shared bespoke `.astro` page template across all locales while sourcing localized copy/SEO from MDX.
 * **`blog`**: Chronological articles requiring `publishedAt` and a non-empty `slug`, rendered uniformly through `BlogPostView.astro` (taxonomy, TOC, related posts, feed).
-* **`projects`**: Case studies/portfolio entries on top of `baseSchema` plus `client`, `year`, `link` and `stack`, rendered through the generic `CollectionEntryView.astro`. Whether it is routed, listed, linked or fed is decided by its `content.types` entry, not by the schema.
+* **`projects`**: Case studies/portfolio entries on top of `baseSchema` plus `client`, `year`, `link` and `stack`, rendered through the generic `CollectionEntryView.astro`. Whether it is routed, listed, linked or fed is decided by its `content.types` entry, not by the schema. (Additional client-specific collections can be exported inside `clientCollections` in `client/content.ts` and are automatically spread into `src/content.config.ts`.)
 * **Group Identity**: The directory name `{group}` is the universal entity identity shared across all locales.
 * **Featured Image**: Specified as a relative path (`./<group>.png`). Astro's `image()` helper resolves the reference at build time, checks file existence, and provides ready-to-use `ImageMetadata` (used for `og:image` social cards and optional `hero: 'default'` banners). A broken path fails the build immediately.
 
@@ -53,7 +53,7 @@ import hero from '../../../assets/hero/hero-0.jpg';
 * `PageSection` renders a `w-full` band with `surface` / `spacing` / `border-*` props and wraps children in `.layout-container` unless `bleed` is set.
 * **22 Composable Corporate, Landing & UI Blocks (PrebuiltUI-Adapted)** live in `src/components/`: 19 section blocks (`LandingHeroSplit`, `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection`, `LatestPostsSection`, `TeamSection`, `FaqAccordion` + `src/libs/content/faq.ts`, `ContactSplitSection`, `NewsletterBanner`, `CtaBanner`) and 3 UI primitives (`UiBadge`, `UiAlert`, `AvatarGroup`), sharing `SectionHeader.astro`, `src/libs/ui/locale.ts`, and `src/libs/ui/initials.ts`. All use semantic OKLCH tokens, CSS logical properties, `<Icon>`, `<Button>`, Paraglide localized defaults (`locale` auto-detects from URL), and ChronoTrig attributes. Pass `contained` on section blocks when nesting them inside a `container: 'contained'` page (`pricing/*.mdx`, etc.) so they skip a redundant `<PageSection>` wrapper.
 * Reuse `.layout-container` (1280px) inside a band for aligned content; omit it for true edge-to-edge media.
-* For repeatable bespoke layouts shared by every locale, create `src/views/pages/<Name>.astro` and register it in the `PAGE_TEMPLATES` map of `src/views/PageView.astro`, then set `template: '<name>'` in frontmatter. The template receives `entry`, `locale`, `alternates`, `url`, and `schema`.
+* For repeatable bespoke client layouts shared by every locale without touching upstream core, create `client/templates/<Name>.astro` and register it in `CLIENT_PAGE_TEMPLATES` inside `client/templates/index.ts` (`src/views/PageView.astro` merges `CLIENT_PAGE_TEMPLATES` over core templates), then set `template: '<name>'` in frontmatter. The template receives `entry`, `locale`, `alternates`, `url`, and `schema`.
 * A canvas page must bring its own bottom spacing (`.layout-container`'s `pb-12 md:pb-16` only applies to contained pages) and must render **exactly one `<h1>`**.
 
 ### 1.3 Zod Validation Rules
@@ -187,7 +187,7 @@ Helpers exported from the same module — use these instead of hardcoding a segm
 * one `collection-entry` route per published entry per locale, with `alternates` built from `getContentTypeEntryHref`;
 * one `collection-index` route per **live** locale when `index` is on — paginated types get the same clamping logic as the blog (`switcherAlternates` never points past a locale's last page).
 
-**Live locales.** A locale is live once at least one entry of it is published — a page, a post or an entry of any other collection. A locale that exists in configuration only gets no section indexes at all (`/de/blog/` is not built for a German dictionary that still holds `[TODO: de]` titles), because those listings would be placeholder copy and would link at a home page that was never built. Declaring a locale therefore never publishes anything: the first translated, published entry is what turns its sections on, and `pnpm run i18n:add-lang` alone cannot produce a broken build.
+**Live locales.** A locale is live once at least one entry of it is published — a page, a post or an entry of any other collection. A locale that exists in configuration only gets no section indexes at all (`/de/blog/` is not built for a German dictionary that still holds `[TODO: de]` titles), because those listings would be placeholder copy and would link at a home page that was never built. Declaring a locale therefore never publishes anything: the first translated, published entry is what turns its sections on, and `npm run i18n:add-lang` alone cannot produce a broken build.
 
 A disabled blog registers **no** routes at all (not even an empty `/blog/`). `getBreadcrumbs()` matches the first URL segment against the enabled indexed types, so a new collection gets `Home → Section → Entry` for free.
 
@@ -199,13 +199,11 @@ A disabled blog registers **no** routes at all (not even an empty `/blog/`). `ge
 
 Neither view knows about taxonomy, TOC, related posts or feeds: that chrome stays in the blog views, so adding a collection never drags blog complexity along.
 
-### 7.4 Adding a fourth type
+### 7.4 Adding a fourth client collection / content type (zero core edits)
 
-1. `defineCollection` in `src/content.config.ts`.
-2. Key in `CONTENT_TYPE_KEYS` and `KNOWN_TYPES` (`scripts/lib/content-types.mjs`).
-3. `content.types.<key>` block in `app.config.json`.
-4. `nav_<key>` message in every dictionary + a `case` in `getContentTypeLabel` / `getContentTypeDescription`.
-5. `loadExtraEntries()` and the `SiteRouteProps` union in `service.ts` (`CollectionEntry<'<key>'>`).
-6. Optional: a hue row in `TYPE_HUES` of `scripts/generate-assets.mjs`.
+1. Define the client collection schema inside `clientCollections` in `client/content.ts` (and optional `label` / `description` / `icon` UI metadata in `CLIENT_CONTENT_TYPES`) — `src/content.config.ts`, `src/libs/content/types.ts`, `src/libs/content/service.ts`, and `scripts/lib/content-types.mjs` discover exported keys automatically.
+2. Add the collection settings under `content.types.<key>` in `client/config.json` (e.g. `{ "enabled": true, "base": "services", "index": true, "paginated": false, "feed": false, "nav": true }`).
+3. Add `nav_<key>` and optional `<key>_index_description` in `client/messages/<locale>.json` (picked up automatically by `getContentTypeLabel` / `getContentTypeDescription` when not overridden in `CLIENT_CONTENT_TYPES`).
+4. Optional: add a hue row in `TYPE_HUES` of `scripts/generate-assets.mjs` if customizing generated cover tones.
 
-Then `pnpm run content:new <key> <slug> --publish` and the standard verification suite.
+Then `npm run content:new <key> <slug> --publish` and the standard verification suite.

@@ -1,30 +1,35 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { compileMessages } from './lib/compile-messages.mjs';
+import { readLocaleConfig } from './lib/locales.mjs';
+import {
+  readClientMessages,
+  readCoreMessages,
+  stripSchema,
+  writeClientMessages,
+} from './lib/merge-messages.mjs';
 
 /**
- * Merges a single key into one locale dictionary.
+ * Merges a single key into a client dictionary.
  *
- * An explicit translation always wins. A locale without an explicit
- * translation keeps an existing value and only receives a `[TODO: …]`
- * placeholder when the key does not exist yet — registering a key for one
- * locale must never wipe the translations already in the other locales.
+ * Explicit translations always win. Existing keys in `dict` or `coreDict` keep
+ * their value; missing keys only receive `[TODO: …]` when absent from both layers.
  *
- * @param {Record<string, string>} dict Existing dictionary for the locale.
+ * @param {Record<string, unknown>} dict Existing client dictionary for the locale.
  * @param {string} fullKey Fully qualified key, e.g. `nav_features`.
  * @param {string} locale Locale code, e.g. `de`.
  * @param {string} key Bare key, used to build the placeholder text.
  * @param {Record<string, string>} textByLocale Explicit translations.
- * @returns {Record<string, string>} The merged dictionary.
+ * @param {Record<string, unknown>} [coreDict={}] Upstream core dictionary for the locale.
+ * @returns {Record<string, unknown>} The merged client dictionary.
  */
-export function mergeTranslation(dict, fullKey, locale, key, textByLocale) {
-  if (textByLocale[locale]) {
+export function mergeTranslation(dict, fullKey, locale, key, textByLocale, coreDict = {}) {
+  if (textByLocale[locale] !== undefined) {
     return { ...dict, [fullKey]: textByLocale[locale] };
   }
-  if (fullKey in dict) {
+  if (fullKey in dict || fullKey in coreDict) {
     return dict;
   }
   return { ...dict, [fullKey]: `[TODO: ${locale}] ${key}` };
@@ -33,7 +38,6 @@ export function mergeTranslation(dict, fullKey, locale, key, textByLocale) {
 export function runCli() {
   const args = process.argv.slice(2);
 
-  // Check if user passed batch options (--json, --file, or --batch)
   if (args.some((a) => a.startsWith('--json=') || a.startsWith('--file=') || a === '--batch')) {
     const batchArgs = args.filter((a) => a !== '--batch');
     try {
@@ -67,34 +71,29 @@ export function runCli() {
   }
 
   if (!category || !key) {
-    console.error('Usage: pnpm run i18n:add -- --category=<category> --key=<key> [--en="..."] [--fa="..."] [--de="..."]');
-    console.error('For multiple keys, use: pnpm run i18n:add-batch -- --file=<path> or --json=\'{"key": {"en": "..."}}\'');
+    console.error(
+      'Usage: npm run i18n:add -- --category=<category> --key=<key> [--en="..."] [--fa="..."] [--de="..."]'
+    );
+    console.error(
+      'For multiple keys, use: npm run i18n:add-batch -- --file=<path> or --json=\'{"key": {"en": "..."}}\''
+    );
     process.exit(1);
   }
 
   const fullKey = `${category}_${key}`;
   const rootDir = process.cwd();
-
-  const inlangPath = path.join(rootDir, 'project.inlang', 'settings.json');
-  const inlangSettings = JSON.parse(fs.readFileSync(inlangPath, 'utf-8'));
-  const LOCALES = inlangSettings.locales;
-
-  const sortKeys = (obj) => {
-    const sorted = {};
-    Object.keys(obj).sort().forEach((k) => (sorted[k] = obj[k]));
-    return sorted;
-  };
+  const { locales: LOCALES } = readLocaleConfig(rootDir);
 
   for (const loc of LOCALES) {
-    const filePath = path.join(rootDir, 'messages', `${loc}.json`);
-    if (!fs.existsSync(filePath)) continue;
-    const dict = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    const merged = mergeTranslation(dict, fullKey, loc, key, textByLocale);
-
-    fs.writeFileSync(filePath, JSON.stringify(sortKeys(merged), null, 2) + '\n', 'utf-8');
+    const clientDict = stripSchema(readClientMessages(loc, rootDir));
+    const coreDict = stripSchema(readCoreMessages(loc, rootDir));
+    const merged = mergeTranslation(clientDict, fullKey, loc, key, textByLocale, coreDict);
+    writeClientMessages(loc, merged, rootDir);
   }
 
-  console.log(`✅ Registered key "${fullKey}" across all active locales (${LOCALES.join(', ')}).`);
+  console.log(
+    `✅ Registered key "${fullKey}" in client/messages/*.json across active locales (${LOCALES.join(', ')}).`
+  );
   console.log('🔄 Recompiling Paraglide messages...');
 
   try {

@@ -9,16 +9,16 @@ This document provides step-by-step verified playbooks for common architectural 
 To switch the primary default (prefix-less) language of the site (e.g. from English to Persian `fa`):
 
 ```bash
-pnpm run i18n:set-default fa
+npm run i18n:set-default fa
 ```
 
 1. **What it updates automatically**:
-   - Sets `DEFAULT_LOCALE` in `src/i18n/locales.ts`.
-   - Sets `"baseLocale"` in `project.inlang/settings.json`.
+   - Sets `defaultLocale` and reorders `locales` in `client/locales.json` (which `src/i18n/locales.ts` re-exports).
+   - Merges dictionaries and updates `.paraglide-work/project.inlang/settings.json` (`baseLocale`) on compile.
    - Recompiles Paraglide dictionaries (`src/paraglide/`).
 2. **Verify**:
    ```bash
-   pnpm run messages:compile && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke
+   npm run messages:compile && npm test && npm run audit:i18n && npm run build && npm run smoke
    ```
 3. **Expected Outcome**:
    - Persian (`fa`) instantly routes to prefix-less URLs (`/`, `/درباره-ما/`, `/blog/...`).
@@ -26,79 +26,78 @@ pnpm run i18n:set-default fa
    - Hreflang `x-default`, canonical URLs, and sitemap update seamlessly without moving a single file.
 
 ### Single-Language Client Sites
-* **Recommended (zero structural changes)**: Set `"showLanguageSwitcher": false` under `"ui"` in `app.config.json` (plus `pnpm run i18n:set-default <locale>` if the root `/` site should use another locale). Both desktop `<LanguageSwitcher>` and the mobile drawer language grid hide cleanly while keeping all files intact.
-* **Optional strict solo archive (`i18n:solo`)**: Run `pnpm run i18n:solo <locale>` if you want alternate locale routes excluded from `dist/` and `sitemap.xml` (archives inactive dictionaries and `.mdx` files under `.locale-archive/`).
+* **Recommended (zero structural changes)**: Set `"showLanguageSwitcher": false` under `"ui"` in `client/config.json` (plus `npm run i18n:set-default <locale>` if the root `/` site should use another locale). Both desktop `<LanguageSwitcher>` and the mobile drawer language grid hide cleanly while keeping all files intact.
+* **Optional strict solo archive (`i18n:solo`)**: Run `npm run i18n:solo <locale>` if you want alternate locale routes excluded from `dist/` and `sitemap.xml` (archives inactive dictionaries and `.mdx` files under `.locale-archive/`).
 
 ---
 
 ## Playbook 2: Content Types — Toggling, Adding & Managing Collections
 
-Which collections are built is decided by `app.config.json` → `content.types`. `pages` owns the root and cannot be disabled; `blog` and `projects` ship enabled.
+Which collections are built is decided by merged `app.config.json` + `client/config.json` → `content.types`. `pages` owns the root and cannot be disabled; `blog` and `projects` ship enabled.
 
 ### 1. Toggle an existing type
 
 ```bash
-pnpm run content:list                 # state, route base, entry counts
-pnpm run content:disable projects     # routes, sitemap entries and nav links disappear
-pnpm run content:enable projects      # they come back
-pnpm run build && pnpm run smoke
+npm run content:list                 # state, route base, entry counts
+npm run content:disable projects     # writes sparse override to client/config.json; routes, sitemap & nav links disappear
+npm run content:enable projects      # they come back
+npm run build && npm run smoke
 ```
 
-* The command only flips `content.types.<type>.enabled`; the file's indentation and line endings are preserved, so the diff is one line.
+* The command writes only the sparse `content.types.<type>.enabled` override in `client/config.json`, leaving upstream `app.config.json` untouched.
 * Disabling never deletes content. It removes the index/entry routes, the sitemap entries, the header/drawer/footer link and the home-page CTA. `/api/blog-posts.json` and `/rss.xml` deliberately keep working so external consumers do not break.
-* Hand-written MDX links to a removed section are not rewritten — `pnpm run link:check` reports the missing page **or the missing `#anchor`** after a build, and the navigation itself never emits an anchor whose target page is gone.
+* Hand-written MDX links to a removed section are not rewritten — `npm run link:check` reports the missing page **or the missing `#anchor`** after a build, and the navigation itself never emits an anchor whose target page is gone.
 
 ### 2. Inspect what is ready
 
 ```bash
-pnpm run content:status                      # group × locale matrix
-pnpm run content:status -- --write=docs/STATUS.md
-pnpm run doctor                              # setup health, with a fix hint per finding
+npm run content:status                      # group × locale matrix
+npm run content:status -- --write=docs/STATUS.md
+npm run doctor                              # setup health, with a fix hint per finding
+npm run upstream:check                      # verifies core vs client/ separation
 ```
 
-### 3. Add a new collection (e.g. `services`)
+### 3. Add a new collection (e.g. `services`) — Zero Core Edits
 
-1. **Schema** — `defineCollection` in `src/content.config.ts` on top of `baseSchema` (with a non-empty `slug` and the fields the collection needs).
-2. **Registry keys** — add the key to `CONTENT_TYPE_KEYS` (`src/libs/content/types.ts`) and `KNOWN_TYPES` (`scripts/lib/content-types.mjs`).
-3. **Configuration** — add a `content.types.services` block in `app.config.json` (`base: "services"`, `index: true`, `nav: true`, …).
-4. **Messages** — `nav_services` in every `messages/<locale>.json`, plus a `case` in `getContentTypeLabel` / `getContentTypeDescription`.
-5. **Routing** — extend `loadExtraEntries()` and the `SiteRouteProps` union in `src/libs/content/service.ts` with `CollectionEntry<'services'>`. Routes, sitemap entries, breadcrumbs and navigation are generated from the registry; no new view is needed for a standard listing + article pair.
-6. **Artwork (optional)** — add a hue row to `TYPE_HUES` in `scripts/generate-assets.mjs`.
+1. **Schema & UI Metadata (`client/content.ts`)** — register `services: defineCollection(...)` in `clientCollections` (`glob` loader in `./src/content/services`) and add `CLIENT_CONTENT_TYPES.services` (`label`, `description`, `icon`). `src/content.config.ts`, `src/libs/content/types.ts`, `src/libs/content/service.ts`, and `scripts/lib/content-types.mjs` read `client/content.ts` automatically.
+2. **Configuration (`client/config.json`)** — add `content.types.services` (`"enabled": true, "base": "services", "index": true, "nav": true`).
+3. **Messages (`client/messages/<locale>.json`)** — add `nav_services` to each client dictionary and reference `m.nav_services({}, { locale })` from `CLIENT_CONTENT_TYPES.services.label`.
 
 ### 4. Scaffold and verify
 
 ```bash
-pnpm run content:new services web-design --title="Web Design" --publish
-pnpm run assets:generate
-pnpm run doctor && pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke && pnpm run link:check
+npm run content:new services web-design -- --title="Web Design" --publish
+npm run assets:generate
+npm run upstream:check && npm run doctor && npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke && npm run link:check
 ```
 
 `content:new` delegates `pages` and `blog` to `new:page` / `new:post`; every other type receives the shared frontmatter, a generated cover, and `[TODO: …]` drafts for locales that are not translated yet. Full reference: `docs/CONTENT-TYPES-FA.md`.
 
 ## Playbook 3: Composable Corporate Blocks & Client Rebranding
 
-1. **Rapid Client Branding (`pnpm run site:init`)**:
-   Configure site identity, 6 OKLCH palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose`), Latin/RTL font pairings, branded OG card generation, and active content modules in one command:
+1. **Rapid Client Branding (`npm run site:init`)**:
+   Configure site identity, 6 OKLCH palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose`), Latin/RTL font pairings, branded OG card generation, and active content modules in `client/config.json` with one command:
    ```bash
-   pnpm run site:init -- --name="Acme Studio" --preset=emerald --font=jakarta --rtl-font=noto-arabic --og-mode=branded --yes
+   npm run site:init -- --name="Acme Studio" --preset=emerald --font=jakarta --rtl-font=noto-arabic --og-mode=branded --yes
    ```
+   Need optional demo pages, posts, and projects to preview or copy blocks from? Run `npm run starter:seed` (and `npm run starter:seed -- --clean --yes` to strip demo items cleanly).
 
 2. **Start From the 22 Built-In PrebuiltUI-Adapted Blocks (`src/components/`)**:
    Before building custom markup from scratch, check the starter's 19 RTL/LTR-safe section blocks and 3 UI primitives — all work with zero props using localized Paraglide defaults (`locale` auto-detects from URL) or custom overrides:
    - **Sections (19):** `LandingHeroSplit.astro`, `PromoBanner.astro`, `PartnerLogos.astro`, `AboutSplitSection.astro`, `BentoCapabilities.astro`, `FeatureTabsSection.astro`, `ProcessSteps.astro`, `FeatureCardGrid.astro`, `ProofStatsRow.astro`, `ComparisonTable.astro`, `PricingSection.astro`, `TestimonialGrid.astro`, `ImageGallerySection.astro`, `LatestPostsSection.astro`, `TeamSection.astro`, `FaqAccordion.astro`, `ContactSplitSection.astro`, `NewsletterBanner.astro`, and `CtaBanner.astro`.
    - **UI Primitives (3):** `UiBadge.astro`, `UiAlert.astro`, and `AvatarGroup.astro`.
-   - Use `pnpm run new:page <key> -- --preset=landing` to scaffold a multi-locale landing page pre-wired with canvas layout and composable blocks.
+   - Use `npm run new:page <key> -- --preset=landing` to scaffold a multi-locale landing page pre-wired with canvas layout and composable blocks.
 
 3. **Tailwind Blocks RTL & Token Adaptation**:
    When pasting custom Tailwind UI or external component code, adapt directions and utility colors:
    ```bash
-   pnpm run block:adapt -- --file=src/components/MyComponent.astro
+   npm run block:adapt -- --file=src/components/MyComponent.astro
    ```
 
 4. **Extract Copy to Compiled Messages & Recompile**:
    ```bash
-   pnpm run i18n:extract -- --target=src/components/MyComponent.astro --key=mycomp --auto-add --replace
-   pnpm run messages:compile
+   npm run i18n:extract -- --target=src/components/MyComponent.astro --key=mycomp --auto-add --replace
+   npm run messages:compile
    ```
 
 5. **Reach for `<Button>`, not a hand-rolled control**:
@@ -108,18 +107,18 @@ pnpm run doctor && pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run
      {m.common_get_started({}, { locale })}
    </Button>
    ```
-   The class recipe lives in `src/libs/ui/button.ts` (`buttonClasses()`), so client-side renderers such as the blog pager produce the same control. Icon-only controls stay `IconButton.astro`.
+   The class recipe lives in `src/libs/ui/button.ts` (`buttonClasses()`), so client-side renderers such as the blog pager produce the same control. Icon-only controls stay `IconButton.astro`. Custom client icons go into `client/icons.ts` + `client/ClientIcons.astro` without editing `src/libs/ui/icons.ts`.
 
 ---
 
 ## Playbook 4: Adding New Languages & Scaffolding Multilingual Content
 
-### 1. Adding a New Language (`pnpm run i18n:add-lang`)
+### 1. Adding a New Language (`npm run i18n:add-lang`)
 ```bash
 # Add a new language with interactive prompt or explicit flags:
-pnpm run i18n:add-lang -- ar --with-content --from=en
-pnpm run i18n:add-lang -- es --with-content --from=fa
-pnpm run i18n:add-lang -- it --no-content
+npm run i18n:add-lang -- ar --with-content --from=en
+npm run i18n:add-lang -- es --with-content --from=fa
+npm run i18n:add-lang -- it --no-content
 ```
 * **Flags:**
   * `--with-content` / `--no-content`: Chooses whether to auto-generate markdown files for all existing pages and posts in the new language.
@@ -127,16 +126,16 @@ pnpm run i18n:add-lang -- it --no-content
   * `--publish` / `--draft=false`: Requests published output, but entries whose title still contains a `[TODO: ...]` placeholder always stay `draft: true`. Generated content copies the source language, so translate each file and flip its `draft` flag instead of forcing it.
   * A body copied from `--from=<locale>` starts with an MDX comment naming the source file (`{/* TODO(de): translate this body — it is still en copy. */}`). It is not translated copy, and the marker makes that obvious in review instead of leaving source-language prose under a translated title. Locales that were never translated keep a localized `[TODO: …]` stub instead.
 
-### 2. Scaffolding New Articles (`pnpm run new:post`)
+### 2. Scaffolding New Articles (`npm run new:post`)
 ```bash
 # Create post with default source language (en) and draft non-source translations:
-pnpm run new:post -- tech-trends
+npm run new:post tech-trends
 
 # Create post from Persian and publish the locales that have translations:
-pnpm run new:post -- ai-features --from=fa --title="قابلیت‌های هوش مصنوعی" --publish
+npm run new:post ai-features -- --from=fa --title="قابلیت‌های هوش مصنوعی" --publish
 
 # Non-interactive frontmatter sync across all active language files without overwriting markdown body:
-pnpm run new:post -- tech-trends --update --sync-frontmatter --title="Modern Tech Trends" --desc="Updated description"
+npm run new:post tech-trends -- --update --sync-frontmatter --title="Modern Tech Trends" --desc="Updated description"
 ```
 * **Why non-source locales default to `draft: true`:**
   To prevent unreviewed placeholder translations (`[TODO: ...]`) from appearing publicly on the live blog index (`/fa/blog/`, etc.), `new:post` sets `draft: true` on non-source locales by default.
@@ -146,80 +145,80 @@ pnpm run new:post -- tech-trends --update --sync-frontmatter --title="Modern Tec
 * **Slugs:** The source and default locale use the group key (`tech-trends`); the other locales get a placeholder (`tech-trends-fa`) until a native slug is set with `--slug:fa="روندهای-فناوری"`. `--from` selects the source locale only — use `--clone-from=<group>` to copy the body of an existing article.
 * **Blog taxonomy and covers:** Pass `--category=engineering`, `--tags="astro,performance"`, and `--image=cover.png` when scaffolding (the file is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file) so cards, filters, and the article hero are populated from the start. The same flags work with `--update`, and inline YAML arrays are preserved when frontmatter is rewritten.
   * Category and tag keys stay language-neutral (`engineering`, `i18n`); visible labels are message keys (`blog_category_engineering`, `blog_tag_i18n`). Unknown keys fall back to a humanized label, so a new tag never blocks a build.
-  * Run `pnpm run assets:generate` after adding a post group to produce `src/content/blog/<group>/<group>.png` (1200×675).
+  * Run `npm run assets:generate` after adding a post group to produce `src/content/blog/<group>/<group>.png` (1200×675).
   * Filtering lives entirely in `src/libs/content/blog.ts`; the blog index syncs `?category=…&tag=a,b` so filtered views are linkable.
 * **Updating Frontmatter:** Pass `--update` and `--sync-frontmatter` to update `title`, `description`, `publishedAt`, `categories`, `tags`, `image`, `author`, or `draft` across all active language files while preserving markdown body content.
 
-### 3. Scaffolding New Pages (`pnpm run new:page`)
+### 3. Scaffolding New Pages (`npm run new:page`)
 ```bash
 # Create new page across all active locales with layout options:
-pnpm run new:page -- contact --from=fa --title="تماس با ما" --hero=minimal --container=contained
+npm run new:page contact -- --from=fa --title="تماس با ما" --hero=minimal --container=contained
 
 # Non-interactive frontmatter update across all active locales:
-pnpm run new:page -- contact --update --sync-frontmatter --title:fa="تماس با تیم ما" --title:en="Contact Our Team"
+npm run new:page contact -- --update --sync-frontmatter --title:fa="تماس با تیم ما" --title:en="Contact Our Team"
 ```
-* Auto-creates localized page entries across all active locales in `src/i18n/locales.ts`.
-* Automatically registers navigation key `nav_<key>` in all dictionaries and recompiles Paraglide. The label alone does not add the page to a menu: add `{ group: '<key>', label: … }` to `PAGE_ITEMS` in `src/libs/config/navigation.ts` (header + drawer) or to `getFooterNavigation` / `getLegalNavigation`.
+* Auto-creates localized page entries across all active locales in `client/locales.json`.
+* Automatically registers navigation key `nav_<key>` in `client/messages/*.json` and recompiles Paraglide. The label alone does not add the page to a menu: add `{ group: '<key>', label: … }` to `CLIENT_PAGE_ITEMS` in `client/navigation.ts` (header + drawer) or to `getClientFooterColumns` / `getClientLegalNavigation`.
 * Use `--update` / `--sync-frontmatter` to synchronize structural frontmatter (`image`, `hero`, `container`, `flushTop`, `template`) without manual file rewrites.
 * Only the source locale is published by default; the other locales stay `draft: true` until translated. Use `--publish`, `--draft`, and `--slug:<locale>="…"` to control that explicitly.
-* **Slugs:** the source locale owns the group slug (`contact`); every other locale starts with the placeholder `contact-<locale>` so that each locale has a valid route. The command lists those placeholders with the exact fix (`--update --slug:fa="تماس"`), and `pnpm run doctor` keeps reporting any placeholder that is still in the content: it builds and routes, but `/fa/contact-fa/` is not a URL you want to ship.
-* **`--publish` and scaffold copy:** publishing flips the entry live while its body is still the localized "content coming soon" sentence. The command warns about it, and `pnpm run smoke` fails while that sentence is in `dist/`, so the copy cannot reach production by accident.
+* **Slugs:** the source locale owns the group slug (`contact`); every other locale starts with the placeholder `contact-<locale>` so that each locale has a valid route. The command lists those placeholders with the exact fix (`--update --slug:fa="تماس"`), and `npm run doctor` keeps reporting any placeholder that is still in the content: it builds and routes, but `/fa/contact-fa/` is not a URL you want to ship.
+* **`--publish` and scaffold copy:** publishing flips the entry live while its body is still the localized "content coming soon" sentence. The command warns about it, and `npm run smoke` fails while that sentence is in `dist/`, so the copy cannot reach production by accident.
 
-### 4. Batch Adding Translations (`pnpm run i18n:add-batch`)
+### 4. Batch Adding Translations (`npm run i18n:add-batch`)
 ```bash
 # Import from JSON file:
-pnpm run i18n:add-batch -- --file=translations.json
+npm run i18n:add-batch -- --file=translations.json
 
 # Pass JSON directly or pipe via stdin:
-pnpm run i18n:add-batch -- --json='{"cart_checkout": {"en": "Checkout", "fa": "تسویه حساب"}}'
-cat translations.json | pnpm run i18n:add-batch
+npm run i18n:add-batch -- --json='{"cart_checkout": {"en": "Checkout", "fa": "تسویه حساب"}}'
+cat translations.json | npm run i18n:add-batch
 ```
+* Writes keys into `client/messages/*.json` (while preserving `messages/core/*.json` cleanly).
 * Supports key-to-locale maps, locale-to-keys maps, or nested category objects.
 * Automatically generates fallback placeholders for missing locales to guarantee dictionary key parity.
-* Recompiles Paraglide in a single pass instead of running multi-step loops.
+* Merges two-tier dictionaries into `.paraglide-work/` and recompiles Paraglide in a single pass instead of running multi-step loops.
 
 ---
 
 ## Playbook 5: Removing Languages & Content (Clean Lifecycle)
 
-### 1. Removing a Language (`pnpm run i18n:remove-lang`)
+### 1. Removing a Language (`npm run i18n:remove-lang`)
 ```bash
 # Interactive mode (asks whether to delete content files):
-pnpm run i18n:remove-lang -- ar
+npm run i18n:remove-lang -- ar
 
 # Force mode (deletes language config, dictionary, and all ar.mdx content files):
-pnpm run i18n:remove-lang -- ar --with-content --force
+npm run i18n:remove-lang -- ar --with-content --force
 
 # Keep existing content files under src/content/:
-pnpm run i18n:remove-lang -- ar --keep-content --force
+npm run i18n:remove-lang -- ar --keep-content --force
 ```
 * **Guard:** Protects the default base locale (`DEFAULT_LOCALE`) from accidental deletion.
 * **Cleanup:**
-  1. Removes the locale from `project.inlang/settings.json`.
-  2. Deletes `messages/<locale>.json`.
-  3. Updates `src/i18n/locales.ts` (removes from `LOCALES` array and `LOCALE_METADATA`).
-  4. Deletes associated `<locale>.mdx` files across `src/content/` (if `--with-content`).
-  5. Recompiles Paraglide messages automatically.
+  1. Updates `client/locales.json` (removes from `locales` array and `metadata`).
+  2. Deletes `client/messages/<locale>.json` (and core fallback if applicable).
+  3. Deletes associated `<locale>.mdx` files across `src/content/` (if `--with-content`).
+  4. Merges dictionaries into `.paraglide-work/` and recompiles Paraglide messages automatically.
 
-### 2. Removing an Article / Blog Post (`pnpm run remove:post`)
+### 2. Removing an Article / Blog Post (`npm run remove:post`)
 ```bash
 # Delete entire article across all languages:
-pnpm run remove:post -- tech-trends --force
+npm run remove:post tech-trends -- --force
 
 # Delete only the German translation file for a post:
-pnpm run remove:post -- tech-trends --locale=de --force
+npm run remove:post tech-trends -- --locale=de --force
 ```
 
-### 3. Removing a Static Page (`pnpm run remove:page`)
+### 3. Removing a Static Page (`npm run remove:page`)
 ```bash
 # Delete entire page and clean its navigation key from dictionaries:
-pnpm run remove:page -- pricing --force
+npm run remove:page pricing -- --force
 
 # Delete only a specific language's page file:
-pnpm run remove:page -- pricing --locale=de --force
+npm run remove:page pricing -- --locale=de --force
 ```
-* Automatically cleans up `nav_<page-key>` from all dictionary files (`messages/*.json`) and recompiles Paraglide messages. With `--locale` only that locale's file is deleted and the navigation key stays in every dictionary, because the dictionaries always carry the same key set; the missing locale is reported by `pnpm run audit:i18n` as a warning, not an error.
-* Before deleting the key it scans `src/` for surviving `m.nav_<page-key>(` calls and names every file that still needs fixing. The footer's pages column is derived from `PAGE_ITEMS`, so after removing a group from that list there is nothing else to rewrite — but a leftover reference is reported here instead of failing the next build with an undefined message.
+* Automatically cleans up `nav_<page-key>` from client dictionary files (`client/messages/*.json`) and recompiles Paraglide messages. With `--locale` only that locale's file is deleted and the navigation key stays in every dictionary, because the dictionaries always carry the same key set; the missing locale is reported by `npm run audit:i18n` as a warning, not an error.
+* Before deleting the key it scans `src/` and `client/` for surviving `m.nav_<page-key>(` calls and names every file that still needs fixing. The footer's pages column is derived from `CLIENT_PAGE_ITEMS` (`client/navigation.ts`), so after removing a group from that list there is nothing else to rewrite — but a leftover reference is reported here instead of failing the next build with an undefined message.
 * Guards the critical `home` page from deletion without `--force`.
 
 ---
@@ -229,7 +228,7 @@ pnpm run remove:page -- pricing --locale=de --force
 The blog index is a **static, paginated** listing: one URL per page per locale. Nothing is paginated in the browser, so every page is a real, linkable, crawlable document.
 
 ### 1. Changing the Page Size
-The single source of truth is `app.config.json`:
+The single source of truth is merged `app.config.json` / `client/config.json`:
 ```json
 "blog": { "postsPerPage": 9 }
 ```
@@ -264,11 +263,11 @@ const window = buildPageWindow(page, totalPages);   // holes become the PAGE_GAP
 
 ### 5. Verify
 ```bash
-pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke
+npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke
 ```
-`pnpm run smoke` derives the expected page count from the content collection and asserts that every page exists, that `rel="prev"` / `rel="next"` point at the right neighbours, that the pager is present only when there is more than one page, and that no page beyond the last one was generated.
+`npm run smoke` derives the expected page count from the content collection and asserts that every page exists, that `rel="prev"` / `rel="next"` point at the right neighbours, that the pager is present only when there is more than one page, and that no page beyond the last one was generated.
 
-> To see the pager while developing, temporarily lower `POSTS_PER_PAGE` (e.g. `1`) and rebuild — the starter ships only three posts per locale, so the default of `9` renders a single page.
+> To see the pager while developing, either run `npm run starter:seed` (which adds 6 demo posts) and lower `POSTS_PER_PAGE`, or adjust `blog.postsPerPage` in `client/config.json` (default `9`).
 
 ---
 
@@ -301,11 +300,11 @@ pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run 
 
 ### 1. Choosing a Page Layout (`src/content/pages/<group>/<locale>.mdx`)
 Unlike `blog` entries (which always use `BlogPostView.astro` + `PageHero.astro`), static `pages` default to `hero: "none"` and `container: "canvas"`:
-* **Custom Full-Bleed Canvas (`hero: "none"`, `container: "canvas"`)**: Compose arbitrary sections inside MDX using `<PageSection>` or `.layout-container` (`1280px` max-width), or delegate to a shared `.astro` view in `src/views/pages/` via `template: "home"`. Add `flushTop: true` when your first section sits directly behind the floating glass header. Never use `layout:` in MDX frontmatter (reserved by `@astrojs/mdx`).
+* **Custom Full-Bleed Canvas (`hero: "none"`, `container: "canvas"`)**: Compose arbitrary sections inside MDX using `<PageSection>` or `.layout-container` (`1280px` max-width), or delegate to a shared `.astro` view registered in `CLIENT_PAGE_TEMPLATES` (`client/templates/index.ts`, or `template: "home"` in `src/views/pages/`). Add `flushTop: true` when your first section sits directly behind the floating glass header. Never use `layout:` in MDX frontmatter (reserved by `@astrojs/mdx`).
 * **Minimal Typographic Header (`hero: "minimal"`, `container: "contained" | "prose"`)**: Renders `PageHeader.astro` (breadcrumbs, accent rule, `<h1>`, description) above either a `1280px` `.layout-container` (`contained`) or a `72ch` editorial column (`prose`).
 * **Atmospheric Banner (`hero: "default"`)**: Renders the defocused full-bleed `PageHero.astro` + `HeroCopy.astro`.
 
 ### 2. Connecting Contact & Newsletter Forms to an External API (Zero Backend)
 This starter is **100% Pure SSG** and ships with no backend server. Both `src/components/ContactForm.astro` and `src/components/NewsletterBanner.astro` post directly to external/headless APIs through `src/libs/api/client.ts`:
-1. Set `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL` (or shared `PUBLIC_API_BASE_URL`) in `.env` / deployment environment variables, **or** configure `api.baseUrl` + `api.endpoints.contact|newsletter` (and optional `api.topics`) in `app.config.json`.
+1. Set `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL` (or shared `PUBLIC_API_BASE_URL`) in `.env` / deployment environment variables, **or** configure `api.baseUrl` + `api.endpoints.contact|newsletter` (and optional `api.topics`) in `client/config.json`.
 2. Embed `<ContactForm locale={locale} />` or `<NewsletterBanner locale={locale} />` in any Astro view or MDX page. When no external endpoint is configured yet, neither form is rendered; visitors see a clean `mailto:` fallback (when `site.contactEmail` is set) or neutral unavailable notice, and `import.meta.env.DEV`-only setup notes guide developers without leaking env var names in production HTML.

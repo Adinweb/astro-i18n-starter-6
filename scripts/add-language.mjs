@@ -5,17 +5,21 @@ import readline from 'node:readline';
 import { contentStub, stripLeadingHeading } from './lib/content-stub.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
 import { localeCodeError } from './lib/validate.mjs';
+import { parseFrontmatter, stringifyFrontmatter } from './lib/frontmatter.mjs';
+import { readLocaleConfig, writeLocaleConfig } from './lib/locales.mjs';
 import {
-  escapeRegex,
-  parseFrontmatter,
-  stringifyFrontmatter,
-} from './lib/frontmatter.mjs';
+  readClientMessages,
+  readCoreMessages,
+  readMergedMessages,
+  stripSchema,
+  writeClientMessages,
+} from './lib/merge-messages.mjs';
 
 const args = process.argv.slice(2);
 const langCode = args.find((a) => !a.startsWith('--'));
 let langName = '';
 let dir = 'ltr';
-let contentOption = null; // null: prompt user, true: create content, false: skip content
+let contentOption = null;
 let fromLocale = '';
 let isDraft = true;
 
@@ -27,15 +31,27 @@ for (const arg of args) {
   else if (arg.startsWith('--source-lang=')) fromLocale = arg.slice(14);
   else if (arg === '--draft=true' || arg === '--draft') isDraft = true;
   else if (arg === '--draft=false' || arg === '--publish' || arg === '--no-draft') isDraft = false;
-  else if (arg === '--with-content' || arg === '--create-content' || arg === '--content=yes' || arg === '--content=true') {
+  else if (
+    arg === '--with-content' ||
+    arg === '--create-content' ||
+    arg === '--content=yes' ||
+    arg === '--content=true'
+  ) {
     contentOption = true;
-  } else if (arg === '--no-content' || arg === '--without-content' || arg === '--content=no' || arg === '--content=false') {
+  } else if (
+    arg === '--no-content' ||
+    arg === '--without-content' ||
+    arg === '--content=no' ||
+    arg === '--content=false'
+  ) {
     contentOption = false;
   }
 }
 
 if (!langCode) {
-  console.error('Usage: pnpm run i18n:add-lang <locale-code> [--name="<Display Name>"] [--dir="ltr|rtl"] [--from=<source-locale>] [--with-content|--no-content] [--draft=true|false]');
+  console.error(
+    'Usage: npm run i18n:add-lang -- <locale-code> [--name="<Display Name>"] [--dir="ltr|rtl"] [--from=<source-locale>] [--with-content|--no-content] [--draft=true|false]'
+  );
   process.exit(1);
 }
 
@@ -67,18 +83,18 @@ if (['ar', 'fa', 'he', 'ur'].includes(langCode)) {
 const rootDir = process.cwd();
 console.log(`🌍 Adding new language: "${langCode}" (${langName}, dir=${dir})...\n`);
 
-const inlangPath = path.join(rootDir, 'project.inlang', 'settings.json');
-const inlangSettings = JSON.parse(fs.readFileSync(inlangPath, 'utf-8'));
-const existingLocales = [...inlangSettings.locales];
-const defaultBaseLocale = inlangSettings.baseLocale || 'en';
+const localeConfig = readLocaleConfig(rootDir);
+const existingLocales = [...localeConfig.locales];
+const defaultBaseLocale = localeConfig.defaultLocale || 'en';
 
-// Helper to prompt user or resolve options
 async function resolveContentOptions() {
   let shouldCreate = contentOption;
   let source = fromLocale;
 
   if (source && !existingLocales.includes(source)) {
-    console.warn(`⚠️ Warning: Specified source locale "${source}" not found in [${existingLocales.join(', ')}]. Falling back to "${defaultBaseLocale}".`);
+    console.warn(
+      `⚠️ Warning: Specified source locale "${source}" not found in [${existingLocales.join(', ')}]. Falling back to "${defaultBaseLocale}".`
+    );
     source = defaultBaseLocale;
   }
 
@@ -111,11 +127,7 @@ async function resolveContentOptions() {
         `❓ Which existing language should be used as template source to auto-generate content? (available: ${existingLocales.join(', ')}) [default: ${defaultBaseLocale}]: `
       );
       const chosen = answer.trim();
-      if (chosen && existingLocales.includes(chosen)) {
-        source = chosen;
-      } else {
-        source = defaultBaseLocale;
-      }
+      source = chosen && existingLocales.includes(chosen) ? chosen : defaultBaseLocale;
     }
   } finally {
     rl.close();
@@ -126,20 +138,41 @@ async function resolveContentOptions() {
 
 const { shouldCreate: shouldPopulateContent, source: sourceLocale } = await resolveContentOptions();
 
-// 1. Update project.inlang/settings.json
-if (!inlangSettings.locales.includes(langCode)) {
-  inlangSettings.locales.push(langCode);
-  fs.writeFileSync(inlangPath, JSON.stringify(inlangSettings, null, 2) + '\n', 'utf-8');
-  console.log(`✅ Added "${langCode}" to project.inlang/settings.json`);
+// 1. Update client/locales.json
+const fontVar =
+  langCode === 'ar'
+    ? 'var(--font-ar)'
+    : dir === 'rtl'
+      ? 'var(--font-fa)'
+      : 'var(--font-sans)';
+
+let localesChanged = false;
+if (!localeConfig.locales.includes(langCode)) {
+  localeConfig.locales.push(langCode);
+  localesChanged = true;
+}
+if (!localeConfig.metadata[langCode]) {
+  localeConfig.metadata[langCode] = {
+    dir,
+    htmlLang: langCode,
+    name: langName,
+    fontFamily: fontVar,
+  };
+  localesChanged = true;
+}
+if (localesChanged) {
+  writeLocaleConfig(localeConfig, rootDir);
+  console.log(`✅ Updated client/locales.json with "${langCode}" (${langName}, dir=${dir})`);
 }
 
-// 2. Create messages/<locale>.json from sourceLocale dictionary
-const sourceDictPath = fs.existsSync(path.join(rootDir, 'messages', `${sourceLocale}.json`))
-  ? path.join(rootDir, 'messages', `${sourceLocale}.json`)
-  : path.join(rootDir, 'messages', 'en.json');
-const targetDictPath = path.join(rootDir, 'messages', `${langCode}.json`);
-const sourceDict = JSON.parse(fs.readFileSync(sourceDictPath, 'utf-8'));
+// 2. Create or restore client/messages/<locale>.json
+const coreDictForTarget = stripSchema(readCoreMessages(langCode, rootDir));
+const hasCoreLocale = Object.keys(coreDictForTarget).length > 0;
+const sourceMergedDict = hasCoreLocale
+  ? stripSchema(readClientMessages(sourceLocale, rootDir))
+  : stripSchema(readMergedMessages(sourceLocale, rootDir));
 
+const targetDictPath = path.join(rootDir, 'client', 'messages', `${langCode}.json`);
 const frTranslations = {
   common_back_home: 'Retour à l’accueil',
   common_back_to_blog: 'Retour au blog',
@@ -160,14 +193,12 @@ const frTranslations = {
   nav_home: 'Accueil',
 };
 
-const newDict = {
-  $schema: 'https://inlang.com/schema/inlang-message-format',
-};
-
-for (const [key, val] of Object.entries(sourceDict)) {
+const newClientEntries = {};
+for (const [key, val] of Object.entries(sourceMergedDict)) {
   if (key.startsWith('$')) continue;
+  if (hasCoreLocale && key in coreDictForTarget) continue;
   if (key === 'items_count') {
-    newDict[key] = [
+    newClientEntries[key] = [
       {
         declarations: ['input count', 'local countPlural = count: plural'],
         selectors: ['countPlural'],
@@ -189,7 +220,7 @@ for (const [key, val] of Object.entries(sourceDict)) {
       },
     ];
   } else if (key === 'position_ordinal') {
-    newDict[key] = [
+    newClientEntries[key] = [
       {
         declarations: ['input pos', 'local posOrdinal = pos: plural type=ordinal'],
         selectors: ['posOrdinal'],
@@ -209,11 +240,11 @@ for (const [key, val] of Object.entries(sourceDict)) {
       },
     ];
   } else if (langCode === 'fr' && frTranslations[key]) {
-    newDict[key] = frTranslations[key];
+    newClientEntries[key] = frTranslations[key];
   } else if (typeof val === 'string') {
-    newDict[key] = `[TODO: ${langCode}] ${val}`;
+    newClientEntries[key] = `[TODO: ${langCode}] ${val}`;
   } else if (Array.isArray(val)) {
-    newDict[key] = val.map((variant) => ({
+    newClientEntries[key] = val.map((variant) => ({
       ...variant,
       match: Object.fromEntries(
         Object.entries(variant?.match ?? {}).map(([k, text]) => [
@@ -225,89 +256,48 @@ for (const [key, val] of Object.entries(sourceDict)) {
       ),
     }));
   } else {
-    newDict[key] = val;
+    newClientEntries[key] = val;
   }
 }
 
 const archivedDictPath = path.join(rootDir, '.locale-archive', langCode, 'messages.json');
 if (fs.existsSync(targetDictPath)) {
-  // Re-running the command for an existing language must never wipe the
-  // translations that were already paid for. Only a missing dictionary is
-  // derived from the source locale.
   console.log(
-    `⏭️  messages/${langCode}.json already exists — keeping its existing translations.`
+    `⏭️  client/messages/${langCode}.json already exists — keeping its existing translations.`
   );
-  console.log('   Delete the file first if you want a freshly derived all-placeholder dictionary.');
+  console.log('   Delete the file first if you want a freshly derived dictionary.');
 } else if (fs.existsSync(archivedDictPath)) {
+  fs.mkdirSync(path.dirname(targetDictPath), { recursive: true });
   fs.renameSync(archivedDictPath, targetDictPath);
-  console.log(`✅ Restored messages/${langCode}.json from .locale-archive/${langCode}/messages.json`);
-} else {
-  fs.writeFileSync(targetDictPath, JSON.stringify(newDict, null, 2) + '\n', 'utf-8');
-  console.log(`✅ Created messages/${langCode}.json (derived from "${sourceLocale}")`);
-}
-
-// 3. Update src/i18n/locales.ts (SSOT for LOCALES and metadata)
-const localesPath = path.join(rootDir, 'src', 'i18n', 'locales.ts');
-let localesCode = fs.readFileSync(localesPath, 'utf-8');
-
-if (!localesCode.includes(`'${langCode}'`)) {
-  localesCode = localesCode.replace(
-    /export const LOCALES = \[(.*?)\] as const;/s,
-    (_match, p1) => {
-      const existing = p1
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      existing.push(`'${langCode}'`);
-      return `export const LOCALES = [${existing.join(', ')}] as const;`;
-    }
+  console.log(
+    `✅ Restored client/messages/${langCode}.json from .locale-archive/${langCode}/messages.json`
   );
-  console.log(`✅ Updated LOCALES in src/i18n/locales.ts with "${langCode}"`);
+} else {
+  writeClientMessages(langCode, newClientEntries, rootDir);
+  console.log(
+    `✅ Created client/messages/${langCode}.json` +
+      (hasCoreLocale
+        ? ` (core keys served from messages/core/${langCode}.json)`
+        : ` (derived from "${sourceLocale}")`)
+  );
 }
 
-const metaKeyPattern = new RegExp(`^\\s*['"]?${escapeRegex(langCode)}['"]?:\\s*\\{`, 'm');
-if (!metaKeyPattern.test(localesCode)) {
-  const fontVar =
-    langCode === 'ar'
-      ? 'var(--font-ar)'
-      : dir === 'rtl'
-        ? 'var(--font-fa)'
-        : 'var(--font-sans)';
-  const formattedKey = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(langCode)
-    ? langCode
-    : `'${langCode}'`;
-  const escapedName = langName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  // Keep the file's own line ending so inserting a locale does not rewrite a
-  // CRLF file with mixed endings.
-  const eol = localesCode.includes('\r\n') ? '\r\n' : '\n';
-  const newMetaBlock = [
-    `  ${formattedKey}: {`,
-    `    dir: '${dir}',`,
-    `    htmlLang: '${langCode}',`,
-    `    name: '${escapedName}',`,
-    `    fontFamily: '${fontVar}',`,
-    '  },',
-    '} satisfies Record<Locale, LocaleMeta>;',
-  ].join(eol);
-
-  localesCode = localesCode.replace(/}\s*satisfies Record<Locale, LocaleMeta>;/, newMetaBlock);
-  console.log(`✅ Updated LOCALE_METADATA in src/i18n/locales.ts with metadata for "${langCode}"`);
-}
-
-fs.writeFileSync(localesPath, localesCode, 'utf-8');
-
-// 4. Confirmation and population of missing content collection files
+// 3. Populate missing content collection files
 if (shouldPopulateContent) {
-  console.log(`\n📄 Creating content files for existing pages and posts using source language "${sourceLocale}"...`);
+  console.log(
+    `\n📄 Creating content files for existing pages and posts using source language "${sourceLocale}"...`
+  );
   const contentDir = path.join(rootDir, 'src', 'content');
   if (fs.existsSync(contentDir)) {
-    const collections = fs.readdirSync(contentDir, { withFileTypes: true })
+    const collections = fs
+      .readdirSync(contentDir, { withFileTypes: true })
       .filter((d) => d.isDirectory())
       .map((d) => d.name);
 
     for (const collection of collections) {
       const colDir = path.join(contentDir, collection);
-      const groups = fs.readdirSync(colDir, { withFileTypes: true })
+      const groups = fs
+        .readdirSync(colDir, { withFileTypes: true })
         .filter((d) => d.isDirectory())
         .map((d) => d.name);
 
@@ -321,35 +311,43 @@ if (shouldPopulateContent) {
           const archivedCandidate = ['mdx', 'md']
             .map((ext) => ({
               ext,
-              file: path.join(rootDir, '.locale-archive', langCode, 'content', collection, group, `${langCode}.${ext}`),
+              file: path.join(
+                rootDir,
+                '.locale-archive',
+                langCode,
+                'content',
+                collection,
+                group,
+                `${langCode}.${ext}`
+              ),
             }))
             .find((entry) => fs.existsSync(entry.file));
           if (archivedCandidate) {
-            fs.renameSync(archivedCandidate.file, path.join(groupDir, `${langCode}.${archivedCandidate.ext}`));
-            console.log(`  ↩ Restored archived content: src/content/${collection}/${group}/${langCode}.${archivedCandidate.ext}`);
+            fs.renameSync(
+              archivedCandidate.file,
+              path.join(groupDir, `${langCode}.${archivedCandidate.ext}`)
+            );
+            console.log(
+              `  ↩ Restored archived content: src/content/${collection}/${group}/${langCode}.${archivedCandidate.ext}`
+            );
             continue;
           }
-          // Resolve candidate source file
+
           const preferredSourceFile = path.join(groupDir, `${sourceLocale}.mdx`);
           const fallbackSourceFile = path.join(groupDir, `${defaultBaseLocale}.mdx`);
+          const anyMdx = fs.readdirSync(groupDir).find((f) => f.endsWith('.mdx') || f.endsWith('.md'));
           const sourceCandidate = fs.existsSync(preferredSourceFile)
             ? preferredSourceFile
             : fs.existsSync(fallbackSourceFile)
-            ? fallbackSourceFile
-            : fs.readdirSync(groupDir).find((f) => f.endsWith('.mdx') || f.endsWith('.md'))
-            ? path.join(groupDir, fs.readdirSync(groupDir).find((f) => f.endsWith('.mdx') || f.endsWith('.md')))
-            : null;
+              ? fallbackSourceFile
+              : anyMdx
+                ? path.join(groupDir, anyMdx)
+                : null;
 
           let title = group;
           const slug = group === 'home' ? '' : `${group}-${langCode}`;
-          // A page without a description keeps none: inventing one would ship a
-          // placeholder as the meta description of the localized page.
           let description = '';
           let body = contentStub(langCode);
-          // A body copied from the source locale is *not* translated copy: it is
-          // carried over so the translator has something to start from. Marking
-          // it keeps a half-done translation from being published as if it were
-          // finished.
           let bodyCopiedFromSource = false;
           let sourceFm = {};
 
@@ -372,9 +370,14 @@ if (shouldPopulateContent) {
             }
           }
 
-          const pageTitle = langCode === 'fr'
-            ? (group === 'home' ? 'Bienvenue sur Astro i18n' : group === 'about' ? 'À propos de nous' : title)
-            : `[TODO: ${langCode}] ${title}`;
+          const pageTitle =
+            langCode === 'fr'
+              ? group === 'home'
+                ? 'Bienvenue sur Astro i18n'
+                : group === 'about'
+                  ? 'À propos de nous'
+                  : title
+              : `[TODO: ${langCode}] ${title}`;
           const pageDescription = !description
             ? ''
             : description.startsWith('[TODO:')
@@ -424,15 +427,19 @@ if (shouldPopulateContent) {
           const mdxContent = stringifyFrontmatter(fmRecord, `\n${untranslatedNote}${cleanBody}\n`);
           fs.writeFileSync(targetFile, mdxContent, 'utf-8');
           if (!isDraft && entryIsDraft) {
-            console.warn(`  ⚠️ src/content/${collection}/${group}/${langCode}.mdx stays a draft: its title or description still contains a placeholder.`);
+            console.warn(
+              `  ⚠️ src/content/${collection}/${group}/${langCode}.mdx stays a draft: its title or description still contains a placeholder.`
+            );
           }
-          console.log(`  + Created content: src/content/${collection}/${group}/${langCode}.mdx (from "${sourceCandidate ? path.basename(sourceCandidate, '.mdx') : 'default'}")`);
+          console.log(
+            `  + Created content: src/content/${collection}/${group}/${langCode}.mdx (from "${sourceCandidate ? path.basename(sourceCandidate, '.mdx') : 'default'}")`
+          );
         }
       }
     }
   }
 } else {
-  console.log(`\n⏭️ Skipped creating content files for existing content as requested.`);
+  console.log('\n⏭️ Skipped creating content files for existing content as requested.');
   console.log(`💡 You can create "${langCode}.mdx" files under src/content/ whenever you are ready.`);
 }
 
@@ -446,7 +453,7 @@ if (fs.existsSync(archiveRoot) && fs.readdirSync(archiveRoot).length === 0) {
   fs.rmSync(archiveRoot, { recursive: true, force: true });
 }
 
-// 5. Compile Paraglide
+// 4. Compile Paraglide
 console.log('\n🔄 Compiling Paraglide messages...');
 try {
   compileMessages(rootDir);
@@ -455,4 +462,3 @@ try {
   console.error('❌ Failed to compile messages:', e.message);
   process.exit(1);
 }
-

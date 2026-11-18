@@ -1,13 +1,12 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
-import path from 'node:path';
 import { askYesNo, confirmDeletion } from './lib/prompt.mjs';
+import { readLocaleConfig } from './lib/locales.mjs';
 import { unregisterLocale } from './lib/locale-mutations.mjs';
 
 const args = process.argv.slice(2);
 const langCode = args.find((a) => !a.startsWith('--'));
 let force = false;
-let contentOption = null; // true: delete content, false: keep content, null: prompt
+let contentOption = null;
 
 for (const arg of args) {
   if (arg === '--force' || arg === '-y' || arg === '--yes') {
@@ -21,32 +20,31 @@ for (const arg of args) {
 
 if (!langCode) {
   console.error(
-    'Usage: pnpm run i18n:remove-lang <locale-code> [--with-content|--keep-content] [--force]'
+    'Usage: npm run i18n:remove-lang -- <locale-code> [--with-content|--keep-content] [--force]'
   );
   process.exit(1);
 }
 
 const rootDir = process.cwd();
-const inlangPath = path.join(rootDir, 'project.inlang', 'settings.json');
-const inlangSettings = JSON.parse(fs.readFileSync(inlangPath, 'utf-8'));
-const baseLocale = inlangSettings.baseLocale || 'en';
+const localeConfig = readLocaleConfig(rootDir);
+const baseLocale = localeConfig.defaultLocale || 'en';
 
-if (!inlangSettings.locales.includes(langCode)) {
-  console.error(`❌ Locale "${langCode}" is not registered in project.inlang/settings.json.`);
-  console.error(`   Currently registered locales: ${inlangSettings.locales.join(', ')}`);
+if (!localeConfig.locales.includes(langCode)) {
+  console.error(`❌ Locale "${langCode}" is not registered in client/locales.json.`);
+  console.error(`   Currently registered locales: ${localeConfig.locales.join(', ')}`);
   process.exit(1);
 }
 
 if (langCode === baseLocale) {
   console.error(`❌ Cannot remove base/default locale "${langCode}".`);
   console.error(
-    `   To remove "${langCode}", first swap the default locale with: pnpm run i18n:set-default <other-locale>`
+    `   To remove "${langCode}", first swap the default locale with: npm run i18n:set-default -- <other-locale>`
   );
   console.error('   See docs/PLAYBOOKS.md Playbook 1 for more details.');
   process.exit(1);
 }
 
-if (inlangSettings.locales.length <= 1) {
+if (localeConfig.locales.length <= 1) {
   console.error('❌ Cannot remove the only remaining locale.');
   process.exit(1);
 }
@@ -67,7 +65,6 @@ if (!proceed) {
   process.exit(0);
 }
 
-// Content is opt-in: --force alone removes only configuration and dictionaries.
 let deleteContent = contentOption === true;
 if (!force && contentOption === null) {
   deleteContent = await askYesNo(
@@ -85,15 +82,14 @@ try {
     archiveContent: !deleteContent,
     compile: true,
   });
-  console.log(`✅ Removed "${langCode}" from project.inlang/settings.json`);
+  console.log(`✅ Removed "${langCode}" from client/locales.json`);
   if (result.deletedDictionary) {
     console.log(
       result.archivedDictionary
-        ? `✅ Archived messages/${langCode}.json → .locale-archive/${langCode}/messages.json`
-        : `✅ Deleted messages/${langCode}.json`
+        ? `✅ Archived client/messages/${langCode}.json → .locale-archive/${langCode}/messages.json`
+        : `✅ Deleted client/messages/${langCode}.json`
     );
   }
-  console.log('✅ Updated LOCALES and LOCALE_METADATA in src/i18n/locales.ts');
   if (deleteContent) {
     for (const rel of result.deletedContentFiles) {
       console.log(`  - Deleted: ${rel}`);
@@ -101,7 +97,7 @@ try {
     console.log(`✅ Deleted ${result.deletedContentFiles.length} content files.`);
   } else if (result.archivedContentFiles.length > 0) {
     console.log(
-      `📦 Archived ${result.archivedContentFiles.length} content file(s) for "${langCode}" under .locale-archive/${langCode}/content/ (restore anytime with \`pnpm run i18n:add-lang ${langCode}\`).`
+      `📦 Archived ${result.archivedContentFiles.length} content file(s) for "${langCode}" under .locale-archive/${langCode}/content/ (restore anytime with \`npm run i18n:add-lang -- ${langCode}\`).`
     );
   } else {
     console.log(`ℹ️ No content files found for "${langCode}".`);

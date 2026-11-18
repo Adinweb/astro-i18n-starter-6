@@ -1,20 +1,12 @@
 /**
- * The icon vocabulary of the site, and nothing else.
+ * The icon vocabulary of the site, composed from core icons plus client extensions (`client/icons.ts`).
  *
- * `Icon.astro` maps each name below to one Tabler icon component (`@tabler/
- * icons-astro`). The list is deliberately a closed union instead of `string`:
- * a typo in a component, or a navigation entry that names an icon nobody
- * registered, fails the type check rather than rendering an empty square.
- *
- * The mapping is static, so the bundler only pulls in the icons that appear
- * here — importing the package barrel and indexing it at runtime would drag the
- * whole set into the build, and inline SVG would then be duplicated per render.
- *
- * This module has no Astro imports on purpose: navigation data and the unit
- * tests can use the names without touching the component layer.
+ * `Icon.astro` maps core names statically to per-icon `@tabler/icons-astro` modules and delegates
+ * client-added icon names to `client/ClientIcons.astro`.
  */
+import { CLIENT_DIRECTIONAL_ICONS, CLIENT_ICONS, type ClientIconName } from '@client/icons';
 
-export const SITE_ICONS = [
+const CORE_SITE_ICONS = [
   'search',
   'globe',
   'close',
@@ -78,15 +70,33 @@ export const SITE_ICONS = [
   'brand-telegram',
 ] as const;
 
-export type IconName = (typeof SITE_ICONS)[number];
+export type CoreIconName = (typeof CORE_SITE_ICONS)[number];
+
+export const SITE_ICONS = [...CORE_SITE_ICONS, ...CLIENT_ICONS] as const;
+
+export type IconName = CoreIconName | ClientIconName;
 
 /** Rendered when a name is unknown at runtime (data-driven menus, user content). */
-export const FALLBACK_ICON: IconName = 'file';
+export const FALLBACK_ICON: CoreIconName = 'file';
 
+const CORE_ICON_SET: ReadonlySet<string> = new Set(CORE_SITE_ICONS);
+const CLIENT_ICON_SET: ReadonlySet<string> = new Set(CLIENT_ICONS);
 const SITE_ICON_SET: ReadonlySet<string> = new Set(SITE_ICONS);
+
+function isCoreIconName(name: string | undefined): name is CoreIconName {
+  return typeof name === 'string' && CORE_ICON_SET.has(name);
+}
+
+export function isClientIconName(name: string | undefined): name is ClientIconName {
+  return typeof name === 'string' && CLIENT_ICON_SET.has(name);
+}
 
 export function isIconName(name: string | undefined): name is IconName {
   return typeof name === 'string' && SITE_ICON_SET.has(name);
+}
+
+export function resolveCoreIconName(name: string | undefined): CoreIconName {
+  return isCoreIconName(name) ? name : FALLBACK_ICON;
 }
 
 /**
@@ -99,13 +109,12 @@ export function resolveIconName(name: string | undefined): IconName {
 
 /**
  * Icons that point along the reading direction and therefore mirror in RTL.
- * `Button.astro` uses this list to rotate the icon and to decide whether the
- * hover nudge travels forward, so the two never disagree.
  */
-const DIRECTIONAL_ICONS: ReadonlySet<IconName> = new Set<IconName>([
+const DIRECTIONAL_ICONS: ReadonlySet<string> = new Set<string>([
   'arrow-right',
   'chevron-left',
   'chevron-right',
+  ...CLIENT_DIRECTIONAL_ICONS,
 ]);
 
 export function isDirectionalIcon(name: string | undefined): boolean {

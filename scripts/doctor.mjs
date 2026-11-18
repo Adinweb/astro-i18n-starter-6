@@ -2,27 +2,32 @@
 /**
  * Pre-flight health check for a project built from this starter.
  *
- * Runs no build and writes no file: it inspects the configuration, the
- * dictionaries and the content, then prints one line per finding with the
- * command that fixes it. `lint`/`build`/`smoke` answer "does it compile and
- * render"; `doctor` answers "is this project set up for the site it describes".
+ * Inspects two-tier configuration (`app.config.json` + `client/config.json`),
+ * `client/locales.json`, merged dictionaries, and content health.
  *
  * Usage:
- *   pnpm run doctor [--json]
- *
- * Exit code is 1 when at least one error was found, so CI can gate on it.
+ *   npm run doctor -- [--json]
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import {
-  KNOWN_TYPES,
   contentDirFor,
+  getKnownTypes,
   groupDirs,
-  readAppConfig,
   readContentTypes,
   rootDir,
 } from './lib/content-types.mjs';
-import { readLocaleConfig } from './lib/locales.mjs';
+import {
+  clientConfigPathFor,
+  coreConfigPathFor,
+  deepMergeConfig,
+} from './lib/config.mjs';
+import { localeConfigPathFor, readLocaleConfig } from './lib/locales.mjs';
+import {
+  readCoreMessages,
+  readMergedMessages,
+  stripSchema,
+} from './lib/merge-messages.mjs';
 import { parseFrontmatter } from './lib/frontmatter.mjs';
 import { findPlaceholderSlugs } from './lib/slug.mjs';
 
@@ -49,8 +54,7 @@ const requiredNode = /(\d+)\.(\d+)\.(\d+)/.exec(packageJson.engines?.node ?? '')
 const [major, minor] = process.versions.node.split('.').map(Number);
 if (requiredNode) {
   const needed = requiredNode.slice(1, 3).map(Number);
-  const tooOld =
-    major < needed[0] || (major === needed[0] && minor < needed[1]);
+  const tooOld = major < needed[0] || (major === needed[0] && minor < needed[1]);
   if (tooOld) {
     add(
       'error',
@@ -62,40 +66,64 @@ if (requiredNode) {
   }
 }
 
-if (!fs.existsSync(path.join(rootDir, 'pnpm-lock.yaml'))) {
-  // A fresh clone before `pnpm install` is a normal state, so this is a
-  // warning: it cannot break the build, it only makes installs unreproducible.
-  add('warn', 'pnpm-lock.yaml is missing.', 'Run `pnpm install` and commit the lockfile.');
-} else if (!packageJson.packageManager) {
-  add(
-    'warn',
-    'package.json has no "packageManager" field.',
-    'Add e.g. "packageManager": "pnpm@<version>" so CI and contributors agree on the tool.'
-  );
+const hasLockfile =
+  fs.existsSync(path.join(rootDir, 'package-lock.json')) ||
+  fs.existsSync(path.join(rootDir, 'pnpm-lock.yaml'));
+if (!hasLockfile) {
+  add('warn', 'No lockfile (package-lock.json or pnpm-lock.yaml) found.', 'Run `npm install` and commit the lockfile.');
 } else {
-  add('ok', `Package manager pinned as ${packageJson.packageManager}.`);
+  add('ok', 'Dependency lockfile is present.');
 }
 
 // ----------------------------------------------------------------- config ---
+let coreConfig = null;
+let clientConfig = {};
 let appConfig = null;
+
 try {
-  appConfig = readAppConfig();
+  coreConfig = JSON.parse(fs.readFileSync(coreConfigPathFor(rootDir), 'utf-8'));
   add('ok', 'app.config.json parses.');
 } catch (error) {
   add('error', `app.config.json is not valid JSON: ${error.message}`, 'Fix the JSON syntax.');
 }
 
-// Read the locales before validating content-type bases: a base that matches a
-// locale prefix is reserved by the router, exactly as it is in types.ts.
-const { locales, defaultLocale } = readLocaleConfig();
-const types = appConfig ? readContentTypes(appConfig) : [];
+const clientCfgPath = clientConfigPathFor(rootDir);
+if (fs.existsSync(clientCfgPath)) {
+  try {
+    const raw = fs.readFileSync(clientCfgPath, 'utf-8').trim();
+    clientConfig = raw ? JSON.parse(raw) : {};
+    add('ok', 'client/config.json parses.');
+  } catch (error) {
+    add('error', `client/config.json is not valid JSON: ${error.message}`, 'Fix the JSON syntax.');
+  }
+} else {
+  add('warn', 'client/config.json is missing.', 'Create `{}` in client/config.json or run `npm run site:init`.');
+}
 
-const unknown = types.filter((type) => !KNOWN_TYPES.includes(type.key));
+if (coreConfig) {
+  appConfig = deepMergeConfig(coreConfig, clientConfig);
+}
+
+let locales = [];
+let defaultLocale = 'en';
+try {
+  const localeCfg = readLocaleConfig(rootDir);
+  locales = localeCfg.locales;
+  defaultLocale = localeCfg.defaultLocale || locales[0] || 'en';
+  add('ok', `client/locales.json defines ${locales.length} locale(s) (default: ${defaultLocale}).`);
+} catch (error) {
+  add('error', error instanceof Error ? error.message : String(error), 'Create valid client/locales.json.');
+}
+
+const knownTypes = getKnownTypes(rootDir);
+const types = appConfig ? readContentTypes(appConfig, rootDir) : [];
+
+const unknown = types.filter((type) => !knownTypes.includes(type.key));
 for (const type of unknown) {
   add(
     'error',
     `Unknown content type "${type.key}" in content.types.`,
-    `Add its collection to src/content.config.ts and the key to CONTENT_TYPE_KEYS, or remove it from app.config.json (known: ${KNOWN_TYPES.join(', ')}).`
+    `Register its collection in client/content.ts or remove it from client/config.json (known: ${knownTypes.join(', ')}).`
   );
 }
 
@@ -128,7 +156,7 @@ if (disabled.length > 0) {
   add(
     'warn',
     `Disabled content type(s): ${disabled.map((type) => type.key).join(', ')}.`,
-    'Their routes, sitemap entries and navigation links are not built. Re-enable with `pnpm run content:enable <type>`.'
+    'Their routes, sitemap entries and navigation links are not built. Re-enable with `npm run content:enable -- <type>`.'
   );
 }
 
@@ -140,7 +168,7 @@ if (appConfig) {
     add(
       'warn',
       `Site name is still the template default ("${appConfig.site?.name}").`,
-      'Run `pnpm run site:init` or update site metadata and brand palette in app.config.json.'
+      'Run `npm run site:init` or set site overrides in client/config.json.'
     );
   } else {
     add('ok', `Site identity is customised (${appConfig.site.name}).`);
@@ -153,61 +181,58 @@ if (appConfig) {
     if (brand.preset && !(brand.preset in themePresets.palettes)) {
       add(
         'error',
-        `Unknown brand.preset "${brand.preset}" in app.config.json.`,
+        `Unknown brand.preset "${brand.preset}" in merged config.`,
         `Use one of: ${Object.keys(themePresets.palettes).join(', ')}.`
       );
     }
     if (brand.primaryColor && !/^#[0-9a-fA-F]{6}$/.test(brand.primaryColor)) {
       add(
         'error',
-        `Invalid brand.primaryColor "${brand.primaryColor}" in app.config.json.`,
+        `Invalid brand.primaryColor "${brand.primaryColor}".`,
         'Use a 6-digit hex color like "#1e40af".'
       );
     }
     if (brand.accentColor && !/^#[0-9a-fA-F]{6}$/.test(brand.accentColor)) {
       add(
         'error',
-        `Invalid brand.accentColor "${brand.accentColor}" in app.config.json.`,
+        `Invalid brand.accentColor "${brand.accentColor}".`,
         'Use a 6-digit hex color like "#f59e0b".'
       );
     }
     if (brand.fontPreset && !(brand.fontPreset in themePresets.latinFonts)) {
       add(
         'error',
-        `Unknown brand.fontPreset "${brand.fontPreset}" in app.config.json.`,
+        `Unknown brand.fontPreset "${brand.fontPreset}".`,
         `Use one of: ${Object.keys(themePresets.latinFonts).join(', ')}.`
       );
     }
     if (brand.rtlFontPreset && !(brand.rtlFontPreset in themePresets.rtlFonts)) {
       add(
         'error',
-        `Unknown brand.rtlFontPreset "${brand.rtlFontPreset}" in app.config.json.`,
+        `Unknown brand.rtlFontPreset "${brand.rtlFontPreset}".`,
         `Use one of: ${Object.keys(themePresets.rtlFonts).join(', ')}.`
       );
     }
     if (brand.socialCardMode && !['branded', 'artwork', 'default'].includes(brand.socialCardMode)) {
       add(
         'error',
-        `Unknown brand.socialCardMode "${brand.socialCardMode}" in app.config.json.`,
+        `Unknown brand.socialCardMode "${brand.socialCardMode}".`,
         'Use "branded", "artwork", or "default".'
       );
     }
   }
 
-  const hasPlaceholderSocial = Object.values(appConfig.social ?? {}).some((url) =>
-    typeof url === 'string' && /example\.com|github\.com\/?$/.test(url.trim())
+  const hasPlaceholderSocial = Object.values(appConfig.social ?? {}).some(
+    (url) => typeof url === 'string' && /example\.com|github\.com\/?$/.test(url.trim())
   );
   if (hasPlaceholderSocial) {
     add(
       'warn',
       'Social links still point at placeholders.',
-      'Set your links under social (github, twitter, linkedin, instagram, telegram) in app.config.json.'
+      'Set your links under social in client/config.json.'
     );
   }
 
-  // The contact form needs a destination. Without an endpoint it renders a
-  // visitor-facing "unavailable" panel and, when `site.contactEmail` is set, a
-  // mailto button; without both, the page can receive nothing at all.
   const hasEndpoint = Boolean(
     appConfig.api?.baseUrl ||
       process.env.PUBLIC_API_BASE_URL ||
@@ -219,7 +244,7 @@ if (appConfig) {
     add(
       'warn',
       'The contact form has no destination (api.baseUrl and site.contactEmail are both empty).',
-      'Set site.contactEmail for the mailto fallback and/or api.baseUrl (or PUBLIC_CONTACT_API_URL) for the external endpoint.'
+      'Set site.contactEmail in client/config.json for mailto fallback and/or api.baseUrl for an external endpoint.'
     );
   } else {
     add(
@@ -230,39 +255,27 @@ if (appConfig) {
     );
   }
 
-  // Both the footer/OG metadata and `site.webmanifest` now read `site_description`
-  // from the active `DEFAULT_LOCALE` dictionary. Verify it is populated and
-  // warn only if `baseLocale === 'en'` has diverged from `app.config.json`.
-  const baseLocale = defaultLocale ?? locales[0];
-  const dictionaryPath = baseLocale
-    ? path.join(rootDir, 'messages', `${baseLocale}.json`)
-    : null;
+  const baseDictionary = locales.length ? readMergedMessages(defaultLocale, rootDir) : null;
+  if (baseDictionary) {
+    const messageDescription = baseDictionary.site_description;
+    const appDescription = appConfig.site?.description;
 
-  if (dictionaryPath && fs.existsSync(dictionaryPath)) {
-    try {
-      const dictionary = JSON.parse(fs.readFileSync(dictionaryPath, 'utf-8'));
-      const messageDescription = dictionary.site_description;
-      const appDescription = appConfig.site?.description;
-
-      if (typeof messageDescription !== 'string' || !messageDescription.trim()) {
-        add(
-          'error',
-          `messages/${baseLocale}.json is missing a non-empty "site_description".`,
-          `Add "site_description" in messages/${baseLocale}.json.`
-        );
-      } else if (
-        baseLocale === 'en' &&
-        typeof appDescription === 'string' &&
-        messageDescription.trim() !== appDescription.trim()
-      ) {
-        add(
-          'warn',
-          `Site description differs between app.config.json and messages/${baseLocale}.json.`,
-          `Keep site.description in app.config.json aligned with site_description in messages/${baseLocale}.json.`
-        );
-      }
-    } catch {
-      // A dictionary that cannot be parsed is reported by the audit, not here.
+    if (typeof messageDescription !== 'string' || !messageDescription.trim()) {
+      add(
+        'error',
+        `Merged dictionary for "${defaultLocale}" is missing a non-empty "site_description".`,
+        `Add "site_description" in client/messages/${defaultLocale}.json.`
+      );
+    } else if (
+      defaultLocale === 'en' &&
+      typeof appDescription === 'string' &&
+      messageDescription.trim() !== appDescription.trim()
+    ) {
+      add(
+        'warn',
+        `Site description differs between merged config and "${defaultLocale}" dictionary.`,
+        `Keep site.description in client/config.json aligned with site_description in client/messages/${defaultLocale}.json.`
+      );
     }
   }
 }
@@ -278,21 +291,18 @@ if (!process.env.SITE_URL) {
 }
 
 // ------------------------------------------------------------- dictionaries ---
-if (locales.length === 0) {
-  add('error', 'Could not read LOCALES from src/i18n/locales.ts.', 'Check that file.');
-}
-
 const dictionaries = {};
 for (const locale of locales) {
-  const file = path.join(rootDir, 'messages', `${locale}.json`);
-  if (!fs.existsSync(file)) {
-    add('error', `messages/${locale}.json is missing.`, 'Run `pnpm run messages:compile` or create it.');
+  const hasCore = Object.keys(stripSchema(readCoreMessages(locale, rootDir))).length > 0;
+  const clientFile = path.join(rootDir, 'client', 'messages', `${locale}.json`);
+  if (!hasCore && !fs.existsSync(clientFile)) {
+    add('error', `client/messages/${locale}.json is missing.`, 'Run `npm run messages:compile` or create it.');
     continue;
   }
   try {
-    dictionaries[locale] = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    dictionaries[locale] = readMergedMessages(locale, rootDir);
   } catch (error) {
-    add('error', `messages/${locale}.json is not valid JSON: ${error.message}`, 'Fix the syntax.');
+    add('error', `Dictionary for "${locale}" could not be loaded: ${error.message}`, 'Fix the JSON syntax.');
   }
 }
 
@@ -307,8 +317,8 @@ if (baseDictionary) {
     if (missing.length > 0) {
       add(
         'error',
-        `${locale}.json is missing ${missing.length} key(s), e.g. ${missing.slice(0, 3).join(', ')}.`,
-        'Run `pnpm run audit:i18n` for the full list.'
+        `Merged "${locale}" dictionary is missing ${missing.length} key(s), e.g. ${missing.slice(0, 3).join(', ')}.`,
+        'Run `npm run audit:i18n` for the full list.'
       );
     }
   }
@@ -330,36 +340,39 @@ if (baseDictionary) {
     add(
       'warn',
       `Untranslated message keys: ${todos.map((entry) => `${entry.locale} ${entry.count}`).join(', ')}.`,
-      'Translate them in messages/<locale>.json. A [TODO: …] value ships as visible copy.'
+      'Translate them in client/messages/<locale>.json. A [TODO: …] value ships as visible copy.'
     );
   } else {
-    add('ok', `No [TODO: …] values in the ${locales.length} dictionaries.`);
+    add('ok', `No [TODO: …] values in the ${locales.length} active dictionaries.`);
   }
 }
 
-// Compiled messages must not be older than the dictionaries they come from.
-// The compiler only rewrites the files whose content changed, so the barrel it
-// always regenerates is the reliable timestamp of the last successful compile.
+// Check compiled Paraglide output freshness against core + client messages + client/locales.json
 const compiledBarrel = path.join(rootDir, 'src', 'paraglide', 'messages', '_index.js');
 const compiledMessages = fs.existsSync(compiledBarrel)
   ? compiledBarrel
   : path.join(rootDir, 'src', 'paraglide', 'messages.js');
 
 if (!fs.existsSync(compiledMessages)) {
-  add('warn', 'src/paraglide/ is not compiled.', 'Run `pnpm run messages:compile`.');
+  add('warn', 'src/paraglide/ is not compiled.', 'Run `npm run messages:compile`.');
 } else {
   const compiledAt = fs.statSync(compiledMessages).mtimeMs;
-  const newestDictionary = Math.max(
-    ...locales.map((locale) => {
-      const file = path.join(rootDir, 'messages', `${locale}.json`);
-      return fs.existsSync(file) ? fs.statSync(file).mtimeMs : 0;
-    })
+  const watchFiles = [
+    localeConfigPathFor(rootDir),
+    ...locales.flatMap((locale) => [
+      path.join(rootDir, 'messages', 'core', `${locale}.json`),
+      path.join(rootDir, 'client', 'messages', `${locale}.json`),
+    ]),
+  ];
+  const newestSource = Math.max(
+    0,
+    ...watchFiles.map((file) => (fs.existsSync(file) ? fs.statSync(file).mtimeMs : 0))
   );
-  if (newestDictionary > compiledAt + 1000) {
+  if (newestSource > compiledAt + 1000) {
     add(
       'warn',
-      'messages/*.json changed after src/paraglide/ was compiled.',
-      'Run `pnpm run messages:compile` (or `pnpm run dev`, which compiles first).'
+      'Message dictionaries or client/locales.json changed after src/paraglide/ was compiled.',
+      'Run `npm run messages:compile`.'
     );
   } else {
     add('ok', 'Compiled messages are up to date.');
@@ -367,14 +380,14 @@ if (!fs.existsSync(compiledMessages)) {
 }
 
 // ------------------------------------------------------------------ content ---
-for (const type of types.filter((candidate) => KNOWN_TYPES.includes(candidate.key))) {
+for (const type of types.filter((candidate) => knownTypes.includes(candidate.key))) {
   const groups = groupDirs(type.key);
   if (groups.length === 0) {
     if (type.enabled && type.key !== 'pages') {
       add(
-        'warn',
-        `Content type "${type.key}" is enabled but has no entries.`,
-        `Create one with \`pnpm run content:new ${type.key} <slug>\` or disable it.`
+        'ok',
+        `Content type "${type.key}" is enabled with 0 entries (clean base).`,
+        `Seed starter demo entries with \`npm run starter:seed\` or create an entry with \`npm run content:new -- ${type.key} <slug>\`.`
       );
     }
     continue;
@@ -387,7 +400,9 @@ for (const type of types.filter((candidate) => KNOWN_TYPES.includes(candidate.ke
   for (const group of groups) {
     const groupDir = path.join(contentDirFor(type.key), group);
     for (const locale of locales) {
-      const file = ['mdx', 'md'].map((ext) => path.join(groupDir, `${locale}.${ext}`)).find((candidate) => fs.existsSync(candidate));
+      const file = ['mdx', 'md']
+        .map((ext) => path.join(groupDir, `${locale}.${ext}`))
+        .find((candidate) => fs.existsSync(candidate));
       if (!file) {
         missingFiles += 1;
         continue;
@@ -406,14 +421,14 @@ for (const type of types.filter((candidate) => KNOWN_TYPES.includes(candidate.ke
     add(
       'warn',
       `${type.key}: ${missingFiles} group/locale file(s) missing.`,
-      `Run \`pnpm run content:status\` for the matrix, then \`pnpm run i18n:add-lang\`-style scaffolding or add the files.`
+      'Run `npm run content:status` for the matrix.'
     );
   }
   if (brokenImages > 0) {
     add(
       'error',
       `${type.key}: ${brokenImages} frontmatter image reference(s) point at files that do not exist.`,
-      'Fix the `image: "./<file>"` value or run `pnpm run assets:generate`.'
+      'Fix the `image: "./<file>"` value or run `npm run assets:generate`.'
     );
   }
   if (todoEntries > 0) {
@@ -424,9 +439,6 @@ for (const type of types.filter((candidate) => KNOWN_TYPES.includes(candidate.ke
     );
   }
 
-  // A scaffolded locale starts with `<group>-<locale>` as its slug. It routes
-  // and builds, so nothing fails — the URL simply reads like a leftover
-  // (`/fa/services-fa/`) and indexes for the wrong phrase in the wrong script.
   const placeholderSlugs = groups.flatMap((group) =>
     findPlaceholderSlugs(path.join(contentDirFor(type.key), group), group, locales).map(
       (entry) => `${group}/${entry.locale} → "${entry.slug}"`
@@ -436,7 +448,7 @@ for (const type of types.filter((candidate) => KNOWN_TYPES.includes(candidate.ke
     add(
       'warn',
       `${type.key}: ${placeholderSlugs.length} placeholder slug(s): ${placeholderSlugs.slice(0, 3).join(', ')}${placeholderSlugs.length > 3 ? ', …' : ''}.`,
-      'Set a native slug per language: `pnpm run new:page|new:post <group> --update --slug:<locale>="<native-slug>"` before publishing.'
+      'Set a native slug per language before publishing.'
     );
   }
   if (missingFiles === 0 && brokenImages === 0 && todoEntries === 0) {
@@ -444,8 +456,12 @@ for (const type of types.filter((candidate) => KNOWN_TYPES.includes(candidate.ke
   }
 }
 
+if (fs.existsSync(path.join(rootDir, 'starter-kit'))) {
+  add('ok', 'starter-kit/ demo bundle is available (`npm run starter:seed`).');
+}
+
 if (!fs.existsSync(path.join(rootDir, 'dist'))) {
-  add('warn', 'No dist/ build yet.', 'Run `pnpm run build` before `pnpm run smoke`.');
+  add('warn', 'No dist/ build yet.', 'Run `npm run build` before `npm run smoke`.');
 }
 
 // ------------------------------------------------------------------- output ---
@@ -454,7 +470,11 @@ const warnings = findings.filter((finding) => finding.level === 'warn');
 
 if (wantsJson) {
   console.log(
-    JSON.stringify({ ok: errors.length === 0, errors: errors.length, warnings: warnings.length, findings }, null, 2)
+    JSON.stringify(
+      { ok: errors.length === 0, errors: errors.length, warnings: warnings.length, findings },
+      null,
+      2
+    )
   );
   process.exit(errors.length === 0 ? 0 : 1);
 }

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { prepareParaglideWorkspace } from './merge-messages.mjs';
 
 /**
  * Resolves the installed `@inlang/paraglide-js` CLI entry point by walking up
@@ -14,46 +15,41 @@ export function findParaglideBin(startDir = process.cwd()) {
     return process.env.PARAGLIDE_BIN;
   }
 
-  let dir = path.resolve(startDir);
-  while (true) {
-    const candidate = path.join(dir, 'node_modules', '@inlang', 'paraglide-js', 'bin', 'run.js');
-    if (fs.existsSync(candidate)) return candidate;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
+  const starts = [path.resolve(startDir), path.resolve(import.meta.dirname, '..', '..')];
+  for (const start of starts) {
+    let dir = start;
+    while (true) {
+      const candidate = path.join(dir, 'node_modules', '@inlang', 'paraglide-js', 'bin', 'run.js');
+      if (fs.existsSync(candidate)) return candidate;
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
   }
 
   return null;
 }
 
 /**
- * Compiles `messages/*.json` into `src/paraglide/`.
- *
- * Runs the installed `@inlang/paraglide-js` CLI entry point directly under the
- * active Node.js binary when `node_modules` is present, avoiding a hard runtime
- * dependency on `pnpm` (so `npm`, `pnpm`, or bare `node` invocations all work).
- * Falls back to `pnpm run messages:compile` (or `npm`) when running inside a
- * dependency-less sandbox such as `scripts/verify-cli.mjs`.
+ * Merges core + client dictionaries into `.paraglide-work/` and compiles
+ * Paraglide output into `src/paraglide/`.
  *
  * @param {string} [rootDir=process.cwd()]
  */
 export function compileMessages(rootDir = process.cwd()) {
+  const { inlangDir } = prepareParaglideWorkspace(rootDir);
   const compilerBin = findParaglideBin(rootDir);
-  const projectPath = path.join(rootDir, 'project.inlang');
   const outdirPath = path.join(rootDir, 'src', 'paraglide');
 
   if (compilerBin) {
     execFileSync(
       process.execPath,
-      [compilerBin, 'compile', '--project', projectPath, '--outdir', outdirPath],
+      [compilerBin, 'compile', '--project', inlangDir, '--outdir', outdirPath],
       { cwd: rootDir, stdio: 'inherit' }
     );
     return;
   }
 
-  // On Windows the package managers are `.cmd` shims, which Node refuses to
-  // spawn directly (EINVAL). Resolving them through the shell keeps the
-  // dependency-less fallback working instead of dying on a spawn error.
   const runPackageScript = (manager) =>
     execFileSync(manager, ['run', 'messages:compile'], {
       cwd: rootDir,
@@ -62,10 +58,10 @@ export function compileMessages(rootDir = process.cwd()) {
     });
 
   try {
-    runPackageScript('pnpm');
+    runPackageScript('npm');
   } catch (err) {
     if (err && (err.code === 'ENOENT' || err.code === 'EINVAL')) {
-      runPackageScript('npm');
+      runPackageScript('pnpm');
       return;
     }
     throw err;

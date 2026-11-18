@@ -1,33 +1,35 @@
 import { describe, it, expect } from 'vitest';
 import { getCategoryLabel, getTagLabel } from './taxonomy';
 import { DEFAULT_LOCALE, LOCALES, isLocale, type Locale } from '@/i18n/locales';
+import * as m from '@/paraglide/messages';
 
 const altLocale: Locale = LOCALES.find((locale) => locale !== DEFAULT_LOCALE) ?? DEFAULT_LOCALE;
+const messagesRecord = m as unknown as Record<string, ((params: Record<string, never>, options: { locale: Locale }) => string) | undefined>;
 
-function expectCategoryIfActive(key: string, code: string, expected: string) {
-  if (isLocale(code)) {
-    expect(getCategoryLabel(key, code)).toBe(expected);
-  }
+function expectCategoryIfActive(key: string, code: string, expected: string, fallback: string) {
+  if (!isLocale(code)) return;
+  const hasMessage = typeof messagesRecord[`blog_category_${key}`] === 'function';
+  expect(getCategoryLabel(key, code)).toBe(hasMessage ? expected : fallback);
 }
 
-function expectTagIfActive(key: string, code: string, expected: string) {
-  if (isLocale(code)) {
-    expect(getTagLabel(key, code)).toBe(expected);
-  }
+function expectTagIfActive(key: string, code: string, expected: string, fallback: string) {
+  if (!isLocale(code)) return;
+  const hasMessage = typeof messagesRecord[`blog_tag_${key}`] === 'function';
+  expect(getTagLabel(key, code)).toBe(hasMessage ? expected : fallback);
 }
 
 describe('src/libs/content/taxonomy.ts', () => {
-  it('resolves localized category labels from the message dictionaries', () => {
-    expectCategoryIfActive('engineering', 'en', 'Engineering');
-    expectCategoryIfActive('engineering', 'de', 'Entwicklung');
-    expectCategoryIfActive('engineering', 'fa', 'مهندسی');
-    expectCategoryIfActive('guides', 'ar', 'أدلة');
+  it('resolves localized category labels when present in dictionaries, or falls back cleanly', () => {
+    expectCategoryIfActive('engineering', 'en', 'Engineering', 'Engineering');
+    expectCategoryIfActive('engineering', 'de', 'Entwicklung', 'Engineering');
+    expectCategoryIfActive('engineering', 'fa', 'مهندسی', 'Engineering');
+    expectCategoryIfActive('guides', 'ar', 'أدلة', 'Guides');
   });
 
-  it('resolves localized tag labels', () => {
-    expectTagIfActive('i18n', 'en', 'Internationalization');
-    expectTagIfActive('i18n', 'fr', 'Internationalisation');
-    expectTagIfActive('rtl', 'fa', 'راست‌چین');
+  it('resolves localized tag labels when present in dictionaries, or falls back cleanly', () => {
+    expectTagIfActive('i18n', 'en', 'Internationalization', 'I18n');
+    expectTagIfActive('i18n', 'fr', 'Internationalisation', 'I18n');
+    expectTagIfActive('rtl', 'fa', 'راست‌چین', 'Rtl');
   });
 
   it('falls back to a humanized key when no message exists', () => {

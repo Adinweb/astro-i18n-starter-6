@@ -7,6 +7,7 @@ import { resolveImageOption, placeArtworkFor } from './lib/image-reference.mjs';
 import { contentStub } from './lib/content-stub.mjs';
 import { findPlaceholderSlugs, placeholderSlugNotice, resolveSlug } from './lib/slug.mjs';
 import { entryKeyError } from './lib/validate.mjs';
+import { readLocaleConfig } from './lib/locales.mjs';
 import {
   escapeRegex,
   parseFrontmatter,
@@ -197,11 +198,8 @@ Update / Sync Options:
   const rootDir = process.cwd();
   const targetDir = path.join(rootDir, 'src', 'content', 'pages', pageKey);
 
-  const inlangSettings = JSON.parse(
-    fs.readFileSync(path.join(rootDir, 'project.inlang', 'settings.json'), 'utf-8')
-  );
-  const LOCALES = inlangSettings.locales;
-  const defaultLocale = inlangSettings.baseLocale || 'en';
+  const { locales: LOCALES, defaultLocale: cfgDefaultLocale } = readLocaleConfig(rootDir);
+  const defaultLocale = cfgDefaultLocale || 'en';
   if (fromLocale && !LOCALES.includes(fromLocale)) {
     console.error(
       `❌ Unknown source locale "${fromLocale}". Registered locales: ${LOCALES.join(', ')}.`
@@ -541,7 +539,7 @@ Update / Sync Options:
         `  eyebrow=${JSON.stringify(isFa ? 'پرسش‌های متداول' : isAr ? 'الأسئلة الشائعة' : 'FAQ')}`,
         `  heading=${JSON.stringify(isFa ? 'پاسخ به پرسش‌های رایج' : isAr ? 'إجابات على الأسئلة المتكررة' : 'Frequently asked questions')}`,
         `  items={[`,
-        `    { question: ${JSON.stringify(isFa ? 'چگونه رنگ‌ها و فونت برند را تغییر دهم؟' : isAr ? 'كيف أخصص ألوان العلامة التجارية؟' : 'How do we customize brand colors and fonts?')}, answer: ${JSON.stringify(isFa ? 'تنظیمات برند از یک منبع واحد در app.config.json خوانده می‌شود و با دستور site:init قابل تغییر است.' : isAr ? 'تُقرأ إعدادات العلامة من مصدر واحد في app.config.json.' : 'Brand tokens, palettes, and font pairings are managed centrally in app.config.json or via pnpm run site:init.')} },`,
+        `    { question: ${JSON.stringify(isFa ? 'چگونه رنگ‌ها و فونت برند را تغییر دهم؟' : isAr ? 'كيف أخصص ألوان العلامة التجارية؟' : 'How do we customize brand colors and fonts?')}, answer: ${JSON.stringify(isFa ? 'تنظیمات برند در client/config.json نگهداری می‌شود و با دستور site:init قابل تغییر است.' : isAr ? 'تُحفظ إعدادات العلامة التجارية في client/config.json.' : 'Brand tokens, palettes, and font pairings are managed in client/config.json or via npm run site:init.')} },`,
         `    { question: ${JSON.stringify(isFa ? 'آیا این صفحه با زبان‌های راست‌به‌چپ سازگار است؟' : isAr ? 'هل تدعم الصفحة اللغات من اليمين لليسار؟' : 'Does this layout mirror for RTL languages?')}, answer: ${JSON.stringify(isFa ? 'بله، تمامی بخش‌ها صرفاً با ویژگی‌های منطقی CSS پیاده‌سازی شده‌اند.' : isAr ? 'نعم، جميع المكونات مبنية بخصائص CSS المنطقية.' : 'Yes. All layout spacing, borders, and directional chevrons mirror automatically using CSS logical properties.')} }`,
         `  ]}`,
         `/>`,
@@ -642,10 +640,10 @@ Update / Sync Options:
       console.warn('⚠️ Warning: Failed to auto-register nav key:', e.message);
     }
 
-    // The dictionaries now have the label; the menu order is still the
+    // The client dictionary now has the label; the menu order is still the
     // project's decision, so point at the one place that decides it.
     console.log(
-      `   ↳ Add "${pageKey}" (label: nav_${pageKey}) to PAGE_ITEMS in src/libs/config/navigation.ts to show it in the menus.`
+      `   ↳ Add "${pageKey}" (label: nav_${pageKey}) to CLIENT_PAGE_ITEMS in client/navigation.ts to show it in the menus.`
     );
   }
 }

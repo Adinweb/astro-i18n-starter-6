@@ -15,9 +15,16 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { readAppConfig, writeAppConfig } from './lib/content-types.mjs';
+import { readMergedConfig, writeClientConfig } from './lib/config.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
+import { readLocaleConfig } from './lib/locales.mjs';
 import { switchDefaultLocale, switchToSingleLocale } from './lib/locale-mutations.mjs';
+import {
+  readClientMessages,
+  readCoreMessages,
+  stripSchema,
+  writeClientMessages,
+} from './lib/merge-messages.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const presetsPath = path.join(rootDir, 'src', 'libs', 'config', 'theme-presets.json');
@@ -33,7 +40,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const args = process.argv.slice(2);
 if (args.includes('--help') || args.includes('-h')) {
-  console.log(`Usage: pnpm run site:init [options]
+  console.log(`Usage: npm run site:init [options]
 
 Identity:
   --name="<Site Name>"           Full site / brand title
@@ -120,11 +127,10 @@ for (const arg of args) {
   }
 }
 
-const config = readAppConfig();
-const inlangPath = path.join(rootDir, 'project.inlang', 'settings.json');
-const inlangSettings = JSON.parse(fs.readFileSync(inlangPath, 'utf-8'));
-const registeredLocales = inlangSettings.locales;
-const currentDefaultLocale = inlangSettings.baseLocale || registeredLocales[0];
+const config = readMergedConfig(rootDir);
+const localeConfig = readLocaleConfig(rootDir);
+const registeredLocales = localeConfig.locales;
+const currentDefaultLocale = localeConfig.defaultLocale || registeredLocales[0];
 
 if (!opts.yes && process.stdin.isTTY) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -321,8 +327,8 @@ config.social = {
   telegram: opts.telegram ?? config.social?.telegram ?? '',
 };
 
-writeAppConfig(config);
-console.log('✅ Updated app.config.json.');
+writeClientConfig(config, { rootDir, sparse: true });
+console.log('✅ Updated client/config.json.');
 
 try {
   if (opts.singleLang === true) {
@@ -354,21 +360,14 @@ try {
   process.exit(1);
 }
 
-// Keep `site_description` in sync in the active default locale dictionary when modified or on 'en'
-const targetDictPath = path.join(rootDir, 'messages', `${targetLocale}.json`);
-if (fs.existsSync(targetDictPath) && (descExplicit || targetLocale === 'en')) {
-  const rawDict = fs.readFileSync(targetDictPath, 'utf-8');
-  const dict = JSON.parse(rawDict);
-  if (dict.site_description !== description) {
-    dict.site_description = description;
-    const eol = rawDict.includes('\r\n') ? '\r\n' : '\n';
-    fs.writeFileSync(
-      targetDictPath,
-      JSON.stringify(dict, null, 2).split('\n').join(eol) + eol,
-      'utf-8'
-    );
-    console.log(`✅ Synchronized site_description in messages/${targetLocale}.json.`);
-  }
+// Keep `site_description` in sync in the active default client dictionary when modified or on 'en'
+const targetCore = stripSchema(readCoreMessages(targetLocale, rootDir));
+const targetClient = stripSchema(readClientMessages(targetLocale, rootDir));
+const currentSiteDesc = targetClient.site_description ?? targetCore.site_description;
+if ((descExplicit || targetLocale === 'en') && currentSiteDesc !== description) {
+  targetClient.site_description = description;
+  writeClientMessages(targetLocale, targetClient, rootDir);
+  console.log(`✅ Synchronized site_description in client/messages/${targetLocale}.json.`);
 }
 
 console.log('🔄 Compiling Paraglide messages...');
@@ -388,4 +387,4 @@ console.log(`   Site: ${name} (${shortName})`);
 console.log(`   Palette: ${preset}${primary ? ` + primary ${primary}` : ''}${accent ? ` + accent ${accent}` : ''}`);
 console.log(`   Fonts: latin=${fontPreset}, rtl=${rtlFontPreset}`);
 console.log(`   OG Mode: ${socialCardMode} | Default locale: ${targetLocale}`);
-console.log('   Next: run `pnpm run doctor && pnpm run lint && pnpm run build` to verify.');
+console.log('   Next: run `npm run doctor && npm run lint && npm run build` to verify.');

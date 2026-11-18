@@ -24,7 +24,7 @@ Never use physical directional utilities. Always use logical properties:
 
 ## 2. Bidirectional Typography & Font Stacks
 
-Fonts are variable and self-hosted (`@fontsource-variable/*`) and configurable through `brand.fontPreset` (`system`, `jakarta`, `manrope`, `outfit`, `editorial`) and `brand.rtlFontPreset` (`vazirmatn`, `noto-arabic`) in `app.config.json` (`src/libs/config/theme.ts` + `theme-presets.json`):
+Fonts are variable and self-hosted (`@fontsource-variable/*`) and configurable through `brand.fontPreset` (`system`, `jakarta`, `manrope`, `outfit`, `editorial`) and `brand.rtlFontPreset` (`vazirmatn`, `noto-arabic`) in `client/config.json` / `app.config.json` (`src/libs/config/theme.ts` + `theme-presets.json`):
 * **Latin (`en`, `de`, `fr`)**: Configurable display/sans stacks (`--font-sans`, `--font-display`), defaulting to `system`.
 * **Persian (`fa`)**: `Vazirmatn Variable` or `Noto Sans Arabic Variable` (`--font-fa`), defaulting to `vazirmatn`.
 * **Arabic (`ar`)**: `Noto Sans Arabic Variable` (`--font-ar`).
@@ -89,17 +89,17 @@ Never re-declare container widths, buttons, chips, kickers, or raw `text-white`/
 - `.hero-badge`, `.section-kicker`
 - Reusable page shells: `PageSection.astro` (full-bleed surface bands + `.layout-container`), `PageHeader.astro` (`hero: 'minimal'`), and `PageHero.astro` (`hero: 'default'` & blog)
 
-### Brand Palette Presets & Hex Overrides (`src/libs/config/theme.ts`)
-`app.config.json` → `brand.preset` supports 6 curated OKLCH-safe palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose` defined in `theme-presets.json`) plus optional `brand.primaryColor` / `brand.accentColor` hex overrides. `BaseLayout.astro` computes light and dark `--theme-*` overrides at build time (verified to meet WCAG AA contrast) and binds `--font-sans`, `--font-display`, and `--font-fa`.
+### Brand Palette Presets & Hex Overrides (`src/libs/config/theme.ts` + `client/styles.css`)
+`client/config.json` (merged onto `app.config.json`) → `brand.preset` supports 6 curated OKLCH-safe palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose` defined in `theme-presets.json`) plus optional `brand.primaryColor` / `brand.accentColor` hex overrides. `BaseLayout.astro` computes light and dark `--theme-*` overrides at build time (verified to meet WCAG AA contrast) and binds `--font-sans`, `--font-display`, and `--font-fa`. Client-specific CSS token overrides and custom classes live in `client/styles.css`, imported at the end of `src/styles/global.css`.
 
 ### Two-Mode Contrast
 Every role clears **WCAG AA (4.5:1)** contrast against its respective `-fg` counterpart in both light and dark mode.
 
 ---
 
-## 5. Icon Catalog (`@tabler/icons-astro`)
+## 5. Icon Catalog (`@tabler/icons-astro` + `client/icons.ts`)
 
-Never embed raw `<svg><path ...></svg>` in templates or write SVG paths in client code. Every glyph comes from the Tabler set through `<Icon name="..." />` or `<IconButton icon="..." label="..." />`; the semantic names live in `src/libs/ui/icons.ts` (`SITE_ICONS`) and the vendor mapping in `src/components/Icon.astro`.
+Never embed raw `<svg><path ...></svg>` in templates or write SVG paths in client code. Every glyph comes from the Tabler set through `<Icon name="..." />` or `<IconButton icon="..." label="..." />`; core semantic names (61 icons) live in `src/libs/ui/icons.ts` (`SITE_ICONS`), and client-added names register in `client/icons.ts` (`CLIENT_ICONS`, `CLIENT_DIRECTIONAL_ICONS`) with components mapped in `client/ClientIcons.astro`.
 
 **Always import the per-icon module** (`@tabler/icons-astro/dist/esm/icons/<name>.mjs`), never the package barrel: the barrel re-exports all 6,258 icons, so the bundler reads the whole set before tree-shaking it away (measured ≈ +2–7 s per build here, for identical HTML). Types for those deep modules are declared in `src/types/tabler-icons-astro.d.ts`.
 
@@ -124,10 +124,10 @@ Every text button is `<Button>`: colour from `variant` (`primary`/`secondary`/`h
 14. `shield` — privacy and cookie consent (`shield-check`)
 15. `mail` — contact and inquiry notice
 16. `layers` — architecture and Resources markers (`stack-2`)
-17. `home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `star`, `star-filled`, `quote`, `users`, `building`, `alert-circle`, `alert-triangle`, `circle-check`, `bell`, `bolt`, `clock`, `map-pin`, `phone`, `rocket`, `code`, `award`, `layout-grid`, `calendar`, `photo`, `minus`, `file` — navigation, status, UI blocks, ratings, quotes, team, and partner emblem icons (46 total); an unknown name resolves to `file`
+17. `home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `star`, `star-filled`, `quote`, `users`, `building`, `alert-circle`, `alert-triangle`, `circle-check`, `bell`, `bolt`, `clock`, `map-pin`, `phone`, `rocket`, `code`, `award`, `layout-grid`, `calendar`, `photo`, `minus`, `eye`, `eye-off`, `shopping-bag`, `heart`, `share`, `chevron-up`, `dots-vertical`, `lock`, `user`, `adjustments-horizontal`, `brand-github`, `brand-x`, `brand-linkedin`, `brand-instagram`, `brand-telegram`, `file` — navigation, status, UI blocks, commerce/social, and partner emblem icons (61 core total, plus any names added in `client/icons.ts`); an unknown name resolves to `file`.
 
 ### Navigation Icons:
-The mobile drawer renders one icon tile per row, so every navigation entry carries an `icon` from this catalog (`NavItem.icon` in `src/libs/config/navigation.ts`; a row without one falls back to `file`):
+The mobile drawer renders one icon tile per row, so every navigation entry carries an `icon` from this catalog (`NavItem.icon` in `client/navigation.ts` / `src/libs/config/navigation.ts`; a row without one falls back to `file`):
 
 | Key | Icon |
 | :--- | :--- |

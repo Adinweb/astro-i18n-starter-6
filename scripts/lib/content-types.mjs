@@ -1,39 +1,96 @@
 /**
- * Node-side view of the content-type registry in `app.config.json`.
- *
- * The router reads the same block through `src/libs/content/types.ts`. Keeping
- * one reader here means `content:list`, `content:enable`, `content:disable`,
- * `content:new`, `doctor` and `content:status` all describe the project the
- * build actually produces, instead of keeping their own list of collections.
+ * Node-side view of the two-tier content-type registry
+ * (`app.config.json` merged with `client/config.json`, plus custom collections
+ * declared in `client/content.ts`).
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  coreConfigPathFor,
+  readCoreConfig,
+  readClientConfig,
+  readMergedConfig,
+  writeClientConfig,
+} from './config.mjs';
 
 export const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-export const appConfigPath = path.join(rootDir, 'app.config.json');
+export const appConfigPath = coreConfigPathFor(rootDir);
 
-/** Collection names Astro defines in `src/content.config.ts`. */
-export const KNOWN_TYPES = ['pages', 'blog', 'projects'];
+/** Upstream core collection names defined in `src/content.config.ts`. */
+export const CORE_TYPES = ['pages', 'blog', 'projects'];
 
 /** Types that cannot be switched off or renamed away from the root. */
 export const FIXED_TYPES = new Set(['pages']);
 
-export function readAppConfig() {
-  return JSON.parse(fs.readFileSync(appConfigPath, 'utf-8'));
+/**
+ * Extracts collection keys exported in `client/content.ts -> export const clientCollections = { ... }`.
+ * Handles both shorthand (`services,`) and keyed (`services: defineCollection(...)`) entries.
+ */
+export function readClientCollectionKeys(targetRootDir = rootDir) {
+  const clientContentPath = path.join(targetRootDir, 'client', 'content.ts');
+  if (!fs.existsSync(clientContentPath)) return [];
+  const source = fs.readFileSync(clientContentPath, 'utf-8');
+  const decl = source.match(/export const clientCollections\s*=\s*\{/);
+  if (!decl || decl.index === undefined) return [];
+
+  const start = decl.index + decl[0].length;
+  let depth = 1;
+  let i = start;
+  while (i < source.length && depth > 0) {
+    const ch = source[i];
+    if (ch === '{') depth += 1;
+    else if (ch === '}') depth -= 1;
+    i += 1;
+  }
+  const body = source.slice(start, i - 1);
+  const keys = [];
+  // Scan only top-level properties (depth === 0 inside body)
+  let innerDepth = 0;
+  let tokenStart = 0;
+  const splitTopLevel = [];
+  for (let idx = 0; idx < body.length; idx += 1) {
+    const ch = body[idx];
+    if (ch === '{' || ch === '(' || ch === '[') innerDepth += 1;
+    else if (ch === '}' || ch === ')' || ch === ']') innerDepth -= 1;
+    else if (ch === ',' && innerDepth === 0) {
+      splitTopLevel.push(body.slice(tokenStart, idx));
+      tokenStart = idx + 1;
+    }
+  }
+  splitTopLevel.push(body.slice(tokenStart));
+
+  for (const rawPart of splitTopLevel) {
+    const cleaned = rawPart
+      .replace(/\/\/.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .trim();
+    if (!cleaned) continue;
+    const keyMatch = cleaned.match(/^['"]?([a-z0-9-]+)['"]?(?:\s*:|$)/i);
+    if (keyMatch) keys.push(keyMatch[1]);
+  }
+  return keys;
+}
+
+export function getKnownTypes(targetRootDir = rootDir) {
+  return [...new Set([...CORE_TYPES, ...readClientCollectionKeys(targetRootDir)])];
+}
+
+export const KNOWN_TYPES = getKnownTypes(rootDir);
+
+export function readAppConfig(targetRootDir = rootDir) {
+  return readMergedConfig(targetRootDir);
 }
 
 /**
- * Writes `app.config.json` back with two-space indentation, the file's own line
- * endings and a trailing newline, so a toggle produces a one-line diff instead
- * of a reformat of the whole config.
+ * Persists client changes as a sparse diff in `client/config.json` instead of
+ * mutating upstream `app.config.json`.
  */
-export function writeAppConfig(config) {
-  const existing = fs.readFileSync(appConfigPath, 'utf-8');
-  const eol = existing.includes('\r\n') ? '\r\n' : '\n';
-  const json = JSON.stringify(config, null, 2).split('\n').join(eol);
-  fs.writeFileSync(appConfigPath, `${json}${eol}`, 'utf-8');
+export function writeAppConfig(config, targetRootDir = rootDir) {
+  return writeClientConfig(config, { rootDir: targetRootDir, sparse: true });
 }
+
+export { readCoreConfig, readClientConfig, readMergedConfig, writeClientConfig };
 
 /**
  * Every declared type with its effective settings.
@@ -41,9 +98,9 @@ export function writeAppConfig(config) {
  * @returns {{ key: string, enabled: boolean, base: string, index: boolean,
  *   paginated: boolean, feed: boolean, nav: boolean, declared: boolean }[]}
  */
-export function readContentTypes(config = readAppConfig()) {
+export function readContentTypes(config = readAppConfig(), targetRootDir = rootDir) {
   const types = config.content?.types ?? {};
-  const keys = [...new Set([...KNOWN_TYPES, ...Object.keys(types)])];
+  const keys = [...new Set([...getKnownTypes(targetRootDir), ...Object.keys(types)])];
 
   return keys.map((key) => {
     const settings = types[key] ?? {};
@@ -62,27 +119,29 @@ export function readContentTypes(config = readAppConfig()) {
 
 /**
  * @param {string} key
+ * @param {string} [targetRootDir]
  * @returns {string | null} An error message, or `null` when the type is usable.
  */
-export function contentTypeKeyError(key) {
+export function contentTypeKeyError(key, targetRootDir = rootDir) {
   if (!key) return '❌ Missing content type.';
-  if (!KNOWN_TYPES.includes(key)) {
+  const known = getKnownTypes(targetRootDir);
+  if (!known.includes(key)) {
     return (
-      `❌ Unknown content type "${key}". Known types: ${KNOWN_TYPES.join(', ')}. ` +
-      'Declare the collection in src/content.config.ts first.'
+      `❌ Unknown content type "${key}". Known types: ${known.join(', ')}. ` +
+      'Declare the collection in client/content.ts (and configure it in client/config.json) first.'
     );
   }
   return null;
 }
 
 /** Directory that holds the entries of one type. */
-export function contentDirFor(key) {
-  return path.join(rootDir, 'src', 'content', key);
+export function contentDirFor(key, targetRootDir = rootDir) {
+  return path.join(targetRootDir, 'src', 'content', key);
 }
 
 /** Folder names of a collection, sorted, ignoring files. */
-export function groupDirs(key) {
-  const dir = contentDirFor(key);
+export function groupDirs(key, targetRootDir = rootDir) {
+  const dir = contentDirFor(key, targetRootDir);
   if (!fs.existsSync(dir)) return [];
   return fs
     .readdirSync(dir, { withFileTypes: true })

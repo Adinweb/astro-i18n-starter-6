@@ -4,12 +4,18 @@ import path from 'node:path';
 import { confirmDeletion } from './lib/prompt.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
 import { entryKeyError, localeCodeError } from './lib/validate.mjs';
+import { readLocaleConfig } from './lib/locales.mjs';
+import {
+  readClientMessages,
+  stripSchema,
+  writeClientMessages,
+} from './lib/merge-messages.mjs';
 
 const args = process.argv.slice(2);
 const pageKey = args.find((a) => !a.startsWith('--'));
 let targetLocale = '';
 let force = false;
-let cleanNav = true; // default true when removing a whole page
+let cleanNav = true;
 
 for (const arg of args) {
   if (arg.startsWith('--locale=')) targetLocale = arg.slice(9);
@@ -19,59 +25,38 @@ for (const arg of args) {
 }
 
 /**
- * Removes `nav_<pageKey>` from the dictionaries of the given locales.
- *
- * A dictionary that keeps the key of a page it no longer has would offer a
- * navigation entry that leads nowhere, so the key is cleaned per locale.
- *
- * @param {string} rootDir
- * @param {string[]} locales Locales whose dictionary is cleaned.
- * @returns {boolean} Whether a dictionary was changed.
+ * Removes `nav_<pageKey>` from `client/messages/<locale>.json` across active locales.
  */
 function cleanNavKey(rootDir, locales) {
   const navKey = `nav_${pageKey}`;
-  const messagesDir = path.join(rootDir, 'messages');
-  if (!fs.existsSync(messagesDir)) return false;
-
   let modified = false;
   for (const locale of locales) {
-    const filePath = path.join(messagesDir, `${locale}.json`);
-    if (!fs.existsSync(filePath)) continue;
+    const clientFile = path.join(rootDir, 'client', 'messages', `${locale}.json`);
+    if (!fs.existsSync(clientFile)) continue;
     try {
-      const dict = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-      if (dict[navKey]) {
+      const dict = stripSchema(readClientMessages(locale, rootDir));
+      if (navKey in dict) {
         delete dict[navKey];
-        fs.writeFileSync(filePath, JSON.stringify(dict, null, 2) + '\n', 'utf-8');
+        writeClientMessages(locale, dict, rootDir);
         modified = true;
       }
     } catch {
-      // A dictionary that cannot be parsed is reported by the audit, not here.
+      // Unparseable dictionaries are reported by the audit.
     }
   }
   return modified;
 }
 
 /**
- * Finds source files that still call `m.nav_<pageKey>(...)`.
- *
- * The nav key is deleted from the dictionaries with the page, so a call that
- * survives in the code turns into a fatal i18n-audit error on the next build.
- * Reporting the files here turns a failed build into a fixable instruction.
- *
- * @param {string} rootDir
- * @param {string} key page group
- * @returns {string[]} workspace-relative file paths
+ * Finds files in `src/` and `client/` that still call `m.nav_<pageKey>(...)`.
  */
 function findRemainingNavReferences(rootDir, key) {
   const needle = `m.nav_${key}(`;
   const hits = [];
-  const srcDir = path.join(rootDir, 'src');
-  if (!fs.existsSync(srcDir)) return hits;
 
   const walk = (dir) => {
+    if (!fs.existsSync(dir)) return;
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      // Generated Paraglide output re-exports every message; it never defines a
-      // navigation item of its own.
       if (entry.name === 'paraglide' || entry.name === 'node_modules') continue;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
@@ -85,12 +70,15 @@ function findRemainingNavReferences(rootDir, key) {
     }
   };
 
-  walk(srcDir);
+  walk(path.join(rootDir, 'src'));
+  walk(path.join(rootDir, 'client'));
   return hits;
 }
 
 if (!pageKey) {
-  console.error('Usage: pnpm run remove:page <page-key> [--locale=<locale>] [--no-clean-nav] [--force]');
+  console.error(
+    'Usage: npm run remove:page -- <page-key> [--locale=<locale>] [--no-clean-nav] [--force]'
+  );
   process.exit(1);
 }
 
@@ -155,37 +143,26 @@ if (targetLocale) {
     process.exit(1);
   }
 
-  // The navigation key stays in every dictionary: the dictionaries always
-  // carry the same key set, and the navigation itself skips a page whose
-  // locale has no entry.
   console.log(
     `ℹ️ The group has no "${targetLocale}" entry any more. The i18n audit reports that as a warning, not an error.`
   );
   console.log(`ℹ️ The key "nav_${pageKey}" stays in the dictionaries, so every locale keeps the same key set.`);
 } else {
-  // The group's artwork lives inside the group folder, so it is removed with it.
   fs.rmSync(targetGroupDir, { recursive: true, force: true });
   console.log(`✅ Successfully removed page group: src/content/pages/${pageKey}/`);
 
-  // Clean nav translation key if present
   if (cleanNav) {
     const remainingReferences = findRemainingNavReferences(rootDir, pageKey);
-    const messagesDir = path.join(rootDir, 'messages');
-    const files = fs.existsSync(messagesDir)
-      ? fs
-          .readdirSync(messagesDir)
-          .filter((f) => f.endsWith('.json'))
-          .map((f) => f.replace(/\.json$/, ''))
-      : [];
+    const { locales } = readLocaleConfig(rootDir);
 
-    if (cleanNavKey(rootDir, files)) {
-      console.log(`🧹 Cleaned translation key "nav_${pageKey}" from dictionaries.`);
+    if (cleanNavKey(rootDir, locales)) {
+      console.log(`🧹 Cleaned translation key "nav_${pageKey}" from client/messages/*.json.`);
       if (remainingReferences.length > 0) {
         console.warn(
           `⚠️ Code still calls m.nav_${pageKey}(): ${remainingReferences.join(', ')}.`
         );
         console.warn(
-          `   Remove or rewrite those references (PAGE_ITEMS / footer) before building; the i18n audit fails while they exist.`
+          '   Remove or rewrite those references (CLIENT_PAGE_ITEMS / footer in client/navigation.ts) before building; the i18n audit fails while they exist.'
         );
       }
       console.log('🔄 Recompiling Paraglide messages...');

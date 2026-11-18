@@ -1,0 +1,7 @@
+# Keep upstream core updates separated from client workspace customizations.
+client/** linguist-detectable=true
+public/apple-touch-icon.png binary
+public/icon-192.png binary
+public/icon-512.png binary
+public/og-default.png binary
+public/favicon.ico binary

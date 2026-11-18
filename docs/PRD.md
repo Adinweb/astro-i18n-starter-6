@@ -1,8 +1,10 @@
 # ASTRO I18N STARTER — MASTER BUILD PROMPT / PRD v5.0 
 
+> **Note (Architecture v5.1+):** This document is the baseline v5.0 build specification. The repository now implements the **Three-Tier Zero-Conflict Upstream Architecture** (`Core` in `src/` + `app.config.json` + `messages/core/`, `Client` workspace in `client/`, and optional demo `starter-kit/`). For the active contract, commands (`npm run` / `starter:seed` / `upstream:check`), and `client/` extension points, see [`AGENTS.md`](../AGENTS.md), [`README.md`](../README.md), and [`docs/PLAYBOOKS.md`](PLAYBOOKS.md).
+
 **Purpose:** Complete, self-contained specification for an AI coding agent to design and build a production-grade, multi-lingual (RTL + LTR), SSG-first website starter from scratch.  
 **Target Audience:** AI Coding Agent (working phase-by-phase).  
-**Version:** 5.0 (Definitive) · **Status:** Ready for execution — zero open questions.
+**Version:** 5.0 (Baseline Spec) · **Status:** Implemented & superseded by v5.1 Three-Tier (`client/` + `starter-kit/`) layout.
 
 ---
 

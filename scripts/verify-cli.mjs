@@ -13,6 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { readMergedConfig } from './lib/config.mjs';
 
 const rootDir = path.resolve(import.meta.dirname, '..');
 const results = [];
@@ -27,52 +28,49 @@ function record(ok, label, detail = '') {
 const SANDBOX_ROOT = path.join(os.tmpdir(), 'astro-i18n-starter-verify');
 
 /**
- * Writes a `pnpm` shim into the sandbox.
+ * Writes `pnpm` and `npm` shims into the sandbox.
  *
- * The content scripts call `pnpm run messages:compile` to refresh the
- * compiled messages. A real package manager must never run inside the
- * sandbox: pnpm rewrites the dependency links of the `node_modules` it finds
- * and would repoint the *working copy* at the sandbox. The shim therefore
- * runs the Paraglide compiler directly, against the sandbox copy only.
+ * Content/i18n scripts can fall back to calling the package manager for
+ * `messages:compile`. A real package manager must never run inside the sandbox
+ * because it would try to resolve or mutate dependencies outside the sandbox.
  */
-function writePnpmShim(binDir, projectDir) {
+function writePackageManagerShims(binDir, projectDir) {
   fs.mkdirSync(binDir, { recursive: true });
-  const compiler = path.join(rootDir, 'node_modules', '@inlang', 'paraglide-js', 'bin', 'run.js');
-  const project = path.join(projectDir, 'project.inlang');
-  const outdir = path.join(projectDir, 'src', 'paraglide');
+  const compileScript = path.join(projectDir, 'scripts', 'messages-compile.mjs');
 
-  fs.writeFileSync(
-    path.join(binDir, 'pnpm'),
-    [
-      '#!/bin/sh',
-      '# Sandbox shim: compiles the messages of the sandbox copy, nothing else.',
-      'if [ "$1" = "run" ] && [ "$2" = "messages:compile" ]; then',
-      `  node "${compiler}" compile --project "${project}" --outdir "${outdir}" || true`,
-      'fi',
-      'exit 0',
-      '',
-    ].join('\n'),
-    'utf-8'
-  );
-  fs.chmodSync(path.join(binDir, 'pnpm'), 0o755);
+  for (const name of ['pnpm', 'npm']) {
+    fs.writeFileSync(
+      path.join(binDir, name),
+      [
+        '#!/bin/sh',
+        '# Sandbox shim: compiles merged messages of the sandbox copy, nothing else.',
+        'if [ "$1" = "run" ] && [ "$2" = "messages:compile" ]; then',
+        `  node "${compileScript}" || true`,
+        'fi',
+        'exit 0',
+        '',
+      ].join('\n'),
+      'utf-8'
+    );
+    fs.chmodSync(path.join(binDir, name), 0o755);
 
-  fs.writeFileSync(
-    path.join(binDir, 'pnpm.cmd'),
-    [
-      '@echo off',
-      'if "%1"=="run" if "%2"=="messages:compile" (',
-      `  node "${compiler}" compile --project "${project}" --outdir "${outdir}"`,
-      ')',
-      'exit /b 0',
-      '',
-    ].join('\n'),
-    'utf-8'
-  );
+    fs.writeFileSync(
+      path.join(binDir, `${name}.cmd`),
+      [
+        '@echo off',
+        'if "%1"=="run" if "%2"=="messages:compile" (',
+        `  node "${compileScript}"`,
+        ')',
+        'exit /b 0',
+        '',
+      ].join('\n'),
+      'utf-8'
+    );
+  }
 }
 
 /**
- * Resolves the directory of an installed package, following pnpm's symlinks
- * and nested dependency layout.
+ * Resolves the directory of an installed package, supporting both flat npm and pnpm layouts.
  *
  * @param {string} name
  * @param {string} fromDir
@@ -103,11 +101,14 @@ function makeSandbox() {
   fs.mkdirSync(copy, { recursive: true });
 
   for (const entry of [
+    '.gitignore',
     'app.config.json',
     'package.json',
     'astro.config.mjs',
     'tsconfig.json',
-    'project.inlang',
+    'knip.json',
+    'client',
+    'starter-kit',
     'messages',
     'scripts',
     'public',
@@ -118,11 +119,8 @@ function makeSandbox() {
     fs.cpSync(source, path.join(copy, entry), { recursive: true });
   }
 
-  // The sandbox has no Paraglide install of its own: the message compiler is
-  // reached through the shim. `magic-string` (used by block:adapt and
-  // i18n:extract) is copied in, because those two have no shim path. Its
-  // dependency is copied next to it, the way the isolated pnpm store resolves
-  // it, since pnpm does not hoist it to the top level.
+  // Copy `magic-string` (used by block:adapt and i18n:extract) into sandbox node_modules
+  // while leaving `@inlang/paraglide-js` out of sandbox node_modules to verify isolation.
   const magicStringDir = resolvePackageDir('magic-string', rootDir);
   if (magicStringDir) {
     const target = path.join(copy, 'node_modules', 'magic-string');
@@ -136,6 +134,7 @@ function makeSandbox() {
       fs.cpSync(codecDir, codecTarget, { recursive: true });
     }
   }
+
   // Ensure CLI sandbox scratch targets start clean even when verifying inside a customized client project.
   for (const scratch of [
     'src/content/pages/contact',
@@ -147,7 +146,7 @@ function makeSandbox() {
     fs.rmSync(path.join(copy, scratch), { recursive: true, force: true });
   }
 
-  writePnpmShim(path.join(SANDBOX_ROOT, 'bin'), copy);
+  writePackageManagerShims(path.join(SANDBOX_ROOT, 'bin'), copy);
   return copy;
 }
 
@@ -160,7 +159,7 @@ function run(cwd, command, args, { allowFailure = false } = {}) {
       ...process.env,
       CI: '1',
       PARAGLIDE_BIN: path.join(rootDir, 'node_modules', '@inlang', 'paraglide-js', 'bin', 'run.js'),
-      // The shim comes first, so the sandbox never starts a real pnpm.
+      // The shim comes first, so the sandbox never starts a real package manager.
       PATH: `${path.join(SANDBOX_ROOT, 'bin')}${path.delimiter}${process.env.PATH ?? ''}`,
       npm_config_verify_deps_before_run: 'false',
       npm_config_ignore_scripts: 'true',
@@ -191,9 +190,9 @@ const readBytes = (relative) => fs.readFileSync(path.join(sandbox, relative));
 // brand assets that already exist in a client project.
 const homeArtworkBefore = readBytes('src/content/pages/home/home.png');
 const brandIconBefore = readBytes('public/icon-192.png');
-const sandboxSettings = JSON.parse(read('project.inlang/settings.json'));
-const sandboxLocales = sandboxSettings.locales;
-const baseLoc = sandboxSettings.baseLocale || 'en';
+const sandboxLocaleConfig = JSON.parse(read('client/locales.json'));
+const sandboxLocales = sandboxLocaleConfig.locales;
+const baseLoc = sandboxLocaleConfig.defaultLocale || 'en';
 const altLocs = sandboxLocales.filter((loc) => loc !== baseLoc);
 const altLoc = altLocs[0] || baseLoc;
 const trackedSandboxTargets = [
@@ -206,9 +205,8 @@ const trackedSandboxTargets = [
 const workingCopyPreState = Object.fromEntries(
   trackedSandboxTargets.map((rel) => [rel, fs.existsSync(path.join(rootDir, rel))])
 );
-const workingCopyProjectsEnabledBefore = JSON.parse(
-  fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8')
-).content.types.projects.enabled;
+const workingCopyProjectsEnabledBefore = readMergedConfig(rootDir).content.types.projects.enabled;
+const workingCopyCoreAppConfigBefore = fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8');
 
 try {
   // ---------------------------------------------------------------------
@@ -273,8 +271,8 @@ try {
   });
   record(result.code !== 0, 'new:page rejects a page key with a path separator');
   record(
-    JSON.parse(read(`messages/${altLoc}.json`)).nav_contact !== undefined,
-    'new:page registers nav_contact in every dictionary'
+    JSON.parse(read(`client/messages/${altLoc}.json`)).nav_contact !== undefined,
+    'new:page registers nav_contact in client/messages/'
   );
 
   // ---------------------------------------------------------------------
@@ -449,9 +447,9 @@ try {
   ]);
   record(result.code === 0, 'i18n:add registers a key');
   record(
-    JSON.parse(read(`messages/${baseLoc}.json`)).contact_form_label === 'Send message' &&
-      (altLoc === baseLoc || JSON.parse(read(`messages/${altLoc}.json`)).contact_form_label === 'ارسال پیام'),
-    'i18n:add writes the explicit translations'
+    JSON.parse(read(`client/messages/${baseLoc}.json`)).contact_form_label === 'Send message' &&
+      (altLoc === baseLoc || JSON.parse(read(`client/messages/${altLoc}.json`)).contact_form_label === 'ارسال پیام'),
+    'i18n:add writes explicit translations into client/messages/'
   );
 
   result = run(sandbox, 'node', [
@@ -462,8 +460,8 @@ try {
   ]);
   record(
     altLoc === baseLoc ||
-      JSON.parse(read(`messages/${altLoc}.json`)).contact_placeholder_label === `[TODO: ${altLoc}] placeholder_label`,
-    'i18n:add leaves a placeholder for the missing locales'
+      JSON.parse(read(`client/messages/${altLoc}.json`)).contact_placeholder_label === `[TODO: ${altLoc}] placeholder_label`,
+    'i18n:add leaves a placeholder for the missing locales in client/messages/'
   );
 
   result = run(sandbox, 'node', [
@@ -472,8 +470,8 @@ try {
   ]);
   record(result.code === 0, 'i18n:add-batch accepts inline JSON');
   record(
-    JSON.parse(read(`messages/${baseLoc}.json`)).cart_checkout === 'Checkout',
-    'i18n:add-batch writes the batch keys'
+    JSON.parse(read(`client/messages/${baseLoc}.json`)).cart_checkout === 'Checkout',
+    'i18n:add-batch writes the batch keys into client/messages/'
   );
 
   result = run(sandbox, 'node', [
@@ -483,9 +481,9 @@ try {
   ]);
   record(result.code === 0, 'i18n:add-batch accepts --category');
   record(
-    JSON.parse(read(`messages/${baseLoc}.json`)).contact_submit === 'Submit',
+    JSON.parse(read(`client/messages/${baseLoc}.json`)).contact_submit === 'Submit',
     'i18n:add-batch applies the --category prefix',
-    Object.keys(JSON.parse(read(`messages/${baseLoc}.json`))).filter((k) => k.startsWith('contact_')).join(', ')
+    Object.keys(JSON.parse(read(`client/messages/${baseLoc}.json`))).filter((k) => k.startsWith('contact_')).join(', ')
   );
 
   // ---------------------------------------------------------------------
@@ -514,8 +512,8 @@ try {
     'remove:page --locale keeps the rest of the group'
   );
   record(
-    JSON.parse(read(`messages/${altLoc}.json`)).nav_contact !== undefined,
-    'remove:page --locale keeps the nav key in every dictionary'
+    JSON.parse(read(`client/messages/${altLoc}.json`)).nav_contact !== undefined,
+    'remove:page --locale keeps the nav key in client/messages/'
   );
   result = run(sandbox, 'node', ['scripts/audit-i18n.mjs'], { allowFailure: true });
   record(
@@ -527,7 +525,7 @@ try {
   result = run(sandbox, 'node', ['scripts/remove-page.mjs', 'contact', '--no-clean-nav', '--force']);
   record(result.code === 0, 'remove:page --no-clean-nav removes the whole group');
   record(
-    JSON.parse(read(`messages/${baseLoc}.json`)).nav_contact !== undefined,
+    JSON.parse(read(`client/messages/${baseLoc}.json`)).nav_contact !== undefined,
     'remove:page --no-clean-nav keeps the nav key'
   );
   record(!exists('src/content/pages/contact'), 'remove:page removes the group folder');
@@ -549,29 +547,29 @@ try {
   result = run(sandbox, 'node', ['scripts/add-language.mjs', 'zz', '--name=Zeta', '--no-content']);
   record(result.code === 0, 'i18n:add-lang registers a locale', result.stdout.trim().split('\n').pop());
   record(
-    exists('messages/zz.json') &&
-      read('src/i18n/locales.ts').includes("'zz'") &&
-      JSON.parse(read('project.inlang/settings.json')).locales.includes('zz'),
-    'i18n:add-lang updates the dictionary, LOCALES, and inlang settings'
+    exists('client/messages/zz.json') &&
+      JSON.parse(read('client/locales.json')).locales.includes('zz') &&
+      JSON.parse(read('client/locales.json')).metadata.zz?.name === 'Zeta',
+    'i18n:add-lang updates client/messages/zz.json and client/locales.json'
   );
 
   // Re-running the command must not throw away translations that already exist.
-  const zetaDict = JSON.parse(read('messages/zz.json'));
+  const zetaDict = JSON.parse(read('client/messages/zz.json'));
   zetaDict.nav_home = 'Zeta Home';
-  fs.writeFileSync(path.join(sandbox, 'messages/zz.json'), JSON.stringify(zetaDict, null, 2) + '\n');
+  fs.writeFileSync(path.join(sandbox, 'client/messages/zz.json'), JSON.stringify(zetaDict, null, 2) + '\n');
   result = run(sandbox, 'node', ['scripts/add-language.mjs', 'zz', '--name=Zeta', '--no-content']);
   record(
-    result.code === 0 && JSON.parse(read('messages/zz.json')).nav_home === 'Zeta Home',
+    result.code === 0 && JSON.parse(read('client/messages/zz.json')).nav_home === 'Zeta Home',
     'i18n:add-lang re-run keeps existing translations'
   );
 
   result = run(sandbox, 'node', ['scripts/remove-language.mjs', 'zz', '--force', '--keep-content']);
   record(result.code === 0, 'i18n:remove-lang unregisters the locale');
   record(
-    !exists('messages/zz.json') &&
-      !read('src/i18n/locales.ts').includes("'zz'") &&
-      !JSON.parse(read('project.inlang/settings.json')).locales.includes('zz'),
-    'i18n:remove-lang cleans the dictionary, LOCALES, and inlang settings'
+    !exists('client/messages/zz.json') &&
+      !JSON.parse(read('client/locales.json')).locales.includes('zz') &&
+      !JSON.parse(read('client/locales.json')).metadata.zz,
+    'i18n:remove-lang cleans client/messages/zz.json and client/locales.json'
   );
   result = run(sandbox, 'node', ['scripts/audit-i18n.mjs'], { allowFailure: true });
   record(
@@ -584,9 +582,9 @@ try {
     result = run(sandbox, 'node', ['scripts/set-default-language.mjs', altLoc]);
     record(
       result.code === 0 &&
-        JSON.parse(read('project.inlang/settings.json')).baseLocale === altLoc &&
-        read('src/i18n/locales.ts').includes(`DEFAULT_LOCALE: Locale = '${altLoc}'`),
-      `i18n:set-default switches baseLocale and DEFAULT_LOCALE to ${altLoc}`
+        JSON.parse(read('client/locales.json')).defaultLocale === altLoc &&
+        JSON.parse(read('client/locales.json')).locales[0] === altLoc,
+      `i18n:set-default switches client/locales.json defaultLocale to ${altLoc}`
     );
 
     result = run(sandbox, 'node', ['scripts/audit-i18n.mjs'], { allowFailure: true });
@@ -599,9 +597,9 @@ try {
     result = run(sandbox, 'node', ['scripts/set-default-language.mjs', baseLoc]);
     record(
       result.code === 0 &&
-        JSON.parse(read('project.inlang/settings.json')).baseLocale === baseLoc &&
-        read('src/i18n/locales.ts').includes(`DEFAULT_LOCALE: Locale = '${baseLoc}'`),
-      `i18n:set-default restores baseLocale and DEFAULT_LOCALE back to ${baseLoc}`
+        JSON.parse(read('client/locales.json')).defaultLocale === baseLoc &&
+        JSON.parse(read('client/locales.json')).locales[0] === baseLoc,
+      `i18n:set-default restores client/locales.json defaultLocale back to ${baseLoc}`
     );
   }
 
@@ -650,11 +648,11 @@ try {
   record(
     result.code === 0 &&
       read('extract-sample.astro') === extractSample &&
-      !JSON.parse(read(`messages/${baseLoc}.json`)).test_extract_this_sentence,
+      !JSON.parse(read(`client/messages/${baseLoc}.json`)).test_extract_this_sentence,
     'i18n:extract --dry-run leaves the file and the dictionaries untouched'
   );
   record(
-    /missing from messages/.test(result.stderr),
+    /missing from (?:messages|merged .* dictionary)/.test(result.stderr),
     'i18n:extract warns when --replace references missing keys'
   );
 
@@ -670,9 +668,9 @@ try {
     result.code === 0 &&
       extracted.includes("import * as m from '@/paraglide/messages'") &&
       extracted.includes("{m.test_extract_this_sentence({})}") &&
-      JSON.parse(read(`messages/${altLoc === baseLoc ? baseLoc : altLoc}.json`)).test_extract_this_sentence !==
+      JSON.parse(read(`client/messages/${altLoc === baseLoc ? baseLoc : altLoc}.json`)).test_extract_this_sentence !==
         undefined,
-    'i18n:extract --replace --auto-add rewrites the template and registers the key'
+    'i18n:extract --replace --auto-add rewrites the template and registers the key in client/messages/'
   );
 
   // ---------------------------------------------------------------------
@@ -690,8 +688,10 @@ try {
 
   result = run(sandbox, 'node', ['scripts/content-toggle.mjs', 'disable', 'projects']);
   record(
-    result.code === 0 && JSON.parse(read('app.config.json')).content.types.projects.enabled === false,
-    'content:disable switches the type off in app.config.json'
+    result.code === 0 &&
+      JSON.parse(read('client/config.json')).content.types.projects.enabled === false &&
+      JSON.parse(read('app.config.json')).content.types.projects.enabled === true,
+    'content:disable writes sparse override to client/config.json without touching app.config.json'
   );
 
   result = run(sandbox, 'node', [
@@ -718,7 +718,7 @@ try {
 
   result = run(sandbox, 'node', ['scripts/content-toggle.mjs', 'enable', 'projects']);
   record(
-    result.code === 0 && JSON.parse(read('app.config.json')).content.types.projects.enabled === true,
+    result.code === 0 && readMergedConfig(sandbox).content.types.projects.enabled === true,
     'content:enable restores the type'
   );
 
@@ -868,29 +868,32 @@ try {
     '--skip-assets',
     '--yes',
   ]);
-  const initedConfig = JSON.parse(read('app.config.json'));
+  const initedMerged = readMergedConfig(sandbox);
+  const initedClient = JSON.parse(read('client/config.json'));
+  const untouchedCore = JSON.parse(read('app.config.json'));
   record(
     result.code === 0 &&
-      initedConfig.site.name === 'Acme Digital' &&
-      initedConfig.brand.preset === 'emerald' &&
-      initedConfig.brand.themeColor === '#047857' &&
-      initedConfig.brand.fontPreset === 'jakarta' &&
-      initedConfig.brand.rtlFontPreset === 'noto-arabic' &&
-      initedConfig.brand.socialCardMode === 'branded' &&
-      initedConfig.content.types.blog.enabled === false,
-    'site:init applies client identity, brand tokens, font pairings, and content modules cleanly'
+      initedMerged.site.name === 'Acme Digital' &&
+      initedMerged.brand.preset === 'emerald' &&
+      initedMerged.brand.themeColor === '#047857' &&
+      initedMerged.brand.fontPreset === 'jakarta' &&
+      initedMerged.brand.rtlFontPreset === 'noto-arabic' &&
+      initedMerged.brand.socialCardMode === 'branded' &&
+      initedMerged.content.types.blog.enabled === false &&
+      initedClient.site?.name === 'Acme Digital' &&
+      untouchedCore.site.name !== 'Acme Digital',
+    'site:init writes sparse client/config.json overrides while keeping app.config.json clean'
   );
 
   if (altLoc !== baseLoc) {
     result = run(sandbox, 'node', ['scripts/set-language-mode.mjs', altLoc, '--force']);
-    const soloSettings = JSON.parse(read('project.inlang/settings.json'));
+    const soloLocales = JSON.parse(read('client/locales.json'));
     record(
       result.code === 0 &&
-        soloSettings.locales.length === 1 &&
-        soloSettings.baseLocale === altLoc &&
-        read('src/i18n/locales.ts').includes(`DEFAULT_LOCALE: Locale = '${altLoc}'`) &&
+        soloLocales.locales.length === 1 &&
+        soloLocales.defaultLocale === altLoc &&
         exists(`.locale-archive/${baseLoc}/messages.json`),
-      `i18n:solo switches to single-language "${altLoc}" and archives removed locale content`
+      `i18n:solo switches client/locales.json to single-language "${altLoc}" and archives removed locale content`
     );
 
     result = run(sandbox, 'node', ['scripts/audit-i18n.mjs'], { allowFailure: true });
@@ -908,16 +911,75 @@ try {
     ]);
     const restored =
       result.code === 0 &&
-      JSON.parse(read('project.inlang/settings.json')).locales.includes(baseLoc) &&
+      JSON.parse(read('client/locales.json')).locales.includes(baseLoc) &&
       exists(`src/content/pages/home/${baseLoc}.mdx`);
     record(restored, `i18n:add-lang restores archived locale "${baseLoc}" cleanly`);
     run(sandbox, 'node', ['scripts/set-default-language.mjs', baseLoc]);
   }
 
   // ---------------------------------------------------------------------
-  // 11. The working copy is untouched
+  // 11. Two-tier starter seed & upstream health check
   // ---------------------------------------------------------------------
-  console.log('\n### 11. Isolation');
+  console.log('\n### 11. starter:seed and upstream:check');
+
+  // Remove scratch drafts created in earlier sections so starter:seed/audit run on clean content
+  for (const scratch of [
+    'src/content/blog/draft-post',
+    'src/content/blog/publish-ready',
+    'src/content/blog/delegated-post',
+    'src/content/projects/demo-work',
+    'src/content/projects/dormant-work',
+  ]) {
+    fs.rmSync(path.join(sandbox, scratch), { recursive: true, force: true });
+  }
+  run(sandbox, 'node', ['scripts/content-toggle.mjs', 'enable', 'blog']);
+  run(sandbox, 'node', ['scripts/content-toggle.mjs', 'enable', 'projects']);
+
+  result = run(sandbox, 'node', ['scripts/seed-starter.mjs', '--yes']);
+  record(
+    result.code === 0 &&
+      exists('src/content/pages/about/en.mdx') &&
+      exists('src/content/blog/first-post/en.mdx') &&
+      exists('src/content/projects/atlas-dashboard/en.mdx') &&
+      read('client/navigation.ts').includes("'about'"),
+    'starter:seed installs demo pages, blog posts, projects, and client/navigation.ts'
+  );
+
+  result = run(sandbox, 'node', ['scripts/audit-i18n.mjs'], { allowFailure: true });
+  record(
+    result.code === 0,
+    'audit passes on seeded starter-kit demo state',
+    result.code === 0 ? '' : result.stdout.trim().split('\n').slice(-8).join(' | ')
+  );
+
+  result = run(sandbox, 'node', ['scripts/upstream-check.mjs'], { allowFailure: true });
+  record(
+    result.code === 0,
+    'upstream:check passes on seeded starter-kit demo state',
+    result.code === 0 ? '' : result.stderr.trim().split('\n').slice(-4).join(' | ')
+  );
+
+  result = run(sandbox, 'node', ['scripts/seed-starter.mjs', '--clean', '--yes']);
+  record(
+    result.code === 0 &&
+      !exists('src/content/pages/about') &&
+      !exists('src/content/blog/first-post') &&
+      !exists('src/content/projects/atlas-dashboard') &&
+      exists('src/content/pages/home/en.mdx'),
+    'starter:seed --clean removes demo items while preserving home and core structure'
+  );
+
+  result = run(sandbox, 'node', ['scripts/upstream-check.mjs'], { allowFailure: true });
+  record(
+    result.code === 0,
+    'upstream:check passes after returning to clean minimal base state',
+    result.code === 0 ? '' : result.stderr.trim().split('\n').slice(-4).join(' | ')
+  );
+
+  // ---------------------------------------------------------------------
+  // 12. The working copy is untouched
+  // ---------------------------------------------------------------------
+  console.log('\n### 12. Isolation');
   record(
     !exists('node_modules/@inlang/paraglide-js'),
     'the sandbox has no Paraglide install of its own'
@@ -933,13 +995,13 @@ try {
     'the working copy keeps no scaffolded content from the sandbox'
   );
   record(
-    JSON.parse(
-      fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8')
-    ).content.types.projects.enabled === workingCopyProjectsEnabledBefore,
-    'the working copy keeps its content-type configuration'
+    readMergedConfig(rootDir).content.types.projects.enabled === workingCopyProjectsEnabledBefore &&
+      fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8') === workingCopyCoreAppConfigBefore,
+    'the working copy keeps its content-type configuration and core app.config.json intact'
   );
 } catch (error) {
-  record(false, 'verification script crashed', error.message);
+  const extra = [error.stderr, error.stdout].filter(Boolean).join('\n').trim();
+  record(false, 'verification script crashed', extra ? `${error.message}\n${extra}` : error.message);
 } finally {
   fs.rmSync(SANDBOX_ROOT, { recursive: true, force: true });
 }

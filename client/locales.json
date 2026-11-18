@@ -1,0 +1,21 @@
+{
+  "defaultLocale": "en",
+  "locales": [
+    "en",
+    "fa"
+  ],
+  "metadata": {
+    "en": {
+      "dir": "ltr",
+      "htmlLang": "en",
+      "name": "English",
+      "fontFamily": "var(--font-sans)"
+    },
+    "fa": {
+      "dir": "rtl",
+      "htmlLang": "fa",
+      "name": "فارسی",
+      "fontFamily": "var(--font-fa)"
+    }
+  }
+}

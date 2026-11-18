@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * Switches a content type on or off in `app.config.json`.
+ * Switches a content type on or off in `client/config.json`.
  *
  * Disabling a type removes its routes, its sitemap entries, its navigation
  * links and its feed — but never touches the content itself, so re-enabling it
  * brings the pages straight back.
  *
  * Usage:
- *   pnpm run content:enable <type>
- *   pnpm run content:disable <type>
+ *   npm run content:enable -- <type>
+ *   npm run content:disable -- <type>
  */
 import {
   FIXED_TYPES,

@@ -9,7 +9,7 @@ src/content/<type>/<group>/<group>.png   ← کاور، با ارجاع نسبی
 
 ## ۱. منبع حقیقت
 
-`app.config.json` → `content.types` تعیین می‌کند چه چیزی ساخته شود:
+تنظیمات هسته در `app.config.json` با بازنویسی‌های پروژهٔ مشتری در `client/config.json` ادغام می‌شود و بخش `content.types` تعیین می‌کند چه چیزی ساخته شود:
 
 ```json
 "content": {
@@ -35,23 +35,23 @@ src/content/<type>/<group>/<group>.png   ← کاور، با ارجاع نسبی
 ## ۲. فعال و غیرفعال کردن
 
 ```bash
-pnpm run content:disable projects     # مسیرها، sitemap و لینک‌ها حذف می‌شوند
-pnpm run content:enable projects      # برمی‌گردند
-pnpm run content:list                 # وضعیت همهٔ نوع‌ها
+npm run content:disable projects     # مسیرها، sitemap و لینک‌ها حذف می‌شوند
+npm run content:enable projects      # برمی‌گردند
+npm run content:list                 # وضعیت همهٔ نوع‌ها
 ```
 
-`content:disable` فقط `enabled` را در `app.config.json` عوض می‌کند (با حفظ قالب و EOL فایل)، و `pages` را رد می‌کند. بعد از تغییر:
+`content:disable` فقط `content.types.<type>.enabled` را در `client/config.json` به‌صورت sparse می‌نویسد/تغییر می‌دهد (بدون دست‌زدن به `app.config.json` هسته)، و `pages` را رد می‌کند. بعد از تغییر:
 
 ```bash
-pnpm run build && pnpm run smoke
+npm run build && npm run smoke
 ```
 
-نکته: خاموش‌کردن `blog` مسیرهای آن، لینک ناوبری و دکمهٔ «وبلاگ» در صفحهٔ خانه را حذف می‌کند، ولی اندپوینت‌های استاتیک `/api/blog-posts.json` و `/rss.xml` باقی می‌مانند تا مصرف‌کننده‌های بیرونی نشکنند. لینک‌های دستی داخل متن MDX با رجیستری هماهنگ نمی‌شوند؛ `pnpm run link:check` آن‌ها را پس از build پیدا می‌کند.
+نکته: خاموش‌کردن `blog` مسیرهای آن، لینک ناوبری و دکمهٔ «وبلاگ» در صفحهٔ خانه را حذف می‌کند، ولی اندپوینت‌های استاتیک `/api/blog-posts.json` و `/rss.xml` باقی می‌مانند تا مصرف‌کننده‌های بیرونی نشکنند. لینک‌های دستی داخل متن MDX با رجیستری هماهنگ نمی‌شوند؛ `npm run link:check` آن‌ها را پس از build پیدا می‌کند.
 
 ## ۳. دستورهای محتوا
 
 ```bash
-pnpm run content:new <type> <slug> [--title="…"] [--desc="…"] [--from=<locale>] \
+npm run content:new <type> <slug> -- [--title="…"] [--desc="…"] [--from=<locale>] \
   [--slug:<locale>="…"] [--image=cover.png|none] [--publish]
 ```
 
@@ -64,42 +64,41 @@ pnpm run content:new <type> <slug> [--title="…"] [--desc="…"] [--from=<local
 ## ۴. ابزارهای بررسی
 
 ```bash
-pnpm run doctor            # سلامت پروژه بدون build؛ با دستور رفع هر مورد
-pnpm run doctor -- --json  # خروجی ماشین‌خوان (exit 1 فقط برای خطاها)
-pnpm run content:status    # ماتریس آمادگی: هر گروه × هر زبان
-pnpm run content:status -- --write=docs/STATUS.md
-pnpm run link:check        # خزش dist/ و گزارش لینک‌ها و لنگرهای شکسته
+npm run doctor            # سلامت پروژه بدون build؛ با دستور رفع هر مورد
+npm run doctor -- --json  # خروجی ماشین‌خوان (exit 1 فقط برای خطاها)
+npm run content:status    # ماتریس آمادگی: هر گروه × هر زبان
+npm run content:status -- --write=docs/STATUS.md
+npm run link:check        # خزش dist/ و گزارش لینک‌ها و لنگرهای شکسته
+npm run upstream:check    # بررسی قرارداد لایهٔ هسته و client/
 ```
 
-`doctor` این‌ها را می‌سنجد: نسخهٔ Node در برابر `engines`، pin بودن package manager، اعتبار `app.config.json` و نوع‌های محتوا، جای‌نگهدارهای برند، `SITE_URL`، هم‌ارزی کلیدهای دیکشنری و `[TODO: …]`ها، تازگی `src/paraglide/`، فایل‌های غایب هر گروه، تصویر فرانتمتر ناموجود و نبود `dist/`.
+`doctor` این‌ها را می‌سنجد: نسخهٔ Node در برابر `engines`، pin بودن package manager، اعتبار پیکربندی ادغام‌شده (`app.config.json` + `client/config.json`) و نوع‌های محتوا، جای‌نگهدارهای برند، `SITE_URL`، هم‌ارزی کلیدهای دیکشنری و `[TODO: …]`ها، تازگی `src/paraglide/`، فایل‌های غایب هر گروه، تصویر فرانتمتر ناموجود و نبود `dist/`.
 
-## ۵. افزودن یک نوع محتوای تازه
+## ۵. افزودن یک نوع محتوای تازه (بدون ویرایش هسته)
 
-مثال: `services`.
+مثال: `services`. به لطف معماری لایه‌بندی‌شدهٔ `client/`، افزودن یک مجموعهٔ جدید نیازی به تغییر فایل‌های هسته (`src/content.config.ts`، `types.ts` یا `service.ts`) ندارد:
 
-1. **مجموعه و schema** — در `src/content.config.ts` یک `defineCollection` با `baseSchema` اضافه کنید (slug اجباری، فیلدهای اختصاصی خودش).
-2. **کلید رجیستری** — `CONTENT_TYPE_KEYS` در `src/libs/content/types.ts` و `KNOWN_TYPES` در `scripts/lib/content-types.mjs` را به‌روز کنید.
-3. **پیکربندی** — بلوک `content.types.services` را در `app.config.json` اضافه کنید.
-4. **برچسب ترجمه‌شده** — کلید `nav_services` را در همهٔ `messages/<locale>.json`ها بگذارید و در `getContentTypeLabel`/`getContentTypeDescription` یک `case` اضافه کنید.
-5. **بارگذاری و مسیر** — در `src/libs/content/service.ts`، `loadExtraEntries` و اتحاد نوع `SiteRouteProps` (`CollectionEntry<'services'>`) را گسترش دهید. مسیرها، sitemap، بردکرامب و ناوبری خودکار از رجیستری تغذیه می‌شوند.
-6. **آرتورک (اختیاری)** — در `scripts/generate-assets.mjs` یک ردیف رنگ به `TYPE_HUES` اضافه کنید.
+1. **مجموعه و متادیتای رابط در `client/content.ts`** — در `clientCollections` یک `defineCollection` با loader `glob` در `./src/content/services` اضافه کنید و در `CLIENT_CONTENT_TYPES.services` برچسب/توضیح/آیکون (`label`، `description`، `icon`) آن را بدهید.
+2. **پیکربندی در `client/config.json`** — بلوک `content.types.services` (`enabled: true`, `base: "services"`, `index: true`, `nav: true`) را اضافه کنید.
+3. **برچسب ترجمه‌شده در `client/messages/<locale>.json`** — کلید `nav_services` را در فرهنگ‌های کلاینت قرار دهید تا در ناوبری و بردکرامب استفاده شود (و در `CLIENT_CONTENT_TYPES` با `m.nav_services({}, { locale })` بخوانید).
+4. **مسیرسازی خودکار** — هسته (`src/content.config.ts`، `src/libs/content/types.ts`، `src/libs/content/service.ts` و `scripts/lib/content-types.mjs`) به‌طور خودکار مجموعه، مسیرهای لیست/ورودی، sitemap، بردکرامب و ناوبری را از `client/content.ts` می‌خواند و `assets:generate` برای آن کاور می‌سازد.
 
 سپس:
 
 ```bash
-pnpm run content:new services web-design --title="Web Design" --publish
-pnpm run assets:generate
-pnpm run lint && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke
+npm run content:new services web-design -- --title="Web Design" --publish
+npm run assets:generate
+npm run upstream:check && npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke
 ```
 
 ## ۶. محدودیت‌های آگاهانه
 
 - **وبلاگ نمای اختصاصی دارد.** `BlogIndexView` و `BlogPostView` فیلتر، تاکسونومی، فهرست مطالب، نوشته‌های مرتبط و فید را در خود دارند. نوع‌های دیگر از `CollectionIndexView` و `CollectionEntryView` استفاده می‌کنند که فقط قرارداد مشترک ورودی را می‌شناسند. ادغام این دو، پیچیدگی وبلاگ را به همهٔ نوع‌ها تحمیل می‌کند.
-- **schemaها ایستا هستند.** Astro مجموعه‌ها را در زمان build می‌خواهد، پس افزودن نوع تازه یک تغییر کد است؛ فعال/غیرفعال کردن اما فقط یک خط در `app.config.json` است.
+- **schemaها ایستا هستند.** Astro مجموعه‌ها را در زمان build می‌خواهد، پس افزودن نوع تازه مستلزم ثبت آن در `client/content.ts` است؛ فعال/غیرفعال کردن اما فقط یک خط در `client/config.json` است.
 - **`pages` خاموش‌شدنی نیست** چون مالک صفحهٔ خانه و ریشهٔ سایت است.
 
 ## ۷. تأیید
 
-`pnpm run verify:cli` (۹۰ ادعا) بخش‌های ۸، ۹ و ۱۰ را به این‌ها اختصاص می‌دهد: فهرست نوع‌ها، خاموش/روشن کردن، رد شدن خاموش‌کردن `pages`، ساخت گروه در `projects` (انتشار فقط زبان مبدأ) و در نوع خاموش (تولید کاور)، رد شدن slug فرار، واگذاری `pages`/`blog` به فرمان‌های خودشان، خروجی JSON `doctor` و `content:status`، اینکه `link:check` لینک و لنگر (`#section`) شکسته را می‌گیرد ولی مسیرهای بدون اسلش پایانی، بدون پسوند و لنگرهای موجود را می‌پذیرد، و گردش‌کارهای `--preset=landing`، `site:init` و `i18n:solo`.
+`npm run verify:cli` (۹۵ ادعا) گردش‌کارهای CLI را در یک مخزن موقت می‌آزماید: فهرست نوع‌ها، خاموش/روشن کردن در `client/config.json`، رد شدن خاموش‌کردن `pages`، ساخت گروه در `projects` (انتشار فقط زبان مبدأ) و در نوع خاموش (تولید کاور)، رد شدن slug فرار، واگذاری `pages`/`blog` به فرمان‌های خودشان، خروجی JSON `doctor` و `content:status`، اینکه `link:check` لینک و لنگر (`#section`) شکسته را می‌گیرد ولی مسیرهای بدون اسلش پایانی، بدون پسوند و لنگرهای موجود را می‌پذیرد، و گردش‌کارهای `--preset=landing`، `site:init`، `starter:seed`، `upstream:check` و `i18n:solo`.
 
 > نمای فهرست و نمای ورودی هر دو بردکرامب زبان‌مقصد را نشان می‌دهند («خانه → پروژه‌ها → داشبورد …»)، با همان `BreadcrumbList` که در JSON-LD اعلام می‌شود؛ فهرست خالی هم پیام `content_empty` را نشان می‌دهد.

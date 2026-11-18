@@ -2,7 +2,7 @@
 
 > استارتر چندزبانهٔ تولیدی و **۱۰۰٪ استاتیک (Pure SSG بدون نیاز به بک‌اند)** بر پایهٔ **Astro v7**
 > با پشتیبانی بومی **RTL/LTR**، ۲۲ بلوک آماده (الهام‌گرفته از PrebuiltUI) برای سایت‌های شرکتی و لندینگ، دسته‌بندی و صفحه‌بندی وبلاگ،
-> جستجوی **Pagefind** بهینه‌شده برای زبان فارسی، آداپتور فرم تماس و خبرنامه برای APIهای خارجی، و ۲۴ ابزار خط فرمان.
+> جستجوی **Pagefind** بهینه‌شده برای زبان فارسی، آداپتور فرم تماس و خبرنامه برای APIهای خارجی، معماری سه‌لایه (`Core` / `client/` / `starter-kit/`) و ۲۸ ابزار خط فرمان.
 
 نسخهٔ ۵٫۱ — مرجع فنی کامل و راهنمای عملیاتی.
 
@@ -75,8 +75,8 @@
 | **جستجوی فارسی بهینه‌شده** | ایندکس Pagefind با نرمال‌سازی حروف و علائم فارسی (`scripts/index-pagefind.mjs`) + بازسازی نیم‌فاصله، همزه و ارقام در سمت کاربر (`src/libs/search/persian.ts`) + فهرست `/api/search-dev/<locale>.json` به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K |
 | **SEO و کارت OG برنددار** | canonical، hreflang چندزبانه + `x-default`، کارت PNG برنددار زمان بیلد (`/og/[...slug].png.ts` در حالت `branded`)، Twitter Card، JSON-LD (`WebSite`, `WebPage`, `CollectionPage`, `BlogPosting`, `BreadcrumbList`, `FAQPage`)، sitemap با `lastmod` کامل، فیدهای Atom مجزا (`/rss.xml` و `/rss/<locale>.xml`) |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک بازگشت به نسخهٔ زبان پیش‌فرض |
-| **ابزار CLI** | ۲۴ اسکریپت برای راه‌اندازی برند (`site:init`)، ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا، تعویض زبان پیش‌فرض و مدیریت زبان‌ها، استخراج متن، تبدیل RTL، بررسی سلامت پروژه، خزش لینک‌ها، تولید تصاویر و ایندکس Pagefind |
-| **کیفیت** | TypeScript strict، `astro check`، ۲۴ فایل تست واحد Vitest (۲۴۵ تست)، ۹۰ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
+| **ابزار CLI** | ۲۸ اسکریپت برای راه‌اندازی برند (`site:init`)، ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا، تزریق/پاک‌سازی دمو (`starter:seed`)، کنترل معماری (`upstream:check`)، تعویض زبان پیش‌فرض و مدیریت زبان‌ها، استخراج متن، تبدیل RTL، بررسی سلامت پروژه، خزش لینک‌ها، تولید تصاویر و ایندکس Pagefind |
+| **کیفیت** | TypeScript strict، `astro check`، ۲۴ فایل تست واحد Vitest (۲۵۰ تست)، ۹۵ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، CI آمادهٔ GitHub Actions |
 | **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
 | **حرکت و اسکرول** | اسکرول نرم با **Lenis** + موتور **ChronoTrig** (`data-trig`) با پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`), پلکانی‌سازی گروهی (`data-trig-stagger`) و سازگاری کامل با View Transitions |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، پشتیبانی یکپارچه از `prefers-reduced-motion` سیستم و کلید `data-motion` روی `<html>` |
@@ -88,20 +88,23 @@
 ### پیش‌نیازها
 
 - **Node.js ≥ ۲۲٫۱۲** (در `engines` تعریف شده)
-- **pnpm ۱۲٫۱۰٫۱** (در `packageManager` قفل شده و در `pnpm-lock.yaml` تثبیت شده)
+- **npm** (یا **pnpm ۱۲٫۱۰٫۱** در صورت تمایل؛ همهٔ فرمان‌ها با `npm run` کار می‌کنند)
 
 ### نصب و اجرا
 
 ```bash
-pnpm install
+npm install
 
-pnpm dev          # کامپایل پیام‌ها + سرور توسعه روی http://localhost:3000
-pnpm build        # کامپایل پیام‌ها + ممیزی i18n + بیلد Astro + ایندکس Pagefind
-pnpm preview      # پیش‌نمایش خروجی بیلدشده
+npm run dev           # ادغام/کامپایل پیام‌ها + سرور توسعه روی http://localhost:3000
+npm run starter:seed  # (اختیاری) افزودن صفحات، ۶ مقاله و ۴ نمونه‌کار دمو از starter-kit/
+npm run build         # کامپایل پیام‌ها + ممیزی i18n + بیلد Astro + ایندکس Pagefind
+npm run preview       # پیش‌نمایش خروجی بیلدشده
 ```
 
-> سرور توسعه روی `0.0.0.0:3000` گوش می‌دهد؛ هر دو مقدار از `app.config.json`
+> سرور توسعه روی `0.0.0.0:3000` گوش می‌دهد؛ هر دو مقدار از پیکربندی ادغام‌شده (`app.config.json` + `client/config.json`)
 > خوانده می‌شوند، پس سرور و اپ همیشه روی یک پورت هستند.
+>
+> مخزن به‌طور پیش‌فرض در **وضعیت پایهٔ تمیز** قرار دارد تا سریع برای پروژهٔ مشتری آماده شود. برای تست یا دیدن نمونهٔ کامل کافی است `npm run starter:seed` را بزنید و هر زمان خواستید با `npm run starter:seed -- --clean --yes` به پایهٔ تمیز برگردید.
 
 ### وابستگی‌ها
 
@@ -121,8 +124,7 @@ pnpm preview      # پیش‌نمایش خروجی بیلدشده
 | `knip` (dev) | تشخیص فایل/اکسپورت/وابستگی مرده |
 | `@astrojs/check` + `typescript` (dev) | `astro check` و `tsc --noEmit` |
 
-> نسخهٔ دقیق وابستگی‌ها در `package.json` قفل شده و `pnpm-lock.yaml` آن‌ها را
-> تثبیت می‌کند؛ در CI از `pnpm install --frozen-lockfile` استفاده می‌شود.
+> نسخهٔ دقیق وابستگی‌ها در `package.json` قفل شده و در CI از `npm ci` (یا lockfile) استفاده می‌شود.
 
 ### مدیریت سرور توسعه
 
@@ -130,10 +132,10 @@ Astro v7 سرور توسعه را می‌تواند به‌صورت پس‌زم�
 CI و عامل‌های خودکار ضروری است:
 
 ```bash
-pnpm exec astro dev --background   # اجرا در پس‌زمینه (و قفل کردن پورت)
-pnpm exec astro dev status         # وضعیت سرور در حال اجرا
-pnpm exec astro dev logs --follow  # دنبال کردن لاگ همان سرور
-pnpm exec astro dev stop           # توقف سرور
+npx astro dev --background   # اجرا در پس‌زمینه (و قفل کردن پورت)
+npx astro dev status         # وضعیت سرور در حال اجرا
+npx astro dev logs --follow  # دنبال کردن لاگ همان سرور
+npx astro dev stop           # توقف سرور
 ```
 
 پرچم‌های مهم `astro dev`:
@@ -141,7 +143,7 @@ pnpm exec astro dev stop           # توقف سرور
 | پرچم | کار |
 | --- | --- |
 | `--background` | اجرای سرور به‌صورت پس‌زمینه |
-| `--port <port>` | تغییر پورت (پیش‌فرض از `app.config.json`) |
+| `--port <port>` | تغییر پورت (پیش‌فرض از `app.config.json` / `client/config.json`) |
 | `--host` / `--host <address>` | گوش دادن روی همهٔ نشانی‌ها یا یک نشانی مشخص |
 | `--mode <mode>` | حالت Vite (پیش‌فرض `development`) |
 | `--open` | باز کردن مرورگر پس از بالا آمدن سرور |
@@ -153,43 +155,45 @@ pnpm exec astro dev stop           # توقف سرور
 
 | فرمان | کار |
 | --- | --- |
-| `pnpm dev` | کامپایل پیام‌ها + `astro dev` |
-| `pnpm run messages:compile` | کامپایل دستی `messages/*.json` به `src/paraglide/` |
-| `pnpm run check` | کامپایل پیام‌ها + `astro check` |
-| `pnpm run lint` | کامپایل پیام‌ها + `astro check` + `tsc --noEmit` |
-| `pnpm test` | کامپایل پیام‌ها + `vitest run` |
-| `pnpm run build` | کامپایل پیام‌ها + ممیزی i18n + `astro build` + `node scripts/index-pagefind.mjs` |
-| `pnpm preview` | `astro preview` روی خروجی `dist/` |
-| `pnpm run smoke` | تست دود روی `dist/` |
-| `pnpm run knip` | فایل/اکسپورت/وابستگی مرده |
-| `pnpm run assets:generate` | بازتولید آیکون‌ها، کارت OG و artwork هیرو/کاور |
-| `pnpm run clean` | حذف `dist/`، `.astro/` و `src/paraglide/` |
-| `pnpm run new:page` | ساخت/ویرایش صفحهٔ ایستا |
-| `pnpm run new:post` | ساخت/ویرایش مقالهٔ وبلاگ |
-| `pnpm run remove:page` | حذف صفحه (یا فقط یک زبانش) |
-| `pnpm run remove:post` | حذف مقاله |
-| `pnpm run site:init` | راه‌اندازی سریع برند، پالت، فونت، ایمیل تماس و شبکه‌های اجتماعی مشتری |
-| `pnpm run i18n:add-lang` | افزودن زبان جدید (یا بازگردانی زبان بایگانی‌شده) |
-| `pnpm run i18n:remove-lang` | حذف زبان |
-| `pnpm run i18n:set-default` | تعویض زبان پیش‌فرض در `locales.ts` و `settings.json` |
-| `pnpm run i18n:solo` | (اختیاری) تک‌زبانه‌کردن ساختاری با حذف مسیرهای دیگر و بایگانی در `.locale-archive/` |
-| `pnpm run i18n:add` | افزودن یک کلید ترجمه |
-| `pnpm run i18n:add-batch` | افزودن گروهی کلیدها |
-| `pnpm run i18n:extract` | استخراج متن سخت‌کد از قالب |
-| `pnpm run block:adapt` | تبدیل بلوک Tailwind به خواص منطقی |
-| `pnpm run audit:i18n` | ممیزی چندزبانه (۶ مرحله) |
-| `pnpm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۹۰ ادعا) |
-| `pnpm run content:list` | فهرست انواع محتوا، مسیر و تعداد ورودی‌ها (`--json`) |
-| `pnpm run content:new` | ساخت گروه در هر نوع محتوا |
-| `pnpm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا (مسیرها، sitemap و ناوبری) |
-| `pnpm run content:status` | ماتریس آمادگی هر گروه × هر زبان (`--write=docs/STATUS.md`) |
-| `pnpm run doctor` | بررسی سلامت پروژه بدون build، با دستور رفع هر مورد |
-| `pnpm run link:check` | خزش `dist/` و گزارش لینک‌های داخلی شکسته (از جمله لنگرهای `#anchor`) |
+| `npm run dev` | کامپایل پیام‌ها + `astro dev` |
+| `npm run messages:compile` | ادغام `messages/core/*.json` + `client/messages/*.json` در `.paraglide-work/` و کامپایل به `src/paraglide/` |
+| `npm run check` | کامپایل پیام‌ها + `astro check` |
+| `npm run lint` | کامپایل پیام‌ها + `astro check` + `tsc --noEmit` |
+| `npm test` | کامپایل پیام‌ها + `vitest run` (۲۴ فایل، ۲۵۰ تست) |
+| `npm run build` | کامپایل پیام‌ها + ممیزی i18n + `astro build` + `node scripts/index-pagefind.mjs` |
+| `npm run preview` | `astro preview` روی خروجی `dist/` |
+| `npm run smoke` | تست دود روی `dist/` |
+| `npm run knip` | فایل/اکسپورت/وابستگی مرده |
+| `npm run assets:generate` | بازتولید آیکون‌ها، کارت OG و artwork هیرو/کاور |
+| `npm run clean` | حذف `dist/`، `.astro/`، `.paraglide-work/` و `src/paraglide/` |
+| `npm run new:page` | ساخت/ویرایش صفحهٔ ایستا |
+| `npm run new:post` | ساخت/ویرایش مقالهٔ وبلاگ |
+| `npm run remove:page` | حذف صفحه (یا فقط یک زبانش) |
+| `npm run remove:post` | حذف مقاله |
+| `npm run site:init` | راه‌اندازی سریع برند، پالت، فونت، ایمیل تماس و شبکه‌های اجتماعی مشتری در `client/config.json` |
+| `npm run starter:seed` | تزریق یا پاک‌سازی (`--clean`) محتوای دمو از `starter-kit/` |
+| `npm run upstream:check` | بررسی قرارداد معماری سه‌لایه (`Core` / `client/` / `starter-kit/`) |
+| `npm run i18n:add-lang` | افزودن زبان جدید (یا بازگردانی زبان بایگانی‌شده) در `client/locales.json` |
+| `npm run i18n:remove-lang` | حذف زبان |
+| `npm run i18n:set-default` | تعویض زبان پیش‌فرض در `client/locales.json` |
+| `npm run i18n:solo` | (اختیاری) تک‌زبانه‌کردن ساختاری با حذف مسیرهای دیگر و بایگانی در `.locale-archive/` |
+| `npm run i18n:add` | افزودن یک کلید ترجمه در `client/messages/*.json` |
+| `npm run i18n:add-batch` | افزودن گروهی کلیدها |
+| `npm run i18n:extract` | استخراج متن سخت‌کد از قالب |
+| `npm run block:adapt` | تبدیل بلوک Tailwind به خواص منطقی |
+| `npm run audit:i18n` | ممیزی چندزبانه (۶ مرحله) |
+| `npm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۹۵ ادعا) |
+| `npm run content:list` | فهرست انواع محتوا، مسیر و تعداد ورودی‌ها (`--json`) |
+| `npm run content:new` | ساخت گروه در هر نوع محتوا |
+| `npm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا در `client/config.json` (مسیرها، sitemap و ناوبری) |
+| `npm run content:status` | ماتریس آمادگی هر گروه × هر زبان (`--write=docs/STATUS.md`) |
+| `npm run doctor` | بررسی سلامت پروژه بدون build، با دستور رفع هر مورد |
+| `npm run link:check` | خزش `dist/` و گزارش لینک‌های داخلی شکسته (از جمله لنگرهای `#anchor`) |
 
 ### ساخت برای انتشار
 
 ```bash
-SITE_URL=https://example.com pnpm run build
+SITE_URL=https://example.com npm run build
 ```
 
 بدون `SITE_URL` بیلد با هشدار انجام می‌شود و از مبدأ توسعه استفاده می‌کند؛
@@ -202,51 +206,59 @@ SITE_URL=https://example.com pnpm run build
 
 ```text
 /
-├── app.config.json          # SSOT: سایت، برند، صفحه‌بندی وبلاگ، کوکی، API خارجی و سرور توسعه
-├── astro.config.mjs         # Astro: site، trailingSlash، MDX، Tailwind، سرور
+├── app.config.json          # پیش‌فرض‌های هسته: سایت، برند، صفحه‌بندی وبلاگ، کوکی، API خارجی و سرور
+├── client/                  # لایهٔ اختصاصی پروژهٔ مشتری (از به‌روزرسانی‌های هسته در امان می‌ماند):
+│   ├── config.json          # بازنویسی‌های محدود روی app.config.json
+│   ├── locales.json         # SSOT زبان‌های فعال، defaultLocale و metadata (dir, font, htmlLang)
+│   ├── messages/            # بازنویسی‌ها و کلیدهای ترجمهٔ اختصاصی مشتری (<locale>.json)
+│   ├── navigation.ts        # CLIENT_PAGE_ITEMS، ستون‌های فوتر و لینک‌های حقوقی سفارشی
+│   ├── content.ts           # کالکشن‌های اختصاصی clientCollections و متادیتای CLIENT_CONTENT_TYPES
+│   ├── icons.ts / ClientIcons.astro # آیکون‌های اضافهٔ مشتری بدون تغییر هسته
+│   ├── templates/index.ts   # ثبت قالب‌های صفحهٔ سفارشی CLIENT_PAGE_TEMPLATES
+│   ├── LayoutHooks.astro    # قلاب‌های <head> و انتهای <body> در BaseLayout
+│   └── styles.css           # توکن‌ها و بازنویسی‌های CSS مشتری (توسط Tailwind v4 اسکن می‌شود)
+├── messages/core/           # فرهنگ‌های هسته (۴۸۴ کلید پایه در en.json و fa.json)
+├── starter-kit/             # بستهٔ اختیاری دمو (صفحات، مقالات، پروژه‌ها و دارایی‌ها — با starter:seed)
+├── .paraglide-work/         # ⚠️ تولیدی/موقت (gitignore): حاصل ادغام core + client پیش از کامپایل
+├── astro.config.mjs         # Astro: site، trailingSlash، MDX، Tailwind، aliasهای @/* و @client/*
 ├── knip.json                # پیکربندی تشخیص کد مرده
-├── tsconfig.json            # TypeScript strict + alias `@/*` → `src/*`
-├── vitest.config.ts         # Vitest: alias `@` و mock ماژول `astro:content`
+├── tsconfig.json            # TypeScript strict + alias `@/*` → `src/*` و `@client/*` → `client/*`
+├── vitest.config.ts         # Vitest: alias `@`/`@client` و mock ماژول `astro:content`
 ├── .npmrc                   # تنظیمات npm/pnpm
 ├── .env.example             # نمونهٔ متغیر محیطی (SITE_URL, PUBLIC_API_BASE_URL, PUBLIC_CONTACT_API_URL, PUBLIC_NEWSLETTER_API_URL)
-├── messages/                # فرهنگ لغت‌های زبان‌های فعال: en.json, fa.json (قابل گسترش با i18n:add-lang)
-├── project.inlang/          # پیکربندی کامپایلر Paraglide (settings.json)
 ├── public/                  # chronotrig.min.js، favicon، آیکون‌ها، کارت OG پیش‌فرض
-├── scripts/                 # ۲۴ اسکریپت CLI، بررسی سلامت و ایندکس Pagefind (index-pagefind.mjs)
-│   └── lib/                 # کتابخانهٔ مشترک: locales, locale-mutations, frontmatter, image-reference,
-│                            # content-stub, slug, validate, content-types, prompt, compile-messages
-├── .github/workflows/ci.yml # CI: lint → test → audit → doctor → build → smoke → link:check → knip → verify:cli
+├── scripts/                 # ۲۸ اسکریپت CLI، بررسی سلامت، Pagefind و upstream:check
+│   └── lib/                 # کتابخانهٔ مشترک: config, merge-messages, locales, locale-mutations,
+│                            # frontmatter, image-reference, content-stub, slug, validate, content-types, prompt
+├── .github/workflows/ci.yml # CI: upstream:check → lint → test → audit → doctor → build → smoke → link:check → knip → verify:cli
 ├── .agents/skills/         # مهارت عملیاتی برای عامل‌های AI
 │   └── astro-i18n-starter/  # SKILL.md + references/
 ├── docs/                   # GUIDE-FA.md، GUIDE-HOMEPAGE-FA.md، CONTENT-TYPES-FA.md، PRD.md، PLAYBOOKS.md، SPIKE_RESULTS.md
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
-    ├── components/          # ۴۲ کامپوننت شامل هستهٔ رابط، ۳ پریمیتیو (UiBadge, UiAlert, AvatarGroup)
-    │                        # و ۱۹ بلوک سکشن شرکتی/لندینگ (LandingHeroSplit, PromoBanner, PartnerLogos,
-    │                        # AboutSplitSection, BentoCapabilities, FeatureTabsSection, ProcessSteps,
-    │                        # FeatureCardGrid, ProofStatsRow, ComparisonTable, PricingSection, TestimonialGrid,
-    │                        # ImageGallerySection, LatestPostsSection, TeamSection, FaqAccordion,
-    │                        # ContactSplitSection, NewsletterBanner, CtaBanner, ...)
+    ├── components/          # کامپوننت‌های هسته، ۳ پریمیتیو (UiBadge, UiAlert, AvatarGroup)
+    │                        # و ۱۹ بلوک سکشن شرکتی/لندینگ
     ├── content/
     │   ├── pages/<گروه>/    # صفحات ایستا: <locale>.mdx + <گروه>.png
     │   ├── blog/<گروه>/     # مقالات: <locale>.mdx + <گروه>.png
     │   └── projects/<گروه>/ # نمونه‌کارها: <locale>.mdx + <گروه>.png
-    ├── content.config.ts    # شمای Zod هر سه کالکشن (همراه با گزینه‌های چیدمان pages)
+    ├── content.config.ts    # شمای Zod کالکشن‌های هسته + ادغام clientCollections
     ├── i18n/
-    │   ├── locales.ts       # SSOT زبان‌ها: LOCALES, DEFAULT_LOCALE, LOCALE_METADATA
+    │   ├── locales.ts       # خواندن و صدور نوع‌امن LOCALES, DEFAULT_LOCALE, LOCALE_METADATA از client/locales.json
     │   ├── format.ts        # فرمت بومی تاریخ (هجری شمسی برای fa) و اعداد (Intl)
     │   └── paths.ts         # localizeHref, localeHref, stripLocale, getPathname
     ├── layouts/BaseLayout.astro
     ├── libs/
     │   ├── api/client.ts    # آداپتور Pure-SSG سمت کلاینت برای ارسال فرم تماس و خبرنامه به API خارجی
     │   ├── config/
-    │   │   ├── app.ts       # خواندن و اعتبارسنجی app.config.json
+    │   │   ├── app.ts       # ادغام و اعتبارسنجی app.config.json + client/config.json
+    │   │   ├── client.ts    # خوانندهٔ پیکربندی در باندل مرورگر (بدون Zod) + defaults.ts
     │   │   ├── theme.ts     # پالت‌های OKLCH، پیش‌تنظیم فونت و کارت OG (+ theme-presets.json)
-    │   │   └── navigation.ts # ساخت ناوبری چندمنویی هدر/کشوی موبایل/فوتر
+    │   │   └── navigation.ts # ساخت ناوبری چندمنویی از client/navigation.ts
     │   ├── content/         # entries, service, types, feed, pagination, blog, blog-catalog, taxonomy, faq, social, og-card
     │   ├── cookies/         # مدل رضایت کوکی و مدیریت اسکریپت‌ها (model.ts, manager.ts)
     │   ├── search/          # client.ts + persian.ts (جستجوی Pagefind و فالبک با نرمال‌سازی فارسی)
-    │   └── ui/              # button.ts (کلاس دکمه‌ها) + icons.ts (فهرست بستهٔ ۴۶ آیکون) + locale.ts + initials.ts
+    │   └── ui/              # button.ts (کلاس دکمه‌ها) + icons.ts (۶۱ آیکون هسته + client/icons.ts) + locale.ts + initials.ts
     ├── pages/               # فقط فایل‌های فیزیکی استاتیک
     │   ├── [...path].astro  # دیسپچر مسیریاب
     │   ├── 404.astro        # صفحهٔ ۴۰۴ locale-aware
@@ -272,24 +284,26 @@ SITE_URL=https://example.com pnpm run build
 
 ## ۴. منبع حقیقت واحد (SSOT)
 
-هر مقداری فقط **یک** جا زندگی می‌کند. اگر دو جا نگه‌داری شود، آن‌ها به‌مرور از هم جدا می‌افتند.
+هر مقداری فقط **یک** جا زندگی می‌کند. لایهٔ مشتری (`client/`) بر لایهٔ هسته اولویت دارد و در زمان بیلد/کامپایل با آن ترکیب می‌شود:
 
 | مقدار | محل واحد |
 | --- | --- |
-| نام سایت، رنگ برند، OG، اندازهٔ آیکون | `app.config.json` → `src/libs/config/app.ts` (`siteConfig`) |
-| تعداد مقالات هر صفحه | `app.config.json` → `blog.postsPerPage` → `POSTS_PER_PAGE` |
-| میزبان/پورت سرور | `app.config.json` → `astro.config.mjs` |
-| فهرست زبان‌ها و زبان پیش‌فرض | `src/i18n/locales.ts` ↔ `project.inlang/settings.json` |
-| جهت، `lang`، فونت هر زبان | `LOCALE_METADATA` در `src/i18n/locales.ts` |
+| نام سایت، رنگ برند، OG، اندازهٔ آیکون | `app.config.json` + `client/config.json` → `src/libs/config/app.ts` (`siteConfig`) |
+| تعداد مقالات هر صفحه | `blog.postsPerPage` (ادغام‌شده) → `POSTS_PER_PAGE` |
+| میزبان/پورت سرور | `server` در config ادغام‌شده → `astro.config.mjs` |
+| فهرست زبان‌ها و زبان پیش‌فرض | `client/locales.json` → بازتوزیع در `src/i18n/locales.ts` و `.paraglide-work/` |
+| جهت، `lang`، فونت هر زبان | `metadata` در `client/locales.json` (`LOCALE_METADATA`) |
 | مسیرها و URLها | `src/i18n/paths.ts` |
 | اسلاگ‌ها و نسخه‌های جایگزین | `src/libs/content/service.ts` |
-| انواع محتوا (فعال/غیرفعال، مسیر، صفحه‌بندی، ناوبری) | `app.config.json` → `content.types` → `src/libs/content/types.ts` |
-| قواعد فرانت‌متر | `src/content.config.ts` |
-| متن‌های رابط کاربری | `messages/<locale>.json` → کامپایل به `src/paraglide/` |
-| طرح رنگ و سیستم شیشه‌ای | `src/styles/global.css` |
+| انواع محتوا (فعال/غیرفعال، مسیر، صفحه‌بندی، ناوبری) | `content.types` + `client/content.ts` → `src/libs/content/types.ts` |
+| قواعد فرانت‌متر | `src/content.config.ts` (+ `clientCollections`) |
+| متن‌های رابط کاربری | `messages/core/<locale>.json` + `client/messages/<locale>.json` → کامپایل به `src/paraglide/` |
+| طرح رنگ و سیستم شیشه‌ای | `src/styles/global.css` + بازنویسی‌های مشتری در `client/styles.css` |
 | قواعد ساخت slug و taxonomy | `src/content.config.ts` (Zod) |
 
-### `app.config.json` — نمونهٔ کامل
+### `app.config.json` و `client/config.json`
+
+پیش‌فرض‌های هسته در `app.config.json` نگهداری می‌شوند و پروژهٔ مشتری فقط کلیدهایی را که نیاز به تغییر دارد در `client/config.json` می‌گذارد (اسکریپت‌هایی مثل `site:init` و `content:disable` خودکار به‌صورت sparse در `client/config.json` می‌نویسند):
 
 ```json
 {
@@ -408,42 +422,26 @@ SITE_URL=https://example.com pnpm run build
 | `server.port` | عدد صحیح بین ۱ و ۶۵۵۳۵ |
 | `server.host` | رشتهٔ غیرخالی (`0.0.0.0`) |
 
-### `project.inlang/settings.json`
+### پیکربندی Paraglide (`.paraglide-work/project.inlang/settings.json`)
 
-```json
-{
-  "$schema": "https://inlang.com/schema/project-settings",
-  "baseLocale": "en",
-  "locales": ["en", "fa"],
-  "modules": [
-    "./node_modules/@inlang/plugin-message-format/dist/index.js",
-    "./node_modules/@inlang/plugin-m-function-matcher/dist/index.js"
-  ],
-  "plugin.inlang.messageFormat": { "pathPattern": "./messages/{locale}.json" }
-}
-```
-
-`baseLocale` باید با `DEFAULT_LOCALE` در `src/i18n/locales.ts` یکی باشد؛ ممیزی i18n
-این تطابق را بررسی می‌کند.
-
-افزونه‌های درون‌یابی از `node_modules` خوانده می‌شوند (نه از CDN)، پس نسخهٔ آن‌ها با
-`pnpm-lock.yaml` قفل است و بیلد به شبکه نیاز ندارد.
+هنگام اجرای `npm run messages:compile` (توسط `scripts/messages-compile.mjs`)، لیست زبان‌ها و زبان پایه از `client/locales.json` خوانده می‌شود، دیکشنری‌های `messages/core/<locale>.json` و `client/messages/<locale>.json` ترکیب شده و فایل تنظیمات موقت `.paraglide-work/project.inlang/settings.json` به‌طور خودکار تولید می‌شود تا کامپایلر Paraglide با یک منبع حقیقت اجرا شود. افزونه‌های درون‌یابی از `node_modules` خوانده می‌شوند و بیلد به شبکه نیاز ندارد.
 
 ### تغییر رنگ و هویت برند (تک‌فرمانی با `site:init`)
 
-به جای تغییر دستی چندین فایل، با یک دستور تمام هویت برند، پالت، فونت و ایمیل تماس مشتری را تنظیم کنید:
+به جای تغییر دستی چندین فایل، با یک دستور تمام هویت برند، پالت، فونت و ایمیل تماس مشتری را در `client/config.json` تنظیم کنید:
 
 ```bash
-pnpm run site:init \
+npm run site:init -- \
   --name="Acme Studio" \
   --preset=indigo \
   --font=jakarta \
   --rtl-font=vazirmatn \
   --email=hello@acme.example \
-  --og-mode=branded
+  --og-mode=branded \
+  --yes
 ```
 
-`theme.ts` پالت انتخابی یا `brand.primaryColor`/`accentColor` در `app.config.json` را در `<head>` به متغیرهای `--theme-*` تبدیل می‌کند (و در `:root[data-theme='dark']` نسخهٔ تاریک سازگار با AA می‌سازد). همچنین در صورت نیاز به سفارشی‌سازی عمیق‌تر توکن‌ها، می‌توانید مستقیماً `:root` و `:root[data-theme='dark']` در `src/styles/global.css` را ویرایش کنید و `brand.themeColor` را هماهنگ نمایید.
+`theme.ts` پالت انتخابی یا `brand.primaryColor`/`accentColor` را در `<head>` به متغیرهای `--theme-*` تبدیل می‌کند (و در `:root[data-theme='dark']` نسخهٔ تاریک سازگار با AA می‌سازد). همچنین در صورت نیاز به سفارشی‌سازی عمیق‌تر توکن‌ها، می‌توانید بدون دست‌زدن به هسته، متغیرها و کلاس‌های خودتان را در `client/styles.css` بنویسید.
 
 ### `tsconfig.json` و `vitest.config.ts`
 
@@ -514,22 +512,22 @@ withTrailingSlash('/blog');       // → "/blog/"  (برای صفحات canonica
 برای عوض کردن زبان پیش‌فرض با یک دستور:
 
 ```bash
-pnpm run i18n:set-default fa
+npm run i18n:set-default fa
 ```
 
-(یا تغییر دستی `DEFAULT_LOCALE` در `src/i18n/locales.ts` همراه با `"baseLocale"` در `project.inlang/settings.json`). سپس:
+(که `defaultLocale` و ترتیب `locales` را در `client/locales.json` تغییر داده و پس از ادغام فرهنگ‌ها در `.paraglide-work/` پیام‌ها را دوباره کامپایل می‌کند). سپس:
 
 ```bash
-pnpm run messages:compile && pnpm test && pnpm run audit:i18n && pnpm run build && pnpm run smoke
+npm run messages:compile && npm test && npm run audit:i18n && npm run build && npm run smoke
 ```
 
 نتیجه: فارسی به `/` و `/درباره-ما/` می‌رود و انگلیسی به `/en/`، `/en/about/`.
 
 #### تحویل پروژهٔ تک‌زبانه بدون تغییر ساختاری (پیشنهادی)
 از آن‌جا که خروجی پیش از استقرار بیلد می‌شود، برای یک سایت تک‌زبانه نیازی به تغییر ساختاری یا حذف فایل‌ها نیست:
-- صرفاً `"showLanguageSwitcher": false` را در `app.config.json` → `ui` تنظیم کنید تا منو و بخش زبان در هدر و کشوی موبایل پنهان شود.
-- اگر سایت مشتری فقط فارسی (یا هر زبان غیرپیش‌فرض دیگری) است، یک‌بار `pnpm run i18n:set-default fa` بزنید تا ریشهٔ `/` مستقیماً فارسی باشد.
-- *(اختیاری)* اگر می‌خواهید مسیرهای زبان دوم به‌کل در `dist/` و `sitemap.xml` تولید نشوند، دستور `pnpm run i18n:solo fa` زبان‌های دیگر را بایگانی (`.locale-archive/`) و پیکربندی را تک‌زبانه می‌کند (بعداً با `i18n:add-lang` قابل بازگردانی است).
+- صرفاً `"showLanguageSwitcher": false` را در `client/config.json` → `ui` تنظیم کنید تا منو و بخش زبان در هدر و کشوی موبایل پنهان شود.
+- اگر سایت مشتری فقط فارسی (یا هر زبان غیرپیش‌فرض دیگری) است، یک‌بار `npm run i18n:set-default fa` بزنید تا ریشهٔ `/` مستقیماً فارسی باشد.
+- *(اختیاری)* اگر می‌خواهید مسیرهای زبان دوم به‌کل در `dist/` و `sitemap.xml` تولید نشوند، دستور `npm run i18n:solo fa` زبان‌های دیگر را بایگانی (`.locale-archive/`) و پیکربندی را تک‌زبانه می‌کند (بعداً با `i18n:add-lang` قابل بازگردانی است).
 
 > ⚠️ تعویض زبان پیش‌فرض یک تغییر **ساختاری** در URLهاست. قبل از انجام روی سایت زنده، برای
 > ریدایرکت‌های ۳۰۱ از سرور/CDN برنامه‌ریزی کنید.
@@ -565,14 +563,13 @@ src/content/pages/about/
 
 ### انواع محتوا (`content.types`)
 
-سه نوع محتوا وجود دارد: `pages`، `blog` و `projects`. هر نوع یک مجموعه و یک
-مسیر است، و `app.config.json` تعیین می‌کند کدام‌ها ساخته شوند:
+سه نوع محتوای داخلی وجود دارد: `pages`، `blog` و `projects` (به علاوه هر کالکشن دلخواه مشتری در `client/content.ts`). تنظیمات ادغام‌شدهٔ `app.config.json` و `client/config.json` تعیین می‌کند کدام‌ها ساخته شوند:
 
 ```bash
-pnpm run content:list                 # وضعیت، مسیر و تعداد ورودی هر نوع
-pnpm run content:disable projects     # مسیرها، sitemap و لینک ناوبری حذف می‌شوند
-pnpm run content:enable projects      # برمی‌گردند (فایل‌ها هرگز حذف نمی‌شوند)
-pnpm run content:new projects atlas --title="Atlas" --publish
+npm run content:list                 # وضعیت، مسیر و تعداد ورودی هر نوع
+npm run content:disable projects     # نوشتن override در client/config.json؛ مسیرها، sitemap و ناوبری حذف می‌شوند
+npm run content:enable projects      # برمی‌گردند (فایل‌ها هرگز حذف نمی‌شوند)
+npm run content:new projects atlas -- --title="Atlas" --publish
 ```
 
 * `enabled: false` فقط روت و لینک را حذف می‌کند؛ محتوا سرجایش می‌ماند. `pages` را نمی‌توان خاموش کرد.
@@ -580,7 +577,7 @@ pnpm run content:new projects atlas --title="Atlas" --publish
 * `index` / `paginated` / `feed` / `nav` تعیین می‌کنند فهرست، صفحه‌بندی، فید و لینک ناوبری ساخته شود یا نه.
 * `content:new` برای `pages` و `blog` به `new:page` / `new:post` واگذار می‌شود؛ بقیهٔ نوع‌ها فرانت‌متر مشترک، کاور تولیدی و برای زبان ترجمه‌نشده `[TODO: …]` + `draft: true` می‌گیرند.
 
-جزئیات کامل، از جمله مراحل افزودن نوع چهارم، در [CONTENT-TYPES-FA.md](CONTENT-TYPES-FA.md) آمده است.
+جزئیات کامل، از جمله مراحل افزودن نوع چهارم در `client/content.ts` بدون تغییر هسته، در [CONTENT-TYPES-FA.md](CONTENT-TYPES-FA.md) آمده است.
 
 ### شمای Zod (`src/content.config.ts`)
 
@@ -601,7 +598,7 @@ pnpm run content:new projects atlas --title="Atlas" --publish
 | `hero` | `'none' \| 'minimal' \| 'default'` | — (فقط `pages`) | پیش‌فرض `'none'` (بدون هیروی تحمیلی)؛ `'minimal'` = هدر تایپوگرافیک `PageHeader.astro`؛ `'default'` = بنر اتمسفریک `PageHero.astro` |
 | `container` | `'canvas' \| 'contained' \| 'prose'` | — (فقط `pages`) | پیش‌فرض `'canvas'` (تمام‌عرض آزاد)؛ `'contained'` = ظرف استاندارد `1280px` (`.layout-container` + `.prose-wide`)؛ `'prose'` = ستون خوانایی `72ch`. از نام `layout` استفاده نمی‌شود چون در `@astrojs/mdx` رزرو شده است |
 | `flushTop` | boolean | — (فقط `pages`) | پیش‌فرض `false`؛ در حالت `hero: 'none'` فاصلهٔ بالای `<main>` را برمی‌دارد تا بخش سفارشی زیر هدر شیشه‌ای قرار گیرد |
-| `template` | `'home'` (اختیاری) | — (فقط `pages`) | واگذاری رندر صفحه به یک نمای اختصاصی `.astro` در `src/views/pages/` |
+| `template` | string (اختیاری) | — (فقط `pages`) | واگذاری رندر صفحه به یک نمای اختصاصی `.astro` ثبت‌شده در `CLIENT_PAGE_TEMPLATES` (`client/templates/index.ts`) یا `src/views/pages/` |
 
 \* برای صفحهٔ `home` اسلاگ خالی مجاز است.
 
@@ -732,18 +729,17 @@ draft: false
 
 ## ۷. مجموعهٔ CLI
 
-همهٔ اسکریپت‌ها از طریق `pnpm run` اجرا می‌شوند. اسکریپت‌های مخرب قبل از حذف
-تأیید می‌گیرند؛ در محیط غیرتعاملی بدون `--force` رد می‌شوند.
+همهٔ اسکریپت‌ها از طریق `npm run` (یا در صورت تمایل `pnpm run`) اجرا می‌شوند. هنگام ارسال پرچم‌ها، بعد از نام دستور از `--` استفاده کنید. اسکریپت‌های مخرب قبل از حذف تأیید می‌گیرند و در محیط غیرتعاملی بدون `--force` رد می‌شوند.
 
 ### ۷.۱ ساخت صفحهٔ ایستا — `new:page`
 
 ```bash
-pnpm run new:page contact --title="Contact Us" --from=en --hero=minimal --container=contained
+npm run new:page contact -- --title="Contact Us" --from=en --hero=minimal --container=contained
 ```
 
-خروجی: `src/content/pages/contact/<locale>.mdx` به ازای همهٔ زبان‌های فعال در `src/i18n/locales.ts` با اسلاگ هر زبان (زبان مبدأ
-نام گروه؛ بقیه جای‌نگهدار تا اسلاگ بومی تعیین شود)، ثبت کلید `nav_contact` در همهٔ
-فرهنگ‌ها و اشارهٔ `image` به `./contact.png`.
+خروجی: `src/content/pages/contact/<locale>.mdx` به ازای همهٔ زبان‌های فعال در `client/locales.json` با اسلاگ هر زبان (زبان مبدأ
+نام گروه؛ بقیه جای‌نگهدار تا اسلاگ بومی تعیین شود)، ثبت کلید `nav_contact` در
+`client/messages/*.json` و اشارهٔ `image` به `./contact.png`.
 
 | گزینه | کار |
 | --- | --- |
@@ -804,7 +800,7 @@ artwork خود گروه (`./<page-key>.png`) برمی‌گردد؛ بیلد نم
 ### ۷.۲ ساخت مقالهٔ وبلاگ — `new:post`
 
 ```bash
-pnpm run new:post ai-agents \
+npm run new:post ai-agents -- \
   --from=en \
   --title="AI Coding Agents" \
   --category=engineering \
@@ -839,7 +835,7 @@ pnpm run new:post ai-agents \
 ### ۷.۳ ویرایش بدون بازنویسی متن
 
 ```bash
-pnpm run new:page contact --update --sync-frontmatter \
+npm run new:page contact -- --update --sync-frontmatter \
   --title="Get in touch" --desc="We reply within a day."
 ```
 
@@ -848,12 +844,12 @@ pnpm run new:page contact --update --sync-frontmatter \
 ### ۷.۴ حذف صفحه و مقاله
 
 ```bash
-pnpm run remove:page contact                     # کل گروه + پاک‌سازی nav_contact
-pnpm run remove:page contact --locale=fa         # فقط نسخهٔ فارسی
-pnpm run remove:page contact --no-clean-nav      # نگه‌داشتن کلید ناوبری
-pnpm run remove:page contact --force             # بدون تأیید تعاملی
-pnpm run remove:post ai-agents --collection=blog --force
-pnpm run remove:post ai-agents --locale=fa --force
+npm run remove:page contact                     # کل گروه + پاک‌سازی nav_contact از client/messages/
+npm run remove:page contact -- --locale=fa      # فقط نسخهٔ فارسی
+npm run remove:page contact -- --no-clean-nav   # نگه‌داشتن کلید ناوبری
+npm run remove:page contact -- --force          # بدون تأیید تعاملی
+npm run remove:post ai-agents -- --collection=blog --force
+npm run remove:post ai-agents -- --locale=fa --force
 ```
 
 | گزینهٔ `remove:page` | کار |
@@ -882,19 +878,19 @@ pnpm run remove:post ai-agents --locale=fa --force
 ### ۷.۵ مدیریت کلیدهای ترجمه
 
 ```bash
-# تک کلید
-pnpm run i18n:add -- --category=contact --key=form_label \
+# تک کلید (در client/messages/<locale>.json نوشته می‌شود)
+npm run i18n:add -- --category=contact --key=form_label \
   --en="Send message" --fa="ارسال پیام" --ar="إرسال الرسالة" \
   --de="Nachricht senden" --fr="Envoyer le message"
 
 # گروهی از فایل JSON
-pnpm run i18n:add-batch -- --file=translations.json --category=contact
+npm run i18n:add-batch -- --file=translations.json --category=contact
 
 # گروهی از JSON در خط فرمان
-pnpm run i18n:add-batch -- --json='{"cart_checkout":{"en":"Checkout","fa":"تسویه حساب"}}'
+npm run i18n:add-batch -- --json='{"cart_checkout":{"en":"Checkout","fa":"تسویه حساب"}}'
 
 # از STDIN
-cat keys.json | pnpm run i18n:add-batch
+cat keys.json | npm run i18n:add-batch
 ```
 
 | گزینهٔ `i18n:add` | کار |
@@ -925,7 +921,7 @@ Paraglide کامپایل می‌شود.
 ### ۷.۶ استخراج متن سخت‌کد از قالب
 
 ```bash
-pnpm run i18n:extract -- --target=src/components/Foo.astro --key=foo --auto-add --replace
+npm run i18n:extract -- --target=src/components/Foo.astro --key=foo --auto-add --replace
 ```
 
 | گزینه | کار |
@@ -939,8 +935,8 @@ pnpm run i18n:extract -- --target=src/components/Foo.astro --key=foo --auto-add 
 ### ۷.۷ تبدیل بلوک Tailwind به RTL
 
 ```bash
-pnpm run block:adapt -- --file=src/views/BlogIndexView.astro
-pnpm run block:adapt -- --file=src/views/BlogIndexView.astro --dry-run
+npm run block:adapt -- --file=src/views/BlogIndexView.astro
+npm run block:adapt -- --file=src/views/BlogIndexView.astro --dry-run
 ```
 
 نگاشت‌ها (فقط داخل `class="..."` اعمال می‌شوند):
@@ -957,10 +953,10 @@ pnpm run block:adapt -- --file=src/views/BlogIndexView.astro --dry-run
 ### ۷.۸ تولید تصاویر
 
 ```bash
-pnpm run assets:generate
+npm run assets:generate
 ```
 
-خروجی‌های دقیق (اندازه‌ها از `app.config.json` خوانده می‌شوند):
+خروجی‌های دقیق (اندازه‌ها از پیکربندی ادغام‌شدهٔ `app.config.json` + `client/config.json` خوانده می‌شوند):
 
 | مسیر | اندازه | توضیح |
 | --- | --- | --- |
@@ -992,13 +988,15 @@ pnpm run assets:generate
 ### ۷.۹ مدیریت انواع محتوا و سلامت پروژه
 
 ```bash
-pnpm run content:list                 # نوع‌ها، مسیر، وضعیت و تعداد ورودی
-pnpm run content:disable projects     # حذف مسیرها/sitemap/ناوبری (فایل‌ها می‌مانند)
-pnpm run content:enable projects
-pnpm run content:new projects atlas --title="Atlas" --publish
-pnpm run doctor                       # سلامت بدون build، با دستور رفع
-pnpm run content:status -- --write=docs/STATUS.md
-pnpm run link:check                   # خزش dist/ و گزارش لینک/لنگر شکسته
+npm run content:list                 # نوع‌ها، مسیر، وضعیت و تعداد ورودی
+npm run content:disable projects     # حذف مسیرها/sitemap/ناوبری در client/config.json (فایل‌ها می‌مانند)
+npm run content:enable projects
+npm run content:new projects atlas -- --title="Atlas" --publish
+npm run doctor                       # سلامت بدون build، با دستور رفع
+npm run content:status -- --write=docs/STATUS.md
+npm run link:check                   # خزش dist/ و گزارش لینک/لنگر شکسته
+npm run starter:seed                 # (اختیاری) تزریق صفحات، مقالات و پروژه‌های دمو
+npm run upstream:check               # کنترل قرارداد لایه‌های Core و client/
 ```
 
 `content:new` برای `pages` و `blog` به `new:page` / `new:post` واگذار می‌شود؛
@@ -1010,17 +1008,16 @@ pnpm run link:check                   # خزش dist/ و گزارش لینک/لن
 ### ۷.۱۰ ممیزی و تست
 
 ```bash
-pnpm run audit:i18n    # ۶ بخش: پیکربندی زبان، فرهنگ‌ها، محتوا، مسیرها، متن هاردکد، نگهبان RTL
-pnpm run smoke         # تست دود روی خروجی بیلدشده
-pnpm run knip          # فایل/اکسپورت/وابستگی مرده
-pnpm run verify:cli    # ۹۰ ادعا دربارهٔ گردش‌کارهای CLI
+npm run audit:i18n    # ۶ بخش: پیکربندی زبان، فرهنگ‌ها، محتوا، مسیرها، متن هاردکد، نگهبان RTL
+npm run smoke         # تست دود روی خروجی بیلدشده
+npm run knip          # فایل/اکسپورت/وابستگی مرده
+npm run verify:cli    # ۹۵ ادعا دربارهٔ گردش‌کارهای CLI
 ```
 
 `verify:cli` پروژه را در یک پوشهٔ موقت کپی می‌کند، همهٔ فرمان‌های CLI را دقیقاً
 همان‌طور که در این راهنما آمده اجرا می‌کند و برای هر ادعا یک خط PASS/FAIL
 چاپ می‌کند. این اسکریپت هیچ فایلی از نسخهٔ کاری شما را تغییر نمی‌دهد و
-حتی `node_modules` را دست نمی‌زند (برای همین `pnpm` داخل پوشهٔ موقت اجرا
-نمی‌شود).
+حتی `node_modules` را دست نمی‌زند (اسکریپت‌ها مستقیم با Node روی نسخهٔ موقت اجرا می‌شوند).
 
 > در بخش ۳ ممیزی، **نبودِ فایل یک زبان برای یک گروه هشدار است، نه خطا**:
 > نوشتن یک مقاله فقط به انگلیسی حالت عادی است و سایت، ناوبری و تعویض زبان
@@ -1030,14 +1027,16 @@ pnpm run verify:cli    # ۹۰ ادعا دربارهٔ گردش‌کارهای CL
 
 | فایل | نقش |
 | --- | --- |
-| `locales.mjs` | خواندن `src/i18n/locales.ts` به‌عنوان منبع حقیقت: `parseLocaleConfig(source)` و `readLocaleConfig()` — ممیزی i18n و تست دود هر دو از همین پارسر استفاده می‌کنند، پس فهرست زبان‌ها و جهت آن‌ها هرگز دو بار تعریف نمی‌شود |
+| `config.mjs` | ادغام `app.config.json` + `client/config.json` و نوشتن تغییرات sparse در `client/config.json` |
+| `merge-messages.mjs` / `compile-messages.mjs` | ادغام فرهنگ‌های `messages/core/` + `client/messages/` در `.paraglide-work/` و کامپایل Paraglide |
+| `locales.mjs` / `locale-mutations.mjs` | خواندن/تغییر `client/locales.json` و بازتوزیع آن — ممیزی i18n و تست دود از همین منبع می‌خوانند |
 | `frontmatter.mjs` | `parseFrontmatter` / `stringifyFrontmatter` (بدون وابستگی) |
 | `image-reference.mjs` | تبدیل `--image` به ارجاع نسبی به فایل محتوا و کپی artwork به پوشهٔ گروه |
 | `content-stub.mjs` | متن جانشین هر زبان برای محتوای تولیدشده (صفحه و مقاله) |
 | `slug.mjs` | `resolveSlug` — اسلاگ هر زبان در محتوای تازه‌ساخته (نام گروه برای زبان مبدأ، `<گروه>-<locale>` برای بقیه) |
 | `prompt.mjs` | `askYesNo` / `confirmDeletion` — تأیید یکسان برای اسکریپت‌های مخرب |
 | `validate.mjs` | اعتبارسنجی کلید ورودی، نام مجموعه و کد زبان تا هیچ مسیری از مجموعه خارج نشود |
-| `content-types.mjs` | خواندن/نوشتن `content.types` در `app.config.json` (با حفظ EOL و قالب) و آمار ورودی‌ها برای CLI |
+| `content-types.mjs` | خواندن/نوشتن `content.types` در پیکربندی کلاینت + کشف کالکشن‌های `client/content.ts` و آمار ورودی‌ها |
 
 ---
 
@@ -1046,7 +1045,7 @@ pnpm run verify:cli    # ۹۰ ادعا دربارهٔ گردش‌کارهای CL
 ### افزودن زبان
 
 ```bash
-pnpm run i18n:add-lang -- es --name="Español" --dir="ltr" --with-content --from=en
+npm run i18n:add-lang -- es --name="Español" --dir="ltr" --with-content --from=en
 ```
 
 | گزینه | کار |
@@ -1060,22 +1059,21 @@ pnpm run i18n:add-lang -- es --name="Español" --dir="ltr" --with-content --from
 
 این اسکریپت به‌صورت خودکار:
 
-1. `project.inlang/settings.json` را به‌روز می‌کند
-2. `messages/es.json` می‌سازد (کپی فرهنگ زبان مبدأ)
-3. `src/i18n/locales.ts` را به‌روز می‌کند (فهرست + `LOCALE_METADATA`)
-4. فایل `<locale>.mdx` برای همهٔ صفحات و مقالات می‌سازد
-5. Paraglide را دوباره کامپایل می‌کند
+1. `client/locales.json` را به‌روز می‌کند (`locales` + `metadata`)
+2. `client/messages/es.json` می‌سازد (کپی فرهنگ زبان مبدأ)
+3. فایل `<locale>.mdx` برای همهٔ صفحات و مقالات می‌سازد
+4. فرهنگ‌های هسته و کلاینت را در `.paraglide-work/` ادغام و Paraglide را کامپایل می‌کند
 
-> اسکریپت `LOCALE_METADATA` را هم خودش می‌نویسد، ولی **آن را بررسی کنید**:
+> اسکریپت `metadata` را در `client/locales.json` خودش می‌نویسد، ولی **آن را بررسی کنید**:
 > برای هر زبان جدیدِ RTL مقدار `fontFamily` را روی `var(--font-fa)` می‌گذارد.
 > اگر زبان جدید خطی است، باید `var(--font-sans)` باشد؛ اگر خطی‌نبودنِ غیرعربی
-> است (مثلاً عبری)، باید فونت متناسب خودش را در `src/styles/global.css` تعریف
+> است (مثلاً عبری)، باید فونت متناسب خودش را در `client/styles.css` تعریف
 > و اینجا ارجاع دهید.
 
 ### حذف زبان
 
 ```bash
-pnpm run i18n:remove-lang -- es --with-content --force
+npm run i18n:remove-lang -- es --with-content --force
 ```
 
 | گزینه | کار |
@@ -1089,8 +1087,8 @@ pnpm run i18n:remove-lang -- es --with-content --force
 ### گام بعدی: پیام‌ها
 
 پس از افزودن زبان، فرهنگ جدید فقط کلیدهای زبان مبدأ را دارد. با
-`pnpm run i18n:add-batch` یا `i18n:extract` ترجمه‌ها را کامل کنید؛
-`pnpm run audit:i18n` هر کلید ناقص را گزارش می‌کند.
+`npm run i18n:add-batch` یا `i18n:extract` ترجمه‌ها را کامل کنید؛
+`npm run audit:i18n` هر کلید ناقص را گزارش می‌کند.
 
 ---
 
@@ -1454,28 +1452,30 @@ refreshChronoTrig();
 - `scripts/**/*.mjs` (همهٔ اسکریپت‌های CLI)
 - `src/**/*.test.ts` (فایل‌های تست)
 
-دو افزونهٔ کامپایلر در `ignoreDependencies` هستند چون فقط از طریق `project.inlang/settings.json` بارگذاری می‌شوند:
+دو افزونهٔ کامپایلر در `ignoreDependencies` هستند چون فقط از طریق تنظیمات تولیدی `.paraglide-work/project.inlang/settings.json` بارگذاری می‌شوند:
 `@inlang/plugin-message-format` و `@inlang/plugin-m-function-matcher`.
 
 ### افزودن آیکون
 
-آیکون‌ها از بستهٔ `@tabler/icons-astro` (لایسنس MIT) می‌آیند و با ۴۶ نام معنایی از `src/libs/ui/icons.ts` صدا زده می‌شوند:
-`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `sun` · `moon` · `copy` · `external-link` · `arrow-right` · `shield` · `mail` · `layers` · `star` · `star-filled` · `quote` · `users` · `building` · `alert-circle` · `alert-triangle` · `circle-check` · `bell` · `bolt` · `clock` · `map-pin` · `phone` · `rocket` · `code` · `award` · `layout-grid` · `calendar` · `photo` · `minus` · و آیکون‌های ناوبری (`home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `file`).
+آیکون‌ها از بستهٔ `@tabler/icons-astro` (لایسنس MIT) می‌آیند و با ۶۱ نام هسته از `src/libs/ui/icons.ts` (به همراه آیکون‌های سفارشی مشتری از `client/icons.ts`) صدا زده می‌شوند:
+`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `chevron-up` · `sun` · `moon` · `copy` · `external-link` · `arrow-right` · `shield` · `mail` · `layers` · `home` · `info` · `sparkles` · `tag` · `newspaper` · `folder` · `compass` · `palette` · `book-open` · `star` · `star-filled` · `quote` · `users` · `user` · `building` · `file` · `alert-circle` · `alert-triangle` · `circle-check` · `bell` · `bolt` · `clock` · `map-pin` · `phone` · `rocket` · `code` · `award` · `layout-grid` · `calendar` · `photo` · `minus` · `eye` · `eye-off` · `shopping-bag` · `heart` · `share` · `dots-vertical` · `lock` · `adjustments-horizontal` · `brand-github` · `brand-x` · `brand-linkedin` · `brand-instagram` · `brand-telegram`.
+
+برای افزودن آیکون اختصاصی مشتری بدون دست‌زدن به هسته:
 
 ```ts
-// ۱) نام تازه را به فهرست بسته اضافه کنید
-// src/libs/ui/icons.ts
-export const SITE_ICONS = [ /* … */ 'star' ] as const;
-```
-
-```ts
-// ۲) فقط همان آیکون را import کنید — نه از barrel بسته
-// src/components/Icon.astro
-import IconStar from '@tabler/icons-astro/dist/esm/icons/star.mjs';
+// ۱) نام تازه را به آرایهٔ مشتری اضافه کنید
+// client/icons.ts
+export const CLIENT_ICONS = ['my-icon'] as const;
 ```
 
 ```astro
-<Icon name="star" size={20} class="text-primary" />
+<!-- ۲) فقط همان آیکون را در نگاشت کلاینت import کنید — نه از barrel بسته -->
+<!-- client/ClientIcons.astro -->
+import IconCustom from '@tabler/icons-astro/dist/esm/icons/star.mjs';
+```
+
+```astro
+<Icon name="my-icon" size={20} class="text-primary" />
 ```
 
 > هرگز `<svg>` خام با `<path>` را در قالب‌ها نچسبانید و مسیر SVG را در کد کلاینت دستی نسازید؛ آیکون‌هایی که بعد از بارگذاری لازم می‌شوند از `<template data-icon-template="…">` کلون می‌شوند (مانند صفحه‌بندی بلاگ) یا هر دو حالت رندر و با CSS جابه‌جا می‌شوند (تم و دکمهٔ کپی کد).
@@ -1538,7 +1538,7 @@ export interface NavigationSlots {
 - از تابع `getHeaderNavigation(locale, currentUrl)` تأمین می‌شود؛ این تابع همان `buildPrimaryNavigation` مشترک با کشوی موبایل را برمی‌گرداند، پس یک صفحه هرگز یک بار در هدر و یک بار جداگانه در کشو تعریف نمی‌شود.
 - **منوهای آبشاری چندسطحی (Dropdowns)**: از فیلد `children` در `NavItem` پشتیبانی می‌کند. روی دسکتاپ با هاور و فوکوس کیبورد (`group-hover` و `group-focus-within`) باز می‌شود. زیرمنوهای تو در تو نیز با آیکون `chevron-right` (با چرخش خودکار `rtl:rotate-180` در زبان‌های راست‌به‌چپ) به سمت جهت خواندن هدایت می‌شوند.
 - **تشخیص خودکار صفحهٔ فعال**: تابع `isActive(href, currentUrl)` مسیر جاری را با لینک‌ها مقایسه کرده و کلاس `text-primary font-medium` و نشانگر `aria-current="page"` را اعمال می‌کند.
-- **دکمهٔ CTA پیکربندی‌پذیر**: دکمهٔ شروع سریع (`common_get_started`) به گروه صفحهٔ تعیین‌شده در `ui.ctaPage` (`app.config.json`) می‌رود — پیش‌فرض `pricing`. اگر آن صفحه برای این زبان منتشر نشده باشد، دکمه به‌جای لینک مرده پنهان می‌شود.
+- **دکمهٔ CTA پیکربندی‌پذیر**: دکمهٔ شروع سریع (`common_get_started`) به گروه صفحهٔ تعیین‌شده در `ui.ctaPage` (`app.config.json` / `client/config.json`) می‌رود — پیش‌فرض `pricing`. اگر آن صفحه برای این زبان منتشر نشده باشد، دکمه به‌جای لینک مرده پنهان می‌شود.
 
 #### ۲. کشوی کشویی موبایل (`drawerNav` و پنل اختصاصی)
 - از تابع `getDrawerNavigation(locale, currentUrl)` تأمین می‌شود (همان فهرست هدر، از سازندهٔ مشترک) و با دکمهٔ همبرگری `data-mobile-menu-btn` باز می‌شود.
@@ -1552,12 +1552,12 @@ export interface NavigationSlots {
 #### ۳. فوتر چندستونهٔ پیشرفته (`footerNav` و `legalNav`)
 - از توابع `getFooterNavigation(locale, currentUrl)` و `getLegalNavigation(locale)` تأمین می‌شود و فوتر قدیمی تک‌خطی را به یک شبکهٔ واکنشی استاندارد تبدیل می‌کند:
   - **ستون ۱ (برند و مأموریت)**: نام برند، توضیح بومی سایت (`site_description`).
-  - **ستون ۲ (صفحات / Pages)**: دقیقاً از `PAGE_ITEMS` ساخته می‌شود (خانه، درباره ما، ویژگی‌ها، قیمت‌گذاری)، پس افزودن/حذف صفحه در فوتر هم اثر می‌کند. خانه تنها لینکی است که حتی بدون صفحهٔ خانهٔ همان زبان (با `getHomeHref`) زنده می‌ماند.
+  - **ستون ۲ (صفحات / Pages)**: دقیقاً از `CLIENT_PAGE_ITEMS` (`client/navigation.ts`) ساخته می‌شود، پس افزودن/حذف صفحه در فوتر هم اثر می‌کند. خانه تنها لینکی است که حتی بدون صفحهٔ خانهٔ همان زبان (با `getHomeHref`) زنده می‌ماند.
   - **ستون ۳ (منابع / Resources)**: فقط یک لینک برای هر نوع محتوای قابل‌ناوبری (`getContentTypeNavItems`: وبلاگ، پروژه‌ها). لنگرهای `#rtl`/`#design` و «نمای کلی» متعلق به منوی هدر/کشو هستند، نه فوتر. هیچ لینک خارجی/قالبی در فوتر نیست.
-  - **ستون ۴ (شرکت / Company)**: شبکه‌های اجتماعی `social.github`، `social.twitter`، `social.linkedin`، `social.instagram` و `social.telegram` از `app.config.json`؛ هر کدام فقط وقتی مقدار داشته باشند. ستون خالی کلاً حذف می‌شود.
+  - **ستون ۴ (شرکت / Company)**: شبکه‌های اجتماعی `social.github`، `social.twitter`، `social.linkedin`، `social.instagram` و `social.telegram` از پیکربندی ادغام‌شده؛ هر کدام فقط وقتی مقدار داشته باشند. ستون خالی کلاً حذف می‌شود.
 - **نوار پایین فوتر (Bottom Bar)**:
   - درج سال کپی‌رایت خودکار با تقویم هجری شمسی برای فارسی (`formatYear(currentYear, locale)`) و متن همه‌حقوق محفوظ است (`common_all_rights_reserved`).
-  - پیوندهای حقوقی ثانویه (`legalNav`) شامل حریم خصوصی (`footer_legal_privacy`) و شرایط استفاده (`footer_legal_terms`) — هر دو لنگرهای صفحهٔ about هستند و اگر آن صفحه منتشر نشده باشد، نوار حقوقی خالی می‌ماند (هیچ `#privacy` مرده‌ای ساخته نمی‌شود).
+  - پیوندهای حقوقی ثانویه (`legalNav`) شامل حریم خصوصی (`footer_legal_privacy`) و شرایط استفاده (`footer_legal_terms`) که از `getClientLegalNavigation()` در `client/navigation.ts` خوانده می‌شوند و بدون صفحهٔ هدفِ منتشرشده لینک مرده نمی‌سازند.
 
 #### ۴. لایهٔ سازگاری با گذشته (Backward Compatibility)
 تابع قدیمی `getNavigation(locale, currentUrl)` همچنان در `src/libs/config/navigation.ts` وجود دارد و به عنوان مستعار (alias) برای `getDrawerNavigation` عمل می‌کند تا هیچ اسکریپت یا تستی دچار شکست نشود.
@@ -1566,7 +1566,7 @@ export interface NavigationSlots {
 
 ## ۱۲. صفحات، نماها و مسیریاب
 
-تنها فایل مسیر پویا `src/pages/[...path].astro` است (۳۹ خط):
+تنها فایل مسیر پویا `src/pages/[...path].astro` است که همه‌چیز را به نماهای `src/views/` (`PageView`, `BlogIndexView`, `BlogPostView`, `CollectionIndexView`, `CollectionEntryView`) ارجاع می‌دهد:
 
 ```astro
 ---
@@ -1574,22 +1574,14 @@ import { getSiteRoutes } from '@/libs/content/service';
 import PageView from '@/views/PageView.astro';
 import BlogPostView from '@/views/BlogPostView.astro';
 import BlogIndexView from '@/views/BlogIndexView.astro';
+import CollectionIndexView from '@/views/CollectionIndexView.astro';
+import CollectionEntryView from '@/views/CollectionEntryView.astro';
 
 export async function getStaticPaths() {
   return await getSiteRoutes();
 }
 const props = Astro.props;
 ---
-{props.routeType === 'page' && (
-  <PageView entry={props.entry} locale={props.locale} alternates={props.alternates} url={props.url} />
-)}
-{props.routeType === 'blog-entry' && (
-  <BlogPostView entry={props.entry} locale={props.locale} alternates={props.alternates} url={props.url} />
-)}
-{props.routeType === 'blog-index' && (
-  <BlogIndexView locale={props.locale} alternates={props.alternates} url={props.url}
-    page={props.page} totalPages={props.totalPages} perPage={props.perPage} />
-)}
 ```
 
 **قاعده:** هرگز `src/pages/[lang].astro` یا `[slug].astro` نسازید — برخورد مسیر
@@ -1602,25 +1594,25 @@ const props = Astro.props;
 | `page` | `entry` | `PageView` |
 | `blog-entry` | `entry` | `BlogPostView` |
 | `blog-index` | `page`, `totalPages`, `perPage` | `BlogIndexView` |
+| `collection-index` | `contentType`, `page`, `totalPages`, `perPage` | `CollectionIndexView` |
+| `collection-entry` | `contentType`, `entry` | `CollectionEntryView` |
 
 ### افزودن لینک به ناوبری
 
-۱. مطمئن شوید صفحه در `src/content/pages/<page-key>/` وجود دارد (یا `new:page` بزنید)
-۲. در `src/libs/config/navigation.ts` اضافه کنید:
+۱. مطمئن شوید صفحه در `src/content/pages/<page-key>/` وجود دارد (یا `npm run new:page` بزنید)
+۲. یک ورودی به `CLIENT_PAGE_ITEMS` در `client/navigation.ts` اضافه کنید (ستون‌های اضافهٔ فوتر و لینک‌های حقوقی هم در همین فایل تعریف می‌شوند):
 
 ```ts
-const PAGE_ITEMS = [
-  { group: 'home', label: (locale: Locale) => m.nav_home({}, { locale }) },
-  { group: 'about', label: (locale: Locale) => m.nav_about({}, { locale }) },
-  { group: 'features', label: (locale: Locale) => m.nav_features({}, { locale }) },
-  { group: 'pricing', label: (locale: Locale) => m.nav_pricing({}, { locale }) },
-  { group: 'contact', label: (locale: Locale) => m.nav_contact({}, { locale }) },  // ← جدید
-] as const;
+// client/navigation.ts
+export const CLIENT_PAGE_ITEMS: ClientPageItemConfig[] = [
+  { group: 'home', icon: 'home', label: (locale: Locale) => m.nav_home({}, { locale }) },
+  { group: 'contact', icon: 'mail', label: (locale: Locale) => m.nav_contact({}, { locale }) }, // ← جدید
+];
 ```
 
 هدر دسکتاپ و کشوی موبایل هر دو از `buildPrimaryNavigation` (پشت `getHeaderNavigation`
 و `getDrawerNavigation`) می‌خوانند و فوتر/لینک‌های حقوقی از `getFooterNavigation` و
-`getLegalNavigation`؛ نیازی به ویرایش قالب‌ها نیست. صفحه‌ای که ترجمه‌ای برای زبانی
+`getLegalNavigation`؛ نیازی به ویرایش فایل‌های هسته نیست. صفحه‌ای که ترجمه‌ای برای زبانی
 ندارد، خودکار از منو حذف می‌شود (`getPageUrl` مقدار `null` برمی‌گرداند).
 
 **منوی Resources**: زیرمنوها به بخش‌های صفحهٔ `features` (`#rtl` و `#design`)
@@ -1758,7 +1750,7 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 
 ### بهبودهای اختصاصی جستجوی فارسی در Pagefind و Fallback
 موتور پیش‌فرض Pagefind فاقد ریشه‌یاب (Stemmer) فارسی است. برای حل چالش‌های واقعی تایپ فارسی، دو لایهٔ مکمل در پروژه تعبیه شده است:
-1. **نرمال‌سازی زمان بیلد (`scripts/index-pagefind.mjs`)**: هنگام اجرای `pnpm run build`، فایل‌های HTML پوشهٔ `dist/` بدون تغییر روی دیسک، در حافظه پردازش و به API رسمی Node در Pagefind داده می‌شوند:
+1. **نرمال‌سازی زمان بیلد (`scripts/index-pagefind.mjs`)**: هنگام اجرای `npm run build`، فایل‌های HTML پوشهٔ `dist/` بدون تغییر روی دیسک، در حافظه پردازش و به API رسمی Node در Pagefind داده می‌شوند:
    - یکسان‌سازی حروف عربی به فارسی (`ي`/`ى` ← `ی`، `ك` ← `ک`) و حذف کشیده/اعراب در متن صفحات `fa`.
    - جداسازی علائم نگارشی چسبیده (`«»،؛؟٪٬` مثل `«منبع`) با فاصلهٔ مویی یونیکد (`\u200A`) بیرون از تگ‌های `<pre>`/`<code>`/`<script>`/`<style>` تا توکنایزر Rust در Pagefind کلمات فارسی را کاملاً تمیز ایندکس کند و `plainText()` آن را در خلاصه‌ها پاک کند.
 2. **گسترش هوشمند عبارت جستجو در سمت کاربر (`src/libs/search/persian.ts`)**:
@@ -1779,14 +1771,14 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 
 ### فرم تماس و خبرنامه (معماری Pure SSG بدون بک‌اند)
 این استارتر **۱۰۰٪ استاتیک (SSG)** است و هیچ سرور بک‌اند داخلی ندارد. برای فرم تماس (`src/components/ContactForm.astro`) و بنر اشتراک خبرنامه (`src/components/NewsletterBanner.astro`)، داده‌ها مستقیماً از مرورگر از طریق آداپتور نوع‌امن `src/libs/api/client.ts` (`submitContactInquiry` / `submitNewsletterSubscription` و کمکی‌های `resolveApiEndpoint` / `validateContactPayload` / `validateNewsletterPayload`) با محافظت تایم‌اوت (`AbortController`) و فیلتر ضداسپم Honeypot به سرویس یا API خارجی شما ارسال می‌شوند:
-- نشانی API را در متغیرهای محیطی `PUBLIC_CONTACT_API_URL`، `PUBLIC_NEWSLETTER_API_URL` (یا `PUBLIC_API_BASE_URL`) و یا در بخش `api` فایل `app.config.json` (`endpoints.contact`, `endpoints.newsletter`, `topics`) تنظیم کنید.
+- نشانی API را در متغیرهای محیطی `PUBLIC_CONTACT_API_URL`، `PUBLIC_NEWSLETTER_API_URL` (یا `PUBLIC_API_BASE_URL`) و یا در بخش `api` فایل `client/config.json` (`endpoints.contact`, `endpoints.newsletter`, `topics`) تنظیم کنید.
 - **بدون نشانی API، فرم اصلاً رندر نمی‌شود.** بازدیدکننده به‌جای فرم یک پنل کوتاه می‌بیند:
   - اگر `site.contactEmail` تنظیم شده باشد: پیام `contact_fallback_desc` («ایمیل بزنید…») + دکمهٔ `mailto:` (`contact_fallback_cta`).
   - اگر خالی باشد: پیام بی‌طرف `contact_unavailable_desc` / `newsletter_unavailable_desc` — بدون وعدهٔ ایمیلی که وجود ندارد و بدون دکمه.
 
   دلیل: کنترل بفرست‌نشدنی بدتر از یک نشانی روشن است، و متن‌هایی مثل نام متغیر محیطی هرگز نباید به بازدیدکننده نشان داده شوند.
 - متن راهنمای توسعه‌دهنده فقط در حالت `import.meta.env.DEV` رندر می‌شود؛ در بیلد پروداکشن از HTML حذف می‌شود.
-- `pnpm run doctor` اگر هیچ مقصدی (نه `api.baseUrl`/متغیرهای `PUBLIC_*` و نه `site.contactEmail`) تنظیم نشده باشد هشدار می‌دهد، چون در آن حالت سایت هیچ درخواستی دریافت نمی‌کند.
+- `npm run doctor` اگر هیچ مقصدی (نه `api.baseUrl`/متغیرهای `PUBLIC_*` و نه `site.contactEmail`) تنظیم نشده باشد هشدار می‌دهد، چون در آن حالت سایت هیچ درخواستی دریافت نمی‌کند.
 
 ---
 
@@ -1872,13 +1864,15 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 ## ۱۷. تست و اعتبارسنجی
 
 ```bash
-pnpm run lint     # کامپایل پیام‌ها + astro check + tsc --noEmit
-pnpm test         # ۲۴ فایل تست واحد Vitest (۲۴۵ تست)
-pnpm run audit:i18n
-SITE_URL=https://example.com pnpm run build
-pnpm run smoke    # تست دود روی dist/
-pnpm run knip
-pnpm run verify:cli  # ۹۰ ادعا دربارهٔ گردش‌کارهای CLI
+npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
+npm run lint           # کامپایل پیام‌ها + astro check + tsc --noEmit
+npm test               # ۲۴ فایل تست واحد Vitest (۲۵۰ تست)
+npm run audit:i18n
+SITE_URL=https://example.com npm run build
+npm run smoke          # تست دود روی dist/
+npm run link:check     # خزش dist/ و گزارش لینک‌های شکسته
+npm run knip
+npm run verify:cli     # ۹۵ ادعا دربارهٔ گردش‌کارهای CLI
 ```
 
 ### چه چیزی تست می‌شود
@@ -1893,9 +1887,10 @@ pnpm run verify:cli  # ۹۰ ادعا دربارهٔ گردش‌کارهای CLI
 | `src/libs/content/pagination.test.ts` | `paginate`، `clampPage`، `buildPageWindow` |
 | `src/libs/content/blog.test.ts` | فیلترها، مقایسهٔ وضعیت فیلتر (`areBlogFiltersEqual`)، زمان مطالعه، TOC و مقالات مرتبط |
 | `src/libs/content/taxonomy.test.ts` | برچسب دسته/برچسب و fallback |
+| `src/libs/content/content-types.test.ts` | رجیستری انواع محتوا و مسیرهای جنریک مجموعه‌ها |
 | `src/libs/content/og-card.test.ts` | رندر SVG کارت OG برنددار، شکستن خطوط و فرار از XSS |
 | `src/libs/content/scripts.test.ts` | توابع فرانت‌متر، CLI helperها، پارسر زبان |
-| `src/libs/config/app.test.ts` | اعتبارسنجی `app.config.json` و تنظیمات برند/وبلاگ/API/کوکی |
+| `src/libs/config/app.test.ts` | اعتبارسنجی ادغام `app.config.json` + `client/config.json` و تنظیمات برند/وبلاگ/API/کوکی |
 | `src/libs/config/theme.test.ts` | پالت‌های OKLCH، رنگ‌های hex سفارشی، فونت‌ها و کنتراست AA |
 | `src/libs/config/navigation.test.ts` | اسلات‌های ناوبری چندمنویی هدر، کشوی موبایل و فوتر |
 | `src/libs/config/client.test.ts` | هم‌خوانی `CLIENT_COOKIE_CONFIG` با پیکربندی اعتبارسنجی‌شده و نبود import زمان اجرا از `app.ts` (به‌این‌ترتیب Zod به باندل مرورگر نمی‌رسد) |
@@ -1909,7 +1904,7 @@ pnpm run verify:cli  # ۹۰ ادعا دربارهٔ گردش‌کارهای CLI
 | `src/libs/ui/icons.test.ts` | یکتایی و kebab-case بودن `SITE_ICONS`، `resolveIconName`، آیکون‌های جهت‌دار RTL و پوشش آیکون‌های ناوبری |
 | `src/libs/ui/blocks.test.ts` | بلوک‌های آمادهٔ شرکتی/لندینگ (خواص منطقی، نبود `<svg>` خام، کلیدهای Paraglide و توکن‌های معنایی) |
 
-> **۲۴ فایل تست واحد (۲۴۵ تست).** ماژول `astro:content` در Vitest با
+> **۲۴ فایل تست واحد (۲۵۰ تست).** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -1917,16 +1912,14 @@ pnpm run verify:cli  # ۹۰ ادعا دربارهٔ گردش‌کارهای CLI
 
 | بخش | چه چیزی را بررسی می‌کند |
 | --- | --- |
-| ۱. پیکربندی زبان | تطابق `locales.ts` و `project.inlang/settings.json`، وجود `dir` برای هر زبان |
-| ۲. فرهنگ‌ها | کلیدها و placeholderهای ICU در همهٔ زبان‌ها، همهٔ کلیدهای استفاده‌شده، کلیدهای بی‌استفاده |
+| ۱. پیکربندی زبان | تطابق `client/locales.json` و `src/i18n/locales.ts`، وجود `dir` برای هر زبان |
+| ۲. فرهنگ‌ها | کلیدها و placeholderهای ICU در فرهنگ‌های ادغام‌شدهٔ همهٔ زبان‌ها، همهٔ کلیدهای استفاده‌شده، کلیدهای بی‌استفاده |
 | ۳. کالکشن محتوا | وجود فایل هر زبان برای هر گروه (نبودِ یک زبان = هشدار) |
 | ۴. نگهبان slug و مسیر | فرانت‌متر معتبر، اسلاگ‌های یکتا، نبود برخورد مسیر |
 | ۵. اسکنر متن هاردکد | هشدار دربارهٔ رشته‌های ترجمه‌نشده در قالب‌ها (هشدار، نه خطا) |
 | ۶. نگهبان RTL | نبود کلاس جهت‌دار فیزیکی (`ml-`, `pr-`, `text-left`, `left/right`) و بردارهای فیزیکی انیمیشن |
 
-خروجی واقعی روی این مخزن: ۲ زبان، ۱۸۹ کلید در همهٔ فرهنگ‌ها با placeholder
-یکسان، ۱۷۸ کلید استفاده‌شدهٔ ایستا، ۹ گروه محتوا، بدون برخورد مسیر و بدون
-هشدار متن هاردکد.
+خروجی واقعی روی وضعیت پایهٔ تمیز این مخزن: ۲ زبان (`en`, `fa`)، ۴۸۴ کلید پایه در فرهنگ‌های هسته با placeholder یکسان، بدون برخورد مسیر و صفر تخلف RTL.
 
 ### تست دود — ۷ بخش روی `dist/`
 
@@ -1944,7 +1937,7 @@ pnpm run verify:cli  # ۹۰ ادعا دربارهٔ گردش‌کارهای CLI
 
 - `lang` و `dir` از **خودِ تگ `<html>`** خوانده می‌شوند، نه از جست‌وجوی متن کل
   سند؛ وگرنه `dir="ltr"` نوار پیشرفت باعث می‌شد بررسی جهت همیشه پاس شود.
-- هر زبان باید در `src/i18n/locales.ts` جهت صریح (`ltr`/`rtl`) داشته باشد؛
+- هر زبان باید در `client/locales.json` جهت صریح (`ltr`/`rtl`) داشته باشد؛
   نبودِ جهت یک خطای پیکربندی است، نه «پیش‌فرض ltr».
 - تعداد صفحه‌های وبلاگ از خودِ کالکشن محتوا مشتق و با `blog.postsPerPage`
   سنجیده می‌شود.
@@ -1954,10 +1947,10 @@ pnpm run verify:cli  # ۹۰ ادعا دربارهٔ گردش‌کارهای CLI
 `.github/workflows/ci.yml`:
 
 - `concurrency` با `cancel-in-progress` — بیلدهای قدیمی خودکار لغو می‌شوند
-- Node 22 با cache pnpm، `pnpm install --frozen-lockfile`
+- Node 22 با cache بسته، نصب وابستگی‌ها
 - `SITE_URL: https://example.com` به‌عنوان env
 - `timeout-minutes: 15`
-- ترتیب: lint → test → audit → doctor → build → smoke → link:check → knip → verify:cli
+- ترتیب: `upstream:check` → `lint` → `test` → `audit:i18n` → `doctor` → `build` → `smoke` → `link:check` → `knip` → `verify:cli`
 
 ---
 
@@ -1982,7 +1975,7 @@ SITE_URL="https://your-domain.com"
 ### ۲. بیلد
 
 ```bash
-pnpm run build && pnpm run smoke
+npm run build && npm run smoke
 ```
 
 ### ۳. تنظیمات `astro.config.mjs`
@@ -1994,8 +1987,8 @@ pnpm run build && pnpm run smoke
 | `build.format` | `'directory'` | هر صفحه یک پوشهٔ `index.html` |
 | `compressHTML` | `true` | فشرده‌سازی HTML خروجی |
 | `integrations` | `[mdx()]` | پشتیبانی MDX |
-| `vite.plugins` | `[tailwindcss()]` | Tailwind v4 از طریق Vite |
-| `server.host` / `server.port` | از `app.config.json` | سرور توسعه با اپ هم‌پورت است |
+| `vite.plugins` | `[tailwindcss()]` | Tailwind v4 از طریق Vite + aliasهای `@` و `@client` |
+| `server.host` / `server.port` | از `app.config.json` / `client/config.json` | سرور توسعه با اپ هم‌پورت است |
 
 ### ۴. خروجی
 
@@ -2008,7 +2001,7 @@ pnpm run build && pnpm run smoke
 ```text
 dist/
 ├── index.html          # صفحهٔ خانهٔ زبان پیش‌فرض
-├── about/index.html    # صفحهٔ ایستا
+├── about/index.html    # صفحهٔ ایستا (در صورت ایجاد یا seed)
 ├── fa/index.html       # خانهٔ فارسی
 ├── blog/index.html     # ایندکس وبلاگ
 ├── 404.html            # صفحهٔ خطای locale-aware
@@ -2034,21 +2027,21 @@ dist/
 
 | نشانه | علت محتمل | راه‌حل |
 | --- | --- | --- |
-| صفحهٔ ۴۰۴ در یک زبان | اسلاگ با پیشوند زبان اشتباه | `pnpm run audit:i18n` — برخورد مسیر را گزارش می‌کند |
-| متن‌ها خالی/انگلیسی مانده | فرهنگ کامپایل نشده | `pnpm run messages:compile` |
+| صفحهٔ ۴۰۴ در یک زبان | اسلاگ با پیشوند زبان اشتباه | `npm run audit:i18n` — برخورد مسیر را گزارش می‌کند |
+| متن‌ها خالی/انگلیسی مانده | فرهنگ کامپایل نشده | `npm run messages:compile` |
 | بیلد با خطای تصویر | مسیر `image` نسبت به فایل محتوا نیست | مسیر را `./<group>.png` کنید و فایل را کنار محتوا بگذارید |
 | `SITE_URL is required for a deployment build` | بیلد در CI بدون `SITE_URL` | متغیر محیطی را تنظیم کنید |
 | `Duplicate route collision detected at URL` | دو ورودی یک URL | یکی از اسلاگ‌ها یا گروه‌ها را تغییر دهید |
 | `Missing "<locale>" home page` | صفحهٔ خانهٔ زبان پیش‌فرض وجود ندارد | `src/content/pages/home/<locale>.mdx` بسازید |
-| `Unknown locale "…" in content entry` | فایل محتوا برای زبان ثبت‌نشده | اول زبان را در `locales.ts` و `settings.json` اضافه کنید |
-| فونت فارسی اعمال نمی‌شود | `fontFamily` در `LOCALE_METADATA` اشتباه | `var(--font-fa)` و `var(--font-ar)` را بررسی کنید |
-| متن در RTL جابه‌جا می‌شود | استفاده از خواص فیزیکی | `pnpm run block:adapt -- --file=<file>` |
-| کلید ترجمه گم شده | فرهنگ ناقص | `pnpm run audit:i18n` فهرست کلیدهای ناقص را می‌دهد |
+| `Unknown locale "…" in content entry` | فایل محتوا برای زبان ثبت‌نشده | اول زبان را در `client/locales.json` (با `npm run i18n:add-lang`) اضافه کنید |
+| فونت فارسی اعمال نمی‌شود | `fontFamily` در `client/locales.json` اشتباه | `var(--font-fa)` و `var(--font-ar)` را بررسی کنید |
+| متن در RTL جابه‌جا می‌شود | استفاده از خواص فیزیکی | `npm run block:adapt -- --file=<file>` |
+| کلید ترجمه گم شده | فرهنگ ناقص | `npm run audit:i18n` فهرست کلیدهای ناقص را می‌دهد |
 | نوار پیشرفت دیده نمی‌شود | فقط روی ناوبری سمت کاربر اجرا می‌شود | با کلیک بین صفحه‌ها تست کنید؛ در بارگذاری کامل صفحه اجرا نمی‌شود |
-| جستجو نتیجه نمی‌دهد | ایندکس Pagefind ساخته نشده | `pnpm run build` (مرحلهٔ `pagefind`) و منتشر کردن `dist/pagefind/` |
+| جستجو نتیجه نمی‌دهد | ایندکس Pagefind ساخته نشده | `npm run build` (مرحلهٔ `pagefind`) و منتشر کردن `dist/pagefind/` |
 | `SITE_URL is not a valid absolute URL` | مقدار ناقص در `.env` | مقدار کامل با `https://` بدهید |
-| `Unknown file extension ".astro"` در سرور توسعه | سرور توسعه قبل از `pnpm install` بالا آمده و `node_modules` عوض شده است | سرور را ری‌استارت کنید: `pnpm exec astro dev stop` و بعد `pnpm exec astro dev --background` |
-| `Missing <locale>.mdx` در خروجی ممیزی | گروه محتوا در همهٔ زبان‌ها ترجمه نشده | هشدار است و بیلد را نمی‌شکند؛ با `pnpm run new:page <key> --update` یا `--slug:<locale>=…` تکمیلش کنید |
+| `Unknown file extension ".astro"` در سرور توسعه | سرور توسعه قبل از `npm install` بالا آمده و `node_modules` عوض شده است | سرور را ری‌استارت کنید: `npx astro dev stop` و بعد `npx astro dev --background` |
+| `Missing <locale>.mdx` در خروجی ممیزی | گروه محتوا در همهٔ زبان‌ها ترجمه نشده | هشدار است و بیلد را نمی‌شکند؛ با `npm run new:page <key> -- --update` یا `--slug:<locale>=…` تکمیلش کنید |
 | اسکرول چرخ ماوس داخل مودال یا پنل کار نمی‌کند | Lenis رویداد چرخ ماوس را برای کل صفحه می‌گیرد | صفت `data-lenis-prevent` را به ظرف دارای `overflow-y-auto` اضافه کنید |
 | آیتم‌های داخل `[data-trig-stagger]` هم‌زمان باز می‌شوند | کارت‌ها فرزند مستقیم یا دارای `[data-trig-stagger-item]` نیستند | کارت‌ها را فرزند مستقیم (`:scope > *`) قرار دهید یا صفت `data-trig-stagger-item` به آن‌ها بدهید |
 | کارت‌ها پس از فیلتر شدن یا تعویض تب بدون انیمیشن ظاهر می‌شوند | کارت‌ها کلاس `.trig` را از قبل دارند | پیش از `refreshChronoTrig()` تابع `replayGridReveals()` را صدا بزنید |
@@ -2073,13 +2066,13 @@ dist/
 
 `AGENTS.md` راهنمای عملیاتی کامل برای عامل‌های AI است و شامل موارد زیر است:
 
-- **قواعد قراردادی** (SSOT، دیسپچر مسیریاب، RTL، کد تولیدشده‌نشدنی)
+- **قواعد قراردادی** (معماری سه‌لایه `Core` / `client/` / `starter-kit/`، SSOT، دیسپچر مسیریاب، RTL، کد تولیدشده‌نشدنی)
 - **نقشهٔ معماری** و مجموعهٔ فرمان‌های اعتبارسنجی
 - **پلی‌بوک‌ها** برای کارهای پرتکرار (لینک ناوبری، تعویض زبان پیش‌فرض، هیرو، آیکون، صفحه‌بندی، انیمیشن‌های اسکرول و چیدمان پلکانی)
 - **جدول ضدالگوهای ممنوع** — الگوهایی که هرگز نباید در کد ظاهر شوند
 
 پیش از هر تغییری `AGENTS.md` را بخوانید؛ پس از هر تغییری
-`pnpm run lint && pnpm test && pnpm run audit:i18n` را اجرا کنید.
+`npm run upstream:check && npm run lint && npm test && npm run audit:i18n` را اجرا کنید.
 
 ### ضدالگوها (خلاصه)
 
@@ -2087,11 +2080,11 @@ dist/
 | --- | --- |
 | مسیر ثابت `/en/about` | `localizeHref('/about', locale)` |
 | `ml-4`، `pr-6`، `text-left` | `ms-4`، `pe-6`، `text-start` |
-| ویرایش دستی `src/paraglide/` | ویرایش `messages/<lang>.json` + `messages:compile` |
+| ویرایش دستی `src/paraglide/` یا `.paraglide-work/` | ویرایش `client/messages/<lang>.json` (یا `messages/core/`) + `messages:compile` |
 | فراخوانی `m.key()` در سطح ماژول | فراخوانی داخل چرخهٔ رندر |
 | ساخت `src/pages/[lang]/…` | استفاده از `[...path].astro` + `src/views/` |
 | `navigate()` برای تعویض زبان | `window.location.assign(target)` |
-| `<svg>` خام در قالب یا مسیر SVG دستی در کد کلاینت | افزودن نام به `src/libs/ui/icons.ts` + رجیستری `Icon.astro` و استفاده از `<Icon>` (یا کلون از `<template>`) |
+| `<svg>` خام در قالب یا مسیر SVG دستی در کد کلاینت | افزودن نام به `client/icons.ts` + `client/ClientIcons.astro` (یا `src/libs/ui/icons.ts`) و استفاده از `<Icon>` |
 | نوار پیشرفت بدون `dataset.bound` | `if (el.dataset.bound === 'true') return;` |
 | تعریف دوبارهٔ `.cta` در کامپوننت | دکمهٔ متنی را با `<Button variant="…" size="…" icon="…">` بسازید |
 | `<button>` دستی با `<Icon>` | `IconButton` |
@@ -2107,48 +2100,55 @@ dist/
 
 | فرمان | کار |
 | --- | --- |
-| `pnpm dev` | کامپایل پیام‌ها + سرور توسعه |
-| `pnpm run messages:compile` | کامپایل دستی پیام‌ها |
-| `pnpm run check` | `astro check` |
-| `pnpm run lint` | کامپایل پیام‌ها + astro check + tsc |
-| `pnpm test` | تست‌های Vitest |
-| `pnpm run build` | بیلد تولیدی + Pagefind |
-| `pnpm preview` | پیش‌مایش خروجی |
-| `pnpm run smoke` | تست دود روی `dist/` |
-| `pnpm run knip` | کد مرده |
-| `pnpm run clean` | حذف `dist/`، `.astro/`، `src/paraglide/` |
-| `pnpm run assets:generate` | بازتولید آیکون‌ها، OG و artworkها |
-| `pnpm run new:page` | ساخت/ویرایش صفحه |
-| `pnpm run new:post` | ساخت/ویرایش مقاله |
-| `pnpm run remove:page` | حذف صفحه |
-| `pnpm run remove:post` | حذف مقاله |
-| `pnpm run site:init` | راه‌اندازی سریع برند، پالت، فونت و ایمیل تماس |
-| `pnpm run i18n:add-lang` | افزودن زبان |
-| `pnpm run i18n:remove-lang` | حذف زبان |
-| `pnpm run i18n:set-default` | تعویض زبان پیش‌فرض |
-| `pnpm run i18n:solo` | (اختیاری) تک‌زبانه‌کردن ساختاری با بایگانی زبان‌های دیگر |
-| `pnpm run i18n:add` | افزودن کلید ترجمه |
-| `pnpm run i18n:add-batch` | افزودن گروهی کلید |
-| `pnpm run i18n:extract` | استخراج متن سخت‌کد |
-| `pnpm run block:adapt` | تبدیل به خواص منطقی |
-| `pnpm run audit:i18n` | ممیزی چندزبانه |
-| `pnpm run verify:cli` | تست سرتاسری گردش‌کارهای CLI |
-| `pnpm run content:list` | فهرست انواع محتوا و وضعیت آن‌ها |
-| `pnpm run content:new` | ساخت گروه در هر نوع محتوا |
-| `pnpm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا |
-| `pnpm run content:status` | ماتریس آمادگی گروه × زبان |
-| `pnpm run doctor` | بررسی سلامت پروژه بدون build |
-| `pnpm run link:check` | خزش `dist/` و گزارش لینک شکسته |
-| `pnpm exec astro dev --background` | اجرای سرور توسعه در پس‌زمینه |
-| `pnpm exec astro dev status` | وضعیت سرور توسعه |
-| `pnpm exec astro dev logs --follow` | دنبال کردن لاگ سرور |
-| `pnpm exec astro dev stop` | توقف سرور توسعه |
+| `npm run dev` | کامپایل پیام‌ها + سرور توسعه |
+| `npm run messages:compile` | ادغام `messages/core/` + `client/messages/` و کامپایل به `src/paraglide/` |
+| `npm run check` | `astro check` |
+| `npm run lint` | کامپایل پیام‌ها + astro check + tsc |
+| `npm test` | تست‌های Vitest (۲۴ فایل، ۲۵۰ تست) |
+| `npm run build` | بیلد تولیدی + Pagefind |
+| `npm run preview` | پیش‌نمایش خروجی |
+| `npm run smoke` | تست دود روی `dist/` |
+| `npm run knip` | کد مرده |
+| `npm run clean` | حذف `dist/`، `.astro/`، `.paraglide-work/`، `src/paraglide/` |
+| `npm run assets:generate` | بازتولید آیکون‌ها، OG و artworkها |
+| `npm run new:page` | ساخت/ویرایش صفحه |
+| `npm run new:post` | ساخت/ویرایش مقاله |
+| `npm run remove:page` | حذف صفحه |
+| `npm run remove:post` | حذف مقاله |
+| `npm run site:init` | راه‌اندازی سریع برند، پالت، فونت و ایمیل تماس در `client/config.json` |
+| `npm run starter:seed` | تزریق یا پاک‌سازی (`--clean`) محتوای دمو از `starter-kit/` |
+| `npm run upstream:check` | بررسی قرارداد لایهٔ هسته و `client/` |
+| `npm run i18n:add-lang` | افزودن زبان به `client/locales.json` |
+| `npm run i18n:remove-lang` | حذف زبان |
+| `npm run i18n:set-default` | تعویض زبان پیش‌فرض |
+| `npm run i18n:solo` | (اختیاری) تک‌زبانه‌کردن ساختاری با بایگانی زبان‌های دیگر |
+| `npm run i18n:add` | افزودن کلید ترجمه در `client/messages/*.json` |
+| `npm run i18n:add-batch` | افزودن گروهی کلید |
+| `npm run i18n:extract` | استخراج متن سخت‌کد |
+| `npm run block:adapt` | تبدیل به خواص منطقی |
+| `npm run audit:i18n` | ممیزی چندزبانه |
+| `npm run verify:cli` | تست سرتاسری گردش‌کارهای CLI (۹۵ ادعا) |
+| `npm run content:list` | فهرست انواع محتوا و وضعیت آن‌ها |
+| `npm run content:new` | ساخت گروه در هر نوع محتوا |
+| `npm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا |
+| `npm run content:status` | ماتریس آمادگی گروه × زبان |
+| `npm run doctor` | بررسی سلامت پروژه بدون build |
+| `npm run link:check` | خزش `dist/` و گزارش لینک شکسته |
+| `npx astro dev --background` | اجرای سرور توسعه در پس‌زمینه |
+| `npx astro dev status` | وضعیت سرور توسعه |
+| `npx astro dev logs --follow` | دنبال کردن لاگ سرور |
+| `npx astro dev stop` | توقف سرور توسعه |
 
 ---
 
 ## پیوست B — کلیدهای ترجمه
 
-۱۸۹ کلید ترجمه در `messages/en.json` (و یک کلید `$schema` که فقط متادیتای JSON Schema است). این فهرست دسته‌بندی‌شده است؛ منبع دقیق خود فایل و `pnpm run audit:i18n` است:
+۴۸۴ کلید ترجمهٔ هسته در `messages/core/en.json` (و `fa.json`) به‌علاوهٔ کلیدهای اختصاصی مشتری در `client/messages/<locale>.json` (کلیدهای دمو مثل `nav_about` / دسته‌های نمونهٔ وبلاگ با `npm run starter:seed` افزوده می‌شوند). منبع دقیق خود فایل‌ها و `npm run audit:i18n` است:
+
+### `block_*` (۳۰۶ کلید) و `doc_*` (۸ کلید)
+
+- `block_*`: متن‌های بومی‌پیش‌فرض ۱۹ بلوک سکشن شرکتی/لندینگ و ۳ پریمیتیو رابط (`LandingHeroSplit`، `PricingSection`، `TestimonialGrid`، `FaqAccordion`، `UiBadge`، `UiAlert`، `AvatarGroup` و…).
+- `doc_*`: برچسب‌های مستندسازی درون‌خطی برای `ComponentDoc.astro`.
 
 ### `common_*` (۲۵ کلید)
 
@@ -2161,21 +2161,15 @@ dist/
 `common_search_results_count` · `common_skip_to_content` · `common_theme_dark` ·
 `common_theme_light` · `common_theme_toggle` · `common_type_to_search` · `common_updated_on`
 
-### `blog_*` (۳۲ کلید)
+### `blog_*` (۲۱ کلید هسته + دسته‌ها و برچسب‌های دمو با `starter:seed`)
 
-عمومی: `blog_all_posts` · `blog_categories` · `blog_empty` ·
+`blog_all_posts` · `blog_categories` · `blog_empty` ·
 `blog_filter_by_category` · `blog_filter_by_tag` · `blog_filter_clear` ·
 `blog_filter_empty` · `blog_filter_showing_all` · `blog_filter_showing_page` ·
 `blog_index_description` · `blog_newer_post` · `blog_older_post` ·
 `blog_pagination_label` · `blog_pagination_next` · `blog_pagination_page` ·
 `blog_pagination_previous` · `blog_pagination_status` · `blog_read_time` ·
 `blog_related_posts` · `blog_tags` · `blog_toc_title`
-
-دسته‌ها: `blog_category_announcements` · `blog_category_design` ·
-`blog_category_engineering` · `blog_category_guides` · `blog_category_product`
-
-برچسب‌ها: `blog_tag_architecture` · `blog_tag_astro` · `blog_tag_i18n` ·
-`blog_tag_performance` · `blog_tag_release` · `blog_tag_rtl`
 
 ### `contact_*` (۳۰ کلید) و `newsletter_*` (۱۸ کلید) و `cookie_*` (۳۹ کلید)
 
@@ -2189,11 +2183,9 @@ dist/
 - `drawer_*`: `drawer_tab_nav` · `drawer_tab_search`
 - `footer_*`: `footer_col_pages` · `footer_col_resources` · `footer_col_company` · `footer_col_legal` · `footer_legal_privacy` · `footer_legal_terms`
 
-### `nav_*` (۱۱ کلید)
+### `nav_*` (۳ کلید پایه + کلیدهای صفحات مشتری در `client/messages/`)
 
-`nav_about` · `nav_blog` · `nav_design_system` ·
-`nav_explore` · `nav_features` · `nav_home` · `nav_overview` ·
-`nav_pricing` · `nav_projects` · `nav_resources` · `nav_rtl_support`
+در حالت پایهٔ تمیز: `nav_blog` · `nav_home` · `nav_projects` (با `new:page <key>` یا `starter:seed` کلیدهای صفحات جدید مثل `nav_about`، `nav_features`، `nav_pricing` به `client/messages/` اضافه می‌شوند).
 
 ### `projects_*` (۶ کلید)
 
@@ -2219,13 +2211,13 @@ dist/
 
 ## پیوست C — مرجع API داخلی
 
-### `src/i18n/locales.ts`
+### `client/locales.json` و `src/i18n/locales.ts`
 
 | خروجی | کار |
 | --- | --- |
-| `LOCALES` | آرایهٔ ثابت زبان‌ها |
+| `LOCALES` | آرایهٔ زبان‌های فعال خوانده‌شده از `client/locales.json` |
 | `Locale` | نوع استخراج‌شده از `LOCALES` |
-| `DEFAULT_LOCALE` | زبان پیش‌فرض (بدون پیشوند) |
+| `DEFAULT_LOCALE` | زبان پیش‌فرض (بدون پیشوند) از `client/locales.json` |
 | `isLocale(value)` | بررسی عضویت |
 | `LOCALE_METADATA` | نگاشت زبان → `{ dir, htmlLang, name, fontFamily }` |
 | `getLocaleMeta(locale)` | متادیتای یک زبان |
@@ -2243,7 +2235,7 @@ dist/
 
 `siteConfig` · `POSTS_PER_PAGE` · `HERO_TITLE_ID` · `DEFAULT_HERO_IMAGE` · `absoluteUrl` · `UI_CONFIG` · `BLOG_CONFIG` · `COOKIE_CONFIG` · `API_CONFIG` · `SOCIAL_CONFIG`
 
-> ⚠️ این ماژول در زمان import اعتبارسنجی Zod را اجرا می‌کند، پس فقط در کامپوننت‌ها، viewها، صفحه‌ها و اسکریپت‌های Node استفاده می‌شود. ماژولی که به مرورگر می‌رود باید از `src/libs/config/client.ts` بخواند (`CLIENT_COOKIE_CONFIG`) که همان `app.config.json` را بدون Zod می‌خواند و پیش‌فرض‌هایش را از `defaults.ts` می‌گیرد — یک تعریف مشترک با طرح‌واره، بدون تکرار مقدار.
+> ⚠️ این ماژول در زمان import پیکربندی ادغام‌شده (`app.config.json` + `client/config.json`) را با Zod اعتبارسنجی می‌کند، پس فقط در کامپوننت‌ها، viewها، صفحه‌ها و اسکریپت‌های Node استفاده می‌شود. ماژولی که به مرورگر می‌رود باید از `src/libs/config/client.ts` بخواند (`CLIENT_COOKIE_CONFIG`) که بدون Zod می‌خواند و پیش‌فرض‌هایش را از `defaults.ts` می‌گیرد — یک تعریف مشترک با طرح‌واره، بدون تکرار مقدار.
 
 ### `src/libs/config/client.ts` و `defaults.ts`
 
@@ -2261,10 +2253,11 @@ dist/
 | `search/client.ts` | `executeSearch` · `getPagefindInstance` · `plainText` |
 | `search/persian.ts` | `normalizePersianQuery` · `applyPersianZwnjCompounds` · `buildSearchQueryVariants` · `normalizeForFallbackMatch` · `matchesFallbackSearch` |
 
-### `src/libs/config/navigation.ts`
+### `src/libs/config/navigation.ts` و `client/navigation.ts`
 
 | خروجی | نوع / کاربرد |
 | --- | --- |
+| `CLIENT_PAGE_ITEMS` (`client/navigation.ts`) | فهرست یکتای صفحات مشتری در هدر، کشو و ستون صفحات فوتر |
 | `getNavigationSlots(locale, currentUrl?)` | خروجی تفکیک‌شدهٔ اسلات‌ها `{ header, drawer, footer, legal }` |
 | `getHeaderNavigation(locale, currentUrl?)` | لیست اقلام هدر دسکتاپ با پشتیبانی زیرمنوهای آبشاری |
 | `getDrawerNavigation(locale, currentUrl?)` | لیست اقلام کشوی موبایل با زیرمنوهای درون‌خطی |
@@ -2297,9 +2290,8 @@ dist/
 
 | خروجی | کار |
 | --- | --- |
-| `LOCALES_SOURCE_PATH` | مسیر مطلق `src/i18n/locales.ts` |
-| `parseLocaleConfig(source)` | تجزیهٔ متن `locales.ts` → `{ locales, defaultLocale, metadata }` |
-| `readLocaleConfig()` | همان، با خواندن مستقیم فایل |
+| `readLocaleConfig(rootDir?)` | خواندن `client/locales.json` → `{ locales, defaultLocale, metadata }` |
+| `parseLocaleConfig(source)` | تجزیهٔ متن JSON پیکربندی زبان‌ها |
 
 ### انواع TypeScript
 

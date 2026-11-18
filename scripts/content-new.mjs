@@ -21,9 +21,9 @@ import { readLocaleConfig } from './lib/locales.mjs';
 import { entryKeyError } from './lib/validate.mjs';
 import { resolveImageOption } from './lib/image-reference.mjs';
 import {
-  KNOWN_TYPES,
   contentDirFor,
   contentTypeKeyError,
+  getKnownTypes,
   readContentTypes,
   rootDir,
 } from './lib/content-types.mjs';
@@ -64,9 +64,9 @@ for (const arg of rawArgs) {
 }
 
 if (!type || !group) {
-  console.error(`Usage: pnpm run content:new <type> <slug> [options]`);
-  console.error(`Types: ${KNOWN_TYPES.join(', ')}`);
-  console.error('Run `pnpm run content:list` to see the declared types and their state.');
+  console.error('Usage: npm run content:new -- <type> <slug> [options]');
+  console.error(`Types: ${getKnownTypes(rootDir).join(', ')}`);
+  console.error('Run `npm run content:list` to see the declared types and their state.');
   process.exit(1);
 }
 
@@ -93,14 +93,14 @@ if (type === 'pages' || type === 'blog') {
 const declared = readContentTypes().find((candidate) => candidate.key === type);
 if (!declared.enabled) {
   console.warn(
-    `⚠️  "${type}" is disabled in app.config.json — the entry will be created but not routed. ` +
-      `Enable it with: pnpm run content:enable ${type}`
+    `⚠️  "${type}" is disabled in client/config.json — the entry will be created but not routed. ` +
+      `Enable it with: npm run content:enable -- ${type}`
   );
 }
 
 const { locales, defaultLocale } = readLocaleConfig();
 if (locales.length === 0) {
-  console.error('❌ Could not read LOCALES from src/i18n/locales.ts');
+  console.error('❌ Could not read locales from client/locales.json');
   process.exit(1);
 }
 

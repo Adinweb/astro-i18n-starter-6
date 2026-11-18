@@ -1,7 +1,8 @@
 import heroPhoto from '@/assets/hero/hero-0.jpg';
 import { z } from 'astro/zod';
 import rawConfig from '../../../app.config.json';
-import { COOKIE_CONFIG_DEFAULTS } from './defaults';
+import clientConfig from '../../../client/config.json';
+import { COOKIE_CONFIG_DEFAULTS, deepMergeConfig } from './defaults';
 import {
   BRAND_PRESET_KEYS,
   FONT_PRESET_KEYS,
@@ -10,17 +11,15 @@ import {
 } from './theme';
 
 /**
- * Typed access to the application's single configuration file.
+ * Typed access to the application's merged configuration (`app.config.json` +
+ * `client/config.json`).
  *
- * `app.config.json` is the one place that holds values shared by the Astro app
- * and the Node scripts (site metadata, brand colours, social card, blog
- * pagination, dev server). This module validates that file once and exposes the
- * values the app consumes, so a script and a component can never disagree
- * about, say, the default OG image size.
+ * Upstream defaults live in `app.config.json`; client-specific overrides live
+ * cleanly in `client/config.json`. This module validates the merged result once
+ * and exposes the typed config the app consumes.
  *
- * Framework-only settings stay in `astro.config.mjs` (site URL env handling,
- * integrations, build output); locale configuration stays in
- * `src/i18n/locales.ts` and `project.inlang/settings.json`.
+ * Framework-only settings stay in `astro.config.mjs`; locale configuration stays
+ * in `client/locales.json` (exposed via `src/i18n/locales.ts`).
  */
 
 const hexColor = z
@@ -195,7 +194,12 @@ export const appConfigSchema = z.object({
   }),
 });
 
-export const appConfig = appConfigSchema.parse(rawConfig);
+const mergedRawConfig = deepMergeConfig(
+  rawConfig as Record<string, unknown>,
+  clientConfig as Record<string, unknown>
+);
+
+export const appConfig = appConfigSchema.parse(mergedRawConfig);
 
 const siteConfigSchema = z.object({
   url: z.url(),

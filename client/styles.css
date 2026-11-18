@@ -1,0 +1,4 @@
+/* Client custom CSS overrides & utility rules.
+ * Imported after src/styles/global.css and src/styles/prose.css.
+ * Override `--theme-*` custom properties or add brand styles here without touching `src/styles/`.
+ */

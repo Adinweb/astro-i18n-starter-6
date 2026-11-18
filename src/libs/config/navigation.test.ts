@@ -11,11 +11,72 @@ import {
   BLOG_ITEM,
   getContentTypeIcon,
   type NavItemConfig,
+  type NavigationBuildOptions,
 } from './navigation';
 import * as service from '@/libs/content/service';
 import { siteConfig } from '@/libs/config/app';
-import { DEFAULT_LOCALE } from '@/i18n/locales';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
+
+const demoPageItems = [
+  { group: 'home', icon: 'home', label: (locale: Locale) => m.nav_home({}, { locale }) },
+  { group: 'features', icon: 'sparkles', label: () => 'Features' },
+  { group: 'pricing', icon: 'tag', label: () => 'Pricing' },
+  { group: 'about', icon: 'info', label: () => 'About' },
+];
+
+const sampleNavOptions: NavigationBuildOptions = {
+  pageItems: demoPageItems,
+  primaryExtras: async ({ locale, currentUrl, isActive: activeFn }) => {
+    const featuresHref = await service.getPageUrl('features', locale);
+    const blogHref = service.getBlogIndexHref(locale);
+    const overviewHref = featuresHref ?? blogHref;
+
+    const exploreChildren = featuresHref
+      ? [
+          { key: 'rtl_support', label: 'RTL Support', href: `${featuresHref}#rtl`, icon: 'globe', active: false },
+          { key: 'design_system', label: 'Design System', href: `${featuresHref}#design`, icon: 'palette', active: false },
+        ]
+      : [];
+
+    return [
+      {
+        key: 'resources',
+        label: 'Resources',
+        icon: 'layers',
+        active: false,
+        children: [
+          {
+            key: 'overview',
+            label: 'Overview',
+            href: overviewHref,
+            icon: 'book-open',
+            active: featuresHref ? false : activeFn(overviewHref, currentUrl),
+          },
+          ...(exploreChildren.length > 0
+            ? [
+                {
+                  key: 'explore',
+                  label: 'Explore',
+                  icon: 'compass',
+                  active: false,
+                  children: exploreChildren,
+                },
+              ]
+            : []),
+        ],
+      },
+    ];
+  },
+  legalItems: async ({ locale }) => {
+    const aboutHref = await service.getPageUrl('about', locale);
+    if (!aboutHref) return [];
+    return [
+      { key: 'privacy', label: m.footer_legal_privacy({}, { locale }), href: `${aboutHref}#privacy`, active: false },
+      { key: 'terms', label: m.footer_legal_terms({}, { locale }), href: `${aboutHref}#terms`, active: false },
+    ];
+  },
+};
 
 describe('src/libs/config/navigation.ts', () => {
   beforeEach(() => {
@@ -57,12 +118,9 @@ describe('src/libs/config/navigation.ts', () => {
   });
 
   describe('PAGE_ITEMS & BLOG_ITEM', () => {
-    it('defines expected page groups and declarative blog config', () => {
+    it('includes the home group in active PAGE_ITEMS and exposes declarative blog config', () => {
       const groups = PAGE_ITEMS.map((item) => item.group);
       expect(groups).toContain('home');
-      expect(groups).toContain('about');
-      expect(groups).toContain('features');
-      expect(groups).toContain('pricing');
 
       const sampleConfig: NavItemConfig = {
         key: BLOG_ITEM.key,
@@ -75,28 +133,27 @@ describe('src/libs/config/navigation.ts', () => {
 
   describe('Individual navigation getters', () => {
     it('getHeaderNavigation returns desktop navbar items', async () => {
-      const header = await getHeaderNavigation('en', '/features/');
+      const header = await getHeaderNavigation('en', '/features/', sampleNavOptions);
       expect(header.length).toBeGreaterThan(0);
       expect(header.map((i) => i.key)).toContain('features');
     });
 
     it('getFooterNavigation returns multi-column structure', async () => {
-      const footer = await getFooterNavigation('en', '/');
+      const footer = await getFooterNavigation('en', '/', sampleNavOptions);
       expect(footer.length).toBe(3);
       expect(footer.map((c) => c.key)).toEqual(['product', 'resources', 'company']);
     });
 
     it('getLegalNavigation returns privacy and terms links', async () => {
-      const legal = await getLegalNavigation('en', '/');
+      const legal = await getLegalNavigation('en', '/', sampleNavOptions);
       expect(legal.map((i) => i.key)).toEqual(['privacy', 'terms']);
     });
   });
 
   describe('getNavigationSlots()', () => {
     it('returns distinct header, drawer, footer, and legal slots', async () => {
-      const slots = await getNavigationSlots('en', 'https://example.com/features/');
+      const slots = await getNavigationSlots('en', 'https://example.com/features/', sampleNavOptions);
 
-      // Header slot check
       expect(Array.isArray(slots.header)).toBe(true);
       expect(slots.header.length).toBeGreaterThan(0);
       const headerKeys = slots.header.map((item) => item.key);
@@ -106,13 +163,11 @@ describe('src/libs/config/navigation.ts', () => {
       expect(headerKeys).toContain('blog');
       expect(headerKeys).toContain('resources');
 
-      // Check active state: only 'features' is active, not 'resources' dropdown
       const featuresItem = slots.header.find((item) => item.key === 'features');
       const resourcesItem = slots.header.find((item) => item.key === 'resources');
       expect(featuresItem?.active).toBe(true);
       expect(resourcesItem?.active).toBe(false);
 
-      // Drawer slot check
       expect(Array.isArray(slots.drawer)).toBe(true);
       const drawerKeys = slots.drawer.map((item) => item.key);
       expect(drawerKeys).toContain('home');
@@ -121,17 +176,13 @@ describe('src/libs/config/navigation.ts', () => {
       expect(drawerKeys).toContain('pricing');
       expect(drawerKeys).toContain('blog');
 
-      // Footer columns check
       expect(Array.isArray(slots.footer)).toBe(true);
       expect(slots.footer.length).toBe(3);
-      const footerKeys = slots.footer.map((col) => col.key);
-      expect(footerKeys).toEqual(['product', 'resources', 'company']);
+      expect(slots.footer.map((col) => col.key)).toEqual(['product', 'resources', 'company']);
 
-      // Check footer column items
       const productCol = slots.footer.find((col) => col.key === 'product');
       expect(productCol?.items.length).toBeGreaterThan(0);
 
-      // Legal slot check
       expect(Array.isArray(slots.legal)).toBe(true);
       const legalKeys = slots.legal.map((item) => item.key);
       expect(legalKeys).toContain('privacy');
@@ -139,7 +190,7 @@ describe('src/libs/config/navigation.ts', () => {
     });
 
     it('works across different locales (e.g. Persian/fa) and localizes home fallback', async () => {
-      const slotsFa = await getNavigationSlots('fa', 'https://example.com/fa/features/');
+      const slotsFa = await getNavigationSlots('fa', 'https://example.com/fa/features/', sampleNavOptions);
       expect(slotsFa.footer.length).toBe(3);
       expect(slotsFa.footer[0].title).toBe(m.footer_col_pages({}, { locale: 'fa' }));
       expect(slotsFa.footer[1].title).toBe(m.footer_col_resources({}, { locale: 'fa' }));
@@ -148,7 +199,7 @@ describe('src/libs/config/navigation.ts', () => {
       vi.spyOn(service, 'getPageUrl').mockImplementationOnce(async (group: string) =>
         group === 'home' ? null : '/fa/about/'
       );
-      const fallbackFooter = await getFooterNavigation('fa', '/fa/about/');
+      const fallbackFooter = await getFooterNavigation('fa', '/fa/about/', sampleNavOptions);
       const productHome = fallbackFooter
         .find((col) => col.key === 'product')
         ?.items.find((item) => item.key === 'home');
@@ -157,20 +208,20 @@ describe('src/libs/config/navigation.ts', () => {
   });
 
   describe('footer columns', () => {
-    it('derives the pages column from PAGE_ITEMS and drops unpublished pages', async () => {
+    it('derives the pages column from pageItems and drops unpublished pages', async () => {
       vi.mocked(service.getPageUrl).mockImplementation(async (group: string) =>
         group === 'pricing' ? null : `/${group}/`
       );
 
-      const footer = await getFooterNavigation('en', '/');
+      const footer = await getFooterNavigation('en', '/', sampleNavOptions);
       const pagesColumn = footer.find((column) => column.key === 'product');
 
       expect(pagesColumn?.title).toBe(m.footer_col_pages({}, { locale: 'en' }));
       expect(pagesColumn?.items.map((item) => item.key)).toEqual(
-        PAGE_ITEMS.map((item) => item.group).filter((group) => group !== 'pricing')
+        demoPageItems.map((item) => item.group).filter((group) => group !== 'pricing')
       );
-      // The pages column is the only place a page group is listed in the footer.
-      const pageKeys = new Set<string>(PAGE_ITEMS.map((item) => item.group));
+
+      const pageKeys = new Set<string>(demoPageItems.map((item) => item.group));
       const otherColumns = footer.filter((column) => column.key !== 'product');
       for (const column of otherColumns) {
         for (const item of column.items) {
@@ -186,7 +237,7 @@ describe('src/libs/config/navigation.ts', () => {
         siteConfig.social.instagram = 'https://instagram.com/acme';
         siteConfig.social.telegram = 'https://t.me/acme';
 
-        const footer = await getFooterNavigation('en', '/');
+        const footer = await getFooterNavigation('en', '/', sampleNavOptions);
         const companyCol = footer.find((column) => column.key === 'company');
         const keys = companyCol?.items.map((item) => item.key) ?? [];
 
@@ -201,12 +252,11 @@ describe('src/libs/config/navigation.ts', () => {
 
   describe('shared primary navigation', () => {
     it('serves the header and the drawer from the same page list', async () => {
-      const header = await getHeaderNavigation('en', '/pricing/');
-      const drawer = await getDrawerNavigation('en', '/pricing/');
+      const header = await getHeaderNavigation('en', '/pricing/', sampleNavOptions);
+      const drawer = await getDrawerNavigation('en', '/pricing/', sampleNavOptions);
       expect(drawer.map((item) => item.key)).toEqual(header.map((item) => item.key));
 
-      // Every declared page group with a published translation is listed once.
-      for (const group of PAGE_ITEMS.map((item) => item.group)) {
+      for (const group of demoPageItems.map((item) => item.group)) {
         expect(header.filter((item) => item.key === group)).toHaveLength(1);
       }
     });
@@ -220,16 +270,15 @@ describe('src/libs/config/navigation.ts', () => {
             : `/${locale}/${group}/`
       );
 
-      const header = await getHeaderNavigation(DEFAULT_LOCALE, '/');
-      const footer = await getFooterNavigation(DEFAULT_LOCALE, '/');
+      const header = await getHeaderNavigation(DEFAULT_LOCALE, '/', sampleNavOptions);
+      const footer = await getFooterNavigation(DEFAULT_LOCALE, '/', sampleNavOptions);
       const headerItems = header.flatMap((item) => [item, ...(item.children ?? [])]);
       const hrefs = [...headerItems, ...footer.flatMap((column) => column.items)].map(
         (item) => item.href ?? ''
       );
       expect(hrefs.some((href) => href.includes('#rtl') || href.includes('#design'))).toBe(false);
 
-      // The Resources menu survives as a single Overview link to the blog.
-      const resources = (await getHeaderNavigation(DEFAULT_LOCALE, '/')).find((item) => item.key === 'resources');
+      const resources = header.find((item) => item.key === 'resources');
       expect(resources?.children?.map((child) => child.key)).toEqual(['overview']);
       expect(resources?.children?.[0].href).toBe(service.getBlogIndexHref(DEFAULT_LOCALE));
     });
@@ -238,19 +287,17 @@ describe('src/libs/config/navigation.ts', () => {
       vi.mocked(service.getPageUrl).mockImplementation(async (group: string) =>
         group === 'about' ? null : '/any/'
       );
-      expect(await getLegalNavigation('en', '/')).toEqual([]);
+      expect(await getLegalNavigation('en', '/', sampleNavOptions)).toEqual([]);
     });
   });
 
   describe('drawer icons', () => {
     it('gives every page group, content type and submenu entry an icon', async () => {
-      const drawer = await getDrawerNavigation('en', '/');
+      const drawer = await getDrawerNavigation('en', '/', sampleNavOptions);
       const everyItem = drawer.flatMap(function flatten(item): typeof drawer {
         return [item, ...(item.children ?? []).flatMap(flatten)];
       });
 
-      // The drawer renders an icon tile per row, so a row without an icon would
-      // fall back to the generic `file` glyph.
       expect(everyItem.length).toBeGreaterThan(0);
       for (const item of everyItem) {
         expect(item.icon, `missing icon for ${item.key}`).toBeTruthy();

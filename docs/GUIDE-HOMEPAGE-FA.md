@@ -37,9 +37,9 @@
 | --- | --- | --- | --- |
 | **A — هیرو آماده** | مشتری طراحی اختصاصی نمی‌خواهد؛ فقط متن، عکس و بخش‌ها عوض می‌شوند | `src/content/pages/home/<locale>.mdx` | ★ |
 | **B — خانهٔ تمام‌MDX** | طراحی متفاوت است ولی نمی‌خواهید کامپوننت Astro بنویسید | همان فایل MDX + چند کلاس Tailwind | ★★ |
-| **C — قالب اختصاصی Astro** | طراحی کاملاً سفارشی، چند بخش تکرارشونده، کد قابل نگهداری برای تیم | `src/views/pages/…astro` + MDX فقط برای متن | ★★★ |
+| **C — قالب اختصاصی Astro** | طراحی کاملاً سفارشی، چند بخش تکرارشونده، کد قابل نگهداری برای تیم | `client/templates/<Name>.astro` + MDX فقط برای متن | ★★★ |
 
-> برای یک پروژهٔ واقعی مشتری **C** را انتخاب کنید: طراحی در یک فایل `.astro` می‌ماند،
+> برای یک پروژهٔ واقعی مشتری **C** را انتخاب کنید: طراحی در یک فایل `.astro` درون `client/templates/` می‌ماند (بدون دست‌زدن به هسته)،
 > متن هر زبان در MDX خودش، و بازبینی/تغییر بعدی ساده است. اگر فقط یک لندینگ ساده
 > می‌خواهید، **B** سریع‌ترین گزینه است.
 
@@ -50,9 +50,9 @@
 ### ۲.۱ نصب و اجرا
 
 ```bash
-pnpm install                      # lockfile موجود است؛ از --frozen-lockfile هم می‌توانید استفاده کنید
+npm install                       # یا pnpm install (در صورت نصب بودن pnpm)
 cp .env.example .env              # سپس SITE_URL را با دامنهٔ نهایی پر کنید
-pnpm dev                          # http://localhost:3000  (نه ۴۳۲۱)
+npm run dev                       # http://localhost:3000  (نه ۴۳۲۱)
 ```
 
 `SITE_URL` تعیین‌کنندهٔ canonical، `hreflang`، OG، sitemap و RSS است. اگر خالی بماند
@@ -61,50 +61,56 @@ pnpm dev                          # http://localhost:3000  (نه ۴۳۲۱)
 
 ### ۲.۲ هویت برند و تک‌زبانه‌کردن (قبل از طراحی صفحه)
 
-سریع‌ترین راه تنظیم هویت برند، پالت، فونت و ایمیل تماس یک مشتری، اجرای دستور `site:init` است (به‌جای ویرایش دستی چندین فایل):
+سریع‌ترین راه تنظیم هویت برند، پالت، فونت و ایمیل تماس یک مشتری در `client/config.json`، اجرای دستور `site:init` است (به‌جای ویرایش دستی چندین فایل):
 
 ```bash
-pnpm run site:init \
+npm run site:init -- \
   --name="Acme Studio" \
   --preset=indigo \
   --font=jakarta \
   --rtl-font=vazirmatn \
   --email=hello@acme.example \
-  --og-mode=branded
+  --og-mode=branded \
+  --yes
 ```
 
 | چه چیزی | کجا |
 | --- | --- |
-| نام، توضیح، author، ایمیل تماس، تصویر اجتماعی | [app.config.json](../app.config.json) → `site` |
-| پالت برند، فونت لاتین/RTL، حالت کارت اجتماعی | `brand` در `app.config.json` (`preset`، `fontPreset`، `rtlFontPreset`، `socialCardMode`) و [theme.ts](../src/libs/config/theme.ts) |
-| توکن‌های دقیق OKLCH در صورت سفارشی‌سازی عمیق | [src/styles/global.css](../src/styles/global.css) → توکن‌های `--theme-*` |
-| لوگو/فاوآیکون/PWA | `public/` + `brand` در همان فایل، سپس `pnpm run assets:generate` |
-| فونت اختصاصی هر زبان | [src/i18n/locales.ts](../src/i18n/locales.ts) → `fontFamily` در `LOCALE_METADATA` |
-| متن دکمه‌ها و ناوبری | `messages/en.json` و `messages/fa.json` (هرگز در قالب هاردکد نشود) |
-| سایت تک‌زبانه (بدون تغییر ساختاری) | `ui.showLanguageSwitcher: false` در `app.config.json` (+ `pnpm run i18n:set-default fa` اگر دامنه فقط فارسی است؛ پیش‌فرض بدون پیشوند `/` روی زبان اصلی قرار می‌گیرد) |
+| نام، توضیح، author، ایمیل تماس، تصویر اجتماعی | [client/config.json](../client/config.json) (بازنویسی روی [app.config.json](../app.config.json)) → `site` |
+| پالت برند، فونت لاتین/RTL، حالت کارت اجتماعی | `brand` در `client/config.json` (`preset`، `fontPreset`، `rtlFontPreset`، `socialCardMode`) و [theme.ts](../src/libs/config/theme.ts) |
+| توکن‌های دقیق OKLCH و استایل‌های سفارشی مشتری | [client/styles.css](../client/styles.css) (و مقادیر پایه در [src/styles/global.css](../src/styles/global.css)) |
+| لوگو/فاوآیکون/PWA | `public/` + `brand` در پیکربندی کلاینت، سپس `npm run assets:generate` |
+| فونت اختصاصی هر زبان و زبان‌های فعال | [client/locales.json](../client/locales.json) (`src/i18n/locales.ts` آن را بازتوزیع می‌کند) |
+| متن دکمه‌ها و ناوبری | [client/messages/en.json](../client/messages/en.json) و `fa.json` (بازنویسی روی `messages/core/*.json`؛ هرگز در قالب هاردکد نشود) |
+| سایت تک‌زبانه (بدون تغییر ساختاری) | `ui.showLanguageSwitcher: false` در `client/config.json` (+ `npm run i18n:set-default fa` اگر دامنه فقط فارسی است؛ پیش‌فرض بدون پیشوند `/` روی زبان اصلی قرار می‌گیرد) |
 
 هیچ رنگ hex داخل کامپوننت ننویسید؛ از `primary`، `secondary`، `accent`، `surface`، `muted`، `border`
-و معادل‌های `-fg` استفاده کنید تا دارک‌مود و RTL هم درست بمانند. (اگر نیاز به حذف کامل مسیرها و فایل‌های زبان دیگر از خروجی بیلد دارید، دستور اختیاری `pnpm run i18n:solo <locale>` نیز در دسترس است.)
+و معادل‌های `-fg` استفاده کنید تا دارک‌مود و RTL هم درست بمانند. (اگر نیاز به حذف کامل مسیرها و فایل‌های زبان دیگر از خروجی بیلد دارید، دستور اختیاری `npm run i18n:solo <locale>` نیز در دسترس است.)
 
-### ۲.۳ پاک‌سازی محتوای دمو
+### ۲.۳ وضعیت پایهٔ تمیز و محتوای دمو (`starter-kit/`)
 
-سایت مشتری نباید مقاله‌ها و صفحات نمونه را داشته باشد:
+این پروژه به‌طور پیش‌فرض با **وضعیت پایهٔ تمیز (Clean Base State)** شروع می‌شود (فقط صفحهٔ خانه در `en` و `fa`)؛ بنابراین برای مشتری نیازی به پاک‌سازی دستی نیست. اگر برای مشاهدهٔ نمونه صفحات، ۶ مقاله و ۴ نمونه‌کار دمو را با دستور زیر تزریق کرده‌اید:
 
 ```bash
-ls src/content/blog                    # گروه‌های مقالهٔ نمونه
-pnpm run remove:post <group-slug> --force
-pnpm run remove:page pricing --force   # اگر صفحهٔ قیمت‌گذاری لازم نیست
+npm run starter:seed                  # تزریق صفحات، مقالات و پروژه‌های دمو
+npm run starter:seed -- --clean --yes # بازگشت به وضعیت پایهٔ تمیز و حذف داده‌های دمو
 ```
 
-این اسکریپت‌ها پوشهٔ محتوا و کلید ناوبری `nav_<key>` را پاک می‌کنند و Paraglide را
+و یا اگر بخشی از صفحات/مقاله‌ها را دستی اضافه کرده‌اید و می‌خواهید حذف کنید:
+
+```bash
+npm run remove:post <group-slug> -- --force
+npm run remove:page pricing -- --force
+```
+
+این اسکریپت‌ها پوشهٔ محتوا و کلید ناوبری `nav_<key>` را از `client/messages/*.json` پاک می‌کنند و Paraglide را
 دوباره کامپایل می‌کنند. بعد از حذف، آیتم‌های مربوطه را از
-[src/libs/config/navigation.ts](../src/libs/config/navigation.ts) (`PAGE_ITEMS` و اسلات‌های
-هدر/فوتر) هم بردارید.
+[client/navigation.ts](../client/navigation.ts) (`CLIENT_PAGE_ITEMS` و توابع فهرست فوتر/حقوقی) هم بردارید.
 
 به‌روزرسانی عنوان و توضیح صفحهٔ خانه در همهٔ زبان‌ها، بدون دست‌زدن به بدنهٔ متن:
 
 ```bash
-pnpm run new:page home --update \
+npm run new:page home -- --update \
   --title:en="Acme Studio" --desc:en="Brand, web and product design for growing teams." \
   --title:fa="استودیو آکمی" --desc:fa="طراحی برند، وب و محصول برای تیم‌های در حال رشد."
 ```
@@ -160,9 +166,9 @@ flushTop: true
 > بیلد را می‌شکند. معادل آن `container` است.
 >
 > 💡 سه سطح پیش‌فرض در پروژه تعریف شده است: در **شِمای `src/content.config.ts`** پیش‌فرض
-> `hero: "none"` و `container: "canvas"` است؛ دستور `pnpm run new:page <key>` به‌طور
+> `hero: "none"` و `container: "canvas"` است؛ دستور `npm run new:page <key>` به‌طور
 > پیش‌فرض صفحه‌های استاندارد را با `hero: "default"` و `container: "contained"` می‌سازد؛ و
-> برای لندینگ‌پیج‌ها می‌توانید `pnpm run new:page <key> -- --preset=landing` را بزنید تا
+> برای لندینگ‌پیج‌ها می‌توانید `npm run new:page <key> -- --preset=landing` را بزنید تا
 > مستقیماً با `hero: "none"`، `container: "canvas"`، `flushTop: true` و بلوک‌های آماده ساخته شود.
 
 ---
@@ -295,19 +301,20 @@ import Button from '@/components/Button.astro';
 
 ---
 
-## ۶. مسیر C — قالب اختصاصی Astro (پیشنهادی برای مشتری)
+## ۶. مسیر C — قالب اختصاصی Astro در `client/templates/` (پیشنهادی برای مشتری)
 
-اینجا کل صفحه یک کامپوننت است؛ MDX فقط متن می‌دهد. چهار ویرایش کوچک لازم است.
+اینجا کل صفحه یک کامپوننت اختصاصی است و MDX فقط متن می‌دهد. به لطف معماری لایه‌بندی‌شدهٔ `client/`، نیازی به دست‌زدن به فایل‌های هسته نیست.
 
 ### ۶.۱ ساخت قالب
 
-فایل `src/views/pages/StudioHome.astro`:
+فایل `client/templates/StudioHome.astro` (توجه: اگر فایل `<Button>` را استفاده می‌کنید آن را از `@/components/Button.astro` import کنید):
 
 ```astro
 ---
 import { render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageSection from '@/components/PageSection.astro';
+import Button from '@/components/Button.astro';
 import Icon from '@/components/Icon.astro';
 import { HERO_TITLE_ID } from '@/libs/config/app';
 import type { Locale } from '@/i18n/locales';
@@ -381,28 +388,21 @@ const services = [
 </BaseLayout>
 ```
 
-### ۶.۲ ثبت قالب
+### ۶.۲ ثبت قالب در `client/templates/index.ts`
 
-در [src/views/PageView.astro](../src/views/PageView.astro) هم import و هم نقشه را
-به‌روز کنید:
-
-```astro
-import StudioHome from '@/views/pages/StudioHome.astro';
-
-const PAGE_TEMPLATES = {
-  home: HomePageTemplate,
-  'studio-home': StudioHome,
-} as const;
-```
-
-### ۶.۳ باز کردن کلید در شمای محتوا
-
-در [src/content.config.ts](../src/content.config.ts) مقدار `template` یک enum بسته است؛
-بدون این تغییر، بیلد با خطای اعتبارسنجی می‌شکند:
+کافی است قالب جدید را در [client/templates/index.ts](../client/templates/index.ts) ثبت کنید (فایل هستهٔ `src/views/PageView.astro` به‌صورت خودکار `CLIENT_PAGE_TEMPLATES` را می‌خواند):
 
 ```ts
-template: z.enum(['home', 'studio-home']).optional(),
+import StudioHome from './StudioHome.astro';
+
+export const CLIENT_PAGE_TEMPLATES = {
+  'studio-home': StudioHome,
+};
 ```
+
+### ۶.۳ شمای باز در `src/content.config.ts` (نیاز به تغییر ندارد)
+
+در [src/content.config.ts](../src/content.config.ts) مقدار `template` به‌صورت `z.string().min(1).optional()` تعریف شده است و هر نام معتبری که در `CLIENT_PAGE_TEMPLATES` ثبت کنید را بدون ویرایش فایل‌های هسته می‌پذیرد.
 
 ### ۶.۴ فعال‌کردن روی صفحه
 
@@ -569,12 +569,13 @@ import CtaBanner from '@/components/CtaBanner.astro';
   کلاس‌های `.cta`، `.btn-secondary`، `.btn-hero-secondary`، `.chip` و `.glass-surface` یک‌جا در `global.css` تعریف شده‌اند؛ در کامپوننت‌ها دوباره نسازید.
 - فقط یک `<h1>` در کل صفحه (تست smoke تعدادش را چک می‌کند).
 - هیچ کلاس فیزیکی (`ml-`، `pr-`، `text-left`، `left-`) ننویسید؛ همیشه `ms-`، `pe-`، `text-start`، `start-*`.
-- آیکون فقط با `<Icon name="…" />`. ۴۶ نام ثبت‌شده عبارت‌اند از: `search`، `globe`، `close`، `check`،
-  `menu`، `chevron-left`، `chevron-right`، `chevron-down`، `sun`، `moon`، `copy`، `external-link`، `arrow-right`،
-  `shield`، `mail`، `layers`، `star`، `star-filled`، `quote`، `users`، `building`، `alert-circle`، `alert-triangle`،
+- آیکون فقط با `<Icon name="…" />`. ۶۱ نام هسته در [icons.ts](../src/libs/ui/icons.ts) ثبت شده‌اند: `search`، `globe`، `close`، `check`،
+  `menu`، `chevron-left`، `chevron-right`، `chevron-down`، `chevron-up`، `sun`، `moon`، `copy`، `external-link`، `arrow-right`،
+  `shield`، `mail`، `layers`، `star`، `star-filled`، `quote`، `users`، `user`، `building`، `alert-circle`، `alert-triangle`،
   `circle-check`، `bell`، `bolt`، `clock`، `map-pin`، `phone`، `rocket`، `code`، `award`، `layout-grid`، `calendar`،
-  `photo`، `minus` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
-  `folder`، `compass`، `palette`، `book-open`، `file`. آیکون جدید: نام را در [icons.ts](../src/libs/ui/icons.ts) ثبت و در رجیستری [Icon.astro](../src/components/Icon.astro) با import تک‌فایلی وصل کنید (هرگز از barrel بستهٔ `@tabler/icons-astro` import نکنید).
+  `photo`، `minus`، `eye`، `eye-off`، `shopping-bag`، `heart`، `share`، `dots-vertical`، `lock`، `adjustments-horizontal`، آیکون‌های شبکهٔ اجتماعی `brand-github`، `brand-x`، `brand-linkedin`، `brand-instagram`، `brand-telegram` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
+  `folder`، `compass`، `palette`، `book-open`، `file`.
+  آیکون جدید مشتری: نام را در [client/icons.ts](../client/icons.ts) ثبت و در [client/ClientIcons.astro](../client/ClientIcons.astro) با import تک‌فایلی از `@tabler/icons-astro/dist/esm/icons/<name>.mjs` وصل کنید تا نیازی به ویرایش هسته نباشد (هرگز از barrel بستهٔ `@tabler/icons-astro` import نکنید).
 - متن دکمه‌های مشترک را با `m.common_…` از Paraglide بگیرید، نه رشتهٔ ثابت.
 
 ---
@@ -596,9 +597,9 @@ import heroShot from '@/assets/studio/shot.jpg';
 ```
 
 - `alt` توصیفی بنویسید؛ برای تصویر تزئینی `alt=""` (نه حذف ویژگی).
-- `pnpm run assets:generate` فقط فایل‌های **موجود را نگه می‌دارد** و می‌توانید
+- `npm run assets:generate` فقط فایل‌های **موجود را نگه می‌دارد** و می‌توانید
   بدون نگرانی آن را اجرا کنید؛ برای بازتولید تصویرهای جایگزین (`home.png`، آیکون‌ها، OG)
-  از `pnpm run assets:generate -- --force` استفاده کنید.
+  از `npm run assets:generate -- --force` استفاده کنید.
 
 ---
 
@@ -618,11 +619,10 @@ const blogHref = getBlogIndexHref(locale);
 - `getPageUrl('<group>', locale)` برای صفحات محتوایی؛ اگر صفحه در آن زبان draft باشد
   `null` برمی‌گرداند، پس همیشه fallback بدهید.
 - بخش‌های داخلی خانه: `href="#services"` (همان صفحه).
-- برای اضافه‌کردن آیتم به هدر و دراور: یک ورودی در `PAGE_ITEMS` در
-  [navigation.ts](../src/libs/config/navigation.ts) — هر دو از همان یک فهرست می‌خوانند.
-  فوتر و لینک‌های حقوقی سازندهٔ اختصاصی خود را دارند (`getFooterNavigation`،
-  `getLegalNavigation`) و همه با `getNavigationSlots()` توزیع می‌شوند.
-- دکمهٔ CTA هدر و دراور از `ui.ctaPage` در `app.config.json` می‌آید؛ اگر آن صفحه
+- برای اضافه‌کردن آیتم به هدر و دراور: یک ورودی در `CLIENT_PAGE_ITEMS` در
+  [client/navigation.ts](../client/navigation.ts) — هر دو از همان یک فهرست می‌خوانند.
+  ستون‌های سفارشی فوتر و لینک‌های حقوقی نیز در همین فایل (`getClientFooterColumns`، `getClientLegalNavigation`) تنظیم و توسط `src/libs/config/navigation.ts` توزیع می‌شوند.
+- دکمهٔ CTA هدر و دراور از `ui.ctaPage` در پیکربندی ادغام‌شده (`app.config.json` + `client/config.json`) می‌آید؛ اگر آن صفحه
   منتشر نشده باشد، دکمه پنهان می‌شود (لینک مرده ساخته نمی‌شود).
 - زبان هرگز با `navigate()` عوض نمی‌شود؛ `LanguageSwitcher` خودش `window.location.assign` را انجام می‌دهد.
 
@@ -634,17 +634,17 @@ const blogHref = getBlogIndexHref(locale);
 ۲. عنوان/توضیح هر زبان:
 
 ```bash
-pnpm run new:page home --update --title:fa="استودیو آکمی" --desc:fa="…" --sync-frontmatter
+npm run new:page home -- --update --title:fa="استودیو آکمی" --desc:fa="…" --sync-frontmatter
 ```
 
 `--sync-frontmatter` کلیدهای ساختاری (`image`، `hero`، `container`، `flushTop`، `template`)
 را بین زبان‌ها هم‌تراز می‌کند؛ متن را دست نمی‌زند.
 
-۳. عبارت‌های تکراری رابط (CTA، برچسب فرم، پیام خطا) را به `messages/*.json` ببرید:
+۳. عبارت‌های تکراری رابط (CTA، برچسب فرم، پیام خطا) را به `client/messages/*.json` ببرید:
 
 ```bash
-pnpm run i18n:add -- --category=home --key=cta_primary --en="Start a project" --fa="شروع پروژه"
-pnpm run messages:compile
+npm run i18n:add -- --category=home --key=cta_primary --en="Start a project" --fa="شروع پروژه"
+npm run messages:compile
 ```
 
 در قالب `.astro`:
@@ -654,8 +654,8 @@ import * as m from '@/paraglide/messages';
 <Button href="#contact" size="lg">{m.home_cta_primary({}, { locale })}</Button>
 ```
 
-۴. زبان جدید؟ `pnpm run i18n:add-lang -- de --name="Deutsch" --dir=ltr --with-content`.
-۵. در پایان: `pnpm run audit:i18n` باید بدون اختلاف کلید/محتوا پاس شود.
+۴. زبان جدید؟ `npm run i18n:add-lang -- de --name="Deutsch" --dir=ltr --with-content`.
+۵. در پایان: `npm run audit:i18n` باید بدون اختلاف کلید/محتوا پاس شود.
 
 > در MDX به `locale` دسترسی ندارید؛ به همین دلیل **متن محتوایی** در فایل هر زبان
 > می‌نشیند و **متن رابط** در پیام‌های Paraglide. این دو را قاطی نکنید.
@@ -679,14 +679,16 @@ import * as m from '@/paraglide/messages';
 ## ۱۲. چک‌لیست تأیید قبل از تحویل
 
 ```bash
-pnpm run lint          # messages + astro check + tsc (خطای تایپ/شمای محتوا اینجا گیر می‌افتد)
-pnpm test              # ۲۴ فایل تست واحد (۲۴۵ تست)
-pnpm run audit:i18n    # هم‌ترازی زبان‌ها، کلیدها، مسیرها، RTL
-pnpm run doctor        # بررسی سلامت پروژه بدون بیلد
-pnpm run build         # Astro + Pagefind
-pnpm run smoke         # HTML/SEO/feed/H1 روی خروجی واقعی
-pnpm run link:check    # خزش dist/ برای یافتن لینک یا #anchor شکسته
-pnpm run knip          # کد و وابستگی مرده
+npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
+npm run lint           # messages + astro check + tsc (خطای تایپ/شمای محتوا اینجا گیر می‌افتد)
+npm test               # ۲۴ فایل تست واحد (۲۵۰ تست)
+npm run audit:i18n     # هم‌ترازی زبان‌ها، کلیدها، مسیرها، RTL
+npm run doctor         # بررسی سلامت پروژه بدون بیلد
+npm run build          # Astro + Pagefind
+npm run smoke          # HTML/SEO/feed/H1 روی خروجی واقعی
+npm run link:check     # خزش dist/ برای یافتن لینک یا #anchor شکسته
+npm run knip           # کد و وابستگی مرده
+npm run verify:cli     # ۹۵ ادعای CLI در محیط ایزوله
 ```
 
 سپس دستی در مرورگر:
@@ -699,7 +701,7 @@ pnpm run knip          # کد و وابستگی مرده
 - [ ] انیمیشن ظاهر شدن با اسکرول اجرا می‌شود و با JS خاموش یا `prefers-reduced-motion` همه‌چیز مرتب است (`print` هم).
 - [ ] ناوبری موبایل، زبان (در حالت چندزبانه) و جستجو کار می‌کنند.
 - [ ] هیچ کلمهٔ دمو/استارتر («Astro i18n Starter»، «لوکس»...) باقی نمانده است.
-- [ ] `pnpm run build` بدون هشدار محتوای گمشده (تصویر/ترجمه) تمام شد.
+- [ ] `npm run build` بدون هشدار محتوای گمشده (تصویر/ترجمه) تمام شد.
 
 ---
 
@@ -708,13 +710,13 @@ pnpm run knip          # کد و وابستگی مرده
 | مورد | کجا | چرا |
 | --- | --- | --- |
 | `SITE_URL` روی دامنهٔ نهایی | محیط بیلد | canonical/sitemap/RSS |
-| نام، توضیح، author، ایمیل تماس، شبکه‌های اجتماعی | `app.config.json` (یا `pnpm run site:init`) | متادیتا و فوتر |
-| تحویل تک‌زبانه (در صورت نیاز مشتری) | `ui.showLanguageSwitcher: false` + در صورت نیاز `i18n:set-default` | حذف دکمهٔ تعویض زبان بدون تغییر ساختاری |
+| نام، توضیح، author، ایمیل تماس، شبکه‌های اجتماعی | `client/config.json` (یا `npm run site:init`) | متادیتا و فوتر |
+| تحویل تک‌زبانه (در صورت نیاز مشتری) | `ui.showLanguageSwitcher: false` در `client/config.json` + در صورت نیاز `i18n:set-default` | حذف دکمهٔ تعویض زبان بدون تغییر ساختاری |
 | تصویر OG و فاوآیکون | `public/` + `brand.socialCardMode` + `site.socialImage` | اشتراک‌گذاری و PWA |
-| تنظیم کوکی و رضایت | `cookies` در `app.config.json` | انطباق GDPR/TDDDG |
+| تنظیم کوکی و رضایت | `cookies` در `client/config.json` / `app.config.json` | انطباق GDPR/TDDDG |
 | فرم تماس و خبرنامه | `api.baseUrl` / `api.endpoints` یا `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL` / `PUBLIC_NEWSLETTER_API_URL` | اتصال به سرویس ایمیل/CRM |
-| صفحات حقوقی | `privacy`، `terms` در ناوبری فوتر | الزام قانونی |
-| حذف محتوای دمو | `remove:page`/`remove:post` | جلوگیری از محتوای گمراه‌کننده |
+| صفحات حقوقی | `privacy`، `terms` در `client/navigation.ts` | الزام قانونی |
+| پاک‌سازی محتوای دمو (در صورت seed) | `npm run starter:seed -- --clean --yes` یا `remove:page`/`remove:post` | جلوگیری از محتوای گمراه‌کننده |
 | بازبینی لایسنس | `LICENSE` | حقوق استفاده برای مشتری |
 
 اگر فرم تماس یا خبرنامه لازم است و هنوز سرویس انتخاب نشده، پیش از نوشتن هر کد یک سرویس
@@ -727,14 +729,14 @@ pnpm run knip          # کد و وابستگی مرده
 
 | نشانه | علت | راه‌حل |
 | --- | --- | --- |
-| بیلد: `Invalid enum value` روی `template` | قالب جدید در `content.config.ts` ثبت نشده | مقدار را به enum اضافه کنید |
+| قالب `template` اعمال نمی‌شود و صفحه معمولی رندر می‌شود | کلید قالب در `CLIENT_PAGE_TEMPLATES` ثبت نشده | قالب را در `client/templates/index.ts` ثبت کنید |
 | بیلد: `layout` شناخته نشد / خطای MDX | `layout:` در فرانت‌متر | با `container:` عوض کنید |
 | صفحه دو `<h1>` دارد | هیروی آماده + `<h1>` دستی | هیرو را `none` کنید یا `h1` خودتان را بردارید |
 | متن‌ها بعد از تغییر MDX عوض نشدند | `template` فعال است و متن از قالب می‌آید | بخش مربوطه در `.astro` را ویرایش کنید |
 | بخش اول زیر هدر گم می‌شود | `flushTop: true` بدون `pt-28` | فاصلهٔ بالای بخش اول را بدهید |
 | در فارسی چیدمان آینه نمی‌شود | کلاس فیزیکی (`ml`، `text-left`) | به `ms`، `text-start` تغییر دهید |
 | تصویر در بیلد پیدا نمی‌شود | مسیر `public/` یا مسیر مطلق | فایل را کنار MDX بگذارید و `./file.png` بنویسید |
-| `m.some_key is not a function` | پیام کامپایل نشده یا کلید غلط | `pnpm run messages:compile` و `audit:i18n` |
+| `m.some_key is not a function` | پیام کامپایل نشده یا کلید غلط | `npm run messages:compile` و `audit:i18n` |
 | انیمیشن کارت‌های جدید اجرا نمی‌شود | عناصر پویا مشاهده نشده‌اند | `refreshChronoTrig()` را صدا بزنید |
 | `astro check` روی Props قالب خطا می‌دهد | امضای Props با `PageView` فرق دارد | `entry, locale, alternates, url, schema?` را دقیقاً بگیرید |
 
@@ -747,12 +749,15 @@ src/content/pages/home/en.mdx         متن + فرانت‌متر (en)
 src/content/pages/home/fa.mdx         متن + فرانت‌متر (fa)
 src/content/pages/home/home.png       تصویر هیرو/OG
 src/views/PageView.astro              انتخاب قالب بر اساس frontmatter.template
-src/views/pages/HomePageTemplate.astro  قالب دمو (مسیر A)
-src/views/pages/StudioHome.astro      قالب اختصاصی شما (مسیر C)
-src/content.config.ts                 شمای صفحه + مقدارهای مجاز template
+src/views/pages/HomePageTemplate.astro  قالب پایهٔ هسته (مسیر A)
+client/templates/StudioHome.astro     قالب اختصاصی مشتری (مسیر C)
+client/templates/index.ts             ثبت CLIENT_PAGE_TEMPLATES
+client/styles.css                     استایل‌ها و بازنویسی توکن‌های مشتری
+src/content.config.ts                 شمای صفحه (template باز است)
 src/components/PageSection.astro      بخش full-bleed با ریتم و سطح
 src/components/PageHero.astro         هیروی آماده با عکس (hero: default)
 src/components/PageHeader.astro       هدر تایپوگرافیک (hero: minimal)
-src/styles/global.css                 توکن رنگ، .layout-container، .cta، .btn-secondary، .chip
-src/libs/config/navigation.ts         هدر/دراور/فوتر
+src/styles/global.css                 توکن رنگ پایه، .layout-container، .cta، .btn-secondary، .chip
+client/navigation.ts                  آیتم‌های صفحه (CLIENT_PAGE_ITEMS)، فوتر و لینک‌های حقوقی مشتری
+src/libs/config/navigation.ts         سازندهٔ هدر/دراور/فوتر هسته
 ```

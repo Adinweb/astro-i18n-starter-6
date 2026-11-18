@@ -10,11 +10,13 @@ import { parseContentEntryId } from '@/libs/content/entries';
 import { buildBreadcrumbSchema, getBreadcrumbs, getHomeHref } from '@/libs/content/service';
 import { buildOgRouteKey, type SocialCardContext } from '@/libs/content/social';
 import HomePageTemplate from '@/views/pages/HomePageTemplate.astro';
+import { CLIENT_PAGE_TEMPLATES } from '@client/templates/index';
 import * as m from '@/paraglide/messages';
 
-const PAGE_TEMPLATES = {
+const PAGE_TEMPLATES: Record<string, any> = {
   home: HomePageTemplate,
-} as const;
+  ...CLIENT_PAGE_TEMPLATES,
+};
 
 interface Props {
   entry: CollectionEntry<'pages'>;

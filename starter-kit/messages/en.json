@@ -1,0 +1,23 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "blog_category_announcements": "Announcements",
+  "blog_category_design": "Design",
+  "blog_category_engineering": "Engineering",
+  "blog_category_guides": "Guides",
+  "blog_category_product": "Product",
+  "blog_tag_architecture": "Architecture",
+  "blog_tag_astro": "Astro",
+  "blog_tag_i18n": "Internationalization",
+  "blog_tag_performance": "Performance",
+  "blog_tag_release": "Release",
+  "blog_tag_rtl": "RTL",
+  "nav_about": "About",
+  "nav_components": "Components",
+  "nav_design_system": "Design System",
+  "nav_explore": "Explore",
+  "nav_features": "Features",
+  "nav_overview": "Overview",
+  "nav_pricing": "Pricing",
+  "nav_resources": "Resources",
+  "nav_rtl_support": "RTL Support"
+}

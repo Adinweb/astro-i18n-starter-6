@@ -3,9 +3,10 @@
   "compilerOptions": {
     "types": ["node"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@client/*": ["./client/*"]
     }
   },
   "include": [".astro/types.d.ts", "**/*", "public/chronotrig.min.js"],
-  "exclude": ["dist"]
+  "exclude": ["dist", ".paraglide-work", "starter-kit"]
 }

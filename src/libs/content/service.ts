@@ -1,3 +1,4 @@
+import type { ImageMetadata } from 'astro';
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/i18n/locales';
 import { getPathname, localizeHref, stripLocale, withTrailingSlash } from '@/i18n/paths';
@@ -17,6 +18,30 @@ import {
   getIndexedContentTypes,
   type ContentTypeKey,
 } from '@/libs/content/types';
+
+interface GenericCollectionEntryData {
+  title: string;
+  slug: string;
+  description?: string;
+  image?: ImageMetadata;
+  draft?: boolean;
+  publishedAt?: Date;
+  updatedAt?: Date;
+  client?: string;
+  year?: number;
+  link?: string;
+  stack?: string[];
+  [key: string]: unknown;
+}
+
+export type GenericCollectionEntry =
+  | CollectionEntry<'projects'>
+  | {
+      id: string;
+      collection?: string;
+      data: GenericCollectionEntryData;
+      body?: string;
+    };
 
 interface RouteBase {
   locale: Locale;
@@ -39,8 +64,7 @@ export type SiteRouteProps =
       perPage: number;
     })
   // Every enabled content type other than `pages` and `blog` shares one generic
-  // route pair. The entry type is the union of the declared collections, so
-  // adding a fourth collection means adding it here and in `loadExtraEntries`.
+  // route pair (including custom client collections registered in `client/content.ts`).
   | (RouteBase & {
       routeType: 'collection-index';
       contentType: ContentTypeKey;
@@ -52,7 +76,7 @@ export type SiteRouteProps =
   | (RouteBase & {
       routeType: 'collection-entry';
       contentType: ContentTypeKey;
-      entry: CollectionEntry<'projects'>;
+      entry: GenericCollectionEntry;
     });
 
 export interface SiteRoute {
@@ -70,6 +94,11 @@ export interface BreadcrumbItem {
 type EntryLike<T extends 'pages' | 'blog' | 'projects'> = {
   id: string;
   data: CollectionEntry<T>['data'];
+};
+
+type ExtraEntryLike = {
+  id: string;
+  data: GenericCollectionEntryData;
 };
 
 /**
@@ -166,7 +195,7 @@ function resolvePageUrl(
 export function buildSiteRoutes(
   pages: EntryLike<'pages'>[],
   posts: EntryLike<'blog'>[],
-  extraCollections: Partial<Record<ContentTypeKey, EntryLike<'projects'>[]>> = {}
+  extraCollections: Partial<Record<ContentTypeKey, ExtraEntryLike[]>> = {}
 ): SiteRoute[] {
   const routes: SiteRoute[] = [];
   const registeredPaths = new Set<string>();
@@ -446,15 +475,14 @@ export function buildSiteRoutes(
  * `blog` keeps its own loader because its index, feed and search catalogs carry
  * blog-only fields.
  */
-async function loadExtraEntries(): Promise<Partial<Record<ContentTypeKey, EntryLike<'projects'>[]>>> {
-  const collections: Partial<Record<ContentTypeKey, EntryLike<'projects'>[]>> = {};
+async function loadExtraEntries(): Promise<Partial<Record<ContentTypeKey, ExtraEntryLike[]>>> {
+  const collections: Partial<Record<ContentTypeKey, ExtraEntryLike[]>> = {};
 
   for (const type of getEntryContentTypes()) {
-    if (type.key === 'projects') {
-      collections.projects = (await getCollection(
-        'projects'
-      )) as unknown as EntryLike<'projects'>[];
-    }
+    if (type.key === 'blog') continue;
+    collections[type.key] = (await getCollection(
+      type.key as 'projects'
+    )) as unknown as ExtraEntryLike[];
   }
 
   return collections;

@@ -1,0 +1,29 @@
+---
+/**
+ * Client-owned layout injection hooks rendered at well-defined slots in `BaseLayout.astro`:
+ * - `head`: inside `<head>` after SEO metadata
+ * - `brand-badge`: inside header brand link beside site name
+ * - `header-actions`: inside header action bar before mobile menu button
+ * - `footer-top`: at top of `<footer>` container before grid columns
+ * - `footer-bottom`: beside legal bar at bottom of `<footer>`
+ */
+import type { Locale } from '@/i18n/locales';
+
+export type LayoutHookSlot =
+  | 'head'
+  | 'brand-badge'
+  | 'header-actions'
+  | 'footer-top'
+  | 'footer-bottom';
+
+interface Props {
+  slot: LayoutHookSlot;
+  locale: Locale;
+  url: string;
+}
+
+const { slot, locale, url } = Astro.props;
+void slot;
+void locale;
+void url;
+---
