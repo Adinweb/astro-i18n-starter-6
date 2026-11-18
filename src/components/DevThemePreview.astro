@@ -226,6 +226,8 @@ const initialRtlFont = siteConfig.rtlFontPreset ?? 'vazirmatn';
     '--font-ar',
   ];
 
+  const STORAGE_KEY = 'dev-theme-preview';
+
   function initDevThemePreview() {
     const root = document.querySelector<HTMLElement>('[data-dev-theme-preview]');
     if (!root || root.dataset.bound === 'true') return;
@@ -260,6 +262,30 @@ const initialRtlFont = siteConfig.rtlFontPreset ?? 'vazirmatn';
       rtlFontPreset: defaults.rtlFontPreset,
     };
 
+    let hasCustomPreview = false;
+    try {
+      const savedRaw = window.sessionStorage.getItem(STORAGE_KEY);
+      if (savedRaw) {
+        const saved = JSON.parse(savedRaw) as Partial<typeof state>;
+        if (saved.preset && saved.preset in THEME_PRESETS.palettes) state.preset = saved.preset;
+        if (typeof saved.primaryColor === 'string') state.primaryColor = saved.primaryColor;
+        if (saved.fontPreset && saved.fontPreset in THEME_PRESETS.latinFonts) {
+          state.fontPreset = saved.fontPreset;
+        }
+        if (saved.rtlFontPreset && saved.rtlFontPreset in THEME_PRESETS.rtlFonts) {
+          state.rtlFontPreset = saved.rtlFontPreset;
+        }
+        hasCustomPreview = true;
+      }
+    } catch (_) {}
+
+    const persistState = () => {
+      try {
+        window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (_) {}
+      hasCustomPreview = true;
+    };
+
     const syncModeButtons = () => {
       const currentMode = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
       modeButtons.forEach((btn) => {
@@ -270,7 +296,9 @@ const initialRtlFont = siteConfig.rtlFontPreset ?? 'vazirmatn';
       });
     };
 
-    const applyPreview = () => {
+    const applyPreview = (save = true) => {
+      if (save) persistState();
+
       const resolved = resolveBrandTheme({
         preset: state.preset,
         themeColor: defaults.primary,
@@ -286,14 +314,10 @@ const initialRtlFont = siteConfig.rtlFontPreset ?? 'vazirmatn';
       THEME_TOKEN_KEYS.forEach((key) => docStyle.removeProperty(key));
       Object.entries(tokens).forEach(([key, value]) => docStyle.setProperty(key, value));
 
-      if (state.fontPreset !== 'system') {
-        docStyle.setProperty('--font-sans', resolved.fonts.sans);
-        docStyle.setProperty('--font-display', resolved.fonts.display);
-      }
-      if (state.rtlFontPreset !== 'vazirmatn') {
-        docStyle.setProperty('--font-fa', resolved.fonts.fa);
-        docStyle.setProperty('--font-ar', resolved.fonts.fa);
-      }
+      docStyle.setProperty('--font-sans', resolved.fonts.sans);
+      docStyle.setProperty('--font-display', resolved.fonts.display);
+      docStyle.setProperty('--font-fa', resolved.fonts.fa);
+      docStyle.setProperty('--font-ar', resolved.fonts.fa);
 
       presetButtons.forEach((btn) => {
         const active = !state.primaryColor && btn.dataset.devPresetBtn === state.preset;
@@ -328,7 +352,8 @@ const initialRtlFont = siteConfig.rtlFontPreset ?? 'vazirmatn';
         try {
           window.localStorage.setItem('theme', target);
         } catch (_) {}
-        applyPreview();
+        if (hasCustomPreview) applyPreview(false);
+        else syncModeButtons();
       });
     });
 
@@ -338,23 +363,23 @@ const initialRtlFont = siteConfig.rtlFontPreset ?? 'vazirmatn';
         if (!key) return;
         state.preset = key;
         state.primaryColor = '';
-        applyPreview();
+        applyPreview(true);
       });
     });
 
     primaryInput?.addEventListener('input', () => {
       state.primaryColor = primaryInput.value.toLowerCase();
-      applyPreview();
+      applyPreview(true);
     });
 
     latinSelect?.addEventListener('change', () => {
       state.fontPreset = latinSelect.value as NonNullable<BrandThemeInput['fontPreset']>;
-      applyPreview();
+      applyPreview(true);
     });
 
     rtlSelect?.addEventListener('change', () => {
       state.rtlFontPreset = rtlSelect.value as NonNullable<BrandThemeInput['rtlFontPreset']>;
-      applyPreview();
+      applyPreview(true);
     });
 
     resetBtn?.addEventListener('click', () => {
@@ -364,12 +389,24 @@ const initialRtlFont = siteConfig.rtlFontPreset ?? 'vazirmatn';
         fontPreset: defaults.fontPreset,
         rtlFontPreset: defaults.rtlFontPreset,
       };
+      hasCustomPreview = false;
+      try {
+        window.sessionStorage.removeItem(STORAGE_KEY);
+      } catch (_) {}
       THEME_TOKEN_KEYS.forEach((key) => document.documentElement.style.removeProperty(key));
       const paletteHex =
         THEME_PRESETS.palettes[defaults.preset]?.primary ?? defaults.primary;
       if (primaryInput) primaryInput.value = paletteHex;
       if (primaryReadout) primaryReadout.textContent = paletteHex;
-      applyPreview();
+      if (latinSelect) latinSelect.value = defaults.fontPreset;
+      if (rtlSelect) rtlSelect.value = defaults.rtlFontPreset;
+      presetButtons.forEach((btn) => {
+        const active = btn.dataset.devPresetBtn === defaults.preset;
+        btn.classList.toggle('border-primary', active);
+        btn.classList.toggle('bg-primary/10', active);
+        btn.classList.toggle('text-primary', active);
+      });
+      syncModeButtons();
     });
 
     let copyTimer = 0;
@@ -400,14 +437,20 @@ const initialRtlFont = siteConfig.rtlFontPreset ?? 'vazirmatn';
     });
 
     const themeObserver = new MutationObserver(() => {
-      if (!panel?.hidden) applyPreview();
+      if (hasCustomPreview) applyPreview(false);
+      else syncModeButtons();
     });
     themeObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme'],
     });
     document.addEventListener('astro:before-swap', () => themeObserver.disconnect(), { once: true });
-    syncModeButtons();
+
+    if (hasCustomPreview) {
+      applyPreview(false);
+    } else {
+      syncModeButtons();
+    }
   }
 
   if (document.documentElement.dataset.devThemeBound !== 'true') {

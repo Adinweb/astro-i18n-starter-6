@@ -3,7 +3,7 @@
 
 media:
   input: src/assets
-  output: ./
+  output: ../../assets
 
 content:
   - name: pages
@@ -40,6 +40,13 @@ content:
         options:
           values: ["canvas", "contained", "prose"]
         default: "canvas"
+      - name: flushTop
+        label: Flush Top (under sticky header)
+        type: boolean
+        default: false
+      - name: template
+        label: Bespoke Template Key
+        type: string
       - name: image
         label: Hero Image
         type: image
@@ -51,7 +58,7 @@ content:
     label: Blog Posts
     type: collection
     path: src/content/blog
-    filename: "{year}-{month}-{day}-{primary}/{locale}.mdx"
+    filename: "{primary}/{locale}.mdx"
     subfolders: true
     format: yaml-frontmatter
     fields:
@@ -66,11 +73,16 @@ content:
       - name: description
         label: Summary
         type: string
-        required: true
-      - name: date
+      - name: author
+        label: Author
+        type: string
+      - name: publishedAt
         label: Publish Date
         type: date
         required: true
+      - name: updatedAt
+        label: Updated Date
+        type: date
       - name: categories
         label: Categories
         type: string
@@ -109,13 +121,15 @@ content:
       - name: description
         label: Summary
         type: string
-        required: true
       - name: client
         label: Client Name
         type: string
       - name: year
         label: Year
         type: number
+      - name: link
+        label: Live Project URL
+        type: string
       - name: stack
         label: Technologies / Services
         type: string

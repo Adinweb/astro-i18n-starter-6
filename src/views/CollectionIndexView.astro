@@ -409,6 +409,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
           const matchesSearch = !needle || haystack.includes(needle);
           const show = matchesCat && matchesStack && matchesSearch;
 
+          card.hidden = !show;
           card.classList.toggle('hidden', !show);
           if (show) visibleCount += 1;
         });
@@ -422,9 +423,13 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
         if (clearBtn) clearBtn.hidden = !hasFilter;
         if (emptyEl) emptyEl.hidden = visibleCount > 0;
         if (grid) {
-          grid.querySelectorAll('[data-trig]').forEach((item) => {
-            item.classList.remove('trig-active');
-          });
+          if (typeof window.chronoTrig !== 'undefined') {
+            grid.classList.remove('trig-stagger-active');
+            for (const child of Array.from(grid.children)) {
+              child.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active');
+            }
+            void grid.offsetHeight;
+          }
           refreshChronoTrig();
         }
       };
