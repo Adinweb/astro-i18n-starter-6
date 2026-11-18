@@ -140,7 +140,9 @@ export function setupChronoTrig(): void {
 
   // Hero copy and top elements: activate in the next frame so the initial hidden state is registered
   try {
-    const topVisible = document.querySelectorAll<HTMLElement>('.max-w-3xl[data-trig]:not(.trig)');
+    const topVisible = document.querySelectorAll<HTMLElement>(
+      '.max-w-3xl[data-trig]:not(.trig), .max-w-4xl[data-trig]:not(.trig)'
+    );
     if (topVisible && typeof topVisible.forEach === 'function') {
       topVisible.forEach((el) => {
         if (typeof el.getBoundingClientRect === 'function') {

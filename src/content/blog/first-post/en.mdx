@@ -1,0 +1,35 @@
+---
+title: "Getting Started with Astro i18n Starter"
+slug: "first-post"
+description: "An overview of the prefix-less routing architecture, symmetrical content folders, and single-source configuration in Astro i18n Starter."
+publishedAt: 2026-01-15
+author: "Astro Starter Team"
+image: "./first-post.png"
+categories:
+  - guides
+  - announcements
+tags:
+  - astro
+  - i18n
+  - architecture
+draft: false
+---
+
+Building a multilingual website should not require duplicating layout code or maintaining brittle route tables. **Astro i18n Starter** solves this with a single dynamic dispatcher and symmetrical folder conventions across every language.
+
+## Prefix-less Default Routing
+
+Your default locale renders directly at the domain root (`/`, `/about/`, `/blog/first-post/`), while every secondary locale resolves under its own prefix (`/fa/درباره-ما/`, `/de/about/`). Switching the default language requires only one CLI command (`npm run i18n:set-default`).
+
+## Symmetrical Content Collections
+
+Each page, blog post, or project lives inside its own group folder containing one Markdown/MDX file per active locale alongside shared cover artwork:
+
+```text
+src/content/blog/first-post/
+├── en.mdx
+├── fa.mdx
+└── first-post.png
+```
+
+Because every locale shares the same group key, alternate `hreflang` links, XML sitemaps, and Atom RSS feeds stay strictly reciprocal automatically.

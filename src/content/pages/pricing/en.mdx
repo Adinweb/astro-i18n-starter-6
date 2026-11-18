@@ -1,0 +1,104 @@
+---
+title: "Pricing & Contact"
+slug: "pricing"
+description: "Simple starter tiers for static web delivery, multilingual scaling, and direct project inquiries."
+image: "./pricing.png"
+hero: "minimal"
+container: "contained"
+draft: false
+---
+
+import ComparisonTable from '@/components/ComparisonTable.astro';
+import ContactForm from '@/components/ContactForm.astro';
+import FaqAccordion from '@/components/FaqAccordion.astro';
+import PricingSection from '@/components/PricingSection.astro';
+
+<PricingSection
+  contained
+  billingToggle
+  locale="en"
+  heading="Flexible Engagement Options"
+  subheading="Use the starter open-source foundation directly or tailor it with bespoke design systems and multilingual workflows."
+  tiers={[
+    {
+      eyebrow: '01 · Starter',
+      name: 'Open Starter',
+      amount: 0,
+      annualAmount: 0,
+      currencyPrefix: '$',
+      period: '/ month',
+      annualPeriod: '/ year',
+      description: 'Complete static Astro v7 foundation with RTL/LTR support, CLI generators, and Pagefind search.',
+      features: [
+        'Prefix-less default locale + bilingual scaffolding',
+        'OKLCH theme presets & branded OG card generation',
+        'Automated i18n, link, smoke, and CLI test suites',
+      ],
+      cta: { label: 'Read features', href: '/features/', icon: 'arrow-right' },
+    },
+    {
+      eyebrow: '02 · Studio',
+      name: 'Custom Brand Launch',
+      amount: 120,
+      annualAmount: 1150,
+      currencyPrefix: '$',
+      period: '/ month',
+      annualPeriod: '/ year',
+      featured: true,
+      description: 'Tailored brand palette, custom landing sections, and content migration ready for production hosting.',
+      features: [
+        'Custom brand preset, font stack, and OG cards',
+        'Multi-page landing architecture & headless form wiring',
+        'Full SEO, JSON-LD schema, and WCAG accessibility audit',
+      ],
+      cta: { label: 'Start an inquiry', href: '#contact-inquiry', icon: 'mail' },
+    },
+    {
+      eyebrow: '03 · Scale',
+      name: 'Enterprise Multilingual',
+      price: 'Custom',
+      annualPrice: 'Custom',
+      period: '/ scope',
+      annualPeriod: '/ annual',
+      description: 'Dedicated multi-region deployment with extended content types and automated CI pipelines.',
+      features: [
+        'Unlimited RTL/LTR locales via CLI tooling',
+        'Custom collection schemas and catalog integrations',
+        'Ongoing performance & governance reviews',
+      ],
+      cta: { label: 'Contact team', href: '#contact-inquiry', icon: 'mail' },
+    },
+  ]}
+/>
+
+<ComparisonTable
+  contained
+  locale="en"
+  eyebrow="Capability Breakdown"
+  heading="Compare Starter Editions"
+  subheading="Every tier shares the same type-safe Astro v7 routing and verification pipeline."
+/>
+
+<FaqAccordion
+  contained
+  emitSchema
+  locale="en"
+  eyebrow="Licensing & Scope"
+  heading="Pricing Questions"
+  items={[
+    {
+      question: "Is there any recurring license fee for the Open Starter core?",
+      answer: "No. The Astro v7 core template and CLI automation tools are open for commercial and client builds with zero platform lock-in."
+    },
+    {
+      question: "Can we switch presets or add locales after launch?",
+      answer: "Yes. Brand presets, typography stacks, and active locales live in configuration files and can be updated anytime via npm scripts."
+    },
+    {
+      question: "How are forms connected when deploying statically?",
+      answer: "Configure external endpoint URLs in client/config.json or environment variables; ContactForm and NewsletterBanner post JSON over HTTPS cleanly."
+    }
+  ]}
+/>
+
+<ContactForm locale="en" />

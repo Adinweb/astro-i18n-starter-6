@@ -193,19 +193,19 @@ const gridColsClass =
                 )}
 
                 {enableLightbox && item.image && (
-                  <button
-                    type="button"
-                    data-gallery-open
-                    data-title={item.title}
-                    data-caption={item.caption ?? ''}
-                    aria-label={m.block_gallery_preview_aria(
+                  <IconButton
+                    variant="glass"
+                    icon="external-link"
+                    size={16}
+                    label={m.block_gallery_preview_aria(
                       { title: item.title },
                       { locale: activeLocale }
                     )}
-                    class="glass-control absolute top-3 end-3 size-9 cursor-pointer print:hidden"
-                  >
-                    <Icon name="external-link" size={16} />
-                  </button>
+                    data-gallery-open
+                    data-title={item.title}
+                    data-caption={item.caption ?? ''}
+                    class="absolute top-3 end-3 print:hidden"
+                  />
                 )}
               </div>
 

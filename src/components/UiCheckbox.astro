@@ -18,8 +18,11 @@ interface Props {
   checked?: boolean;
   indeterminate?: boolean;
   disabled?: boolean;
+  required?: boolean;
+  size?: 'sm' | 'md';
   variant?: 'default' | 'card';
   class?: string;
+  [attribute: string]: unknown;
 }
 
 const {
@@ -31,8 +34,11 @@ const {
   checked = false,
   indeterminate = false,
   disabled = false,
+  required = false,
+  size = 'md',
   variant = 'default',
   class: className,
+  ...rest
 } = Astro.props;
 
 const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
@@ -44,6 +50,9 @@ const resolvedDesc =
     : (description ?? (usingDefaults ? m.block_checkbox_default_desc({}, { locale: activeLocale }) : undefined));
 
 const inputId = id ?? `checkbox-${crypto.randomUUID().slice(0, 6)}`;
+const isSmall = size === 'sm';
+const iconSize = isSmall ? 12 : 14;
+const attributes = rest as Record<string, string | number | boolean | undefined>;
 ---
 
 <label
@@ -51,13 +60,15 @@ const inputId = id ?? `checkbox-${crypto.randomUUID().slice(0, 6)}`;
   data-ui-checkbox
   data-indeterminate={indeterminate ? 'true' : 'false'}
   class:list={[
-    'not-prose group flex items-start gap-3 select-none',
+    'not-prose group flex items-start select-none',
+    isSmall ? 'gap-2.5' : 'gap-3',
     disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
     variant === 'card'
       ? 'rounded-2xl border border-border bg-surface p-3.5 transition-colors hover:border-primary/45 has-[input:checked]:border-primary has-[input:checked]:bg-primary/5 sm:p-4'
       : '',
     className,
   ]}
+  {...attributes}
 >
   <input
     id={inputId}
@@ -65,6 +76,7 @@ const inputId = id ?? `checkbox-${crypto.randomUUID().slice(0, 6)}`;
     type="checkbox"
     checked={checked}
     disabled={disabled}
+    required={required}
     class="peer sr-only"
     data-ui-checkbox-input
   />
@@ -73,22 +85,30 @@ const inputId = id ?? `checkbox-${crypto.randomUUID().slice(0, 6)}`;
     aria-hidden="true"
     data-ui-checkbox-box
     class:list={[
-      'mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary',
+      'mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md border transition-colors peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary',
+      isSmall ? 'size-4' : 'size-5',
       checked || indeterminate
         ? 'border-primary bg-primary text-primary-fg'
         : 'border-border bg-bg text-transparent group-hover:border-primary/60',
     ]}
   >
     <span data-icon-check hidden={indeterminate}>
-      <Icon name="check" size={14} />
+      <Icon name="check" size={iconSize} />
     </span>
     <span data-icon-minus hidden={!indeterminate}>
-      <Icon name="minus" size={14} />
+      <Icon name="minus" size={iconSize} />
     </span>
   </span>
 
   <span class="min-w-0 flex-1">
-    <span class="block text-sm font-semibold text-fg">{resolvedLabel}</span>
+    <span
+      class:list={[
+        'block',
+        isSmall ? 'text-xs font-medium text-muted' : 'text-sm font-semibold text-fg',
+      ]}
+    >
+      {resolvedLabel}
+    </span>
     {resolvedDesc && <span class="mt-0.5 block text-xs leading-relaxed text-muted">{resolvedDesc}</span>}
   </span>
 </label>

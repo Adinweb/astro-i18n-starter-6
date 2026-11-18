@@ -38,11 +38,13 @@ interface Props {
    * band is served from the optimized renditions of the very same file.
    */
   image?: ImageMetadata;
+  headingId?: string | null;
+  compact?: boolean;
 }
 
-const { image } = Astro.props;
+const { image, headingId = HERO_TITLE_ID, compact = false } = Astro.props;
 const background = image ?? DEFAULT_HERO_IMAGE;
-const backdropKey = `hero-backdrop:${background.src}`;
+const backdropKey = compact ? undefined : `hero-backdrop:${background.src}`;
 
 /**
  * Renditions offered to the browser. The band is full-bleed, so `sizes` is
@@ -60,9 +62,12 @@ const widths = [
 ---
 
 <section
-  aria-labelledby={HERO_TITLE_ID}
+  aria-labelledby={headingId ?? undefined}
   data-page-hero
-  class="relative isolate w-full overflow-hidden bg-hero-base"
+  class:list={[
+    'relative isolate w-full overflow-hidden bg-hero-base',
+    compact && 'rounded-3xl',
+  ]}
 >
   <!-- The page image *is* the background of this section. -->
   <div class="absolute inset-0" data-hero-background aria-hidden="true">
@@ -92,7 +97,12 @@ const widths = [
   </div>
 
   <div
-    class="layout-container relative flex min-h-[24rem] flex-col justify-end pb-12 pt-28 sm:min-h-[28rem] sm:pb-16 sm:pt-32 lg:min-h-[32rem]"
+    class:list={[
+      'layout-container relative flex flex-col justify-end',
+      compact
+        ? 'min-h-[16rem] py-10 sm:py-12'
+        : 'min-h-[24rem] pb-12 pt-28 sm:min-h-[28rem] sm:pb-16 sm:pt-32 lg:min-h-[32rem]',
+    ]}
   >
     <slot />
   </div>

@@ -4,11 +4,10 @@
  * photograph band. Composable via `PageView.astro` frontmatter (`hero: "minimal"`)
  * or imported directly inside custom MDX / Astro pages.
  */
-import Icon from '@/components/Icon.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import type { Locale } from '@/i18n/locales';
 import { HERO_TITLE_ID } from '@/libs/config/app';
 import type { BreadcrumbItem } from '@/libs/content/service';
-import * as m from '@/paraglide/messages';
 
 interface Props {
   title: string;
@@ -17,6 +16,7 @@ interface Props {
   breadcrumbs?: BreadcrumbItem[];
   kicker?: string;
   align?: 'start' | 'center';
+  headingTag?: 'h1' | 'h2';
   class?: string;
 }
 
@@ -27,14 +27,16 @@ const {
   breadcrumbs = [],
   kicker,
   align = 'start',
+  headingTag = 'h1',
   class: className,
 } = Astro.props;
 
 const isCentered = align === 'center';
+const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
 ---
 
 <header
-  aria-labelledby={HERO_TITLE_ID}
+  aria-labelledby={titleId}
   data-page-header
   data-trig
   class:list={[
@@ -45,40 +47,15 @@ const isCentered = align === 'center';
 >
   {
     breadcrumbs.length > 1 && (
-      <nav
-        aria-label={m.common_breadcrumbs({}, { locale })}
-        class:list={[
-          'mb-4 flex flex-wrap items-center gap-1.5 text-xs text-muted print:hidden',
-          isCentered && 'justify-center',
-        ]}
-      >
-        {breadcrumbs.map((crumb, index) => {
-          const isLast = index === breadcrumbs.length - 1;
-          return (
-            <>
-              {index > 0 && (
-                <Icon
-                  name="chevron-right"
-                  size={12}
-                  class="shrink-0 opacity-50 rtl:rotate-180"
-                />
-              )}
-              {isLast ? (
-                <span class="font-medium text-fg" aria-current="page">
-                  {crumb.label}
-                </span>
-              ) : (
-                <a
-                  href={crumb.href}
-                  class="transition-colors hover:text-primary"
-                >
-                  {crumb.label}
-                </a>
-              )}
-            </>
-          );
-        })}
-      </nav>
+      <Breadcrumbs
+        items={breadcrumbs}
+        locale={locale}
+        separator="chevron"
+        showHomeIcon={true}
+        size="sm"
+        align={align}
+        class="mb-4 print:hidden"
+      />
     )
   }
 
@@ -96,18 +73,26 @@ const isCentered = align === 'center';
     )
   }
 
-  <h1
-    id={HERO_TITLE_ID}
-    class="text-balance text-3xl font-extrabold leading-[1.12] tracking-tight text-fg sm:text-4xl lg:text-5xl"
-  >
-    {title}
-  </h1>
+  {
+    headingTag === 'h2' ? (
+      <h2 class="text-balance text-3xl font-extrabold leading-[1.12] tracking-tight text-fg sm:text-4xl lg:text-5xl">
+        {title}
+      </h2>
+    ) : (
+      <h1
+        id={titleId}
+        class="text-balance text-3xl font-extrabold leading-[1.12] tracking-tight text-fg sm:text-4xl lg:text-5xl"
+      >
+        {title}
+      </h1>
+    )
+  }
 
   {
     description && (
       <p
         class:list={[
-          'mt-4 max-w-3xl text-pretty text-base leading-relaxed text-muted sm:text-lg',
+          'mt-4 max-w-4xl text-pretty text-base leading-relaxed text-muted sm:text-lg',
           isCentered && 'mx-auto',
         ]}
       >

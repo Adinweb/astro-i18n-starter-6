@@ -7,6 +7,9 @@ hero: "minimal"
 container: "prose"
 draft: false
 ---
+import Button from '@/components/Button.astro';
+import SocialLinks from '@/components/SocialLinks.astro';
+import UiAlert from '@/components/UiAlert.astro';
 
 **Astro i18n Starter** is a production-ready static site foundation built for multilingual, bidirectional web projects. Every layer—from routing and content schemas to color tokens and scroll choreography—follows strict Single Source of Truth principles.
 
@@ -16,6 +19,13 @@ draft: false
 2. **Accessible by Default:** Semantic HTML landmarks, WCAG-compliant focus rings, unified `data-motion` reduced-motion controls, and print-ready styles come built in.
 3. **Zero Vendor Lock-in:** Pure SSG output deploys anywhere static files are hosted, with optional external API adapters for forms and newsletters.
 
+<UiAlert
+  variant="info"
+  title="Three-Tier Upgradeable Workspace"
+  description="Core logic stays in src/, client overrides live cleanly in client/, and optional demo content ships inside starter-kit/."
+  class="not-prose my-8"
+/>
+
 <section id="privacy" class="scroll-mt-28">
 
 ## Privacy & Cookie Policy
@@ -24,9 +34,15 @@ Essential browser preferences (such as selected color theme and consent state) o
 
 You can review or withdraw your consent preferences at any time below:
 
-<button type="button" data-open-cookie-settings class="btn-secondary not-prose mt-2 cursor-pointer">
+<Button
+  variant="secondary"
+  icon="shield"
+  iconPosition="start"
+  data-open-cookie-settings
+  class="not-prose mt-2"
+>
   Open Cookie Preferences
-</button>
+</Button>
 
 </section>
 
@@ -37,3 +53,5 @@ You can review or withdraw your consent preferences at any time below:
 All starter templates, reusable UI blocks, and CLI automation utilities are structured for rapid client customization via `app.config.json`, `theme-presets.json`, and compiled Paraglide message dictionaries.
 
 </section>
+
+<SocialLinks variant="pills" showShare class="not-prose mt-10" />

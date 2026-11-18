@@ -1,6 +1,7 @@
 ---
 import { render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import PageHero from '@/components/PageHero.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import Icon from '@/components/Icon.astro';
@@ -107,29 +108,20 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
   <PageHero slot="hero" image={image}>
     <HeroCopy title={title} description={description} size="post">
       <Fragment slot="prelude">
-        <nav aria-label={m.common_breadcrumbs({}, { locale })}>
-          <ol class="flex flex-wrap items-center gap-2 text-xs text-hero-fg/90">
-            {
-              breadcrumbs.map((crumb, index) => (
-                <li class="flex items-center gap-2">
-                  {index > 0 && <span aria-hidden="true">/</span>}
-                  {index === breadcrumbs.length - 1 ? (
-                    <span class="max-w-xs truncate font-medium text-hero-fg">{crumb.label}</span>
-                  ) : (
-                    <a href={crumb.href} class="transition-colors hover:text-hero-fg">
-                      {crumb.label}
-                    </a>
-                  )}
-                </li>
-              ))
-            }
-          </ol>
-        </nav>
+        <Breadcrumbs
+          items={breadcrumbs}
+          locale={locale}
+          separator="chevron"
+          showHomeIcon={true}
+          surface="hero"
+          size="xs"
+          truncateLast
+        />
       </Fragment>
     </HeroCopy>
   </PageHero>
 
-  <article class="max-w-4xl">
+  <article class="w-full max-w-5xl">
     {
       (metaItems.length > 0 || stack.length > 0 || link) && (
         <div class="mb-8 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 border-b border-border pb-6 text-sm">
@@ -172,7 +164,7 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
       )
     }
 
-    <div class="prose">
+    <div class="prose max-w-none">
       <Content />
     </div>
 

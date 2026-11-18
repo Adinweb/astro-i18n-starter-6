@@ -1,0 +1,1575 @@
+---
+title: "Components"
+slug: "components"
+description: "Live interactive examples, usage snippets, and prop references for every reusable Astro component in the starter."
+image: "./components.png"
+hero: "none"
+container: "canvas"
+flushTop: true
+draft: false
+---
+import AboutSplitSection from '@/components/AboutSplitSection.astro';
+import AuthFormCard from '@/components/AuthFormCard.astro';
+import AvatarGroup from '@/components/AvatarGroup.astro';
+import BentoCapabilities from '@/components/BentoCapabilities.astro';
+import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import Button from '@/components/Button.astro';
+import CarouselSection from '@/components/CarouselSection.astro';
+import ComparisonTable from '@/components/ComparisonTable.astro';
+import ComponentDoc from '@/components/ComponentDoc.astro';
+import ContactForm from '@/components/ContactForm.astro';
+import ContactSplitSection from '@/components/ContactSplitSection.astro';
+import CtaBanner from '@/components/CtaBanner.astro';
+import FaqAccordion from '@/components/FaqAccordion.astro';
+import FeatureCardGrid from '@/components/FeatureCardGrid.astro';
+import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
+import HeroCopy from '@/components/HeroCopy.astro';
+import HomeHero from '@/components/HomeHero.astro';
+import Icon from '@/components/Icon.astro';
+import IconButton from '@/components/IconButton.astro';
+import ImageGallerySection from '@/components/ImageGallerySection.astro';
+import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
+import LatestPostsSection from '@/components/LatestPostsSection.astro';
+import NewsletterBanner from '@/components/NewsletterBanner.astro';
+import PageHeader from '@/components/PageHeader.astro';
+import PageHero from '@/components/PageHero.astro';
+import PageSection from '@/components/PageSection.astro';
+import PartnerLogos from '@/components/PartnerLogos.astro';
+import PricingSection from '@/components/PricingSection.astro';
+import ProcessSteps from '@/components/ProcessSteps.astro';
+import ProductShowcaseGrid from '@/components/ProductShowcaseGrid.astro';
+import PromoBanner from '@/components/PromoBanner.astro';
+import ProofStatsRow from '@/components/ProofStatsRow.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import SocialLinks from '@/components/SocialLinks.astro';
+import TeamSection from '@/components/TeamSection.astro';
+import TestimonialGrid from '@/components/TestimonialGrid.astro';
+import UiAlert from '@/components/UiAlert.astro';
+import UiBadge from '@/components/UiBadge.astro';
+import UiCheckbox from '@/components/UiCheckbox.astro';
+import UiDropdown from '@/components/UiDropdown.astro';
+import UiInput from '@/components/UiInput.astro';
+import UiModal from '@/components/UiModal.astro';
+import UiPagination from '@/components/UiPagination.astro';
+import UiProgress from '@/components/UiProgress.astro';
+import UiSwitch from '@/components/UiSwitch.astro';
+import UiTooltip from '@/components/UiTooltip.astro';
+import heroVisual from './components.png';
+
+<LandingHeroSplit
+  id="hero-landing"
+  surface="hero"
+  eyebrow="Component Library"
+  title="Reusable UI Blocks & Primitives"
+  description="Every component adapts automatically to OKLCH brand themes, light/dark modes, and RTL/LTR layouts—ready to drop in with defaults or customize via props."
+  primaryCta={{ label: "UI Primitives", href: "#sec-primitives", icon: "arrow-right" }}
+  secondaryCta={{ label: "Section Blocks", href: "#sec-hero" }}
+  trustNote="47 reusable components · All content props optional · CSS logical geometry"
+  image={heroVisual}
+  imageAlt="Starter Component Library"
+/>
+
+<PageSection id="catalog-nav" surface="surface" spacing="sm" borderBottom>
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="#sec-primitives" class="chip px-3.5 py-1.5 text-xs font-semibold">UI Primitives</a>
+      <a href="#sec-hero" class="chip px-3.5 py-1.5 text-xs font-semibold">Headers &amp; Heroes</a>
+      <a href="#sec-features" class="chip px-3.5 py-1.5 text-xs font-semibold">Features &amp; Workflow</a>
+      <a href="#sec-proof" class="chip px-3.5 py-1.5 text-xs font-semibold">Pricing, Media &amp; Proof</a>
+      <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">Contact &amp; CTA</a>
+    </div>
+    <span class="text-xs font-medium text-muted">47 reusable building blocks</span>
+  </div>
+</PageSection>
+
+<div id="sec-primitives" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-button"
+    name="Button"
+    category="UI Primitives"
+    title="Button"
+    summary="Polymorphic action control that renders an accessible link when href is provided and a native button otherwise. Directional icons flip automatically in RTL."
+    propsList={[
+      { name: "href", type: "string", description: "Switches the rendered element from <button> to <a href>." },
+      { name: "variant", type: "'primary' | 'secondary' | 'hero' | 'ghost' | 'glass'", defaultVal: "'primary'", description: "Applies semantic OKLCH button styling from libs/ui/button.ts." },
+      { name: "size", type: "'sm' | 'md' | 'lg' | 'auto'", defaultVal: "'md'", description: "Controls padding and typography scale." },
+      { name: "icon", type: "IconName", description: "Optional icon from the closed SITE_ICONS registry." },
+      { name: "iconPosition", type: "'start' | 'end'", defaultVal: "'end'", description: "Places the icon relative to the reading direction." },
+      { name: "glow", type: "boolean", defaultVal: "false", description: "Adds an ambient OKLCH primary glow ring that intensifies on hover." },
+      { name: "block", type: "boolean", defaultVal: "false", description: "Expands button width to fill its parent container." }
+    ]}
+    usage={`import Button from '@/components/Button.astro';
+
+<Button href="/pricing" variant="primary" size="lg" glow icon="arrow-right">
+  Explore pricing
+</Button>
+<Button variant="secondary" icon="sparkles" iconPosition="start">
+  Action button
+</Button>`}
+  >
+    <div class="flex flex-wrap items-center gap-3">
+      <Button href="#doc-button" variant="primary" size="md" icon="arrow-right">Primary</Button>
+      <Button href="#doc-button" variant="primary" size="md" glow icon="sparkles" iconPosition="start">Primary Glow</Button>
+      <Button href="#doc-button" variant="secondary" size="md" icon="sparkles" iconPosition="start">Secondary</Button>
+      <Button variant="ghost" size="md" icon="code">Ghost</Button>
+      <Button variant="glass" size="md" icon="palette">Glass</Button>
+      <Button variant="primary" size="sm">Small</Button>
+      <Button variant="primary" size="lg" icon="rocket">Large</Button>
+      <span class="inline-flex rounded-full bg-hero-base p-1.5">
+        <Button href="#doc-button" variant="hero" size="sm" icon="arrow-right">On Hero Surface</Button>
+      </span>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-icon-button"
+    surface="surface"
+    name="IconButton"
+    category="UI Primitives"
+    title="IconButton & Icon"
+    summary="IconButton provides a consistent 36x36px square/circle control with a required accessible aria-label. Icon renders crisp Tabler glyphs from the closed 61-icon registry."
+    propsList={[
+      { name: "label", type: "string", required: true, description: "Required accessible name mapped to aria-label and title." },
+      { name: "icon", type: "IconName", description: "Registered icon key from src/libs/ui/icons.ts." },
+      { name: "variant", type: "'glass' | 'ghost'", defaultVal: "'glass'", description: "Visual surface style for frosted headers or opaque panels." },
+      { name: "size", type: "number", defaultVal: "18", description: "Icon size in pixels inside the control." }
+    ]}
+    usage={`import Icon from '@/components/Icon.astro';
+import IconButton from '@/components/IconButton.astro';
+
+<IconButton icon="search" label="Open search" variant="glass" />
+<IconButton icon="bell" label="Notifications" variant="ghost" />
+<Icon name="sparkles" size={20} class="text-primary" />`}
+  >
+    <div class="flex flex-wrap items-center justify-between gap-6">
+      <div class="flex flex-wrap items-center gap-3">
+        <IconButton icon="search" label="Search preview" variant="glass" />
+        <IconButton icon="bell" label="Notifications preview" variant="ghost" />
+        <IconButton icon="sun" label="Theme preview" variant="glass" />
+        <IconButton icon="copy" label="Copy preview" variant="ghost" />
+      </div>
+      <div class="flex flex-wrap items-center gap-3 text-primary">
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="sparkles" size={18} /></span>
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="globe" size={18} /></span>
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="shield" size={18} /></span>
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="rocket" size={18} /></span>
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="palette" size={18} /></span>
+        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="award" size={18} /></span>
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-ui-badge"
+    name="UiBadge"
+    category="UI Primitives"
+    title="UiBadge"
+    summary="Compact status pill and category chip mapped to semantic OKLCH roles. Automatically turns into an anchor link when href is passed."
+    propsList={[
+      { name: "label", type: "string", defaultVal: "m.block_badge_default", description: "Badge text; defaults to localized Paraglide copy." },
+      { name: "variant", type: "'primary' | 'secondary' | 'accent' | 'neutral' | 'info' | 'success' | 'warning' | 'error'", defaultVal: "'primary'", description: "Semantic color role." },
+      { name: "size", type: "'sm' | 'md'", defaultVal: "'md'", description: "Badge padding and font size." },
+      { name: "icon", type: "IconName", description: "Optional leading icon aligned via logical flex gap." },
+      { name: "href", type: "string", description: "Optional destination URL converting the badge to an interactive <a>." }
+    ]}
+    usage={`import UiBadge from '@/components/UiBadge.astro';
+
+<UiBadge label="Ready" variant="success" icon="circle-check" />
+<UiBadge label="v5.1" variant="info" size="sm" href="/features" />`}
+  >
+    <div class="flex flex-wrap items-center gap-2.5">
+      <UiBadge variant="primary" icon="sparkles" />
+      <UiBadge label="Secondary" variant="secondary" icon="layers" />
+      <UiBadge label="Accent" variant="accent" icon="bolt" />
+      <UiBadge label="Neutral" variant="neutral" />
+      <UiBadge label="Info" variant="info" icon="info" />
+      <UiBadge label="Success" variant="success" icon="circle-check" />
+      <UiBadge label="Warning" variant="warning" icon="alert-triangle" />
+      <UiBadge label="Error" variant="error" icon="alert-circle" />
+      <UiBadge label="Linked Small" variant="primary" size="sm" icon="external-link" href="#doc-ui-badge" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-ui-alert"
+    surface="surface"
+    name="UiAlert"
+    category="UI Primitives"
+    title="UiAlert"
+    summary="Accessible notification banner using ARIA status/alert roles, semantic icons, optional CTA action, and idempotent client-side dismissal."
+    propsList={[
+      { name: "variant", type: "'info' | 'success' | 'warning' | 'error' | 'neutral'", defaultVal: "'info'", description: "Semantic status palette and default icon." },
+      { name: "title", type: "string", defaultVal: "m.block_alert_default_title", description: "Primary callout heading." },
+      { name: "description", type: "string | null", defaultVal: "m.block_alert_default_desc", description: "Supporting body text; pass null to hide." },
+      { name: "action", type: "AlertAction", description: "Optional { label, href, icon?, external? } action button." },
+      { name: "dismissible", type: "boolean", defaultVal: "false", description: "Displays a close IconButton that hides the alert." }
+    ]}
+    usage={`import UiAlert from '@/components/UiAlert.astro';
+
+<UiAlert
+  variant="success"
+  title="Build verified"
+  description="All i18n, RTL, and link checks passed."
+  dismissible
+/>`}
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      <UiAlert variant="info" dismissible />
+      <UiAlert
+        variant="success"
+        title="Static build ready"
+        description="Images, fonts, and localized routes are pre-rendered with zero runtime server."
+        action={{ label: "Inspect sections", href: "#sec-features" }}
+      />
+      <UiAlert
+        variant="warning"
+        title="Draft workflow"
+        description="Set draft: false in frontmatter once localized copy is ready for production."
+      />
+      <UiAlert
+        variant="error"
+        title="Endpoint check"
+        description="Configure PUBLIC_CONTACT_API_URL before enabling online submissions."
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-avatar-group"
+    name="AvatarGroup"
+    category="UI Primitives"
+    title="AvatarGroup"
+    summary="Overlapping avatar stack using logical negative margins (-ms-2.5), automatic initials fallback, localized counts, and optional 5-star rating."
+    propsList={[
+      { name: "items", type: "AvatarItem[]", defaultVal: "4 team members", description: "Array of { name, image?, alt? }. Falls back to getInitials() when image is omitted." },
+      { name: "extraCount", type: "number", defaultVal: "24", description: "Displays a +N counter badge formatted for the active locale." },
+      { name: "rating", type: "number | null", defaultVal: "5", description: "Renders 1–5 star rating icons; pass null to omit." },
+      { name: "label", type: "string | null", defaultVal: "m.block_avatar_trust_label", description: "Supporting caption beside the avatar stack." },
+      { name: "size", type: "'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "Diameter of each circular avatar." }
+    ]}
+    usage={`import AvatarGroup from '@/components/AvatarGroup.astro';
+
+<AvatarGroup extraCount={40} rating={5} size="md" />`}
+  >
+    <div class="flex flex-wrap items-center justify-between gap-6">
+      <AvatarGroup size="md" />
+      <AvatarGroup size="sm" extraCount={120} rating={null} label="Active contributors across 2 locales" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-breadcrumbs"
+    surface="surface"
+    name="Breadcrumbs"
+    category="Navigation & Disclosure"
+    title="Breadcrumbs"
+    summary="Accessible breadcrumb trail supporting default and dark hero surfaces, chevron or slash dividers, automatic RTL icon flipping (rtl:rotate-180), compact header spacing, and last-item truncation."
+    propsList={[
+      { name: "items", type: "BreadcrumbItem[]", defaultVal: "3 sample crumbs", description: "Ordered list of { label, href?, icon? } links." },
+      { name: "separator", type: "'chevron' | 'slash'", defaultVal: "'chevron'", description: "Divider glyph placed between path segments." },
+      { name: "surface / size", type: "'default' | 'hero' · 'xs' | 'sm'", defaultVal: "'default' / 'sm'", description: "Adapts link contrast for page headers or dark hero bands." },
+      { name: "compact / truncateLast", type: "boolean", defaultVal: "false", description: "Tightens padding and truncates long current titles on small screens." }
+    ]}
+    usage={`import Breadcrumbs from '@/components/Breadcrumbs.astro';
+
+<Breadcrumbs
+  items={[
+    { label: "Home", href: "/" },
+    { label: "Components", href: "/components/" },
+    { label: "Breadcrumbs" }
+  ]}
+/>
+<Breadcrumbs surface="hero" separator="chevron" size="xs" truncateLast />`}
+  >
+    <div class="space-y-4">
+      <Breadcrumbs separator="chevron" />
+      <Breadcrumbs separator="slash" showHomeIcon={false} />
+      <div class="rounded-2xl bg-hero-base px-4 py-3 text-hero-fg">
+        <Breadcrumbs
+          surface="hero"
+          separator="chevron"
+          size="xs"
+          truncateLast
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Components", href: "#doc-breadcrumbs" },
+            { label: "Hero Surface Breadcrumb With Long Truncated Segment" }
+          ]}
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-pagination"
+    name="UiPagination"
+    category="Navigation & Disclosure"
+    title="UiPagination"
+    summary="Compact and numbered page navigation powered by buildPageWindow() and formatNumber() for native locale digits and RTL arrow mirroring. Powers both Blog and Collections indexes."
+    propsList={[
+      { name: "currentPage / totalPages", type: "number", defaultVal: "3 / 8", description: "Active page and total page count." },
+      { name: "variant", type: "'rounded' | 'square' | 'compact'", defaultVal: "'rounded'", description: "Visual pager layout style." },
+      { name: "hrefTemplate / hrefBuilder", type: "string | ((page) => string)", description: "Static route pattern or builder function; renders <button> controls when omitted." },
+      { name: "interactive", type: "boolean", defaultVal: "true", description: "Allows client-side preview state switching in documentation." }
+    ]}
+    usage={`import UiPagination from '@/components/UiPagination.astro';
+
+<UiPagination currentPage={3} totalPages={8} variant="rounded" />
+<UiPagination currentPage={2} totalPages={5} hrefTemplate="/blog/page/{page}/" interactive={false} />`}
+  >
+    <div class="flex flex-col gap-5">
+      <UiPagination currentPage={3} totalPages={8} variant="rounded" />
+      <UiPagination currentPage={6} totalPages={14} variant="rounded" />
+      <UiPagination currentPage={2} totalPages={6} variant="square" />
+      <UiPagination currentPage={3} totalPages={8} variant="compact" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-modal"
+    surface="surface"
+    name="UiModal"
+    category="Navigation & Disclosure"
+    title="UiModal"
+    summary="Native <dialog> modal wrapper with data-lenis-prevent scroll isolation, backdrop dismissal, Escape key handling, custom footer slot, and semantic confirm/danger states."
+    propsList={[
+      { name: "variant", type: "'default' | 'confirm' | 'danger'", defaultVal: "'default'", description: "Semantic header icon and confirm button accent." },
+      { name: "triggerLabel", type: "string", defaultVal: "m.block_modal_trigger", description: "Text displayed on the opening <Button>." },
+      { name: "title / description", type: "string", description: "Dialog heading and body copy." },
+      { name: "footer", type: "slot", description: "Optional named slot to customize modal footer actions." }
+    ]}
+    usage={`import UiModal from '@/components/UiModal.astro';
+
+<UiModal variant="confirm" triggerLabel="Open confirmation" title="Deploy release?">
+  Static assets are verified and ready for edge delivery.
+  <Button slot="footer" variant="primary" size="sm" data-ui-modal-close>Done</Button>
+</UiModal>`}
+  >
+    <div class="flex flex-wrap items-center gap-3">
+      <UiModal id="demo-modal-default" variant="default" />
+      <UiModal
+        id="demo-modal-confirm"
+        variant="confirm"
+        triggerVariant="primary"
+        triggerIcon="circle-check"
+        triggerLabel="Confirm modal"
+        title="Ready to publish changes"
+      />
+      <UiModal
+        id="demo-modal-danger"
+        variant="danger"
+        triggerIcon="alert-triangle"
+        triggerLabel="Destructive modal"
+        title="Archive unused draft?"
+      />
+      <UiModal
+        id="demo-modal-footer"
+        variant="default"
+        triggerVariant="ghost"
+        triggerIcon="code"
+        triggerLabel="Custom footer slot"
+        title="Static build checklist"
+        description="Run npm run lint, audit:i18n, and smoke before shipping."
+      >
+        <Button slot="footer" type="button" variant="primary" size="sm" icon="circle-check" iconPosition="start" data-ui-modal-close>
+          Got it
+        </Button>
+      </UiModal>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-tooltip"
+    name="UiTooltip"
+    category="Navigation & Disclosure"
+    title="UiTooltip"
+    summary="Accessible hover and focus-within tooltip using CSS logical placement (top, bottom, start, end), custom trigger slot wrapping, and reduced-motion support."
+    propsList={[
+      { name: "text", type: "string", defaultVal: "m.block_tooltip_default", description: "Tooltip bubble copy." },
+      { name: "placement", type: "'top' | 'bottom' | 'start' | 'end'", defaultVal: "'top'", description: "Logical direction mirrored automatically in RTL." },
+      { name: "variant", type: "'neutral' | 'primary'", defaultVal: "'neutral'", description: "Surface tone for the floating tooltip." },
+      { name: "default slot", type: "slot", description: "Wraps any custom trigger control such as <IconButton>." }
+    ]}
+    usage={`import UiTooltip from '@/components/UiTooltip.astro';
+
+<UiTooltip placement="top" text="Mirrors start/end in RTL automatically" />
+<UiTooltip placement="bottom" variant="primary" text="Copy configuration snippet">
+  <IconButton icon="copy" label="Copy snippet" variant="glass" />
+</UiTooltip>`}
+  >
+    <div class="flex flex-wrap items-center justify-center gap-4 py-6">
+      <UiTooltip placement="top" label="Top tooltip" />
+      <UiTooltip placement="bottom" variant="primary" label="Bottom primary" />
+      <UiTooltip placement="start" label="Start placement" />
+      <UiTooltip placement="end" label="End placement" />
+      <UiTooltip placement="top" variant="primary" text="Wrapped custom IconButton trigger">
+        <IconButton icon="sparkles" label="Custom tooltip trigger" variant="glass" />
+      </UiTooltip>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-progress"
+    surface="surface"
+    name="UiProgress"
+    category="Feedback & Controls"
+    title="UiProgress"
+    summary="Accessible progress indicator supporting linear bars, CSS conic-gradient circular rings (zero raw SVGs), all 5 semantic tones, and multi-step milestone tracks."
+    propsList={[
+      { name: "value / max", type: "number", defaultVal: "68 / 100", description: "Current progress value and maximum range." },
+      { name: "variant", type: "'bar' | 'ring' | 'steps'", defaultVal: "'bar'", description: "Visual layout style." },
+      { name: "tone", type: "'primary' | 'success' | 'info' | 'warning' | 'error'", defaultVal: "'primary'", description: "OKLCH indicator fill color." },
+      { name: "steps / currentStep", type: "string[] / number", description: "Milestone labels and active step index for variant='steps'." }
+    ]}
+    usage={`import UiProgress from '@/components/UiProgress.astro';
+
+<UiProgress variant="bar" value={76} tone="primary" />
+<UiProgress variant="ring" value={88} tone="success" />
+<UiProgress variant="steps" currentStep={3} />`}
+  >
+    <div class="space-y-8">
+      <div class="grid gap-6 md:grid-cols-2">
+        <div class="space-y-4">
+          <UiProgress variant="bar" value={76} tone="primary" />
+          <UiProgress variant="bar" value={92} tone="success" size="sm" label="Asset optimization" />
+          <UiProgress variant="bar" value={64} tone="info" size="sm" label="Locale parity" />
+          <UiProgress variant="bar" value={48} tone="warning" size="sm" label="Draft review" />
+          <UiProgress variant="bar" value={24} tone="error" size="sm" label="Broken links quota" />
+        </div>
+        <div class="flex flex-wrap items-center justify-around gap-4">
+          <UiProgress variant="ring" value={75} tone="primary" size="md" label="Core parity" />
+          <UiProgress variant="ring" value={94} tone="success" size="md" label="Static score" />
+          <UiProgress variant="ring" value={58} tone="warning" size="md" label="Bundle budget" />
+        </div>
+      </div>
+      <UiProgress variant="steps" currentStep={3} />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-switch"
+    name="UiSwitch"
+    category="Forms & Controls"
+    title="UiSwitch"
+    summary="Accessible role='switch' toggle control with sm/md/lg sizes, RTL-mirrored thumb movement, disabled states, optional form sync, and localized labels."
+    propsList={[
+      { name: "label / description", type: "string", defaultVal: "Localized defaults", description: "Switch label and optional supporting caption." },
+      { name: "checked / disabled", type: "boolean", defaultVal: "false", description: "Initial toggle state and disabled flag." },
+      { name: "size", type: "'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "Track and thumb dimensions." },
+      { name: "name", type: "string", description: "Emits a hidden synced checkbox when submitting inside forms." }
+    ]}
+    usage={`import UiSwitch from '@/components/UiSwitch.astro';
+
+<UiSwitch label="Reduced motion" checked size="md" />`}
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      <UiSwitch id="demo-switch-on" checked size="md" />
+      <UiSwitch
+        id="demo-switch-off"
+        size="sm"
+        label="Strict static links"
+        description="Validate all internal anchors during production builds."
+      />
+      <UiSwitch
+        id="demo-switch-lg"
+        checked
+        size="lg"
+        label="Automatic RTL mirroring (lg)"
+        description="Flips directional icons, grids, and scroll reveals for Persian/Arabic."
+      />
+      <UiSwitch
+        id="demo-switch-disabled"
+        checked
+        disabled
+        size="md"
+        label="Static-only build (locked)"
+        description="Disabled switches preserve aria-disabled and reduced opacity."
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-checkbox"
+    surface="surface"
+    name="UiCheckbox"
+    category="Forms & Controls"
+    title="UiCheckbox"
+    summary="Styled accessible checkbox supporting inline default or selectable card layouts, sm/md sizes, indeterminate state with minus icon, and disabled states."
+    propsList={[
+      { name: "variant", type: "'default' | 'card'", defaultVal: "'default'", description: "Compact row or full bordered interactive card." },
+      { name: "checked / indeterminate", type: "boolean", defaultVal: "false", description: "Checkbox selection state." },
+      { name: "size / disabled", type: "'sm' | 'md' / boolean", defaultVal: "'md' / false", description: "Box scale and disabled attribute support." },
+      { name: "label / description", type: "string", defaultVal: "Localized defaults", description: "Visible option label and helper text." }
+    ]}
+    usage={`import UiCheckbox from '@/components/UiCheckbox.astro';
+
+<UiCheckbox variant="card" checked label="Enable notifications" />`}
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="space-y-3 rounded-2xl border border-border bg-surface p-4">
+        <UiCheckbox id="demo-cb-1" checked />
+        <UiCheckbox id="demo-cb-2" indeterminate label="Partial locale sync" description={null} />
+        <UiCheckbox id="demo-cb-default" size="sm" label="Small unchecked default option" description={null} />
+        <UiCheckbox id="demo-cb-disabled" checked disabled label="Locked preference (disabled)" description={null} />
+      </div>
+      <div class="space-y-3">
+        <UiCheckbox
+          id="demo-cb-card"
+          variant="card"
+          checked
+          label="Selectable card option (checked)"
+          description="Highlights border and surface automatically when checked."
+        />
+        <UiCheckbox
+          id="demo-cb-card-off"
+          variant="card"
+          label="Selectable card option (unchecked)"
+          description="Supports full-row keyboard focus and click toggling."
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-input"
+    name="UiInput"
+    category="Forms & Controls"
+    title="UiInput"
+    summary="Theme-aware form field supporting text, email, password (with eye/eye-off visibility toggle), search, URL, and textarea types with required marks, disabled styling, and validation feedback."
+    propsList={[
+      { name: "type", type: "'text' | 'email' | 'password' | 'search' | 'url' | 'tel' | 'textarea'", defaultVal: "'text'", description: "HTML input control variant." },
+      { name: "label / placeholder / helper", type: "string", defaultVal: "Localized defaults", description: "Field label, placeholder, and aria-describedby helper." },
+      { name: "required / disabled", type: "boolean", defaultVal: "false", description: "HTML validation constraint, asterisk indicator, and disabled styling." },
+      { name: "error / icon", type: "string / IconName", description: "Validation state with aria-invalid='true' and optional leading icon." }
+    ]}
+    usage={`import UiInput from '@/components/UiInput.astro';
+
+<UiInput type="email" icon="mail" required label="Email" placeholder="you@domain.com" />
+<UiInput type="password" icon="lock" label="Password" />
+<UiInput type="textarea" rows={3} label="Project brief" />`}
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      <UiInput id="demo-input-email" type="email" />
+      <UiInput
+        id="demo-input-password"
+        type="password"
+        icon="lock"
+        label="API Token / Password"
+        placeholder="••••••••••••"
+        helper={null}
+      />
+      <UiInput
+        id="demo-input-required"
+        type="text"
+        icon="user"
+        required
+        label="Organization name"
+        placeholder="Acme Studio"
+        helper="Required fields display a semantic error-role asterisk."
+      />
+      <UiInput
+        id="demo-input-error"
+        type="url"
+        icon="globe"
+        label="External endpoint"
+        value="invalid-url"
+        error="Please enter a full https:// URL."
+        helper={null}
+      />
+      <UiInput
+        id="demo-input-textarea"
+        type="textarea"
+        rows={3}
+        label="Message / notes (textarea)"
+        placeholder="Describe your target locales, brand palette, or timeline..."
+        helper={null}
+      />
+      <div class="space-y-4">
+        <UiInput
+          id="demo-input-search"
+          type="search"
+          icon="search"
+          label="Search filter"
+          placeholder="Filter components..."
+          helper={null}
+        />
+        <UiInput
+          id="demo-input-disabled"
+          type="text"
+          icon="shield"
+          disabled
+          value="astro-i18n-starter-v5.1"
+          label="Build identifier (disabled)"
+          helper={null}
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-dropdown"
+    surface="surface"
+    name="UiDropdown"
+    category="Navigation & Disclosure"
+    title="UiDropdown"
+    summary="Keyboard-accessible action menu (ArrowDown, ArrowUp, Home, End, Escape) with logical start/end alignment and optional item badges, danger states, or dividers."
+    propsList={[
+      { name: "label / icon", type: "string", defaultVal: "m.block_dropdown_default_label", description: "Trigger button text and leading icon." },
+      { name: "items", type: "DropdownMenuItem[]", defaultVal: "3 sample links", description: "Menu entries with { label, href?, icon?, badge?, danger?, dividerBefore? }." },
+      { name: "align / variant", type: "'start' | 'end' · 'secondary' | 'primary' | 'ghost'", defaultVal: "'start' / 'secondary'", description: "Logical alignment and trigger surface." }
+    ]}
+    usage={`import UiDropdown from '@/components/UiDropdown.astro';
+
+<UiDropdown
+  align="end"
+  variant="ghost"
+  items={[
+    { label: "Features", href: "/features/", icon: "sparkles", badge: "New" },
+    { label: "Reset filters", icon: "x", danger: true, dividerBefore: true }
+  ]}
+/>`}
+  >
+    <div class="flex flex-wrap items-center justify-between gap-4 pb-8">
+      <div class="flex flex-wrap items-center gap-4">
+        <UiDropdown id="demo-dropdown-start" align="start" variant="secondary" />
+        <UiDropdown id="demo-dropdown-primary" align="start" variant="primary" label="Navigate" icon="compass" />
+        <UiDropdown id="demo-dropdown-ghost" align="start" variant="ghost" label="Ghost Menu" icon="list" />
+      </div>
+      <UiDropdown
+        id="demo-dropdown-custom"
+        align="end"
+        variant="secondary"
+        label="Custom Actions (end)"
+        icon="sparkles"
+        items={[
+          { label: "Explore Features", href: "/features/", icon: "sparkles", badge: "SSG" },
+          { label: "View Pricing", href: "/pricing/", icon: "tag" },
+          { label: "Copy Configuration", icon: "copy", dividerBefore: true },
+          { label: "Discard Draft", icon: "alert-triangle", danger: true }
+        ]}
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-social-links"
+    name="SocialLinks"
+    category="Navigation & Disclosure"
+    title="SocialLinks"
+    summary="Social channel bar wired automatically to siteConfig.social with icon-only, pill, or card layouts plus an optional clipboard share-link button."
+    propsList={[
+      { name: "variant", type: "'icons' | 'pills' | 'cards'", defaultVal: "'pills'", description: "Controls compact icon circles, labeled pills, or detail cards." },
+      { name: "showShare", type: "boolean", defaultVal: "true", description: "Adds a one-click Copy Link share action." },
+      { name: "items", type: "SocialLinkItem[]", defaultVal: "siteConfig.social", description: "Optional custom channel list overriding app.config.json." }
+    ]}
+    usage={`import SocialLinks from '@/components/SocialLinks.astro';
+
+<SocialLinks variant="pills" showShare />`}
+  >
+    <div class="space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <SocialLinks variant="pills" />
+        <SocialLinks variant="icons" />
+      </div>
+      <SocialLinks variant="cards" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-section-header"
+    surface="surface"
+    name="SectionHeader & PageSection"
+    category="Layout Primitives"
+    title="SectionHeader & PageSection"
+    summary="PageSection controls full-bleed background bands and .layout-container alignment; SectionHeader enforces consistent eyebrow, H2, and subheading typography."
+    propsList={[
+      { name: "surface", type: "'default' | 'surface' | 'subtle'", defaultVal: "'default'", description: "PageSection semantic background role." },
+      { name: "spacing", type: "'none' | 'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "Vertical block padding rhythm." },
+      { name: "bleed", type: "boolean", defaultVal: "false", description: "Skips the inner .layout-container when nesting inside another container." },
+      { name: "eyebrow / heading / subheading", type: "string", description: "SectionHeader editorial copy slots." },
+      { name: "align", type: "'start' | 'center'", defaultVal: "'start'", description: "SectionHeader horizontal alignment." }
+    ]}
+    usage={`import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+
+<PageSection surface="subtle" spacing="md" borderTop>
+  <SectionHeader
+    eyebrow="Architecture"
+    heading="Consistent vertical rhythm"
+    subheading="Align content to the 1280px grid cleanly."
+  />
+</PageSection>`}
+  >
+    <div class="grid gap-6 md:grid-cols-2">
+      <div class="rounded-2xl border border-border bg-surface p-6">
+        <SectionHeader
+          eyebrow="Start Aligned"
+          heading="Logical start-aligned header"
+          subheading="Follows LTR left or RTL right automatically."
+        />
+      </div>
+      <div class="rounded-2xl border border-border bg-surface/60 p-6">
+        <SectionHeader
+          align="center"
+          eyebrow="Centered"
+          heading="Centered editorial header"
+          subheading="Ideal for pricing, testimonials, and FAQ bands."
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+</div>
+
+<div id="sec-hero" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-page-header"
+    name="PageHeader"
+    category="Headers & Heroes"
+    title="PageHeader"
+    summary="Clean typographic page header used by hero: 'minimal' pages, composing <Breadcrumbs /> automatically with optional kicker and start/center alignment."
+    propsList={[
+      { name: "title / description", type: "string", required: true, description: "Page title and optional lead summary." },
+      { name: "breadcrumbs", type: "BreadcrumbItem[]", description: "Renders compact chevron <Breadcrumbs /> above the heading when 2+ crumbs exist." },
+      { name: "kicker / align", type: "string / 'start' | 'center'", defaultVal: "'start'", description: "Section kicker text and horizontal alignment." },
+      { name: "headingTag", type: "'h1' | 'h2'", defaultVal: "'h1'", description: "Use 'h2' when embedding previews on a page that already has an <h1>." }
+    ]}
+    usage={`import PageHeader from '@/components/PageHeader.astro';
+
+<PageHeader
+  title="System Architecture"
+  kicker="Documentation"
+  description="Clear typographic hierarchy without a heavy hero photograph."
+  locale="en"
+  breadcrumbs={[{ label: "Home", href: "/" }, { label: "Architecture" }]}
+/>`}
+  >
+    <div class="space-y-8">
+      <PageHeader
+        headingTag="h2"
+        locale="en"
+        kicker="Minimal Header · Start Aligned"
+        title="Clean typographic page header"
+        description="Used automatically on hero: 'minimal' content pages and custom templates, reusing <Breadcrumbs /> instead of duplicate nav markup."
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Components", href: "#doc-page-header" },
+          { label: "PageHeader" }
+        ]}
+      />
+      <PageHeader
+        headingTag="h2"
+        align="center"
+        locale="en"
+        title="Centered PageHeader Variant"
+        description="Automatically falls back to an accent rule bar when no kicker is passed."
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-page-hero"
+    surface="surface"
+    name="PageHero, HeroCopy & BlogPostHeroContent"
+    category="Headers & Heroes"
+    title="PageHero, HeroCopy & BlogPostHeroContent"
+    summary="PageHero renders the full-bleed atmospheric backdrop from an Astro ImageMetadata asset; HeroCopy provides unified page/post typography; BlogPostHeroContent adds breadcrumbs, category pills, and publication meta."
+    propsList={[
+      { name: "image", type: "ImageMetadata", defaultVal: "DEFAULT_HERO_IMAGE", description: "Background asset defocused with smooth vertical tonal scrims." },
+      { name: "size (HeroCopy)", type: "'page' | 'post'", defaultVal: "'page'", description: "Typographic scale for static pages vs. blog/project articles." },
+      { name: "compact / headingId", type: "boolean / string | null", defaultVal: "false / HERO_TITLE_ID", description: "Reduces vertical height and disables aria-labelledby when previewed inline." }
+    ]}
+    usage={`import PageHero from '@/components/PageHero.astro';
+import HeroCopy from '@/components/HeroCopy.astro';
+
+<PageHero image={heroImg}>
+  <HeroCopy title="Features" description="Built for speed." />
+</PageHero>`}
+  >
+    <div class="space-y-6">
+      <PageHero image={heroVisual} compact headingId={null}>
+        <HeroCopy
+          headingTag="h2"
+          size="post"
+          title="PageHero + HeroCopy Atmospheric Band"
+          description="Uses Astro <Image> with tonal scrim overlays and RTL-agnostic vertical contrast gradients."
+        >
+          <Breadcrumbs
+            slot="prelude"
+            surface="hero"
+            separator="chevron"
+            size="xs"
+            truncateLast
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Features", href: "/features/" },
+              { label: "Design System" }
+            ]}
+          />
+        </HeroCopy>
+      </PageHero>
+
+      <PageHero image={heroVisual} compact headingId={null}>
+        <BlogPostHeroContent
+          headingTag="h2"
+          locale="en"
+          title="BlogPostHeroContent Article Band"
+          description="Composes HeroCopy + Breadcrumbs + localized categories, reading time, and publication date."
+          categories={["architecture"]}
+          author="Editorial Team"
+          body="Astro static site generation with zero client JS overhead and full RTL support."
+          publishedAt={new Date("2026-03-15")}
+          breadcrumbs={[
+            { label: "Home", href: "/" },
+            { label: "Blog", href: "/blog/" },
+            { label: "Sample Article" }
+          ]}
+        />
+      </PageHero>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-hero-split"
+    name="LandingHeroSplit & HomeHero"
+    category="Headers & Heroes"
+    title="LandingHeroSplit & HomeHero"
+    summary="LandingHeroSplit powers landing pages (see top of this page or subtle media slot preview below), while HomeHero renders the dark high-contrast homepage hero with kicker badge, gradient accent headline, and 3 proof highlights."
+    propsList={[
+      { name: "surface", type: "'default' | 'hero' | 'subtle'", defaultVal: "'default'", description: "Switches between standard background, subtle card, or dark hero canvas." },
+      { name: "title", type: "string", defaultVal: "m.block_hero_title", description: "Primary headline (use headingTag='h2' when previewing alongside a page's main <h1>)." },
+      { name: "primaryCta / secondaryCta", type: "HeroCtaAction | null", description: "Action buttons rendered via <Button>." },
+      { name: "highlights (HomeHero)", type: "readonly HighlightItem[]", description: "Three bottom proof columns rendered with staggered ChronoTrig reveals." }
+    ]}
+    usage={`import HomeHero from '@/components/HomeHero.astro';
+import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
+
+<LandingHeroSplit surface="subtle" headingTag="h2" compact />
+<HomeHero locale="en" primaryHref="/features/" highlights={[...]} />`}
+  >
+    <div class="space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <p class="text-sm text-muted">
+          The full-height <code dir="ltr" class="font-mono text-xs font-semibold text-fg">&lt;LandingHeroSplit surface="hero" /&gt;</code> renders at the top of this page; compact <code dir="ltr" class="font-mono text-xs font-semibold text-fg">headingTag="h2"</code> variants appear below.
+        </p>
+        <Button href="#hero-landing" variant="secondary" size="sm" icon="arrow-right">
+          Jump to live Hero
+        </Button>
+      </div>
+
+      <LandingHeroSplit
+        locale="en"
+        surface="subtle"
+        compact
+        headingTag="h2"
+        eyebrow="Subtle Surface · Custom Media Slot"
+        title="Productized split hero"
+        description="Accepts any custom visual in slot='media' alongside primary and secondary <Button> CTAs."
+        primaryCta={{ label: "Explore features", href: "/features/", icon: "arrow-right" }}
+        secondaryCta={{ label: "Pricing", href: "/pricing/" }}
+        trustNote="Responsive 12-column CSS grid · Zero physical classes"
+      >
+        <div slot="media" class="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div class="flex items-center justify-between border-b border-border pb-3">
+            <span class="text-xs font-semibold text-fg">Custom slot="media" Preview</span>
+            <UiBadge label="slot='media'" variant="info" size="sm" />
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <div class="rounded-xl border border-border bg-bg p-3">
+              <p class="text-xs text-muted">Build output</p>
+              <p class="mt-1 text-lg font-extrabold text-primary tabular-nums">100% SSG</p>
+            </div>
+            <div class="rounded-xl border border-border bg-bg p-3">
+              <p class="text-xs text-muted">Locales</p>
+              <p class="mt-1 text-lg font-extrabold text-fg tabular-nums">EN + FA</p>
+            </div>
+          </div>
+        </div>
+      </LandingHeroSplit>
+
+      <HomeHero
+        locale="en"
+        compact
+        headingTag="h2"
+        description="The homepage hero uses OKLCH gradient accents and a 3-column proof bar built with CSS logical borders."
+        primaryHref="/features/"
+        secondaryHref="/blog/"
+        highlights={[
+          { key: "architecture", icon: "layers", title: "Three-Tier SSOT", description: "Upgrade core cleanly without touching client files." },
+          { key: "rtl", icon: "globe", title: "Native RTL/LTR", description: "Mirrored padding, borders, icons, and Persian digits." },
+          { key: "perf", icon: "bolt", title: "Pure Static Edge", description: "Pre-rendered HTML, WebP assets, and Pagefind search." }
+        ]}
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-promo-banner"
+    surface="surface"
+    name="PromoBanner"
+    category="Hero & Banners"
+    title="PromoBanner"
+    summary="Dismissible announcement bar supporting 4 theme-aware surfaces, an optional badge pill, leading icon, and compact action button."
+    propsList={[
+      { name: "variant", type: "'primary' | 'hero' | 'surface' | 'accent'", defaultVal: "'hero'", description: "Theme surface and automatic CTA contrast." },
+      { name: "badge", type: "string | null", defaultVal: "m.block_promo_badge", description: "Leading pill label; pass null to hide." },
+      { name: "message", type: "string", defaultVal: "m.block_promo_message", description: "Announcement text." },
+      { name: "cta", type: "PromoBannerCta | null", defaultVal: "Features link", description: "Optional compact <Button>." },
+      { name: "dismissible", type: "boolean", defaultVal: "false", description: "Adds session-persisted close IconButton." }
+    ]}
+    usage={`import PromoBanner from '@/components/PromoBanner.astro';
+
+<PromoBanner
+  id="release-bar"
+  variant="primary"
+  dismissible
+/>`}
+  >
+    <div class="space-y-3">
+      <PromoBanner id="demo-promo-hero" contained variant="hero" dismissible />
+      <PromoBanner id="demo-promo-primary" contained variant="primary" />
+      <PromoBanner id="demo-promo-accent" contained variant="accent" badge="Tip" message="Pass contained when nesting inside custom wrappers." cta={null} />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-partner-logos"
+    name="PartnerLogos"
+    category="Hero & Banners"
+    title="PartnerLogos"
+    summary="Responsive partner and ecosystem strip displaying crisp semantic badges with icons, titles, and category tags."
+    propsList={[
+      { name: "items", type: "PartnerItem[]", defaultVal: "5 ecosystem items", description: "List of { name, tagline?, icon?, href? }." },
+      { name: "columns", type: "4 | 5 | 6", defaultVal: "5", description: "Grid columns on desktop viewports." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "Avoids nested horizontal gutters inside other containers." }
+    ]}
+    usage={`import PartnerLogos from '@/components/PartnerLogos.astro';
+
+<PartnerLogos columns={5} surface="subtle" />`}
+  >
+    <PartnerLogos contained eyebrow={null} heading={null} />
+  </ComponentDoc>
+</div>
+
+<div id="sec-features" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-about-split"
+    surface="surface"
+    name="AboutSplitSection"
+    category="Features & Content"
+    title="AboutSplitSection"
+    summary="Two-column feature/about split supporting start or end media order, checklist highlights, tabular KPI stats, dual CTAs, and optimized Astro <Image>."
+    propsList={[
+      { name: "mediaPosition", type: "'start' | 'end'", defaultVal: "'end'", description: "Places image/media slot before or after copy on desktop." },
+      { name: "highlights", type: "string[]", defaultVal: "3 localized bullets", description: "Checklist rows with circle-check icons." },
+      { name: "stats", type: "AboutStat[]", description: "Optional { label, value?, count?, suffix? } row formatted via formatNumber()." },
+      { name: "image", type: "ImageMetadata | null", defaultVal: "DEFAULT_HERO_IMAGE", description: "Image asset or pass slot='media' for custom visuals." },
+      { name: "primaryCta / secondaryCta", type: "AboutCtaAction | null", description: "Primary and secondary action buttons." }
+    ]}
+    usage={`import AboutSplitSection from '@/components/AboutSplitSection.astro';
+
+<AboutSplitSection
+  mediaPosition="start"
+  stats={[
+    { label: "Components", count: 39, suffix: "+" },
+    { label: "Locales", count: 2 }
+  ]}
+/>`}
+  >
+    <div class="space-y-10">
+      <AboutSplitSection
+        contained
+        mediaPosition="end"
+        stats={[
+          { label: "Reusable Blocks", count: 47 },
+          { label: "Theme Presets", count: 6 },
+          { label: "Server Dependencies", count: 0 }
+        ]}
+      />
+      <div class="border-t border-border pt-10">
+        <AboutSplitSection
+          id="demo-about-start"
+          contained
+          mediaPosition="start"
+          eyebrow="mediaPosition='start'"
+          heading="Composable media slot ordering"
+          description="Flip column order cleanly using logical flex/grid utilities while passing custom metrics or Astro components into slot='media'."
+          highlights={[
+            "Logical CSS order swaps columns without duplicating DOM nodes",
+            "Renders default optimized <Image> or custom slot='media' markup"
+          ]}
+          primaryCta={{ label: "Inspect Features", href: "/features/", icon: "arrow-right" }}
+        >
+          <div slot="media" class="rounded-3xl border border-border bg-surface p-6 shadow-sm">
+            <p class="section-kicker">Custom slot="media"</p>
+            <h3 class="mt-2 text-lg font-bold text-fg">Drop in any live visual</h3>
+            <p class="mt-1.5 text-sm text-muted">Ideal for dashboards, code architecture cards, or interactive KPI blocks.</p>
+            <div class="mt-5 space-y-3">
+              <UiProgress variant="bar" value={100} tone="success" size="sm" label="Static HTML + WebP output" />
+              <UiProgress variant="bar" value={96} tone="primary" size="sm" label="Logical RTL coverage" />
+            </div>
+          </div>
+        </AboutSplitSection>
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-bento"
+    name="BentoCapabilities"
+    category="Features & Content"
+    title="BentoCapabilities"
+    summary="Asymmetric 2-column Bento showcase with optional wide spanning cards, icon badges, optional clickable card links, and numbered sequence indices."
+    propsList={[
+      { name: "items", type: "BentoItem[]", defaultVal: "4 capability cards", description: "Each item accepts { title, description, icon?, wide?, href? }." },
+      { name: "numbered", type: "boolean", defaultVal: "true", description: "Renders localized 01, 02 indices in the top corner." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "Skips redundant .layout-container padding." }
+    ]}
+    usage={`import BentoCapabilities from '@/components/BentoCapabilities.astro';
+
+<BentoCapabilities
+  items={[
+    { wide: true, icon: "sparkles", title: "Modular", description: "...", href: "/features/" },
+    { icon: "globe", title: "RTL Native", description: "..." }
+  ]}
+/>`}
+  >
+    <BentoCapabilities
+      contained
+      eyebrow={null}
+      heading={null}
+      subheading={null}
+      items={[
+        {
+          wide: true,
+          icon: "globe",
+          title: "Prefix-less Routing & RTL Mirroring",
+          description: "Default locale lives cleanly at root while secondary locales add prefixes, Persian digits, and flipped directional icons.",
+          href: "/features/"
+        },
+        {
+          icon: "palette",
+          title: "OKLCH Brand Presets",
+          description: "6 curated themes with instant dark/light contrast calibration."
+        },
+        {
+          icon: "code",
+          title: "Typed SSOT Config",
+          description: "app.config.json merged safely with sparse client overrides."
+        },
+        {
+          wide: true,
+          icon: "rocket",
+          title: "Pure Static Edge Delivery",
+          description: "Includes Pagefind multilingual search, Atom RSS feeds, sitemaps, and branded Open Graph PNG generation.",
+          href: "/pricing/"
+        }
+      ]}
+    />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-feature-tabs"
+    surface="surface"
+    name="FeatureTabsSection"
+    category="Features & Content"
+    title="FeatureTabsSection"
+    summary="Accessible interactive tab switcher with keyboard ArrowLeft/ArrowRight navigation (RTL-aware), pill or underline tab styles, optional tab CTA links, and ChronoTrig integration."
+    propsList={[
+      { name: "tabs", type: "FeatureTabItem[]", defaultVal: "3 architecture tabs", description: "Array of { id, label, title, description, icon?, highlights?, cta?, image? }." },
+      { name: "variant", type: "'pills' | 'underline'", defaultVal: "'pills'", description: "Visual tab bar style." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "Sets bleed={contained} on wrapper PageSection." }
+    ]}
+    usage={`import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
+
+<FeatureTabsSection variant="pills" />
+<FeatureTabsSection variant="underline" tabs={[...]} />`}
+  >
+    <div class="space-y-10">
+      <FeatureTabsSection contained variant="pills" />
+      <div class="border-t border-border pt-10">
+        <FeatureTabsSection
+          id="demo-tabs-underline"
+          contained
+          variant="underline"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+          tabs={[
+            {
+              id: "underline-ui",
+              label: "Underline Variant + CTA",
+              icon: "layers",
+              title: "Underline tab bar with action CTA",
+              description: "Pairs clean editorial tab underlines with an embedded action <Button> and optimized cover visual.",
+              highlights: ["ArrowLeft/ArrowRight mirrors automatically in RTL", "Refreshes ChronoTrig reveals on panel switch"],
+              cta: { label: "Explore Features", href: "/features/", icon: "arrow-right" },
+              image: heroVisual,
+              imageAlt: "Underline tabs preview"
+            },
+            {
+              id: "underline-seo",
+              label: "SEO & Feeds",
+              icon: "search",
+              title: "Static metadata & feeds built in",
+              description: "Every route emits canonical URLs, hreflang links, Schema.org JSON-LD, and localized Atom RSS feeds.",
+              highlights: ["Zero-dependency OG PNG generation", "Pagefind index normalized for Persian ZWNJ"],
+              cta: { label: "View Pricing", href: "/pricing/", icon: "tag" },
+              image: heroVisual,
+              imageAlt: "SEO preview"
+            }
+          ]}
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-process-steps"
+    name="ProcessSteps"
+    category="Features & Content"
+    title="ProcessSteps"
+    summary="Structured onboarding or workflow showcase supporting connected horizontal timeline or card grid layouts, localized step numbers, and an optional bottom CTA button."
+    propsList={[
+      { name: "steps", type: "ProcessStep[]", defaultVal: "4 workflow steps", description: "Array of { title, description, icon?, stepLabel? }." },
+      { name: "variant", type: "'cards' | 'timeline'", defaultVal: "'cards'", description: "Switches between bordered cards and connected timeline track." },
+      { name: "cta", type: "ProcessCta", description: "Optional button placed below the steps grid." }
+    ]}
+    usage={`import ProcessSteps from '@/components/ProcessSteps.astro';
+
+<ProcessSteps variant="timeline" />
+<ProcessSteps variant="cards" cta={{ label: "Start now", href: "/pricing/" }} />`}
+  >
+    <div class="space-y-10">
+      <ProcessSteps contained variant="timeline" />
+      <div class="border-t border-border pt-10">
+        <ProcessSteps
+          id="demo-steps-cards"
+          contained
+          variant="cards"
+          eyebrow="variant='cards'"
+          heading="3-Step Cards Layout"
+          subheading="Pass 3 steps for a 3-column grid and supply cta for a closing action button."
+          steps={[
+            { title: "Configure Tokens", description: "Set site name, OKLCH preset, and font stacks via client/config.json.", icon: "palette" },
+            { title: "Author MDX Pages", description: "Compose sections freely using hero: 'none' and container: 'canvas'.", icon: "code" },
+            { title: "Verify & Deploy", description: "Run lint, audit:i18n, link:check, and publish static dist/ anywhere.", icon: "rocket" }
+          ]}
+          cta={{ label: "Explore Plans", href: "/pricing/", icon: "arrow-right" }}
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-feature-cards"
+    surface="surface"
+    name="FeatureCardGrid"
+    category="Features & Content"
+    title="FeatureCardGrid"
+    summary="Multi-column showcase grid with optional <Image> covers or icon frames, corner badges, chip tags, and full-card clickable links."
+    propsList={[
+      { name: "items", type: "FeatureCardItem[]", defaultVal: "3 cards", description: "Accepts { title, description, badge?, icon?, image?, tags?, href?, ctaLabel? }." },
+      { name: "columns", type: "2 | 3 | 4", defaultVal: "3", description: "Desktop grid column count." },
+      { name: "aspect", type: "'16/9' | '4/3'", defaultVal: "'16/9'", description: "Media container aspect ratio." }
+    ]}
+    usage={`import FeatureCardGrid from '@/components/FeatureCardGrid.astro';
+
+<FeatureCardGrid columns={3} aspect="16/9" />`}
+  >
+    <div class="space-y-10">
+      <FeatureCardGrid contained columns={3} eyebrow={null} heading={null} subheading={null} />
+      <div class="border-t border-border pt-10">
+        <FeatureCardGrid
+          id="demo-cards-visual"
+          contained
+          columns={2}
+          aspect="4/3"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+          items={[
+            {
+              badge: "2-Col · 4/3 Image",
+              title: "Visual Cover Card With Tags",
+              description: "Passes an ImageMetadata asset, corner hero badge, chip tags, and full-card accessible link.",
+              image: heroVisual,
+              imageAlt: "Cover card preview",
+              tags: ["Astro Image", "WebP", "tags[]"],
+              href: "/features/",
+              ctaLabel: "Open Features"
+            },
+            {
+              badge: "Icon Frame + Tags",
+              title: "Icon-Fallback Feature Card",
+              description: "Omitting image renders a gradient icon frame automatically while keeping uniform 4/3 alignment.",
+              icon: "shield",
+              tags: ["Zero CLS", "RTL Safe", "OKLCH"],
+              href: "/pricing/",
+              ctaLabel: "View Plans"
+            }
+          ]}
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-proof-stats"
+    name="ProofStatsRow"
+    category="Features & Content"
+    title="ProofStatsRow"
+    summary="High-contrast tabular KPI metric strip supporting raw display values or numeric counts formatted via formatNumber()."
+    propsList={[
+      { name: "items", type: "ProofStatItem[]", defaultVal: "4 metric items", description: "Array of { label, value?, count?, prefix?, suffix?, context? }." },
+      { name: "eyebrow / heading", type: "string | null", description: "Optional header above the metric grid." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "Controls outer PageSection alignment." }
+    ]}
+    usage={`import ProofStatsRow from '@/components/ProofStatsRow.astro';
+
+<ProofStatsRow
+  items={[
+    { count: 100, suffix: "%", label: "Static", context: "Zero server runtime" }
+  ]}
+/>`}
+  >
+    <ProofStatsRow contained eyebrow={null} heading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-comparison-table"
+    surface="surface"
+    name="ComparisonTable"
+    category="Features & Content"
+    title="ComparisonTable"
+    summary="Responsive matrix comparing tiers or editions side by side, rendering semantic check/minus icons for booleans or custom strings, plus highlighted recommended columns."
+    propsList={[
+      { name: "columns", type: "ComparisonColumn[]", description: "Plan headers with { key, name, subtitle?, highlighted?, badge? }." },
+      { name: "rows", type: "ComparisonRow[]", description: "Rows with { feature, note?, values: Record<string, boolean | string> }." },
+      { name: "featureColumnLabel", type: "string", defaultVal: "m.block_compare_feature_col", description: "Header text for the first capability column." }
+    ]}
+    usage={`import ComparisonTable from '@/components/ComparisonTable.astro';
+
+<ComparisonTable surface="subtle" />`}
+  >
+    <ComparisonTable contained eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+</div>
+
+<div id="sec-proof" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-pricing"
+    name="PricingSection"
+    category="Pricing & Social Proof"
+    title="PricingSection"
+    summary="Conversion-ready tier cards supporting highlighted recommended plans, feature checklists, and an interactive Monthly / Annual billing toggle."
+    propsList={[
+      { name: "tiers", type: "PricingTier[]", defaultVal: "3 localized tiers", description: "Tier specs including monthlyPrice, annualPrice, features[], badge?, featured?, ctaLabel, ctaHref." },
+      { name: "billingToggle", type: "boolean", defaultVal: "false", description: "Enables interactive Monthly vs. Annual price switching." },
+      { name: "defaultBilling", type: "'monthly' | 'annual'", defaultVal: "'monthly'", description: "Initial billing interval when toggle is active." },
+      { name: "annualSaveBadge", type: "string", defaultVal: "m.block_pricing_save_badge", description: "Discount badge beside Annual toggle." }
+    ]}
+    usage={`import PricingSection from '@/components/PricingSection.astro';
+
+<PricingSection billingToggle defaultBilling="monthly" />`}
+  >
+    <PricingSection contained billingToggle defaultBilling="monthly" eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-testimonials"
+    surface="surface"
+    name="TestimonialGrid"
+    category="Pricing & Social Proof"
+    title="TestimonialGrid"
+    summary="Editorial social proof cards pairing 5-star ratings, quote icons, customer avatars (photo or auto-initials), and role metadata."
+    propsList={[
+      { name: "items", type: "TestimonialItem[]", defaultVal: "3 reviews", description: "Array of { quote, author, role?, rating?, avatar? }." },
+      { name: "eyebrow / heading / subheading", type: "string | null", description: "Section header copy; defaults to localized messages." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "Embeds cleanly inside custom containers." }
+    ]}
+    usage={`import TestimonialGrid from '@/components/TestimonialGrid.astro';
+
+<TestimonialGrid surface="subtle" />`}
+  >
+    <TestimonialGrid
+      contained
+      eyebrow={null}
+      heading={null}
+      subheading={null}
+      items={[
+        {
+          quote: "Switching a brochure and technical blog into bilingual English + Persian took hours instead of weeks—logical CSS handled the entire mirror cleanly.",
+          author: "Nadia Karimi",
+          role: "Design Systems Lead",
+          company: "Karo Studio",
+          rating: 5
+        },
+        {
+          quote: "Pagefind search normalizing ZWNJ and Arabic numerals solved our biggest Persian UX complaint right out of the box.",
+          author: "Daniel Becker",
+          role: "Staff Frontend Engineer",
+          company: "NordicEdge",
+          rating: 5
+        },
+        {
+          quote: "Zero runtime servers and clean Three-Tier separation mean upstream fixes never conflict with our client pages or navigation.",
+          author: "Sara Ahmadi",
+          role: "Technical Director",
+          company: "Vira Web",
+          rating: 4
+        }
+      ]}
+    />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-gallery"
+    name="ImageGallerySection"
+    category="Media & Gallery"
+    title="ImageGallerySection"
+    summary="Interactive visual gallery featuring instant category filter chips (with ChronoTrig reveal refresh) and an accessible modal <dialog> lightbox powered by <IconButton />."
+    propsList={[
+      { name: "items", type: "GalleryItem[]", defaultVal: "3 sample items", description: "Array of { title, caption?, category?, image?, alt? }." },
+      { name: "columns", type: "2 | 3 | 4", defaultVal: "3", description: "Desktop column count." },
+      { name: "enableFilter", type: "boolean", defaultVal: "true", description: "Displays category filter pills when 2+ categories exist." },
+      { name: "enableLightbox", type: "boolean", defaultVal: "true", description: "Enables the preview dialog modal on image cards." }
+    ]}
+    usage={`import ImageGallerySection from '@/components/ImageGallerySection.astro';
+
+<ImageGallerySection columns={3} enableFilter enableLightbox />`}
+  >
+    <ImageGallerySection contained columns={3} enableFilter enableLightbox />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-carousel"
+    surface="surface"
+    name="CarouselSection"
+    category="Media & Commerce"
+    title="CarouselSection"
+    summary="RTL-aware slide carousel with keyboard Left/Right navigation, clickable slide dots, localized counters via formatNumber(), and reduced-motion autoplay handling."
+    propsList={[
+      { name: "slides", type: "CarouselSlide[]", defaultVal: "3 localized slides", description: "Array of { title, description, badge?, image?, ctaLabel?, ctaHref? }." },
+      { name: "autoplay", type: "boolean", defaultVal: "false", description: "Rotates slides automatically unless html[data-motion='reduced'] is set." },
+      { name: "intervalMs", type: "number", defaultVal: "6000", description: "Autoplay interval in milliseconds." }
+    ]}
+    usage={`import CarouselSection from '@/components/CarouselSection.astro';
+
+<CarouselSection autoplay={false} surface="default" />`}
+  >
+    <CarouselSection contained eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-products"
+    name="ProductShowcaseGrid"
+    category="Media & Commerce"
+    title="ProductShowcaseGrid"
+    summary="E-commerce product catalog cards featuring discount/status badges, localized pricing and star ratings, category filter chips with ChronoTrig cascade replay, and <IconButton /> wishlist toggles."
+    propsList={[
+      { name: "items", type: "ProductItem[]", defaultVal: "3 sample items", description: "Product cards with { title, description, price, compareAtPrice?, currency?, category?, rating?, reviewCount?, image? }." },
+      { name: "columns", type: "2 | 3 | 4", defaultVal: "3", description: "Desktop grid column count." },
+      { name: "enableFilter", type: "boolean", defaultVal: "true", description: "Displays category chips when 2+ categories exist." }
+    ]}
+    usage={`import ProductShowcaseGrid from '@/components/ProductShowcaseGrid.astro';
+
+<ProductShowcaseGrid columns={3} enableFilter />`}
+  >
+    <ProductShowcaseGrid contained columns={3} enableFilter eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-latest-posts"
+    surface="surface"
+    name="LatestPostsSection & PostCard"
+    category="Editorial & Blog"
+    title="LatestPostsSection & PostCard"
+    summary="Automatically queries published blog articles in the active locale using getSortedLocaleEntries() and renders DRY <PostCard headingTag='h3' /> cards—or accepts custom items."
+    propsList={[
+      { name: "limit", type: "number", defaultVal: "3", description: "Maximum number of blog articles queried automatically." },
+      { name: "category", type: "string", description: "Optional blog category filter slug." },
+      { name: "items", type: "BlogPreviewItem[]", description: "Optional custom card array bypassing the content collection query." },
+      { name: "viewAllHref / viewAllLabel", type: "string | null", defaultVal: "Blog index", description: "Top-right CTA button target; pass null to hide." }
+    ]}
+    usage={`import LatestPostsSection from '@/components/LatestPostsSection.astro';
+
+<LatestPostsSection limit={3} surface="default" />`}
+  >
+    <LatestPostsSection contained limit={3} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-team"
+    name="TeamSection"
+    category="Pricing & Social Proof"
+    title="TeamSection"
+    summary="Clean 4-column team directory cards supporting optimized Astro portraits or semantic initials badges, roles, bios, and profile action links."
+    propsList={[
+      { name: "members", type: "TeamMember[]", defaultVal: "4 team profiles", description: "Array of { name, role, bio?, avatar?, links?: [{ label, href, icon?, external? }] }." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "Controls PageSection outer container." }
+    ]}
+    usage={`import TeamSection from '@/components/TeamSection.astro';
+
+<TeamSection members={[{ name: "Aria Parsa", role: "Architect", links: [{ label: "Features", href: "/features/", icon: "globe" }] }]} />`}
+  >
+    <TeamSection
+      contained
+      eyebrow={null}
+      heading={null}
+      subheading={null}
+      members={[
+        {
+          name: "Aria Parsa",
+          role: "Systems Architect",
+          bio: "Leads Three-Tier workspace decoupling, Zod schemas, and Astro v7 static routing.",
+          links: [
+            { label: "Architecture", href: "/features/", icon: "globe" },
+            { label: "Components", href: "#catalog-nav", icon: "code" }
+          ]
+        },
+        {
+          name: "Elena Rostova",
+          role: "Design Systems Lead",
+          bio: "Maintains OKLCH semantic tokens, container typography, and glass surface treatments.",
+          links: [{ label: "Design System", href: "/features/#design", icon: "palette" }]
+        },
+        {
+          name: "Omid Tehrani",
+          role: "i18n & RTL Specialist",
+          bio: "Oversees Paraglide dictionaries, Persian ZWNJ search folding, and Solar Hijri dates.",
+          links: [{ label: "RTL Engine", href: "/features/#rtl", icon: "globe" }]
+        },
+        {
+          name: "Marcus Lind",
+          role: "Performance Engineer",
+          bio: "Zero-CLS scroll choreography with ChronoTrig, Lenis motion guards, and automated smoke checks.",
+          links: [{ label: "Pricing & Plans", href: "/pricing/", icon: "rocket" }]
+        }
+      ]}
+    />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-faq"
+    surface="surface"
+    name="FaqAccordion"
+    category="Editorial & Documentation"
+    title="FaqAccordion"
+    summary="Native <details>/<summary> FAQ accordion requiring zero JavaScript for toggling, with optional FAQPage JSON-LD schema output."
+    propsList={[
+      { name: "items", type: "FaqItem[]", defaultVal: "3 localized FAQs", description: "Array of { question, answer }." },
+      { name: "openFirst", type: "boolean", defaultVal: "true", description: "Expands the first item on initial render." },
+      { name: "emitSchema", type: "boolean", defaultVal: "true", description: "Injects Schema.org FAQPage structured data when true." }
+    ]}
+    usage={`import FaqAccordion from '@/components/FaqAccordion.astro';
+
+<FaqAccordion openFirst emitSchema={true} />`}
+  >
+    <FaqAccordion contained openFirst emitSchema={false} eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+</div>
+
+<div id="sec-conversion" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-contact-split"
+    name="ContactSplitSection & ContactForm"
+    category="Forms & Conversion"
+    title="ContactSplitSection & ContactForm"
+    summary="ContactSplitSection pairs localized channels with <ContactForm embedded />, while standalone <ContactForm /> renders a self-contained inquiry card with intro copy. Both use <UiInput /> and preserve Pure-SSG mailto fallbacks."
+    propsList={[
+      { name: "channels", type: "ContactChannel[]", defaultVal: "Email, hours, location", description: "Direct channel cards rendered in the start column of ContactSplitSection." },
+      { name: "embedded (ContactForm)", type: "boolean", defaultVal: "false", description: "Omits the outer card frame and intro column when placed inside ContactSplitSection." },
+      { name: "id", type: "string", description: "Optional anchor ID (defaults to 'contact-inquiry' on standalone forms)." }
+    ]}
+    usage={`import ContactForm from '@/components/ContactForm.astro';
+import ContactSplitSection from '@/components/ContactSplitSection.astro';
+
+<ContactSplitSection id="contact" surface="default" />
+<ContactForm id="contact-inquiry" locale="en" />`}
+  >
+    <div class="space-y-10">
+      <ContactSplitSection id="demo-contact-split" contained />
+      <div class="border-t border-border pt-8">
+        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+          Standalone &lt;ContactForm /&gt;
+        </p>
+        <ContactForm id="demo-contact-standalone" locale="en" />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-auth-card"
+    surface="surface"
+    name="AuthFormCard"
+    category="Forms & Conversion"
+    title="AuthFormCard"
+    summary="Pure-SSG authentication card reusing <UiInput /> and <UiCheckbox />, supporting Sign-in / Create-account tabs, password toggles, or static mailto fallback."
+    propsList={[
+      { name: "mode", type: "'login' | 'signup'", defaultVal: "'login'", description: "Initial active authentication mode." },
+      { name: "endpoint", type: "string", description: "External auth API URL; renders mailto fallback if omitted without preview." },
+      { name: "preview", type: "boolean", defaultVal: "false", description: "Enables interactive client-side UI validation for component showcase pages." },
+      { name: "showSocialButtons", type: "boolean", defaultVal: "true", description: "Renders OAuth/SSO provider buttons." }
+    ]}
+    usage={`import AuthFormCard from '@/components/AuthFormCard.astro';
+
+<AuthFormCard endpoint="https://api.example.com/auth" mode="login" />
+<AuthFormCard preview mode="signup" showSocialButtons={false} />`}
+  >
+    <div class="grid gap-8 lg:grid-cols-2">
+      <AuthFormCard id="demo-auth-login" contained preview mode="login" eyebrow="mode='login'" />
+      <AuthFormCard id="demo-auth-signup" contained preview mode="signup" showSocialButtons={false} eyebrow="mode='signup' · No Social Buttons" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-newsletter"
+    name="NewsletterBanner"
+    category="Forms & Conversion"
+    title="NewsletterBanner"
+    summary="Pure-SSG subscription block connecting directly to external headless APIs (or gracefully falling back to site.contactEmail when unconfigured)."
+    propsList={[
+      { name: "eyebrow / title / subtitle", type: "string", defaultVal: "Localized newsletter_* keys", description: "Banner heading and supporting copy." },
+      { name: "endpoint / baseUrl", type: "string", defaultVal: "app.config.json", description: "Optional API endpoint override for subscription requests." },
+      { name: "source", type: "string", defaultVal: "'newsletter-banner'", description: "Identifier sent with submission payloads." }
+    ]}
+    usage={`import NewsletterBanner from '@/components/NewsletterBanner.astro';
+
+<NewsletterBanner source="footer-signup" />`}
+  >
+    <NewsletterBanner id="demo-newsletter" contained />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-cta-banner"
+    surface="surface"
+    name="CtaBanner"
+    category="Forms & Conversion"
+    title="CtaBanner"
+    summary="High-contrast closing call-to-action card with atmospheric hero or light neutral card surfaces and dual action buttons."
+    propsList={[
+      { name: "surface", type: "'hero' | 'surface'", defaultVal: "'hero'", description: "Dark branded hero card or light neutral card surface." },
+      { name: "title / description / eyebrow", type: "string | null", defaultVal: "Localized home_cta_*", description: "Closing banner copy." },
+      { name: "primaryCta / secondaryCta", type: "CtaAction | null", description: "Action links rendered via <Button>." }
+    ]}
+    usage={`import CtaBanner from '@/components/CtaBanner.astro';
+
+<CtaBanner surface="hero" title="Ready to launch?" primaryCta={{ label: "Get started", href: "/pricing/" }} />
+<CtaBanner surface="surface" title="Prefer a lighter editorial tone?" />`}
+  >
+    <div class="space-y-6">
+      <CtaBanner id="demo-cta-banner" contained surface="hero" />
+      <CtaBanner
+        id="demo-cta-surface"
+        contained
+        surface="surface"
+        eyebrow="surface='surface'"
+        title="Light surface variant for subtle mid-page CTAs"
+        description="Matches surface cards seamlessly while keeping high-contrast typography and <Button> action hierarchy."
+        primaryCta={{ label: "Inspect Pricing", href: "/pricing/", icon: "arrow-right" }}
+        secondaryCta={{ label: "Explore Features", href: "/features/" }}
+      />
+    </div>
+  </ComponentDoc>
+</div>

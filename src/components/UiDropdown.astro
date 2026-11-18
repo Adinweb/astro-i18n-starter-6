@@ -6,6 +6,7 @@
  * and Paraglide defaults.
  */
 import Icon from '@/components/Icon.astro';
+import UiBadge from '@/components/UiBadge.astro';
 import type { Locale } from '@/i18n/locales';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale } from '@/libs/ui/locale';
@@ -117,17 +118,20 @@ const TRIGGER_VARIANTS = {
     ]}
   >
     {
-      resolvedItems.map((item) => (
-        <>
-          {item.dividerBefore && <div role="separator" class="my-1 h-px bg-border" />}
-          {item.href ? (
-            <a
+      resolvedItems.map((item) => {
+        const ItemTag = item.href ? 'a' : 'button';
+        return (
+          <>
+            {item.dividerBefore && <div role="separator" class="my-1 h-px bg-border" />}
+            <ItemTag
               href={item.href}
+              type={item.href ? undefined : 'button'}
               role="menuitem"
               tabindex="-1"
               data-ui-dropdown-item
               class:list={[
                 'flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-xs font-medium transition-colors focus:outline-none focus-visible:bg-surface-hover sm:text-sm',
+                !item.href && 'w-full cursor-pointer text-start',
                 item.danger
                   ? 'text-error hover:bg-error/10'
                   : 'text-fg hover:bg-surface-hover',
@@ -144,43 +148,12 @@ const TRIGGER_VARIANTS = {
                 <span class="truncate">{item.label}</span>
               </span>
               {item.badge && (
-                <span class="rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-semibold text-muted">
-                  {item.badge}
-                </span>
+                <UiBadge label={item.badge} variant="neutral" size="sm" class="text-[10px]" />
               )}
-            </a>
-          ) : (
-            <button
-              type="button"
-              role="menuitem"
-              tabindex="-1"
-              data-ui-dropdown-item
-              class:list={[
-                'flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-start text-xs font-medium transition-colors focus:outline-none focus-visible:bg-surface-hover sm:text-sm',
-                item.danger
-                  ? 'text-error hover:bg-error/10'
-                  : 'text-fg hover:bg-surface-hover',
-              ]}
-            >
-              <span class="flex min-w-0 items-center gap-2.5">
-                {item.icon && (
-                  <Icon
-                    name={item.icon}
-                    size={16}
-                    class:list={['shrink-0', item.danger ? 'text-error' : 'text-primary']}
-                  />
-                )}
-                <span class="truncate">{item.label}</span>
-              </span>
-              {item.badge && (
-                <span class="rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-semibold text-muted">
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          )}
-        </>
-      ))
+            </ItemTag>
+          </>
+        );
+      })
     }
   </div>
 </div>

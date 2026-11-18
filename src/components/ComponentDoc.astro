@@ -4,6 +4,7 @@
  * a concise explanation, key prop table, and copyable Astro/MDX usage snippet.
  * Uses semantic OKLCH tokens, CSS logical properties, and compiled Paraglide UI labels.
  */
+import Button from '@/components/Button.astro';
 import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
 import UiBadge from '@/components/UiBadge.astro';
@@ -150,9 +151,12 @@ const cardSurface = surface === 'surface' ? 'bg-bg' : 'bg-surface';
                           {prop.name}
                         </code>
                         {prop.required && (
-                          <span class="ms-1.5 inline-flex rounded-full bg-error/10 px-2 py-0.5 text-[10px] font-semibold text-error">
-                            {labels.required}
-                          </span>
+                          <UiBadge
+                            label={labels.required}
+                            variant="error"
+                            size="sm"
+                            class="ms-1.5 text-[10px]"
+                          />
                         )}
                       </td>
                       <td class="whitespace-nowrap px-4 py-3">
@@ -193,17 +197,19 @@ const cardSurface = surface === 'surface' ? 'bg-bg' : 'bg-surface';
                 <Icon name="file" size={16} class="text-primary" />
                 <h3 class="text-sm font-bold text-fg">{labels.usage}</h3>
               </div>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
+                icon="copy"
+                iconPosition="start"
                 data-doc-copy
                 data-label-copy={labels.copy}
                 data-label-copied={labels.copied}
                 data-code={usage}
-                class="ghost-control inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold cursor-pointer print:hidden"
+                class="print:hidden"
               >
-                <Icon name="copy" size={14} />
                 <span data-doc-copy-label>{labels.copy}</span>
-              </button>
+              </Button>
             </div>
             <pre
               dir="ltr"

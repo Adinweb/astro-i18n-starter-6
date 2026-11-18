@@ -9,8 +9,27 @@ draft: false
 ---
 
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
+import CtaBanner from '@/components/CtaBanner.astro';
+import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
+import ProcessSteps from '@/components/ProcessSteps.astro';
+import ProofStatsRow from '@/components/ProofStatsRow.astro';
+
+<ProofStatsRow
+  contained
+  locale="en"
+  eyebrow="Architecture Metrics"
+  heading="Built for Speed, Reach, and Consistency"
+  subheading="Every route ships pre-rendered HTML with logical CSS geometry and zero server runtime overhead."
+  items={[
+    { count: 100, suffix: "%", label: "Static SSG Output", context: "Zero runtime server dependencies" },
+    { count: 47, suffix: "+", label: "Reusable Components", context: "Section blocks and UI primitives" },
+    { count: 6, label: "OKLCH Theme Presets", context: "Calibrated light & dark contrast" },
+    { count: 2, suffix: "+", label: "Native RTL/LTR Scripts", context: "Expandable via CLI tooling" },
+  ]}
+/>
 
 <BentoCapabilities
+  contained
   locale="en"
   heading="Everything Included Out of the Box"
   subheading="Modular architecture engineered for fast client onboarding, strict type safety, and polished typography in every script."
@@ -43,6 +62,15 @@ import BentoCapabilities from '@/components/BentoCapabilities.astro';
   ]}
 />
 
+<FeatureTabsSection
+  contained
+  locale="en"
+  variant="underline"
+  eyebrow="Interactive Architecture"
+  heading="Inspect Each Layer"
+  subheading="Switch tabs to explore how routing, Perso-Arabic search, and verification checks work together."
+/>
+
 <section id="rtl" class="scroll-mt-28">
 
 ## Native RTL/LTR Architecture
@@ -58,3 +86,23 @@ Directional styling relies exclusively on CSS logical properties (`ms-*`, `me-*`
 Semantic color roles live once in `src/styles/global.css` and resolve dynamically from `app.config.json` and `theme-presets.json`. Composable surface utilities (`.glass-surface`, `.layout-container`) and primitive UI controls (`<Button>`, `<IconButton>`, `<Icon>`) keep contrast, spacing, and typography consistent across every page.
 
 </section>
+
+<ProcessSteps
+  contained
+  locale="en"
+  variant="timeline"
+  eyebrow="Client Delivery Flow"
+  heading="From Blank Clone to Production Launch"
+  subheading="Standardized onboarding commands take you from brand setup to verified static output in minutes."
+/>
+
+<CtaBanner
+  contained
+  locale="en"
+  surface="hero"
+  eyebrow="Interactive Catalog"
+  title="Preview Every UI Primitive & Section Live"
+  description="Browse interactive buttons, modals, inputs, pricing tables, galleries, and carousels in both English and Persian."
+  primaryCta={{ label: "Browse Components", href: "/components/", icon: "arrow-right" }}
+  secondaryCta={{ label: "View Pricing", href: "/pricing/" }}
+/>

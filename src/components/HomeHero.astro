@@ -42,14 +42,28 @@ interface Props {
     title: string;
     description: string;
   }[];
+  headingTag?: 'h1' | 'h2';
+  compact?: boolean;
 }
 
-const { locale, description, primaryHref, secondaryHref, highlights } = Astro.props;
+const {
+  locale,
+  description,
+  primaryHref,
+  secondaryHref,
+  highlights,
+  headingTag = 'h1',
+  compact = false,
+} = Astro.props;
+const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
 ---
 
 <section
-  aria-labelledby={HERO_TITLE_ID}
-  class="relative isolate overflow-hidden bg-hero-base text-hero-fg print:bg-bg print:text-fg"
+  aria-labelledby={titleId}
+  class:list={[
+    'relative isolate overflow-hidden bg-hero-base text-hero-fg print:bg-bg print:text-fg',
+    compact && 'rounded-3xl',
+  ]}
 >
   <!-- Atmosphere: two soft brand glows instead of a flat black panel. -->
   <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 print:hidden">
@@ -60,35 +74,51 @@ const { locale, description, primaryHref, secondaryHref, highlights } = Astro.pr
   </div>
 
   <div
-    class="layout-container flex flex-col justify-end pb-14 pt-28 sm:pb-18 sm:pt-36 lg:pb-20 lg:pt-40"
+    class:list={[
+      'layout-container flex flex-col justify-end',
+      compact
+        ? 'py-10 sm:py-12'
+        : 'pb-14 pt-28 sm:pb-18 sm:pt-36 lg:pb-20 lg:pt-40',
+    ]}
   >
-    <div class="max-w-3xl" data-trig>
+    <div class="max-w-4xl" data-trig>
       <p class="hero-badge print:border-border print:text-fg">
         <Icon name="shield" size={14} class="me-1.5" />
         {m.home_hero_kicker({}, { locale })}
       </p>
 
-      <h1
-        id={HERO_TITLE_ID}
-        class="mt-6 text-balance text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
-      >
-        {m.home_hero_title_lead({}, { locale })}{' '}
-        <!--
-          The band is dark in both themes, so the gradient may only use roles
-          that stay bright: `accent` (6.9:1 on the band) and the hero
-          foreground (18:1). Ending on `primary` measured 3.0:1 in light mode —
-          the bare minimum for large text, and the tail of the phrase sat on it.
-        -->
-        <span
-          class="bg-linear-to-r from-accent to-hero-fg bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-to-l"
-        >
-          {m.home_hero_title_accent({}, { locale })}
-        </span>
-      </h1>
+      {
+        headingTag === 'h2' ? (
+          <h2 class="mt-6 text-balance text-3xl font-extrabold leading-[1.08] tracking-tight sm:text-4xl lg:text-5xl">
+            {m.home_hero_title_lead({}, { locale })}{' '}
+            <span class="bg-linear-to-r from-accent to-hero-fg bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-to-l">
+              {m.home_hero_title_accent({}, { locale })}
+            </span>
+          </h2>
+        ) : (
+          <h1
+            id={titleId}
+            class="mt-6 text-balance text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
+          >
+            {m.home_hero_title_lead({}, { locale })}{' '}
+            <!--
+              The band is dark in both themes, so the gradient may only use roles
+              that stay bright: `accent` (6.9:1 on the band) and the hero
+              foreground (18:1). Ending on `primary` measured 3.0:1 in light mode —
+              the bare minimum for large text, and the tail of the phrase sat on it.
+            -->
+            <span
+              class="bg-linear-to-r from-accent to-hero-fg bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-to-l"
+            >
+              {m.home_hero_title_accent({}, { locale })}
+            </span>
+          </h1>
+        )
+      }
 
       {
         description && (
-          <p class="mt-5 max-w-xl text-pretty text-base leading-relaxed text-hero-fg/90 sm:text-lg print:text-muted">
+          <p class="mt-5 max-w-2xl text-pretty text-base leading-relaxed text-hero-fg/90 sm:text-lg print:text-muted">
             {description}
           </p>
         )

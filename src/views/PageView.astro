@@ -1,6 +1,7 @@
 ---
 import { render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import PageHero from '@/components/PageHero.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import PageHeader from '@/components/PageHeader.astro';
@@ -103,7 +104,20 @@ const isCanvas = containerMode === 'canvas';
     >
       {isDefaultHero && (
         <PageHero slot="hero" image={entry.data.image}>
-          <HeroCopy title={entry.data.title} description={entry.data.description} />
+          <HeroCopy title={entry.data.title} description={entry.data.description}>
+            {breadcrumbs.length > 1 && (
+              <Breadcrumbs
+                slot="prelude"
+                items={breadcrumbs}
+                locale={locale}
+                separator="chevron"
+                showHomeIcon={true}
+                surface="hero"
+                size="xs"
+                truncateLast
+              />
+            )}
+          </HeroCopy>
         </PageHero>
       )}
 
@@ -136,7 +150,7 @@ const isCanvas = containerMode === 'canvas';
               {Content && <Content />}
             </div>
           ) : (
-            <article class:list={['prose', isMinimalHero && 'pt-8 sm:pt-10']}>
+            <article class:list={['prose w-full max-w-5xl', isMinimalHero && 'pt-8 sm:pt-10']}>
               {Content && <Content />}
             </article>
           )}

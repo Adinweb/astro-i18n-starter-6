@@ -10,6 +10,8 @@ import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
 import SectionHeader from '@/components/SectionHeader.astro';
 import UiBadge from '@/components/UiBadge.astro';
+import UiCheckbox from '@/components/UiCheckbox.astro';
+import UiInput from '@/components/UiInput.astro';
 import { resolveApiEndpoint } from '@/libs/api/client';
 import { API_CONFIG, siteConfig } from '@/libs/config/app';
 import type { Locale } from '@/i18n/locales';
@@ -273,130 +275,79 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
               class="space-y-4"
             >
               <div data-auth-signup-only hidden={mode !== 'signup'}>
-                <label for={`${instancePrefix}-name`} class="block text-xs font-semibold text-fg">
-                  {copy.nameLabel}
-                </label>
-                <div class="relative mt-1.5">
-                  <span
-                    aria-hidden="true"
-                    class="pointer-events-none absolute inset-y-0 start-3.5 flex items-center text-muted"
-                  >
-                    <Icon name="user" size={16} />
-                  </span>
-                  <input
-                    id={`${instancePrefix}-name`}
-                    name="name"
-                    type="text"
-                    autocomplete="name"
-                    placeholder={copy.namePlaceholder}
-                    class="w-full rounded-xl border border-border bg-bg ps-10 pe-3.5 py-2.5 text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error"
-                  />
-                </div>
+                <UiInput
+                  id={`${instancePrefix}-name`}
+                  name="name"
+                  locale={activeLocale}
+                  type="text"
+                  icon="user"
+                  label={copy.nameLabel}
+                  placeholder={copy.namePlaceholder}
+                  helper={null}
+                  autocomplete="name"
+                />
               </div>
 
-              <div>
-                <label for={`${instancePrefix}-email`} class="block text-xs font-semibold text-fg">
-                  {copy.emailLabel}
-                </label>
-                <div class="relative mt-1.5">
-                  <span
-                    aria-hidden="true"
-                    class="pointer-events-none absolute inset-y-0 start-3.5 flex items-center text-muted"
-                  >
-                    <Icon name="mail" size={16} />
-                  </span>
-                  <input
-                    id={`${instancePrefix}-email`}
-                    name="email"
-                    type="email"
-                    dir="ltr"
-                    required
-                    autocomplete="email"
-                    placeholder={copy.emailPlaceholder}
-                    class="w-full rounded-xl border border-border bg-bg ps-10 pe-3.5 py-2.5 text-start text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error rtl:text-end"
-                  />
-                </div>
-              </div>
+              <UiInput
+                id={`${instancePrefix}-email`}
+                name="email"
+                locale={activeLocale}
+                type="email"
+                icon="mail"
+                label={copy.emailLabel}
+                placeholder={copy.emailPlaceholder}
+                helper={null}
+                required
+                showRequiredMark={false}
+                autocomplete="email"
+              />
 
-              <div>
-                <div class="flex items-center justify-between gap-2">
-                  <label for={`${instancePrefix}-password`} class="block text-xs font-semibold text-fg">
-                    {copy.passwordLabel}
-                  </label>
-                  {emailHref && (
-                    <a
-                      href={emailHref}
-                      data-auth-login-only
-                      hidden={mode !== 'login'}
-                      class="text-xs font-medium text-primary hover:underline"
-                    >
-                      {copy.forgot}
-                    </a>
-                  )}
-                </div>
-
-                <div class="relative mt-1.5">
-                  <span
-                    aria-hidden="true"
-                    class="pointer-events-none absolute inset-y-0 start-3.5 flex items-center text-muted"
-                  >
-                    <Icon name="lock" size={16} />
-                  </span>
-                  <input
-                    id={`${instancePrefix}-password`}
-                    name="password"
-                    type="password"
-                    dir="ltr"
-                    required
-                    minlength="8"
-                    autocomplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                    placeholder={copy.passwordPlaceholder}
-                    class="w-full rounded-xl border border-border bg-bg ps-10 pe-11 py-2.5 text-start text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error rtl:text-end"
-                  />
-                  <button
-                    type="button"
-                    data-auth-toggle-pw
-                    aria-pressed="false"
-                    aria-label={copy.showPassword}
-                    data-label-show={copy.showPassword}
-                    data-label-hide={copy.hidePassword}
-                    class="absolute inset-y-0 end-2 my-auto inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-hover hover:text-fg"
-                  >
-                    <span data-pw-icon-show>
-                      <Icon name="eye" size={16} />
-                    </span>
-                    <span data-pw-icon-hide hidden>
-                      <Icon name="eye-off" size={16} />
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <label
-                data-auth-login-only
-                hidden={mode !== 'login'}
-                class="flex cursor-pointer items-center gap-2.5 text-xs text-muted select-none"
+              <UiInput
+                id={`${instancePrefix}-password`}
+                name="password"
+                locale={activeLocale}
+                type="password"
+                icon="lock"
+                label={copy.passwordLabel}
+                placeholder={copy.passwordPlaceholder}
+                helper={null}
+                required
+                showRequiredMark={false}
+                minlength={8}
+                autocomplete={mode === 'signup' ? 'new-password' : 'current-password'}
               >
-                <input
-                  type="checkbox"
+                {emailHref && (
+                  <a
+                    slot="label-end"
+                    href={emailHref}
+                    data-auth-login-only
+                    hidden={mode !== 'login'}
+                    class="text-xs font-medium text-primary hover:underline"
+                  >
+                    {copy.forgot}
+                  </a>
+                )}
+              </UiInput>
+
+              <div data-auth-login-only hidden={mode !== 'login'}>
+                <UiCheckbox
                   name="remember"
-                  class="size-4 rounded border-border accent-primary"
+                  locale={activeLocale}
+                  label={copy.remember}
+                  description={null}
+                  size="sm"
                 />
-                <span>{copy.remember}</span>
-              </label>
+              </div>
 
-              <label
-                data-auth-signup-only
-                hidden={mode !== 'signup'}
-                class="flex cursor-pointer items-center gap-2.5 text-xs text-muted select-none"
-              >
-                <input
-                  type="checkbox"
+              <div data-auth-signup-only hidden={mode !== 'signup'}>
+                <UiCheckbox
                   name="terms"
-                  class="size-4 rounded border-border accent-primary"
+                  locale={activeLocale}
+                  label={copy.terms}
+                  description={null}
+                  size="sm"
                 />
-                <span>{copy.terms}</span>
-              </label>
+              </div>
 
               <div
                 data-auth-feedback
@@ -444,9 +395,6 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
       const submitLabel = form.querySelector<HTMLElement>('[data-auth-submit-label]');
       const feedback = form.querySelector<HTMLElement>('[data-auth-feedback]');
       const passwordInput = form.querySelector<HTMLInputElement>('input[name="password"]');
-      const togglePw = form.querySelector<HTMLButtonElement>('[data-auth-toggle-pw]');
-      const iconShow = togglePw?.querySelector<HTMLElement>('[data-pw-icon-show]');
-      const iconHide = togglePw?.querySelector<HTMLElement>('[data-pw-icon-hide]');
 
       const setFeedback = (kind: 'success' | 'error', text: string) => {
         if (!feedback) return;
@@ -492,19 +440,6 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
           const next = tab.dataset.authTab === 'signup' ? 'signup' : 'login';
           switchMode(next);
         });
-      });
-
-      togglePw?.addEventListener('click', () => {
-        if (!passwordInput) return;
-        const showing = passwordInput.type === 'text';
-        passwordInput.type = showing ? 'password' : 'text';
-        togglePw.setAttribute('aria-pressed', String(!showing));
-        togglePw.setAttribute(
-          'aria-label',
-          showing ? (togglePw.dataset.labelShow ?? '') : (togglePw.dataset.labelHide ?? '')
-        );
-        if (iconShow) iconShow.hidden = !showing;
-        if (iconHide) iconHide.hidden = showing;
       });
 
       card.querySelectorAll<HTMLButtonElement>('[data-auth-social]').forEach((btn) => {

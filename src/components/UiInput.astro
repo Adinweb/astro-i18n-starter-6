@@ -20,12 +20,18 @@ interface Props {
   value?: string;
   helper?: string | null;
   error?: string;
+  errorId?: string;
+  fieldErrorName?: string;
   icon?: string;
   required?: boolean;
+  showRequiredMark?: boolean;
   disabled?: boolean;
   rows?: number;
+  autocomplete?: string;
+  minlength?: number | string;
   dir?: 'ltr' | 'rtl' | 'auto';
   class?: string;
+  [attribute: string]: unknown;
 }
 
 const {
@@ -38,12 +44,18 @@ const {
   value,
   helper,
   error,
+  errorId,
+  fieldErrorName,
   icon,
   required = false,
+  showRequiredMark = true,
   disabled = false,
   rows = 3,
+  autocomplete,
+  minlength,
   dir,
   class: className,
+  ...rest
 } = Astro.props;
 
 const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
@@ -65,15 +77,22 @@ const descId = error || resolvedHelper ? `${inputId}-desc` : undefined;
 const resolvedIcon = icon ?? (usingDefaults ? 'mail' : undefined);
 const isLtrField = dir ?? (type === 'email' || type === 'url' || type === 'tel' || type === 'password' ? 'ltr' : undefined);
 const isPassword = type === 'password';
+const hasLabelEnd = Astro.slots.has('label-end');
+const attributes = rest as Record<string, string | number | boolean | undefined>;
 ---
 
 <div data-ui-input-group class:list={['not-prose w-full space-y-1.5', className]}>
   {
-    resolvedLabel && (
-      <label for={inputId} class="block text-xs font-semibold text-fg">
-        <span>{resolvedLabel}</span>
-        {required && <span class="ms-1 text-error">*</span>}
-      </label>
+    (resolvedLabel || hasLabelEnd) && (
+      <div class:list={[hasLabelEnd && 'flex items-center justify-between gap-2']}>
+        {resolvedLabel && (
+          <label for={inputId} class="block text-xs font-semibold text-fg">
+            <span>{resolvedLabel}</span>
+            {required && showRequiredMark && <span class="ms-1 text-error">*</span>}
+          </label>
+        )}
+        <slot name="label-end" />
+      </div>
     )
   }
 
@@ -98,16 +117,16 @@ const isPassword = type === 'password';
           dir={isLtrField}
           required={required}
           disabled={disabled}
+          minlength={minlength}
           placeholder={resolvedPlaceholder}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={descId}
           class:list={[
-            'w-full rounded-xl border bg-bg px-3.5 py-2.5 text-sm text-fg placeholder:text-muted/70 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60',
+            'w-full rounded-xl border bg-bg px-3.5 py-2.5 text-sm text-fg placeholder:text-muted/70 focus:outline-none aria-[invalid=true]:border-error disabled:cursor-not-allowed disabled:opacity-60',
             error ? 'border-error focus:border-error' : 'border-border focus:border-primary',
           ]}
-        >
-          {value}
-        </textarea>
+          {...attributes}
+        >{value}</textarea>
       ) : (
         <input
           id={inputId}
@@ -117,17 +136,20 @@ const isPassword = type === 'password';
           dir={isLtrField}
           required={required}
           disabled={disabled}
+          autocomplete={autocomplete}
+          minlength={minlength}
           placeholder={resolvedPlaceholder}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={descId}
           data-ui-input-el
           class:list={[
-            'w-full rounded-xl border bg-bg py-2.5 text-sm text-fg placeholder:text-muted/70 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60',
+            'w-full rounded-xl border bg-bg py-2.5 text-sm text-fg placeholder:text-muted/70 focus:outline-none aria-[invalid=true]:border-error disabled:cursor-not-allowed disabled:opacity-60',
             resolvedIcon ? 'ps-10' : 'ps-3.5',
             isPassword ? 'pe-11' : 'pe-3.5',
             isLtrField === 'ltr' ? 'text-start rtl:text-end' : '',
             error ? 'border-error focus:border-error' : 'border-border focus:border-primary',
           ]}
+          {...attributes}
         />
       )
     }
@@ -156,15 +178,25 @@ const isPassword = type === 'password';
 
   {
     error ? (
-      <p id={descId} class="text-xs font-medium text-error">
+      <p id={descId} data-field-error={fieldErrorName} class="text-xs font-medium text-error">
         {error}
       </p>
     ) : (
-      resolvedHelper && (
-        <p id={descId} class="text-xs leading-relaxed text-muted">
-          {resolvedHelper}
-        </p>
-      )
+      <>
+        {(errorId || fieldErrorName) && (
+          <p
+            id={errorId}
+            data-field-error={fieldErrorName}
+            hidden
+            class="text-xs font-medium text-error"
+          />
+        )}
+        {resolvedHelper && (
+          <p id={descId} class="text-xs leading-relaxed text-muted">
+            {resolvedHelper}
+          </p>
+        )}
+      </>
     )
   }
 </div>

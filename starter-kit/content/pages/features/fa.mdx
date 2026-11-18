@@ -9,8 +9,27 @@ draft: false
 ---
 
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
+import CtaBanner from '@/components/CtaBanner.astro';
+import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
+import ProcessSteps from '@/components/ProcessSteps.astro';
+import ProofStatsRow from '@/components/ProofStatsRow.astro';
+
+<ProofStatsRow
+  contained
+  locale="fa"
+  eyebrow="شاخص‌های معماری"
+  heading="طراحی‌شده برای سرعت، دسترس‌پذیری و یکپارچگی"
+  subheading="تمام مسیرها به‌صورت HTML استاتیک پیش‌رندر‌شده با چیدمان منطقی CSS و بدون نیاز به سرور زمان اجرا تولید می‌شوند."
+  items={[
+    { count: 100, suffix: "٪", label: "خروجی استاتیک خالص", context: "بدون وابستگی به سرور اختصاصی" },
+    { count: 47, suffix: "+", label: "کامپوننت قابل ترکیب", context: "بلوک‌های صفحه و اجزای پایه" },
+    { count: 6, label: "پالت آماده OKLCH", context: "کنتراست دقیق در حالت روشن و تاریک" },
+    { count: 2, suffix: "+", label: "زبان بومی RTL و LTR", context: "قابل گسترش سریع با ابزار CLI" },
+  ]}
+/>
 
 <BentoCapabilities
+  contained
   locale="fa"
   heading="امکانات آماده در قلب استارتر"
   subheading="معماری ماژولار برای راه‌اندازی سریع پروژه‌های مشتریان، امنیت نوعی کامل و تایپوگرافی دقیق در زبان‌های فارسی و انگلیسی."
@@ -43,6 +62,15 @@ import BentoCapabilities from '@/components/BentoCapabilities.astro';
   ]}
 />
 
+<FeatureTabsSection
+  contained
+  locale="fa"
+  variant="underline"
+  eyebrow="ساختار لایه‌ای"
+  heading="بررسی هر لایه از نزدیک"
+  subheading="با جابه‌جایی میان تب‌ها با چرخه مسیریابی، جستجوی فارسی و ابزارهای اعتبارسنجی آشنا شوید."
+/>
+
 <section id="rtl" class="scroll-mt-28">
 
 ## معماری بومی RTL/LTR
@@ -58,3 +86,23 @@ import BentoCapabilities from '@/components/BentoCapabilities.astro';
 رنگ‌های معنایی تنها در یک منبع تعریف می‌شوند و از تنظیمات `app.config.json` و `theme-presets.json` مقداردهی می‌گردند. ابزارهای مشترک رابط کاربری مانند `<Button>`، `<IconButton>` و `<Icon>` هماهنگی بصری و دسترس‌پذیری را در تمام صفحات تضمین می‌کنند.
 
 </section>
+
+<ProcessSteps
+  contained
+  locale="fa"
+  variant="timeline"
+  eyebrow="فرآیند تحویل پروژه"
+  heading="از کلون خام تا استقرار نهایی"
+  subheading="دستورهای استاندارد راه‌اندازی شما را در چند دقیقه از تنظیم برند به خروجی تاییدشده می‌رسانند."
+/>
+
+<CtaBanner
+  contained
+  locale="fa"
+  surface="hero"
+  eyebrow="کاتالوگ تعاملی"
+  title="پیش‌نمایش زنده تمامی اجزا و بلوک‌ها"
+  description="دکمه‌ها، مودال‌ها، فرم‌ها، جداول مقایسه، گالری و اسلایدرها را در هر دو زبان فارسی و انگلیسی آزمایش کنید."
+  primaryCta={{ label: "مشاهده کامپوننت‌ها", href: "/fa/کامپوننت‌ها/", icon: "arrow-right" }}
+  secondaryCta={{ label: "تعرفه‌ها", href: "/fa/قیمت‌گذاری/" }}
+/>

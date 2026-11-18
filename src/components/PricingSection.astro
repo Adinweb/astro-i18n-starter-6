@@ -13,6 +13,7 @@ import Button from '@/components/Button.astro';
 import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
 import SectionHeader from '@/components/SectionHeader.astro';
+import UiBadge from '@/components/UiBadge.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
@@ -240,9 +241,7 @@ function formatTierPrice(
               ]}
             >
               <span>{resolvedAnnualLabel}</span>
-              <span class="rounded-full bg-accent/20 px-2 py-0.5 text-[10px] font-bold text-fg">
-                {resolvedSaveBadge}
-              </span>
+              <UiBadge label={resolvedSaveBadge} variant="accent" size="sm" class="border-transparent bg-accent/20 text-[10px] font-bold text-fg" />
             </button>
           </div>
         )
@@ -304,9 +303,7 @@ function formatTierPrice(
                   </div>
 
                   {badgeText && (
-                    <span class="inline-flex shrink-0 items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
-                      {badgeText}
-                    </span>
+                    <UiBadge label={badgeText} variant="primary" size="sm" class="shrink-0" />
                   )}
                 </div>
 

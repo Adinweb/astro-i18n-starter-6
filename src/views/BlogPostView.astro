@@ -125,7 +125,7 @@ const schema = [
   <div
     class:list={[
       tocHeadings.length > 0 &&
-        'lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:items-start lg:gap-14',
+        'lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:items-start lg:gap-12',
     ]}
   >
     <div class="min-w-0">
@@ -162,8 +162,8 @@ const schema = [
         )
       }
 
-      <article class="max-w-4xl">
-        <div class="prose">
+      <article class:list={['w-full', tocHeadings.length === 0 && 'max-w-5xl']}>
+        <div class="prose max-w-none">
           <Content />
         </div>
 

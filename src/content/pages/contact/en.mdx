@@ -1,0 +1,46 @@
+---
+title: "Contact"
+slug: "contact"
+description: "Get in touch about multilingual Astro builds, custom design systems, headless API integrations, or onboarding support."
+image: "./contact.png"
+hero: "minimal"
+container: "contained"
+draft: false
+---
+
+import ContactSplitSection from '@/components/ContactSplitSection.astro';
+import FaqAccordion from '@/components/FaqAccordion.astro';
+
+Planning a bilingual marketing site, documentation hub, or client storefront powered by Astro v7? Share your goals, timeline, and target locales using the channels or inquiry form below.
+
+<ContactSplitSection
+  id="contact-inquiry"
+  contained
+  locale="en"
+  eyebrow="Direct Inquiry"
+  heading="Start a Conversation"
+  subheading="Reach out for custom theme development, multi-locale architecture reviews, or static deployment guidance."
+/>
+
+<FaqAccordion
+  contained
+  emitSchema={false}
+  locale="en"
+  eyebrow="Common Questions"
+  heading="Before You Write"
+  subheading="Quick answers on how contact endpoints, static hosting, and localization work."
+  items={[
+    {
+      question: "How does the contact form work on static hosting?",
+      answer: "When PUBLIC_CONTACT_API_URL is configured, submissions post directly to your external endpoint. Without an endpoint, visitors see a clean mailto fallback configured from app.config.json."
+    },
+    {
+      question: "Can we add additional RTL or LTR languages later?",
+      answer: "Yes. Run npm run i18n:add-lang to register any locale, generate dictionary stubs, and scaffold matching page/blog/project folders automatically."
+    },
+    {
+      question: "Where should client-specific styles and navigation live?",
+      answer: "All client overrides live in client/ (config.json, locales.json, navigation.ts, styles.css, messages/), keeping upstream src/ cleanly isolated."
+    }
+  ]}
+/>

@@ -8,11 +8,14 @@ container: "contained"
 draft: false
 ---
 
-import PricingSection from '@/components/PricingSection.astro';
+import ComparisonTable from '@/components/ComparisonTable.astro';
 import ContactForm from '@/components/ContactForm.astro';
+import FaqAccordion from '@/components/FaqAccordion.astro';
+import PricingSection from '@/components/PricingSection.astro';
 
 <PricingSection
   contained
+  billingToggle
   locale="fa"
   heading="طرح‌های انعطاف‌پذیر راه‌اندازی"
   subheading="از پایه استاندارد استارتر به‌صورت مستقیم استفاده کنید یا پیاده‌سازی اختصاصی با سیستم طراحی برند خودتان را سفارش دهید."
@@ -20,8 +23,11 @@ import ContactForm from '@/components/ContactForm.astro';
     {
       eyebrow: '۰۱ · پایه',
       name: 'استارتر متن‌باز',
-      price: '۰ تومان',
-      period: '/ همیشگی',
+      amount: 0,
+      annualAmount: 0,
+      currencySuffix: ' تومان',
+      period: '/ ماهانه',
+      annualPeriod: '/ سالانه',
       description: 'ساختار کامل Astro v7 با پشتیبانی بومی RTL/LTR، ابزارهای CLI و جستجوی استاتیک Pagefind.',
       features: [
         'زبان پیش‌فرض بدون پیشوند و اسکفولدینگ خودکار محتوا',
@@ -33,8 +39,11 @@ import ContactForm from '@/components/ContactForm.astro';
     {
       eyebrow: '۰۲ · استودیو',
       name: 'راه‌اندازی برند اختصاصی',
-      price: '۳۵ میلیون',
-      period: '/ پروژه',
+      amount: 120,
+      annualAmount: 1150,
+      currencyPrefix: '$',
+      period: '/ ماهانه',
+      annualPeriod: '/ سالانه',
       featured: true,
       description: 'ریبرندینگ کامل، طراحی صفحات فرود اختصاصی و آماده‌سازی سئو برای استقرار نهایی.',
       features: [
@@ -48,7 +57,9 @@ import ContactForm from '@/components/ContactForm.astro';
       eyebrow: '۰۳ · سازمانی',
       name: 'توسعه چندزبانه گسترده',
       price: 'توافقی',
+      annualPrice: 'توافقی',
       period: '/ متناسب با پروژه',
+      annualPeriod: '/ قرارداد سالانه',
       description: 'معماری اختصاصی برای سازمان‌ها با انواع محتوای سفارشی و پایپ‌لاین استقرار خودکار.',
       features: [
         'پشتیبانی از زبان‌های نامحدود RTL و LTR با ابزار CLI',
@@ -57,6 +68,36 @@ import ContactForm from '@/components/ContactForm.astro';
       ],
       cta: { label: 'ارسال پیام', href: '#contact-inquiry', icon: 'mail' },
     },
+  ]}
+/>
+
+<ComparisonTable
+  contained
+  locale="fa"
+  eyebrow="مقایسه جزئیات"
+  heading="مقایسه نسخه‌های راه‌اندازی"
+  subheading="تمام طرح‌ها از هسته تایپ‌سیف Astro v7 و زنجیره خودکار تست و ممیزی بهره‌مند هستند."
+/>
+
+<FaqAccordion
+  contained
+  emitSchema
+  locale="fa"
+  eyebrow="شفافیت همکاری"
+  heading="پرسش‌های متداول تعرفه"
+  items={[
+    {
+      question: "آیا استفاده از هسته Open Starter هزینه دوره‌ای دارد؟",
+      answer: "خیر؛ هسته استارتر Astro v7 و تمام ابزارهای خط فرمان آن بدون محدودیت برای پروژه‌های تجاری و مشتریان قابل استفاده است."
+    },
+    {
+      question: "آیا پس از راه‌اندازی می‌توان پالت رنگی یا زبان جدید اضافه کرد؟",
+      answer: "بله؛ تمام پالت‌های برند، فونت‌ها و زبان‌های فعال در فایل‌های پیکربندی قرار دارند و در هر زمان قابل تغییر یا گسترش هستند."
+    },
+    {
+      question: "فرم‌های تماس و خبرنامه در خروجی استاتیک چگونه متصل می‌شوند؟",
+      answer: "کافی است نشانی سرویس خارجی خود را در client/config.json یا متغیرهای محیطی وارد کنید تا فرم‌ها به‌صورت امن از طریق HTTPS ارسال شوند."
+    }
   ]}
 />
 

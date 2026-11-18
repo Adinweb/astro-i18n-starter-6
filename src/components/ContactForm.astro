@@ -1,18 +1,20 @@
 ---
 import Icon from '@/components/Icon.astro';
 import Button from '@/components/Button.astro';
+import UiInput from '@/components/UiInput.astro';
 import { DEFAULT_LOCALE, type Locale } from '@/i18n/locales';
 import { resolveApiEndpoint } from '@/libs/api/client';
 import { API_CONFIG, siteConfig } from '@/libs/config/app';
 import * as m from '@/paraglide/messages';
 
 interface Props {
+  id?: string;
   locale: Locale;
   /** Omit outer section wrapper and left-hand intro column when composed inside `ContactSplitSection`. */
   embedded?: boolean;
 }
 
-const { locale, embedded = false } = Astro.props;
+const { id, locale, embedded = false } = Astro.props;
 
 const resolvedEndpoint = resolveApiEndpoint(API_CONFIG.endpoints.contact, API_CONFIG.baseUrl);
 const isConfigured = resolvedEndpoint !== null;
@@ -73,7 +75,7 @@ const topicOptions = API_CONFIG.topics?.length
 ---
 
 <section
-  id={embedded ? undefined : 'contact-inquiry'}
+  id={id ?? (embedded ? undefined : 'contact-inquiry')}
   data-contact-form
   class:list={[
     'not-prose',
@@ -174,55 +176,36 @@ const topicOptions = API_CONFIG.topics?.length
         </div>
 
         <div class="grid gap-5 sm:grid-cols-2">
-          <div>
-            <label
-              for={`contact-name-${locale}`}
-              class="block text-xs font-semibold text-fg"
-            >
-              {copy.nameLabel}
-            </label>
-            <input
-              id={`contact-name-${locale}`}
-              name="name"
-              type="text"
-              required
-              minlength="2"
-              autocomplete="name"
-              placeholder={copy.namePlaceholder}
-              class="mt-1.5 w-full rounded-xl border border-border bg-bg px-3.5 py-2.5 text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error"
-            />
-            <p
-              id={`contact-name-error-${locale}`}
-              data-field-error="name"
-              hidden
-              class="mt-1.5 text-xs text-error"
-            ></p>
-          </div>
+          <UiInput
+            id={`contact-name-${locale}`}
+            name="name"
+            locale={locale}
+            type="text"
+            label={copy.nameLabel}
+            placeholder={copy.namePlaceholder}
+            helper={null}
+            required
+            showRequiredMark={false}
+            minlength={2}
+            autocomplete="name"
+            errorId={`contact-name-error-${locale}`}
+            fieldErrorName="name"
+          />
 
-          <div>
-            <label
-              for={`contact-email-${locale}`}
-              class="block text-xs font-semibold text-fg"
-            >
-              {copy.emailLabel}
-            </label>
-            <input
-              id={`contact-email-${locale}`}
-              name="email"
-              type="email"
-              dir="ltr"
-              required
-              autocomplete="email"
-              placeholder={copy.emailPlaceholder}
-              class="mt-1.5 w-full rounded-xl border border-border bg-bg px-3.5 py-2.5 text-start text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error rtl:text-end"
-            />
-            <p
-              id={`contact-email-error-${locale}`}
-              data-field-error="email"
-              hidden
-              class="mt-1.5 text-xs text-error"
-            ></p>
-          </div>
+          <UiInput
+            id={`contact-email-${locale}`}
+            name="email"
+            locale={locale}
+            type="email"
+            label={copy.emailLabel}
+            placeholder={copy.emailPlaceholder}
+            helper={null}
+            required
+            showRequiredMark={false}
+            autocomplete="email"
+            errorId={`contact-email-error-${locale}`}
+            fieldErrorName="email"
+          />
         </div>
 
         <div>
@@ -249,29 +232,21 @@ const topicOptions = API_CONFIG.topics?.length
           ></p>
         </div>
 
-        <div>
-          <label
-            for={`contact-message-${locale}`}
-            class="block text-xs font-semibold text-fg"
-          >
-            {copy.messageLabel}
-          </label>
-          <textarea
-            id={`contact-message-${locale}`}
-            name="message"
-            rows="4"
-            required
-            minlength="10"
-            placeholder={copy.messagePlaceholder}
-            class="mt-1.5 w-full rounded-xl border border-border bg-bg px-3.5 py-2.5 text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error"
-          ></textarea>
-          <p
-            id={`contact-message-error-${locale}`}
-            data-field-error="message"
-            hidden
-            class="mt-1.5 text-xs text-error"
-          ></p>
-        </div>
+        <UiInput
+          id={`contact-message-${locale}`}
+          name="message"
+          locale={locale}
+          type="textarea"
+          rows={4}
+          label={copy.messageLabel}
+          placeholder={copy.messagePlaceholder}
+          helper={null}
+          required
+          showRequiredMark={false}
+          minlength={10}
+          errorId={`contact-message-error-${locale}`}
+          fieldErrorName="message"
+        />
 
         <div
           data-contact-feedback

@@ -1,0 +1,104 @@
+---
+title: "تعرفه‌ها و تماس"
+slug: "قیمت‌گذاری"
+description: "طرح‌های شفاف برای راه‌اندازی وب‌سایت استاتیک، توسعه چندزبانه و ارسال درخواست همکاری."
+image: "./pricing.png"
+hero: "minimal"
+container: "contained"
+draft: false
+---
+
+import ComparisonTable from '@/components/ComparisonTable.astro';
+import ContactForm from '@/components/ContactForm.astro';
+import FaqAccordion from '@/components/FaqAccordion.astro';
+import PricingSection from '@/components/PricingSection.astro';
+
+<PricingSection
+  contained
+  billingToggle
+  locale="fa"
+  heading="طرح‌های انعطاف‌پذیر راه‌اندازی"
+  subheading="از پایه استاندارد استارتر به‌صورت مستقیم استفاده کنید یا پیاده‌سازی اختصاصی با سیستم طراحی برند خودتان را سفارش دهید."
+  tiers={[
+    {
+      eyebrow: '۰۱ · پایه',
+      name: 'استارتر متن‌باز',
+      amount: 0,
+      annualAmount: 0,
+      currencySuffix: ' تومان',
+      period: '/ ماهانه',
+      annualPeriod: '/ سالانه',
+      description: 'ساختار کامل Astro v7 با پشتیبانی بومی RTL/LTR، ابزارهای CLI و جستجوی استاتیک Pagefind.',
+      features: [
+        'زبان پیش‌فرض بدون پیشوند و اسکفولدینگ خودکار محتوا',
+        'پالت‌های رنگی OKLCH و تولید خودکار تصویر OG برند',
+        'مجموعه تست‌های i18n، لینک، smoke و سلامت پروژه',
+      ],
+      cta: { label: 'مشاهده ویژگی‌ها', href: '/fa/ویژگی‌ها/', icon: 'arrow-right' },
+    },
+    {
+      eyebrow: '۰۲ · استودیو',
+      name: 'راه‌اندازی برند اختصاصی',
+      amount: 120,
+      annualAmount: 1150,
+      currencyPrefix: '$',
+      period: '/ ماهانه',
+      annualPeriod: '/ سالانه',
+      featured: true,
+      description: 'ریبرندینگ کامل، طراحی صفحات فرود اختصاصی و آماده‌سازی سئو برای استقرار نهایی.',
+      features: [
+        'سفارشی‌سازی رنگ، فونت فارسی/انگلیسی و کارت‌های OG',
+        'چیدمان ماژولار لندینگ‌پیج و اتصال فرم به API دلخواه',
+        'بازبینی کامل سئو، اسکیما JSON-LD و دسترسی‌پذیری WCAG',
+      ],
+      cta: { label: 'ثبت درخواست', href: '#contact-inquiry', icon: 'mail' },
+    },
+    {
+      eyebrow: '۰۳ · سازمانی',
+      name: 'توسعه چندزبانه گسترده',
+      price: 'توافقی',
+      annualPrice: 'توافقی',
+      period: '/ متناسب با پروژه',
+      annualPeriod: '/ قرارداد سالانه',
+      description: 'معماری اختصاصی برای سازمان‌ها با انواع محتوای سفارشی و پایپ‌لاین استقرار خودکار.',
+      features: [
+        'پشتیبانی از زبان‌های نامحدود RTL و LTR با ابزار CLI',
+        'تعریف کالکشن‌های اختصاصی و دسته‌بندی‌های پیشرفته',
+        'بهینه‌سازی مداوم کارایی و پایش کیفیت بیلد',
+      ],
+      cta: { label: 'ارسال پیام', href: '#contact-inquiry', icon: 'mail' },
+    },
+  ]}
+/>
+
+<ComparisonTable
+  contained
+  locale="fa"
+  eyebrow="مقایسه جزئیات"
+  heading="مقایسه نسخه‌های راه‌اندازی"
+  subheading="تمام طرح‌ها از هسته تایپ‌سیف Astro v7 و زنجیره خودکار تست و ممیزی بهره‌مند هستند."
+/>
+
+<FaqAccordion
+  contained
+  emitSchema
+  locale="fa"
+  eyebrow="شفافیت همکاری"
+  heading="پرسش‌های متداول تعرفه"
+  items={[
+    {
+      question: "آیا استفاده از هسته Open Starter هزینه دوره‌ای دارد؟",
+      answer: "خیر؛ هسته استارتر Astro v7 و تمام ابزارهای خط فرمان آن بدون محدودیت برای پروژه‌های تجاری و مشتریان قابل استفاده است."
+    },
+    {
+      question: "آیا پس از راه‌اندازی می‌توان پالت رنگی یا زبان جدید اضافه کرد؟",
+      answer: "بله؛ تمام پالت‌های برند، فونت‌ها و زبان‌های فعال در فایل‌های پیکربندی قرار دارند و در هر زمان قابل تغییر یا گسترش هستند."
+    },
+    {
+      question: "فرم‌های تماس و خبرنامه در خروجی استاتیک چگونه متصل می‌شوند؟",
+      answer: "کافی است نشانی سرویس خارجی خود را در client/config.json یا متغیرهای محیطی وارد کنید تا فرم‌ها به‌صورت امن از طریق HTTPS ارسال شوند."
+    }
+  ]}
+/>
+
+<ContactForm locale="fa" />

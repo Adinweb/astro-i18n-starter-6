@@ -1,0 +1,34 @@
+---
+title: "Release v1.0: Brand Presets, OG Cards & Pure SSG"
+slug: "release-v1"
+description: "Highlights from version 1.0 including OKLCH color presets, build-time Open Graph card rendering, and external API adapters."
+publishedAt: 2026-02-10
+author: "Astro Starter Team"
+image: "./release-v1.png"
+categories:
+  - product
+  - engineering
+tags:
+  - release
+  - performance
+  - architecture
+draft: false
+---
+
+Version **1.0** introduces streamlined client rebranding workflows designed for agencies and independent teams launching fast static websites without backend maintenance.
+
+## OKLCH Brand Presets & Typography
+
+Instead of editing raw CSS variables manually, `app.config.json` exposes curated OKLCH color presets (`indigo`, `emerald`, `rose`, `amber`, `slate`) paired with Latin and RTL font stacks. One command updates your site identity, PWA icons, and surface accents cleanly:
+
+```bash
+npm run site:init -- --name="Brand Studio" --preset=emerald --og-mode=branded --yes
+```
+
+## Build-Time Open Graph Cards
+
+When `brand.socialCardMode` is set to `"branded"`, Astro generates deterministic PNG social cards for every page, blog post, and project at build time using your active palette and site branding.
+
+## Pure Static Forms & Consent
+
+Both `ContactForm` and `NewsletterBanner` post straight to your configured headless API endpoint (`api.endpoints`) with timeout guards and explicit TDDDG/GDPR consent separation.

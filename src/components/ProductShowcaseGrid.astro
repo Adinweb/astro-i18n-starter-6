@@ -9,6 +9,7 @@ import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import Button from '@/components/Button.astro';
 import Icon from '@/components/Icon.astro';
+import IconButton from '@/components/IconButton.astro';
 import PageSection from '@/components/PageSection.astro';
 import SectionHeader from '@/components/SectionHeader.astro';
 import UiBadge from '@/components/UiBadge.astro';
@@ -235,18 +236,18 @@ const gridColsClass =
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  data-product-wishlist
-                  aria-pressed="false"
-                  aria-label={m.block_products_wishlist_aria(
+                <IconButton
+                  variant="glass"
+                  icon="heart"
+                  size={16}
+                  label={m.block_products_wishlist_aria(
                     { title: item.title },
                     { locale: activeLocale }
                   )}
-                  class="glass-control absolute top-3 end-3 size-9 cursor-pointer text-fg transition-colors hover:text-primary print:hidden"
-                >
-                  <Icon name="heart" size={16} />
-                </button>
+                  data-product-wishlist
+                  aria-pressed="false"
+                  class="absolute top-3 end-3 text-fg transition-colors hover:text-primary print:hidden"
+                />
               </div>
 
               <div class="flex flex-1 flex-col p-5 sm:p-6">

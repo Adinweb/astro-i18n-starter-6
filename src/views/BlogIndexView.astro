@@ -1,10 +1,11 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import PageHero from '@/components/PageHero.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import PostCard from '@/components/PostCard.astro';
-import Button from '@/components/Button.astro';
+import UiPagination from '@/components/UiPagination.astro';
 import Icon from '@/components/Icon.astro';
 import {
   buildBreadcrumbSchema,
@@ -20,7 +21,7 @@ import {
   type BlogFilters,
 } from '@/libs/content/blog';
 import { getSortedLocaleEntries } from '@/libs/content/entries';
-import { buildPageWindow, PAGE_GAP, paginate } from '@/libs/content/pagination';
+import { paginate } from '@/libs/content/pagination';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import { buildOgRouteKey, type SocialCardContext } from '@/libs/content/social';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
@@ -66,7 +67,6 @@ const totalLabel = m.blog_filter_showing_page(
 const pageHref = (target: number) => getBlogPageHref(target, locale);
 const previousHref = page > 1 ? pageHref(page - 1) : undefined;
 const nextHref = page < totalPages ? pageHref(page + 1) : undefined;
-const pageWindow = buildPageWindow(page, totalPages);
 
 const pageStatus = m.blog_pagination_status(
   { page: formatNumber(page, locale), totalPages: formatNumber(totalPages, locale) },
@@ -122,7 +122,18 @@ const ogContext: SocialCardContext = {
   hero
 >
   <PageHero slot="hero">
-    <HeroCopy title={m.nav_blog({}, { locale })} description={m.blog_index_description({}, { locale })} />
+    <HeroCopy title={m.nav_blog({}, { locale })} description={m.blog_index_description({}, { locale })}>
+      <Breadcrumbs
+        slot="prelude"
+        items={breadcrumbs}
+        locale={locale}
+        separator="chevron"
+        showHomeIcon={true}
+        surface="hero"
+        size="xs"
+        truncateLast
+      />
+    </HeroCopy>
   </PageHero>
 
   <div class="space-y-8">
@@ -250,59 +261,17 @@ const ogContext: SocialCardContext = {
                 <p class="text-center text-xs text-muted" data-blog-page-status>
                   {pageStatus}
                 </p>
-                <nav
-                  class="flex flex-wrap items-center justify-center gap-1.5"
-                  aria-label={m.blog_pagination_label({}, { locale })}
+                <UiPagination
+                  locale={locale}
+                  variant="rounded"
+                  currentPage={page}
+                  totalPages={totalPages}
+                  hrefBuilder={pageHref}
+                  interactive={false}
+                  pageLinkAttrs
+                  class="justify-center"
                   data-blog-pagination
-                >
-                  {previousHref && (
-                    <Button
-                      href={previousHref}
-                      rel="prev"
-                      variant="secondary"
-                      size="sm"
-                      icon="chevron-left"
-                      iconPosition="start"
-                      data-page-link="previous"
-                      data-page-href={previousHref}
-                    >
-                      {m.blog_pagination_previous({}, { locale })}
-                    </Button>
-                  )}
-
-                  {pageWindow.map((entry) =>
-                    entry === PAGE_GAP ? (
-                      <span class="px-1 text-xs text-muted" aria-hidden="true">
-                        …
-                      </span>
-                    ) : (
-                      <a
-                        href={pageHref(entry)}
-                        data-page-link="page"
-                        data-page-href={pageHref(entry)}
-                        aria-label={m.blog_pagination_page({ page: formatNumber(entry, locale) }, { locale })}
-                        aria-current={entry === page ? 'page' : undefined}
-                        class="chip h-9 min-w-9 justify-center px-3 text-xs"
-                      >
-                        {formatNumber(entry, locale)}
-                      </a>
-                    )
-                  )}
-
-                  {nextHref && (
-                    <Button
-                      href={nextHref}
-                      rel="next"
-                      variant="secondary"
-                      size="sm"
-                      icon="chevron-right"
-                      data-page-link="next"
-                      data-page-href={nextHref}
-                    >
-                      {m.blog_pagination_next({}, { locale })}
-                    </Button>
-                  )}
-                </nav>
+                />
               </div>
             )
           }

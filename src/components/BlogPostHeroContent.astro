@@ -7,6 +7,7 @@
  * page never drift apart typographically. Rendered inside `PageHero`'s default
  * slot, on top of the section's background image.
  */
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import { getBlogIndexHref, type BreadcrumbItem } from '@/libs/content/service';
 import { buildBlogFilterQuery, getReadingTime } from '@/libs/content/blog';
@@ -28,6 +29,7 @@ interface Props {
   publishedAt: Date;
   updatedAt?: Date;
   breadcrumbs: BreadcrumbItem[];
+  headingTag?: 'h1' | 'h2';
 }
 
 const {
@@ -40,6 +42,7 @@ const {
   publishedAt,
   updatedAt,
   breadcrumbs,
+  headingTag = 'h1',
 } = Astro.props;
 
 const blogIndexHref = getBlogIndexHref(locale);
@@ -52,26 +55,17 @@ const formattedUpdatedDate = hasUpdate && updatedAt ? formatDate(updatedAt, loca
 const readingTime = getReadingTime(body);
 ---
 
-<HeroCopy title={title} description={description} size="post">
+<HeroCopy title={title} description={description} size="post" headingTag={headingTag}>
   <Fragment slot="prelude">
-    <nav aria-label={m.common_breadcrumbs({}, { locale })}>
-      <ol class="flex flex-wrap items-center gap-2 text-xs text-hero-fg/90">
-        {
-          breadcrumbs.map((crumb, index) => (
-            <li class="flex items-center gap-2">
-              {index > 0 && <span aria-hidden="true">/</span>}
-              {index === breadcrumbs.length - 1 ? (
-                <span class="max-w-xs truncate font-medium text-hero-fg">{crumb.label}</span>
-              ) : (
-                <a href={crumb.href} class="transition-colors hover:text-hero-fg">
-                  {crumb.label}
-                </a>
-              )}
-            </li>
-          ))
-        }
-      </ol>
-    </nav>
+    <Breadcrumbs
+      items={breadcrumbs}
+      locale={locale}
+      separator="chevron"
+      showHomeIcon={true}
+      surface="hero"
+      size="xs"
+      truncateLast
+    />
 
     {
       categories.length > 0 && (
