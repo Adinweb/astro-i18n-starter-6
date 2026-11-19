@@ -8,6 +8,7 @@
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
 import IconButton from '@/components/IconButton.astro';
 import PageSection from '@/components/PageSection.astro';
 import SectionHeader from '@/components/SectionHeader.astro';
@@ -150,23 +151,26 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
     ]}
     data-trig
   >
-    <div class="relative">
-      {
-        resolvedSlides.map((slide, idx) => {
-          const currentFormatted = formatNumber(idx + 1, activeLocale);
-          const slideImage = slide.image ?? DEFAULT_HERO_IMAGE;
-          return (
-            <article
-              data-carousel-slide={String(idx)}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={m.block_carousel_slide_status(
-                { current: currentFormatted, total: totalFormatted },
-                { locale: activeLocale }
-              )}
-              hidden={idx !== 0}
-              class="grid items-center gap-6 p-5 sm:p-8 lg:grid-cols-12 lg:gap-10"
-            >
+    <div
+      data-carousel-viewport
+      class="cursor-grab overflow-hidden active:cursor-grabbing"
+    >
+      <div class="flex touch-pan-y">
+        {
+          resolvedSlides.map((slide, idx) => {
+            const currentFormatted = formatNumber(idx + 1, activeLocale);
+            const slideImage = slide.image ?? DEFAULT_HERO_IMAGE;
+            return (
+              <article
+                data-carousel-slide={String(idx)}
+                role="group"
+                aria-roledescription="slide"
+                aria-label={m.block_carousel_slide_status(
+                  { current: currentFormatted, total: totalFormatted },
+                  { locale: activeLocale }
+                )}
+                class="grid min-w-0 shrink-0 basis-full items-center gap-6 p-5 sm:p-8 lg:grid-cols-12 lg:gap-10"
+              >
               <div class="lg:col-span-6">
                 <div class="overflow-hidden rounded-2xl border border-border bg-bg shadow-xs">
                   <Image
@@ -210,10 +214,11 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
                   </div>
                 )}
               </div>
-            </article>
-          );
-        })
-      }
+              </article>
+            );
+          })
+        }
+      </div>
     </div>
 
     {
@@ -243,20 +248,12 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
           </div>
 
           <div class="flex items-center gap-2">
-            <IconButton
-              icon="chevron-left"
-              label={prevLabel}
-              size={18}
-              iconClass="rtl:rotate-180"
-              data-carousel-prev
-            />
-            <IconButton
-              icon="chevron-right"
-              label={nextLabel}
-              size={18}
-              iconClass="rtl:rotate-180"
-              data-carousel-next
-            />
+            <IconButton label={prevLabel} data-carousel-prev>
+              <Icon name="chevron-left" size={18} class="rtl:rotate-180" />
+            </IconButton>
+            <IconButton label={nextLabel} data-carousel-next>
+              <Icon name="chevron-right" size={18} class="rtl:rotate-180" />
+            </IconButton>
           </div>
         </div>
       )
@@ -265,29 +262,36 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
 </PageSection>
 
 <script>
+  import EmblaCarousel, { type EmblaCarouselType } from 'embla-carousel';
+
+  const activeCarouselInstances: EmblaCarouselType[] = [];
+
   function initCarousels() {
     const carousels = document.querySelectorAll<HTMLElement>('[data-carousel]');
+    const isRtl = document.documentElement.dir === 'rtl';
 
     carousels.forEach((root) => {
       if (root.dataset.bound === 'true') return;
       root.dataset.bound = 'true';
 
+      const viewport = root.querySelector<HTMLElement>('[data-carousel-viewport]');
       const slides = Array.from(root.querySelectorAll<HTMLElement>('[data-carousel-slide]'));
       const dots = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-carousel-dot]'));
       const prevBtn = root.querySelector<HTMLButtonElement>('[data-carousel-prev]');
       const nextBtn = root.querySelector<HTMLButtonElement>('[data-carousel-next]');
 
-      if (slides.length <= 1) return;
+      if (!viewport || slides.length <= 1) return;
 
-      let activeIdx = 0;
+      const embla = EmblaCarousel(viewport, {
+        loop: true,
+        align: 'start',
+        direction: isRtl ? 'rtl' : 'ltr',
+      });
 
-      const showSlide = (nextIdx: number) => {
-        const count = slides.length;
-        activeIdx = ((nextIdx % count) + count) % count;
+      activeCarouselInstances.push(embla);
 
-        slides.forEach((slide, idx) => {
-          slide.hidden = idx !== activeIdx;
-        });
+      const syncDots = () => {
+        const activeIdx = embla.selectedScrollSnap();
 
         dots.forEach((dot, idx) => {
           const active = idx === activeIdx;
@@ -300,30 +304,32 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
         });
       };
 
-      prevBtn?.addEventListener('click', () => showSlide(activeIdx - 1));
-      nextBtn?.addEventListener('click', () => showSlide(activeIdx + 1));
+      embla.on('select', syncDots);
+      syncDots();
+
+      prevBtn?.addEventListener('click', () => embla.scrollPrev());
+      nextBtn?.addEventListener('click', () => embla.scrollNext());
 
       dots.forEach((dot, idx) => {
-        dot.addEventListener('click', () => showSlide(idx));
+        dot.addEventListener('click', () => embla.scrollTo(idx));
       });
 
       root.addEventListener('keydown', (event) => {
-        const isRtl = document.documentElement.dir === 'rtl';
         const nextKey = isRtl ? 'ArrowLeft' : 'ArrowRight';
         const prevKey = isRtl ? 'ArrowRight' : 'ArrowLeft';
 
         if (event.key === nextKey) {
           event.preventDefault();
-          showSlide(activeIdx + 1);
+          embla.scrollNext();
         } else if (event.key === prevKey) {
           event.preventDefault();
-          showSlide(activeIdx - 1);
+          embla.scrollPrev();
         } else if (event.key === 'Home') {
           event.preventDefault();
-          showSlide(0);
+          embla.scrollTo(0);
         } else if (event.key === 'End') {
           event.preventDefault();
-          showSlide(slides.length - 1);
+          embla.scrollTo(slides.length - 1);
         }
       });
 
@@ -332,22 +338,31 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
       const intervalMs = Math.max(2500, Number.parseInt(root.dataset.interval ?? '6000', 10) || 6000);
 
       if (autoplay && !reducedMotion) {
-        let timer = window.setInterval(() => showSlide(activeIdx + 1), intervalMs);
+        let timer = window.setInterval(() => embla.scrollNext(), intervalMs);
         const pause = () => {
           window.clearInterval(timer);
         };
         const resume = () => {
           window.clearInterval(timer);
-          timer = window.setInterval(() => showSlide(activeIdx + 1), intervalMs);
+          timer = window.setInterval(() => embla.scrollNext(), intervalMs);
         };
         root.addEventListener('mouseenter', pause);
         root.addEventListener('focusin', pause);
         root.addEventListener('mouseleave', resume);
         root.addEventListener('focusout', resume);
+        embla.on('pointerDown', pause);
+        embla.on('pointerUp', resume);
       }
     });
   }
 
+  function destroyCarousels() {
+    while (activeCarouselInstances.length > 0) {
+      activeCarouselInstances.pop()?.destroy();
+    }
+  }
+
+  document.addEventListener('astro:before-swap', destroyCarousels);
   document.addEventListener('astro:page-load', initCarousels);
   initCarousels();
 </script>

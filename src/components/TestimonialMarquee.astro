@@ -1,0 +1,241 @@
+---
+/**
+ * Continuous Testimonials Marquee powered by Embla Carousel + `embla-carousel-auto-scroll`.
+ *
+ * - Free drag (`dragFree: true`) with natural momentum physics and infinite looping.
+ * - Pauses smoothly on hover/focus and resumes after drag interaction (`stopOnInteraction: false`).
+ * - Honors `html[data-motion="reduced"]` (disables auto-scroll while keeping manual drag active).
+ * - Native RTL/LTR direction detection (`document.documentElement.dir`).
+ * - Semantic OKLCH tokens, logical CSS properties, and Paraglide localized defaults.
+ */
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import type { Locale } from '@/i18n/locales';
+import { getInitials } from '@/libs/ui/initials';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface MarqueeTestimonialItem {
+  quote: string;
+  author: string;
+  role?: string;
+  rating?: number;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  items?: readonly MarqueeTestimonialItem[];
+  /** Auto-scroll speed in pixels per animation frame (default: `0.9`). */
+  speed?: number;
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale,
+  eyebrow,
+  heading,
+  subheading,
+  items,
+  speed = 0.9,
+  contained = false,
+  surface = 'default',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = items === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_testimonials_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_testimonials_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_testimonials_subheading({}, { locale: activeLocale })
+);
+
+const baseItems: readonly MarqueeTestimonialItem[] = items ?? [
+  {
+    quote: m.block_testimonials_1_quote({}, { locale: activeLocale }),
+    author: m.block_testimonials_1_author({}, { locale: activeLocale }),
+    role: m.block_testimonials_1_role({}, { locale: activeLocale }),
+    rating: 5,
+  },
+  {
+    quote: m.block_testimonials_2_quote({}, { locale: activeLocale }),
+    author: m.block_testimonials_2_author({}, { locale: activeLocale }),
+    role: m.block_testimonials_2_role({}, { locale: activeLocale }),
+    rating: 5,
+  },
+  {
+    quote: m.block_testimonials_3_quote({}, { locale: activeLocale }),
+    author: m.block_testimonials_3_author({}, { locale: activeLocale }),
+    role: m.block_testimonials_3_role({}, { locale: activeLocale }),
+    rating: 5,
+  },
+];
+
+// Ensure enough slides for seamless infinite looping on ultra-wide screens
+const resolvedItems =
+  baseItems.length > 0 && baseItems.length < 6 ? [...baseItems, ...baseItems] : baseItems;
+
+const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+---
+
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <SectionHeader
+    eyebrow={resolvedEyebrow}
+    heading={resolvedHeading}
+    subheading={resolvedSubheading}
+  />
+
+  <div
+    data-embla-marquee
+    data-speed={String(speed)}
+    role="region"
+    aria-roledescription="carousel"
+    aria-label={resolvedHeading ?? resolvedEyebrow ?? m.block_testimonials_eyebrow({}, { locale: activeLocale })}
+    class:list={['relative select-none', hasHeader && 'mt-8']}
+    data-trig
+    data-trig-once="true"
+  >
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-y-0 start-0 z-10 w-10 bg-linear-to-r from-bg to-transparent sm:w-16 rtl:bg-linear-to-l print:hidden"
+    ></div>
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-y-0 end-0 z-10 w-10 bg-linear-to-l from-bg to-transparent sm:w-16 rtl:bg-linear-to-r print:hidden"
+    ></div>
+    <div
+      data-embla-viewport
+      class="cursor-grab overflow-hidden active:cursor-grabbing"
+    >
+      <div class="flex touch-pan-y">
+        {
+          resolvedItems.map((item) => {
+            const rating = Math.min(5, Math.max(0, Math.round(item.rating ?? 5)));
+            const initials = getInitials(item.author);
+            return (
+              <div class="min-w-0 shrink-0 basis-[85%] pe-4 sm:basis-[52%] md:basis-[40%] lg:basis-[32%]">
+                <figure
+                  class:list={[
+                    'flex h-full flex-col justify-between rounded-2xl border border-border p-6 shadow-xs transition-colors hover:border-primary/40',
+                    cardSurface,
+                  ]}
+                >
+                  <div>
+                    <div class="flex items-center justify-between gap-3">
+                      {rating > 0 ? (
+                        <div class="flex items-center gap-0.5 text-accent" aria-hidden="true">
+                          {Array.from({ length: rating }).map(() => (
+                            <Icon name="star-filled" size={14} />
+                          ))}
+                        </div>
+                      ) : (
+                        <span />
+                      )}
+                      <Icon name="quote" size={18} class="text-muted/40" />
+                    </div>
+
+                    <blockquote class="mt-4 text-sm leading-relaxed text-fg/90 text-pretty">
+                      {item.quote}
+                    </blockquote>
+                  </div>
+
+                  <figcaption class="mt-6 flex items-center gap-3 border-t border-border pt-4">
+                    <span
+                      class="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface-hover text-xs font-bold text-primary"
+                      aria-hidden="true"
+                    >
+                      {initials}
+                    </span>
+                    <div class="min-w-0 text-start">
+                      <p class="truncate text-sm font-semibold text-fg">{item.author}</p>
+                      {item.role && (
+                        <p class="truncate text-xs text-muted">{item.role}</p>
+                      )}
+                    </div>
+                  </figcaption>
+                </figure>
+              </div>
+            );
+          })
+        }
+      </div>
+    </div>
+  </div>
+</PageSection>
+
+<script>
+  import EmblaCarousel, { type EmblaCarouselType } from 'embla-carousel';
+  import AutoScroll from 'embla-carousel-auto-scroll';
+
+  const activeInstances: EmblaCarouselType[] = [];
+
+  function initTestimonialMarquees() {
+    const roots = document.querySelectorAll<HTMLElement>('[data-embla-marquee]');
+    const isRtl = document.documentElement.dir === 'rtl';
+
+    roots.forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const viewport = root.querySelector<HTMLElement>('[data-embla-viewport]');
+      if (!viewport) return;
+
+      const parsedSpeed = Number.parseFloat(root.dataset.speed ?? '1');
+      const speed = Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 1;
+
+      const emblaOptions = {
+        loop: true,
+        dragFree: true,
+        align: 'start' as const,
+        direction: (isRtl ? 'rtl' : 'ltr') as 'rtl' | 'ltr',
+      };
+
+      const autoScrollOptions = {
+        speed,
+        startDelay: 500,
+        stopOnInteraction: false,
+        stopOnMouseEnter: true,
+      };
+
+      const embla = EmblaCarousel(viewport, emblaOptions, [AutoScroll(autoScrollOptions)]);
+
+      activeInstances.push(embla);
+    });
+  }
+
+  function destroyTestimonialMarquees() {
+    while (activeInstances.length > 0) {
+      activeInstances.pop()?.destroy();
+    }
+  }
+
+  document.addEventListener('astro:before-swap', destroyTestimonialMarquees);
+  document.addEventListener('astro:page-load', initTestimonialMarquees);
+  initTestimonialMarquees();
+</script>

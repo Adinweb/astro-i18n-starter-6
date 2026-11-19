@@ -1,0 +1,332 @@
+---
+/**
+ * Swipeable & Clickable Tabs powered by Embla Carousel.
+ *
+ * - Clicking any tab smoothly slides to its panel (`embla.scrollTo(index)`).
+ * - Dragging / swiping the content panel updates the active tab and auto-centers
+ *   the active tab button in the horizontal scrollable tab bar for great mobile UX.
+ * - Full keyboard navigation (`ArrowLeft` / `ArrowRight` respecting RTL, `Home`, `End`).
+ * - Native RTL/LTR Embla direction, semantic OKLCH tokens, and Paraglide defaults.
+ */
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface SwipeableTabItem {
+  label: string;
+  title: string;
+  description: string;
+  icon?: string;
+  highlights?: readonly string[];
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  tabs?: readonly SwipeableTabItem[];
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale,
+  eyebrow,
+  heading,
+  subheading,
+  tabs,
+  contained = false,
+  surface = 'default',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = tabs === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_tabs_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_tabs_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_tabs_subheading({}, { locale: activeLocale })
+);
+
+const resolvedTabs: readonly SwipeableTabItem[] = tabs ?? [
+  {
+    label: m.block_tabs_1_label({}, { locale: activeLocale }),
+    title: m.block_tabs_1_title({}, { locale: activeLocale }),
+    description: m.block_tabs_1_desc({}, { locale: activeLocale }),
+    icon: 'palette',
+    highlights: [
+      m.block_tabs_1_h1({}, { locale: activeLocale }),
+      m.block_tabs_1_h2({}, { locale: activeLocale }),
+    ],
+  },
+  {
+    label: m.block_tabs_2_label({}, { locale: activeLocale }),
+    title: m.block_tabs_2_title({}, { locale: activeLocale }),
+    description: m.block_tabs_2_desc({}, { locale: activeLocale }),
+    icon: 'globe',
+    highlights: [
+      m.block_tabs_2_h1({}, { locale: activeLocale }),
+      m.block_tabs_2_h2({}, { locale: activeLocale }),
+    ],
+  },
+  {
+    label: m.block_tabs_3_label({}, { locale: activeLocale }),
+    title: m.block_tabs_3_title({}, { locale: activeLocale }),
+    description: m.block_tabs_3_desc({}, { locale: activeLocale }),
+    icon: 'bolt',
+    highlights: [
+      m.block_tabs_3_h1({}, { locale: activeLocale }),
+      m.block_tabs_3_h2({}, { locale: activeLocale }),
+    ],
+  },
+];
+
+const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const instancePrefix = id ?? `embla-tabs-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <SectionHeader
+    eyebrow={resolvedEyebrow}
+    heading={resolvedHeading}
+    subheading={resolvedSubheading}
+  />
+
+  <div
+    data-embla-tabs
+    class:list={[hasHeader && 'mt-8']}
+    data-trig
+    data-trig-once="true"
+  >
+    <!-- Scrollable mobile-friendly tab strip -->
+    <div
+      role="tablist"
+      aria-label={resolvedHeading ?? resolvedEyebrow ?? m.block_tabs_eyebrow({}, { locale: activeLocale })}
+      data-embla-tablist
+      class="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {
+        resolvedTabs.map((tab, idx) => {
+          const active = idx === 0;
+          return (
+            <button
+              type="button"
+              role="tab"
+              id={`${instancePrefix}-tab-${idx}`}
+              aria-controls={`${instancePrefix}-panel-${idx}`}
+              aria-selected={active ? 'true' : 'false'}
+              tabindex={active ? 0 : -1}
+              data-embla-tab={String(idx)}
+              class:list={[
+                'inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                active
+                  ? 'border-primary bg-primary text-primary-fg shadow-xs'
+                  : 'border-border bg-surface text-muted hover:border-primary/40 hover:text-fg',
+              ]}
+            >
+              {tab.icon && <Icon name={tab.icon} size={16} />}
+              <span>{tab.label}</span>
+            </button>
+          );
+        })
+      }
+    </div>
+
+    <!-- Swipeable Embla viewport -->
+    <div
+      data-embla-viewport
+      class:list={[
+        'mt-4 cursor-grab overflow-hidden rounded-2xl border border-border shadow-xs active:cursor-grabbing',
+        cardSurface,
+      ]}
+    >
+      <div class="flex touch-pan-y">
+        {
+          resolvedTabs.map((tab, idx) => (
+            <div
+              role="tabpanel"
+              id={`${instancePrefix}-panel-${idx}`}
+              aria-labelledby={`${instancePrefix}-tab-${idx}`}
+              class="min-w-0 shrink-0 basis-full p-6 sm:p-8"
+            >
+              <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
+                {tab.icon && (
+                  <span
+                    class="inline-flex size-12 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-hover/70 text-primary"
+                    aria-hidden="true"
+                  >
+                    <Icon name={tab.icon} size={22} />
+                  </span>
+                )}
+
+                <div class="min-w-0 flex-1 text-start">
+                  <h3 class="text-xl font-bold tracking-tight text-fg sm:text-2xl text-balance">
+                    {tab.title}
+                  </h3>
+                  <p class="mt-2.5 text-sm leading-relaxed text-muted sm:text-base text-pretty">
+                    {tab.description}
+                  </p>
+
+                  {tab.highlights && tab.highlights.length > 0 && (
+                    <ul class="mt-5 grid gap-2.5 sm:grid-cols-2">
+                      {tab.highlights.map((item) => (
+                        <li class="flex items-start gap-2.5 text-sm text-fg/90">
+                          <Icon name="circle-check" size={17} class="mt-0.5 shrink-0 text-primary" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- Compact progress dots for mobile swipe feedback -->
+    {
+      resolvedTabs.length > 1 && (
+        <div class="mt-4 flex items-center justify-center gap-2 print:hidden" aria-hidden="true">
+          {resolvedTabs.map((_, idx) => (
+            <span
+              data-embla-dot={String(idx)}
+              class:list={[
+                'block h-1.5 rounded-full transition-all duration-200',
+                idx === 0 ? 'w-6 bg-primary' : 'w-1.5 bg-border',
+              ]}
+            />
+          ))}
+        </div>
+      )
+    }
+  </div>
+</PageSection>
+
+<script>
+  import EmblaCarousel, { type EmblaCarouselType } from 'embla-carousel';
+
+  const activeTabInstances: EmblaCarouselType[] = [];
+
+  function initEmblaTabs() {
+    const roots = document.querySelectorAll<HTMLElement>('[data-embla-tabs]');
+    const isRtl = document.documentElement.dir === 'rtl';
+
+    roots.forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const viewport = root.querySelector<HTMLElement>('[data-embla-viewport]');
+      const tabButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-embla-tab]'));
+      const dots = Array.from(root.querySelectorAll<HTMLElement>('[data-embla-dot]'));
+      if (!viewport || tabButtons.length === 0) return;
+
+      const embla = EmblaCarousel(viewport, {
+        loop: false,
+        direction: isRtl ? 'rtl' : 'ltr',
+        align: 'start',
+        skipSnaps: false,
+      });
+
+      activeTabInstances.push(embla);
+
+      const syncActiveTab = (scrollTabIntoView = false) => {
+        const selected = embla.selectedScrollSnap();
+
+        tabButtons.forEach((btn, idx) => {
+          const active = idx === selected;
+          btn.setAttribute('aria-selected', String(active));
+          btn.tabIndex = active ? 0 : -1;
+          btn.classList.toggle('border-primary', active);
+          btn.classList.toggle('bg-primary', active);
+          btn.classList.toggle('text-primary-fg', active);
+          btn.classList.toggle('shadow-xs', active);
+          btn.classList.toggle('border-border', !active);
+          btn.classList.toggle('bg-surface', !active);
+          btn.classList.toggle('text-muted', !active);
+          btn.classList.toggle('hover:border-primary/40', !active);
+          btn.classList.toggle('hover:text-fg', !active);
+
+          if (active && scrollTabIntoView) {
+            btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        });
+
+        dots.forEach((dot, idx) => {
+          const active = idx === selected;
+          dot.classList.toggle('w-6', active);
+          dot.classList.toggle('bg-primary', active);
+          dot.classList.toggle('w-1.5', !active);
+          dot.classList.toggle('bg-border', !active);
+        });
+      };
+
+      tabButtons.forEach((btn, idx) => {
+        btn.addEventListener('click', () => {
+          embla.scrollTo(idx);
+        });
+
+        btn.addEventListener('keydown', (event) => {
+          const nextKey = isRtl ? 'ArrowLeft' : 'ArrowRight';
+          const prevKey = isRtl ? 'ArrowRight' : 'ArrowLeft';
+          let targetIdx: number | null = null;
+
+          if (event.key === nextKey) {
+            targetIdx = (idx + 1) % tabButtons.length;
+          } else if (event.key === prevKey) {
+            targetIdx = (idx - 1 + tabButtons.length) % tabButtons.length;
+          } else if (event.key === 'Home') {
+            targetIdx = 0;
+          } else if (event.key === 'End') {
+            targetIdx = tabButtons.length - 1;
+          }
+
+          if (targetIdx !== null) {
+            event.preventDefault();
+            embla.scrollTo(targetIdx);
+            tabButtons[targetIdx]?.focus();
+          }
+        });
+      });
+
+      embla.on('select', () => syncActiveTab(true));
+      syncActiveTab(false);
+    });
+  }
+
+  function destroyEmblaTabs() {
+    while (activeTabInstances.length > 0) {
+      activeTabInstances.pop()?.destroy();
+    }
+  }
+
+  document.addEventListener('astro:before-swap', destroyEmblaTabs);
+  document.addEventListener('astro:page-load', initEmblaTabs);
+  initEmblaTabs();
+</script>

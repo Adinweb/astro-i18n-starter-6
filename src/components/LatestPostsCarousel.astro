@@ -1,0 +1,254 @@
+---
+/**
+ * Latest Blog Posts Carousel powered by Embla Carousel.
+ *
+ * - Automatically queries published `blog` entries in the active locale
+ *   (honoring `content.types.blog.enabled`, `limit`, and optional `category`).
+ * - Reuses `<PostCard headingTag="h3" />` for 100% DRY visual parity.
+ * - Responsive multi-card Embla track with RTL-mirrored `<IconButton />` arrows,
+ *   slide snap dots, and optional "View all" CTA button.
+ */
+import { getCollection } from 'astro:content';
+import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
+import IconButton from '@/components/IconButton.astro';
+import PageSection from '@/components/PageSection.astro';
+import PostCard from '@/components/PostCard.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { getSortedLocaleEntries } from '@/libs/content/entries';
+import { getBlogIndexHref, getBlogPostHref } from '@/libs/content/service';
+import { getContentType } from '@/libs/content/types';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  limit?: number;
+  category?: string;
+  viewAllHref?: string | null;
+  viewAllLabel?: string;
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale,
+  eyebrow,
+  heading,
+  subheading,
+  limit = 6,
+  category,
+  viewAllHref,
+  viewAllLabel,
+  contained = false,
+  surface = 'default',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const blogEnabled = getContentType('blog').enabled;
+
+const posts = blogEnabled
+  ? getSortedLocaleEntries(await getCollection('blog'), activeLocale)
+      .filter((post) => !category || post.data.categories.includes(category))
+      .slice(0, limit)
+  : [];
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  true,
+  m.block_posts_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  true,
+  m.block_posts_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  true,
+  m.block_posts_subheading({}, { locale: activeLocale })
+);
+
+const resolvedViewAllHref =
+  viewAllHref === null
+    ? undefined
+    : (viewAllHref ?? (blogEnabled ? getBlogIndexHref(activeLocale) : undefined));
+const resolvedViewAllLabel =
+  viewAllLabel ?? m.block_posts_view_all({}, { locale: activeLocale });
+
+const prevLabel = m.block_carousel_prev({}, { locale: activeLocale });
+const nextLabel = m.block_carousel_next({}, { locale: activeLocale });
+---
+
+{
+  posts.length > 0 && (
+    <PageSection
+      id={id}
+      surface={contained ? 'default' : surface}
+      spacing={contained ? 'none' : spacing}
+      bleed={contained}
+      class={contained ? 'not-prose my-10' : undefined}
+    >
+      <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <SectionHeader
+          eyebrow={resolvedEyebrow}
+          heading={resolvedHeading}
+          subheading={resolvedSubheading}
+        />
+
+        <div class="flex items-center gap-3 self-start sm:self-auto print:hidden">
+          {resolvedViewAllHref && (
+            <Button
+              href={resolvedViewAllHref}
+              variant="secondary"
+              size="md"
+              icon="arrow-right"
+            >
+              {resolvedViewAllLabel}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div
+        data-embla-posts
+        role="region"
+        aria-roledescription="carousel"
+        aria-label={resolvedHeading ?? resolvedEyebrow ?? m.block_posts_eyebrow({}, { locale: activeLocale })}
+        class="mt-8"
+        data-trig
+        data-trig-once="true"
+      >
+        <div
+          data-embla-viewport
+          class="cursor-grab overflow-hidden active:cursor-grabbing"
+        >
+          <div class="flex touch-pan-y">
+            {posts.map((post) => (
+              <div class="min-w-0 shrink-0 basis-[86%] pe-5 sm:basis-[50%] lg:basis-[33.3333%]">
+                <PostCard
+                  post={post}
+                  locale={activeLocale}
+                  href={getBlogPostHref(post.data.slug, activeLocale)}
+                  headingTag="h3"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {posts.length > 1 && (
+          <div class="mt-6 flex flex-wrap items-center justify-between gap-4 print:hidden">
+            <div class="flex items-center gap-2" data-embla-dots>
+              {posts.map((_, idx) => {
+                const numLabel = formatNumber(idx + 1, activeLocale);
+                return (
+                  <button
+                    type="button"
+                    data-embla-dot={String(idx)}
+                    aria-label={m.block_carousel_dot_aria(
+                      { number: numLabel },
+                      { locale: activeLocale }
+                    )}
+                    class:list={[
+                      'h-2 cursor-pointer rounded-full transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                      idx === 0 ? 'w-7 bg-primary' : 'w-2 bg-border hover:bg-primary/50',
+                    ]}
+                  />
+                );
+              })}
+            </div>
+
+            <div class="flex items-center gap-2">
+              <IconButton label={prevLabel} data-embla-prev>
+                <Icon name="chevron-left" size={18} class="rtl:rotate-180" />
+              </IconButton>
+              <IconButton label={nextLabel} data-embla-next>
+                <Icon name="chevron-right" size={18} class="rtl:rotate-180" />
+              </IconButton>
+            </div>
+          </div>
+        )}
+      </div>
+    </PageSection>
+  )
+}
+
+<script>
+  import EmblaCarousel, { type EmblaCarouselType } from 'embla-carousel';
+
+  const activePostCarousels: EmblaCarouselType[] = [];
+
+  function initLatestPostsCarousels() {
+    const roots = document.querySelectorAll<HTMLElement>('[data-embla-posts]');
+    const isRtl = document.documentElement.dir === 'rtl';
+
+    roots.forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const viewport = root.querySelector<HTMLElement>('[data-embla-viewport]');
+      const prevBtn = root.querySelector<HTMLButtonElement>('[data-embla-prev]');
+      const nextBtn = root.querySelector<HTMLButtonElement>('[data-embla-next]');
+      const dots = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-embla-dot]'));
+      if (!viewport) return;
+
+      const embla = EmblaCarousel(viewport, {
+        loop: false,
+        align: 'start',
+        containScroll: 'trimSnaps',
+        direction: isRtl ? 'rtl' : 'ltr',
+      });
+
+      activePostCarousels.push(embla);
+
+      const syncControls = () => {
+        const snapCount = embla.scrollSnapList().length;
+        const selected = embla.selectedScrollSnap();
+
+        if (prevBtn) prevBtn.disabled = !embla.canScrollPrev();
+        if (nextBtn) nextBtn.disabled = !embla.canScrollNext();
+
+        dots.forEach((dot, idx) => {
+          dot.hidden = idx >= snapCount;
+          const active = idx === selected;
+          dot.setAttribute('aria-current', active ? 'true' : 'false');
+          dot.classList.toggle('w-7', active);
+          dot.classList.toggle('bg-primary', active);
+          dot.classList.toggle('w-2', !active);
+          dot.classList.toggle('bg-border', !active);
+          dot.classList.toggle('hover:bg-primary/50', !active);
+        });
+      };
+
+      prevBtn?.addEventListener('click', () => embla.scrollPrev());
+      nextBtn?.addEventListener('click', () => embla.scrollNext());
+      dots.forEach((dot, idx) => {
+        dot.addEventListener('click', () => embla.scrollTo(idx));
+      });
+
+      embla.on('select', syncControls);
+      embla.on('reInit', syncControls);
+      syncControls();
+    });
+  }
+
+  function destroyLatestPostsCarousels() {
+    while (activePostCarousels.length > 0) {
+      activePostCarousels.pop()?.destroy();
+    }
+  }
+
+  document.addEventListener('astro:before-swap', destroyLatestPostsCarousels);
+  document.addEventListener('astro:page-load', initLatestPostsCarousels);
+  initLatestPostsCarousels();
+</script>

@@ -13,6 +13,9 @@ import AuthFormCard from '@/components/AuthFormCard.astro';
 import AvatarGroup from '@/components/AvatarGroup.astro';
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
 import BentoGrid from '@/components/BentoGrid.astro';
+import LatestPostsCarousel from '@/components/LatestPostsCarousel.astro';
+import SwipeableTabs from '@/components/SwipeableTabs.astro';
+import TestimonialMarquee from '@/components/TestimonialMarquee.astro';
 import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import Button from '@/components/Button.astro';
@@ -1472,6 +1475,98 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
 <ProductShowcaseGrid columns={3} enableFilter />`}
   >
     <ProductShowcaseGrid contained columns={3} enableFilter eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-testimonial-marquee"
+    surface="surface"
+    name="TestimonialMarquee"
+    category="اسلایدر Embla"
+    title="TestimonialMarquee (مارکی دیدگاه‌ها با Drag آزاد)"
+    summary="سکشن کامل دیدگاه مشتریان با Embla Carousel و پلاگین embla-carousel-auto-scroll؛ دارای کشیدن آزاد (dragFree) با مومنتوم طبیعی، ادامه‌ی خودکار حرکت پس از تعامل کاربر، پشتیبانی کامل از RTL و احترام به حالت کاهش حرکت."
+    propsList={[
+      { name: "eyebrow / heading / subheading", type: "string | null", defaultVal: "پیش‌فرض دوزبانه", description: "سرتیتر، عنوان و زیرعنوان سکشن بالای مارکی." },
+      { name: "items", type: "MarqueeTestimonialItem[]", defaultVal: "پیش‌فرض دوزبانه", description: "لیست کارت‌های دیدگاه شامل { quote, author, role?, rating? }." },
+      { name: "speed", type: "number", defaultVal: "0.9", description: "سرعت حرکت خودکار بر حسب پیکسل در هر فریم." },
+      { name: "surface", type: "'default' | 'surface' | 'subtle'", defaultVal: "'default'", description: "رنگ پس‌زمینه‌ی سکشن." }
+    ]}
+    usage={`import TestimonialMarquee from '@/components/TestimonialMarquee.astro';
+
+<TestimonialMarquee
+  surface="surface"
+  eyebrow="دیدگاه مشتریان"
+  heading="تجربه‌ی تیم‌های محصول و مهندسی"
+  subheading="کارت‌ها را آزادانه بکشید — پس از رها کردن، حرکت پیوسته ادامه می‌یابد."
+  speed={1}
+  items={[
+    {
+      quote: "ساخت وبسایت‌های دوزبانه و راست‌به‌چپ با این استارتر سرعت تحویل پروژه‌های ما را دو برابر کرد.",
+      author: "سارا احمدی",
+      role: "سرپرست فرانت‌اند",
+      rating: 5
+    }
+  ]}
+/>`}
+  >
+    <TestimonialMarquee contained speed={1} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-swipeable-tabs"
+    name="SwipeableTabs"
+    category="اسلایدر Embla"
+    title="SwipeableTabs (تب‌های قابل کشیدن با Embla)"
+    summary="سکشن کامل تب‌های تعاملی متصل به Embla Carousel؛ جابه‌جایی بین محتوای تب‌ها هم با کلیک روی دکمه‌ها و کیبورد (سازگار با RTL) و هم با کشیدن (Swipe/Drag) روی محتوا انجام می‌شود و نوار تب‌ها در موبایل به‌صورت خودکار تب فعال را در مرکز قرار می‌دهد."
+    propsList={[
+      { name: "eyebrow / heading / subheading", type: "string | null", defaultVal: "پیش‌فرض دوزبانه", description: "سرتیتر، عنوان و زیرعنوان سکشن بالای تب‌ها." },
+      { name: "tabs", type: "SwipeableTabItem[]", defaultVal: "۳ تب پیش‌فرض", description: "هر تب شامل { label, title, description, icon?, highlights? }." },
+      { name: "surface", type: "'default' | 'surface' | 'subtle'", defaultVal: "'default'", description: "رنگ پس‌زمینه‌ی سکشن." }
+    ]}
+    usage={`import SwipeableTabs from '@/components/SwipeableTabs.astro';
+
+<SwipeableTabs
+  surface="default"
+  eyebrow="ارکان پلتفرم"
+  heading="مرور ساختار و امکانات کلیدی"
+  subheading="روی تب‌ها کلیک کنید یا کارت محتوا را به چپ و راست بکشید."
+  tabs={[
+    {
+      label: "سیستم طراحی",
+      icon: "palette",
+      title: "زبان بصری یکپارچه با OKLCH",
+      description: "کنتراست استاندارد در حالت روشن، تیره و چاپ.",
+      highlights: ["توکن‌های معنایی رنگ", "فاصله‌گذاری منطقی RTL"]
+    }
+  ]}
+/>`}
+  >
+    <SwipeableTabs contained />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-latest-posts-carousel"
+    surface="surface"
+    name="LatestPostsCarousel"
+    category="اسلایدر Embla"
+    title="LatestPostsCarousel (کروسل آخرین پست‌های بلاگ)"
+    summary="سکشن کامل نمایش آخرین مطالب منتشرشده‌ی بلاگ در زبان فعال با Embla Carousel؛ همراه با هدر سکشن، دکمه‌ی مشاهده همه، استفاده مجدد از PostCard، دکمه‌های پیمایش آینه‌شده در RTL و نقاط وضعیت."
+    propsList={[
+      { name: "eyebrow / heading / subheading", type: "string | null", defaultVal: "پیش‌فرض دوزبانه", description: "سرتیتر، عنوان و زیرعنوان سکشن در کنار دکمه‌ی مشاهده همه." },
+      { name: "limit", type: "number", defaultVal: "6", description: "حداکثر تعداد پست‌های خوانده‌شده از کالکشن بلاگ." },
+      { name: "category", type: "string", defaultVal: "undefined", description: "فیلتر اختیاری بر اساس اسلاگ دسته‌بندی." },
+      { name: "viewAllHref", type: "string | null", defaultVal: "نشانی صفحه بلاگ", description: "تغییر لینک یا مخفی کردن (null) دکمه‌ی مشاهده همه." }
+    ]}
+    usage={`import LatestPostsCarousel from '@/components/LatestPostsCarousel.astro';
+
+<LatestPostsCarousel
+  surface="surface"
+  eyebrow="از وبلاگ"
+  heading="آخرین یادداشت‌های فنی"
+  subheading="با کشیدن کارت‌ها یا دکمه‌های پیمایش آخرین مقالات را مرور کنید."
+  limit={6}
+/>`}
+  >
+    <LatestPostsCarousel contained limit={6} />
   </ComponentDoc>
 
   <ComponentDoc

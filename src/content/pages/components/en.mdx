@@ -13,6 +13,9 @@ import AuthFormCard from '@/components/AuthFormCard.astro';
 import AvatarGroup from '@/components/AvatarGroup.astro';
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
 import BentoGrid from '@/components/BentoGrid.astro';
+import LatestPostsCarousel from '@/components/LatestPostsCarousel.astro';
+import SwipeableTabs from '@/components/SwipeableTabs.astro';
+import TestimonialMarquee from '@/components/TestimonialMarquee.astro';
 import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import Button from '@/components/Button.astro';
@@ -1472,6 +1475,98 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
 <ProductShowcaseGrid columns={3} enableFilter />`}
   >
     <ProductShowcaseGrid contained columns={3} enableFilter eyebrow={null} heading={null} subheading={null} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-testimonial-marquee"
+    surface="surface"
+    name="TestimonialMarquee"
+    category="Embla Carousel"
+    title="TestimonialMarquee (Auto-Scroll + Free Drag)"
+    summary="Complete testimonials marquee section powered by Embla Carousel + embla-carousel-auto-scroll with free drag, momentum physics, automatic resume after user interaction, RTL direction support, and reduced-motion safety."
+    propsList={[
+      { name: "eyebrow / heading / subheading", type: "string | null", defaultVal: "Localized defaults", description: "Section header copy rendered above the marquee." },
+      { name: "items", type: "MarqueeTestimonialItem[]", defaultVal: "Localized defaults", description: "Testimonial cards with { quote, author, role?, rating? }." },
+      { name: "speed", type: "number", defaultVal: "0.9", description: "Auto-scroll speed in pixels per frame." },
+      { name: "surface", type: "'default' | 'surface' | 'subtle'", defaultVal: "'default'", description: "Section background tone." }
+    ]}
+    usage={`import TestimonialMarquee from '@/components/TestimonialMarquee.astro';
+
+<TestimonialMarquee
+  surface="surface"
+  eyebrow="Customer Stories"
+  heading="Loved by product & engineering teams"
+  subheading="Drag freely with momentum — the marquee resumes automatically."
+  speed={1}
+  items={[
+    {
+      quote: "Shipping bilingual RTL/LTR sites used to take weeks. Now it takes an afternoon.",
+      author: "Sara Ahmadi",
+      role: "Head of Frontend",
+      rating: 5
+    }
+  ]}
+/>`}
+  >
+    <TestimonialMarquee contained speed={1} />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-swipeable-tabs"
+    name="SwipeableTabs"
+    category="Embla Carousel"
+    title="SwipeableTabs (Click + Drag/Swipe)"
+    summary="Complete interactive tabs section powered by Embla Carousel. Switch panels by clicking a tab, using RTL-aware arrow keys, or swiping/dragging the panel directly—with auto-centering mobile tab bar."
+    propsList={[
+      { name: "eyebrow / heading / subheading", type: "string | null", defaultVal: "Localized defaults", description: "Section header copy rendered above the tabs." },
+      { name: "tabs", type: "SwipeableTabItem[]", defaultVal: "3 localized tabs", description: "Each tab accepts { label, title, description, icon?, highlights? }." },
+      { name: "surface", type: "'default' | 'surface' | 'subtle'", defaultVal: "'default'", description: "Section background tone." }
+    ]}
+    usage={`import SwipeableTabs from '@/components/SwipeableTabs.astro';
+
+<SwipeableTabs
+  surface="default"
+  eyebrow="Platform Pillars"
+  heading="Explore the architecture"
+  subheading="Click any tab or swipe the card left and right."
+  tabs={[
+    {
+      label: "Design System",
+      icon: "palette",
+      title: "Unified OKLCH visual language",
+      description: "Consistent contrast across light, dark, and print modes.",
+      highlights: ["Semantic colour tokens", "Logical RTL spacing"]
+    }
+  ]}
+/>`}
+  >
+    <SwipeableTabs contained />
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-latest-posts-carousel"
+    surface="surface"
+    name="LatestPostsCarousel"
+    category="Embla Carousel"
+    title="LatestPostsCarousel"
+    summary="Complete blog showcase section with a responsive multi-slide Embla Carousel for the latest published posts in the active locale. Reuses <PostCard headingTag='h3' /> with RTL-mirrored navigation arrows, snap dots, and a View All CTA."
+    propsList={[
+      { name: "eyebrow / heading / subheading", type: "string | null", defaultVal: "Localized defaults", description: "Section header copy rendered alongside the View All button." },
+      { name: "limit", type: "number", defaultVal: "6", description: "Maximum number of published posts queried automatically." },
+      { name: "category", type: "string", defaultVal: "undefined", description: "Optional category slug filter." },
+      { name: "viewAllHref", type: "string | null", defaultVal: "Blog index URL", description: "Override or hide (null) the View All CTA button." }
+    ]}
+    usage={`import LatestPostsCarousel from '@/components/LatestPostsCarousel.astro';
+
+<LatestPostsCarousel
+  surface="surface"
+  eyebrow="From the Blog"
+  heading="Latest engineering notes"
+  subheading="Swipe or use the arrows to browse recent articles."
+  limit={6}
+/>`}
+  >
+    <LatestPostsCarousel contained limit={6} />
   </ComponentDoc>
 
   <ComponentDoc
