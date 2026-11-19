@@ -41,7 +41,13 @@ const hasPrelude = Astro.slots.has('prelude');
 const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
 ---
 
-<div class="max-w-4xl" data-trig>
+<div
+  class="max-w-4xl"
+  data-trig-stagger
+  data-trig-stagger-mode="linear"
+  data-trig-stagger-delay="0.1"
+  data-trig-once="true"
+>
   <span
     class="mb-5 block h-1 w-12 rounded-full bg-accent"
     aria-hidden="true"

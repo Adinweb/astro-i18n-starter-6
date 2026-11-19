@@ -38,7 +38,10 @@ const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
 <header
   aria-labelledby={titleId}
   data-page-header
-  data-trig
+  data-trig-stagger
+  data-trig-stagger-mode="linear"
+  data-trig-stagger-delay="0.1"
+  data-trig-once="true"
   class:list={[
     'border-b border-border pb-8 sm:pb-10',
     isCentered && 'text-center',

@@ -81,7 +81,13 @@ const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
         : 'pb-14 pt-28 sm:pb-18 sm:pt-36 lg:pb-20 lg:pt-40',
     ]}
   >
-    <div class="max-w-4xl" data-trig>
+    <div
+      class="max-w-4xl"
+      data-trig-stagger
+      data-trig-stagger-mode="linear"
+      data-trig-stagger-delay="0.1"
+      data-trig-once="true"
+    >
       <p class="hero-badge print:border-border print:text-fg">
         <Icon name="shield" size={14} class="me-1.5" />
         {m.home_hero_kicker({}, { locale })}
@@ -141,7 +147,9 @@ const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
     <ul
       class="mt-12 flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-8 lg:mt-16"
       data-trig-stagger
-      data-trig-stagger-delay="0.08"
+      data-trig-stagger-mode="linear"
+      data-trig-stagger-delay="0.1"
+      data-trig-once="true"
     >
       {
         highlights.map((item) => (

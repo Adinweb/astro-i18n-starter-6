@@ -133,7 +133,13 @@ const isHeroSurface = surface === 'hero';
 
   <div class="layout-container">
     <div class:list={[hasMedia ? 'grid items-center gap-10 lg:grid-cols-12 lg:gap-12' : 'max-w-3xl']}>
-      <div class:list={[hasMedia && 'lg:col-span-6']} data-trig data-trig-direction="start">
+      <div
+        class:list={[hasMedia && 'lg:col-span-6']}
+        data-trig-stagger
+        data-trig-stagger-mode="linear"
+        data-trig-stagger-delay="0.1"
+        data-trig-once="true"
+      >
         {
           resolvedEyebrow && (
             <p
@@ -218,7 +224,7 @@ const isHeroSurface = surface === 'hero';
 
       {
         hasMedia && (
-          <div class="lg:col-span-6 trig-delay-100" data-trig data-trig-direction="end">
+          <div class="lg:col-span-6 trig-delay-100" data-trig data-trig-direction="end" data-trig-once="true">
             {Astro.slots.has('media') ? (
               <slot name="media" />
             ) : (
