@@ -117,7 +117,9 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
       hasAsymmetric ? 'md:grid-cols-6' : 'sm:grid-cols-2 lg:grid-cols-3',
     ]}
     data-trig-stagger
+    data-trig-stagger-mode="linear"
     data-trig-stagger-delay="0.06"
+    data-trig-once="true"
   >
     {
       resolvedItems.map((item, idx) => {

@@ -92,10 +92,11 @@ const isDarkSurface = variant === 'primary' || variant === 'hero';
   <div
     data-promo-banner={id ?? 'default'}
     data-trig
+    data-trig-once="true"
     role="region"
     aria-label={resolvedBadge ?? resolvedMessage}
     class:list={[
-      'relative overflow-hidden rounded-2xl border px-4 py-3.5 shadow-xs sm:px-6',
+      'fadeInUpSm relative overflow-hidden rounded-2xl border px-4 py-3.5 shadow-xs sm:px-6',
       VARIANTS[variant],
     ]}
   >

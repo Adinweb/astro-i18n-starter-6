@@ -12,6 +12,7 @@ import AboutSplitSection from '@/components/AboutSplitSection.astro';
 import AuthFormCard from '@/components/AuthFormCard.astro';
 import AvatarGroup from '@/components/AvatarGroup.astro';
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
+import BentoGrid from '@/components/BentoGrid.astro';
 import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import Button from '@/components/Button.astro';
@@ -78,6 +79,7 @@ import heroVisual from './components.png';
       <a href="#sec-features" class="chip px-3.5 py-1.5 text-xs font-semibold">Features &amp; Workflow</a>
       <a href="#sec-proof" class="chip px-3.5 py-1.5 text-xs font-semibold">Pricing, Media &amp; Proof</a>
       <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">Contact &amp; CTA</a>
+      <a href="#sec-motion" class="chip px-3.5 py-1.5 text-xs font-semibold">Motion &amp; Scroll</a>
     </div>
     <span class="text-xs font-medium text-muted">47 reusable building blocks</span>
   </div>
@@ -1069,6 +1071,99 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
   </ComponentDoc>
 
   <ComponentDoc
+    id="doc-bento-grid"
+    surface="surface"
+    name="BentoGrid"
+    category="Features & Content"
+    title="BentoGrid"
+    summary="Asymmetric 5-card, 6-column Bento Grid with a featured metric highlight, circular ring emblem, sparkline performance card, and two wide split preview cards. Adapts automatically to OKLCH theme tokens, dark mode, and RTL."
+    propsList={[
+      { name: "layout", type: "'classic' | 'spotlight' | 'mosaic'", defaultVal: "'classic'", description: "Switches grid arrangement: 3+2 classic, tall spotlight + full-width footer, or reversed 2+3 mosaic." },
+      { name: "metricCard", type: "BentoGridMetricCard", defaultVal: "100% Customizable", description: "Featured top-start metric card ({ metric, title, href? })." },
+      { name: "securityCard", type: "BentoGridFeatureCard", defaultVal: "Secure by default", description: "Centered double-ring icon card ({ title, description, icon?, href? })." },
+      { name: "speedCard", type: "BentoGridFeatureCard", defaultVal: "Faster than light", description: "Performance card with CSS sparkline bars." },
+      { name: "analyticsCard", type: "BentoGridFeatureCard", defaultVal: "Built-in insights", description: "Wide 2-column split card with inset chart preview." },
+      { name: "collaborationCard", type: "BentoGridFeatureCard", defaultVal: "Team-ready workflow", description: "Wide 2-column split card with stacked workflow rows." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "Skips redundant .layout-container padding when nested." }
+    ]}
+    usage={`import BentoGrid from '@/components/BentoGrid.astro';
+
+<!-- Classic 3+2 grid (default) -->
+<BentoGrid />
+
+<!-- Tall Spotlight + Full-Width Row -->
+<BentoGrid layout="spotlight" />
+
+<!-- Reversed 2+3 Mosaic with custom cards -->
+<BentoGrid
+  layout="mosaic"
+  metricCard={{ metric: "99.9%", title: "Uptime SLA", href: "/features/" }}
+/>`}
+  >
+    <div class="space-y-12">
+      <div>
+        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Layout: Classic (3 + 2 Default)</p>
+        <BentoGrid
+          contained
+          layout="classic"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+        />
+      </div>
+
+      <div>
+        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Layout: Spotlight (Tall Metric + 4-Col Split + Full-Width Banner)</p>
+        <BentoGrid
+          contained
+          layout="spotlight"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+        />
+      </div>
+
+      <div>
+        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Layout: Mosaic (Reversed 2 + 3 with Custom Props)</p>
+        <BentoGrid
+          contained
+          layout="mosaic"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+          metricCard={{
+            metric: "99.9%",
+            title: "Static Uptime",
+            href: "/features/"
+          }}
+          securityCard={{
+            icon: "lock",
+            title: "Zero-Trust Headers",
+            description: "Strict CSP, HSTS, and zero third-party runtime trackers out of the box.",
+            href: "/features/"
+          }}
+          speedCard={{
+            icon: "rocket",
+            title: "Sub-50ms TTFB",
+            description: "Pre-rendered HTML and WebP assets served directly from global edge nodes."
+          }}
+          analyticsCard={{
+            icon: "compass",
+            title: "Core Web Vitals",
+            description: "Zero CLS scroll reveals and lightweight client bundles keep Lighthouse at 100."
+          }}
+          collaborationCard={{
+            icon: "layers",
+            title: "Multi-Locale Content",
+            description: "Typed content collections keep English and Persian pages in strict parity.",
+            href: "/about/"
+          }}
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
     id="doc-feature-tabs"
     surface="surface"
     name="FeatureTabsSection"
@@ -1570,6 +1665,126 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
         primaryCta={{ label: "Inspect Pricing", href: "/pricing/", icon: "arrow-right" }}
         secondaryCta={{ label: "Explore Features", href: "/features/" }}
       />
+    </div>
+  </ComponentDoc>
+</div>
+
+<div id="sec-motion" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-motion-reveals"
+    name="ChronoTrig Presets"
+    category="Motion & Scroll"
+    title="Scroll Reveal Presets & RTL Directions"
+    summary="Zero-CLS, print-safe scroll entrances powered by ChronoTrig v5.2.0. All states are scoped under .js, respect html[data-motion='reduced'], and automatically mirror logical directions (start / end / clipStart) in RTL."
+    propsList={[
+      { name: "data-trig", type: "boolean", description: "Registers the element with ChronoTrig's IntersectionObserver." },
+      { name: "data-trig-once", type: "'true'", description: "Triggers once, releases will-change, and unobserves for 0% scroll overhead." },
+      { name: "data-trig-direction", type: "'start' | 'end'", description: "RTL-safe horizontal entrance from reading start or reading end." },
+      { name: "class presets", type: "'fadeInUpSm' | 'blurIn' | 'clipUp' | 'clipStart' | 'zoomIn'", description: "Ready-made v5.2.0 reveal keyframes and delay/duration utility modifiers." }
+    ]}
+    usage={`<!-- Modern reveal presets (one-shot) -->
+<div class="fadeInUpSm" data-trig data-trig-once="true">Subtle 18px reveal</div>
+<div class="blurIn trig-delay-100" data-trig data-trig-once="true">Glass blur-to-sharp</div>
+<div class="clipUp trig-delay-200" data-trig data-trig-once="true">Editorial clip wipe</div>
+<div class="clipStart trig-delay-300" data-trig data-trig-once="true">Logical inline-start wipe</div>
+
+<!-- RTL-safe directional slide -->
+<div data-trig data-trig-direction="start" data-trig-once="true">From reading start</div>
+<div data-trig data-trig-direction="end" data-trig-once="true">From reading end</div>`}
+  >
+    <div class="space-y-6">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="fadeInUpSm rounded-2xl border border-border bg-surface p-5" data-trig data-trig-once="true">
+          <p class="text-xs font-semibold uppercase tracking-wider text-primary">.fadeInUpSm</p>
+          <p class="mt-1.5 text-sm text-muted">Subtle 18px upward fade ideal for cards and copy.</p>
+        </div>
+        <div class="blurIn trig-delay-100 rounded-2xl border border-border bg-surface p-5" data-trig data-trig-once="true">
+          <p class="text-xs font-semibold uppercase tracking-wider text-primary">.blurIn</p>
+          <p class="mt-1.5 text-sm text-muted">Blur-to-sharp entrance (auto-degrades on mobile).</p>
+        </div>
+        <div class="clipUp trig-delay-200 rounded-2xl border border-border bg-surface p-5" data-trig data-trig-once="true">
+          <p class="text-xs font-semibold uppercase tracking-wider text-primary">.clipUp</p>
+          <p class="mt-1.5 text-sm text-muted">Editorial bottom-to-top clip-path mask reveal.</p>
+        </div>
+        <div class="clipStart trig-delay-300 rounded-2xl border border-border bg-surface p-5" data-trig data-trig-once="true">
+          <p class="text-xs font-semibold uppercase tracking-wider text-primary">.clipStart</p>
+          <p class="mt-1.5 text-sm text-muted">Logical inline-start wipe (mirrors in RTL).</p>
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="rounded-2xl border border-border bg-surface p-5" data-trig data-trig-direction="start" data-trig-once="true">
+          <p class="text-xs font-semibold uppercase tracking-wider text-accent">data-trig-direction="start"</p>
+          <p class="mt-1.5 text-sm text-muted">Enters from left in LTR and from right in RTL.</p>
+        </div>
+        <div class="trig-delay-100 rounded-2xl border border-border bg-surface p-5" data-trig data-trig-direction="end" data-trig-once="true">
+          <p class="text-xs font-semibold uppercase tracking-wider text-accent">data-trig-direction="end"</p>
+          <p class="mt-1.5 text-sm text-muted">Enters from right in LTR and from left in RTL.</p>
+        </div>
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-motion-stagger"
+    surface="surface"
+    name="ChronoTrig Stagger"
+    category="Motion & Scroll"
+    title="Harmonic Stagger Cascades"
+    summary="Wrap hero copy, grids, stat rows, or FAQ lists in [data-trig-stagger]. ChronoTrig computes --stagger-delay automatically in linear, center, wave, or reverse modes and clamps delays on mobile lightweight mode."
+    propsList={[
+      { name: "data-trig-stagger", type: "boolean", description: "Enables staggered entrance across direct children or [data-trig-stagger-item]." },
+      { name: "data-trig-stagger-mode", type: "'linear' | 'center' | 'wave' | 'reverse'", defaultVal: "'linear'", description: "Distribution curve for child delays (linear for top-to-bottom heroes & lists, center for stat/logo rows)." },
+      { name: "data-trig-stagger-delay", type: "number (seconds)", defaultVal: "0.08", description: "Step delay between items in seconds (clamped <= 0.04s on mobile)." },
+      { name: "data-trig-once", type: "'true'", description: "Propagates one-shot reveal to all stagger children." }
+    ]}
+    usage={`<!-- Top-to-bottom linear cascade (used in HeroCopy, PageHeader, SectionHeader, FaqAccordion) -->
+<div data-trig-stagger data-trig-stagger-mode="linear" data-trig-stagger-delay="0.1" data-trig-once="true">
+  <span>Eyebrow</span>
+  <h2>Heading</h2>
+  <p>Supporting description</p>
+</div>
+
+<!-- Center-out harmonic cascade (used in ProofStatsRow, PartnerLogos) -->
+<div class="grid grid-cols-4 gap-4" data-trig-stagger data-trig-stagger-mode="center" data-trig-stagger-delay="0.06" data-trig-once="true">
+  <div>01</div>
+  <div>02</div>
+  <div>03</div>
+  <div>04</div>
+</div>`}
+  >
+    <div class="space-y-6">
+      <div>
+        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">mode="linear" · delay="0.08"</p>
+        <div
+          class="grid gap-3 sm:grid-cols-4"
+          data-trig-stagger
+          data-trig-stagger-mode="linear"
+          data-trig-stagger-delay="0.08"
+          data-trig-once="true"
+        >
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">01 · First</div>
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">02 · Second</div>
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">03 · Third</div>
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">04 · Fourth</div>
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">mode="center" · delay="0.08"</p>
+        <div
+          class="grid gap-3 sm:grid-cols-4"
+          data-trig-stagger
+          data-trig-stagger-mode="center"
+          data-trig-stagger-delay="0.08"
+          data-trig-once="true"
+        >
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">Outer Start</div>
+          <div class="rounded-xl border border-primary/40 bg-primary/5 p-4 text-center text-sm font-semibold text-primary">Center A</div>
+          <div class="rounded-xl border border-primary/40 bg-primary/5 p-4 text-center text-sm font-semibold text-primary">Center B</div>
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">Outer End</div>
+        </div>
+      </div>
     </div>
   </ComponentDoc>
 </div>

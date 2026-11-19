@@ -1,0 +1,450 @@
+---
+/**
+ * Asymmetric 5-card, 6-column Bento Grid inspired by modern SaaS feature showcases,
+ * rebuilt to this starter's strict standards:
+ *
+ * - Semantic OKLCH colour tokens only (`bg-surface`, `bg-bg`, `border-border`, `text-primary`, `bg-accent`, `bg-success`).
+ * - 100% RTL-native CSS logical properties (`ms-`, `me-`, `start-`, `border-s`, `rounded-ss-2xl`).
+ * - Zero raw `<svg>` markup: uses `<Icon />` and pure CSS geometric visuals.
+ * - Paraglide compiled i18n defaults with full prop customization.
+ * - ChronoTrig v5.2.0 linear top-to-bottom stagger (`data-trig-once="true"`).
+ */
+import Icon from '@/components/Icon.astro';
+import PageSection from '@/components/PageSection.astro';
+import SectionHeader from '@/components/SectionHeader.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface BentoGridMetricCard {
+  metric: string;
+  title: string;
+  href?: string;
+}
+
+export interface BentoGridFeatureCard {
+  title: string;
+  description: string;
+  icon?: string;
+  href?: string;
+}
+
+interface Props {
+  id?: string;
+  eyebrow?: string | null;
+  heading?: string | null;
+  subheading?: string | null;
+  locale?: Locale | string;
+  metricCard?: BentoGridMetricCard;
+  securityCard?: BentoGridFeatureCard;
+  speedCard?: BentoGridFeatureCard;
+  analyticsCard?: BentoGridFeatureCard;
+  collaborationCard?: BentoGridFeatureCard;
+  layout?: 'classic' | 'spotlight' | 'mosaic';
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  eyebrow,
+  heading,
+  subheading,
+  locale,
+  metricCard,
+  securityCard,
+  speedCard,
+  analyticsCard,
+  collaborationCard,
+  layout = 'classic',
+  contained = false,
+  surface = 'default',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults =
+  metricCard === undefined &&
+  securityCard === undefined &&
+  speedCard === undefined &&
+  analyticsCard === undefined &&
+  collaborationCard === undefined;
+
+const resolvedEyebrow = resolveOptionalHeader(
+  eyebrow,
+  usingDefaults,
+  m.block_bento_grid_eyebrow({}, { locale: activeLocale })
+);
+const resolvedHeading = resolveOptionalHeader(
+  heading,
+  usingDefaults,
+  m.block_bento_grid_heading({}, { locale: activeLocale })
+);
+const resolvedSubheading = resolveOptionalHeader(
+  subheading,
+  usingDefaults,
+  m.block_bento_grid_subheading({}, { locale: activeLocale })
+);
+
+const resolvedMetric: BentoGridMetricCard = metricCard ?? {
+  metric: m.block_bento_grid_1_metric({}, { locale: activeLocale }),
+  title: m.block_bento_grid_1_title({}, { locale: activeLocale }),
+};
+
+const resolvedSecurity: BentoGridFeatureCard = securityCard ?? {
+  title: m.block_bento_grid_2_title({}, { locale: activeLocale }),
+  description: m.block_bento_grid_2_desc({}, { locale: activeLocale }),
+  icon: 'shield',
+};
+
+const resolvedSpeed: BentoGridFeatureCard = speedCard ?? {
+  title: m.block_bento_grid_3_title({}, { locale: activeLocale }),
+  description: m.block_bento_grid_3_desc({}, { locale: activeLocale }),
+  icon: 'bolt',
+};
+
+const resolvedAnalytics: BentoGridFeatureCard = analyticsCard ?? {
+  title: m.block_bento_grid_4_title({}, { locale: activeLocale }),
+  description: m.block_bento_grid_4_desc({}, { locale: activeLocale }),
+  icon: 'sparkles',
+};
+
+const resolvedCollaboration: BentoGridFeatureCard = collaborationCard ?? {
+  title: m.block_bento_grid_5_title({}, { locale: activeLocale }),
+  description: m.block_bento_grid_5_desc({}, { locale: activeLocale }),
+  icon: 'users',
+};
+
+const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
+const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const insetSurface = !contained && surface === 'surface' ? 'bg-surface/75' : 'bg-bg/75';
+
+const LAYOUT_CLASSES = {
+  classic: {
+    metric: 'col-span-full lg:col-span-2',
+    security: 'col-span-full sm:col-span-3 lg:col-span-2',
+    speed: 'col-span-full sm:col-span-3 lg:col-span-2',
+    analytics: 'col-span-full lg:col-span-3',
+    collaboration: 'col-span-full lg:col-span-3',
+  },
+  spotlight: {
+    metric: 'col-span-full lg:col-span-2 lg:row-span-2 lg:order-1',
+    analytics: 'col-span-full lg:col-span-4 lg:order-2',
+    security: 'col-span-full sm:col-span-3 lg:col-span-2 lg:order-3',
+    speed: 'col-span-full sm:col-span-3 lg:col-span-2 lg:order-4',
+    collaboration: 'col-span-full lg:col-span-6 lg:order-5',
+  },
+  mosaic: {
+    analytics: 'col-span-full lg:col-span-3 lg:order-1',
+    collaboration: 'col-span-full lg:col-span-3 lg:order-2',
+    metric: 'col-span-full lg:col-span-2 lg:order-3',
+    security: 'col-span-full sm:col-span-3 lg:col-span-2 lg:order-4',
+    speed: 'col-span-full sm:col-span-3 lg:col-span-2 lg:order-5',
+  },
+} as const;
+
+const span = LAYOUT_CLASSES[layout];
+
+const SPARKLINE_BARS = [32, 48, 40, 66, 54, 78, 68, 92, 84, 100] as const;
+const CHART_BARS = [34, 52, 44, 68, 60, 82, 74, 96, 88] as const;
+const WORKFLOW_ROWS = [
+  { icon: 'layers', dot: 'bg-success', barA: 'w-24', barB: 'w-14' },
+  { icon: 'code', dot: 'bg-primary', barA: 'w-20', barB: 'w-16' },
+  { icon: 'rocket', dot: 'bg-accent', barA: 'w-28', barB: 'w-12' },
+] as const;
+---
+
+<PageSection
+  id={id}
+  surface={contained ? 'default' : surface}
+  spacing={contained ? 'none' : spacing}
+  bleed={contained}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <SectionHeader
+    eyebrow={resolvedEyebrow}
+    heading={resolvedHeading}
+    subheading={resolvedSubheading}
+  />
+
+  <div
+    class:list={['grid grid-cols-6 gap-4', hasHeader && 'mt-8']}
+    data-trig-stagger
+    data-trig-stagger-mode="linear"
+    data-trig-stagger-delay="0.08"
+    data-trig-once="true"
+  >
+    <!-- Card 1: Big Metric Highlight -->
+    <article
+      data-trig
+      class:list={[
+        'group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+        span.metric,
+        cardSurface,
+      ]}
+    >
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute -top-16 start-1/2 size-44 -translate-x-1/2 rounded-full bg-primary/10 blur-2xl rtl:translate-x-1/2 print:hidden"
+      >
+      </div>
+
+      <div
+        class="relative mx-auto flex aspect-square size-32 items-center justify-center rounded-full border border-border bg-surface-hover/50 before:pointer-events-none before:absolute before:-inset-2 before:rounded-full before:border before:border-border/60"
+      >
+        <span
+          class="bg-linear-to-r from-primary to-accent bg-clip-text text-4xl font-extrabold tracking-tight text-transparent tabular-nums rtl:bg-linear-to-l print:bg-none print:text-fg"
+        >
+          {resolvedMetric.metric}
+        </span>
+      </div>
+
+      <h3 class="relative z-10 mt-6 text-2xl font-bold tracking-tight text-fg">
+        {
+          resolvedMetric.href ? (
+            <a
+              href={resolvedMetric.href}
+              class="transition-colors after:absolute after:inset-0 hover:text-primary focus-visible:outline-none"
+            >
+              {resolvedMetric.title}
+            </a>
+          ) : (
+            resolvedMetric.title
+          )
+        }
+      </h3>
+    </article>
+
+    <!-- Card 2: Security / Ring Emblem -->
+    <article
+      data-trig
+      class:list={[
+        'group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+        span.security,
+        cardSurface,
+      ]}
+    >
+      <div
+        class="relative mx-auto mt-2 flex aspect-square size-28 items-center justify-center rounded-full border border-border bg-surface-hover/60 text-primary before:pointer-events-none before:absolute before:-inset-2 before:rounded-full before:border before:border-border/60"
+        aria-hidden="true"
+      >
+        <Icon name={resolvedSecurity.icon ?? 'shield'} size={36} />
+      </div>
+
+      <div class="relative z-10 mt-6 space-y-2">
+        <h3 class="text-lg font-bold tracking-tight text-fg">
+          {
+            resolvedSecurity.href ? (
+              <a
+                href={resolvedSecurity.href}
+                class="transition-colors after:absolute after:inset-0 hover:text-primary focus-visible:outline-none"
+              >
+                {resolvedSecurity.title}
+              </a>
+            ) : (
+              resolvedSecurity.title
+            )
+          }
+        </h3>
+        <p class="text-sm leading-relaxed text-muted">{resolvedSecurity.description}</p>
+      </div>
+    </article>
+
+    <!-- Card 3: Performance / Sparkline Visual -->
+    <article
+      data-trig
+      class:list={[
+        'group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+        span.speed,
+        cardSurface,
+      ]}
+    >
+      <div
+        aria-hidden="true"
+        class:list={[
+          'mx-auto w-full rounded-xl border border-border/80 p-4',
+          insetSurface,
+        ]}
+      >
+        <div class="flex items-center justify-between">
+          <span
+            class="inline-flex size-7 items-center justify-center rounded-full border border-border bg-surface text-primary"
+          >
+            <Icon name={resolvedSpeed.icon ?? 'bolt'} size={15} />
+          </span>
+          <span class="h-2 w-16 rounded-full bg-border/80"></span>
+        </div>
+
+        <div class="mt-4 flex h-16 items-end gap-1.5">
+          {
+            SPARKLINE_BARS.map((height, idx) => (
+              <span
+                class:list={[
+                  'flex-1 rounded-t-sm transition-all duration-300',
+                  idx >= SPARKLINE_BARS.length - 2
+                    ? 'bg-primary'
+                    : idx >= SPARKLINE_BARS.length - 4
+                      ? 'bg-primary/55'
+                      : 'bg-primary/25',
+                ]}
+                style={`height: ${height}%`}
+              />
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="relative z-10 mt-6 space-y-2">
+        <h3 class="text-lg font-bold tracking-tight text-fg">
+          {
+            resolvedSpeed.href ? (
+              <a
+                href={resolvedSpeed.href}
+                class="transition-colors after:absolute after:inset-0 hover:text-primary focus-visible:outline-none"
+              >
+                {resolvedSpeed.title}
+              </a>
+            ) : (
+              resolvedSpeed.title
+            )
+          }
+        </h3>
+        <p class="text-sm leading-relaxed text-muted">{resolvedSpeed.description}</p>
+      </div>
+    </article>
+
+    <!-- Card 4: Wide Split Card (Analytics Window Preview) -->
+    <article
+      data-trig
+      class:list={[
+        'group relative overflow-hidden rounded-2xl border border-border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+        span.analytics,
+        cardSurface,
+      ]}
+    >
+      <div class="grid h-full gap-6 sm:grid-cols-2">
+        <div class="relative z-10 flex flex-col justify-between space-y-8">
+          <div
+            class="relative flex aspect-square size-12 items-center justify-center rounded-full border border-border bg-surface-hover/60 text-primary before:pointer-events-none before:absolute before:-inset-1.5 before:rounded-full before:border before:border-border/60"
+            aria-hidden="true"
+          >
+            <Icon name={resolvedAnalytics.icon ?? 'sparkles'} size={20} />
+          </div>
+
+          <div class="space-y-2 text-start">
+            <h3 class="text-lg font-bold tracking-tight text-fg">
+              {
+                resolvedAnalytics.href ? (
+                  <a
+                    href={resolvedAnalytics.href}
+                    class="transition-colors after:absolute after:inset-0 hover:text-primary focus-visible:outline-none"
+                  >
+                    {resolvedAnalytics.title}
+                  </a>
+                ) : (
+                  resolvedAnalytics.title
+                )
+              }
+            </h3>
+            <p class="text-sm leading-relaxed text-muted">{resolvedAnalytics.description}</p>
+          </div>
+        </div>
+
+        <div
+          aria-hidden="true"
+          class:list={[
+            'relative -mb-6 -me-6 mt-2 flex flex-col justify-end rounded-ss-2xl border-s border-t border-border p-5 pt-9 sm:-mb-7 sm:-me-7 sm:ms-2 sm:mt-0',
+            insetSurface,
+          ]}
+        >
+          <div class="absolute start-4 top-3 flex items-center gap-1.5">
+            <span class="block size-2 rounded-full border border-border bg-surface-hover"></span>
+            <span class="block size-2 rounded-full border border-border bg-surface-hover"></span>
+            <span class="block size-2 rounded-full border border-border bg-surface-hover"></span>
+          </div>
+
+          <div class="flex h-32 items-end gap-2">
+            {
+              CHART_BARS.map((height, idx) => (
+                <span
+                  class:list={[
+                    'flex-1 rounded-t-md',
+                    idx === CHART_BARS.length - 1
+                      ? 'bg-accent'
+                      : idx >= CHART_BARS.length - 3
+                        ? 'bg-primary'
+                        : 'bg-primary/30',
+                  ]}
+                  style={`height: ${height}%`}
+                />
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Card 5: Wide Split Card (Workflow / Team Stack Preview) -->
+    <article
+      data-trig
+      class:list={[
+        'group relative overflow-hidden rounded-2xl border border-border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+        span.collaboration,
+        cardSurface,
+      ]}
+    >
+      <div class="grid h-full gap-6 sm:grid-cols-2">
+        <div class="relative z-10 flex flex-col justify-between space-y-8">
+          <div
+            class="relative flex aspect-square size-12 items-center justify-center rounded-full border border-border bg-surface-hover/60 text-primary before:pointer-events-none before:absolute before:-inset-1.5 before:rounded-full before:border before:border-border/60"
+            aria-hidden="true"
+          >
+            <Icon name={resolvedCollaboration.icon ?? 'users'} size={20} />
+          </div>
+
+          <div class="space-y-2 text-start">
+            <h3 class="text-lg font-bold tracking-tight text-fg">
+              {
+                resolvedCollaboration.href ? (
+                  <a
+                    href={resolvedCollaboration.href}
+                    class="transition-colors after:absolute after:inset-0 hover:text-primary focus-visible:outline-none"
+                  >
+                    {resolvedCollaboration.title}
+                  </a>
+                ) : (
+                  resolvedCollaboration.title
+                )
+              }
+            </h3>
+            <p class="text-sm leading-relaxed text-muted">{resolvedCollaboration.description}</p>
+          </div>
+        </div>
+
+        <div
+          aria-hidden="true"
+          class:list={[
+            'relative -mb-6 -me-6 mt-2 flex flex-col justify-center gap-2.5 rounded-ss-2xl border-s border-t border-border p-5 sm:-mb-7 sm:-me-7 sm:ms-2 sm:mt-0',
+            insetSurface,
+          ]}
+        >
+          {
+            WORKFLOW_ROWS.map((row) => (
+              <div class="flex items-center gap-3 rounded-xl border border-border/80 bg-surface px-3 py-2.5 shadow-xs">
+                <span class="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-hover/70 text-primary">
+                  <Icon name={row.icon} size={16} />
+                </span>
+                <div class="min-w-0 flex-1 space-y-1.5">
+                  <span class:list={['block h-2 rounded-full bg-fg/20', row.barA]} />
+                  <span class:list={['block h-1.5 rounded-full bg-muted/25', row.barB]} />
+                </div>
+                <span class:list={['size-2 shrink-0 rounded-full', row.dot]} />
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </article>
+  </div>
+</PageSection>

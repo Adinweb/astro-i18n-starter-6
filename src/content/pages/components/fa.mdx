@@ -12,6 +12,7 @@ import AboutSplitSection from '@/components/AboutSplitSection.astro';
 import AuthFormCard from '@/components/AuthFormCard.astro';
 import AvatarGroup from '@/components/AvatarGroup.astro';
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
+import BentoGrid from '@/components/BentoGrid.astro';
 import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import Button from '@/components/Button.astro';
@@ -78,6 +79,7 @@ import heroVisual from './components.png';
       <a href="#sec-features" class="chip px-3.5 py-1.5 text-xs font-semibold">امکانات و مراحل</a>
       <a href="#sec-proof" class="chip px-3.5 py-1.5 text-xs font-semibold">تعرفه، گالری و دیدگاه‌ها</a>
       <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">تماس و فراخوان</a>
+      <a href="#sec-motion" class="chip px-3.5 py-1.5 text-xs font-semibold">انیمیشن و اسکرول</a>
     </div>
     <span class="text-xs font-medium text-muted">۴۷ کامپوننت آماده و قابل ترکیب</span>
   </div>
@@ -1069,6 +1071,99 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
   </ComponentDoc>
 
   <ComponentDoc
+    id="doc-bento-grid"
+    surface="surface"
+    name="BentoGrid"
+    category="امکانات و محتوا"
+    title="BentoGrid (شبکه بنتو ۵کارته)"
+    summary="شبکه نامتقارن ۵کارته و ۶ستونه شامل کارت شاخص عددی، نشان دایره‌ای دوحلقه‌ای، کارت نمودار عملکرد و دو کارت عریض دو‌بخشی؛ کاملاً هماهنگ با توکن‌های OKLCH، حالت تیره و راست‌به‌چپ."
+    propsList={[
+      { name: "layout", type: "'classic' | 'spotlight' | 'mosaic'", defaultVal: "'classic'", description: "نوع چیدمان جدول: کلاسیک (۳+۲)، کانونی (کارت عمودی بلند + بنر تمام‌عرض) یا موزاییک معکوس (۲+۳)." },
+      { name: "metricCard", type: "BentoGridMetricCard", defaultVal: "۱۰۰٪ قابل سفارشی‌سازی", description: "کارت شاخص عددی ردیف اول ({ metric, title, href? })." },
+      { name: "securityCard", type: "BentoGridFeatureCard", defaultVal: "امن به‌صورت پیش‌فرض", description: "کارت میانی با نشان آیکون دوحلقه‌ای ({ title, description, icon?, href? })." },
+      { name: "speedCard", type: "BentoGridFeatureCard", defaultVal: "سرعت فوق‌العاده", description: "کارت عملکرد همراه با نمودار میله‌ای CSS." },
+      { name: "analyticsCard", type: "BentoGridFeatureCard", defaultVal: "تحلیل و بینش داخلی", description: "کارت عریض دو‌ستونه با پنجره پیش‌نمایش نمودار." },
+      { name: "collaborationCard", type: "BentoGridFeatureCard", defaultVal: "هماهنگ برای کار تیمی", description: "کارت عریض دو‌ستونه با ردیف‌های جریان کار." },
+      { name: "contained", type: "boolean", defaultVal: "false", description: "حذف حاشیه اضافه هنگام استفاده در چیدمان‌های تو‌در‌تو." }
+    ]}
+    usage={`import BentoGrid from '@/components/BentoGrid.astro';
+
+<!-- چیدمان کلاسیک ۳+۲ (پیش‌فرض) -->
+<BentoGrid />
+
+<!-- چیدمان کانونی با کارت عمودی بلند و ردیف تمام‌عرض -->
+<BentoGrid layout="spotlight" />
+
+<!-- چیدمان موزاییک معکوس ۲+۳ با کارت‌های سفارشی -->
+<BentoGrid
+  layout="mosaic"
+  metricCard={{ metric: "۹۹٫۹٪", title: "پایداری استاتیک", href: "/fa/ویژگی‌ها/" }}
+/>`}
+  >
+    <div class="space-y-12">
+      <div>
+        <p class="mb-3 text-xs font-semibold text-muted">چیدمان کلاسیک (Classic — ردیف اول ۳ کارت، ردیف دوم ۲ کارت عریض)</p>
+        <BentoGrid
+          contained
+          layout="classic"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+        />
+      </div>
+
+      <div>
+        <p class="mb-3 text-xs font-semibold text-muted">چیدمان کانونی (Spotlight — کارت عمودی ۲ردیفه + کارت ۴ستونه + بنر تمام‌عرض)</p>
+        <BentoGrid
+          contained
+          layout="spotlight"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+        />
+      </div>
+
+      <div>
+        <p class="mb-3 text-xs font-semibold text-muted">چیدمان موزاییک معکوس (Mosaic — ردیف اول ۲ کارت عریض، ردیف دوم ۳ کارت با داده‌های سفارشی)</p>
+        <BentoGrid
+          contained
+          layout="mosaic"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+          metricCard={{
+            metric: "۹۹٫۹٪",
+            title: "پایداری استاتیک",
+            href: "/fa/ویژگی‌ها/"
+          }}
+          securityCard={{
+            icon: "lock",
+            title: "هدرهای امنیتی آماده",
+            description: "پیکربندی استاندارد CSP و HSTS بدون ردیاب‌های سنگین جانبی.",
+            href: "/fa/ویژگی‌ها/"
+          }}
+          speedCard={{
+            icon: "rocket",
+            title: "پاسخ‌دهی زیر ۵۰ میلی‌ثانیه",
+            description: "تحویل مستقیم HTML استاتیک و تصاویر WebP از نزدیک‌ترین نود CDN."
+          }}
+          analyticsCard={{
+            icon: "compass",
+            title: "امتیاز کامل Core Web Vitals",
+            description: "انیمیشن‌های بدون CLS و باندل سبک کلاینت برای حداکثر سرعت اجرا."
+          }}
+          collaborationCard={{
+            icon: "layers",
+            title: "محتوای چندزبانه یکپارچه",
+            description: "کالکشن‌های تایپ‌شده برای همگام نگه داشتن صفحات فارسی و انگلیسی.",
+            href: "/fa/درباره-ما/"
+          }}
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
     id="doc-feature-tabs"
     surface="surface"
     name="FeatureTabsSection"
@@ -1570,6 +1665,126 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
         primaryCta={{ label: "مشاهده تعرفه‌ها", href: "/fa/قیمت‌گذاری/", icon: "arrow-right" }}
         secondaryCta={{ label: "مشاهده ویژگی‌ها", href: "/fa/ویژگی‌ها/" }}
       />
+    </div>
+  </ComponentDoc>
+</div>
+
+<div id="sec-motion" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-motion-reveals"
+    name="ChronoTrig Presets"
+    category="انیمیشن و اسکرول"
+    title="پریست‌های ورود اسکرولی و جهت‌های منطقی RTL"
+    summary="انیمیشن‌های ورود بدون پرش چیدمان (Zero-CLS) و ایمن برای پرینت با موتور ChronoTrig v5.2.0. تمامی حالت‌ها زیر کلاس .js محدود شده‌اند، به html[data-motion='reduced'] احترام می‌گذارند و جهت‌های منطقی (start / end / clipStart) در فارسی به‌صورت خودکار آینه می‌شوند."
+    propsList={[
+      { name: "data-trig", type: "boolean", description: "عنصر را برای رصد ورود به نمای صفحه در ChronoTrig ثبت می‌کند." },
+      { name: "data-trig-once", type: "'true'", description: "انیمیشن را فقط یک بار اجرا کرده و پس از اتمام، رصد را متوقف می‌کند (صفر درصد بار CPU)." },
+      { name: "data-trig-direction", type: "'start' | 'end'", description: "ورود افقی منطقی از ابتدای خط (راست در RTL) یا انتهای خط (چپ در RTL)." },
+      { name: "class presets", type: "'fadeInUpSm' | 'blurIn' | 'clipUp' | 'clipStart' | 'zoomIn'", description: "کلاس‌های آماده ورود نسخه ۵.۲ همراه با کلاس‌های کمکی تاخیر و مدت زمان." }
+    ]}
+    usage={`<!-- پریست‌های مدرن ورود (اجرای یک‌باره) -->
+<div class="fadeInUpSm" data-trig data-trig-once="true">ورود نرم ۱۸ پیکسلی</div>
+<div class="blurIn trig-delay-100" data-trig data-trig-once="true">ورود از محو به شفاف</div>
+<div class="clipUp trig-delay-200" data-trig data-trig-once="true">پرده خطی از پایین به بالا</div>
+<div class="clipStart trig-delay-300" data-trig data-trig-once="true">پرده منطقی از ابتدای خط</div>
+
+<!-- ورود افقی سازگار با RTL -->
+<div data-trig data-trig-direction="start" data-trig-once="true">ورود از ابتدای خط</div>
+<div data-trig data-trig-direction="end" data-trig-once="true">ورود از انتهای خط</div>`}
+  >
+    <div class="space-y-6">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="fadeInUpSm rounded-2xl border border-border bg-surface p-5" data-trig data-trig-once="true">
+          <p class="text-xs font-semibold uppercase tracking-wider text-primary" dir="ltr">.fadeInUpSm</p>
+          <p class="mt-1.5 text-sm text-muted">ورود ظریف ۱۸ پیکسلی به بالا؛ مناسب کارت‌ها و متن‌ها.</p>
+        </div>
+        <div class="blurIn trig-delay-100 rounded-2xl border border-border bg-surface p-5" data-trig data-trig-once="true">
+          <p class="text-xs font-semibold uppercase tracking-wider text-primary" dir="ltr">.blurIn</p>
+          <p class="mt-1.5 text-sm text-muted">ورود از حالت محو به شفاف (در موبایل خودکار سبک می‌شود).</p>
+        </div>
+        <div class="clipUp trig-delay-200 rounded-2xl border border-border bg-surface p-5" data-trig data-trig-once="true">
+          <p class="text-xs font-semibold uppercase tracking-wider text-primary" dir="ltr">.clipUp</p>
+          <p class="mt-1.5 text-sm text-muted">پرده clip-path از پایین به بالا برای تیترها و تصاویر.</p>
+        </div>
+        <div class="clipStart trig-delay-300 rounded-2xl border border-border bg-surface p-5" data-trig data-trig-once="true">
+          <p class="text-xs font-semibold uppercase tracking-wider text-primary" dir="ltr">.clipStart</p>
+          <p class="mt-1.5 text-sm text-muted">پرده منطقی از ابتدای خط خواندن (در RTL از راست به چپ).</p>
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="rounded-2xl border border-border bg-surface p-5" data-trig data-trig-direction="start" data-trig-once="true">
+          <p class="text-xs font-semibold text-accent" dir="ltr">data-trig-direction="start"</p>
+          <p class="mt-1.5 text-sm text-muted">در فارسی از سمت راست و در انگلیسی از سمت چپ وارد می‌شود.</p>
+        </div>
+        <div class="trig-delay-100 rounded-2xl border border-border bg-surface p-5" data-trig data-trig-direction="end" data-trig-once="true">
+          <p class="text-xs font-semibold text-accent" dir="ltr">data-trig-direction="end"</p>
+          <p class="mt-1.5 text-sm text-muted">در فارسی از سمت چپ و در انگلیسی از سمت راست وارد می‌شود.</p>
+        </div>
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-motion-stagger"
+    surface="surface"
+    name="ChronoTrig Stagger"
+    category="انیمیشن و اسکرول"
+    title="آبشار تاخیری هماهنگ (Harmonic Stagger)"
+    summary="با قرار دادن [data-trig-stagger] روی ظرف والد، ChronoTrig تاخیر هر فرزند (--stagger-delay) را به‌صورت خودکار در حالت‌های linear، center، wave یا reverse محاسبه می‌کند و در موبایل تاخیر را به حداکثر ۰.۰۴ ثانیه محدود می‌سازد."
+    propsList={[
+      { name: "data-trig-stagger", type: "boolean", description: "اجرای پله‌ای انیمیشن روی فرزندان مستقیم یا [data-trig-stagger-item]." },
+      { name: "data-trig-stagger-mode", type: "'linear' | 'center' | 'wave' | 'reverse'", defaultVal: "'linear'", description: "الگوی توزیع تاخیر (linear برای هیرو و لیست‌ها از بالا به پایین، center برای ردیف آمار و لوگوها)." },
+      { name: "data-trig-stagger-delay", type: "number (ثانیه)", defaultVal: "0.08", description: "فاصله زمانی بین هر آیتم بر حسب ثانیه." },
+      { name: "data-trig-once", type: "'true'", description: "اجرای یک‌باره را به تمام فرزندان stagger منتقل می‌کند." }
+    ]}
+    usage={`<!-- آبشار خطی از بالا به پایین (در HeroCopy، PageHeader، SectionHeader و FaqAccordion) -->
+<div data-trig-stagger data-trig-stagger-mode="linear" data-trig-stagger-delay="0.1" data-trig-once="true">
+  <span>برچسب بالا</span>
+  <h2>عنوان اصلی</h2>
+  <p>توضیحات تکمیلی</p>
+</div>
+
+<!-- آبشار از مرکز به اطراف (در ProofStatsRow و PartnerLogos) -->
+<div class="grid grid-cols-4 gap-4" data-trig-stagger data-trig-stagger-mode="center" data-trig-stagger-delay="0.06" data-trig-once="true">
+  <div>۰۱</div>
+  <div>۰۲</div>
+  <div>۰۳</div>
+  <div>۰۴</div>
+</div>`}
+  >
+    <div class="space-y-6">
+      <div>
+        <p class="mb-3 text-xs font-semibold text-muted" dir="ltr">mode="linear" · delay="0.08"</p>
+        <div
+          class="grid gap-3 sm:grid-cols-4"
+          data-trig-stagger
+          data-trig-stagger-mode="linear"
+          data-trig-stagger-delay="0.08"
+          data-trig-once="true"
+        >
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">۰۱ · اول</div>
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">۰۲ · دوم</div>
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">۰۳ · سوم</div>
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">۰۴ · چهارم</div>
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-3 text-xs font-semibold text-muted" dir="ltr">mode="center" · delay="0.08"</p>
+        <div
+          class="grid gap-3 sm:grid-cols-4"
+          data-trig-stagger
+          data-trig-stagger-mode="center"
+          data-trig-stagger-delay="0.08"
+          data-trig-once="true"
+        >
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">ابتدا</div>
+          <div class="rounded-xl border border-primary/40 bg-primary/5 p-4 text-center text-sm font-semibold text-primary">مرکز ۱</div>
+          <div class="rounded-xl border border-primary/40 bg-primary/5 p-4 text-center text-sm font-semibold text-primary">مرکز ۲</div>
+          <div class="rounded-xl border border-border bg-bg p-4 text-center text-sm font-semibold text-fg">انتها</div>
+        </div>
+      </div>
     </div>
   </ComponentDoc>
 </div>

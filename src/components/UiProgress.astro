@@ -96,7 +96,9 @@ const RING_SIZES = {
       aria-valuemin={0}
       aria-valuemax={safeMax}
       aria-valuenow={Math.min(safeMax, Math.max(0, value))}
-      class:list={['not-prose inline-flex flex-col items-center gap-2.5', className]}
+      data-trig
+      data-trig-once="true"
+      class:list={['zoomIn not-prose inline-flex flex-col items-center gap-2.5', className]}
     >
       <div
         class:list={[
@@ -130,7 +132,13 @@ const RING_SIZES = {
         )}
       </div>
 
-      <ol class="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      <ol
+        class="grid grid-cols-2 gap-2.5 sm:grid-cols-4"
+        data-trig-stagger
+        data-trig-stagger-mode="linear"
+        data-trig-stagger-delay="0.08"
+        data-trig-once="true"
+      >
         {resolvedSteps.map((step, idx) => {
           const stepNumber = idx + 1;
           const completed = stepNumber < activeStepIdx;
@@ -173,7 +181,10 @@ const RING_SIZES = {
       aria-valuemin={0}
       aria-valuemax={safeMax}
       aria-valuenow={Math.min(safeMax, Math.max(0, value))}
-      class:list={['not-prose w-full space-y-2', className]}
+      data-ui-progress-bar
+      data-trig
+      data-trig-once="true"
+      class:list={['fadeInUpSm not-prose w-full space-y-2', className]}
     >
       {(resolvedLabel || showValue) && (
         <div class="flex items-center justify-between gap-2 text-xs">
@@ -183,8 +194,9 @@ const RING_SIZES = {
       )}
       <div class:list={['w-full overflow-hidden rounded-full bg-surface-hover', BAR_HEIGHTS[size]]}>
         <div
+          data-ui-progress-fill
           class:list={[
-            'h-full rounded-full transition-all duration-300 [[data-motion=reduced]_&]:transition-none',
+            'h-full rounded-full',
             TONE_FILL[tone],
           ]}
           style={`width: ${percent}%;`}

@@ -72,7 +72,7 @@ const VARIANTS = {
     id={tooltipId}
     role="tooltip"
     class:list={[
-      'pointer-events-none invisible absolute z-30 w-max max-w-60 rounded-xl border px-3 py-1.5 text-center text-xs font-medium leading-snug opacity-0 transition-opacity duration-150 group-hover/tooltip:visible group-hover/tooltip:opacity-100 group-focus-within/tooltip:visible group-focus-within/tooltip:opacity-100 [[data-motion=reduced]_&]:transition-none',
+      'pointer-events-none invisible absolute z-30 w-max max-w-60 scale-90 rounded-xl border px-3 py-1.5 text-center text-xs font-medium leading-snug opacity-0 transition-[opacity,scale] duration-220 ease-out group-hover/tooltip:visible group-hover/tooltip:scale-100 group-hover/tooltip:opacity-100 group-focus-within/tooltip:visible group-focus-within/tooltip:scale-100 group-focus-within/tooltip:opacity-100 [[data-motion=reduced]_&]:transition-none',
       PLACEMENTS[placement],
       VARIANTS[variant],
     ]}

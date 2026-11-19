@@ -140,7 +140,9 @@ const aspectClass = aspect === '4/3' ? 'aspect-[4/3]' : 'aspect-[16/9]';
   <div
     class:list={['grid gap-6', hasHeader && 'mt-8', gridColsClass]}
     data-trig-stagger
+    data-trig-stagger-mode="linear"
     data-trig-stagger-delay="0.06"
+    data-trig-once="true"
   >
     {
       resolvedItems.map((item) => {

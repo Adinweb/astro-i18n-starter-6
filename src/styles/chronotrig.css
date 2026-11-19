@@ -474,13 +474,85 @@ html[data-motion="reduced"] [data-trig-pin] {
   height: auto !important;
 }
 
+/* --------------------------------------------------------------------------
+   8. Interactive UI Primitive Animations (UiModal, UiDropdown, UiProgress)
+   -------------------------------------------------------------------------- */
+@keyframes ui-modal-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ui-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ui-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+[data-ui-modal-dialog][open] {
+  animation: ui-modal-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-ui-modal-dialog][open]::backdrop {
+  animation: ui-backdrop-in 240ms ease-out both;
+}
+
+[data-ui-dropdown-menu]:not([hidden]) {
+  transform-origin: top;
+  animation: ui-dropdown-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.js [data-ui-progress-bar] [data-ui-progress-fill] {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1100ms cubic-bezier(0.22, 1, 0.36, 1) 350ms;
+}
+
+:where([dir="rtl"]) .js [data-ui-progress-bar] [data-ui-progress-fill] {
+  transform-origin: right center;
+}
+
+.js [data-ui-progress-bar].trig [data-ui-progress-fill] {
+  transform: scaleX(1);
+}
+
+html[data-motion="reduced"] [data-ui-modal-dialog][open],
+html[data-motion="reduced"] [data-ui-modal-dialog][open]::backdrop,
+html[data-motion="reduced"] [data-ui-dropdown-menu]:not([hidden]),
+html[data-motion="reduced"] .js [data-ui-progress-fill],
+body.chronotrig-mobile-disabled .js [data-ui-progress-fill] {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
 @media print {
   [data-trig],
   [data-trig-stagger] > *,
   [data-trig-stagger] [data-trig-stagger-item],
   [data-trig-stagger] .trig-stagger-item,
   [data-trig-timeline],
-  [data-trig-pin] [data-trig-pin-track] {
+  [data-trig-pin] [data-trig-pin-track],
+  [data-ui-progress-fill] {
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;

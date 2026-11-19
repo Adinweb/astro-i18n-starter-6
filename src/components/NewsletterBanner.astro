@@ -97,8 +97,9 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
   <div
     data-newsletter-banner
     data-trig
+    data-trig-once="true"
     class:list={[
-      'rounded-3xl border border-border p-6 sm:p-8 lg:p-10',
+      'fadeInUpSm rounded-3xl border border-border p-6 sm:p-8 lg:p-10',
       cardSurface,
     ]}
   >
