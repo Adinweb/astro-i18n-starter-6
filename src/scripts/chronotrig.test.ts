@@ -201,4 +201,41 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
     expect(lenisSrc).toContain('window.chronoTrig.trigScroll?.()');
     expect(lenisSrc).not.toContain('window.chronoTrig.onScroll');
   });
+
+  it('integrates UiProgress bar, circular ring, and steps variants with ChronoTrig animations', () => {
+    const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
+    const progress = fs.readFileSync(path.join(rootDir, 'src/components/UiProgress.astro'), 'utf-8');
+    const doc = fs.readFileSync(path.join(rootDir, 'src/components/ComponentDoc.astro'), 'utf-8');
+    const enMdx = fs.readFileSync(path.join(rootDir, 'src/content/pages/components/en.mdx'), 'utf-8');
+    const faMdx = fs.readFileSync(path.join(rootDir, 'src/content/pages/components/fa.mdx'), 'utf-8');
+
+    expect(progress).toContain('data-ui-progress-bar');
+    expect(progress).toContain('data-ui-progress-fill');
+    expect(progress).toContain('data-ui-progress-ring');
+    expect(progress).toContain('data-ui-progress-ring-track');
+    expect(progress).toContain('data-ui-progress-steps');
+    expect(progress).toContain('data-ui-progress-step-fill');
+    expect(progress).toContain('data-ui-progress-value');
+    expect(progress).toContain('data-progress-target');
+    expect(progress).toContain('data-progress-active');
+    expect(progress).toContain('getEffectiveOpacity');
+    expect(progress).toContain('IntersectionObserver');
+    expect(progress).toContain('window.chronoTrig?.subscribe');
+    expect(progress).toContain('isInComfortZone');
+    expect(progress).toContain('isCompletelyOffscreen');
+    expect(progress).toContain('--ui-progress-target');
+
+    expect(css).toContain('@property --ui-progress-value');
+    expect(css).toContain('.js [data-ui-progress-bar][data-progress-active="true"] [data-ui-progress-fill]');
+    expect(css).toContain('.js [data-ui-progress-steps][data-progress-active="true"] [data-ui-progress-step-fill]');
+    expect(css).toContain('.js [data-ui-progress-ring]:not([data-progress-active="true"]) [data-ui-progress-ring-track]');
+    expect(css).toContain('html[data-motion="reduced"] .js [data-ui-progress-ring-track]');
+
+    // Scroll-triggered demos must not be wrapped in an outer opacity-0 ComponentDoc container
+    expect(doc).toContain('animatePreview = true');
+    expect(enMdx).toContain('id="doc-progress"');
+    expect(enMdx).toContain('animatePreview={false}');
+    expect(faMdx).toContain('id="doc-progress"');
+    expect(faMdx).toContain('animatePreview={false}');
+  });
 });

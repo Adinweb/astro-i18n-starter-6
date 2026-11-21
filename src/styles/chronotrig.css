@@ -521,28 +521,85 @@ html[data-motion="reduced"] [data-trig-pin] {
   animation: ui-dropdown-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.js [data-ui-progress-bar] [data-ui-progress-fill] {
+@property --ui-progress-value {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+/* Keep UiProgress container reveal crisp so opacity reaches 1 right as fill/sweep begins */
+.js [data-ui-progress-bar][data-trig].trig,
+.js [data-ui-progress-ring][data-trig].trig {
+  animation-duration: 300ms;
+  animation-delay: 0s;
+}
+
+.js [data-trig-stagger] > [data-ui-progress-bar].trig-stagger-active,
+.js [data-trig-stagger] > [data-ui-progress-bar].trig,
+.js [data-trig-stagger] > [data-ui-progress-ring].trig-stagger-active,
+.js [data-trig-stagger] > [data-ui-progress-ring].trig,
+.js [data-ui-progress-steps] [data-trig-stagger] > *.trig-stagger-active,
+.js [data-ui-progress-steps] [data-trig-stagger] > *.trig {
+  animation-duration: 300ms;
+  animation-delay: var(--stagger-delay, 0s);
+}
+
+.js [data-ui-progress-bar]:not([data-progress-active="true"]) [data-ui-progress-fill] {
   transform: scaleX(0);
+}
+
+.js [data-ui-progress-bar] [data-ui-progress-fill] {
   transform-origin: left center;
-  transition: transform 1100ms cubic-bezier(0.22, 1, 0.36, 1) 350ms;
+  will-change: transform;
 }
 
 :where([dir="rtl"]) .js [data-ui-progress-bar] [data-ui-progress-fill] {
   transform-origin: right center;
 }
 
-.js [data-ui-progress-bar].trig [data-ui-progress-fill] {
+.js [data-ui-progress-bar][data-progress-active="true"] [data-ui-progress-fill] {
   transform: scaleX(1);
+  will-change: auto;
+}
+
+.js [data-ui-progress-steps]:not([data-progress-active="true"]) [data-ui-progress-step-fill] {
+  transform: scaleX(0);
+}
+
+.js [data-ui-progress-steps] [data-ui-progress-step-fill] {
+  transform-origin: left center;
+  transition: transform 550ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:where([dir="rtl"]) .js [data-ui-progress-steps] [data-ui-progress-step-fill] {
+  transform-origin: right center;
+}
+
+.js [data-ui-progress-steps][data-progress-active="true"] [data-ui-progress-step-fill] {
+  transform: scaleX(1);
+}
+
+[data-ui-progress-ring-track] {
+  --ui-progress-value: var(--ui-progress-target, 0);
+}
+
+.js [data-ui-progress-ring]:not([data-progress-active="true"]) [data-ui-progress-ring-track] {
+  --ui-progress-value: 0;
 }
 
 html[data-motion="reduced"] [data-ui-modal-dialog][open],
 html[data-motion="reduced"] [data-ui-modal-dialog][open]::backdrop,
 html[data-motion="reduced"] [data-ui-dropdown-menu]:not([hidden]),
 html[data-motion="reduced"] .js [data-ui-progress-fill],
-body.chronotrig-mobile-disabled .js [data-ui-progress-fill] {
+html[data-motion="reduced"] .js [data-ui-progress-step-fill],
+html[data-motion="reduced"] .js [data-ui-progress-ring-track],
+body.chronotrig-mobile-disabled .js [data-ui-progress-fill],
+body.chronotrig-mobile-disabled .js [data-ui-progress-step-fill],
+body.chronotrig-mobile-disabled .js [data-ui-progress-ring-track] {
   animation: none !important;
   transition: none !important;
   transform: none !important;
+  --ui-progress-value: var(--ui-progress-target, 0) !important;
 }
 
 @media print {
@@ -552,12 +609,16 @@ body.chronotrig-mobile-disabled .js [data-ui-progress-fill] {
   [data-trig-stagger] .trig-stagger-item,
   [data-trig-timeline],
   [data-trig-pin] [data-trig-pin-track],
-  [data-ui-progress-fill] {
+  [data-ui-progress-fill],
+  [data-ui-progress-step-fill],
+  [data-ui-progress-ring-track] {
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;
     clip-path: none !important;
     animation: none !important;
+    transition: none !important;
+    --ui-progress-value: var(--ui-progress-target, 0) !important;
   }
 
   [data-trig-pin] {

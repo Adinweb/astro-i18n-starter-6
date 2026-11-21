@@ -417,38 +417,93 @@ import IconButton from '@/components/IconButton.astro';
   <ComponentDoc
     id="doc-progress"
     surface="surface"
+    animatePreview={false}
     name="UiProgress"
     category="Feedback & Controls"
     title="UiProgress"
-    summary="Accessible progress indicator supporting linear bars, CSS conic-gradient circular rings (zero raw SVGs), all 5 semantic tones, and multi-step milestone tracks."
+    summary="Accessible progress indicator supporting linear bars, CSS conic-gradient circular rings (zero raw SVGs), all 5 semantic tones, multi-step milestone tracks, and synchronized ChronoTrig viewport fill/sweep/count-up animations."
     propsList={[
       { name: "value / max", type: "number", defaultVal: "68 / 100", description: "Current progress value and maximum range." },
       { name: "variant", type: "'bar' | 'ring' | 'steps'", defaultVal: "'bar'", description: "Visual layout style." },
       { name: "tone", type: "'primary' | 'success' | 'info' | 'warning' | 'error'", defaultVal: "'primary'", description: "OKLCH indicator fill color." },
+      { name: "once", type: "boolean", defaultVal: "true", description: "Triggers once on viewport entry, or resets and replays on re-enter when false." },
       { name: "steps / currentStep", type: "string[] / number", description: "Milestone labels and active step index for variant='steps'." }
     ]}
     usage={`import UiProgress from '@/components/UiProgress.astro';
 
-<UiProgress variant="bar" value={76} tone="primary" />
-<UiProgress variant="ring" value={88} tone="success" />
+<!-- Single item viewport animations -->
+<UiProgress variant="bar" value={84} tone="primary" size="lg" label="Edge cache warm-up" />
+<UiProgress variant="ring" value={88} tone="success" size="lg" label="Core Web Vitals" />
+<UiProgress variant="bar" value={68} tone="info" once={false} label="Replays on scroll" />
+
+<!-- Staggered group cascade -->
+<div class="space-y-4" data-trig-stagger data-trig-stagger-mode="linear" data-trig-stagger-delay="0.1" data-trig-once="true">
+  <UiProgress variant="bar" value={76} tone="primary" />
+  <UiProgress variant="bar" value={92} tone="success" />
+  <UiProgress variant="bar" value={64} tone="info" />
+</div>
+
 <UiProgress variant="steps" currentStep={3} />`}
   >
-    <div class="space-y-8">
-      <div class="grid gap-6 md:grid-cols-2">
-        <div class="space-y-4">
-          <UiProgress variant="bar" value={76} tone="primary" />
-          <UiProgress variant="bar" value={92} tone="success" size="sm" label="Asset optimization" />
-          <UiProgress variant="bar" value={64} tone="info" size="sm" label="Locale parity" />
-          <UiProgress variant="bar" value={48} tone="warning" size="sm" label="Draft review" />
-          <UiProgress variant="bar" value={24} tone="error" size="sm" label="Broken links quota" />
+    <div class="space-y-10">
+      <div class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="text-sm font-bold text-fg">Single-Item Viewport Animations</h3>
+          <span class="text-xs text-muted">Standalone bar &amp; ring indicators animating on viewport entry</span>
         </div>
-        <div class="flex flex-wrap items-center justify-around gap-4">
-          <UiProgress variant="ring" value={75} tone="primary" size="md" label="Core parity" />
-          <UiProgress variant="ring" value={94} tone="success" size="md" label="Static score" />
-          <UiProgress variant="ring" value={58} tone="warning" size="md" label="Bundle budget" />
+        <div class="grid gap-6 md:grid-cols-12 md:items-center">
+          <div class="space-y-5 md:col-span-7">
+            <UiProgress variant="bar" value={84} tone="primary" size="lg" label="Edge cache warm-up (plays once)" />
+            <UiProgress variant="bar" value={68} tone="info" size="md" once={false} label="Live telemetry sync (once={false}, replays on scroll)" />
+          </div>
+          <div class="flex flex-wrap items-center justify-around gap-6 md:col-span-5">
+            <UiProgress variant="ring" value={88} tone="success" size="lg" label="Core Web Vitals" />
+            <UiProgress variant="ring" value={72} tone="primary" size="lg" once={false} label="Replays (once=false)" />
+          </div>
         </div>
       </div>
-      <UiProgress variant="steps" currentStep={3} />
+
+      <div class="space-y-4 border-t border-border pt-8">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="text-sm font-bold text-fg">Staggered Group Animations</h3>
+          <span class="text-xs text-muted">Sequential linear cascade via data-trig-stagger</span>
+        </div>
+        <div class="grid gap-6 md:grid-cols-2">
+          <div
+            class="space-y-4"
+            data-trig-stagger
+            data-trig-stagger-mode="linear"
+            data-trig-stagger-delay="0.1"
+            data-trig-once="true"
+          >
+            <UiProgress variant="bar" value={76} tone="primary" label="Deployment readiness" />
+            <UiProgress variant="bar" value={92} tone="success" size="sm" label="Asset optimization" />
+            <UiProgress variant="bar" value={64} tone="info" size="sm" label="Locale parity" />
+            <UiProgress variant="bar" value={48} tone="warning" size="sm" label="Draft review" />
+            <UiProgress variant="bar" value={24} tone="error" size="sm" label="Broken links quota" />
+          </div>
+          <div
+            class="flex flex-wrap items-center justify-around gap-4"
+            data-trig-stagger
+            data-trig-stagger-mode="linear"
+            data-trig-stagger-delay="0.12"
+            data-trig-once="true"
+          >
+            <UiProgress variant="ring" value={75} tone="primary" size="md" label="Core parity" />
+            <UiProgress variant="ring" value={94} tone="success" size="md" label="Static score" />
+            <UiProgress variant="ring" value={58} tone="warning" size="md" label="Bundle budget" />
+            <UiProgress variant="ring" value={82} tone="info" size="sm" label="A11y check" />
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4 border-t border-border pt-8">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="text-sm font-bold text-fg">Staggered Milestone Steps</h3>
+          <span class="text-xs text-muted">Multi-step track with automatic stagger</span>
+        </div>
+        <UiProgress variant="steps" currentStep={3} />
+      </div>
     </div>
   </ComponentDoc>
 
@@ -1767,6 +1822,7 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
 <div id="sec-motion" class="scroll-mt-24">
   <ComponentDoc
     id="doc-motion-reveals"
+    animatePreview={false}
     name="ChronoTrig Presets"
     category="Motion & Scroll"
     title="Scroll Reveal Presets & RTL Directions"
@@ -1823,6 +1879,7 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
   <ComponentDoc
     id="doc-motion-stagger"
     surface="surface"
+    animatePreview={false}
     name="ChronoTrig Stagger"
     category="Motion & Scroll"
     title="Harmonic Stagger Cascades"

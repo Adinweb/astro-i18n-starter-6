@@ -2,8 +2,8 @@
 /**
  * Accessible progress indicator inspired by PrebuiltUI progress-bar components.
  * Supports linear `bar`, circular CSS `conic-gradient` `ring` (zero raw SVG), and
- * multi-milestone `steps` variants with `formatNumber()` numerals, OKLCH roles, and
- * Paraglide defaults.
+ * multi-milestone `steps` variants with `formatNumber()` numerals, OKLCH roles,
+ * Paraglide defaults, and ChronoTrig v5.2.0 entrance + fill/sweep/count-up animations.
  */
 import Icon from '@/components/Icon.astro';
 import { formatNumber } from '@/i18n/format';
@@ -24,6 +24,7 @@ interface Props {
   size?: 'sm' | 'md' | 'lg';
   steps?: readonly string[];
   currentStep?: number;
+  once?: boolean;
   class?: string;
 }
 
@@ -38,6 +39,7 @@ const {
   size = 'md',
   steps,
   currentStep,
+  once = true,
   class: className,
 } = Astro.props;
 
@@ -96,19 +98,29 @@ const RING_SIZES = {
       aria-valuemin={0}
       aria-valuemax={safeMax}
       aria-valuenow={Math.min(safeMax, Math.max(0, value))}
+      data-ui-progress-ring
+      data-progress-target={String(percent)}
+      data-progress-locale={activeLocale}
+      data-progress-once={once ? 'true' : 'false'}
       data-trig
-      data-trig-once="true"
+      data-trig-once={once ? 'true' : undefined}
+      style={`--ui-progress-target: ${percent};`}
       class:list={['zoomIn not-prose inline-flex flex-col items-center gap-2.5', className]}
     >
       <div
+        data-ui-progress-ring-track
         class:list={[
           'relative inline-flex items-center justify-center rounded-full p-2',
           RING_SIZES[size],
         ]}
-        style={`background: conic-gradient(${TONE_CSS_VAR[tone]} ${percent}%, var(--color-border) 0);`}
+        style={`--ui-progress-tone: ${TONE_CSS_VAR[tone]}; background: conic-gradient(var(--ui-progress-tone) calc(var(--ui-progress-value, ${percent}) * 1%), var(--color-border) 0);`}
       >
         <div class="flex h-full w-full items-center justify-center rounded-full bg-surface font-bold tabular-nums text-fg">
-          {showValue && <span>{formattedPercent}</span>}
+          {showValue && (
+            <span data-ui-progress-value>
+              {formattedPercent}
+            </span>
+          )}
         </div>
       </div>
       {resolvedLabel && <span class="text-xs font-semibold text-muted">{resolvedLabel}</span>}
@@ -120,6 +132,8 @@ const RING_SIZES = {
       aria-valuemin={0}
       aria-valuemax={resolvedSteps.length}
       aria-valuenow={activeStepIdx}
+      data-ui-progress-steps
+      data-progress-once={once ? 'true' : 'false'}
       class:list={['not-prose w-full space-y-3', className]}
     >
       <div class="flex items-center justify-between gap-2 text-xs">
@@ -137,7 +151,7 @@ const RING_SIZES = {
         data-trig-stagger
         data-trig-stagger-mode="linear"
         data-trig-stagger-delay="0.08"
-        data-trig-once="true"
+        data-trig-once={once ? 'true' : undefined}
       >
         {resolvedSteps.map((step, idx) => {
           const stepNumber = idx + 1;
@@ -145,12 +159,15 @@ const RING_SIZES = {
           const current = stepNumber === activeStepIdx;
           return (
             <li class="space-y-1.5">
-              <div
-                class:list={[
-                  'h-1.5 w-full rounded-full transition-colors',
-                  completed || current ? TONE_FILL[tone] : 'bg-border',
-                ]}
-              />
+              <div class="h-1.5 w-full overflow-hidden rounded-full bg-border">
+                {(completed || current) && (
+                  <div
+                    data-ui-progress-step-fill
+                    class:list={['h-full w-full rounded-full', TONE_FILL[tone]]}
+                    style={`transition-delay: ${idx * 120}ms;`}
+                  />
+                )}
+              </div>
               <div class="flex items-center gap-1.5 text-xs">
                 <span
                   aria-hidden="true"
@@ -182,14 +199,21 @@ const RING_SIZES = {
       aria-valuemax={safeMax}
       aria-valuenow={Math.min(safeMax, Math.max(0, value))}
       data-ui-progress-bar
+      data-progress-target={String(percent)}
+      data-progress-locale={activeLocale}
+      data-progress-once={once ? 'true' : 'false'}
       data-trig
-      data-trig-once="true"
+      data-trig-once={once ? 'true' : undefined}
       class:list={['fadeInUpSm not-prose w-full space-y-2', className]}
     >
       {(resolvedLabel || showValue) && (
         <div class="flex items-center justify-between gap-2 text-xs">
           <span class="font-semibold text-fg">{resolvedLabel}</span>
-          {showValue && <span class="font-mono font-semibold tabular-nums text-muted">{formattedPercent}</span>}
+          {showValue && (
+            <span data-ui-progress-value class="font-mono font-semibold tabular-nums text-muted">
+              {formattedPercent}
+            </span>
+          )}
         </div>
       )}
       <div class:list={['w-full overflow-hidden rounded-full bg-surface-hover', BAR_HEIGHTS[size]]}>
@@ -205,3 +229,353 @@ const RING_SIZES = {
     </div>
   )
 }
+
+<script>
+  import { formatNumber } from '@/i18n/format';
+
+  const cleanups: Array<() => void> = [];
+
+  function isMotionReduced(): boolean {
+    if (
+      document.documentElement.dataset.motion === 'reduced' ||
+      document.body.classList.contains('chronotrig-mobile-disabled')
+    ) {
+      return true;
+    }
+    try {
+      return Boolean(window.chronoTrig?.isDisabled?.());
+    } catch {
+      return false;
+    }
+  }
+
+  function getEffectiveOpacity(el: HTMLElement): number {
+    let minOpacity = 1;
+    let curr: HTMLElement | null = el;
+    while (curr && curr !== document.documentElement) {
+      const parsed = Number.parseFloat(window.getComputedStyle(curr).opacity);
+      if (Number.isFinite(parsed) && parsed < minOpacity) {
+        minOpacity = parsed;
+      }
+      if (minOpacity <= 0.05) return minOpacity;
+      curr = curr.parentElement;
+    }
+    return minOpacity;
+  }
+
+  function getStaggerFactor(index: number, total: number, mode: string | null): number {
+    if (mode === 'reverse') return total - 1 - index;
+    if (mode === 'center') return Math.abs(index - (total - 1) / 2);
+    if (mode === 'wave') {
+      return Math.sin((index / Math.max(1, total - 1)) * Math.PI) * Math.min(total, 6);
+    }
+    return index;
+  }
+
+  function computePostVisibleDelayMs(root: HTMLElement): number {
+    const staggerParent = root.closest<HTMLElement>('[data-trig-stagger]');
+    if (!staggerParent) return 40;
+    const siblings = Array.from(
+      staggerParent.querySelectorAll<HTMLElement>(
+        '[data-ui-progress-bar], [data-ui-progress-ring], [data-ui-progress-steps]'
+      )
+    );
+    const total = Math.max(1, siblings.length);
+    const idx = Math.max(0, siblings.indexOf(root));
+    const mode = staggerParent.getAttribute('data-trig-stagger-mode');
+    const rawStep = Number.parseFloat(staggerParent.dataset.trigStaggerDelay || '0.1');
+    const stepMs =
+      Number.isFinite(rawStep) && rawStep >= 0
+        ? Math.max(90, Math.min(Math.round(rawStep * 1000), 160))
+        : 110;
+    const desiredDelayMs = Math.round(getStaggerFactor(idx, total, mode) * stepMs);
+
+    // ChronoTrig already offsets the CSS entrance by --stagger-delay; subtract it
+    // so we don't wait twice on desktop while keeping crisp cascades on <1024px viewports.
+    const cssDelaySec = Number.parseFloat(
+      window.getComputedStyle(root).getPropertyValue('--stagger-delay') || '0'
+    );
+    const cssDelayMs = Number.isFinite(cssDelaySec) ? Math.max(0, cssDelaySec * 1000) : 0;
+    return Math.max(35, desiredDelayMs - cssDelayMs);
+  }
+
+  function isInComfortZone(el: HTMLElement): boolean {
+    const rect = el.getBoundingClientRect();
+    if (rect.height <= 0 && rect.width <= 0) return false;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
+    const docH = document.documentElement.scrollHeight || 0;
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    const nearDocBottom = scrollY + vh >= docH - 24;
+    const enterLine = nearDocBottom ? vh : vh * 0.88;
+    return rect.top < enterLine && rect.bottom > 24;
+  }
+
+  function isCompletelyOffscreen(el: HTMLElement): boolean {
+    const rect = el.getBoundingClientRect();
+    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
+    return rect.bottom <= 0 || rect.top >= vh;
+  }
+
+  function initUiProgressAnimations() {
+    const items = document.querySelectorAll<HTMLElement>(
+      '[data-ui-progress-bar], [data-ui-progress-ring], [data-ui-progress-steps]'
+    );
+
+    const evaluators: Array<() => void> = [];
+
+    items.forEach((root) => {
+      if (root.dataset.progressBound === 'true') return;
+      root.dataset.progressBound = 'true';
+
+      const isSteps = root.hasAttribute('data-ui-progress-steps');
+      const target = Math.max(
+        0,
+        Math.min(100, Number.parseInt(root.dataset.progressTarget ?? '0', 10) || 0)
+      );
+      const locale = root.dataset.progressLocale || document.documentElement.lang || 'en';
+      const staggerParent = root.closest<HTMLElement>('[data-trig-stagger]');
+      const containerOnce = staggerParent?.getAttribute('data-trig-once');
+      const once = root.dataset.progressOnce !== 'false' && containerOnce !== 'false';
+      const valueEl = root.querySelector<HTMLElement>('[data-ui-progress-value]');
+      const ringTrack = root.querySelector<HTMLElement>('[data-ui-progress-ring-track]');
+      const fillEl = root.querySelector<HTMLElement>('[data-ui-progress-fill]');
+
+      let rafId = 0;
+      let waitRafId = 0;
+      let delayTimer = 0;
+      let hasActivated = false;
+      let isWaitingOpacity = false;
+
+      const setVisualRatio = (ratio: number) => {
+        const clamped = Math.max(0, Math.min(1, ratio));
+        if (fillEl) {
+          fillEl.style.transform = `scaleX(${clamped.toFixed(4)})`;
+        }
+        const val = clamped * target;
+        if (ringTrack) {
+          ringTrack.style.setProperty('--ui-progress-value', val.toFixed(2));
+        }
+        if (valueEl) {
+          valueEl.textContent = `${formatNumber(Math.round(val), locale)}%`;
+        }
+      };
+
+      const cancelPending = () => {
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = 0;
+        }
+        if (waitRafId) {
+          cancelAnimationFrame(waitRafId);
+          waitRafId = 0;
+        }
+        if (delayTimer) {
+          window.clearTimeout(delayTimer);
+          delayTimer = 0;
+        }
+        isWaitingOpacity = false;
+      };
+
+      const resetToZero = () => {
+        cancelPending();
+        hasActivated = false;
+        root.removeAttribute('data-progress-active');
+        if (fillEl) {
+          fillEl.style.transform = '';
+        }
+        if (ringTrack) {
+          ringTrack.style.setProperty('--ui-progress-value', '0');
+        }
+        if (valueEl) {
+          valueEl.textContent = `${formatNumber(0, locale)}%`;
+        }
+      };
+
+      const completeImmediately = () => {
+        cancelPending();
+        hasActivated = true;
+        root.setAttribute('data-progress-active', 'true');
+        if (fillEl) {
+          fillEl.style.transform = '';
+        }
+        if (ringTrack) {
+          ringTrack.style.setProperty('--ui-progress-value', String(target));
+        }
+        if (valueEl) {
+          valueEl.textContent = `${formatNumber(target, locale)}%`;
+        }
+      };
+
+      if (isMotionReduced()) {
+        completeImmediately();
+        return;
+      }
+
+      // Start at 0% until the indicator scrolls cleanly into the visible viewport
+      resetToZero();
+
+      const startFillAnimation = () => {
+        if (isMotionReduced()) {
+          completeImmediately();
+          return;
+        }
+
+        const startDelayMs = computePostVisibleDelayMs(root);
+
+        delayTimer = window.setTimeout(() => {
+          delayTimer = 0;
+          if (isMotionReduced()) {
+            completeImmediately();
+            return;
+          }
+
+          if (isSteps) {
+            root.setAttribute('data-progress-active', 'true');
+            return;
+          }
+
+          if (target === 0) {
+            root.setAttribute('data-progress-active', 'true');
+            setVisualRatio(0);
+            return;
+          }
+
+          // Lock visual state at 0 inline before setting data-progress-active so bar never flashes 100%
+          setVisualRatio(0);
+          root.setAttribute('data-progress-active', 'true');
+
+          const durationMs = 1150;
+          const startTime = performance.now();
+
+          const tick = (now: number) => {
+            if (isMotionReduced()) {
+              completeImmediately();
+              return;
+            }
+            const t = Math.min(1, (now - startTime) / durationMs);
+            // Smooth exponential ease-out matching cubic-bezier(0.22, 1, 0.36, 1)
+            const eased = 1 - Math.pow(1 - t, 3.6);
+            setVisualRatio(eased);
+            if (t < 1) {
+              rafId = requestAnimationFrame(tick);
+            } else {
+              completeImmediately();
+            }
+          };
+
+          rafId = requestAnimationFrame(tick);
+        }, startDelayMs);
+      };
+
+      const playAnimation = () => {
+        if (hasActivated || isWaitingOpacity) return;
+        if (isMotionReduced()) {
+          completeImmediately();
+          return;
+        }
+
+        isWaitingOpacity = true;
+        const visibilityTarget =
+          (isSteps ? root.querySelector<HTMLElement>('[data-trig-stagger] > li') : null) ?? root;
+        const waitStartedAt = performance.now();
+
+        const waitUntilVisible = () => {
+          waitRafId = 0;
+          if (isMotionReduced()) {
+            completeImmediately();
+            return;
+          }
+          if (!isInComfortZone(root) && isCompletelyOffscreen(root)) {
+            isWaitingOpacity = false;
+            return;
+          }
+          const visibleOpacity = getEffectiveOpacity(visibilityTarget);
+          const timedOut = performance.now() - waitStartedAt >= 900;
+          if (visibleOpacity >= 0.75 || timedOut) {
+            isWaitingOpacity = false;
+            hasActivated = true;
+            startFillAnimation();
+            return;
+          }
+          waitRafId = requestAnimationFrame(waitUntilVisible);
+        };
+
+        waitRafId = requestAnimationFrame(waitUntilVisible);
+      };
+
+      const evaluate = () => {
+        if (isMotionReduced()) {
+          if (!hasActivated) completeImmediately();
+          return;
+        }
+        if (!hasActivated) {
+          if (isInComfortZone(root)) {
+            playAnimation();
+          }
+        } else if (!once && isCompletelyOffscreen(root)) {
+          resetToZero();
+        }
+      };
+
+      evaluators.push(evaluate);
+
+      if (typeof IntersectionObserver !== 'function') {
+        completeImmediately();
+        return;
+      }
+
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.target === root) {
+              evaluate();
+            }
+          }
+        },
+        {
+          root: null,
+          rootMargin: '0px 0px -12% 0px',
+          threshold: [0, 0.1, 0.25],
+        }
+      );
+
+      io.observe(root);
+      cleanups.push(() => {
+        cancelPending();
+        io.disconnect();
+        delete root.dataset.progressBound;
+      });
+    });
+
+    if (evaluators.length === 0) return;
+
+    const evaluateAll = () => {
+      for (const fn of evaluators) {
+        fn();
+      }
+    };
+
+    const unsubscribeChronoTrig = window.chronoTrig?.subscribe?.(evaluateAll);
+    window.addEventListener('scroll', evaluateAll, { passive: true });
+    window.addEventListener('resize', evaluateAll, { passive: true });
+
+    // Run an initial pass on load (handles landing directly on a hash like #doc-progress)
+    requestAnimationFrame(evaluateAll);
+
+    cleanups.push(() => {
+      unsubscribeChronoTrig?.();
+      window.removeEventListener('scroll', evaluateAll);
+      window.removeEventListener('resize', evaluateAll);
+    });
+  }
+
+  function destroyUiProgressObservers() {
+    while (cleanups.length > 0) {
+      cleanups.pop()?.();
+    }
+  }
+
+  document.addEventListener('astro:before-swap', destroyUiProgressObservers);
+  document.addEventListener('astro:page-load', initUiProgressAnimations);
+  initUiProgressAnimations();
+</script>

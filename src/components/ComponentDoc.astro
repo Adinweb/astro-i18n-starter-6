@@ -31,6 +31,7 @@ interface Props {
   usage?: string;
   surface?: 'default' | 'surface' | 'subtle';
   framed?: boolean;
+  animatePreview?: boolean;
 }
 
 const {
@@ -44,6 +45,7 @@ const {
   usage,
   surface = 'default',
   framed = true,
+  animatePreview = true,
 } = Astro.props;
 
 const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
@@ -89,7 +91,7 @@ const cardSurface = surface === 'surface' ? 'bg-bg' : 'bg-surface';
 
     {
       hasPreview && (
-        <div class="space-y-2.5" data-trig>
+        <div class="space-y-2.5" {...(animatePreview ? { 'data-trig': '' } : {})}>
           <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
             <Icon name="sparkles" size={14} class="text-primary" />
             <span>{labels.preview}</span>
