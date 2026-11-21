@@ -61,6 +61,8 @@ import UiProgress from '@/components/UiProgress.astro';
 import UiSwitch from '@/components/UiSwitch.astro';
 import UiTooltip from '@/components/UiTooltip.astro';
 import heroVisual from './components.png';
+import parallaxArchPhoto from '@/assets/germancert/hq-tuntenhausen.jpg';
+import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
 
 <LandingHeroSplit
   id="hero-landing"
@@ -1947,10 +1949,10 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
     name="ParallaxSection"
     category="Motion & Scroll"
     title="ParallaxSection"
-    summary="Full-bleed or rounded-card section featuring a GPU-composited parallax background image driven by ChronoTrig --trig-px. Ships with WebP responsive images, RTL-agnostic gradient contrast scrims, custom slot overlays, and automatic reduced-motion/print flattening."
+    summary="Full-bleed or rounded-card section featuring a GPU-composited parallax background image synchronized with ChronoTrig. Ships with WebP responsive images, RTL-agnostic gradient contrast scrims, custom slot overlays, and automatic reduced-motion/print flattening."
     propsList={[
       { name: "variant", type: "'full' | 'card'", defaultVal: "'full'", description: "Renders an edge-to-edge full-width band or a rounded framed block (forced automatically when contained is true)." },
-      { name: "speed", type: "'subtle' | 'medium' | 'deep'", defaultVal: "'medium'", description: "Parallax scroll depth factor (0.35x, 0.55x, or 0.78x) via CSS --parallax-factor." },
+      { name: "speed", type: "'subtle' | 'medium' | 'deep'", defaultVal: "'medium'", description: "Parallax vertical travel amplitude (subtle / medium / deep) clamped safely inside the 38% overscan buffer." },
       { name: "overlay", type: "'gradient' | 'dark' | 'subtle'", defaultVal: "'gradient'", description: "Contrast scrim style ensuring accessible text legibility over photography." },
       { name: "align / height", type: "'start' | 'center' · 'sm' | 'md' | 'lg'", defaultVal: "'start' / 'md'", description: "Logical copy alignment and responsive minimum section height." },
       { name: "image / blur", type: "ImageMetadata / boolean", defaultVal: "DEFAULT_HERO_IMAGE / false", description: "Astro Image asset and optional atmospheric Gaussian blur." }
@@ -1988,28 +1990,28 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
         contained
         variant="card"
         align="center"
-        height="sm"
+        height="md"
         speed="deep"
-        overlay="dark"
-        image={heroVisual}
+        overlay="subtle"
+        image={parallaxArchPhoto}
         eyebrow="variant='card' · align='center' · speed='deep'"
         title="Centered Statement With Custom Overlay Metrics"
-        description="Supports any custom ImageMetadata background plus optional slot content layered cleanly over dark atmospheric scrims."
+        description="Supports any custom ImageMetadata background plus optional slot content layered cleanly over balanced contrast scrims."
         primaryCta={null}
         secondaryCta={null}
       >
         <div class="mx-auto grid max-w-2xl grid-cols-3 gap-3 text-center">
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
             <p class="text-lg font-extrabold text-accent tabular-nums">60fps</p>
-            <p class="text-xs text-hero-fg/80">Compositor Only</p>
+            <p class="text-xs text-hero-fg/85">Compositor Only</p>
           </div>
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
             <p class="text-lg font-extrabold text-hero-fg tabular-nums">Zero CLS</p>
-            <p class="text-xs text-hero-fg/80">Overscan Buffer</p>
+            <p class="text-xs text-hero-fg/85">Overscan Buffer</p>
           </div>
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
             <p class="text-lg font-extrabold text-hero-fg tabular-nums">RTL/LTR</p>
-            <p class="text-xs text-hero-fg/80">Logical Scrims</p>
+            <p class="text-xs text-hero-fg/85">Logical Scrims</p>
           </div>
         </div>
       </ParallaxSection>
@@ -2023,6 +2025,7 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
   speed="deep"
   overlay="gradient"
   height="md"
+  image={parallaxCampusPhoto}
   eyebrow="Live Full-Bleed ParallaxSection"
   title="Edge-to-Edge Viewport Parallax Background"
   description="Drop <ParallaxSection variant='full' /> anywhere on a canvas page to create a full-width narrative divider with smooth Lenis + ChronoTrig scroll synchronization."

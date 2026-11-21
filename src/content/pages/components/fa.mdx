@@ -61,6 +61,8 @@ import UiProgress from '@/components/UiProgress.astro';
 import UiSwitch from '@/components/UiSwitch.astro';
 import UiTooltip from '@/components/UiTooltip.astro';
 import heroVisual from './components.png';
+import parallaxArchPhoto from '@/assets/germancert/hq-tuntenhausen.jpg';
+import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
 
 <LandingHeroSplit
   id="hero-landing"
@@ -1947,10 +1949,10 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
     name="ParallaxSection"
     category="انیمیشن و اسکرول"
     title="ParallaxSection (سکشن و بلوک با پس‌زمینه پارالاکس)"
-    summary="بخش تمام‌عرض یا کارت گوشه‌گرد مجهز به تصویر پس‌زمینه پارالاکس متصل به متغیر --trig-px در موتور ChronoTrig. شامل بهینه‌سازی WebP، لایه‌های کنتراست سازگار با RTL، اسلات دلخواه و غیرفعال‌سازی خودکار در حالت کاهش حرکت و چاپ."
+    summary="بخش تمام‌عرض یا کارت گوشه‌گرد مجهز به تصویر پس‌زمینه پارالاکس هماهنگ با موتور ChronoTrig. شامل بهینه‌سازی WebP، لایه‌های کنتراست سازگار با RTL، اسلات دلخواه و غیرفعال‌سازی خودکار در حالت کاهش حرکت و چاپ."
     propsList={[
       { name: "variant", type: "'full' | 'card'", defaultVal: "'full'", description: "نوار تمام‌عرض لبه به لبه یا بلوک کارتی با حاشیه گرد (با contained به‌صورت خودکار card می‌شود)." },
-      { name: "speed", type: "'subtle' | 'medium' | 'deep'", defaultVal: "'medium'", description: "ضریب عمق حرکت پارالاکس در اسکرول (۰.۳۵، ۰.۵۵ یا ۰.۷۸) با متغیر CSS." },
+      { name: "speed", type: "'subtle' | 'medium' | 'deep'", defaultVal: "'medium'", description: "دامنه عمودی حرکت پارالاکس در اسکرول (subtle / medium / deep) با محدودسازی ایمن درون حاشیه ۳۸ درصدی." },
       { name: "overlay", type: "'gradient' | 'dark' | 'subtle'", defaultVal: "'gradient'", description: "لایه کنتراست برای خوانایی بالای متن روی تصویر." },
       { name: "align / height", type: "'start' | 'center' · 'sm' | 'md' | 'lg'", defaultVal: "'start' / 'md'", description: "تراز منطقی متن و حداقل ارتفاع سکشن." },
       { name: "image / blur", type: "ImageMetadata / boolean", defaultVal: "DEFAULT_HERO_IMAGE / false", description: "تصویر بهینه‌شده Astro و گزینه محوسازی پس‌زمینه." }
@@ -1988,28 +1990,28 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
         contained
         variant="card"
         align="center"
-        height="sm"
+        height="md"
         speed="deep"
-        overlay="dark"
-        image={heroVisual}
+        overlay="subtle"
+        image={parallaxArchPhoto}
         eyebrow="variant='card' · align='center' · speed='deep'"
         title="چیدمان وسط‌چین با کارت‌های آماری روی لایه پارالاکس"
-        description="امکان ارسال هر تصویر ImageMetadata و قراردادن محتوای سفارشی از طریق اسلات پیش‌فرض روی پس‌زمینه تیره اتمسفریک."
+        description="امکان ارسال هر تصویر ImageMetadata و قراردادن محتوای سفارشی از طریق اسلات پیش‌فرض روی پس‌زمینه خوانا و شفاف."
         primaryCta={null}
         secondaryCta={null}
       >
         <div class="mx-auto grid max-w-2xl grid-cols-3 gap-3 text-center">
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
             <p class="text-lg font-extrabold text-accent tabular-nums">۶۰ فریم</p>
-            <p class="text-xs text-hero-fg/80">پردازش با GPU</p>
+            <p class="text-xs text-hero-fg/85">پردازش با GPU</p>
           </div>
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
             <p class="text-lg font-extrabold text-hero-fg tabular-nums">بدون CLS</p>
-            <p class="text-xs text-hero-fg/80">حاشیه اطمینان تصویر</p>
+            <p class="text-xs text-hero-fg/85">حاشیه اطمینان تصویر</p>
           </div>
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
             <p class="text-lg font-extrabold text-hero-fg tabular-nums">RTL/LTR</p>
-            <p class="text-xs text-hero-fg/80">لایه کنتراست منطقی</p>
+            <p class="text-xs text-hero-fg/85">لایه کنتراست منطقی</p>
           </div>
         </div>
       </ParallaxSection>
@@ -2023,6 +2025,7 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
   speed="deep"
   overlay="gradient"
   height="md"
+  image={parallaxCampusPhoto}
   eyebrow="پیش‌نمایش زنده سکشن تمام‌عرض"
   title="سکشن تمام‌عرض با پس‌زمینه پارالاکس در طول صفحه"
   description="کامپوننت <ParallaxSection variant='full' /> را می‌توانید در هر صفحه canvas قرار دهید تا با هماهنگی کامل Lenis و ChronoTrig حرکت کند."

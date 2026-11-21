@@ -156,7 +156,7 @@ const HEIGHT_CLASSES = {
           sizes={isCard ? '(min-width: 1280px) 1200px, 100vw' : '100vw'}
           format="webp"
           quality={75}
-          loading="lazy"
+          loading="eager"
           decoding="async"
           class:list={[
             'h-full w-full object-cover',
@@ -167,18 +167,21 @@ const HEIGHT_CLASSES = {
 
       {
         overlay === 'dark' ? (
-          <div class="absolute inset-0 bg-hero-base/75" />
+          <>
+            <div class="absolute inset-0 bg-hero-base/50" />
+            <div class="absolute inset-0 bg-linear-to-t from-hero-base/70 via-transparent to-hero-base/25" />
+          </>
         ) : overlay === 'subtle' ? (
           <>
-            <div class="absolute inset-0 bg-hero-base/35" />
-            <div class="absolute inset-0 bg-linear-to-t from-hero-base/90 via-hero-base/45 to-transparent" />
+            <div class="absolute inset-0 bg-hero-base/15" />
+            <div class="absolute inset-0 bg-linear-to-t from-hero-base/65 via-hero-base/20 to-transparent" />
           </>
         ) : (
           <>
-            <div class="absolute inset-0 bg-hero-base/45" />
-            <div class="absolute inset-0 bg-linear-to-t from-hero-base/95 from-5% via-hero-base/65 via-55% to-hero-base/35" />
+            <div class="absolute inset-0 bg-hero-base/20" />
+            <div class="absolute inset-0 bg-linear-to-t from-hero-base/75 from-5% via-hero-base/35 via-50% to-hero-base/15" />
             {!isCentered && (
-              <div class="absolute inset-0 bg-linear-to-r from-hero-base/80 via-hero-base/35 to-transparent rtl:bg-linear-to-l" />
+              <div class="absolute inset-0 bg-linear-to-r from-hero-base/85 from-10% via-hero-base/45 via-55% to-transparent rtl:bg-linear-to-l" />
             )}
           </>
         )
@@ -221,7 +224,7 @@ const HEIGHT_CLASSES = {
           resolvedDescription && (
             <p
               class:list={[
-                'mt-4 text-base leading-relaxed text-hero-fg/85 text-pretty print:text-muted sm:text-lg',
+                'mt-4 text-base leading-relaxed text-hero-fg/90 text-pretty print:text-muted sm:text-lg',
                 isCentered && 'mx-auto max-w-2xl',
               ]}
             >
@@ -276,3 +279,129 @@ const HEIGHT_CLASSES = {
     </div>
   </div>
 </PageSection>
+
+<script>
+  const SPEED_AMPLITUDE_PX: Record<string, number> = {
+    subtle: 64,
+    medium: 115,
+    deep: 165,
+  };
+
+  let cleanupParallax: (() => void) | null = null;
+
+  function isMotionReduced(): boolean {
+    if (
+      document.documentElement.dataset.motion === 'reduced' ||
+      document.body.classList.contains('chronotrig-mobile-disabled')
+    ) {
+      return true;
+    }
+    try {
+      return Boolean(window.chronoTrig?.isDisabled?.());
+    } catch {
+      return false;
+    }
+  }
+
+  function clamp(min: number, max: number, value: number): number {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function destroyParallaxStages(): void {
+    cleanupParallax?.();
+    cleanupParallax = null;
+  }
+
+  function initParallaxStages(): void {
+    destroyParallaxStages();
+
+    const stageNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-parallax-stage]'));
+    if (stageNodes.length === 0) return;
+
+    const entries = stageNodes
+      .map((stage) => {
+        const media = stage.querySelector<HTMLElement>('[data-parallax-media]');
+        if (!media) return null;
+        const speedKey = stage.dataset.parallaxSpeed ?? 'medium';
+        const amplitude = SPEED_AMPLITUDE_PX[speedKey] ?? SPEED_AMPLITUDE_PX.medium;
+        return { stage, media, amplitude };
+      })
+      .filter((item): item is { stage: HTMLElement; media: HTMLElement; amplitude: number } => item !== null);
+
+    if (entries.length === 0) return;
+
+    let rafId = 0;
+
+    const resetAll = () => {
+      for (const { media } of entries) {
+        media.style.setProperty('--parallax-y', '0px');
+      }
+    };
+
+    const updateAll = () => {
+      rafId = 0;
+      if (isMotionReduced()) {
+        resetAll();
+        return;
+      }
+
+      const vh = window.innerHeight || document.documentElement.clientHeight || 800;
+
+      for (const { stage, media, amplitude } of entries) {
+        const rect = stage.getBoundingClientRect();
+        if (rect.height <= 0 || rect.bottom < -160 || rect.top > vh + 160) {
+          continue;
+        }
+
+        const stageCenter = rect.top + rect.height * 0.5;
+        const halfTravel = Math.max(1, (vh + rect.height) * 0.5);
+        const normalized = clamp(-1, 1, (vh * 0.5 - stageCenter) / halfTravel);
+        // Never exceed the 38% CSS overscan buffer inside the stage container
+        const safeAmplitude = Math.min(amplitude, Math.max(36, rect.height * 0.34));
+        const offsetPx = normalized * safeAmplitude;
+
+        media.style.setProperty('--parallax-y', `${offsetPx.toFixed(2)}px`);
+      }
+    };
+
+    const scheduleUpdate = () => {
+      if (rafId !== 0) return;
+      rafId = requestAnimationFrame(updateAll);
+    };
+
+    // Initial synchronous pass plus next-frame paint alignment
+    updateAll();
+    scheduleUpdate();
+
+    const unsubscribeChronoTrig = window.chronoTrig?.subscribe?.(scheduleUpdate);
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate, { passive: true });
+
+    const observer = new MutationObserver(() => {
+      scheduleUpdate();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-motion'],
+    });
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    cleanupParallax = () => {
+      if (rafId !== 0) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+      unsubscribeChronoTrig?.();
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+      observer.disconnect();
+    };
+  }
+
+  document.addEventListener('astro:before-swap', destroyParallaxStages);
+  document.addEventListener('astro:page-load', initParallaxStages);
+  initParallaxStages();
+</script>

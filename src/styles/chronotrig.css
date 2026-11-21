@@ -628,17 +628,24 @@ body.chronotrig-mobile-disabled .js [data-ui-progress-ring-track] {
   will-change: auto;
 }
 
-/* Overscanned media layer scrubbed on compositor thread via ChronoTrig --trig-px */
+/* Overscanned media layer scrubbed continuously on compositor thread */
 [data-parallax-stage] [data-parallax-media] {
   position: absolute;
   inset-inline: 0;
-  inset-block: -32%;
+  inset-block: -38%;
+  transition: none;
   will-change: transform;
-  transform: translate3d(0, calc(var(--trig-px, 0px) * var(--parallax-factor, 0.55)), 0) scale(1.06);
+  transform: translate3d(
+      0,
+      var(--parallax-y, calc(var(--trig-px, 0px) * var(--parallax-factor, 0.55))),
+      0
+    )
+    scale(1.04);
 }
 
 html[data-motion="reduced"] [data-parallax-stage] [data-parallax-media],
 body.chronotrig-mobile-disabled [data-parallax-stage] [data-parallax-media] {
+  --parallax-y: 0px;
   inset-block: 0 !important;
   transform: none !important;
   will-change: auto !important;

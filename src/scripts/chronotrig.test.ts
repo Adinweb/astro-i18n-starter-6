@@ -239,7 +239,7 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
     expect(faMdx).toContain('animatePreview={false}');
   });
 
-  it('integrates ParallaxSection with ChronoTrig --trig-px scrubbing and reduced-motion flattening', () => {
+  it('integrates ParallaxSection with ChronoTrig --parallax-y scrubbing and reduced-motion flattening', () => {
     const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
     const parallax = fs.readFileSync(path.join(rootDir, 'src/components/ParallaxSection.astro'), 'utf-8');
     const enMdx = fs.readFileSync(path.join(rootDir, 'src/content/pages/components/en.mdx'), 'utf-8');
@@ -247,14 +247,121 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
 
     expect(parallax).toContain('data-parallax-stage');
     expect(parallax).toContain('data-parallax-media');
-    expect(parallax).toContain('data-trig-pixels="true"');
     expect(parallax).toContain('data-parallax-speed');
+    expect(parallax).toContain('window.chronoTrig?.subscribe');
+    expect(parallax).toContain('isMotionReduced');
+    expect(parallax).toContain('astro:page-load');
+    expect(parallax).toContain('astro:before-swap');
+    expect(parallax).toContain('--parallax-y');
 
     expect(css).toContain('[data-parallax-stage] [data-parallax-media]');
+    expect(css).toContain('inset-block: -38%');
+    expect(css).toContain('var(--parallax-y');
     expect(css).toContain('var(--trig-px, 0px)');
     expect(css).toContain('html[data-motion="reduced"] [data-parallax-stage] [data-parallax-media]');
 
     expect(enMdx).toContain('id="doc-parallax-section"');
     expect(faMdx).toContain('id="doc-parallax-section"');
+
+    // Behavioral check: simulate viewport scroll from bottom edge -> center -> top edge
+    const scriptMatch = parallax.match(/<script>([\s\S]*?)<\/script>/);
+    expect(scriptMatch).toBeTruthy();
+    const rawScript = scriptMatch![1]
+      .replace(/const SPEED_AMPLITUDE_PX:\s*Record<string,\s*number>\s*=/, 'const SPEED_AMPLITUDE_PX =')
+      .replace(/let cleanupParallax:\s*\(\(\)\s*=>\s*void\)\s*\|\s*null\s*=/, 'let cleanupParallax =')
+      .replace(/\):\s*boolean\b/g, ')')
+      .replace(/\((min|max|value):\s*number\)/g, '($1)')
+      .replace(/\((min:\s*number,\s*max:\s*number,\s*value:\s*number)\):\s*number/g, '(min, max, value)')
+      .replace(/\):\s*void\b/g, ')')
+      .replace(/\.querySelectorAll<HTMLElement>/g, '.querySelectorAll')
+      .replace(/\.querySelector<HTMLElement>/g, '.querySelector')
+      .replace(/\.filter\(\(item\):[^=]+=>\s*item\s*!==\s*null\)/g, '.filter((item) => item !== null)');
+
+    const setProps: Record<string, string> = {};
+    let simulatedTop = 850;
+    const subscribeCallbacks: Array<() => void> = [];
+    const scrollListeners: Array<() => void> = [];
+
+    const mockMedia = {
+      style: {
+        setProperty: (k: string, v: string) => {
+          setProps[k] = v;
+        },
+      },
+    };
+    const mockStage = {
+      dataset: { parallaxSpeed: 'deep' },
+      querySelector: () => mockMedia,
+      getBoundingClientRect: () => ({ top: simulatedTop, bottom: simulatedTop + 460, height: 460 }),
+    };
+
+    const docElement = {
+      clientHeight: 900,
+      dataset: { motion: 'full' },
+    };
+
+    const fakeDoc = {
+      documentElement: docElement,
+      body: { classList: { contains: () => false } },
+      querySelectorAll: (sel: string) => (sel === '[data-parallax-stage]' ? [mockStage] : []),
+      addEventListener: vi.fn(),
+    };
+    const fakeWin = {
+      innerHeight: 900,
+      chronoTrig: {
+        isDisabled: () => false,
+        subscribe: (cb: () => void) => {
+          subscribeCallbacks.push(cb);
+          return () => {};
+        },
+      },
+      addEventListener: (ev: string, cb: () => void) => {
+        if (ev === 'scroll') scrollListeners.push(cb);
+      },
+      removeEventListener: vi.fn(),
+    };
+
+    const rafQueue: Array<() => void> = [];
+    const runParallax = new Function(
+      'document',
+      'window',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'MutationObserver',
+      rawScript
+    );
+    class FakeObserver {
+      observe() {}
+      disconnect() {}
+    }
+
+    runParallax(
+      fakeDoc,
+      fakeWin,
+      (cb: () => void) => {
+        rafQueue.push(cb);
+        return rafQueue.length;
+      },
+      vi.fn(),
+      FakeObserver
+    );
+
+    // At bottom of viewport -> negative --parallax-y
+    const bottomOffset = Number.parseFloat(setProps['--parallax-y']);
+    expect(bottomOffset).toBeLessThan(-50);
+
+    // Scroll card past top of viewport -> positive --parallax-y
+    simulatedTop = -250;
+    scrollListeners[0]?.();
+    rafQueue.shift()?.();
+    const topOffset = Number.parseFloat(setProps['--parallax-y']);
+    expect(topOffset).toBeGreaterThan(50);
+    expect(topOffset - bottomOffset).toBeGreaterThan(180);
+
+    // Reduced motion zeroes --parallax-y cleanly
+    docElement.dataset.motion = 'reduced';
+    subscribeCallbacks[0]?.();
+    rafQueue.shift()?.();
+    expect(setProps['--parallax-y']).toBe('0px');
   });
 });
