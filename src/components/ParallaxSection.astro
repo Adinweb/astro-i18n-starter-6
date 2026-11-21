@@ -1,0 +1,278 @@
+---
+/**
+ * Composable section / card block with a ChronoTrig scroll-driven parallax
+ * background image. Supports full-bleed bands (`variant="full"`) and rounded
+ * contained cards (`variant="card"` or `contained`), RTL-safe scrims, reduced
+ * motion / print flattening, and Paraglide-localized defaults.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import Button from '@/components/Button.astro';
+import PageSection from '@/components/PageSection.astro';
+import type { Locale } from '@/i18n/locales';
+import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface ParallaxAction {
+  label: string;
+  href: string;
+  icon?: string;
+  external?: boolean;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  image?: ImageMetadata;
+  imageAlt?: string;
+  eyebrow?: string | null;
+  title?: string;
+  description?: string | null;
+  primaryCta?: ParallaxAction | null;
+  secondaryCta?: ParallaxAction | null;
+  variant?: 'full' | 'card';
+  align?: 'start' | 'center';
+  speed?: 'subtle' | 'medium' | 'deep';
+  height?: 'sm' | 'md' | 'lg';
+  overlay?: 'gradient' | 'dark' | 'subtle';
+  blur?: boolean;
+  contained?: boolean;
+  surface?: 'default' | 'surface' | 'subtle';
+  spacing?: 'none' | 'sm' | 'md' | 'lg';
+}
+
+const {
+  id,
+  locale,
+  image,
+  imageAlt = '',
+  eyebrow,
+  title,
+  description,
+  primaryCta,
+  secondaryCta,
+  variant = 'full',
+  align = 'start',
+  speed = 'medium',
+  height = 'md',
+  overlay = 'gradient',
+  blur = false,
+  contained = false,
+  surface = 'default',
+  spacing = 'md',
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = title === undefined;
+
+const [featuresHref, componentsHref, homeHref] =
+  usingDefaults && (primaryCta === undefined || secondaryCta === undefined)
+    ? await Promise.all([
+        getPageUrl('features', activeLocale),
+        getPageUrl('components', activeLocale),
+        getHomeHref(activeLocale),
+      ])
+    : [null, null, ''];
+
+const resolvedEyebrow =
+  eyebrow === null
+    ? undefined
+    : (eyebrow ??
+      (usingDefaults ? m.block_parallax_eyebrow({}, { locale: activeLocale }) : undefined));
+const resolvedTitle = title ?? m.block_parallax_heading({}, { locale: activeLocale });
+const resolvedDescription =
+  description === null
+    ? undefined
+    : (description ??
+      (usingDefaults ? m.block_parallax_desc({}, { locale: activeLocale }) : undefined));
+const resolvedPrimaryCta =
+  primaryCta === null
+    ? undefined
+    : (primaryCta ??
+      (usingDefaults
+        ? {
+            label: m.block_parallax_cta_primary({}, { locale: activeLocale }),
+            href: componentsHref ?? featuresHref ?? homeHref,
+            icon: 'arrow-right',
+          }
+        : undefined));
+const resolvedSecondaryCta =
+  secondaryCta === null
+    ? undefined
+    : (secondaryCta ??
+      (usingDefaults && featuresHref
+        ? {
+            label: m.block_parallax_cta_secondary({}, { locale: activeLocale }),
+            href: featuresHref,
+          }
+        : undefined));
+
+const background = image ?? DEFAULT_HERO_IMAGE;
+const isCard = contained || variant === 'card';
+const isCentered = align === 'center';
+const hasSlot = Astro.slots.has('default');
+
+const widths = [
+  ...new Set([480, 768, 1024, 1280, 1920, 2560, background.width]),
+]
+  .filter((width) => width <= background.width)
+  .sort((a, b) => a - b);
+
+const HEIGHT_CLASSES = {
+  sm: isCard ? 'min-h-[16rem] py-10 sm:min-h-[19rem] sm:py-12' : 'min-h-[18rem] py-12 sm:min-h-[21rem] sm:py-16',
+  md: isCard ? 'min-h-[21rem] py-12 sm:min-h-[25rem] sm:py-16' : 'min-h-[24rem] py-16 sm:min-h-[29rem] sm:py-24',
+  lg: isCard ? 'min-h-[26rem] py-14 sm:min-h-[30rem] sm:py-20' : 'min-h-[30rem] py-20 sm:min-h-[36rem] sm:py-28',
+} as const;
+---
+
+<PageSection
+  id={id}
+  surface={surface}
+  spacing={contained || variant === 'full' ? 'none' : spacing}
+  bleed={contained || variant === 'full'}
+  class={contained ? 'not-prose my-10' : undefined}
+>
+  <div
+    data-parallax-stage
+    data-parallax-speed={speed}
+    data-trig-pixels="true"
+    data-trig-min="-100"
+    data-trig-max="100"
+    class:list={[
+      'relative isolate overflow-hidden bg-hero-base text-hero-fg print:bg-bg print:text-fg',
+      isCard
+        ? 'rounded-3xl border border-hero-fg/15 shadow-lg print:border-border print:shadow-none'
+        : 'border-y border-hero-fg/10 print:border-border',
+    ]}
+  >
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden print:hidden">
+      <div data-parallax-media>
+        <Image
+          src={background}
+          alt={imageAlt}
+          widths={widths}
+          sizes={isCard ? '(min-width: 1280px) 1200px, 100vw' : '100vw'}
+          format="webp"
+          quality={75}
+          loading="lazy"
+          decoding="async"
+          class:list={[
+            'h-full w-full object-cover',
+            blur && 'blur-sm',
+          ]}
+        />
+      </div>
+
+      {
+        overlay === 'dark' ? (
+          <div class="absolute inset-0 bg-hero-base/75" />
+        ) : overlay === 'subtle' ? (
+          <>
+            <div class="absolute inset-0 bg-hero-base/35" />
+            <div class="absolute inset-0 bg-linear-to-t from-hero-base/90 via-hero-base/45 to-transparent" />
+          </>
+        ) : (
+          <>
+            <div class="absolute inset-0 bg-hero-base/45" />
+            <div class="absolute inset-0 bg-linear-to-t from-hero-base/95 from-5% via-hero-base/65 via-55% to-hero-base/35" />
+            {!isCentered && (
+              <div class="absolute inset-0 bg-linear-to-r from-hero-base/80 via-hero-base/35 to-transparent rtl:bg-linear-to-l" />
+            )}
+          </>
+        )
+      }
+    </div>
+
+    <div
+      class:list={[
+        'relative flex flex-col justify-center',
+        isCard ? 'px-6 sm:px-10 lg:px-14' : 'layout-container',
+        HEIGHT_CLASSES[height],
+      ]}
+    >
+      <div
+        class:list={[
+          isCentered ? 'mx-auto max-w-3xl text-center' : 'max-w-3xl text-start',
+        ]}
+        data-trig-stagger
+        data-trig-stagger-mode="linear"
+        data-trig-stagger-delay="0.08"
+        data-trig-once="true"
+      >
+        {
+          resolvedEyebrow && (
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-accent print:text-primary rtl:tracking-normal">
+              {resolvedEyebrow}
+            </p>
+          )
+        }
+
+        <h2
+          class="fadeInUpSm mt-2 text-2xl font-bold tracking-tight text-hero-fg text-balance print:text-fg sm:text-3xl lg:text-4xl"
+          data-trig
+          data-trig-once="true"
+        >
+          {resolvedTitle}
+        </h2>
+
+        {
+          resolvedDescription && (
+            <p
+              class:list={[
+                'mt-4 text-base leading-relaxed text-hero-fg/85 text-pretty print:text-muted sm:text-lg',
+                isCentered && 'mx-auto max-w-2xl',
+              ]}
+            >
+              {resolvedDescription}
+            </p>
+          )
+        }
+
+        {
+          (resolvedPrimaryCta || resolvedSecondaryCta) && (
+            <div
+              class:list={[
+                'mt-7 flex flex-wrap items-center gap-3 print:hidden',
+                isCentered ? 'justify-center' : 'justify-start',
+              ]}
+            >
+              {resolvedPrimaryCta && (
+                <Button
+                  href={resolvedPrimaryCta.href}
+                  variant="primary"
+                  size="lg"
+                  glow
+                  icon={resolvedPrimaryCta.icon ?? 'arrow-right'}
+                  external={resolvedPrimaryCta.external}
+                >
+                  {resolvedPrimaryCta.label}
+                </Button>
+              )}
+
+              {resolvedSecondaryCta && (
+                <Button
+                  href={resolvedSecondaryCta.href}
+                  variant="hero"
+                  size="lg"
+                  external={resolvedSecondaryCta.external}
+                >
+                  {resolvedSecondaryCta.label}
+                </Button>
+              )}
+            </div>
+          )
+        }
+      </div>
+
+      {
+        hasSlot && (
+          <div class="mt-8 w-full">
+            <slot />
+          </div>
+        )
+      }
+    </div>
+  </div>
+</PageSection>

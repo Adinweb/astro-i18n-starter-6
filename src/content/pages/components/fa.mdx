@@ -39,6 +39,7 @@ import NewsletterBanner from '@/components/NewsletterBanner.astro';
 import PageHeader from '@/components/PageHeader.astro';
 import PageHero from '@/components/PageHero.astro';
 import PageSection from '@/components/PageSection.astro';
+import ParallaxSection from '@/components/ParallaxSection.astro';
 import PartnerLogos from '@/components/PartnerLogos.astro';
 import PricingSection from '@/components/PricingSection.astro';
 import ProcessSteps from '@/components/ProcessSteps.astro';
@@ -69,7 +70,7 @@ import heroVisual from './components.png';
   description="تمامی کامپوننت‌ها به‌صورت خودکار با پالت رنگی OKLCH برند، حالت روشن و تاریک و چیدمان راست‌چین/چپ‌چین هماهنگ می‌شوند و هم با مقادیر پیش‌فرض و هم با پراپ‌های دلخواه کار می‌کنند."
   primaryCta={{ label: "اجزای پایه UI", href: "#sec-primitives", icon: "arrow-right" }}
   secondaryCta={{ label: "سرصفحه و هیرو", href: "#sec-hero" }}
-  trustNote="۴۷ کامپوننت قابل استفاده مجدد · پراپ‌های اختیاری · هندسه منطقی CSS"
+  trustNote="۴۸ کامپوننت قابل استفاده مجدد · پراپ‌های اختیاری · هندسه منطقی CSS"
   image={heroVisual}
   imageAlt="کتابخانه کامپوننت‌های استارتر"
 />
@@ -84,7 +85,7 @@ import heroVisual from './components.png';
       <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">تماس و فراخوان</a>
       <a href="#sec-motion" class="chip px-3.5 py-1.5 text-xs font-semibold">انیمیشن و اسکرول</a>
     </div>
-    <span class="text-xs font-medium text-muted">۴۷ کامپوننت آماده و قابل ترکیب</span>
+    <span class="text-xs font-medium text-muted">۴۸ کامپوننت آماده و قابل ترکیب</span>
   </div>
 </PageSection>
 
@@ -1939,4 +1940,93 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
       </div>
     </div>
   </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-parallax-section"
+    animatePreview={false}
+    name="ParallaxSection"
+    category="انیمیشن و اسکرول"
+    title="ParallaxSection (سکشن و بلوک با پس‌زمینه پارالاکس)"
+    summary="بخش تمام‌عرض یا کارت گوشه‌گرد مجهز به تصویر پس‌زمینه پارالاکس متصل به متغیر --trig-px در موتور ChronoTrig. شامل بهینه‌سازی WebP، لایه‌های کنتراست سازگار با RTL، اسلات دلخواه و غیرفعال‌سازی خودکار در حالت کاهش حرکت و چاپ."
+    propsList={[
+      { name: "variant", type: "'full' | 'card'", defaultVal: "'full'", description: "نوار تمام‌عرض لبه به لبه یا بلوک کارتی با حاشیه گرد (با contained به‌صورت خودکار card می‌شود)." },
+      { name: "speed", type: "'subtle' | 'medium' | 'deep'", defaultVal: "'medium'", description: "ضریب عمق حرکت پارالاکس در اسکرول (۰.۳۵، ۰.۵۵ یا ۰.۷۸) با متغیر CSS." },
+      { name: "overlay", type: "'gradient' | 'dark' | 'subtle'", defaultVal: "'gradient'", description: "لایه کنتراست برای خوانایی بالای متن روی تصویر." },
+      { name: "align / height", type: "'start' | 'center' · 'sm' | 'md' | 'lg'", defaultVal: "'start' / 'md'", description: "تراز منطقی متن و حداقل ارتفاع سکشن." },
+      { name: "image / blur", type: "ImageMetadata / boolean", defaultVal: "DEFAULT_HERO_IMAGE / false", description: "تصویر بهینه‌شده Astro و گزینه محوسازی پس‌زمینه." }
+    ]}
+    usage={`import ParallaxSection from '@/components/ParallaxSection.astro';
+
+<ParallaxSection
+  variant="full"
+  speed="medium"
+  overlay="gradient"
+  eyebrow="بخش اتمسفریک"
+  title="عمق پارالاکس نرم روی شتاب‌دهنده‌ی گرافیکی"
+  description="اسکرول پیوسته ChronoTrig همراه با بهینه‌سازی خودکار تصاویر در Astro."
+  primaryCta={{ label: "شروع کنید", href: "/fa/قیمت‌گذاری/" }}
+/>
+
+<ParallaxSection variant="card" align="center" speed="deep" overlay="dark" height="sm" />`}
+  >
+    <div class="space-y-6">
+      <ParallaxSection
+        id="demo-parallax-card"
+        contained
+        variant="card"
+        speed="medium"
+        overlay="gradient"
+        eyebrow="variant='card' · speed='medium'"
+        title="بلوک کارتی با پس‌زمینه پارالاکس"
+        description="با اسکرول روی این بخش، تصویر پس‌زمینه با حرکتی نرم و عمق بیشتر پشت لایه گرادیان خوانا جابه‌جا می‌شود."
+        primaryCta={{ label: "مشاهده ویژگی‌ها", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
+        secondaryCta={{ label: "مشاهده تعرفه‌ها", href: "/fa/قیمت‌گذاری/" }}
+      />
+
+      <ParallaxSection
+        id="demo-parallax-centered"
+        contained
+        variant="card"
+        align="center"
+        height="sm"
+        speed="deep"
+        overlay="dark"
+        image={heroVisual}
+        eyebrow="variant='card' · align='center' · speed='deep'"
+        title="چیدمان وسط‌چین با کارت‌های آماری روی لایه پارالاکس"
+        description="امکان ارسال هر تصویر ImageMetadata و قراردادن محتوای سفارشی از طریق اسلات پیش‌فرض روی پس‌زمینه تیره اتمسفریک."
+        primaryCta={null}
+        secondaryCta={null}
+      >
+        <div class="mx-auto grid max-w-2xl grid-cols-3 gap-3 text-center">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+            <p class="text-lg font-extrabold text-accent tabular-nums">۶۰ فریم</p>
+            <p class="text-xs text-hero-fg/80">پردازش با GPU</p>
+          </div>
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+            <p class="text-lg font-extrabold text-hero-fg tabular-nums">بدون CLS</p>
+            <p class="text-xs text-hero-fg/80">حاشیه اطمینان تصویر</p>
+          </div>
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+            <p class="text-lg font-extrabold text-hero-fg tabular-nums">RTL/LTR</p>
+            <p class="text-xs text-hero-fg/80">لایه کنتراست منطقی</p>
+          </div>
+        </div>
+      </ParallaxSection>
+    </div>
+  </ComponentDoc>
 </div>
+
+<ParallaxSection
+  id="demo-parallax-full"
+  variant="full"
+  speed="deep"
+  overlay="gradient"
+  height="md"
+  eyebrow="پیش‌نمایش زنده سکشن تمام‌عرض"
+  title="سکشن تمام‌عرض با پس‌زمینه پارالاکس در طول صفحه"
+  description="کامپوننت <ParallaxSection variant='full' /> را می‌توانید در هر صفحه canvas قرار دهید تا با هماهنگی کامل Lenis و ChronoTrig حرکت کند."
+  primaryCta={{ label: "بازگشت به بالا", href: "#hero-landing", icon: "arrow-right" }}
+  secondaryCta={{ label: "مرور ویژگی‌ها", href: "/fa/ویژگی‌ها/" }}
+/>
+

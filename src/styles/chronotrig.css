@@ -450,12 +450,14 @@ body.trig-scroll-up .js [data-trig].trig-directional.trig {
    flattening all reveals/timelines/pins instantaneously; engine-disabled states
    and print always flatten. */
 html[data-motion="reduced"] .js [data-trig],
+html[data-motion="reduced"] .js [data-parallax-stage][data-trig],
 html[data-motion="reduced"] .js [data-trig-stagger] > *,
 html[data-motion="reduced"] .js [data-trig-stagger] [data-trig-stagger-item],
 html[data-motion="reduced"] .js [data-trig-stagger] .trig-stagger-item,
 html[data-motion="reduced"] [data-trig-timeline],
 html[data-motion="reduced"] [data-trig-pin] [data-trig-pin-track],
 body.chronotrig-mobile-disabled .js [data-trig],
+body.chronotrig-mobile-disabled .js [data-parallax-stage][data-trig],
 body.chronotrig-mobile-disabled .js [data-trig-stagger] > *,
 body.chronotrig-mobile-disabled .js [data-trig-stagger] [data-trig-stagger-item],
 body.chronotrig-mobile-disabled .js [data-trig-stagger] .trig-stagger-item,
@@ -602,6 +604,46 @@ body.chronotrig-mobile-disabled .js [data-ui-progress-ring-track] {
   --ui-progress-value: var(--ui-progress-target, 0) !important;
 }
 
+/* --------------------------------------------------------------------------
+   9. Scroll-Driven Parallax Background Stage ([data-parallax-stage])
+   -------------------------------------------------------------------------- */
+[data-parallax-stage] {
+  --parallax-factor: 0.55;
+}
+
+[data-parallax-stage][data-parallax-speed="subtle"] {
+  --parallax-factor: 0.35;
+}
+
+[data-parallax-stage][data-parallax-speed="deep"] {
+  --parallax-factor: 0.78;
+}
+
+/* Never hide the outer parallax container at opacity: 0 when data-trig is paired with pixels */
+.js [data-parallax-stage][data-trig] {
+  opacity: 1;
+  transform: none;
+  transition: none;
+  animation: none;
+  will-change: auto;
+}
+
+/* Overscanned media layer scrubbed on compositor thread via ChronoTrig --trig-px */
+[data-parallax-stage] [data-parallax-media] {
+  position: absolute;
+  inset-inline: 0;
+  inset-block: -32%;
+  will-change: transform;
+  transform: translate3d(0, calc(var(--trig-px, 0px) * var(--parallax-factor, 0.55)), 0) scale(1.06);
+}
+
+html[data-motion="reduced"] [data-parallax-stage] [data-parallax-media],
+body.chronotrig-mobile-disabled [data-parallax-stage] [data-parallax-media] {
+  inset-block: 0 !important;
+  transform: none !important;
+  will-change: auto !important;
+}
+
 @media print {
   [data-trig],
   [data-trig-stagger] > *,
@@ -611,7 +653,8 @@ body.chronotrig-mobile-disabled .js [data-ui-progress-ring-track] {
   [data-trig-pin] [data-trig-pin-track],
   [data-ui-progress-fill],
   [data-ui-progress-step-fill],
-  [data-ui-progress-ring-track] {
+  [data-ui-progress-ring-track],
+  [data-parallax-stage] [data-parallax-media] {
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;
@@ -619,6 +662,11 @@ body.chronotrig-mobile-disabled .js [data-ui-progress-ring-track] {
     animation: none !important;
     transition: none !important;
     --ui-progress-value: var(--ui-progress-target, 0) !important;
+  }
+
+  [data-parallax-stage] [data-parallax-media] {
+    inset-block: 0 !important;
+    will-change: auto !important;
   }
 
   [data-trig-pin] {

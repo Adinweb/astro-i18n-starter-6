@@ -238,4 +238,23 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
     expect(faMdx).toContain('id="doc-progress"');
     expect(faMdx).toContain('animatePreview={false}');
   });
+
+  it('integrates ParallaxSection with ChronoTrig --trig-px scrubbing and reduced-motion flattening', () => {
+    const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
+    const parallax = fs.readFileSync(path.join(rootDir, 'src/components/ParallaxSection.astro'), 'utf-8');
+    const enMdx = fs.readFileSync(path.join(rootDir, 'src/content/pages/components/en.mdx'), 'utf-8');
+    const faMdx = fs.readFileSync(path.join(rootDir, 'src/content/pages/components/fa.mdx'), 'utf-8');
+
+    expect(parallax).toContain('data-parallax-stage');
+    expect(parallax).toContain('data-parallax-media');
+    expect(parallax).toContain('data-trig-pixels="true"');
+    expect(parallax).toContain('data-parallax-speed');
+
+    expect(css).toContain('[data-parallax-stage] [data-parallax-media]');
+    expect(css).toContain('var(--trig-px, 0px)');
+    expect(css).toContain('html[data-motion="reduced"] [data-parallax-stage] [data-parallax-media]');
+
+    expect(enMdx).toContain('id="doc-parallax-section"');
+    expect(faMdx).toContain('id="doc-parallax-section"');
+  });
 });

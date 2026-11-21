@@ -39,6 +39,7 @@ import NewsletterBanner from '@/components/NewsletterBanner.astro';
 import PageHeader from '@/components/PageHeader.astro';
 import PageHero from '@/components/PageHero.astro';
 import PageSection from '@/components/PageSection.astro';
+import ParallaxSection from '@/components/ParallaxSection.astro';
 import PartnerLogos from '@/components/PartnerLogos.astro';
 import PricingSection from '@/components/PricingSection.astro';
 import ProcessSteps from '@/components/ProcessSteps.astro';
@@ -69,7 +70,7 @@ import heroVisual from './components.png';
   description="Every component adapts automatically to OKLCH brand themes, light/dark modes, and RTL/LTR layouts—ready to drop in with defaults or customize via props."
   primaryCta={{ label: "UI Primitives", href: "#sec-primitives", icon: "arrow-right" }}
   secondaryCta={{ label: "Section Blocks", href: "#sec-hero" }}
-  trustNote="47 reusable components · All content props optional · CSS logical geometry"
+  trustNote="48 reusable components · All content props optional · CSS logical geometry"
   image={heroVisual}
   imageAlt="Starter Component Library"
 />
@@ -84,7 +85,7 @@ import heroVisual from './components.png';
       <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">Contact &amp; CTA</a>
       <a href="#sec-motion" class="chip px-3.5 py-1.5 text-xs font-semibold">Motion &amp; Scroll</a>
     </div>
-    <span class="text-xs font-medium text-muted">47 reusable building blocks</span>
+    <span class="text-xs font-medium text-muted">48 reusable building blocks</span>
   </div>
 </PageSection>
 
@@ -1939,4 +1940,93 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
       </div>
     </div>
   </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-parallax-section"
+    animatePreview={false}
+    name="ParallaxSection"
+    category="Motion & Scroll"
+    title="ParallaxSection"
+    summary="Full-bleed or rounded-card section featuring a GPU-composited parallax background image driven by ChronoTrig --trig-px. Ships with WebP responsive images, RTL-agnostic gradient contrast scrims, custom slot overlays, and automatic reduced-motion/print flattening."
+    propsList={[
+      { name: "variant", type: "'full' | 'card'", defaultVal: "'full'", description: "Renders an edge-to-edge full-width band or a rounded framed block (forced automatically when contained is true)." },
+      { name: "speed", type: "'subtle' | 'medium' | 'deep'", defaultVal: "'medium'", description: "Parallax scroll depth factor (0.35x, 0.55x, or 0.78x) via CSS --parallax-factor." },
+      { name: "overlay", type: "'gradient' | 'dark' | 'subtle'", defaultVal: "'gradient'", description: "Contrast scrim style ensuring accessible text legibility over photography." },
+      { name: "align / height", type: "'start' | 'center' · 'sm' | 'md' | 'lg'", defaultVal: "'start' / 'md'", description: "Logical copy alignment and responsive minimum section height." },
+      { name: "image / blur", type: "ImageMetadata / boolean", defaultVal: "DEFAULT_HERO_IMAGE / false", description: "Astro Image asset and optional atmospheric Gaussian blur." }
+    ]}
+    usage={`import ParallaxSection from '@/components/ParallaxSection.astro';
+
+<ParallaxSection
+  variant="full"
+  speed="medium"
+  overlay="gradient"
+  eyebrow="Atmospheric Section"
+  title="Smooth GPU-composited parallax depth"
+  description="Pairs ChronoTrig continuous scroll scrubbing with Astro Image WebP optimization."
+  primaryCta={{ label: "Get started", href: "/pricing/" }}
+/>
+
+<ParallaxSection variant="card" align="center" speed="deep" overlay="dark" height="sm" />`}
+  >
+    <div class="space-y-6">
+      <ParallaxSection
+        id="demo-parallax-card"
+        contained
+        variant="card"
+        speed="medium"
+        overlay="gradient"
+        eyebrow="variant='card' · speed='medium'"
+        title="Contained Parallax Highlight Block"
+        description="Scroll past this card to watch the background photograph glide with hardware-accelerated depth behind the contrast scrim."
+        primaryCta={{ label: "Explore Features", href: "/features/", icon: "arrow-right" }}
+        secondaryCta={{ label: "View Pricing", href: "/pricing/" }}
+      />
+
+      <ParallaxSection
+        id="demo-parallax-centered"
+        contained
+        variant="card"
+        align="center"
+        height="sm"
+        speed="deep"
+        overlay="dark"
+        image={heroVisual}
+        eyebrow="variant='card' · align='center' · speed='deep'"
+        title="Centered Statement With Custom Overlay Metrics"
+        description="Supports any custom ImageMetadata background plus optional slot content layered cleanly over dark atmospheric scrims."
+        primaryCta={null}
+        secondaryCta={null}
+      >
+        <div class="mx-auto grid max-w-2xl grid-cols-3 gap-3 text-center">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+            <p class="text-lg font-extrabold text-accent tabular-nums">60fps</p>
+            <p class="text-xs text-hero-fg/80">Compositor Only</p>
+          </div>
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+            <p class="text-lg font-extrabold text-hero-fg tabular-nums">Zero CLS</p>
+            <p class="text-xs text-hero-fg/80">Overscan Buffer</p>
+          </div>
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/60 px-4 py-3 backdrop-blur-sm">
+            <p class="text-lg font-extrabold text-hero-fg tabular-nums">RTL/LTR</p>
+            <p class="text-xs text-hero-fg/80">Logical Scrims</p>
+          </div>
+        </div>
+      </ParallaxSection>
+    </div>
+  </ComponentDoc>
 </div>
+
+<ParallaxSection
+  id="demo-parallax-full"
+  variant="full"
+  speed="deep"
+  overlay="gradient"
+  height="md"
+  eyebrow="Live Full-Bleed ParallaxSection"
+  title="Edge-to-Edge Viewport Parallax Background"
+  description="Drop <ParallaxSection variant='full' /> anywhere on a canvas page to create a full-width narrative divider with smooth Lenis + ChronoTrig scroll synchronization."
+  primaryCta={{ label: "Back to Top", href: "#hero-landing", icon: "arrow-right" }}
+  secondaryCta={{ label: "Browse Features", href: "/features/" }}
+/>
+

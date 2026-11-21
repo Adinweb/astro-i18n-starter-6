@@ -29,6 +29,7 @@ const COMPOSABLE_SECTIONS = [
   'CarouselSection',
   'ProductShowcaseGrid',
   'AuthFormCard',
+  'ParallaxSection',
 ] as const;
 
 const UI_PRIMITIVES = [
@@ -53,7 +54,7 @@ const FORBIDDEN_PHYSICAL_CLASS =
   /^(?:-?m[lr]-|p[lr]-|-?(?:left|right)-|text-(?:left|right)$|border-[lr](?:$|-)|rounded-(?:[tb])?[lr](?:$|-))/;
 
 describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
-  it('all 35 reusable blocks/primitives exist and use RTL logical properties without raw <svg> blobs or hex colors', () => {
+  it('all 36 reusable blocks/primitives exist and use RTL logical properties without raw <svg> blobs or hex colors', () => {
     for (const component of ALL_REUSABLE_COMPONENTS) {
       const filePath = path.join(rootDir, `src/components/${component}.astro`);
       expect(fs.existsSync(filePath), `Missing component: ${component}`).toBe(true);
@@ -79,7 +80,7 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
     }
   });
 
-  it('all 22 section blocks declare data-trig viewport reveal attributes', () => {
+  it('all 23 section blocks declare data-trig viewport reveal attributes', () => {
     for (const block of COMPOSABLE_SECTIONS) {
       const source = fs.readFileSync(
         path.join(rootDir, `src/components/${block}.astro`),
@@ -89,7 +90,7 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
     }
   });
 
-  it('all 21 non-hero section blocks wrap via PageSection and never emit competing <h1> tags', () => {
+  it('all 22 non-hero section blocks wrap via PageSection and never emit competing <h1> tags', () => {
     for (const block of COMPOSABLE_SECTIONS) {
       if (block === 'LandingHeroSplit') continue;
       const source = fs.readFileSync(
