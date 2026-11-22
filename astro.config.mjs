@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
+import { codeInspectorPlugin } from 'code-inspector-plugin';
 
 const require = createRequire(import.meta.url);
 
@@ -174,7 +175,7 @@ export default defineConfig({
   },
   integrations: [mdx()],
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss(), codeInspectorPlugin({ bundler: 'vite' })],
     resolve: {
       alias: {
         'astro/components': astroComponentsDir,

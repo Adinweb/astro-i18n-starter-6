@@ -69,6 +69,7 @@
     "@inlang/plugin-m-function-matcher": "2.2.6",
     "@inlang/plugin-message-format": "4.4.0",
     "@types/node": "^22.12.0",
+    "code-inspector-plugin": "^2.0.9",
     "knip": "^6.40.0",
     "sharp": "^0.35.5",
     "typescript": "^6.0.3",
