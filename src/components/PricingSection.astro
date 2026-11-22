@@ -214,7 +214,7 @@ function formatTierPrice(
 
       {
         billingToggle && (
-          <div class="inline-flex shrink-0 items-center gap-3 self-start rounded-full border border-border bg-surface p-1.5 sm:self-auto" data-trig>
+          <div class="inline-flex shrink-0 items-center gap-3 self-start rounded-full border border-border bg-surface p-1.5 sm:self-auto" data-trig data-trig-once="true">
             <button
               type="button"
               data-billing-choice="monthly"
@@ -256,7 +256,7 @@ function formatTierPrice(
       ]}
       data-trig-stagger
       data-trig-stagger-mode="linear"
-      data-trig-stagger-delay="0.08"
+      data-trig-stagger-delay="0.06"
       data-trig-once="true"
     >
       {
@@ -285,6 +285,7 @@ function formatTierPrice(
           return (
             <article
               data-trig
+              data-trig-once="true"
               class:list={[
                 'flex flex-col justify-between rounded-2xl border p-6 transition duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-7',
                 cardSurface,

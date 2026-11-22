@@ -1,15 +1,26 @@
 /**
- * ChronoTrig v5.2.0 client integration & lifecycle coordinator.
+ * ChronoTrig v6.0.0 client integration & lifecycle coordinator.
  *
  * Ensures ChronoTrig scans, measures, and observes elements across initial page
  * loads, Astro View Transitions (`astro:page-load`), and dynamic DOM updates
  * while preserving harmonic stagger modes (`linear` | `wave` | `center` | `reverse`),
- * pinned sections, timelines, and `data-trig-once="true"` reveals.
+ * pinned sections, timelines, zero-cost reveal fast paths, and `data-trig-once="true"`.
  */
 
 type ChronoTrigEase = 'linear' | 'ease' | 'easeIn' | 'easeOut' | 'easeInOut';
 
 type ChronoTrigMobileBehavior = 'disable' | 'lightweight' | 'full';
+
+export interface ChronoTrigFrameMetrics {
+  lastUpdateMs: number;
+  layoutReads: number;
+  styleWrites: number;
+  revealCount: number;
+  activeScrubbers: number;
+  activePins: number;
+  activeScrubStaggers: number;
+  activeTimelines: number;
+}
 
 interface ChronoTrigTimelineStep {
   at: number;
@@ -44,12 +55,21 @@ interface ChronoTrigOptions {
   disableBlurOnMobile?: boolean;
   disable3DOnMobile?: boolean;
   respectReducedMotion?: boolean;
+  root?: HTMLElement | null;
+  rootMargin?: string;
+  threshold?: number | number[];
+  externalScroll?: boolean;
+  measureOnScroll?: boolean;
+  precision?: number;
+  autoScan?: boolean;
 }
 
 interface ChronoTrigInstance {
   init: () => void;
   scan: () => void;
+  sync: (scrollY?: number) => void;
   refresh: () => void;
+  setRoot: (root: HTMLElement | null) => void;
   subscribe: (cb: (state: ChronoTrigScrollState) => void) => () => void;
   setLerp: (val: number) => void;
   getLerp: () => number;
@@ -61,6 +81,7 @@ interface ChronoTrigInstance {
   setDebugMarkers: (enabled: boolean) => void;
   isDebugMarkers: () => boolean;
   getLastUpdateMs: () => number;
+  getFrameMetrics: () => ChronoTrigFrameMetrics;
   applyTimelineInterpolation: (
     el: HTMLElement,
     steps: ChronoTrigTimelineStep[],
@@ -68,7 +89,7 @@ interface ChronoTrigInstance {
     directOverride?: boolean
   ) => void;
   trigInit: () => void;
-  trigScroll: () => void;
+  trigScroll: (sync?: boolean) => void;
   trigWindowHeight: () => void;
   destroy: () => void;
 }
@@ -79,7 +100,7 @@ declare global {
     chronoTrig?: ChronoTrigInstance;
     trig?: ChronoTrigInstance;
     trigInit?: () => void;
-    trigScroll?: () => void;
+    trigScroll?: (sync?: boolean) => void;
     trigWindowHeight?: () => void;
   }
 }
@@ -87,10 +108,10 @@ declare global {
 let lifecycleBound = false;
 
 /**
- * Automatically attributes prose titles, subtitles, and section headers for smooth
- * bottom reveal, ensures stagger children participate cleanly in IntersectionObserver
- * without overwriting ChronoTrig v5.2.0 stagger modes (`wave`, `center`, `reverse`),
- * and refreshes engine measurements.
+ * Automatically attributes prose titles, subtitles, and section headers for zero-cost
+ * one-shot reveal (`data-trig-once="true"`), ensures stagger children participate cleanly
+ * in IntersectionObserver without overwriting ChronoTrig stagger modes, and refreshes
+ * cached engine geometry.
  */
 export function setupChronoTrig(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
@@ -102,7 +123,7 @@ export function setupChronoTrig(): void {
     return;
   }
 
-  // Auto-tag prose headings, subtitles, and kickers for smooth bottom reveal
+  // Auto-tag prose headings, subtitles, and kickers for crisp one-shot reveal
   const headings = document.querySelectorAll<HTMLElement>(
     '.prose h2, .prose h3, .prose h4, .prose .section-kicker, [data-prose-reveal]'
   );
@@ -110,13 +131,16 @@ export function setupChronoTrig(): void {
     headings.forEach((el) => {
       if (typeof el.hasAttribute === 'function' && !el.hasAttribute('data-trig')) {
         el.setAttribute('data-trig', '');
+        if (!el.hasAttribute('data-trig-once')) {
+          el.setAttribute('data-trig-once', 'true');
+        }
       }
     });
   }
 
   // Ensure stagger children participate in IntersectionObserver reveals while
   // delegating `--stagger-index`, `--stagger-delay` (`linear` | `wave` | `center` | `reverse`),
-  // `--stagger-total`, and mobile lightweight clamping to ChronoTrig v5.2.0.
+  // `--stagger-total`, and mobile lightweight clamping to ChronoTrig v6.0.0.
   try {
     const staggers = document.querySelectorAll<HTMLElement>('[data-trig-stagger]');
     if (staggers && typeof staggers.forEach === 'function') {
@@ -161,7 +185,7 @@ export function setupChronoTrig(): void {
     window.chronoTrig.refresh();
   } else {
     window.chronoTrig.scan();
-    window.chronoTrig.trigScroll?.();
+    window.chronoTrig.trigScroll?.(true);
   }
 }
 

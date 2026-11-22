@@ -108,7 +108,7 @@ const gridColsClass =
 >
   {
     (resolvedEyebrow || resolvedHeading) && (
-      <div class="mb-6 text-center" data-trig>
+      <div class="mb-6 text-center" data-trig data-trig-once="true">
         {resolvedEyebrow && <p class="section-kicker">{resolvedEyebrow}</p>}
         {resolvedHeading && (
           <h2 class="mt-1.5 text-lg font-bold tracking-tight text-fg sm:text-xl text-balance">
@@ -130,7 +130,7 @@ const gridColsClass =
       resolvedItems.map((item) => {
         const isExternal = item.external ?? (item.href ? /^https?:\/\//i.test(item.href) : false);
         return (
-          <li data-trig>
+          <li data-trig data-trig-once="true">
             {item.href ? (
               <a
                 href={item.href}

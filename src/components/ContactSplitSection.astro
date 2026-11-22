@@ -197,7 +197,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
   class={contained ? 'not-prose my-10' : undefined}
 >
   <div class="grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
-    <div class="lg:col-span-5" data-trig data-trig-direction="start">
+    <div class="lg:col-span-5" data-trig data-trig-direction="start" data-trig-once="true">
       <SectionHeader
         eyebrow={resolvedEyebrow}
         heading={resolvedHeading}
@@ -313,9 +313,9 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
     <div
       data-trig
       data-trig-direction="end"
-      data-trig-delay="0.1"
+      data-trig-once="true"
       class:list={[
-        'rounded-3xl border border-border p-6 shadow-xs sm:p-8 lg:col-span-7',
+        'trig-delay-100 rounded-3xl border border-border p-6 shadow-xs sm:p-8 lg:col-span-7',
         cardSurface,
       ]}
     >

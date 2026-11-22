@@ -1,6 +1,6 @@
-# Smooth Scroll (Lenis) & ChronoTrig v5.2.0 Scroll Engine Reference
+# Smooth Scroll (Lenis) & ChronoTrig v6.0.0 Scroll Engine Reference
 
-This reference documents how to animate elements across Astro views, reusable components, and `.mdx` content pages using **ChronoTrig v5.2.0** and **Lenis** smooth scrolling, while preserving 100% RTL/LTR symmetry, progressive enhancement, zero Cumulative Layout Shift (CLS), and Astro `<ClientRouter />` compatibility.
+This reference documents how to animate elements across Astro views, reusable components, and `.mdx` content pages using **ChronoTrig v6.0.0** and **Lenis** smooth scrolling, while preserving 100% RTL/LTR symmetry, progressive enhancement, zero Cumulative Layout Shift (CLS), and Astro `<ClientRouter />` compatibility.
 
 ---
 
@@ -8,11 +8,11 @@ This reference documents how to animate elements across Astro views, reusable co
 
 | File | Responsibility |
 | :--- | :--- |
-| `public/chronotrig.min.js` / `public/chronotrig.esm.js` | Zero-dependency **ChronoTrig v5.2.0** FastDOM CSS scroll engine (2-pass measure/mutate, IntersectionObserver gating, WeakMap caching, `autoInit: true`). Drives `[data-trig]`, `[data-trig-pin]`, `[data-trig-stagger]`, `[data-trig-timeline]`, continuous variables (`--trig`, `--trig-px`, `--trig-deg`), body milestone classes, and live OS `prefers-reduced-motion` listeners. |
+| `public/chronotrig.min.js` / `public/chronotrig.esm.js` | Zero-dependency **ChronoTrig v6.0.0** FastDOM CSS scroll engine (2-pass measure/mutate, IntersectionObserver gating, WeakMap caching, dynamic `willChange` release, `sync(scrollY)`, `autoInit: true`). Drives `[data-trig]`, `[data-trig-pin]`, `[data-trig-stagger]`, `[data-trig-timeline]`, continuous variables (`--trig`, `--trig-px`, `--trig-deg`), body milestone classes, and live OS `prefers-reduced-motion` listeners. |
 | `src/layouts/BaseLayout.astro` | Loads `<script is:inline src="/chronotrig.min.js"></script>`, executes `resolveMotion()` in `<head>` (checks `localStorage.motion`, falls back to OS `prefers-reduced-motion: reduce`, sets `html[data-motion]`), and imports `src/scripts/lenis` and `src/scripts/chronotrig`. |
-| `src/styles/chronotrig.css` | Scopes all entrance states strictly under `.js [data-trig]`, provides v5.2.0 presets (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, etc.) and utility modifiers (`.trig-delay-*`, `.trig-duration-*`, `.trig-ease-*`, `.trig-reactive-*`), handles logical RTL directions and harmonic stagger items, and flattens reveals/pins/timelines for `html[data-motion="reduced"]`, `body.chronotrig-mobile-disabled`, and `@media print`. |
-| `src/scripts/chronotrig.ts` | Full v5.2.0 TypeScript declarations and client lifecycle coordinator. Auto-tags `.prose` headings, propagates `data-trig` + `data-trig-once` to stagger children without clobbering `wave`/`center`/`reverse` delays, calls `window.chronoTrig.refresh()` on initial load and `astro:page-load`, and exports `refreshChronoTrig()`. |
-| `src/scripts/lenis.ts` | Manages the singleton `Lenis` instance (`lerp: 0.085`), syncs Lenis scroll ticks with `window.chronoTrig.trigScroll?.()`, intercepts same-page `#hash` links in the capture phase (`-96px` header offset), isolates nested scroll containers, and honors `data-motion="reduced"`. |
+| `src/styles/chronotrig.css` | Scopes all entrance states strictly under `.js [data-trig]`, provides calibrated v6 presets (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, etc.) and utility modifiers (`.trig-delay-*`, `.trig-duration-*`, `.trig-ease-*`, `.trig-reactive-*`), handles logical RTL directions and settled stagger items (`.trig-stagger-settled`), and flattens reveals/pins/timelines for `html[data-motion="reduced"]`, `body.chronotrig-mobile-disabled`, and `@media print`. |
+| `src/scripts/chronotrig.ts` | Full v6.0.0 TypeScript declarations and client lifecycle coordinator. Auto-tags `.prose` headings (`data-trig` + `data-trig-once="true"`), propagates `data-trig` + `data-trig-once` to stagger children without clobbering `wave`/`center`/`reverse` delays, calls `window.chronoTrig.refresh()` on initial load and `astro:page-load`, and exports `refreshChronoTrig()`. |
+| `src/scripts/lenis.ts` | Manages the singleton `Lenis` instance (`lerp: 0.125`), syncs Lenis scroll ticks synchronously via `window.chronoTrig.sync(instance.scroll)`, intercepts same-page `#hash` links in the capture phase (`-96px` header offset), isolates nested scroll containers, and honors `data-motion="reduced"`. |
 | `src/styles/global.css` | Sets `html { scroll-behavior: auto; }` (preventing Lenis conflict) and `body { overflow-x: clip; }` (crucial so `position: sticky` inside `[data-trig-pin]` is never broken). |
 
 ---
@@ -25,10 +25,10 @@ Hiding elements with `display: none` collapses their bounding box to `0×0`, bre
 
 ```text
 1. <head> Script       : Adds <html class="js"> synchronously before first paint (100% visible if JS disabled).
-2. .js [data-trig]     : Initial state in chronotrig.css: opacity: 0; transform: translate3d(0, 56px, 0);
-3. ChronoTrig Observer : Adds .trig (+ trig-up / trig-down) when entering viewport (rootMargin 10% 0px).
-4. .js [data-trig].trig: Runs `trig-reveal-up` for 1.2s on cubic-bezier(0.22, 1, 0.36, 1) to opacity: 1; transform: none;
-                         after a deliberate --trig-reveal-delay (180ms) hold.
+2. .js [data-trig]     : Initial state in chronotrig.css: opacity: 0; transform: translate3d(0, 20px, 0);
+3. ChronoTrig Observer : Adds .trig (+ trig-up / trig-down) when entering viewport (rootMargin 0px 0px -8% 0px).
+4. .js [data-trig].trig: Runs `trig-reveal-up` for 0.55s on cubic-bezier(0.16, 1, 0.3, 1) to opacity: 1; transform: none;
+                         with `--trig-reveal-delay: 0ms` and dynamic `will-change` cleanup on completion.
 5. Reveal-Once         : Add `data-trig-once="true"` to trigger once, release `will-change: auto`, and unobserve
                          automatically (0% scroll overhead on long pages).
 6. Failsafe            : If /chronotrig.min.js never loads, setupChronoTrig() removes `.js` so content never stays hidden.
@@ -130,7 +130,7 @@ When a client-side filter only toggles `card.hidden`, reset the grid's reveal cl
 if (typeof window.chronoTrig !== 'undefined') {
   grid.classList.remove('trig-stagger-active');
   for (const child of Array.from(grid.children)) {
-    child.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active');
+    child.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active', 'trig-stagger-settled');
   }
   void grid.offsetHeight;
 }
@@ -193,8 +193,8 @@ Interpolate across percentage checkpoints (`at`: `0`–`100`):
 
 ## 9. Engine API, Lenis & Reduced Motion Synchronization
 
-* **Engine Instance (`window.chronoTrig`)**: Configured out of the box with `{ lerp: 0, mobileBehavior: 'lightweight', mobileBreakpoint: 1024, disableBlurOnMobile: true, disable3DOnMobile: true, respectReducedMotion: true }`.
-  * Key methods: `refresh()`, `scan()`, `subscribe(cb)`, `setLerp(val)` / `getLerp()`, `setMobileBehavior(mode)` / `getMobileBehavior()`, `setDebugMarkers(bool)`, `isMobile()`, `isDisabled()`, `getLastUpdateMs()`, `trigScroll()`, `destroy()`.
-  * **Important**: v5.2.0 does not expose `onScroll()` or `onResize()`; use `refresh()` after DOM/layout changes and `trigScroll?.()` in scroll callbacks.
-* **Lenis (`src/scripts/lenis.ts`)**: Initializes with `lerp: 0.085`, `smoothWheel: true`, `-96px` header anchor offset, and calls `window.chronoTrig.trigScroll?.()` inside `lenis.on('scroll', ...)`. Always add `data-lenis-prevent` on nested `overflow-y-auto` panels/modals.
+* **Engine Instance (`window.chronoTrig`)**: Configured out of the box with `{ lerp: 0, rootMargin: '0px 0px -8% 0px', threshold: [0, 0.1, 0.5, 1], externalScroll: false, measureOnScroll: false, precision: 2, mobileBehavior: 'lightweight', mobileBreakpoint: 1024, disableBlurOnMobile: true, disable3DOnMobile: true, respectReducedMotion: true }`.
+  * Key methods: `refresh()`, `scan()`, `subscribe(cb)`, `sync(scrollY?)`, `setRoot(el)`, `getFrameMetrics()`, `setLerp(val)` / `getLerp()`, `setMobileBehavior(mode)` / `getMobileBehavior()`, `setDebugMarkers(bool)`, `isMobile()`, `isDisabled()`, `getLastUpdateMs()`, `trigScroll(sync?)`, `destroy()`.
+  * **Important**: v6.0.0 does not expose `onScroll()` or `onResize()`; use `refresh()` after DOM/layout changes and `sync(scrollY)` or `trigScroll?.(true)` in scroll callbacks.
+* **Lenis (`src/scripts/lenis.ts`)**: Initializes with `lerp: 0.125`, `smoothWheel: true`, `-96px` header anchor offset, and calls `window.chronoTrig.sync(instance.scroll)` inside `lenis.on('scroll', ...)`. Always add `data-lenis-prevent` on nested `overflow-y-auto` panels/modals.
 * **Unified Reduced Motion (`resolveMotion()`)**: `<head>` sets `html[data-motion="reduced" | "full"]` from `localStorage.motion` or OS `prefers-reduced-motion: reduce`. ChronoTrig's `respectReducedMotion` also watches `prefers-reduced-motion` live (`chronotrig-mobile-disabled`). Together with `chronotrig.css`, `lenis.ts`, `global.css`, and `@media print`, all reveals, timelines, horizontal tracks, and pinned heights flatten cleanly with zero stuck elements.

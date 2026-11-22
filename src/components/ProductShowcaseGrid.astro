@@ -162,7 +162,7 @@ const gridColsClass =
 
       {
         showFilters && (
-          <div class="flex flex-wrap items-center gap-2 print:hidden" data-trig>
+          <div class="flex flex-wrap items-center gap-2 print:hidden" data-trig data-trig-once="true">
             <button
               type="button"
               data-product-filter="__all__"
@@ -191,6 +191,7 @@ const gridColsClass =
       class:list={['grid gap-5', (hasHeader || showFilters) && 'mt-8', gridColsClass]}
       data-trig-stagger
       data-trig-stagger-delay="0.06"
+      data-trig-once="true"
     >
       {
         resolvedItems.map((item) => {
@@ -208,6 +209,7 @@ const gridColsClass =
           return (
             <article
               data-trig
+              data-trig-once="true"
               data-product-card
               data-category={item.category ?? ''}
               class:list={[
@@ -344,7 +346,13 @@ const gridColsClass =
           if (grid && typeof window.chronoTrig !== 'undefined') {
             grid.classList.remove('trig-stagger-active');
             cards.forEach((card) =>
-              card.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active')
+              card.classList.remove(
+                'trig',
+                'trig-up',
+                'trig-down',
+                'trig-stagger-active',
+                'trig-stagger-settled'
+              )
             );
             void grid.offsetHeight;
           }

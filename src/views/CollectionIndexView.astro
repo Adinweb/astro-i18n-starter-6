@@ -249,7 +249,8 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
           data-collection-grid
           class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
           data-trig-stagger
-          data-trig-stagger-delay="0.08"
+          data-trig-stagger-delay="0.06"
+          data-trig-once="true"
         >
           {pageEntries.map((entry) => {
             const href = getContentTypeEntryHref(contentType, entry.data.slug, locale);
@@ -270,6 +271,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
             return (
               <li
                 data-trig
+                data-trig-once="true"
                 data-collection-card
                 data-categories={JSON.stringify(entryCategories)}
                 data-stack={JSON.stringify(entryStack)}
@@ -426,7 +428,13 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
           if (typeof window.chronoTrig !== 'undefined') {
             grid.classList.remove('trig-stagger-active');
             for (const child of Array.from(grid.children)) {
-              child.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active');
+              child.classList.remove(
+                'trig',
+                'trig-up',
+                'trig-down',
+                'trig-stagger-active',
+                'trig-stagger-settled'
+              );
             }
             void grid.offsetHeight;
           }

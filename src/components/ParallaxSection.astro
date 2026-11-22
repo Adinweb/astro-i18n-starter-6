@@ -137,17 +137,17 @@ const HEIGHT_CLASSES = {
   <div
     data-parallax-stage
     data-parallax-speed={speed}
-    data-trig-pixels="true"
-    data-trig-min="-100"
-    data-trig-max="100"
     class:list={[
-      'relative isolate overflow-hidden bg-hero-base text-hero-fg print:bg-bg print:text-fg',
+      'not-prose relative isolate overflow-hidden bg-hero-base text-hero-fg print:bg-bg print:text-fg',
       isCard
         ? 'rounded-3xl border border-hero-fg/15 shadow-lg print:border-border print:shadow-none'
         : 'border-y border-hero-fg/10 print:border-border',
     ]}
   >
-    <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden print:hidden">
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] [transform:translateZ(0)] print:hidden"
+    >
       <div data-parallax-media>
         <Image
           src={background}
@@ -282,20 +282,52 @@ const HEIGHT_CLASSES = {
 
 <script>
   const SPEED_AMPLITUDE_PX: Record<string, number> = {
-    subtle: 64,
-    medium: 115,
-    deep: 165,
+    subtle: 76,
+    medium: 135,
+    deep: 195,
   };
+  const SMOOTH_LAMBDA = 24;
 
   let cleanupParallax: (() => void) | null = null;
 
+  interface ParallaxEntry {
+    stage: HTMLElement;
+    media: HTMLElement;
+    amplitude: number;
+    currentY: number;
+    targetY: number;
+    lastWrittenY: number;
+    initialized: boolean;
+  }
+
+  function getNow(): number {
+    return typeof performance !== 'undefined' ? performance.now() : Date.now();
+  }
+
   function isMotionReduced(): boolean {
-    if (
-      document.documentElement.dataset.motion === 'reduced' ||
-      document.body.classList.contains('chronotrig-mobile-disabled')
-    ) {
+    const explicit = document.documentElement.dataset.motion;
+    if (explicit === 'reduced') {
       return true;
     }
+
+    const mobileDisabled =
+      typeof window.chronoTrig?.getMobileBehavior === 'function' &&
+      typeof window.chronoTrig?.isMobile === 'function' &&
+      window.chronoTrig.getMobileBehavior() === 'disable' &&
+      window.chronoTrig.isMobile();
+
+    if (mobileDisabled) {
+      return true;
+    }
+
+    if (explicit === 'full') {
+      return false;
+    }
+
+    if (document.body.classList.contains('chronotrig-mobile-disabled')) {
+      return true;
+    }
+
     try {
       return Boolean(window.chronoTrig?.isDisabled?.());
     } catch {
@@ -319,66 +351,148 @@ const HEIGHT_CLASSES = {
     if (stageNodes.length === 0) return;
 
     const entries = stageNodes
-      .map((stage) => {
+      .map((stage): ParallaxEntry | null => {
         const media = stage.querySelector<HTMLElement>('[data-parallax-media]');
         if (!media) return null;
         const speedKey = stage.dataset.parallaxSpeed ?? 'medium';
         const amplitude = SPEED_AMPLITUDE_PX[speedKey] ?? SPEED_AMPLITUDE_PX.medium;
-        return { stage, media, amplitude };
+        return {
+          stage,
+          media,
+          amplitude,
+          currentY: 0,
+          targetY: 0,
+          lastWrittenY: Number.NaN,
+          initialized: false,
+        };
       })
-      .filter((item): item is { stage: HTMLElement; media: HTMLElement; amplitude: number } => item !== null);
+      .filter((item): item is ParallaxEntry => item !== null);
 
     if (entries.length === 0) return;
 
     let rafId = 0;
+    let snapRafId = 0;
+    let lastStepTime = 0;
+    let hasPendingMotion = false;
 
     const resetAll = () => {
-      for (const { media } of entries) {
-        media.style.setProperty('--parallax-y', '0px');
+      hasPendingMotion = false;
+      for (const entry of entries) {
+        entry.currentY = 0;
+        entry.targetY = 0;
+        if (!entry.initialized || entry.lastWrittenY !== 0) {
+          entry.media.style.setProperty('--parallax-y', '0px');
+          entry.lastWrittenY = 0;
+          entry.initialized = true;
+        }
       }
     };
 
-    const updateAll = () => {
-      rafId = 0;
+    const step = (now: number, snap: boolean): boolean => {
       if (isMotionReduced()) {
         resetAll();
-        return;
+        lastStepTime = Math.max(lastStepTime, now);
+        return true;
       }
 
-      const vh = window.innerHeight || document.documentElement.clientHeight || 800;
+      if (!snap && lastStepTime !== 0 && now - lastStepTime < 2) {
+        return !hasPendingMotion;
+      }
 
-      for (const { stage, media, amplitude } of entries) {
-        const rect = stage.getBoundingClientRect();
-        if (rect.height <= 0 || rect.bottom < -160 || rect.top > vh + 160) {
+      const dt = lastStepTime > 0 ? clamp(0.001, 0.05, (now - lastStepTime) / 1000) : 1 / 60;
+      lastStepTime = Math.max(lastStepTime, now);
+      const alpha = snap ? 1 : 1 - Math.exp(-SMOOTH_LAMBDA * dt);
+
+      const vh = window.innerHeight || document.documentElement.clientHeight || 800;
+      let pending = false;
+
+      for (const entry of entries) {
+        const rect = entry.stage.getBoundingClientRect();
+        if (rect.height <= 0) {
           continue;
         }
 
         const stageCenter = rect.top + rect.height * 0.5;
         const halfTravel = Math.max(1, (vh + rect.height) * 0.5);
         const normalized = clamp(-1, 1, (vh * 0.5 - stageCenter) / halfTravel);
-        // Never exceed the 38% CSS overscan buffer inside the stage container
-        const safeAmplitude = Math.min(amplitude, Math.max(36, rect.height * 0.34));
-        const offsetPx = normalized * safeAmplitude;
+        // Never exceed the 38% CSS overscan buffer + 1.06 scale inside the stage container
+        const safeAmplitude = Math.min(entry.amplitude, Math.max(40, rect.height * 0.37));
+        const targetY = normalized * safeAmplitude;
+        entry.targetY = targetY;
 
-        media.style.setProperty('--parallax-y', `${offsetPx.toFixed(2)}px`);
+        const diff = targetY - entry.currentY;
+        const nextY = snap || Math.abs(diff) <= 0.05 ? targetY : entry.currentY + diff * alpha;
+        entry.currentY = nextY;
+
+        if (!entry.initialized || Math.abs(nextY - entry.lastWrittenY) >= 0.02) {
+          entry.media.style.setProperty('--parallax-y', `${nextY.toFixed(2)}px`);
+          entry.lastWrittenY = nextY;
+          entry.initialized = true;
+        }
+
+        if (Math.abs(targetY - nextY) > 0.05) {
+          pending = true;
+        }
+      }
+
+      hasPendingMotion = pending;
+      return !pending;
+    };
+
+    const tick = (frameTime?: number) => {
+      rafId = 0;
+      const now = typeof frameTime === 'number' ? frameTime : getNow();
+      const settled = step(now, false);
+      if (!settled) {
+        rafId = requestAnimationFrame(tick);
       }
     };
 
-    const scheduleUpdate = () => {
-      if (rafId !== 0) return;
-      rafId = requestAnimationFrame(updateAll);
+    const onScrollTick = () => {
+      const settled = step(getNow(), false);
+      if (!settled && rafId === 0) {
+        rafId = requestAnimationFrame(tick);
+      }
     };
 
-    // Initial synchronous pass plus next-frame paint alignment
-    updateAll();
-    scheduleUpdate();
+    const scheduleSnap = () => {
+      if (snapRafId !== 0) return;
+      snapRafId = requestAnimationFrame((frameTime) => {
+        snapRafId = 0;
+        const now = typeof frameTime === 'number' ? frameTime : getNow();
+        step(now, true);
+      });
+    };
 
-    const unsubscribeChronoTrig = window.chronoTrig?.subscribe?.(scheduleUpdate);
-    window.addEventListener('scroll', scheduleUpdate, { passive: true });
-    window.addEventListener('resize', scheduleUpdate, { passive: true });
+    const onMotionChange = () => {
+      step(getNow(), true);
+    };
+
+    // Initial synchronous snap across all stages (pre-clamps off-screen stages cleanly) + next-frame paint alignment
+    step(getNow(), true);
+    scheduleSnap();
+
+    const unsubscribeChronoTrig = window.chronoTrig?.subscribe?.(onScrollTick);
+    window.addEventListener('lenis:scroll', onScrollTick);
+    window.addEventListener('scroll', onScrollTick, { passive: true });
+    window.addEventListener('resize', scheduleSnap, { passive: true });
+    window.addEventListener('load', scheduleSnap, { passive: true });
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => {
+            scheduleSnap();
+          })
+        : null;
+
+    if (resizeObserver) {
+      for (const entry of entries) {
+        resizeObserver.observe(entry.stage);
+      }
+    }
 
     const observer = new MutationObserver(() => {
-      scheduleUpdate();
+      onMotionChange();
     });
     observer.observe(document.documentElement, {
       attributes: true,
@@ -394,9 +508,16 @@ const HEIGHT_CLASSES = {
         cancelAnimationFrame(rafId);
         rafId = 0;
       }
+      if (snapRafId !== 0) {
+        cancelAnimationFrame(snapRafId);
+        snapRafId = 0;
+      }
       unsubscribeChronoTrig?.();
-      window.removeEventListener('scroll', scheduleUpdate);
-      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener('lenis:scroll', onScrollTick);
+      window.removeEventListener('scroll', onScrollTick);
+      window.removeEventListener('resize', scheduleSnap);
+      window.removeEventListener('load', scheduleSnap);
+      resizeObserver?.disconnect();
       observer.disconnect();
     };
   }

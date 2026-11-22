@@ -242,7 +242,7 @@ const ogContext: SocialCardContext = {
             {m.blog_filter_empty({}, { locale })}
           </p>
 
-          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-blog-grid data-trig-stagger data-trig-stagger-delay="0.06" data-pagefind-ignore>
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-blog-grid data-trig-stagger data-trig-stagger-delay="0.06" data-trig-once="true" data-pagefind-ignore>
             {
               pagePosts.map((post, index) => (
                 <PostCard
@@ -376,6 +376,7 @@ const ogContext: SocialCardContext = {
       'group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30';
     article.dataset.dynamicPostCard = 'true';
     article.setAttribute('data-trig', '');
+    article.setAttribute('data-trig-once', 'true');
 
     const media = document.createElement('div');
     media.className =
@@ -549,7 +550,13 @@ const ogContext: SocialCardContext = {
       if (!grid || typeof window.chronoTrig === 'undefined') return;
       grid.classList.remove('trig-stagger-active');
       for (const child of Array.from(grid.children)) {
-        child.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active');
+        child.classList.remove(
+          'trig',
+          'trig-up',
+          'trig-down',
+          'trig-stagger-active',
+          'trig-stagger-settled'
+        );
       }
       // Flush the hidden entrance state before ChronoTrig re-observes the grid.
       void grid.offsetHeight;

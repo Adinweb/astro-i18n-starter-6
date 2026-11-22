@@ -96,7 +96,7 @@ function handleSamePageAnchorClick(event: MouseEvent): void {
   if (lenis) {
     lenis.scrollTo(destination, {
       offset: getHeaderOffset(),
-      duration: 1.15,
+      duration: 0.9,
     });
   } else {
     destination.scrollIntoView({
@@ -122,18 +122,18 @@ export function initLenis(): void {
   const anchorOffset = getHeaderOffset();
 
   // Note: In Lenis v1.3+, passing `duration` + `easing` shadows `lerp` inside
-  // `Animate.advance()`. Omitting `duration` here lets `lerp: 0.085` drive
-  // silky-smooth wheel inertia, while programmatic `scrollTo` uses `duration`.
+  // `Animate.advance()`. Omitting `duration` here lets `lerp: 0.125` drive
+  // responsive wheel inertia, while programmatic `scrollTo` uses `duration`.
   lenis = new Lenis({
     autoRaf: true,
-    lerp: 0.085,
+    lerp: 0.125,
     wheelMultiplier: 1,
-    touchMultiplier: 1.3,
+    touchMultiplier: 1.25,
     orientation: 'vertical',
     gestureOrientation: 'vertical',
     smoothWheel: true,
     syncTouch: false,
-    anchors: anchorOffset !== 0 ? { offset: anchorOffset, duration: 1.15 } : { duration: 1.15 },
+    anchors: anchorOffset !== 0 ? { offset: anchorOffset, duration: 0.9 } : { duration: 0.9 },
     allowNestedScroll: true,
     stopInertiaOnNavigate: true,
     respectReducedMotion: false,
@@ -143,9 +143,20 @@ export function initLenis(): void {
       ) !== null,
   });
 
-  lenis.on('scroll', () => {
-    if (typeof window !== 'undefined' && window.chronoTrig) {
-      window.chronoTrig.trigScroll?.();
+  const lenisScrollEvent = typeof Event !== 'undefined' ? new Event('lenis:scroll') : null;
+
+  lenis.on('scroll', (instance) => {
+    if (typeof window !== 'undefined') {
+      if (window.chronoTrig) {
+        if (typeof window.chronoTrig.sync === 'function') {
+          window.chronoTrig.sync(instance.scroll);
+        } else {
+          window.chronoTrig.trigScroll?.(true);
+        }
+      }
+      if (lenisScrollEvent) {
+        window.dispatchEvent(lenisScrollEvent);
+      }
     }
   });
 

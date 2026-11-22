@@ -107,8 +107,8 @@ const isHero = surface === 'hero';
     {
       isHero && (
         <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 print:hidden">
-          <div class="absolute -bottom-32 end-[-4rem] size-80 rounded-full bg-primary/25 blur-3xl" />
-          <div class="absolute -top-32 start-[-4rem] size-72 rounded-full bg-accent/20 blur-3xl" />
+          <div class="hero-glow-primary absolute -bottom-32 end-[-4rem] size-80 rounded-full" />
+          <div class="hero-glow-accent absolute -top-32 start-[-4rem] size-72 rounded-full" />
         </div>
       )
     }

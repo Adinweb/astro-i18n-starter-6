@@ -129,6 +129,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
         class="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3"
         data-trig-stagger
         data-trig-stagger-delay="0.06"
+        data-trig-once="true"
       >
         {usingCustomItems
           ? items.map((item) => {
@@ -139,6 +140,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
               return (
                 <article
                   data-trig
+                  data-trig-once="true"
                   class:list={[
                     'group relative flex flex-col justify-between rounded-2xl border border-border p-6 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md',
                     cardSurface,

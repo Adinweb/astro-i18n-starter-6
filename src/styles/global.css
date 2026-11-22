@@ -245,7 +245,24 @@ summary::-webkit-details-marker {
 
   /* The frosted bar that carries the navigation. */
   .glass-surface {
-    @apply rounded-2xl border border-glass-border bg-glass shadow-glass backdrop-blur-2xl backdrop-saturate-150;
+    @apply rounded-2xl border border-glass-border bg-glass shadow-glass backdrop-blur-md;
+  }
+
+  /* Pure radial-gradient glows for hero/CTA bands (avoids expensive full-layer blur-3xl). */
+  .hero-glow-primary {
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklch, var(--theme-primary) 26%, transparent),
+      transparent
+    );
+  }
+
+  .hero-glow-accent {
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklch, var(--theme-accent) 20%, transparent),
+      transparent
+    );
   }
 
   /* A control sitting *inside* the glass bar: translucent, with a hairline

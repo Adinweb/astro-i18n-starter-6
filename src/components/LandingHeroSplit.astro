@@ -125,8 +125,8 @@ const isHeroSurface = surface === 'hero';
   {
     isHeroSurface && (
       <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 print:hidden">
-        <div class="absolute -top-40 end-[-6rem] size-[28rem] rounded-full bg-primary/25 blur-3xl" />
-        <div class="absolute -bottom-44 start-[-8rem] size-[24rem] rounded-full bg-accent/20 blur-3xl" />
+        <div class="hero-glow-primary absolute -top-40 end-[-6rem] size-[28rem] rounded-full" />
+        <div class="hero-glow-accent absolute -bottom-44 start-[-8rem] size-[24rem] rounded-full" />
       </div>
     )
   }
@@ -137,7 +137,7 @@ const isHeroSurface = surface === 'hero';
         class:list={[hasMedia && 'lg:col-span-6']}
         data-trig-stagger
         data-trig-stagger-mode="linear"
-        data-trig-stagger-delay="0.1"
+        data-trig-stagger-delay="0.05"
         data-trig-once="true"
       >
         {

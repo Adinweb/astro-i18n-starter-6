@@ -2,12 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 import { setupChronoTrig, refreshChronoTrig } from './chronotrig';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
 
-describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
+describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -38,7 +39,7 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
     expect(remove).toHaveBeenCalledWith('js');
   });
 
-  it('auto-tags prose headings and [data-prose-reveal] with data-trig, invoking v5.2.0 refresh()', () => {
+  it('auto-tags prose headings and [data-prose-reveal] with data-trig and data-trig-once, invoking v6.0.0 refresh()', () => {
     const refreshSpy = vi.fn();
     const scanSpy = vi.fn();
     const trigScrollSpy = vi.fn();
@@ -58,7 +59,7 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
       {
         tagName: 'H3',
         className: 'text-xl',
-        hasAttribute: vi.fn().mockReturnValue(true), // already has data-trig
+        hasAttribute: vi.fn((attr: string) => attr === 'data-trig' || attr === 'data-trig-once'),
         setAttribute: vi.fn(),
       },
     ];
@@ -87,6 +88,7 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
     setupChronoTrig();
 
     expect(mockElements[0].setAttribute).toHaveBeenCalledWith('data-trig', '');
+    expect(mockElements[0].setAttribute).toHaveBeenCalledWith('data-trig-once', 'true');
     expect(mockElements[1].setAttribute).not.toHaveBeenCalled();
 
     expect(refreshSpy).toHaveBeenCalledTimes(1);
@@ -132,25 +134,30 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
     expect(refreshSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('configures chronotrig.css, global.css, and BaseLayout.astro for v5.2.0 features & accessibility', () => {
+  it('configures chronotrig.css, global.css, and BaseLayout.astro for v6.0.0 performance & accessibility', () => {
     const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
     const globalCss = fs.readFileSync(path.join(rootDir, 'src/styles/global.css'), 'utf-8');
     const layout = fs.readFileSync(path.join(rootDir, 'src/layouts/BaseLayout.astro'), 'utf-8');
+    const homeHero = fs.readFileSync(path.join(rootDir, 'src/components/HomeHero.astro'), 'utf-8');
 
-    // Bottom entrance state: starts well below the resting position and transparent
-    expect(css).toContain('translate3d(0, 56px, 0)');
+    // Bottom entrance state: crisp calibrated distance and dynamic engine will-change management
+    expect(css).toContain('translate3d(0, 20px, 0)');
     expect(css).toContain('opacity: 0');
-    expect(css).toContain('1.2s cubic-bezier(0.22, 1, 0.36, 1)');
+    expect(css).toContain('--trig-duration: 0.55s');
+    expect(css).toContain('--trig-ease: cubic-bezier(0.16, 1, 0.3, 1)');
+    expect(css).not.toContain('will-change: transform, opacity;');
 
-    // Scroll reveals pause briefly before starting so they are noticeable
-    expect(css).toContain('--trig-reveal-delay: 180ms');
-    expect(css).toContain('animation-delay: var(--trig-reveal-delay, 0s)');
+    // Zero artificial pre-reveal pause; immediate visual response when intersecting
+    expect(css).toContain('--trig-reveal-delay: 0ms');
+    expect(css).toContain('animation-delay: var(--trig-reveal-delay, 0ms)');
 
-    // Revealed state: transform: none to preserve Tailwind hover transforms on interactive cards
+    // Revealed & settled states release transforms and transition-delay so card hover remains snappy
     expect(css).toContain('.js [data-trig].trig');
     expect(css).toContain('transform: none');
+    expect(css).toContain('.trig-stagger-settled');
+    expect(css).toContain('transition-delay: 0s');
 
-    // v5.2.0 modern presets, utility modifiers, stagger items, and timeline/pin flattening
+    // Presets, utility modifiers, stagger items, and timeline/pin flattening
     expect(css).toContain('.fadeInUpSm');
     expect(css).toContain('.blurIn');
     expect(css).toContain('.clipUp');
@@ -174,6 +181,13 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
     expect(globalCss).not.toMatch(/body\s*\{[^}]*overflow-x:\s*hidden/);
     expect(globalCss).toContain("@import './chronotrig.css';");
     expect(globalCss).toContain('html:not([data-motion="reduced"]) [data-cookie-banner]:not([hidden])');
+    expect(globalCss).toContain('.hero-glow-primary');
+    expect(globalCss).toContain('.hero-glow-accent');
+    expect(globalCss).toContain('backdrop-blur-md');
+
+    // Hero atmospheric glow uses pure radial gradients instead of costly blur-3xl compositing layers
+    expect(homeHero).toContain('hero-glow-primary');
+    expect(homeHero).not.toContain('blur-3xl');
 
     expect(layout).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
     expect(layout).toContain("window.localStorage.getItem('motion')");
@@ -185,6 +199,7 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
 
     expect(view).toContain('const replayGridReveals = () =>');
     expect(view).toContain("typeof window.chronoTrig === 'undefined'");
+    expect(view).toContain('trig-stagger-settled');
     expect(view).toContain('if (replay) replayGridReveals();');
     expect(view).toContain('render({ updateUrl: false, replay: false })');
   });
@@ -196,9 +211,13 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
     expect(layout).toContain("import '@/scripts/chronotrig';");
   });
 
-  it('syncs Lenis scroll callback with ChronoTrig v5.2.0 trigScroll() instead of missing onScroll()', () => {
+  it('syncs Lenis scroll callback synchronously with ChronoTrig v6.0.0 sync() and dispatches lenis:scroll', () => {
     const lenisSrc = fs.readFileSync(path.join(rootDir, 'src/scripts/lenis.ts'), 'utf-8');
-    expect(lenisSrc).toContain('window.chronoTrig.trigScroll?.()');
+    expect(lenisSrc).toContain('lerp: 0.125');
+    expect(lenisSrc).toContain('window.chronoTrig.sync(instance.scroll)');
+    expect(lenisSrc).toContain('window.chronoTrig.trigScroll?.(true)');
+    expect(lenisSrc).toContain("new Event('lenis:scroll')");
+    expect(lenisSrc).toContain('window.dispatchEvent(lenisScrollEvent)');
     expect(lenisSrc).not.toContain('window.chronoTrig.onScroll');
   });
 
@@ -248,7 +267,9 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
     expect(parallax).toContain('data-parallax-stage');
     expect(parallax).toContain('data-parallax-media');
     expect(parallax).toContain('data-parallax-speed');
+    expect(parallax).not.toContain('data-trig-pixels="true"');
     expect(parallax).toContain('window.chronoTrig?.subscribe');
+    expect(parallax).toContain("window.addEventListener('lenis:scroll'");
     expect(parallax).toContain('isMotionReduced');
     expect(parallax).toContain('astro:page-load');
     expect(parallax).toContain('astro:before-swap');
@@ -259,28 +280,27 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
     expect(css).toContain('var(--parallax-y');
     expect(css).toContain('var(--trig-px, 0px)');
     expect(css).toContain('html[data-motion="reduced"] [data-parallax-stage] [data-parallax-media]');
+    expect(css).toContain('html:not([data-motion="full"]) body.chronotrig-mobile-disabled [data-parallax-stage] [data-parallax-media]');
 
     expect(enMdx).toContain('id="doc-parallax-section"');
     expect(faMdx).toContain('id="doc-parallax-section"');
 
-    // Behavioral check: simulate viewport scroll from bottom edge -> center -> top edge
+    // Behavioral check: simulate off-screen pre-clamping -> smooth Lenis/native scrubbing -> reduced-motion reset
     const scriptMatch = parallax.match(/<script>([\s\S]*?)<\/script>/);
     expect(scriptMatch).toBeTruthy();
-    const rawScript = scriptMatch![1]
-      .replace(/const SPEED_AMPLITUDE_PX:\s*Record<string,\s*number>\s*=/, 'const SPEED_AMPLITUDE_PX =')
-      .replace(/let cleanupParallax:\s*\(\(\)\s*=>\s*void\)\s*\|\s*null\s*=/, 'let cleanupParallax =')
-      .replace(/\):\s*boolean\b/g, ')')
-      .replace(/\((min|max|value):\s*number\)/g, '($1)')
-      .replace(/\((min:\s*number,\s*max:\s*number,\s*value:\s*number)\):\s*number/g, '(min, max, value)')
-      .replace(/\):\s*void\b/g, ')')
-      .replace(/\.querySelectorAll<HTMLElement>/g, '.querySelectorAll')
-      .replace(/\.querySelector<HTMLElement>/g, '.querySelector')
-      .replace(/\.filter\(\(item\):[^=]+=>\s*item\s*!==\s*null\)/g, '.filter((item) => item !== null)');
+    const rawScript = ts.transpileModule(scriptMatch![1], {
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.ESNext,
+      },
+    }).outputText;
 
     const setProps: Record<string, string> = {};
-    let simulatedTop = 850;
+    let simulatedTop = 14500;
+    let fakeTime = 1000;
     const subscribeCallbacks: Array<() => void> = [];
     const scrollListeners: Array<() => void> = [];
+    const lenisListeners: Array<() => void> = [];
 
     const mockMedia = {
       style: {
@@ -302,14 +322,16 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
 
     const fakeDoc = {
       documentElement: docElement,
-      body: { classList: { contains: () => false } },
+      body: { classList: { contains: () => true } },
       querySelectorAll: (sel: string) => (sel === '[data-parallax-stage]' ? [mockStage] : []),
       addEventListener: vi.fn(),
     };
     const fakeWin = {
       innerHeight: 900,
       chronoTrig: {
-        isDisabled: () => false,
+        isDisabled: () => true,
+        getMobileBehavior: () => 'lightweight',
+        isMobile: () => false,
         subscribe: (cb: () => void) => {
           subscribeCallbacks.push(cb);
           return () => {};
@@ -317,51 +339,86 @@ describe('ChronoTrig v5.2.0 Integration & Lifecycle', () => {
       },
       addEventListener: (ev: string, cb: () => void) => {
         if (ev === 'scroll') scrollListeners.push(cb);
+        if (ev === 'lenis:scroll') lenisListeners.push(cb);
       },
       removeEventListener: vi.fn(),
     };
 
-    const rafQueue: Array<() => void> = [];
+    const rafQueue: Array<(frameTime: number) => void> = [];
     const runParallax = new Function(
       'document',
       'window',
       'requestAnimationFrame',
       'cancelAnimationFrame',
       'MutationObserver',
+      'performance',
       rawScript
     );
     class FakeObserver {
       observe() {}
       disconnect() {}
     }
+    const fakePerformance = {
+      now: () => fakeTime,
+    };
 
     runParallax(
       fakeDoc,
       fakeWin,
-      (cb: () => void) => {
+      (cb: (frameTime: number) => void) => {
         rafQueue.push(cb);
         return rafQueue.length;
       },
       vi.fn(),
-      FakeObserver
+      FakeObserver,
+      fakePerformance
     );
 
-    // At bottom of viewport -> negative --parallax-y
+    // Drain initial snap RAF alignment
+    while (rafQueue.length > 0) {
+      fakeTime += 16.67;
+      rafQueue.shift()?.(fakeTime);
+    }
+
+    // Even when far below the viewport (~14,500px down), --parallax-y is cleanly pre-clamped (never unset)
+    const initialOffscreen = Number.parseFloat(setProps['--parallax-y']);
+    expect(initialOffscreen).toBeLessThan(-50);
+
+    // Move stage to bottom edge of viewport and confirm negative --parallax-y
+    simulatedTop = 850;
+    fakeTime += 16.67;
+    lenisListeners[0]?.();
+    while (rafQueue.length > 0) {
+      fakeTime += 16.67;
+      rafQueue.shift()?.(fakeTime);
+    }
     const bottomOffset = Number.parseFloat(setProps['--parallax-y']);
     expect(bottomOffset).toBeLessThan(-50);
 
-    // Scroll card past top of viewport -> positive --parallax-y
+    // Scroll card past top of viewport -> damps smoothly on frame 1 then converges past +50px
     simulatedTop = -250;
+    fakeTime += 16.67;
     scrollListeners[0]?.();
-    rafQueue.shift()?.();
+    const firstFrameOffset = Number.parseFloat(setProps['--parallax-y']);
+    expect(firstFrameOffset).toBeGreaterThan(bottomOffset);
+    expect(firstFrameOffset).toBeLessThan(150);
+
+    while (rafQueue.length > 0) {
+      fakeTime += 16.67;
+      rafQueue.shift()?.(fakeTime);
+    }
     const topOffset = Number.parseFloat(setProps['--parallax-y']);
     expect(topOffset).toBeGreaterThan(50);
     expect(topOffset - bottomOffset).toBeGreaterThan(180);
 
     // Reduced motion zeroes --parallax-y cleanly
     docElement.dataset.motion = 'reduced';
+    fakeTime += 16.67;
     subscribeCallbacks[0]?.();
-    rafQueue.shift()?.();
+    while (rafQueue.length > 0) {
+      fakeTime += 16.67;
+      rafQueue.shift()?.(fakeTime);
+    }
     expect(setProps['--parallax-y']).toBe('0px');
   });
 });

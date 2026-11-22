@@ -134,6 +134,7 @@ const gridColsClass =
         return (
           <li
             data-trig
+            data-trig-once="true"
             class:list={[
               'relative flex flex-col justify-between rounded-2xl border border-border p-6 transition duration-200 hover:border-primary/40 hover:shadow-md',
               cardSurface,
@@ -173,7 +174,7 @@ const gridColsClass =
 
   {
     cta && (
-      <div class="mt-8 flex justify-start print:hidden" data-trig>
+      <div class="mt-8 flex justify-start print:hidden" data-trig data-trig-once="true">
         <Button
           href={cta.href}
           variant="primary"

@@ -67,9 +67,9 @@ const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
 >
   <!-- Atmosphere: two soft brand glows instead of a flat black panel. -->
   <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 print:hidden">
-    <div class="absolute -top-40 end-[-6rem] size-[30rem] rounded-full bg-primary/25 blur-3xl">
+    <div class="hero-glow-primary absolute -top-40 end-[-6rem] size-[30rem] rounded-full">
     </div>
-    <div class="absolute -bottom-48 start-[-8rem] size-[26rem] rounded-full bg-accent/20 blur-3xl">
+    <div class="hero-glow-accent absolute -bottom-48 start-[-8rem] size-[26rem] rounded-full">
     </div>
   </div>
 
@@ -85,7 +85,7 @@ const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
       class="max-w-4xl"
       data-trig-stagger
       data-trig-stagger-mode="linear"
-      data-trig-stagger-delay="0.1"
+      data-trig-stagger-delay="0.05"
       data-trig-once="true"
     >
       <p class="hero-badge print:border-border print:text-fg">
@@ -148,7 +148,7 @@ const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
       class="mt-12 flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-8 lg:mt-16"
       data-trig-stagger
       data-trig-stagger-mode="linear"
-      data-trig-stagger-delay="0.1"
+      data-trig-stagger-delay="0.05"
       data-trig-once="true"
     >
       {
@@ -156,6 +156,7 @@ const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
           <li
             class="flex items-center gap-3.5 sm:border-s sm:border-hero-fg/15 sm:ps-8 sm:first:border-s-0 sm:first:ps-0"
             data-trig
+            data-trig-once="true"
           >
             <span
               class="flex size-12 shrink-0 items-center justify-center rounded-full border border-hero-fg/15 bg-hero-fg/10 text-accent"
