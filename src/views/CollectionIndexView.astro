@@ -428,17 +428,42 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
           if (typeof window.chronoTrig !== 'undefined') {
             grid.classList.remove('trig-stagger-active');
             for (const child of Array.from(grid.children)) {
-              child.classList.remove(
+              const el = child as HTMLElement;
+              el.classList.remove(
                 'trig',
                 'trig-up',
                 'trig-down',
                 'trig-stagger-active',
                 'trig-stagger-settled'
               );
+              el.style.willChange = 'auto';
             }
             void grid.offsetHeight;
           }
           refreshChronoTrig();
+          const rawStep =
+            Number.parseFloat(grid.getAttribute('data-trig-stagger-delay') || '0.08') || 0.08;
+          const isLightweightMobile =
+            typeof window.chronoTrig?.isMobile === 'function' &&
+            window.chronoTrig.isMobile() &&
+            window.chronoTrig.getMobileBehavior?.() === 'lightweight';
+          const step = isLightweightMobile ? Math.min(0.04, rawStep) : rawStep;
+          const allChildren = Array.from(grid.children).filter(
+            (el): el is HTMLElement => el instanceof HTMLElement
+          );
+          const visibleChildren = allChildren.filter((el) => !el.hidden);
+          allChildren.forEach((el) => {
+            if (el.hidden) {
+              el.style.removeProperty('--stagger-index');
+              el.style.removeProperty('--stagger-delay');
+              el.style.removeProperty('--stagger-total');
+            }
+          });
+          visibleChildren.forEach((el, index) => {
+            el.style.setProperty('--stagger-index', String(index));
+            el.style.setProperty('--stagger-delay', `${(index * step).toFixed(3)}s`);
+            el.style.setProperty('--stagger-total', String(visibleChildren.length));
+          });
         }
       };
 

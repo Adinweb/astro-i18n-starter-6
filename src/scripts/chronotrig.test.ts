@@ -214,14 +214,24 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(layout).toContain('doc.documentElement.dataset.motion = motion');
   });
 
-  it('replays grid reveals on filter changes but never on the initial render', () => {
+  it('replays grid reveals on filter changes without transition conflicts or hidden-card stagger gaps', () => {
     const view = fs.readFileSync(path.join(rootDir, 'src/views/BlogIndexView.astro'), 'utf-8');
+    const postCard = fs.readFileSync(path.join(rootDir, 'src/components/PostCard.astro'), 'utf-8');
 
     expect(view).toContain('const replayGridReveals = () =>');
+    expect(view).toContain('const syncVisibleStaggerDelays = () =>');
     expect(view).toContain("typeof window.chronoTrig === 'undefined'");
     expect(view).toContain('trig-stagger-settled');
     expect(view).toContain('if (replay) replayGridReveals();');
     expect(view).toContain('render({ updateUrl: false, replay: false })');
+    expect(view).toContain('syncVisibleStaggerDelays()');
+
+    // Hover transitions must live on the inner card surface so ChronoTrig's
+    // transitionend/transitioncancel listener on [data-trig] never settles cards prematurely.
+    const postCardRoot = postCard.match(/<article\b[^>]*>/)?.[0] ?? '';
+    expect(postCardRoot).toContain('data-trig');
+    expect(postCardRoot).not.toMatch(/\btransition\b/);
+    expect(view).toContain("article.className = 'flex h-full'");
   });
 
   it('wires BaseLayout.astro with /chronotrig.min.js inline script and module coordinator', () => {

@@ -242,7 +242,7 @@ const ogContext: SocialCardContext = {
             {m.blog_filter_empty({}, { locale })}
           </p>
 
-          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-blog-grid data-trig-stagger data-trig-stagger-delay="0.06" data-trig-once="true" data-pagefind-ignore>
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-blog-grid data-trig-stagger data-trig-stagger-delay="0.06" data-trig-root-margin="0px" data-trig-once="true" data-pagefind-ignore>
             {
               pagePosts.map((post, index) => (
                 <PostCard
@@ -372,11 +372,14 @@ const ogContext: SocialCardContext = {
     showReadingTime: boolean
   ): HTMLElement {
     const article = document.createElement('article');
-    article.className =
-      'group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30';
+    article.className = 'flex h-full';
     article.dataset.dynamicPostCard = 'true';
     article.setAttribute('data-trig', '');
     article.setAttribute('data-trig-once', 'true');
+
+    const surface = document.createElement('div');
+    surface.className =
+      'group relative flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/30';
 
     const media = document.createElement('div');
     media.className =
@@ -475,7 +478,8 @@ const ogContext: SocialCardContext = {
     }
 
     content.append(footer);
-    article.append(media, content);
+    surface.append(media, content);
+    article.append(surface);
     return article;
   }
 
@@ -550,16 +554,49 @@ const ogContext: SocialCardContext = {
       if (!grid || typeof window.chronoTrig === 'undefined') return;
       grid.classList.remove('trig-stagger-active');
       for (const child of Array.from(grid.children)) {
-        child.classList.remove(
+        const el = child as HTMLElement;
+        el.classList.remove(
           'trig',
           'trig-up',
           'trig-down',
           'trig-stagger-active',
           'trig-stagger-settled'
         );
+        el.style.willChange = 'auto';
       }
       // Flush the hidden entrance state before ChronoTrig re-observes the grid.
       void grid.offsetHeight;
+    };
+
+    const syncVisibleStaggerDelays = () => {
+      if (!grid) return;
+      const rawStep =
+        Number.parseFloat(grid.getAttribute('data-trig-stagger-delay') || '0.08') || 0.08;
+      const isLightweightMobile =
+        typeof window.chronoTrig?.isMobile === 'function' &&
+        window.chronoTrig.isMobile() &&
+        window.chronoTrig.getMobileBehavior?.() === 'lightweight';
+      const step = isLightweightMobile ? Math.min(0.04, rawStep) : rawStep;
+
+      const allChildren = Array.from(grid.children).filter(
+        (el): el is HTMLElement => el instanceof HTMLElement
+      );
+      const visibleChildren = allChildren.filter((el) => !el.hidden);
+      const total = visibleChildren.length;
+
+      for (const el of allChildren) {
+        if (el.hidden) {
+          el.style.removeProperty('--stagger-index');
+          el.style.removeProperty('--stagger-delay');
+          el.style.removeProperty('--stagger-total');
+        }
+      }
+
+      visibleChildren.forEach((el, index) => {
+        el.style.setProperty('--stagger-index', String(index));
+        el.style.setProperty('--stagger-delay', `${(index * step).toFixed(3)}s`);
+        el.style.setProperty('--stagger-total', String(total));
+      });
     };
 
     const restoreServerPager = () => {
@@ -690,6 +727,7 @@ const ogContext: SocialCardContext = {
           renderFilteredPager(slice.page, slice.totalPages);
           if (replay) replayGridReveals();
           refreshChronoTrig();
+          syncVisibleStaggerDelays();
 
           if (status) {
             status.textContent = allTemplate
@@ -728,6 +766,7 @@ const ogContext: SocialCardContext = {
       }
       if (replay) replayGridReveals();
       refreshChronoTrig();
+      syncVisibleStaggerDelays();
 
       const statusTemplate = active ? allTemplate : pageTemplate;
       if (status) {
@@ -759,8 +798,9 @@ const ogContext: SocialCardContext = {
         }
 
         const changed = !areBlogFiltersEqual(filters, nextFilters);
+        if (!changed) return;
         filters = nextFilters;
-        if (changed) filterPage = 1;
+        filterPage = 1;
         void render({ updateUrl: true });
       },
       { signal: abortController.signal }
