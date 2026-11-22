@@ -51,7 +51,7 @@ import hero from '../../../assets/hero/hero-0.jpg';
 ```
 
 * `PageSection` renders a `w-full` band with `surface` / `spacing` / `border-*` props and wraps children in `.layout-container` unless `bleed` is set.
-* **22 Composable Corporate, Landing & UI Blocks (PrebuiltUI-Adapted)** live in `src/components/`: 19 section blocks (`LandingHeroSplit`, `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection`, `LatestPostsSection`, `TeamSection`, `FaqAccordion` + `src/libs/content/faq.ts`, `ContactSplitSection`, `NewsletterBanner`, `CtaBanner`) and 3 UI primitives (`UiBadge`, `UiAlert`, `AvatarGroup`), sharing `SectionHeader.astro`, `src/libs/ui/locale.ts`, and `src/libs/ui/initials.ts`. All use semantic OKLCH tokens, CSS logical properties, `<Icon>`, `<Button>`, Paraglide localized defaults (`locale` auto-detects from URL), and ChronoTrig attributes. Pass `contained` on section blocks when nesting them inside a `container: 'contained'` page (`pricing/*.mdx`, etc.) so they skip a redundant `<PageSection>` wrapper.
+* **36 Composable Corporate, Landing & UI Blocks (PrebuiltUI-Adapted)** live in `src/components/`, guarded by `src/libs/ui/blocks.test.ts`: **23 section blocks** (`LandingHeroSplit`, `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection`, `LatestPostsSection`, `TeamSection`, `FaqAccordion` + `src/libs/content/faq.ts`, `ContactSplitSection`, `NewsletterBanner`, `CtaBanner`, `CarouselSection`, `ProductShowcaseGrid`, `AuthFormCard`, `ParallaxSection`) and **13 UI primitives** (`UiBadge`, `UiAlert`, `AvatarGroup`, `Breadcrumbs`, `UiPagination`, `UiModal`, `UiTooltip`, `UiProgress`, `UiSwitch`, `UiCheckbox`, `UiInput`, `UiDropdown`, `SocialLinks`), plus **4 interactive/motion showcase blocks** (`BentoGrid`, `LatestPostsCarousel`, `SwipeableTabs`, `TestimonialMarquee`), sharing `SectionHeader.astro`, `src/libs/ui/locale.ts`, and `src/libs/ui/initials.ts`. All use semantic OKLCH tokens, CSS logical properties, `<Icon>`, `<Button>`, Paraglide localized defaults (`locale` auto-detects from URL), and GPU-friendly ChronoTrig `data-trig-once="true"` / `loading="lazy"` defaults. Pass `contained` on section blocks when nesting them inside a `container: 'contained'` page (`pricing/*.mdx`, etc.) so they skip a redundant `<PageSection>` wrapper. Pass `priority` only on above-the-fold `ParallaxSection` or hero images.
 * Reuse `.layout-container` (1280px) inside a band for aligned content; omit it for true edge-to-edge media.
 * For repeatable bespoke client layouts shared by every locale without touching upstream core, create `client/templates/<Name>.astro` and register it in `CLIENT_PAGE_TEMPLATES` inside `client/templates/index.ts` (`src/views/PageView.astro` merges `CLIENT_PAGE_TEMPLATES` over core templates), then set `template: '<name>'` in frontmatter. The template receives `entry`, `locale`, `alternates`, `url`, and `schema`.
 * A canvas page must bring its own bottom spacing (`.layout-container`'s `pb-12 md:pb-16` only applies to contained pages) and must render **exactly one `<h1>`**.
@@ -212,3 +212,34 @@ Neither view knows about blog taxonomy/TOC/related-posts/feeds: collection filte
 4. Optional: add a hue row in `TYPE_HUES` of `scripts/generate-assets.mjs` if customizing generated cover tones.
 
 Then `npm run content:new <key> <slug> --publish` and the standard verification suite.
+
+---
+
+## 8. SEO-Ready Page & Post Authoring & Management Playbook
+
+Every `pages`, `blog`, and `projects` entry inherits `Seo.astro`, `sitemap.xml.ts`, `og-card.ts`, and `schema.ts` automatically. Follow these rules when creating or updating entries so search engines, social shares, and internal links perform at enterprise quality:
+
+1. **Unique Metadata (`title` & `description`)**:
+   * Keep `title` concise (`~50–60` characters; rendered as `{title} | {siteName}`).
+   * Always provide a unique, localized `description` (`~140–160` characters). If omitted, `Seo.astro` falls back to generic `m.site_description()`, which weakens page-level uniqueness in search results.
+2. **Native Localized Slugs (`slug`)**:
+   * Always pass `--slug:<locale>="<native-slug>"` (e.g. Persian words joined by `-` or ZWNJ `\u200C`, which `slugSchema` validates). Never leave placeholder `<key>-fa` / `<group>-fa` slugs in published content (`npm run doctor` flags them).
+   * Updating a published `slug` changes its canonical URL: run `npm run link:check` afterward and configure server redirects if an old live URL already has backlinks.
+3. **Single `<h1>` & Semantic Outline**:
+   * Every page must emit **exactly one `<h1>`** (verified by `npm run smoke`). On `hero: 'none'`, `container: 'canvas'` pages without `<PageHero>` or `<LandingHeroSplit>`, provide one top `<h1>`.
+   * Structure body sections cleanly with `<h2>` → `<h3>` (Blog posts with ≥2 `h2`/`h3` headings automatically generate an accessible Table of Contents).
+4. **Freshness, Authorship & Rich Results (JSON-LD)**:
+   * Set `author: "<Name>"` on blog posts to upgrade `BlogPosting.author` schema from `Organization` to `Person`.
+   * Set/update `updatedAt` (YYYY-MM-DD) when making meaningful content updates so `sitemap.xml <lastmod>`, `article:modified_time`, and `BlogPosting.dateModified` reflect fresh revisions.
+   * Use `<FaqAccordion />` whenever a page or article answers common customer questions — it emits valid `FAQPage` JSON-LD automatically.
+   * For bespoke corporate/service templates in `client/templates/<Name>.astro`, pass enriched `buildServiceSchema()` or `buildOrganizationSchema()` from `src/libs/content/schema.ts` to `<BaseLayout schema={...}>`.
+5. **Taxonomy & Internal Linking (Blog)**:
+   * Assign focused hyphenated ASCII `categories` and `tags` (e.g. `categories: ["seo"]`, `tags: ["astro", "rtl"]`) and register localized labels (`blog_category_<key>`, `blog_tag_<key>`) with `npm run i18n:add-batch` — this drives `BlogPosting.articleSection` / `keywords` JSON-LD and strengthens `getRelatedPosts()` internal linking.
+6. **Images, Alt Text & Branded OG Cards**:
+   * Keep a `./<group>.png` (or custom local asset) in `image:` so Astro optimizes responsive WebP artwork. Provide descriptive `imageAlt` on visual blocks (`LandingHeroSplit`, `ParallaxSection`, `ImageGallerySection`, MDX `<Image>`).
+   * Choose `brand.socialCardMode` in `client/config.json`: `"branded"` generates high-contrast `1200×630` RTL/LTR PNG cards per page/post; `"artwork"` uses the cropped entry `image`.
+7. **Drafts & Indexing Boundary**:
+   * Setting `draft: true` keeps an entry out of static routes, `sitemap.xml`, Atom feeds, and Pagefind search. Note that `baseSchema` in `src/content.config.ts` does not define a per-entry `noindex` frontmatter flag (only `404.astro` / `BaseLayout` props carry `noindex`); if a client needs live unindexed campaign pages, add an optional `noindex: z.boolean().default(false)` field to `baseSchema` and wire it in `PageView` / `sitemap.xml.ts`.
+8. **Post-Edit SEO Verification**:
+   * Run `npm run content:status` (translation coverage), `npm run doctor` (placeholder slugs, broken images, config), `npm run audit:i18n`, `SITE_URL=https://yourdomain.com npm run build`, `npm run smoke` (canonical, `hreflang`, OG PNGs, JSON-LD, single `<h1>`, Pagefind), and `npm run link:check` (internal links & `#anchors`).
+

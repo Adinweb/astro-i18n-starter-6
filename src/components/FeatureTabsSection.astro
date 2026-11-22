@@ -147,6 +147,7 @@ const panelSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface
         variant === 'underline' ? 'border-b border-border pb-2' : '',
       ]}
       data-trig
+      data-trig-once="true"
     >
       {
         resolvedTabs.map((tab, idx) => {
@@ -186,7 +187,7 @@ const panelSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface
       }
     </div>
 
-    <div class="mt-6" data-trig>
+    <div class="mt-6" data-trig data-trig-once="true">
       {
         resolvedTabs.map((tab, idx) => {
           const isActive = idx === 0;
@@ -256,6 +257,7 @@ const panelSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface
                         alt={tab.imageAlt ?? tab.title}
                         widths={[560, 880]}
                         sizes="(min-width: 1024px) 42vw, 90vw"
+                        loading="lazy"
                         class="aspect-[16/10] w-full object-cover"
                       />
                     </div>

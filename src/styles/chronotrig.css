@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * ChronoTrig v6.0.0 CSS Scroll Engine & Viewport Reveal System (SSOT)
+ * ChronoTrig v6.1.0 CSS Scroll Engine & Viewport Reveal System (SSOT)
  * ============================================================================
  *
  * Provides snappy, GPU-composited bottom reveals, modern reveal presets,
@@ -23,10 +23,10 @@
    Timing Tokens
    -------------------------------------------------------------------------- */
 :root {
-  --trig-duration: 0.55s;
+  --trig-duration: 1.2s;
   --trig-ease: cubic-bezier(0.16, 1, 0.3, 1);
   /*
-   * ChronoTrig v6.0.0 uses tightened rootMargin ("0px 0px -8% 0px") so elements
+   * ChronoTrig v6.1.0 uses tightened rootMargin ("0px 0px -8% 0px") so elements
    * trigger cleanly inside the viewport without needing an artificial pause.
    */
   --trig-reveal-delay: 0ms;
@@ -38,7 +38,7 @@
 @keyframes trig-reveal-up {
   from {
     opacity: 0;
-    transform: translate3d(0, 20px, 0);
+    transform: translate3d(0, 56px, 0);
   }
   to {
     opacity: 1;
@@ -49,7 +49,7 @@
 @keyframes trig-fade-up-sm {
   from {
     opacity: 0;
-    transform: translate3d(0, 14px, 0);
+    transform: translate3d(0, 18px, 0);
   }
   to {
     opacity: 1;
@@ -60,7 +60,7 @@
 @keyframes trig-blur-in {
   from {
     opacity: 0;
-    transform: translate3d(0, 14px, 0);
+    transform: translate3d(0, 18px, 0);
     filter: blur(6px);
   }
   to {
@@ -115,7 +115,7 @@
 @keyframes trig-fade-down {
   from {
     opacity: 0;
-    transform: translate3d(0, -20px, 0);
+    transform: translate3d(0, -56px, 0);
   }
   to {
     opacity: 1;
@@ -148,7 +148,7 @@
 @keyframes trig-reveal-start {
   from {
     opacity: 0;
-    transform: translate3d(-20px, 0, 0);
+    transform: translate3d(-56px, 0, 0);
   }
   to {
     opacity: 1;
@@ -159,7 +159,7 @@
 @keyframes trig-reveal-end {
   from {
     opacity: 0;
-    transform: translate3d(20px, 0, 0);
+    transform: translate3d(56px, 0, 0);
   }
   to {
     opacity: 1;
@@ -170,7 +170,7 @@
 @keyframes trig-reveal-start-rtl {
   from {
     opacity: 0;
-    transform: translate3d(20px, 0, 0);
+    transform: translate3d(56px, 0, 0);
   }
   to {
     opacity: 1;
@@ -181,7 +181,7 @@
 @keyframes trig-reveal-end-rtl {
   from {
     opacity: 0;
-    transform: translate3d(-20px, 0, 0);
+    transform: translate3d(-56px, 0, 0);
   }
   to {
     opacity: 1;
@@ -195,14 +195,14 @@
 /* ChronoTrig v6 manages will-change dynamically on intersection and resets it on animationend */
 .js [data-trig] {
   opacity: 0;
-  transform: translate3d(0, 20px, 0);
+  transform: translate3d(0, 56px, 0);
 }
 
 /* ChronoTrig adds .trig when the element enters the viewport */
 .js [data-trig].trig {
   opacity: 1;
   transform: none;
-  animation: trig-reveal-up var(--trig-duration, 0.55s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation: trig-reveal-up var(--trig-duration, 1.2s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
   animation-delay: var(--trig-reveal-delay, 0ms);
 }
 
@@ -212,17 +212,17 @@
 }
 
 /* --------------------------------------------------------------------------
-   2. ChronoTrig v6.0.0 Reveal Presets (Scoped Under .js for Zero CLS)
+   2. ChronoTrig v6.1.0 Reveal Presets (Scoped Under .js for Zero CLS)
    -------------------------------------------------------------------------- */
 .js [data-trig].fadeInUpSm:not(.trig) {
-  transform: translate3d(0, 14px, 0);
+  transform: translate3d(0, 18px, 0);
 }
 .js [data-trig].fadeInUpSm.trig {
   animation-name: trig-fade-up-sm;
 }
 
 .js [data-trig].blurIn:not(.trig) {
-  transform: translate3d(0, 14px, 0);
+  transform: translate3d(0, 18px, 0);
   filter: blur(6px);
 }
 .js [data-trig].blurIn.trig {
@@ -275,7 +275,7 @@ body.chronotrig-mobile-lightweight .js [data-trig].blurIn.trig {
 }
 
 .js [data-trig].fadeInDown:not(.trig) {
-  transform: translate3d(0, -20px, 0);
+  transform: translate3d(0, -56px, 0);
 }
 .js [data-trig].fadeInDown.trig {
   animation-name: trig-fade-down;
@@ -297,7 +297,7 @@ body.chronotrig-mobile-lightweight .js [data-trig].blurIn.trig {
 
 /* Direction-aware reveal driven by body.trig-scroll-up / body.trig-scroll-down */
 body.trig-scroll-up .js [data-trig].trig-directional:not(.trig) {
-  transform: translate3d(0, -20px, 0);
+  transform: translate3d(0, -56px, 0);
 }
 body.trig-scroll-up .js [data-trig].trig-directional.trig {
   animation-name: trig-fade-down;
@@ -308,33 +308,33 @@ body.trig-scroll-up .js [data-trig].trig-directional.trig {
    -------------------------------------------------------------------------- */
 /* Inline-start: enters from the reading start (left in LTR, right in RTL) */
 .js [data-trig][data-trig-direction="start"]:not(.trig) {
-  transform: translate3d(-20px, 0, 0);
+  transform: translate3d(-56px, 0, 0);
 }
 .js [data-trig][data-trig-direction="start"].trig {
-  animation: trig-reveal-start var(--trig-duration, 0.55s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation: trig-reveal-start var(--trig-duration, 1.2s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
   animation-delay: var(--trig-reveal-delay, 0ms);
 }
 :where([dir="rtl"]) .js [data-trig][data-trig-direction="start"]:not(.trig) {
-  transform: translate3d(20px, 0, 0);
+  transform: translate3d(56px, 0, 0);
 }
 :where([dir="rtl"]) .js [data-trig][data-trig-direction="start"].trig {
-  animation: trig-reveal-start-rtl var(--trig-duration, 0.55s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation: trig-reveal-start-rtl var(--trig-duration, 1.2s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
   animation-delay: var(--trig-reveal-delay, 0ms);
 }
 
 /* Inline-end: enters from the reading end (right in LTR, left in RTL) */
 .js [data-trig][data-trig-direction="end"]:not(.trig) {
-  transform: translate3d(20px, 0, 0);
+  transform: translate3d(56px, 0, 0);
 }
 .js [data-trig][data-trig-direction="end"].trig {
-  animation: trig-reveal-end var(--trig-duration, 0.55s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation: trig-reveal-end var(--trig-duration, 1.2s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
   animation-delay: var(--trig-reveal-delay, 0ms);
 }
 :where([dir="rtl"]) .js [data-trig][data-trig-direction="end"]:not(.trig) {
-  transform: translate3d(-20px, 0, 0);
+  transform: translate3d(-56px, 0, 0);
 }
 :where([dir="rtl"]) .js [data-trig][data-trig-direction="end"].trig {
-  animation: trig-reveal-end-rtl var(--trig-duration, 0.55s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation: trig-reveal-end-rtl var(--trig-duration, 1.2s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
   animation-delay: var(--trig-reveal-delay, 0ms);
 }
 
@@ -386,7 +386,7 @@ body.trig-scroll-up .js [data-trig].trig-directional.trig {
 .js [data-trig-stagger] [data-trig-stagger-item],
 .js [data-trig-stagger] .trig-stagger-item {
   opacity: 0;
-  transform: translate3d(0, 20px, 0);
+  transform: translate3d(0, 56px, 0);
 }
 
 .js [data-trig-stagger] > *.trig-stagger-active,
@@ -400,7 +400,7 @@ body.trig-scroll-up .js [data-trig].trig-directional.trig {
 .js [data-trig-stagger] .trig-stagger-item.trig {
   opacity: 1;
   transform: none;
-  animation: trig-reveal-up var(--trig-duration, 0.55s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation: trig-reveal-up var(--trig-duration, 1.2s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
   animation-delay: calc(var(--stagger-delay, 0s) + var(--trig-reveal-delay, 0ms));
 }
 
@@ -549,7 +549,7 @@ html[data-motion="reduced"] [data-trig-pin] {
 
 .js [data-ui-progress-bar] [data-ui-progress-fill] {
   transform-origin: left center;
-  will-change: transform;
+  transition: transform 850ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 :where([dir="rtl"]) .js [data-ui-progress-bar] [data-ui-progress-fill] {
@@ -558,7 +558,6 @@ html[data-motion="reduced"] [data-trig-pin] {
 
 .js [data-ui-progress-bar][data-progress-active="true"] [data-ui-progress-fill] {
   transform: scaleX(1);
-  will-change: auto;
 }
 
 .js [data-ui-progress-steps]:not([data-progress-active="true"]) [data-ui-progress-step-fill] {
@@ -625,13 +624,12 @@ body.chronotrig-mobile-disabled .js [data-ui-progress-ring-track] {
   will-change: auto;
 }
 
-/* Overscanned media layer scrubbed continuously on compositor thread */
+/* Overscanned media layer scrubbed on compositor thread only while near viewport */
 [data-parallax-stage] [data-parallax-media] {
   position: absolute;
   inset-inline: 0;
   inset-block: -38%;
   transition: none;
-  will-change: transform;
   transform-origin: center;
   backface-visibility: hidden;
   transform: translate3d(
@@ -640,6 +638,10 @@ body.chronotrig-mobile-disabled .js [data-ui-progress-ring-track] {
       0
     )
     scale(1.06);
+}
+
+[data-parallax-stage][data-parallax-active="true"] [data-parallax-media] {
+  will-change: transform;
 }
 
 html[data-motion="reduced"] [data-parallax-stage] [data-parallax-media],

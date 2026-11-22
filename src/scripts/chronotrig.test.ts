@@ -8,7 +8,7 @@ import { setupChronoTrig, refreshChronoTrig } from './chronotrig';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
 
-describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
+describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -39,7 +39,7 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     expect(remove).toHaveBeenCalledWith('js');
   });
 
-  it('auto-tags prose headings and [data-prose-reveal] with data-trig and data-trig-once, invoking v6.0.0 refresh()', () => {
+  it('auto-tags prose headings and [data-prose-reveal] with data-trig and data-trig-once, invoking v6.1.0 refresh()', () => {
     const refreshSpy = vi.fn();
     const scanSpy = vi.fn();
     const trigScrollSpy = vi.fn();
@@ -134,16 +134,20 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     expect(refreshSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('configures chronotrig.css, global.css, and BaseLayout.astro for v6.0.0 performance & accessibility', () => {
+  it('configures chronotrig.css, global.css, and BaseLayout.astro for v6.1.0 performance & accessibility', () => {
     const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
     const globalCss = fs.readFileSync(path.join(rootDir, 'src/styles/global.css'), 'utf-8');
     const layout = fs.readFileSync(path.join(rootDir, 'src/layouts/BaseLayout.astro'), 'utf-8');
     const homeHero = fs.readFileSync(path.join(rootDir, 'src/components/HomeHero.astro'), 'utf-8');
 
-    // Bottom entrance state: crisp calibrated distance and dynamic engine will-change management
-    expect(css).toContain('translate3d(0, 20px, 0)');
+    const doc = fs.readFileSync(path.join(rootDir, 'src/components/ComponentDoc.astro'), 'utf-8');
+    const pageHero = fs.readFileSync(path.join(rootDir, 'src/components/PageHero.astro'), 'utf-8');
+    const minJs = fs.readFileSync(path.join(rootDir, 'public/chronotrig.min.js'), 'utf-8');
+
+    // Bottom entrance state: 56px reveal travel, 1.2s duration, and dynamic engine will-change management
+    expect(css).toContain('translate3d(0, 56px, 0)');
     expect(css).toContain('opacity: 0');
-    expect(css).toContain('--trig-duration: 0.55s');
+    expect(css).toContain('--trig-duration: 1.2s');
     expect(css).toContain('--trig-ease: cubic-bezier(0.16, 1, 0.3, 1)');
     expect(css).not.toContain('will-change: transform, opacity;');
 
@@ -179,15 +183,31 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     // Sticky [data-trig-pin] sections require overflow-x: clip rather than overflow-x: hidden on body
     expect(globalCss).toMatch(/body\s*\{[^}]*overflow-x:\s*clip/);
     expect(globalCss).not.toMatch(/body\s*\{[^}]*overflow-x:\s*hidden/);
+    expect(globalCss).not.toMatch(/body\s*\{[^}]*optimizeLegibility/);
     expect(globalCss).toContain("@import './chronotrig.css';");
     expect(globalCss).toContain('html:not([data-motion="reduced"]) [data-cookie-banner]:not([hidden])');
     expect(globalCss).toContain('.hero-glow-primary');
     expect(globalCss).toContain('.hero-glow-accent');
     expect(globalCss).toContain('backdrop-blur-md');
 
-    // Hero atmospheric glow uses pure radial gradients instead of costly blur-3xl compositing layers
+    // Long showcase docs skip off-screen table/code layout & paint, and compact heroes lazy-load
+    expect(doc).toContain('[content-visibility:auto]');
+    expect(pageHero).toContain("loading={compact ? 'lazy' : 'eager'}");
+
+    // ChronoTrig v6.1.0 bundle: version 6.1.0, WeakMap listener cleanup on animationcancel,
+    // isExternalScroll(), and opt-in :root --scroll-progress / --scroll-y mutations
+    expect(minJs).toContain('version="6.1.0"');
+    expect(minJs).toContain('rootScrollVars:!1');
+    expect(minJs).toContain('data-trig-root-vars');
+    expect(minJs).toContain('isExternalScroll()');
+    expect(minJs).toContain('animationcancel');
+
+    // Hero and Bento decorative glows use radial gradients instead of costly blur-2xl/blur-3xl compositing layers
+    const bentoGrid = fs.readFileSync(path.join(rootDir, 'src/components/BentoGrid.astro'), 'utf-8');
     expect(homeHero).toContain('hero-glow-primary');
     expect(homeHero).not.toContain('blur-3xl');
+    expect(bentoGrid).toContain('hero-glow-primary');
+    expect(bentoGrid).not.toContain('blur-2xl');
 
     expect(layout).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
     expect(layout).toContain("window.localStorage.getItem('motion')");
@@ -211,7 +231,7 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     expect(layout).toContain("import '@/scripts/chronotrig';");
   });
 
-  it('syncs Lenis scroll callback synchronously with ChronoTrig v6.0.0 sync() and dispatches lenis:scroll', () => {
+  it('syncs Lenis scroll callback synchronously with ChronoTrig v6.1.0 sync() and dispatches lenis:scroll', () => {
     const lenisSrc = fs.readFileSync(path.join(rootDir, 'src/scripts/lenis.ts'), 'utf-8');
     expect(lenisSrc).toContain('lerp: 0.125');
     expect(lenisSrc).toContain('window.chronoTrig.sync(instance.scroll)');
@@ -221,7 +241,7 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     expect(lenisSrc).not.toContain('window.chronoTrig.onScroll');
   });
 
-  it('integrates UiProgress bar, circular ring, and steps variants with ChronoTrig animations', () => {
+  it('integrates UiProgress bar, circular ring, and steps variants with pure IntersectionObserver + compositor animations', () => {
     const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
     const progress = fs.readFileSync(path.join(rootDir, 'src/components/UiProgress.astro'), 'utf-8');
     const doc = fs.readFileSync(path.join(rootDir, 'src/components/ComponentDoc.astro'), 'utf-8');
@@ -237,12 +257,12 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     expect(progress).toContain('data-ui-progress-value');
     expect(progress).toContain('data-progress-target');
     expect(progress).toContain('data-progress-active');
-    expect(progress).toContain('getEffectiveOpacity');
     expect(progress).toContain('IntersectionObserver');
-    expect(progress).toContain('window.chronoTrig?.subscribe');
-    expect(progress).toContain('isInComfortZone');
-    expect(progress).toContain('isCompletelyOffscreen');
     expect(progress).toContain('--ui-progress-target');
+    // Must not poll computed styles up ancestor chains or bind synchronous scroll listeners
+    expect(progress).not.toContain('getComputedStyle');
+    expect(progress).not.toContain("window.addEventListener('scroll'");
+    expect(progress).not.toContain('window.chronoTrig?.subscribe');
 
     expect(css).toContain('@property --ui-progress-value');
     expect(css).toContain('.js [data-ui-progress-bar][data-progress-active="true"] [data-ui-progress-fill]');
@@ -250,15 +270,13 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     expect(css).toContain('.js [data-ui-progress-ring]:not([data-progress-active="true"]) [data-ui-progress-ring-track]');
     expect(css).toContain('html[data-motion="reduced"] .js [data-ui-progress-ring-track]');
 
-    // Scroll-triggered demos must not be wrapped in an outer opacity-0 ComponentDoc container
-    expect(doc).toContain('animatePreview = true');
+    // ComponentDoc previews skip heavy outer [data-trig] promotion by default
+    expect(doc).toContain('animatePreview = false');
     expect(enMdx).toContain('id="doc-progress"');
-    expect(enMdx).toContain('animatePreview={false}');
     expect(faMdx).toContain('id="doc-progress"');
-    expect(faMdx).toContain('animatePreview={false}');
   });
 
-  it('integrates ParallaxSection with ChronoTrig --parallax-y scrubbing and reduced-motion flattening', () => {
+  it('integrates ParallaxSection with viewport-gated --parallax-y scrubbing and reduced-motion flattening', () => {
     const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
     const parallax = fs.readFileSync(path.join(rootDir, 'src/components/ParallaxSection.astro'), 'utf-8');
     const enMdx = fs.readFileSync(path.join(rootDir, 'src/content/pages/components/en.mdx'), 'utf-8');
@@ -267,6 +285,8 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     expect(parallax).toContain('data-parallax-stage');
     expect(parallax).toContain('data-parallax-media');
     expect(parallax).toContain('data-parallax-speed');
+    expect(parallax).toContain('IntersectionObserver');
+    expect(parallax).toContain('parallaxActive');
     expect(parallax).not.toContain('data-trig-pixels="true"');
     expect(parallax).toContain('window.chronoTrig?.subscribe');
     expect(parallax).toContain("window.addEventListener('lenis:scroll'");
@@ -276,6 +296,7 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     expect(parallax).toContain('--parallax-y');
 
     expect(css).toContain('[data-parallax-stage] [data-parallax-media]');
+    expect(css).toContain('[data-parallax-stage][data-parallax-active="true"] [data-parallax-media]');
     expect(css).toContain('inset-block: -38%');
     expect(css).toContain('var(--parallax-y');
     expect(css).toContain('var(--trig-px, 0px)');
@@ -285,7 +306,7 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     expect(enMdx).toContain('id="doc-parallax-section"');
     expect(faMdx).toContain('id="doc-parallax-section"');
 
-    // Behavioral check: simulate off-screen pre-clamping -> smooth Lenis/native scrubbing -> reduced-motion reset
+    // Behavioral check: simulate off-screen pre-clamping -> viewport gating -> smooth Lenis/native scrubbing -> reduced-motion reset
     const scriptMatch = parallax.match(/<script>([\s\S]*?)<\/script>/);
     expect(scriptMatch).toBeTruthy();
     const rawScript = ts.transpileModule(scriptMatch![1], {
@@ -298,9 +319,11 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     const setProps: Record<string, string> = {};
     let simulatedTop = 14500;
     let fakeTime = 1000;
+    let rectCalls = 0;
     const subscribeCallbacks: Array<() => void> = [];
     const scrollListeners: Array<() => void> = [];
     const lenisListeners: Array<() => void> = [];
+    const ioCallbacks: Array<(entries: Array<{ target: unknown; isIntersecting: boolean }>) => void> = [];
 
     const mockMedia = {
       style: {
@@ -310,9 +333,12 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
       },
     };
     const mockStage = {
-      dataset: { parallaxSpeed: 'deep' },
+      dataset: { parallaxSpeed: 'deep', parallaxActive: 'false' },
       querySelector: () => mockMedia,
-      getBoundingClientRect: () => ({ top: simulatedTop, bottom: simulatedTop + 460, height: 460 }),
+      getBoundingClientRect: () => {
+        rectCalls += 1;
+        return { top: simulatedTop, bottom: simulatedTop + 460, height: 460 };
+      },
     };
 
     const docElement = {
@@ -351,10 +377,18 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
       'requestAnimationFrame',
       'cancelAnimationFrame',
       'MutationObserver',
+      'IntersectionObserver',
       'performance',
       rawScript
     );
     class FakeObserver {
+      observe() {}
+      disconnect() {}
+    }
+    class FakeIntersectionObserver {
+      constructor(cb: (entries: Array<{ target: unknown; isIntersecting: boolean }>) => void) {
+        ioCallbacks.push(cb);
+      }
       observe() {}
       disconnect() {}
     }
@@ -371,6 +405,7 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
       },
       vi.fn(),
       FakeObserver,
+      FakeIntersectionObserver,
       fakePerformance
     );
 
@@ -383,11 +418,22 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     // Even when far below the viewport (~14,500px down), --parallax-y is cleanly pre-clamped (never unset)
     const initialOffscreen = Number.parseFloat(setProps['--parallax-y']);
     expect(initialOffscreen).toBeLessThan(-50);
+    expect(mockStage.dataset.parallaxActive).toBe('false');
 
-    // Move stage to bottom edge of viewport and confirm negative --parallax-y
-    simulatedTop = 850;
+    // Off-screen scroll ticks must NOT trigger getBoundingClientRect() or RAFs
+    const callsBeforeOffscreenScroll = rectCalls;
+    simulatedTop = 12000;
     fakeTime += 16.67;
     lenisListeners[0]?.();
+    expect(rectCalls).toBe(callsBeforeOffscreenScroll);
+    expect(rafQueue.length).toBe(0);
+
+    // Stage enters viewport -> IO activates stage and snaps alignment
+    simulatedTop = 850;
+    fakeTime += 16.67;
+    ioCallbacks[0]?.([{ target: mockStage, isIntersecting: true }]);
+    expect(mockStage.dataset.parallaxActive).toBe('true');
+
     while (rafQueue.length > 0) {
       fakeTime += 16.67;
       rafQueue.shift()?.(fakeTime);
@@ -411,7 +457,7 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
     expect(topOffset).toBeGreaterThan(50);
     expect(topOffset - bottomOffset).toBeGreaterThan(180);
 
-    // Reduced motion zeroes --parallax-y cleanly
+    // Reduced motion zeroes --parallax-y cleanly and drops parallaxActive
     docElement.dataset.motion = 'reduced';
     fakeTime += 16.67;
     subscribeCallbacks[0]?.();
@@ -420,5 +466,6 @@ describe('ChronoTrig v6.0.0 Integration & Lifecycle', () => {
       rafQueue.shift()?.(fakeTime);
     }
     expect(setProps['--parallax-y']).toBe('0px');
+    expect(mockStage.dataset.parallaxActive).toBe('false');
   });
 });

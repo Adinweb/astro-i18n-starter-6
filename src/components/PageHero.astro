@@ -79,9 +79,9 @@ const widths = [
       format="webp"
       quality={70}
       layout="full-width"
-      loading="eager"
+      loading={compact ? 'lazy' : 'eager'}
       decoding="async"
-      fetchpriority="high"
+      fetchpriority={compact ? undefined : 'high'}
       transition:persist={backdropKey}
       class="absolute inset-0 h-full w-full scale-105 object-cover blur-md"
     />

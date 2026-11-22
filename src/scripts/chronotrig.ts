@@ -1,17 +1,18 @@
 /**
- * ChronoTrig v6.0.0 client integration & lifecycle coordinator.
+ * ChronoTrig v6.1.0 client integration & lifecycle coordinator.
  *
  * Ensures ChronoTrig scans, measures, and observes elements across initial page
  * loads, Astro View Transitions (`astro:page-load`), and dynamic DOM updates
  * while preserving harmonic stagger modes (`linear` | `wave` | `center` | `reverse`),
- * pinned sections, timelines, zero-cost reveal fast paths, and `data-trig-once="true"`.
+ * pinned sections, timelines, zero-cost reveal fast paths, opt-in `:root` scroll vars,
+ * and `data-trig-once="true"`.
  */
 
 type ChronoTrigEase = 'linear' | 'ease' | 'easeIn' | 'easeOut' | 'easeInOut';
 
 type ChronoTrigMobileBehavior = 'disable' | 'lightweight' | 'full';
 
-export interface ChronoTrigFrameMetrics {
+interface ChronoTrigFrameMetrics {
   lastUpdateMs: number;
   layoutReads: number;
   styleWrites: number;
@@ -60,15 +61,19 @@ interface ChronoTrigOptions {
   threshold?: number | number[];
   externalScroll?: boolean;
   measureOnScroll?: boolean;
+  rootScrollVars?: boolean;
   precision?: number;
   autoScan?: boolean;
 }
 
 interface ChronoTrigInstance {
+  readonly version?: string;
   init: () => void;
   scan: () => void;
   sync: (scrollY?: number) => void;
   refresh: () => void;
+  setExternalScroll?: (external: boolean) => void;
+  isExternalScroll?: () => boolean;
   setRoot: (root: HTMLElement | null) => void;
   subscribe: (cb: (state: ChronoTrigScrollState) => void) => () => void;
   setLerp: (val: number) => void;
@@ -140,7 +145,7 @@ export function setupChronoTrig(): void {
 
   // Ensure stagger children participate in IntersectionObserver reveals while
   // delegating `--stagger-index`, `--stagger-delay` (`linear` | `wave` | `center` | `reverse`),
-  // `--stagger-total`, and mobile lightweight clamping to ChronoTrig v6.0.0.
+  // `--stagger-total`, and mobile lightweight clamping to ChronoTrig v6.1.0.
   try {
     const staggers = document.querySelectorAll<HTMLElement>('[data-trig-stagger]');
     if (staggers && typeof staggers.forEach === 'function') {
@@ -150,8 +155,10 @@ export function setupChronoTrig(): void {
         const children = container.querySelectorAll<HTMLElement>('[data-trig-stagger-item], :scope > *');
         if (children && typeof children.forEach === 'function') {
           children.forEach((child) => {
-            if (typeof child.hasAttribute === 'function' && !child.hasAttribute('data-trig')) {
-              child.setAttribute('data-trig', '');
+            if (typeof child.hasAttribute === 'function') {
+              if (!child.hasAttribute('data-trig')) {
+                child.setAttribute('data-trig', '');
+              }
               if (inheritOnce && !child.hasAttribute('data-trig-once')) {
                 child.setAttribute('data-trig-once', 'true');
               }

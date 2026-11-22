@@ -1,14 +1,14 @@
-# ChronoTrig v6.0.0 — Complete English Guide & Practical Examples
+# ChronoTrig v6.1.0 — Complete English Guide & Practical Examples
 
 > **Zero-Dependency CSS Scroll Engine & Synchronous Keyframe Timeline Orchestrator**  
-> Built on the lightweight, CSS-first foundation of Trig.js v4.2.1 — re-engineered in **v6.0.0** for **zero layout reads per scroll frame**, **zero-cost reveal fast paths**, **synchronous Lenis integration**, **RTL horizontal tracks**, **sub-pixel precision**, and **custom scroll roots**.
+> Built on the lightweight, CSS-first foundation of Trig.js v4.2.1 — re-engineered in **v6.1.0** for **zero layout reads per scroll frame**, **zero global `:root` style recalculations**, **zero-cost reveal fast paths**, **synchronous Lenis integration**, **RTL horizontal tracks**, **sub-pixel precision**, and **custom scroll roots**.
 
 🌐 **Language / زبان**: **English (`GUIDE.md`)** · [فارسی (`GUIDE.fa.md`)](./GUIDE.fa.md)
 
 ---
 
 ## Table of Contents
-1. [v6.0 Architecture: Zero-Cost Reveals & Cached Geometry Math](#1-v60-architecture-zero-cost-reveals--cached-geometry-math)
+1. [v6.1 Architecture: Zero-Cost Reveals & Cached Geometry Math](#1-v61-architecture-zero-cost-reveals--cached-geometry-math)
 2. [Installation & Setup (HTML, ESM, Lenis Sync, TypeScript, React)](#2-installation--setup-html-esm-lenis-sync-typescript-react)
 3. [Everyday Animations, Tight Trigger Margins & `data-trig-once`](#3-everyday-animations-tight-trigger-margins--data-trig-once)
 4. [Ready-Made CSS Presets (`trig-animations.css`)](#4-ready-made-css-presets-trig-animationscss)
@@ -24,9 +24,9 @@
 
 ---
 
-## 1. v6.0 Architecture: Zero-Cost Reveals & Cached Geometry Math
+## 1. v6.1 Architecture: Zero-Cost Reveals & Cached Geometry Math
 
-Traditional scroll libraries mutate inline styles synchronously or measure `getBoundingClientRect()` on every element every frame, causing layout thrashing and battery drain. **ChronoTrig v6.0** runs on a three-tier zero-waste pipeline:
+Traditional scroll libraries mutate inline styles synchronously or measure `getBoundingClientRect()` on every element every frame, causing layout thrashing and battery drain. **ChronoTrig v6.1** runs on a three-tier zero-waste pipeline:
 
 1. **Zero-Cost Reveal Fast Path**:
    Plain `[data-trig]` reveal elements and default entrance staggers **never enter the scroll loop**. They are managed exclusively by pooled `IntersectionObserver`s (`rootMargin: "0px 0px -8% 0px"`), consuming **0% rAF CPU** and **0 layout reads** while scrolling.
@@ -45,10 +45,8 @@ Traditional scroll libraries mutate inline styles synchronously or measure `getB
 
 | File | Size | Purpose |
 | :--- | :--- | :--- |
-| `chronotrig.min.js` | **23.3 KB min (7.7 KB gzip)** | Standalone zero-dependency browser bundle (sets `window.chronoTrig`, `window.trig`, `window.ChronoTrig`). |
-| `chronotrig.esm.js` | **23.4 KB min (7.7 KB gzip)** | Modern ES Module for Vite, Next.js, Rollup, or Webpack. |
-| `trig-animations.css` | **12.5 KB** | Calibrated `0.55s` preset suite, hover-safe `.trig-stagger-item`, CSS `@supports (animation-timeline: view())` helper, and reduced-motion fallbacks. |
-| `chronotrig.d.ts` | **2.6 KB** | Full TypeScript definitions including `FrameMetrics` and v6.0 options. |
+| `chronotrig.min.js` | **24.0 KB min (7.8 KB gzip)** | Standalone zero-dependency browser bundle loaded globally by `BaseLayout.astro` (sets `window.chronoTrig`, `window.trig`, `window.ChronoTrig`). |
+| `src/styles/chronotrig.css` | Starter Stylesheet | Calibrated `1.2s` / `56px` preset suite (`0.55s` in upstream standalone), hover-safe `.trig-stagger-item`, and reduced-motion/print fallbacks. |
 
 ### Option A: Vanilla HTML `<script>` Drop-In
 ```html
@@ -69,6 +67,7 @@ Traditional scroll libraries mutate inline styles synchronously or measure `getB
 ```
 
 ### Option B: ES Module with Synchronous Lenis Driving
+> **Starter Note:** In this Astro starter, `BaseLayout.astro` loads `/chronotrig.min.js` globally as `window.chronoTrig`, and `src/scripts/lenis.ts` drives `window.chronoTrig.setExternalScroll(true)` + `window.chronoTrig.sync(instance.scroll)` automatically (no separate `chronotrig.esm.js` is shipped in `public/`). The standalone ESM example below applies when bundling `chronotrig.esm.js` directly in external projects:
 ```javascript
 import Lenis from 'lenis';
 import { ChronoTrig } from './chronotrig.esm.js';
@@ -121,7 +120,7 @@ function ProductSection({ items }: { items: string[] }) {
 
 ## 3. Everyday Animations, Tight Trigger Margins & `data-trig-once`
 
-ChronoTrig v6.0 uses a tightened default viewport margin (`"0px 0px -8% 0px"`) so below-the-fold elements reveal only once they actually cross cleanly into view rather than pre-firing prematurely off-screen. You can override margins per element (`data-trig-root-margin="0px 0px -20% 0px"` and `data-trig-threshold="0.25"`)—observers are pooled automatically.
+ChronoTrig v6.1 uses a tightened default viewport margin (`"0px 0px -8% 0px"`) so below-the-fold elements reveal only once they actually cross cleanly into view rather than pre-firing prematurely off-screen. You can override margins per element (`data-trig-root-margin="0px 0px -20% 0px"` and `data-trig-threshold="0.25"`)—observers are pooled automatically.
 
 Add `data-trig` + `data-trig-once="true"` for standard reveals:
 ```html
@@ -134,16 +133,16 @@ Add `data-trig` + `data-trig-once="true"` for standard reveals:
 
 ## 4. Ready-Made CSS Presets (`trig-animations.css`)
 
-Customize timing globally via CSS custom properties on `:root`:
+Customize timing globally via CSS custom properties on `:root` (`src/styles/chronotrig.css` configures `1.2s` by default in this starter):
 ```css
 :root {
-  --trig-duration: 0.55s;
+  --trig-duration: 1.2s;
   --trig-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --trig-reveal-delay: 0ms;
 }
 ```
 
-* **Modern Reveals**: `.fadeInUpSm`, `.blurIn` (falls back to `.fadeInUpSm` on mobile lightweight mode), `.clipUp`, `.clipLeft`, `.trig-stagger-item` (automatically receives `.trig-stagger-settled` after reveal so Tailwind hover transitions stay instant).
+* **Modern Reveals**: `.fadeInUpSm`, `.blurIn` (falls back to `.fadeInUpSm` on mobile lightweight mode), `.clipUp`, `.clipStart` (RTL-native) / `.clipLeft`, `.trig-stagger-item` (automatically receives `.trig-stagger-settled` after reveal so Tailwind hover transitions stay instant).
 * **Progressive Native CSS View Timeline**: `.trig-view-reveal` uses `@supports (animation-timeline: view())` for compositor-native reveals without JS.
 * **Classic Presets**: `.fadeIn`, `.fadeInUp`, `.fadeInDown`, `.fadeInLeft`, `.fadeInRight`, `.zoomIn`, `.zoomInUp`, `.zoomInDown`, `.zoomOut`, `.flipInX`, `.flipInY`, `.rotateIn`, `.rotateInDownLeft`, `.rotateInDownRight`, `.bounceIn`, `.bounceInUp`, `.bounceInDown`, `.slideInUp`, `.slideInDown`, `.slideInLeft`, `.slideInRight`, `.trig-directional`.
 * **Utilities**: `.trig-delay-100`..`1000`, `.trig-duration-300`..`2000`, `.trig-ease-smooth|spring|bounce|in-out`, `.trig-reactive-x|x-reverse|y|rotate|px`.
@@ -152,10 +151,11 @@ Customize timing globally via CSS custom properties on `:root`:
 
 ## 5. Trig.js Parity (Sub-Pixel CSS Variables, 10-Step Selectors, Body Classes)
 
-* **Selective Sub-Pixel Variables**: Enable only what you animate (`data-trig-var="true"`, `data-trig-pixels="true"`, or `data-trig-degrees="true"`). v6.0 formats continuous values to `precision` decimals (default `2`, e.g., `12.45px`) for jitter-free parallax.
+* **Selective Sub-Pixel Variables**: Enable only what you animate (`data-trig-var="true"`, `data-trig-pixels="true"`, or `data-trig-degrees="true"`). v6.1 formats continuous values to `precision` decimals (default `2`, e.g., `12.45px`) for jitter-free parallax.
 * **10-Step Attribute Selectors**: `data-trig-val`, `data-trig-var`, `data-trig-pixels`, and `data-trig-degrees` continue to update in crisp integer increments of `10` (`0, 10, 20... 100`).
 * **Global Scope**: `data-trig-global="true"` writes `--trig-[id]` onto `:root`.
-* **Body Milestones**: `trig-scroll-down`, `trig-scroll-up`, `trig-scroll-top`, `trig-scroll-25`, `trig-scroll-50`, `trig-scroll-75`, `trig-scroll-bottom`, plus `--scroll-progress` and `--scroll-y` on `:root`.
+* **Body Milestones**: `trig-scroll-down`, `trig-scroll-up`, `trig-scroll-top`, `trig-scroll-25`, `trig-scroll-50`, `trig-scroll-75`, `trig-scroll-bottom`.
+* **Opt-In `:root` Scroll Variables**: `--scroll-progress` and `--scroll-y` on `:root` (`document.documentElement`) are **off by default** (`rootScrollVars: false`) because mutating inherited CSS variables on `:root` forces full-DOM style recalculations on large pages. Opt in only if needed via `<html data-trig-root-vars>` or `new ChronoTrig({ rootScrollVars: true })`, or drive progress bars with `engine.subscribe(({ progress }) => ...)` + `transform: scaleX(...)` for zero `:root` recalcs.
 
 ---
 
@@ -175,7 +175,7 @@ Customize timing globally via CSS custom properties on `:root`:
 ```
 
 ### Horizontal Pinned Track with Automatic RTL Support
-When `dir="rtl"` is active on `<html>`, an ancestor container, or the pinned section itself, ChronoTrig v6.0 automatically mirrors horizontal track motion smoothly to `+maxTranslate` (positive X) instead of `-maxTranslate`. Override per track with `data-trig-pin-rtl="true" | "false" | "auto"`.
+When `dir="rtl"` is active on `<html>`, an ancestor container, or the pinned section itself, ChronoTrig v6.1 automatically mirrors horizontal track motion smoothly to `+maxTranslate` (positive X) instead of `-maxTranslate`. Override per track with `data-trig-pin-rtl="true" | "false" | "auto"`.
 
 ```html
 <section
@@ -257,6 +257,7 @@ engine.setRoot(anotherScrollPane);
 | `threshold` | `number \| number[]` | `[0, 0.1, 0.5, 1]` | Default `IntersectionObserver` threshold(s). |
 | `externalScroll` | `boolean` | `false` | Disables internal scroll listener & forces `lerp: 0` when driven by `sync()`. |
 | `measureOnScroll` | `boolean` | `false` | Opt-in legacy per-frame `getBoundingClientRect()` globally. |
+| `rootScrollVars` | `boolean` | `false` | Opt-in `:root` `--scroll-progress` & `--scroll-y` writes (or `<html data-trig-root-vars>`). |
 | `precision` | `number` | `2` | Decimal places for continuous CSS variables (`0`–`4`). |
 | `autoScan` | `boolean` | `false` | Enables debounced `MutationObserver` DOM scanning. |
 | `mobileBehavior` | `'disable' \| 'lightweight' \| 'full'` | `'lightweight'` | Mobile optimization strategy. |
@@ -271,6 +272,7 @@ engine.setRoot(anotherScrollPane);
 * `engine.init()` — Initializes pooled `IntersectionObserver`s, `ResizeObserver`, optional `MutationObserver`, and scans DOM.
 * `engine.scan()` — Re-indexes DOM elements and bulk-measures cached geometry.
 * `engine.sync(scrollY?)` — Runs an immediate frame-locked update synchronously (ideal for Lenis).
+* `engine.setExternalScroll(enabled)` / `engine.isExternalScroll()` — Toggles external scroller mode (`Lenis`) vs. native scroll listener at runtime.
 * `engine.refresh()` — Re-measures viewport dimensions, horizontal tracks, scans DOM, and syncs immediately.
 * `engine.setRoot(root)` — Switches custom scroll container dynamically.
 * `engine.getFrameMetrics()` — Returns `{ lastUpdateMs, layoutReads, styleWrites, revealCount, activeScrubbers, activePins, activeScrubStaggers, activeTimelines }`.
@@ -289,7 +291,9 @@ engine.setRoot(anotherScrollPane);
 
 ### Recipe 1: Auto-Hiding Smart Navbar & Global Reading Progress Bar
 ```css
-.progress-bar { position: fixed; top: 0; left: 0; height: 3px; z-index: 60; width: var(--scroll-progress, 0%); }
+/* Zero :root style recalc: drive .progress-bar transform: scaleX via chronoTrig.subscribe(),
+   OR add data-trig-root-vars to <html> to publish --scroll-progress onto :root */
+.progress-bar { position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 60; transform-origin: left; transform: scaleX(0); }
 body.trig-scroll-down .navbar { transform: translateY(-100%); }
 body.trig-scroll-up .navbar   { transform: translateY(0); }
 ```
@@ -374,7 +378,8 @@ const paneEngine = new ChronoTrig({
 
 1. **`position: sticky` isn't sticking inside `[data-trig-pin]`**: Ensure no ancestor up to `<body>` uses `overflow: hidden` or `overflow-x: hidden`. Use `overflow-x: clip`.
 2. **Dynamic layout shifts below an expanding accordion**: Add `data-trig-dynamic="true"` on scrubbers below the accordion or call `chronoTrig.refresh()` after toggling.
-3. **Inspect runtime performance**: Call `chronoTrig.getFrameMetrics()` in DevTools to verify `layoutReads === 0` and confirm reveal elements stay out of `activeScrubbers`.
+3. **Large documentation / component showcase pages (5,000+ DOM nodes)**: Keep `rootScrollVars: false` (default) so ChronoTrig never triggers full-DOM `:root` style recalculations on scroll, and add `content-visibility: auto; contain-intrinsic-size: auto 600px;` to heavy off-screen sections/tables/code blocks to skip off-screen layout & paint.
+4. **Inspect runtime performance**: Call `chronoTrig.getFrameMetrics()` in DevTools to verify `layoutReads === 0` and confirm reveal elements stay out of `activeScrubbers`.
 
 ---
 

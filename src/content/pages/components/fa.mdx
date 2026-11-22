@@ -136,7 +136,7 @@ import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
     name="IconButton"
     category="اجزای پایه UI"
     title="IconButton و Icon (دکمه آیکونی و نمایش آیکون)"
-    summary="IconButton دکمه مربعی/دایره‌ای استاندارد با نام دسترس‌پذیر الزامی (aria-label) می‌سازد و Icon آیکون‌های تبلر را از فهرست ۶۱تایی بسته رندر می‌کند."
+    summary="IconButton دکمه مربعی/دایره‌ای استاندارد با نام دسترس‌پذیر الزامی (aria-label) می‌سازد و Icon آیکون‌های تبلر را از فهرست هسته ۶۶تایی می‌خواند."
     propsList={[
       { name: "label", type: "string", required: true, description: "عنوان دسترس‌پذیر الزامی برای aria-label و title." },
       { name: "icon", type: "IconName", description: "نام آیکون ثبت‌شده در src/libs/ui/icons.ts." },
@@ -1829,12 +1829,12 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
     name="ChronoTrig Presets"
     category="انیمیشن و اسکرول"
     title="پریست‌های ورود اسکرولی و جهت‌های منطقی RTL"
-    summary="انیمیشن‌های ورود بدون پرش چیدمان (Zero-CLS) و ایمن برای پرینت با موتور ChronoTrig v5.2.0. تمامی حالت‌ها زیر کلاس .js محدود شده‌اند، به html[data-motion='reduced'] احترام می‌گذارند و جهت‌های منطقی (start / end / clipStart) در فارسی به‌صورت خودکار آینه می‌شوند."
+    summary="انیمیشن‌های ورود بدون پرش چیدمان (Zero-CLS) و ایمن برای پرینت با موتور ChronoTrig v6.1.0 (جابجایی استاندارد ۵۶ پیکسل، مدت ۱.۲ ثانیه). تمامی حالت‌ها زیر کلاس .js محدود شده‌اند، به html[data-motion='reduced'] احترام می‌گذارند و جهت‌های منطقی (start / end / clipStart) در فارسی به‌صورت خودکار آینه می‌شوند."
     propsList={[
       { name: "data-trig", type: "boolean", description: "عنصر را برای رصد ورود به نمای صفحه در ChronoTrig ثبت می‌کند." },
       { name: "data-trig-once", type: "'true'", description: "انیمیشن را فقط یک بار اجرا کرده و پس از اتمام، رصد را متوقف می‌کند (صفر درصد بار CPU)." },
       { name: "data-trig-direction", type: "'start' | 'end'", description: "ورود افقی منطقی از ابتدای خط (راست در RTL) یا انتهای خط (چپ در RTL)." },
-      { name: "class presets", type: "'fadeInUpSm' | 'blurIn' | 'clipUp' | 'clipStart' | 'zoomIn'", description: "کلاس‌های آماده ورود نسخه ۵.۲ همراه با کلاس‌های کمکی تاخیر و مدت زمان." }
+      { name: "class presets", type: "'fadeInUpSm' | 'blurIn' | 'clipUp' | 'clipStart' | 'zoomIn'", description: "کلاس‌های آماده ورود نسخه ۶.۰ همراه با کلاس‌های کمکی تاخیر و مدت زمان." }
     ]}
     usage={`<!-- پریست‌های مدرن ورود (اجرای یک‌باره) -->
 <div class="fadeInUpSm" data-trig data-trig-once="true">ورود نرم ۱۸ پیکسلی</div>
@@ -2001,15 +2001,15 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
         secondaryCta={null}
       >
         <div class="mx-auto grid max-w-2xl grid-cols-3 gap-3 text-center">
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/85 px-4 py-3">
             <p class="text-lg font-extrabold text-accent tabular-nums">۶۰ فریم</p>
             <p class="text-xs text-hero-fg/85">پردازش با GPU</p>
           </div>
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/85 px-4 py-3">
             <p class="text-lg font-extrabold text-hero-fg tabular-nums">بدون CLS</p>
             <p class="text-xs text-hero-fg/85">حاشیه اطمینان تصویر</p>
           </div>
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/85 px-4 py-3">
             <p class="text-lg font-extrabold text-hero-fg tabular-nums">RTL/LTR</p>
             <p class="text-xs text-hero-fg/85">لایه کنتراست منطقی</p>
           </div>

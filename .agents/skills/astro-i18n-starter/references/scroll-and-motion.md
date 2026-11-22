@@ -1,6 +1,6 @@
-# Smooth Scroll (Lenis) & ChronoTrig v6.0.0 Scroll Engine Reference
+# Smooth Scroll (Lenis) & ChronoTrig v6.1.0 Scroll Engine Reference
 
-This reference documents how to animate elements across Astro views, reusable components, and `.mdx` content pages using **ChronoTrig v6.0.0** and **Lenis** smooth scrolling, while preserving 100% RTL/LTR symmetry, progressive enhancement, zero Cumulative Layout Shift (CLS), and Astro `<ClientRouter />` compatibility.
+This reference documents how to animate elements across Astro views, reusable components, and `.mdx` content pages using **ChronoTrig v6.1.0** and **Lenis** smooth scrolling, while preserving 100% RTL/LTR symmetry, progressive enhancement, zero Cumulative Layout Shift (CLS), and Astro `<ClientRouter />` compatibility.
 
 ---
 
@@ -8,11 +8,11 @@ This reference documents how to animate elements across Astro views, reusable co
 
 | File | Responsibility |
 | :--- | :--- |
-| `public/chronotrig.min.js` / `public/chronotrig.esm.js` | Zero-dependency **ChronoTrig v6.0.0** FastDOM CSS scroll engine (2-pass measure/mutate, IntersectionObserver gating, WeakMap caching, dynamic `willChange` release, `sync(scrollY)`, `autoInit: true`). Drives `[data-trig]`, `[data-trig-pin]`, `[data-trig-stagger]`, `[data-trig-timeline]`, continuous variables (`--trig`, `--trig-px`, `--trig-deg`), body milestone classes, and live OS `prefers-reduced-motion` listeners. |
+| `public/chronotrig.min.js` | Zero-dependency **ChronoTrig v6.1.0** FastDOM CSS scroll engine (2-pass measure/mutate, IntersectionObserver gating, WeakMap caching, deduplicated `animationend`/`animationcancel` `willChange` release, `setExternalScroll(bool)` / `isExternalScroll()`, `rootScrollVars: false` default, `sync(scrollY)`, `autoInit: true`). Drives `[data-trig]`, `[data-trig-pin]`, `[data-trig-stagger]`, `[data-trig-timeline]`, continuous variables (`--trig`, `--trig-px`, `--trig-deg`), body milestone classes, and live OS `prefers-reduced-motion` listeners. |
 | `src/layouts/BaseLayout.astro` | Loads `<script is:inline src="/chronotrig.min.js"></script>`, executes `resolveMotion()` in `<head>` (checks `localStorage.motion`, falls back to OS `prefers-reduced-motion: reduce`, sets `html[data-motion]`), and imports `src/scripts/lenis` and `src/scripts/chronotrig`. |
-| `src/styles/chronotrig.css` | Scopes all entrance states strictly under `.js [data-trig]`, provides calibrated v6 presets (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, etc.) and utility modifiers (`.trig-delay-*`, `.trig-duration-*`, `.trig-ease-*`, `.trig-reactive-*`), handles logical RTL directions and settled stagger items (`.trig-stagger-settled`), and flattens reveals/pins/timelines for `html[data-motion="reduced"]`, `body.chronotrig-mobile-disabled`, and `@media print`. |
-| `src/scripts/chronotrig.ts` | Full v6.0.0 TypeScript declarations and client lifecycle coordinator. Auto-tags `.prose` headings (`data-trig` + `data-trig-once="true"`), propagates `data-trig` + `data-trig-once` to stagger children without clobbering `wave`/`center`/`reverse` delays, calls `window.chronoTrig.refresh()` on initial load and `astro:page-load`, and exports `refreshChronoTrig()`. |
-| `src/scripts/lenis.ts` | Manages the singleton `Lenis` instance (`lerp: 0.125`), syncs Lenis scroll ticks synchronously via `window.chronoTrig.sync(instance.scroll)`, intercepts same-page `#hash` links in the capture phase (`-96px` header offset), isolates nested scroll containers, and honors `data-motion="reduced"`. |
+| `src/styles/chronotrig.css` | Scopes all entrance states strictly under `.js [data-trig]`, provides calibrated presets (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, etc.) and utility modifiers (`.trig-delay-*`, `.trig-duration-*`, `.trig-ease-*`, `.trig-reactive-*`), handles logical RTL directions and settled stagger items (`.trig-stagger-settled`), and flattens reveals/pins/timelines for `html[data-motion="reduced"]`, `body.chronotrig-mobile-disabled`, and `@media print`. |
+| `src/scripts/chronotrig.ts` | Full v6.1.0 TypeScript declarations (`setExternalScroll`, `isExternalScroll`, `sync`, `refresh`, `version`) and client lifecycle coordinator. Auto-tags `.prose` headings (`data-trig` + `data-trig-once="true"`), propagates `data-trig` + `data-trig-once` to stagger children without clobbering `wave`/`center`/`reverse` delays, calls `window.chronoTrig.refresh()` on initial load and `astro:page-load`, and exports `refreshChronoTrig()`. |
+| `src/scripts/lenis.ts` | Manages the singleton `Lenis` instance (`lerp: 0.125`), calls `window.chronoTrig.setExternalScroll?.(true)` on init (`false` on destroy) to eliminate duplicate passive scroll listeners, syncs Lenis ticks via `window.chronoTrig.sync(instance.scroll)`, intercepts same-page `#hash` links in the capture phase (`-96px` header offset), isolates nested scroll containers, and honors `data-motion="reduced"`. |
 | `src/styles/global.css` | Sets `html { scroll-behavior: auto; }` (preventing Lenis conflict) and `body { overflow-x: clip; }` (crucial so `position: sticky` inside `[data-trig-pin]` is never broken). |
 
 ---
@@ -25,9 +25,9 @@ Hiding elements with `display: none` collapses their bounding box to `0×0`, bre
 
 ```text
 1. <head> Script       : Adds <html class="js"> synchronously before first paint (100% visible if JS disabled).
-2. .js [data-trig]     : Initial state in chronotrig.css: opacity: 0; transform: translate3d(0, 20px, 0);
+2. .js [data-trig]     : Initial state in chronotrig.css: opacity: 0; transform: translate3d(0, 56px, 0);
 3. ChronoTrig Observer : Adds .trig (+ trig-up / trig-down) when entering viewport (rootMargin 0px 0px -8% 0px).
-4. .js [data-trig].trig: Runs `trig-reveal-up` for 0.55s on cubic-bezier(0.16, 1, 0.3, 1) to opacity: 1; transform: none;
+4. .js [data-trig].trig: Runs `trig-reveal-up` for 1.2s on cubic-bezier(0.16, 1, 0.3, 1) to opacity: 1; transform: none;
                          with `--trig-reveal-delay: 0ms` and dynamic `will-change` cleanup on completion.
 5. Reveal-Once         : Add `data-trig-once="true"` to trigger once, release `will-change: auto`, and unobserve
                          automatically (0% scroll overhead on long pages).
@@ -54,7 +54,7 @@ Hiding elements with `display: none` collapses their bounding box to `0×0`, bre
 ### Automatic Heading Reveals in `.mdx`
 In `src/scripts/chronotrig.ts`, `.prose h2`, `.prose h3`, `.prose h4`, `.prose .section-kicker`, and `[data-prose-reveal]` elements are automatically tagged with `data-trig` during `setupChronoTrig()`.
 
-### v5.2.0 Presets & Utility Modifiers (`src/styles/chronotrig.css`)
+### v6.1.0 Presets & Utility Modifiers (`src/styles/chronotrig.css`)
 All presets remain strictly scoped under `.js [data-trig]` for Zero-CLS and Print/No-JS safety:
 * **Modern Reveals**:
   * `.fadeInUpSm` — Subtle `18px` upward entrance (ideal for SaaS copy and UI cards)
@@ -89,7 +89,7 @@ When elements slide horizontally, **never use physical `left` or `right`**. Alwa
 
 ## 5. Harmonic Stagger Cascades (`[data-trig-stagger]`)
 
-Wrap cards, list items, or spans in `[data-trig-stagger]`. ChronoTrig v5.2.0 targets `[data-trig-stagger-item], :scope > *`, writes `--stagger-index`, `--stagger-delay`, `--stagger-total`, `--child-progress`, `--child-percent`, and toggles `.trig-stagger-active` on children.
+Wrap cards, list items, or spans in `[data-trig-stagger]`. ChronoTrig v6.1.0 targets `[data-trig-stagger-item], :scope > *`, writes `--stagger-index`, `--stagger-delay`, `--stagger-total`, `--child-progress`, `--child-percent`, and toggles `.trig-stagger-active` on children.
 
 * **Harmonic Modes (`data-trig-stagger-mode`)**:
   * `linear` *(default)*: `0 -> 1 -> 2 -> ...`
@@ -141,7 +141,7 @@ refreshChronoTrig();
 
 ## 6. Pinned / Sticky Sections & Horizontal Tracks (`[data-trig-pin]`)
 
-ChronoTrig v5.2.0 keeps sticky stages fixed across a scroll track and maps progress into `--trig-pin-progress` (`0%`–`100%`), `--trig-pin-t` (`0.0000`–`1.0000`), `--trig-pin-deg`, `--trig-pin-px`, and `data-pin-phase="before|pinned|after"`:
+ChronoTrig v6.1.0 keeps sticky stages fixed across a scroll track and maps progress into `--trig-pin-progress` (`0%`–`100%`), `--trig-pin-t` (`0.0000`–`1.0000`), `--trig-pin-deg`, `--trig-pin-px`, and `data-pin-phase="before|pinned|after"`:
 
 * **Critical CSS Rule**: Never put `overflow-x: hidden` on `body` or ancestor containers around `[data-trig-pin]`, as it breaks `position: sticky`. `src/styles/global.css` sets `body { overflow-x: clip; }`.
 * **Automatic Height & Responsive Media Rules**:
@@ -187,14 +187,27 @@ Interpolate across percentage checkpoints (`at`: `0`–`100`):
 
 * **Element Variables**: Add `data-trig-var="true"`, `data-trig-pixels="true"`, or `data-trig-degrees="true"` (optionally without `data-trig` so non-fading scrub layers never start at `opacity: 0`) to populate `--trig`, `--trig-reverse`, `--trig-progress`, `--trig-px`, `--trig-deg`, and 10-step attribute selectors (`[data-trig-var="20"]`, `...`). Modifiers: `data-trig-offset`, `data-trig-negativeOffset`, `data-trig-min`, `data-trig-max`, `data-trig-height`.
 * **Global Scope**: Add `data-trig-global="true"` + `id="heroSection"` to write `--trig-heroSection`, `--trig-heroSection-px`, `--trig-heroSection-deg` directly on `:root`.
-* **Document Body Classes & `:root` Progress**: `trig-scroll-down` / `trig-scroll-up`, `trig-scroll-top` / `trig-scroll-bottom`, `trig-scroll-25` / `50` / `75`, plus `--scroll-progress` (`0.0%`–`100.0%`) and `--scroll-y` (`px`).
+* **Document Body Classes & Opt-In `:root` Progress**: `trig-scroll-down` / `trig-scroll-up`, `trig-scroll-top` / `trig-scroll-bottom`, `trig-scroll-25` / `50` / `75` always toggle cheaply via class flags. `--scroll-progress` (`0.0%`–`100.0%`) and `--scroll-y` (`px`) on `:root` stay disabled by default (`rootScrollVars: false`) to prevent full-DOM inherited style recalculations during scroll; enable only when needed via `rootScrollVars: true` or `<html data-trig-root-vars>`.
 
 ---
 
 ## 9. Engine API, Lenis & Reduced Motion Synchronization
 
-* **Engine Instance (`window.chronoTrig`)**: Configured out of the box with `{ lerp: 0, rootMargin: '0px 0px -8% 0px', threshold: [0, 0.1, 0.5, 1], externalScroll: false, measureOnScroll: false, precision: 2, mobileBehavior: 'lightweight', mobileBreakpoint: 1024, disableBlurOnMobile: true, disable3DOnMobile: true, respectReducedMotion: true }`.
-  * Key methods: `refresh()`, `scan()`, `subscribe(cb)`, `sync(scrollY?)`, `setRoot(el)`, `getFrameMetrics()`, `setLerp(val)` / `getLerp()`, `setMobileBehavior(mode)` / `getMobileBehavior()`, `setDebugMarkers(bool)`, `isMobile()`, `isDisabled()`, `getLastUpdateMs()`, `trigScroll(sync?)`, `destroy()`.
-  * **Important**: v6.0.0 does not expose `onScroll()` or `onResize()`; use `refresh()` after DOM/layout changes and `sync(scrollY)` or `trigScroll?.(true)` in scroll callbacks.
-* **Lenis (`src/scripts/lenis.ts`)**: Initializes with `lerp: 0.125`, `smoothWheel: true`, `-96px` header anchor offset, and calls `window.chronoTrig.sync(instance.scroll)` inside `lenis.on('scroll', ...)`. Always add `data-lenis-prevent` on nested `overflow-y-auto` panels/modals.
+* **Engine Instance (`window.chronoTrig`)**: Configured out of the box with `{ lerp: 0, rootMargin: '0px 0px -8% 0px', threshold: [0, 0.1, 0.5, 1], externalScroll: false, measureOnScroll: false, rootScrollVars: false, precision: 2, mobileBehavior: 'lightweight', mobileBreakpoint: 1024, disableBlurOnMobile: true, disable3DOnMobile: true, respectReducedMotion: true }`.
+  * Key methods: `refresh()`, `scan()`, `subscribe(cb)`, `sync(scrollY?)`, `setExternalScroll(bool)`, `isExternalScroll()`, `setRoot(el)`, `getFrameMetrics()`, `setLerp(val)` / `getLerp()`, `setMobileBehavior(mode)` / `getMobileBehavior()`, `setDebugMarkers(bool)`, `isMobile()`, `isDisabled()`, `getLastUpdateMs()`, `trigScroll(sync?)`, `destroy()`.
+  * **Important**: v6.1.0 does not expose `onScroll()` or `onResize()`; use `refresh()` after DOM/layout changes and `sync(scrollY)` or `trigScroll?.(true)` in scroll callbacks.
+* **Lenis (`src/scripts/lenis.ts`)**: Initializes with `lerp: 0.125`, `smoothWheel: true`, `-96px` header anchor offset, sets `window.chronoTrig?.setExternalScroll?.(true)` (`false` on destroy), and calls `window.chronoTrig.sync(instance.scroll)` inside `lenis.on('scroll', ...)`. Always add `data-lenis-prevent` on nested `overflow-y-auto` panels/modals.
 * **Unified Reduced Motion (`resolveMotion()`)**: `<head>` sets `html[data-motion="reduced" | "full"]` from `localStorage.motion` or OS `prefers-reduced-motion: reduce`. ChronoTrig's `respectReducedMotion` also watches `prefers-reduced-motion` live (`chronotrig-mobile-disabled`). Together with `chronotrig.css`, `lenis.ts`, `global.css`, and `@media print`, all reveals, timelines, horizontal tracks, and pinned heights flatten cleanly with zero stuck elements.
+
+---
+
+## 10. Performance & GPU Guardrails (Zero-Lag Long Pages)
+
+Follow these rules when authoring landing pages or custom components (modeled after `ParallaxSection`, `UiProgress`, `TestimonialMarquee`, and `BentoGrid`):
+
+1. **Default to `data-trig-once="true"`**: Re-triggering reveals on every scroll direction keeps long-lived `IntersectionObserver` entries and repeatedly triggers layer promotion. Use `data-trig-once="true"` on static sections, cards, and stagger grids.
+2. **Never invent `data-trig-delay`**: Delay utilities are `.trig-delay-100`..`.trig-delay-1000` CSS classes in `src/styles/chronotrig.css`.
+3. **Avoid costly GPU filter blurs**: Never put Tailwind `blur-2xl` or `blur-3xl` on large decorative glow layers — use the pure radial gradients `.hero-glow-primary` and `.hero-glow-accent` from `src/styles/global.css`. Never stack nested `backdrop-blur` layers or put `backdrop-blur` on moving scroll overlays.
+4. **Viewport-gate continuous scripts (`IntersectionObserver`)**: Scroll scrubbers (`ParallaxSection.astro` toggling `data-parallax-active="true"`), progress/counter animations (`UiProgress.astro` using CSS `scaleX()` transitions), and `AutoScroll` marquees (`TestimonialMarquee.astro`) must pause when off-screen and disable gracefully under `html[data-motion="reduced"]`. Never call `getBoundingClientRect()` or `getComputedStyle()` across hidden elements in a global scroll loop.
+5. **Lazy-load below-the-fold `<Image>` elements**: Set `loading="lazy"` on cards, galleries, split-section photos, compact mid-page `<PageHero compact />`, and non-priority parallax bands. Reserve `loading="eager"` + `fetchpriority="high"` strictly for top-of-page hero media (`LandingHeroSplit` default mode, `ParallaxSection priority`).
+6. **Contain dense off-screen sub-blocks**: For very long catalog/docs routes with many tables or code blocks (e.g., `ComponentDoc.astro`), apply `[content-visibility:auto]` + `[contain-intrinsic-size:auto_<h>px]` on inner tables/code blocks (never hiding outer `[data-trig]` wrappers or Embla viewports) so layout and text shaping skip off-screen weight cleanly.

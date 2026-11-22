@@ -7,7 +7,7 @@
  * - 100% RTL-native CSS logical properties (`ms-`, `me-`, `start-`, `border-s`, `rounded-ss-2xl`).
  * - Zero raw `<svg>` markup: uses `<Icon />` and pure CSS geometric visuals.
  * - Paraglide compiled i18n defaults with full prop customization.
- * - ChronoTrig v5.2.0 linear top-to-bottom stagger (`data-trig-once="true"`).
+ * - ChronoTrig v6.1.0 linear top-to-bottom stagger (`data-trig-once="true"`).
  */
 import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
@@ -178,6 +178,7 @@ const WORKFLOW_ROWS = [
     <!-- Card 1: Big Metric Highlight -->
     <article
       data-trig
+      data-trig-once="true"
       class:list={[
         'group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
         span.metric,
@@ -186,7 +187,7 @@ const WORKFLOW_ROWS = [
     >
       <div
         aria-hidden="true"
-        class="pointer-events-none absolute -top-16 start-1/2 size-44 -translate-x-1/2 rounded-full bg-primary/10 blur-2xl rtl:translate-x-1/2 print:hidden"
+        class="pointer-events-none absolute -top-16 start-1/2 size-44 -translate-x-1/2 rounded-full hero-glow-primary opacity-45 rtl:translate-x-1/2 print:hidden"
       >
       </div>
 
@@ -219,6 +220,7 @@ const WORKFLOW_ROWS = [
     <!-- Card 2: Security / Ring Emblem -->
     <article
       data-trig
+      data-trig-once="true"
       class:list={[
         'group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
         span.security,
@@ -254,6 +256,7 @@ const WORKFLOW_ROWS = [
     <!-- Card 3: Performance / Sparkline Visual -->
     <article
       data-trig
+      data-trig-once="true"
       class:list={[
         'group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
         span.speed,
@@ -317,6 +320,7 @@ const WORKFLOW_ROWS = [
     <!-- Card 4: Wide Split Card (Analytics Window Preview) -->
     <article
       data-trig
+      data-trig-once="true"
       class:list={[
         'group relative overflow-hidden rounded-2xl border border-border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
         span.analytics,
@@ -388,6 +392,7 @@ const WORKFLOW_ROWS = [
     <!-- Card 5: Wide Split Card (Workflow / Team Stack Preview) -->
     <article
       data-trig
+      data-trig-once="true"
       class:list={[
         'group relative overflow-hidden rounded-2xl border border-border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
         span.collaboration,

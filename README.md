@@ -17,7 +17,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Compile-Time i18n via Paraglide**: Strongly typed translations with native ICU plurals and ordinals, compiled directly from `messages/core/` + `client/messages/` into tree-shakeable JS functions without runtime overhead.
 * **Symmetrical Content Collections & Filterable Indexes**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs, cross-language alternate linking, and interactive category/stack/keyword filtering in `CollectionIndexView.astro` (`projects`, etc.).
 * **Manageable Content Types & Pages CMS**: `pages`, `blog` and `projects` are declared in `app.config.json` → `content.types` (overridable in `client/config.json`, plus client collections via `client/content.ts`), with Git-based visual editing configured out of the box in `.pages.yml`. `npm run content:enable|disable <type>` adds or removes a type's routes, sitemap entries and navigation links without touching a single content file, and `content:new` scaffolds an entry in any type.
-* **22 Composable Corporate, Landing & UI Blocks + Business Profile**: 19 section blocks (`LandingHeroSplit`, `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection`, `LatestPostsSection`, `TeamSection`, `FaqAccordion`, `ContactSplitSection` with phone/WhatsApp/Telegram quick actions and click-to-load lazy map embed, `NewsletterBanner`, `CtaBanner`) plus 3 reusable UI primitives (`UiBadge`, `UiAlert`, `AvatarGroup`) and industry onboarding blueprints (`--blueprint=corporate|agency|portfolio|medical`).
+* **36 Composable Corporate, Landing & UI Blocks + Business Profile**: **23 section blocks** (`LandingHeroSplit`, `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection`, `LatestPostsSection`, `TeamSection`, `FaqAccordion`, `ContactSplitSection` with phone/WhatsApp/Telegram quick actions and click-to-load lazy map embed, `NewsletterBanner`, `CtaBanner`, `CarouselSection`, `ProductShowcaseGrid`, `AuthFormCard`, `ParallaxSection`), **13 reusable UI primitives** (`UiBadge`, `UiAlert`, `AvatarGroup`, `Breadcrumbs`, `UiPagination`, `UiModal`, `UiTooltip`, `UiProgress`, `UiSwitch`, `UiCheckbox`, `UiInput`, `UiDropdown`, `SocialLinks`), **4 interactive/motion showcase blocks** (`BentoGrid`, `LatestPostsCarousel`, `SwipeableTabs`, `TestimonialMarquee`), and industry onboarding blueprints (`--blueprint=corporate|agency|portfolio|medical`).
 * **Configurable, Dead-Link-Free Navigation**: `CLIENT_PAGE_ITEMS` in `client/navigation.ts` feeds both the desktop header **and** the mobile drawer from a single builder, `ui.ctaPage` in config picks the header/drawer CTA target, and any entry whose page (or `#anchor`) no longer exists hides itself — `npm run link:check` fails the pipeline if an internal link or fragment resolves to nothing.
 * **Paginated Blog Index & Cross-Page Filtering**: Static paginated route set — one URL per page per locale (`/blog/`, `/blog/page/2/`, `/fa/blog/page/2/`) — with reciprocal `hreflang`, `rel="prev"` / `rel="next"`, and progressive cross-page taxonomy filtering powered by lightweight per-locale static catalogs (`/api/blog-posts/<locale>.json`).
 * **Persian-Aware Search Built-In**: Production static indexing with **Pagefind** (`scripts/index-pagefind.mjs`) enhanced with Perso-Arabic character normalization (`ي`/`ك` → `ی`/`ک`), punctuation token boundary isolation (`«...»`, `،`), client-side ZWNJ/space compound & numeral query expansion (`src/libs/search/persian.ts`), and per-locale JSON fallbacks (`/api/search-dev/<locale>.json`).
@@ -27,7 +27,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Locale-Native Dates & Numerals**: Centralized `Intl` formatting (`src/i18n/format.ts`) with Solar Hijri (Jalali) dates and Persian numerals (`۰-۹`) for `fa`, Eastern Arabic numerals (`٠-٩`) for `ar`, and standard localized formatting for LTR locales.
 * **Rich Editorial UX & Print Stylesheet**: Automatic sticky/collapsible Table of Contents (`h2`/`h3`), taxonomy-scored Related Articles, chronological Newer/Older article navigation, localized `updatedAt` timestamps, one-click Copy Code buttons on `<pre>` blocks, and a clean `@media print` stylesheet.
 * **Accessible & Reduced-Motion Aware**: Native `<dialog>` search (`⌘K`, `↑`/`↓`/`Enter`), two-tab mobile slide-over drawer, single `<h1>` per page, skip link, visible focus rings, and unified OS `prefers-reduced-motion` + `data-motion` support across CSS reveals, Lenis smooth scrolling, and cookie banners.
-* **ChronoTrig v5.2.0 Scroll Reveals & Smooth Scroll**: GPU-only entrance animations (`data-trig` + `data-trig-once="true"` scoped under `<html class="js">`, never `display: none`), modern reveal presets (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.trig-delay-*`), RTL-mirrored logical directions (`data-trig-direction="start"` / `"end"`), harmonic stagger modes (`linear`, `wave`, `center`, `reverse`), pinned sections (`[data-trig-pin]`), multi-step timelines (`[data-trig-timeline]`), interactive filter replays, and accessible **Lenis** smooth scrolling.
+* **ChronoTrig v6.1.0 Scroll Reveals & Smooth Scroll**: Zero-read GPU entrance animations (`data-trig` + `data-trig-once="true"` scoped under `<html class="js">`, `56px` travel / `1.2s` default curve, never `display: none`), modern reveal presets (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.trig-delay-*`), RTL-mirrored logical directions (`data-trig-direction="start"` / `"end"`), harmonic stagger modes (`linear`, `wave`, `center`, `reverse`), pinned sections (`[data-trig-pin]`), multi-step timelines (`[data-trig-timeline]`), `IntersectionObserver`-gated parallax/marquee/progress motion, and accessible **Lenis** smooth scrolling (`setExternalScroll` + `sync()`).
 * **Flexible Page Canvas & Atmospheric Blog Heroes**: Static `pages` schema defaults to `hero: 'none'` and `container: 'canvas'` for complete design freedom (`<PageSection>`, `hero: 'minimal' | 'default'`, `container: 'contained' | 'prose'`, `flushTop`, or bespoke Astro templates via `template: '<name>'` in `client/templates/index.ts`), while `blog` posts share a full-bleed defocused `PageHero.astro` backdrop shaped by vertical scrims that read identically in LTR and RTL.
 * **Optimized Image Pipeline & Production Caching**: Every picture is served through Astro's image pipeline (WebP output, responsive `srcset`/`sizes`), plus link hover prefetch (`astro.config.mjs`), Cloudflare/Netlify security & cache rules (`public/_headers`), and Nginx reference configuration (`docs/deploy/nginx.conf`).
 * **Frosted-Glass Design System**: The header, its icon controls, buttons (`Button.astro`), and chips are defined once in `src/styles/global.css` alongside an AA-contrast OKLCH semantic palette (`primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, `error`), extensible in `client/styles.css`.
@@ -109,7 +109,7 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   └── deploy/nginx.conf      # Production Nginx caching, gzip & localized 404 reference config
 ├── messages/core/             # Upstream core UI dictionaries (en.json, fa.json)
 ├── starter-kit/               # Optional demo pages, blog posts, projects, assets & nav (`npm run starter:seed`)
-├── public/                    # Static assets (_headers, favicons, browser icons, chronotrig.min.js, chronotrig.esm.js)
+├── public/                    # Static assets (_headers, favicons, browser icons, chronotrig.min.js)
 ├── scripts/                   # Developer automation CLI, health checks, Pagefind indexing & upstream check
 │   └── lib/                   # Shared config, blueprints, merge-messages, prompt, frontmatter, validation, content-type & artwork helpers
 ├── src/
@@ -135,7 +135,7 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   │   ├── DevThemePreview.astro # DEV-only interactive Theme & Font Studio (excluded from dist/)
 │   │   ├── Seo.astro          # Canonical links, reciprocal hreflang tags & OG card wiring
 │   │   ├── TopLoadingBar.astro # Page transition progress bar (reduced-motion aware)
-│   │   └── …                  # + 19 section blocks & 3 UI primitives (LandingHeroSplit … ContactSplitSection, UiBadge, UiAlert, AvatarGroup)
+│   │   └── …                  # + 23 section blocks, 13 UI primitives & 4 interactive/motion showcase blocks (LandingHeroSplit … ParallaxSection, UiBadge … SocialLinks)
 │   ├── content/               # Multilingual Content Collections
 │   │   ├── pages/             # Static pages: home, about, features, pricing
 │   │   │   └── <group>/       # Holds <locale>.mdx files + group hero/OG artwork
@@ -187,12 +187,12 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   │   └── tabler-icons-astro.d.ts # Types for per-icon deep imports in Icon.astro
 │   ├── paraglide/             # Generated Paraglide code (gitignored, do not edit)
 │   ├── scripts/
-│   │   ├── lenis.ts           # Accessible smooth scroll lifecycle (ClientRouter + anchor sync + trigScroll)
-│   │   └── chronotrig.ts      # ChronoTrig v5.2.0 coordinator (setupChronoTrig + refreshChronoTrig)
+│   │   ├── lenis.ts           # Accessible smooth scroll lifecycle (ClientRouter + anchor sync + ChronoTrig sync)
+│   │   └── chronotrig.ts      # ChronoTrig v6.1.0 coordinator (setupChronoTrig + refreshChronoTrig)
 │   ├── styles/                # Global & prose stylesheets
-│   │   ├── global.css         # Tailwind v4 @theme static inline + .layout-container + overflow-x: clip + semantic palette + glass
+│   │   ├── global.css         # Tailwind v4 @theme static inline + .layout-container + overflow-x: clip + .hero-glow-* + semantic palette + glass
 │   │   ├── prose.css          # Article formatting with RTL isolation for code blocks
-│   │   └── chronotrig.css     # ChronoTrig v5.2.0 .js [data-trig] presets, modifiers, staggers, pins & print/opt-out flattening
+│   │   └── chronotrig.css     # ChronoTrig v6.1.0 .js [data-trig] presets, modifiers, staggers, pins & print/opt-out flattening
 │   └── views/
 │       ├── PageView.astro     # Flexible static page renderer (canvas / contained / prose / custom template)
 │       ├── BlogIndexView.astro # Blog listing page
@@ -438,15 +438,15 @@ Icon-only controls go through one component, so their size, shape and accessible
 
 The glass palette is tokenised (`--color-glass`, `--color-glass-control`, `--color-glass-border`, `--color-glass-hover`), so the translucency of the whole site is tuned from one place.
 
-### 7. ChronoTrig v5.2.0 Scroll Reveals, Harmonic Staggers, Pins & Timelines
+### 7. ChronoTrig v6.1.0 Scroll Reveals, Harmonic Staggers, Pins & Timelines
 Entrance animations are scoped strictly under `<html class="js">` (`src/styles/chronotrig.css` + `src/scripts/chronotrig.ts`), never `display: none` or unscoped `opacity-0`, ensuring zero layout shift (CLS = 0) and 100% visibility when JavaScript is disabled or printed:
 
-* **Single elements & reveal-once**: Add `data-trig` (optionally `data-trig-once="true"` to trigger once and unobserve cleanly) plus optional v5.2.0 presets/modifiers (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, `.trig-delay-100`..`1000`, `.trig-duration-*`, `.trig-ease-*`). In `.mdx` content, `.prose h2/h3/h4` are tagged automatically. Default reveals travel 56px over `1.2s` (`cubic-bezier(0.22, 1, 0.36, 1)`) after a `--trig-reveal-delay` (`180ms`) hold.
+* **Single elements & reveal-once**: Add `data-trig data-trig-once="true"` to trigger once, release `will-change: auto`, and unobserve cleanly, paired with optional v6.1.0 presets/modifiers (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, `.trig-delay-100`..`1000`, `.trig-duration-*`, `.trig-ease-*`). In `.mdx` content, `.prose h2/h3/h4` are tagged automatically. Standard reveals travel **`56px`** over `1.2s` (`cubic-bezier(0.16, 1, 0.3, 1)`, `--trig-reveal-delay: 0ms`), while `.fadeInUpSm` / `.blurIn` travel `18px`.
 * **RTL-aware horizontal vectors**: Always use `data-trig-direction="start"` / `"end"` or `.clipStart` instead of physical `left` / `right` so horizontal motion mirrors automatically in `fa` and `ar`.
-* **Harmonic staggered grids (`data-trig-stagger`)**: Put `data-trig-stagger` (plus optional `data-trig-stagger-mode="linear|wave|center|reverse"`, `data-trig-stagger-delay="0.08"`, `data-trig-once="true"`) on the parent grid/list. ChronoTrig targets `[data-trig-stagger-item], :scope > *`, seeds `--stagger-index` / `--stagger-delay` / `--stagger-total`, and activates children via `.trig-stagger-active`.
+* **Harmonic staggered grids (`data-trig-stagger`)**: Put `data-trig-stagger data-trig-once="true"` (plus optional `data-trig-stagger-mode="linear|wave|center|reverse"`, `data-trig-stagger-delay="0.08"`) on the parent grid/list. ChronoTrig targets `[data-trig-stagger-item], :scope > *`, seeds `--stagger-index` / `--stagger-delay` / `--stagger-total`, activates children via `.trig-stagger-active`, and settles transitions with `.trig-stagger-settled` for instant hover response.
 * **Pinned stages & timelines**: Use `[data-trig-pin]` (`data-trig-pin-distance`, `data-trig-pin-horizontal="true"` + `[data-trig-pin-track]`, `data-trig-pin-media`) and `[data-trig-timeline]`. `src/styles/global.css` sets `body { overflow-x: clip; }` (never `overflow-x: hidden`) so `position: sticky` inside pinned containers never breaks.
 * **Interactive filter replays**: Filtering only toggles `card.hidden`, so reset the grid's reveal classes first (`replayGridReveals()` in `BlogIndexView.astro`) and then call `refreshChronoTrig()` from `@/scripts/chronotrig` (invokes `window.chronoTrig.refresh()`); existing cards then replay alongside newly appended ones. Never replay on the initial render. Add `[data-card][hidden] { display: none !important; }` when toggling `card.hidden` on flex/grid cards.
-* **Motion preference**: `BaseLayout.astro`'s `<head>` `resolveMotion()` checks `localStorage.motion` and otherwise honors OS `prefers-reduced-motion: reduce`, setting `html[data-motion="reduced"]`. `chronotrig.css`, `lenis.ts` (syncing via `trigScroll?.()`), `global.css`, ChronoTrig's live `respectReducedMotion` watcher (`body.chronotrig-mobile-disabled`), and `@media print` all flatten or disable motion cleanly.
+* **Motion preference & viewport gating**: `BaseLayout.astro`'s `<head>` `resolveMotion()` checks `localStorage.motion` and otherwise honors OS `prefers-reduced-motion: reduce`, setting `html[data-motion="reduced"]`. `chronotrig.css`, `lenis.ts` (`lerp: 0.125`, calling `setExternalScroll(true)` + `sync()`), `global.css`, ChronoTrig's live `respectReducedMotion` watcher, and `@media print` flatten or disable motion cleanly. Off-screen parallax, counters, and marquees pause automatically via `IntersectionObserver`, and decorative glows use `.hero-glow-*` radial gradients instead of `blur-2xl`/`blur-3xl`.
 * **Lenis nested scroll isolation**: Add `data-lenis-prevent` to any scrollable modal, drawer, or overflow panel (`overflow-y-auto`).
 
 ---
@@ -462,7 +462,7 @@ npm run upstream:check
 # 2. TypeScript Strict Check
 npm run lint
 
-# 3. Vitest Unit Tests (25 files, 260 tests: paths, ICU, routes, blocks, theme, schema, OG, and CLI helpers)
+# 3. Vitest Unit Tests (25 files, 262 tests: paths, ICU, routes, blocks, theme, schema, OG, ChronoTrig, and CLI helpers)
 npm test
 
 # 4. i18n Parity, Placeholder, Content & Route Audit

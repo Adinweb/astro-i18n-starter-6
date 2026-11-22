@@ -241,8 +241,8 @@ const isHeroSurface = surface === 'hero';
                     widths={[640, 960, 1280]}
                     sizes="(min-width: 1024px) 46vw, 94vw"
                     class="aspect-[16/10] w-full object-cover"
-                    loading="eager"
-                    fetchpriority="high"
+                    loading={compact ? 'lazy' : 'eager'}
+                    fetchpriority={compact ? undefined : 'high'}
                   />
                 </div>
               )

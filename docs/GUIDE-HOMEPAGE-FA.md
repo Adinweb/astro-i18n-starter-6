@@ -231,12 +231,12 @@ import Button from '@/components/Button.astro';
 >
   <div
     aria-hidden="true"
-    class="pointer-events-none absolute inset-x-0 -top-24 -z-10 mx-auto h-80 max-w-3xl rounded-full bg-primary/10 blur-3xl"
+    class="hero-glow-primary opacity-45"
   ></div>
 
   <div class="layout-container">
     <div class="grid gap-10 lg:grid-cols-12 lg:items-center">
-      <div class="lg:col-span-7" data-trig>
+      <div class="lg:col-span-7" data-trig data-trig-once="true">
         <p class="section-kicker">طراحی و توسعه</p>
         <h1 id="page-hero-title" class="mt-3 text-balance text-4xl font-extrabold leading-[1.08] tracking-tight text-fg sm:text-5xl lg:text-6xl">
           برند شما، سایت شما
@@ -249,7 +249,7 @@ import Button from '@/components/Button.astro';
           <Button href="#services" variant="secondary" size="lg">خدمات</Button>
         </div>
       </div>
-      <div class="lg:col-span-5" data-trig data-trig-direction="end">
+      <div class="lg:col-span-5" data-trig data-trig-direction="end" data-trig-once="true">
         <!-- تصویر/کارت سمت مقابل هیرو -->
       </div>
     </div>
@@ -270,8 +270,8 @@ import Button from '@/components/Button.astro';
   <p class="section-kicker">خدمات</p>
   <h2 class="mt-3 text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">چه کاری انجام می‌دهیم</h2>
 
-  <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-trig-stagger data-trig-stagger-delay="0.08">
-    <article data-trig class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+  <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-trig-stagger data-trig-stagger-delay="0.06" data-trig-once="true">
+    <article data-trig data-trig-once="true" class="rounded-2xl border border-border bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
       <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">
         <Icon name="globe" size={20} />
       </span>
@@ -368,9 +368,9 @@ const services = [
   </section>
 
   <PageSection spacing="lg">
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-trig-stagger>
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-trig-stagger data-trig-once="true">
       {services.map((s) => (
-        <article data-trig class="rounded-2xl border border-border bg-surface p-6">
+        <article data-trig data-trig-once="true" class="rounded-2xl border border-border bg-surface p-6">
           <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">
             <Icon name={s.icon} size={20} />
           </span>
@@ -431,7 +431,7 @@ flushTop: true
 
 ## ۷. بلوک‌های آماده (کامپوننت‌های شرکتی، لندینگ و رابط کاربری)
 
-به جای کپی کردن HTML خام، از **۲۲ بلوک آمادهٔ پروژه** (۱۹ بلوک سکشن + ۳ پریمیتیو رابط کاربری، الهام‌گرفته از PrebuiltUI) استفاده کنید. همهٔ آن‌ها با توکن‌های OKLCH، خواص منطقی CSS، Paraglide i18n، آیکون‌های `<Icon>` و انیمیشن‌های ChronoTrig (`data-trig` / `data-trig-stagger`) ساخته شده‌اند، حتی **بدون پاس دادن prop** با متن‌های بومی کار می‌کنند و با `contained` داخل صفحات متنی هم قابل استفاده‌اند:
+به جای کپی کردن HTML خام، از **۳۶ بلوک آمادهٔ پروژه** (**۲۳ بلوک سکشن + ۱۳ پریمیتیو رابط کاربری**، الهام‌گرفته از PrebuiltUI و تحت پوشش `blocks.test.ts`) به‌همراه **۴ بلوک تعاملی/حرکتی** (`BentoGrid`، `LatestPostsCarousel`، `SwipeableTabs`، `TestimonialMarquee`) استفاده کنید. همهٔ آن‌ها با توکن‌های OKLCH، خواص منطقی CSS، Paraglide i18n، آیکون‌های `<Icon>`، تنظیمات بهینهٔ ChronoTrig (`data-trig-once="true"`) و `loading="lazy"` ساخته شده‌اند، حتی **بدون پاس دادن prop** با متن‌های بومی کار می‌کنند و با `contained` داخل صفحات متنی هم قابل استفاده‌اند:
 
 | کامپوننت | کاربرد در لندینگ / سایت شرکتی |
 | --- | --- |
@@ -579,6 +579,7 @@ import CtaBanner from '@/components/CtaBanner.astro';
   `folder`، `compass`، `palette`، `book-open`، `file`.
   آیکون جدید مشتری: نام را در [client/icons.ts](../client/icons.ts) ثبت و در [client/ClientIcons.astro](../client/ClientIcons.astro) با import تک‌فایلی از `@tabler/icons-astro/dist/esm/icons/<name>.mjs` وصل کنید تا نیازی به ویرایش هسته نباشد (هرگز از barrel بستهٔ `@tabler/icons-astro` import نکنید).
 - متن دکمه‌های مشترک را با `m.common_…` از Paraglide بگیرید، نه رشتهٔ ثابت.
+- **کارایی و نرمی اسکرول**: روی بلوک‌های استاتیک همیشه `data-trig-once="true"` بگذارید، برای هاله‌های تزئینی به‌جای `blur-2xl`/`blur-3xl` از `.hero-glow-primary` یا `.hero-glow-accent` استفاده کنید، `backdrop-blur` را تو در تو نچینید و تصاویر زیرِ خط دید (Below the fold) را با `loading="lazy"` بارگذاری کنید.
 
 ---
 
@@ -595,7 +596,7 @@ import heroShot from '@/assets/studio/shot.jpg';
 ```
 
 ```html
-<Image src={heroShot} alt="توضیح دقیق تصویر" widths={[480, 768, 1280]} sizes="(min-width: 1024px) 50vw, 100vw" class="rounded-2xl border border-border" />
+<Image src={heroShot} alt="توضیح دقیق تصویر" widths={[480, 768, 1280]} sizes="(min-width: 1024px) 50vw, 100vw" loading="lazy" class="rounded-2xl border border-border" />
 ```
 
 - `alt` توصیفی بنویسید؛ برای تصویر تزئینی `alt=""` (نه حذف ویژگی).
@@ -682,7 +683,7 @@ import * as m from '@/paraglide/messages';
 ```bash
 npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
 npm run lint           # messages + astro check + tsc (خطای تایپ/شمای محتوا اینجا گیر می‌افتد)
-npm test               # ۲۵ فایل تست واحد (۲۶۰ تست)
+npm test               # ۲۵ فایل تست واحد (۲۶۲ تست)
 npm run audit:i18n     # هم‌ترازی زبان‌ها، کلیدها، مسیرها، RTL
 npm run doctor         # بررسی سلامت پروژه بدون بیلد
 npm run build          # Astro + Pagefind

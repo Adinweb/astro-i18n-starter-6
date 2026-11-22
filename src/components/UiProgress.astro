@@ -3,7 +3,7 @@
  * Accessible progress indicator inspired by PrebuiltUI progress-bar components.
  * Supports linear `bar`, circular CSS `conic-gradient` `ring` (zero raw SVG), and
  * multi-milestone `steps` variants with `formatNumber()` numerals, OKLCH roles,
- * Paraglide defaults, and ChronoTrig v5.2.0 entrance + fill/sweep/count-up animations.
+ * Paraglide defaults, and ChronoTrig v6.1.0 entrance + compositor fill/sweep animations.
  */
 import Icon from '@/components/Icon.astro';
 import { formatNumber } from '@/i18n/format';
@@ -249,20 +249,6 @@ const RING_SIZES = {
     }
   }
 
-  function getEffectiveOpacity(el: HTMLElement): number {
-    let minOpacity = 1;
-    let curr: HTMLElement | null = el;
-    while (curr && curr !== document.documentElement) {
-      const parsed = Number.parseFloat(window.getComputedStyle(curr).opacity);
-      if (Number.isFinite(parsed) && parsed < minOpacity) {
-        minOpacity = parsed;
-      }
-      if (minOpacity <= 0.05) return minOpacity;
-      curr = curr.parentElement;
-    }
-    return minOpacity;
-  }
-
   function getStaggerFactor(index: number, total: number, mode: string | null): number {
     if (mode === 'reverse') return total - 1 - index;
     if (mode === 'center') return Math.abs(index - (total - 1) / 2);
@@ -272,9 +258,9 @@ const RING_SIZES = {
     return index;
   }
 
-  function computePostVisibleDelayMs(root: HTMLElement): number {
+  function computeStartDelayMs(root: HTMLElement): number {
     const staggerParent = root.closest<HTMLElement>('[data-trig-stagger]');
-    if (!staggerParent) return 40;
+    if (!staggerParent) return 140;
     const siblings = Array.from(
       staggerParent.querySelectorAll<HTMLElement>(
         '[data-ui-progress-bar], [data-ui-progress-ring], [data-ui-progress-steps]'
@@ -283,37 +269,17 @@ const RING_SIZES = {
     const total = Math.max(1, siblings.length);
     const idx = Math.max(0, siblings.indexOf(root));
     const mode = staggerParent.getAttribute('data-trig-stagger-mode');
-    const rawStep = Number.parseFloat(staggerParent.dataset.trigStaggerDelay || '0.1');
+    const rawStep = Number.parseFloat(staggerParent.dataset.trigStaggerDelay || '0.08');
     const stepMs =
       Number.isFinite(rawStep) && rawStep >= 0
-        ? Math.max(90, Math.min(Math.round(rawStep * 1000), 160))
-        : 110;
-    const desiredDelayMs = Math.round(getStaggerFactor(idx, total, mode) * stepMs);
-
-    // ChronoTrig already offsets the CSS entrance by --stagger-delay; subtract it
-    // so we don't wait twice on desktop while keeping crisp cascades on <1024px viewports.
-    const cssDelaySec = Number.parseFloat(
-      window.getComputedStyle(root).getPropertyValue('--stagger-delay') || '0'
-    );
-    const cssDelayMs = Number.isFinite(cssDelaySec) ? Math.max(0, cssDelaySec * 1000) : 0;
-    return Math.max(35, desiredDelayMs - cssDelayMs);
+        ? Math.max(60, Math.min(Math.round(rawStep * 1000), 140))
+        : 80;
+    return 140 + Math.round(getStaggerFactor(idx, total, mode) * stepMs);
   }
 
-  function isInComfortZone(el: HTMLElement): boolean {
-    const rect = el.getBoundingClientRect();
-    if (rect.height <= 0 && rect.width <= 0) return false;
-    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
-    const docH = document.documentElement.scrollHeight || 0;
-    const scrollY = window.scrollY || window.pageYOffset || 0;
-    const nearDocBottom = scrollY + vh >= docH - 24;
-    const enterLine = nearDocBottom ? vh : vh * 0.88;
-    return rect.top < enterLine && rect.bottom > 24;
-  }
-
-  function isCompletelyOffscreen(el: HTMLElement): boolean {
-    const rect = el.getBoundingClientRect();
-    const vh = window.innerHeight || document.documentElement.clientHeight || 800;
-    return rect.bottom <= 0 || rect.top >= vh;
+  interface ProgressController {
+    onIntersectChange: (intersecting: boolean) => void;
+    cleanup: () => void;
   }
 
   function initUiProgressAnimations() {
@@ -321,7 +287,8 @@ const RING_SIZES = {
       '[data-ui-progress-bar], [data-ui-progress-ring], [data-ui-progress-steps]'
     );
 
-    const evaluators: Array<() => void> = [];
+    const controllers = new Map<HTMLElement, ProgressController>();
+    let io: IntersectionObserver | null = null;
 
     items.forEach((root) => {
       if (root.dataset.progressBound === 'true') return;
@@ -338,20 +305,25 @@ const RING_SIZES = {
       const once = root.dataset.progressOnce !== 'false' && containerOnce !== 'false';
       const valueEl = root.querySelector<HTMLElement>('[data-ui-progress-value]');
       const ringTrack = root.querySelector<HTMLElement>('[data-ui-progress-ring-track]');
-      const fillEl = root.querySelector<HTMLElement>('[data-ui-progress-fill]');
 
       let rafId = 0;
-      let waitRafId = 0;
       let delayTimer = 0;
       let hasActivated = false;
-      let isWaitingOpacity = false;
+      let isVisible = false;
 
-      const setVisualRatio = (ratio: number) => {
-        const clamped = Math.max(0, Math.min(1, ratio));
-        if (fillEl) {
-          fillEl.style.transform = `scaleX(${clamped.toFixed(4)})`;
+      const cancelPending = () => {
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = 0;
         }
-        const val = clamped * target;
+        if (delayTimer) {
+          window.clearTimeout(delayTimer);
+          delayTimer = 0;
+        }
+      };
+
+      const setNumericVisual = (ratio: number) => {
+        const val = Math.max(0, Math.min(1, ratio)) * target;
         if (ringTrack) {
           ringTrack.style.setProperty('--ui-progress-value', val.toFixed(2));
         }
@@ -360,91 +332,74 @@ const RING_SIZES = {
         }
       };
 
-      const cancelPending = () => {
-        if (rafId) {
-          cancelAnimationFrame(rafId);
-          rafId = 0;
-        }
-        if (waitRafId) {
-          cancelAnimationFrame(waitRafId);
-          waitRafId = 0;
-        }
-        if (delayTimer) {
-          window.clearTimeout(delayTimer);
-          delayTimer = 0;
-        }
-        isWaitingOpacity = false;
-      };
-
       const resetToZero = () => {
         cancelPending();
         hasActivated = false;
         root.removeAttribute('data-progress-active');
-        if (fillEl) {
-          fillEl.style.transform = '';
-        }
-        if (ringTrack) {
-          ringTrack.style.setProperty('--ui-progress-value', '0');
-        }
-        if (valueEl) {
-          valueEl.textContent = `${formatNumber(0, locale)}%`;
-        }
+        setNumericVisual(0);
       };
 
       const completeImmediately = () => {
         cancelPending();
         hasActivated = true;
         root.setAttribute('data-progress-active', 'true');
-        if (fillEl) {
-          fillEl.style.transform = '';
-        }
         if (ringTrack) {
           ringTrack.style.setProperty('--ui-progress-value', String(target));
         }
         if (valueEl) {
           valueEl.textContent = `${formatNumber(target, locale)}%`;
         }
+        if (once) {
+          io?.unobserve(root);
+        }
       };
 
       if (isMotionReduced()) {
         completeImmediately();
+        cleanups.push(() => {
+          delete root.dataset.progressBound;
+        });
         return;
       }
 
-      // Start at 0% until the indicator scrolls cleanly into the visible viewport
       resetToZero();
 
-      const startFillAnimation = () => {
+      if (typeof IntersectionObserver !== 'function') {
+        completeImmediately();
+        return;
+      }
+
+      const startAnimation = () => {
+        if (hasActivated) return;
         if (isMotionReduced()) {
           completeImmediately();
           return;
         }
 
-        const startDelayMs = computePostVisibleDelayMs(root);
+        hasActivated = true;
+        const startDelayMs = computeStartDelayMs(root);
 
         delayTimer = window.setTimeout(() => {
           delayTimer = 0;
+          if (!isVisible && !once) {
+            hasActivated = false;
+            return;
+          }
           if (isMotionReduced()) {
             completeImmediately();
             return;
           }
 
-          if (isSteps) {
-            root.setAttribute('data-progress-active', 'true');
-            return;
-          }
-
-          if (target === 0) {
-            root.setAttribute('data-progress-active', 'true');
-            setVisualRatio(0);
-            return;
-          }
-
-          // Lock visual state at 0 inline before setting data-progress-active so bar never flashes 100%
-          setVisualRatio(0);
           root.setAttribute('data-progress-active', 'true');
 
-          const durationMs = 1150;
+          // Linear bars animate via CSS compositor scaleX() transition; only run RAF if counter or ring needs numeric updates
+          if (isSteps || target === 0 || (!ringTrack && !valueEl)) {
+            if (target === 0) setNumericVisual(0);
+            if (once) io?.unobserve(root);
+            return;
+          }
+
+          const durationMs = 850;
           const startTime = performance.now();
 
           const tick = (now: number) => {
@@ -452,10 +407,13 @@ const RING_SIZES = {
               completeImmediately();
               return;
             }
+            if (!isVisible && !once) {
+              rafId = 0;
+              return;
+            }
             const t = Math.min(1, (now - startTime) / durationMs);
-            // Smooth exponential ease-out matching cubic-bezier(0.22, 1, 0.36, 1)
-            const eased = 1 - Math.pow(1 - t, 3.6);
-            setVisualRatio(eased);
+            const eased = 1 - Math.pow(1 - t, 3.2);
+            setNumericVisual(eased);
             if (t < 1) {
               rafId = requestAnimationFrame(tick);
             } else {
@@ -467,105 +425,50 @@ const RING_SIZES = {
         }, startDelayMs);
       };
 
-      const playAnimation = () => {
-        if (hasActivated || isWaitingOpacity) return;
-        if (isMotionReduced()) {
-          completeImmediately();
-          return;
-        }
-
-        isWaitingOpacity = true;
-        const visibilityTarget =
-          (isSteps ? root.querySelector<HTMLElement>('[data-trig-stagger] > li') : null) ?? root;
-        const waitStartedAt = performance.now();
-
-        const waitUntilVisible = () => {
-          waitRafId = 0;
+      controllers.set(root, {
+        onIntersectChange: (intersecting: boolean) => {
+          isVisible = intersecting;
           if (isMotionReduced()) {
-            completeImmediately();
+            if (!hasActivated) completeImmediately();
             return;
           }
-          if (!isInComfortZone(root) && isCompletelyOffscreen(root)) {
-            isWaitingOpacity = false;
-            return;
-          }
-          const visibleOpacity = getEffectiveOpacity(visibilityTarget);
-          const timedOut = performance.now() - waitStartedAt >= 900;
-          if (visibleOpacity >= 0.75 || timedOut) {
-            isWaitingOpacity = false;
-            hasActivated = true;
-            startFillAnimation();
-            return;
-          }
-          waitRafId = requestAnimationFrame(waitUntilVisible);
-        };
-
-        waitRafId = requestAnimationFrame(waitUntilVisible);
-      };
-
-      const evaluate = () => {
-        if (isMotionReduced()) {
-          if (!hasActivated) completeImmediately();
-          return;
-        }
-        if (!hasActivated) {
-          if (isInComfortZone(root)) {
-            playAnimation();
-          }
-        } else if (!once && isCompletelyOffscreen(root)) {
-          resetToZero();
-        }
-      };
-
-      evaluators.push(evaluate);
-
-      if (typeof IntersectionObserver !== 'function') {
-        completeImmediately();
-        return;
-      }
-
-      const io = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.target === root) {
-              evaluate();
+          if (intersecting) {
+            if (!hasActivated) {
+              startAnimation();
             }
+          } else if (!once && hasActivated) {
+            resetToZero();
           }
         },
-        {
-          root: null,
-          rootMargin: '0px 0px -12% 0px',
-          threshold: [0, 0.1, 0.25],
-        }
-      );
-
-      io.observe(root);
-      cleanups.push(() => {
-        cancelPending();
-        io.disconnect();
-        delete root.dataset.progressBound;
+        cleanup: () => {
+          cancelPending();
+          delete root.dataset.progressBound;
+        },
       });
     });
 
-    if (evaluators.length === 0) return;
+    if (controllers.size === 0 || typeof IntersectionObserver !== 'function') return;
 
-    const evaluateAll = () => {
-      for (const fn of evaluators) {
-        fn();
+    io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          controllers.get(entry.target as HTMLElement)?.onIntersectChange(entry.isIntersecting);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '0px 0px -8% 0px',
+        threshold: 0.15,
       }
-    };
+    );
 
-    const unsubscribeChronoTrig = window.chronoTrig?.subscribe?.(evaluateAll);
-    window.addEventListener('scroll', evaluateAll, { passive: true });
-    window.addEventListener('resize', evaluateAll, { passive: true });
-
-    // Run an initial pass on load (handles landing directly on a hash like #doc-progress)
-    requestAnimationFrame(evaluateAll);
+    controllers.forEach((_, root) => io?.observe(root));
 
     cleanups.push(() => {
-      unsubscribeChronoTrig?.();
-      window.removeEventListener('scroll', evaluateAll);
-      window.removeEventListener('resize', evaluateAll);
+      io?.disconnect();
+      io = null;
+      controllers.forEach((ctrl) => ctrl.cleanup());
+      controllers.clear();
     });
   }
 

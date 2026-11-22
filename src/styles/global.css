@@ -170,8 +170,13 @@ html {
 
 body {
   font-family: var(--font-sans);
-  text-rendering: optimizeLegibility;
   overflow-x: clip;
+}
+
+h1,
+h2,
+h3 {
+  text-rendering: optimizeLegibility;
 }
 
 /* Display font pairing applies to Latin headings/display elements while preserving
@@ -268,7 +273,7 @@ summary::-webkit-details-marker {
   /* A control sitting *inside* the glass bar: translucent, with a hairline
      ring that keeps it readable over any artwork. */
   .glass-control {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-full border border-glass-border bg-glass-control text-muted backdrop-blur-md transition-colors hover:bg-glass-hover hover:text-fg;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full border border-glass-border bg-glass-control text-muted transition-colors hover:bg-glass-hover hover:text-fg;
   }
 
   /* A control sitting on an opaque panel: no fill, no ring until hover. */
@@ -306,7 +311,7 @@ summary::-webkit-details-marker {
   .hero-badge {
     /* Persian and Arabic letters join, so the Latin uppercase tracking is reset
        in RTL the same way `.section-kicker` does it. */
-    @apply inline-flex items-center rounded-full border border-hero-fg/20 bg-scrim px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-hero-fg backdrop-blur-sm rtl:tracking-normal;
+    @apply inline-flex items-center rounded-full border border-hero-fg/20 bg-scrim px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-hero-fg rtl:tracking-normal;
   }
 
   /* Editorial eyebrow label shared across section headers. */

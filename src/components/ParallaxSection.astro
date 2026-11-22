@@ -38,6 +38,7 @@ interface Props {
   height?: 'sm' | 'md' | 'lg';
   overlay?: 'gradient' | 'dark' | 'subtle';
   blur?: boolean;
+  priority?: boolean;
   contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'none' | 'sm' | 'md' | 'lg';
@@ -59,6 +60,7 @@ const {
   height = 'md',
   overlay = 'gradient',
   blur = false,
+  priority = false,
   contained = false,
   surface = 'default',
   spacing = 'md',
@@ -156,7 +158,7 @@ const HEIGHT_CLASSES = {
           sizes={isCard ? '(min-width: 1280px) 1200px, 100vw' : '100vw'}
           format="webp"
           quality={75}
-          loading="eager"
+          loading={priority ? 'eager' : 'lazy'}
           decoding="async"
           class:list={[
             'h-full w-full object-cover',
@@ -298,6 +300,7 @@ const HEIGHT_CLASSES = {
     targetY: number;
     lastWrittenY: number;
     initialized: boolean;
+    isVisible: boolean;
   }
 
   function getNow(): number {
@@ -350,12 +353,15 @@ const HEIGHT_CLASSES = {
     const stageNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-parallax-stage]'));
     if (stageNodes.length === 0) return;
 
+    const hasIO = typeof IntersectionObserver === 'function';
+
     const entries = stageNodes
       .map((stage): ParallaxEntry | null => {
         const media = stage.querySelector<HTMLElement>('[data-parallax-media]');
         if (!media) return null;
         const speedKey = stage.dataset.parallaxSpeed ?? 'medium';
         const amplitude = SPEED_AMPLITUDE_PX[speedKey] ?? SPEED_AMPLITUDE_PX.medium;
+        stage.dataset.parallaxActive = hasIO ? 'false' : 'true';
         return {
           stage,
           media,
@@ -364,11 +370,14 @@ const HEIGHT_CLASSES = {
           targetY: 0,
           lastWrittenY: Number.NaN,
           initialized: false,
+          isVisible: !hasIO,
         };
       })
       .filter((item): item is ParallaxEntry => item !== null);
 
     if (entries.length === 0) return;
+
+    const entryMap = new Map<HTMLElement, ParallaxEntry>(entries.map((e) => [e.stage, e]));
 
     let rafId = 0;
     let snapRafId = 0;
@@ -380,6 +389,7 @@ const HEIGHT_CLASSES = {
       for (const entry of entries) {
         entry.currentY = 0;
         entry.targetY = 0;
+        entry.stage.dataset.parallaxActive = 'false';
         if (!entry.initialized || entry.lastWrittenY !== 0) {
           entry.media.style.setProperty('--parallax-y', '0px');
           entry.lastWrittenY = 0;
@@ -407,6 +417,11 @@ const HEIGHT_CLASSES = {
       let pending = false;
 
       for (const entry of entries) {
+        // Never call getBoundingClientRect() on off-screen stages during scroll ticks
+        if (!snap && !entry.isVisible) {
+          continue;
+        }
+
         const rect = entry.stage.getBoundingClientRect();
         if (rect.height <= 0) {
           continue;
@@ -421,16 +436,16 @@ const HEIGHT_CLASSES = {
         entry.targetY = targetY;
 
         const diff = targetY - entry.currentY;
-        const nextY = snap || Math.abs(diff) <= 0.05 ? targetY : entry.currentY + diff * alpha;
+        const nextY = snap || Math.abs(diff) <= 0.15 ? targetY : entry.currentY + diff * alpha;
         entry.currentY = nextY;
 
-        if (!entry.initialized || Math.abs(nextY - entry.lastWrittenY) >= 0.02) {
+        if (!entry.initialized || Math.abs(nextY - entry.lastWrittenY) >= 0.05) {
           entry.media.style.setProperty('--parallax-y', `${nextY.toFixed(2)}px`);
           entry.lastWrittenY = nextY;
           entry.initialized = true;
         }
 
-        if (Math.abs(targetY - nextY) > 0.05) {
+        if (Math.abs(targetY - nextY) > 0.15) {
           pending = true;
         }
       }
@@ -449,6 +464,9 @@ const HEIGHT_CLASSES = {
     };
 
     const onScrollTick = () => {
+      if (!isMotionReduced() && !entries.some((e) => e.isVisible)) {
+        return;
+      }
       const settled = step(getNow(), false);
       if (!settled && rafId === 0) {
         rafId = requestAnimationFrame(tick);
@@ -467,6 +485,39 @@ const HEIGHT_CLASSES = {
     const onMotionChange = () => {
       step(getNow(), true);
     };
+
+    const intersectionObserver = hasIO
+      ? new IntersectionObserver(
+          (ioEntries) => {
+            let becameVisible = false;
+            const reduced = isMotionReduced();
+            for (const ioEntry of ioEntries) {
+              const entry = entryMap.get(ioEntry.target as HTMLElement);
+              if (!entry) continue;
+              const wasVisible = entry.isVisible;
+              entry.isVisible = ioEntry.isIntersecting;
+              entry.stage.dataset.parallaxActive = ioEntry.isIntersecting && !reduced ? 'true' : 'false';
+              if (ioEntry.isIntersecting && !wasVisible) {
+                becameVisible = true;
+              }
+            }
+            if (becameVisible) {
+              step(getNow(), true);
+            }
+          },
+          {
+            root: null,
+            rootMargin: '180px 0px 180px 0px',
+            threshold: 0,
+          }
+        )
+      : null;
+
+    if (intersectionObserver) {
+      for (const entry of entries) {
+        intersectionObserver.observe(entry.stage);
+      }
+    }
 
     // Initial synchronous snap across all stages (pre-clamps off-screen stages cleanly) + next-frame paint alignment
     step(getNow(), true);
@@ -517,6 +568,7 @@ const HEIGHT_CLASSES = {
       window.removeEventListener('scroll', onScrollTick);
       window.removeEventListener('resize', scheduleSnap);
       window.removeEventListener('load', scheduleSnap);
+      intersectionObserver?.disconnect();
       resizeObserver?.disconnect();
       observer.disconnect();
     };

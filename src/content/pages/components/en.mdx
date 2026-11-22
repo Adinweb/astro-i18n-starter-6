@@ -136,7 +136,7 @@ import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
     name="IconButton"
     category="UI Primitives"
     title="IconButton & Icon"
-    summary="IconButton provides a consistent 36x36px square/circle control with a required accessible aria-label. Icon renders crisp Tabler glyphs from the closed 61-icon registry."
+    summary="IconButton provides a consistent 36x36px square/circle control with a required accessible aria-label. Icon renders crisp Tabler glyphs from the closed 66-icon core registry."
     propsList={[
       { name: "label", type: "string", required: true, description: "Required accessible name mapped to aria-label and title." },
       { name: "icon", type: "IconName", description: "Registered icon key from src/libs/ui/icons.ts." },
@@ -1829,12 +1829,12 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
     name="ChronoTrig Presets"
     category="Motion & Scroll"
     title="Scroll Reveal Presets & RTL Directions"
-    summary="Zero-CLS, print-safe scroll entrances powered by ChronoTrig v5.2.0. All states are scoped under .js, respect html[data-motion='reduced'], and automatically mirror logical directions (start / end / clipStart) in RTL."
+    summary="Zero-CLS, print-safe scroll entrances powered by ChronoTrig v6.1.0 (56px standard reveal travel, 1.2s duration). All states are scoped under .js, respect html[data-motion='reduced'], and automatically mirror logical directions (start / end / clipStart) in RTL."
     propsList={[
       { name: "data-trig", type: "boolean", description: "Registers the element with ChronoTrig's IntersectionObserver." },
       { name: "data-trig-once", type: "'true'", description: "Triggers once, releases will-change, and unobserves for 0% scroll overhead." },
       { name: "data-trig-direction", type: "'start' | 'end'", description: "RTL-safe horizontal entrance from reading start or reading end." },
-      { name: "class presets", type: "'fadeInUpSm' | 'blurIn' | 'clipUp' | 'clipStart' | 'zoomIn'", description: "Ready-made v5.2.0 reveal keyframes and delay/duration utility modifiers." }
+      { name: "class presets", type: "'fadeInUpSm' | 'blurIn' | 'clipUp' | 'clipStart' | 'zoomIn'", description: "Ready-made v6.1.0 reveal keyframes and delay/duration utility modifiers." }
     ]}
     usage={`<!-- Modern reveal presets (one-shot) -->
 <div class="fadeInUpSm" data-trig data-trig-once="true">Subtle 18px reveal</div>
@@ -2001,15 +2001,15 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
         secondaryCta={null}
       >
         <div class="mx-auto grid max-w-2xl grid-cols-3 gap-3 text-center">
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/85 px-4 py-3">
             <p class="text-lg font-extrabold text-accent tabular-nums">60fps</p>
             <p class="text-xs text-hero-fg/85">Compositor Only</p>
           </div>
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/85 px-4 py-3">
             <p class="text-lg font-extrabold text-hero-fg tabular-nums">Zero CLS</p>
             <p class="text-xs text-hero-fg/85">Overscan Buffer</p>
           </div>
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/65 px-4 py-3 backdrop-blur-sm">
+          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/85 px-4 py-3">
             <p class="text-lg font-extrabold text-hero-fg tabular-nums">RTL/LTR</p>
             <p class="text-xs text-hero-fg/85">Logical Scrims</p>
           </div>

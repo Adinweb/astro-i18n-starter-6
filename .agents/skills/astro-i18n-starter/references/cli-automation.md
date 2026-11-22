@@ -31,35 +31,36 @@ npm run site:init -- [--name="Acme Studio"] [--short-name="Acme"] [--desc="..."]
 
 ### 2.1 Static Pages (`new:page`)
 ```bash
-npm run new:page <page-key> -- [--title="<Title>"] [--desc="<Desc>"] [--from=<locale>] [--preset=standard|landing] [--hero=none|minimal|default] [--container=canvas|contained|prose] [--image=<path>|none] [--publish] [--slug:<locale>="<native-slug>"]
+npm run new:page <page-key> -- [--title="<Title>"] [--desc="<Desc>"] [--title:<locale>="..."] [--desc:<locale>="..."] [--slug:<locale>="<native-slug>"] [--from=<locale>] [--preset=standard|landing] [--hero=none|minimal|default] [--container=canvas|contained|prose] [--image=<path>|none] [--data='{...}'|--file=copy.json] [--publish]
 ```
 * **Files Created**: `src/content/pages/<page-key>/<locale>.mdx` across all active locales in `client/locales.json` (`en.mdx`, `fa.mdx` out of the box) + `./<page-key>.png`.
 * **Three Presentation Layers**:
   - Content schema (`src/content.config.ts`): `hero: 'none'`, `container: 'canvas'`.
   - Standard CLI scaffold (`--preset=standard`, default): `hero: 'default'`, `container: 'contained'`.
   - Landing preset (`--preset=landing`): `hero: 'none'`, `container: 'canvas'`, `flushTop: true` — scaffolds an MDX landing page composed with `<LandingHeroSplit>`, `<ProofStatsRow>`, `<BentoCapabilities>`, `<FaqAccordion>`, and `<CtaBanner>`.
-* **Dictionary Key**: Automatically registers `nav_<page-key>` across `client/messages/*.json` and prints the follow-up. The key is only a label — the page appears in a menu once it is added to `CLIENT_PAGE_ITEMS` (header + drawer) or to `getClientFooterColumns` / `getClientLegalNavigation` in `client/navigation.ts`.
+* **Dictionary Key**: Automatically registers `nav_<page-key>` across `client/messages/*.json` and prints the follow-up. The key is only a label — the page appears in a menu once it is added to `CLIENT_PAGE_ITEMS` (header + drawer) or to `getClientFooterColumns` / `getClientLegalNavigation` in `client/navigation.ts` (pass `--no-nav` / `--skip-nav` when scaffolding pages intentionally excluded from `nav_*`).
 * **Publication State**:
   - Default: Only the source locale (`--from`, defaults to `DEFAULT_LOCALE`) is published (`draft: false`); other locales remain `draft: true` until translated.
-  - `--publish` / `--draft=false`: Publishes locales that have real translations. Locales retaining `[TODO: ...]` placeholders remain drafts. The body is still the localized "content coming soon" sentence, so the command warns and `npm run smoke` fails while that sentence is in `dist/`.
-* **Placeholder Slugs**: the source locale owns the group slug (`contact`); every other locale starts with `contact-<locale>` so each has a valid route. The command prints those placeholders with the fix (`--update --slug:fa="<native-slug>"`) and `npm run doctor` keeps reporting any that are still in the content — they build, but `/fa/contact-fa/` is not a URL to ship.
+  - `--publish` / `--draft=false`: Publishes locales that have real translations (`--title:<locale>` / `--desc:<locale>` or `--data`). Locales retaining `[TODO: ...]` placeholders remain drafts. The body is still the localized "content coming soon" sentence, so the command warns and `npm run smoke` fails while that sentence is in `dist/`.
+* **Placeholder Slugs**: the source locale owns the group slug (`contact`); every other locale starts with `contact-<locale>` so each has a valid route. Pass `--slug:fa="<native-slug>"` at creation time or fix via `--update --slug:fa="<native-slug>"` — `npm run doctor` reports any remaining placeholder slugs.
 * **Updating Frontmatter without Body Overwrite**:
   ```bash
-  npm run new:page <page-key> -- --update --sync-frontmatter --title="<New Title>" --hero=minimal --container=contained
+  npm run new:page <page-key> -- --update --sync-frontmatter --title="<New Title>" --desc="<Meta Desc>" --slug:fa="<native-slug>" --hero=minimal --container=contained
   ```
   `--update` preserves existing markdown content while `--sync-frontmatter` aligns structural/shared frontmatter (`image`, `hero`, `container`, `flushTop`, `template`) across all locale files.
 
 ### 2.2 Blog Posts (`new:post`)
 ```bash
-npm run new:post <group-slug> -- [--title="<Title>"] [--from=<locale>] [--publish] [--category=<cat>] [--tags=<tags>] [--image=<path>|none]
+npm run new:post <group-slug> -- [--title="<Title>"] [--desc="<Desc>"] [--title:<locale>="..."] [--desc:<locale>="..."] [--slug:<locale>="<native-slug>"] [--date="YYYY-MM-DD"] [--from=<locale>] [--category=<cat>] [--tags=<tags>] [--image=<path>|none] [--clone-from=<group>] [--data='{...}'|--file=copy.json] [--publish]
 ```
 * **Files Created**: `src/content/blog/<group-slug>/<locale>.mdx` across all active locales + `./<group-slug>.png`.
+* **SEO-Ready Creation Pattern**: Pass localized `--title:<locale>`, `--desc:<locale>` (~140–160 chars), native `--slug:<locale>`, `--category`, and `--tags` immediately on scaffold, then add localized taxonomy labels via `npm run i18n:add-batch` (`blog_category_<key>`, `blog_tag_<key>`), write the prose body, and optionally set `author` / `updatedAt` in frontmatter.
 * **Cloning Body**: Use `--clone-from=<existing-group>` to clone the body copy from another post; without it the body is the scaffold sentence that `npm run smoke` refuses to publish.
-* **Placeholder Slugs**: non-source locales start with `<group>-<locale>`; the command lists them with the `--update --slug:<locale>=` fix, and `npm run doctor` reports any leftovers.
+* **Placeholder Slugs**: non-source locales start with `<group>-<locale>`; pass `--slug:<locale>="..."` directly or update later with `--update --slug:<locale>="..."`. `npm run doctor` reports any leftovers.
 * **Taxonomy**: Validates categories and tags against ASCII lowercase rules (`/^[a-z0-9]+(?:-[a-z0-9]+)*$/`).
 * **Updating Frontmatter**:
   ```bash
-  npm run new:post <group-slug> -- --update --sync-frontmatter --title="<New Title>"
+  npm run new:post <group-slug> -- --update --sync-frontmatter --title="<New Title>" --desc="<Meta Desc>" --date="2026-11-22"
   ```
   Synchronizes shared taxonomy/date/image/author frontmatter across all active locales without overwriting localized body prose.
 

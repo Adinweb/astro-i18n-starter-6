@@ -37,6 +37,7 @@ export function destroyLenis(): void {
   }
   if (typeof window !== 'undefined') {
     window.__lenisInstance = null;
+    window.chronoTrig?.setExternalScroll?.(false);
   }
 }
 
@@ -161,6 +162,7 @@ export function initLenis(): void {
   });
 
   window.__lenisInstance = lenis;
+  window.chronoTrig?.setExternalScroll?.(true);
 }
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {

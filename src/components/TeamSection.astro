@@ -134,6 +134,7 @@ const gridColsClass =
       resolvedMembers.map((member) => (
         <article
           data-trig
+          data-trig-once="true"
           class:list={[
             'group flex flex-col overflow-hidden rounded-2xl border border-border transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md',
             cardSurface,
@@ -146,6 +147,7 @@ const gridColsClass =
                 alt={member.avatarAlt ?? member.name}
                 widths={[400, 720]}
                 sizes="(min-width: 1024px) 28vw, (min-width: 640px) 45vw, 94vw"
+                loading="lazy"
                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               />
             </div>

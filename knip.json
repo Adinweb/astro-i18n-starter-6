@@ -4,7 +4,7 @@
     "src/pages/**/*.{astro,ts}",
     "src/content/**/*.mdx",
     "client/**/*.{astro,ts}",
-    "src/components/{HomeHero,SectionHeader,ComponentDoc,UiBadge,UiAlert,AvatarGroup,Breadcrumbs,UiPagination,UiModal,UiTooltip,UiProgress,UiSwitch,UiCheckbox,UiInput,UiDropdown,SocialLinks,LandingHeroSplit,BentoCapabilities,ProofStatsRow,FaqAccordion,CtaBanner,PricingSection,TestimonialGrid,TeamSection,PartnerLogos,NewsletterBanner,PromoBanner,AboutSplitSection,ProcessSteps,FeatureTabsSection,ComparisonTable,FeatureCardGrid,ImageGallerySection,LatestPostsSection,ContactSplitSection,CarouselSection,ProductShowcaseGrid,AuthFormCard}.astro",
+    "src/components/{HomeHero,SectionHeader,ComponentDoc,UiBadge,UiAlert,AvatarGroup,Breadcrumbs,UiPagination,UiModal,UiTooltip,UiProgress,UiSwitch,UiCheckbox,UiInput,UiDropdown,SocialLinks,LandingHeroSplit,BentoCapabilities,BentoGrid,ParallaxSection,ProofStatsRow,FaqAccordion,CtaBanner,PricingSection,TestimonialGrid,TestimonialMarquee,TeamSection,PartnerLogos,NewsletterBanner,PromoBanner,AboutSplitSection,ProcessSteps,FeatureTabsSection,SwipeableTabs,ComparisonTable,FeatureCardGrid,ImageGallerySection,LatestPostsSection,ContactSplitSection,CarouselSection,ProductShowcaseGrid,AuthFormCard}.astro",
     "scripts/**/*.mjs",
     "src/**/*.test.ts"
   ],

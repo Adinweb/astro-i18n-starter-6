@@ -194,10 +194,26 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
   import AutoScroll from 'embla-carousel-auto-scroll';
 
   const activeInstances: EmblaCarouselType[] = [];
+  const marqueeCleanups: Array<() => void> = [];
+
+  function isMotionReduced(): boolean {
+    if (
+      document.documentElement.dataset.motion === 'reduced' ||
+      document.body.classList.contains('chronotrig-mobile-disabled')
+    ) {
+      return true;
+    }
+    try {
+      return Boolean(window.chronoTrig?.isDisabled?.());
+    } catch {
+      return false;
+    }
+  }
 
   function initTestimonialMarquees() {
     const roots = document.querySelectorAll<HTMLElement>('[data-embla-marquee]');
     const isRtl = document.documentElement.dir === 'rtl';
+    const reduced = isMotionReduced();
 
     roots.forEach((root) => {
       if (root.dataset.bound === 'true') return;
@@ -216,20 +232,65 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
         direction: (isRtl ? 'rtl' : 'ltr') as 'rtl' | 'ltr',
       };
 
-      const autoScrollOptions = {
-        speed,
-        startDelay: 500,
-        stopOnInteraction: false,
-        stopOnMouseEnter: true,
-      };
+      const hasIO = typeof IntersectionObserver === 'function';
+      const plugins = reduced
+        ? []
+        : [
+            AutoScroll({
+              speed,
+              startDelay: 400,
+              playOnInit: !hasIO,
+              stopOnInteraction: false,
+              stopOnMouseEnter: true,
+            }),
+          ];
 
-      const embla = EmblaCarousel(viewport, emblaOptions, [AutoScroll(autoScrollOptions)]);
-
+      const embla = EmblaCarousel(viewport, emblaOptions, plugins);
       activeInstances.push(embla);
+
+      const autoScroll = embla.plugins().autoScroll as
+        | { play?: (delay?: number) => void; stop?: () => void }
+        | undefined;
+
+      let io: IntersectionObserver | null = null;
+      if (!reduced && autoScroll && hasIO) {
+        io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting && !isMotionReduced()) {
+                autoScroll.play?.();
+              } else {
+                autoScroll.stop?.();
+              }
+            }
+          },
+          { root: null, rootMargin: '120px 0px', threshold: 0 }
+        );
+        io.observe(root);
+      }
+
+      const motionObserver = new MutationObserver(() => {
+        if (isMotionReduced()) {
+          autoScroll?.stop?.();
+        }
+      });
+      motionObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-motion'],
+      });
+
+      marqueeCleanups.push(() => {
+        io?.disconnect();
+        motionObserver.disconnect();
+        delete root.dataset.bound;
+      });
     });
   }
 
   function destroyTestimonialMarquees() {
+    while (marqueeCleanups.length > 0) {
+      marqueeCleanups.pop()?.();
+    }
     while (activeInstances.length > 0) {
       activeInstances.pop()?.destroy();
     }

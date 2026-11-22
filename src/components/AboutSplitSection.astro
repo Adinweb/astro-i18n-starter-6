@@ -125,6 +125,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
   <div class:list={[hasMedia ? 'grid items-center gap-10 lg:grid-cols-12 lg:gap-12' : 'max-w-3xl']}>
     <div
       data-trig
+      data-trig-once="true"
       data-trig-direction={mediaFirst ? 'end' : 'start'}
       class:list={[hasMedia && 'lg:col-span-6', mediaFirst && hasMedia && 'lg:order-2']}
     >
@@ -219,9 +220,9 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
       hasMedia && (
         <div
           data-trig
+          data-trig-once="true"
           data-trig-direction={mediaFirst ? 'start' : 'end'}
-          data-trig-delay="0.1"
-          class:list={['lg:col-span-6', mediaFirst && 'lg:order-1']}
+          class:list={['trig-delay-100 lg:col-span-6', mediaFirst && 'lg:order-1']}
         >
           {Astro.slots.has('media') ? (
             <slot name="media" />
@@ -238,6 +239,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
                   alt={imageAlt || resolvedHeading}
                   widths={[640, 960, 1280]}
                   sizes="(min-width: 1024px) 46vw, 94vw"
+                  loading="lazy"
                   class="aspect-[4/3] w-full rounded-2xl object-cover"
                 />
               </div>

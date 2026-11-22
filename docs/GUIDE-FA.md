@@ -1,10 +1,10 @@
 # راهنمای جامع Astro i18n Starter
 
 > استارتر چندزبانهٔ تولیدی و **۱۰۰٪ استاتیک (Pure SSG بدون نیاز به بک‌اند)** بر پایهٔ **Astro v7**
-> با پشتیبانی بومی **RTL/LTR**، ۲۲ بلوک آماده (الهام‌گرفته از PrebuiltUI) برای سایت‌های شرکتی و لندینگ، دسته‌بندی و فیلتر وبلاگ و نمونه‌کارها،
+> با پشتیبانی بومی **RTL/LTR**، ۳۶ بلوک آماده (۲۳ بلوک سکشن + ۱۳ پریمیتیو رابط الهام‌گرفته از PrebuiltUI) به‌همراه ۴ بلوک تعاملی/حرکتی، دسته‌بندی و فیلتر وبلاگ و نمونه‌کارها،
 > جستجوی **Pagefind** بهینه‌شده برای زبان فارسی، آداپتور فرم‌های بدون سرور (Web3Forms، Formspree، Basin، Webhook + Turnstile)، بلوپرینت‌های صنعتی، استودیوی زندهٔ تم در DEV، معماری سه‌لایه (`Core` / `client/` / `starter-kit/`) و ۲۸ ابزار خط فرمان.
 
-نسخهٔ ۵٫۱+ — مرجع فنی کامل و راهنمای عملیاتی.
+نسخهٔ ۶٫۰ — مرجع فنی کامل و راهنمای عملیاتی.
 
 ---
 
@@ -67,7 +67,7 @@
 | **معماری Pure SSG و فرم بدون سرور** | خروجی ۱۰۰٪ استاتیک بدون سرور بک‌اند؛ فرم تماس (`ContactForm.astro`) و خبرنامه (`NewsletterBanner.astro`) از طریق `src/libs/api/client.ts` از ارائه‌دهندگان `custom`، `web3forms`، `formspree`، `basin` و `webhook` به‌همراه Cloudflare Turnstile و Honeypot پشتیبانی می‌کنند + مدیریت رضایت کوکی (`CookieConsent.astro`) |
 | **زبان‌ها و حالت تک‌زبانه** | انگلیسی (`en`) و فارسی (`fa`) به‌صورت پیش‌فرض فعال + آمادگی کامل فونت/فرمت و افزودن تک‌فرمانی زبان‌های دیگر (`ar`, `de`, `fr`, …) با `i18n:add-lang`؛ برای سایت تک‌زبانه، صرفاً `ui.showLanguageSwitcher: false` (+ در صورت نیاز `i18n:set-default`) کافی است (و `i18n:solo` به‌صورت اختیاری مسیرهای اضافی را حذف می‌کند) |
 | **مسیریابی** | دیسپچر تک‌فایلی `[...path].astro` — بدون هیچ فایل مسیر پویا در `src/pages/` |
-| **محتوا، فیلتر نمونه‌کارها و CMS** | کالکشن‌های `pages`، `blog` و `projects` با قرارداد `گروه/زبان.mdx`؛ ۱۹ بلوک سکشن شرکتی/لندینگ + ۳ پریمیتیو رابط (`UiBadge`, `UiAlert`, `AvatarGroup`)، فیلتر دسته/پشتهٔ فنی/جستجو در `CollectionIndexView.astro` و پیکربندی آمادهٔ Pages CMS در `.pages.yml` |
+| **محتوا، فیلتر نمونه‌کارها و CMS** | کالکشن‌های `pages`، `blog` و `projects` با قرارداد `گروه/زبان.mdx`؛ ۲۳ بلوک سکشن شرکتی/لندینگ + ۱۳ پریمیتیو رابط (`UiBadge`, `UiAlert`, `UiProgress`, `UiModal`, `UiDropdown`, …) + ۴ بلوک تعاملی/حرکتی، فیلتر دسته/پشتهٔ فنی/جستجو در `CollectionIndexView.astro` و پیکربندی آمادهٔ Pages CMS در `.pages.yml` |
 | **RTL و فونت‌های تجاری فارسی** | خواص منطقی CSS (`ms-`, `pe-`, `start-`), ۵ پیش‌تنظیم فونت RTL (`vazirmatn`, `noto-arabic`, `iransans`, `yekan-bakh`, `peyda` با ساختار `@font-face` در `client/styles.css`)، جداسازی `pre/code` به LTR، چرخاندن آیکون پیجر |
 | **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی در کل مجموعهٔ مقالات (`/api/blog-posts/<locale>.json`)، صفحه‌بندی استاتیک، فهرست مطالب خودکار (TOC)، مقالات مرتبط و ناوبری مقالهٔ قبلی/بعدی، دکمهٔ کپی کد، زمان مطالعه و تاریخ به‌روزرسانی، استایل چاپ (`@media print`) |
 | **برندینگ، لوگو، بلوپرینت و DEV Studio** | راه‌اندازی سریع با `site:init --blueprint=corporate\|agency\|portfolio\|medical`، پشتیبانی از لوگوی تصویر/SVG روشن و تیره (`brand.logo`)، ۶ پالت OKLCH آماده و فونت‌های variable نصب‌شده + **استودیوی زندهٔ تم در DEV (`DevThemePreview.astro` با خروجی صفر بایت در بیلد نهایی)** |
@@ -76,9 +76,9 @@
 | **SEO شرکتی و کارت OG فارسی** | canonical، hreflang چندزبانه + `x-default`، کارت PNG برنددار زمان بیلد (`/og/[...slug].png.ts` در حالت `branded`) با شکل‌دهی صحیح حروف RTL در SVG، Twitter Card، اسکیماهای `Organization` / `LocalBusiness` / `Service` / `WebSite` / `WebPage` / `CollectionPage` / `BlogPosting` / `BreadcrumbList` / `FAQPage` (`schema.ts`)، sitemap با `lastmod` کامل، فیدهای Atom مجزا |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک بازگشت به نسخهٔ زبان پیش‌فرض |
 | **ابزار CLI** | ۲۸ اسکریپت (+ ۱۳ ماژول کمکی) برای راه‌اندازی برند و بلوپرینت (`site:init`)، ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا، تزریق/پاک‌سازی دمو (`starter:seed`)، کنترل معماری (`upstream:check`)، تعویض زبان پیش‌فرض، بررسی سلامت پروژه، خزش لینک‌ها، تولید تصاویر و ایندکس Pagefind |
-| **کیفیت و استقرار** | TypeScript strict، `astro check`، ۲۵ فایل تست واحد Vitest (۲۶۰ تست)، ۹۵ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، Prefetch هوشمند و هدرهای آمادهٔ کش/امنیت در `public/_headers` و `docs/deploy/nginx.conf` |
-| **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset`، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
-| **حرکت و اسکرول** | اسکرول نرم با **Lenis** + موتور **ChronoTrig** (`data-trig`) با پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`), پلکانی‌سازی گروهی (`data-trig-stagger`) و سازگاری کامل با View Transitions |
+| **کیفیت و استقرار** | TypeScript strict، `astro check`، ۲۵ فایل تست واحد Vitest (۲۶۲ تست)، ۹۵ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، Prefetch هوشمند و هدرهای آمادهٔ کش/امنیت در `public/_headers` و `docs/deploy/nginx.conf` |
+| **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset` و `loading="lazy"` زیر خط دید، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
+| **حرکت و اسکرول** | اسکرول نرم با **Lenis** (`setExternalScroll` + `sync`) + موتور **ChronoTrig v6.1.0** (`data-trig` + `data-trig-once="true"`) بدون خواندن چیدمان در فریم اسکرول، پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`), پلکانی‌سازی گروهی (`data-trig-stagger`) و بهینه‌سازی خودکار GPU با `IntersectionObserver` |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، پشتیبانی یکپارچه از `prefers-reduced-motion` سیستم و کلید `data-motion` روی `<html>` |
 
 ---
@@ -160,7 +160,7 @@ npx astro dev stop           # توقف سرور
 | `npm run messages:compile` | ادغام `messages/core/*.json` + `client/messages/*.json` در `.paraglide-work/` و کامپایل به `src/paraglide/` |
 | `npm run check` | کامپایل پیام‌ها + `astro check` |
 | `npm run lint` | کامپایل پیام‌ها + `astro check` + `tsc --noEmit` |
-| `npm test` | کامپایل پیام‌ها + `vitest run` (۲۵ فایل، ۲۶۰ تست) |
+| `npm test` | کامپایل پیام‌ها + `vitest run` (۲۵ فایل، ۲۶۲ تست) |
 | `npm run build` | کامپایل پیام‌ها + ممیزی i18n + `astro build` + `node scripts/index-pagefind.mjs` |
 | `npm run preview` | `astro preview` روی خروجی `dist/` |
 | `npm run smoke` | تست دود روی `dist/` |
@@ -1341,43 +1341,45 @@ pre, code, .math {
          ▼
 مرحله ۳ (`.trig` توسط موتور) : هنگامی که المان وارد دید می‌شود، کلاس `.trig` اضافه می‌شود
          ▼
-مرحله ۴ (`.js [data-trig].trig`) : انیمیشن `trig-reveal-up` با مدت `1.2s` و منحنی
-                            `cubic-bezier(0.22, 1, 0.36, 1)` به opacity: 1 و transform: none می‌رسد
+مرحله ۴ (`.js [data-trig].trig`) : انیمیشن `trig-reveal-up` با مدت `1.2s` (`--trig-duration`) و منحنی
+                            `cubic-bezier(0.16, 1, 0.3, 1)` به opacity: 1 و transform: none می‌رسد
 ```
 
-**مکث کوتاه پیش از شروع (`--trig-reveal-delay`):** موتور انیمیشن را به‌محض نمایان شدن لبهٔ المان فعال می‌کند؛ برای اینکه انیمیشن پیش از دیده شدن تمام نشود، در `chronotrig.css` یک متغیر سراسری تعریف شده است:
+**کنترل سراسری زمان‌بندی در `chronotrig.css`:** سه متغیر اصلی زمان و شتاب همهٔ ورودها را کنترل می‌کنند:
 
 ```css
 :root {
-  --trig-reveal-delay: 180ms;
+  --trig-duration: 1.2s;
+  --trig-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --trig-reveal-delay: 0ms;
 }
 ```
 
-این مکث برای همهٔ عناصر `[data-trig]` و همچنین کارت‌های پلکانی (به‌صورت `calc(var(--stagger-delay) + var(--trig-reveal-delay))`) اعمال می‌شود. برای کم/زیاد کردن آن فقط همین یک متغیر را تغییر دهید.
+این زمان‌بندی روی `[data-trig]` (مسافت استاندارد `56px`؛ و `18px` در `.fadeInUpSm` / `.blurIn`) و کارت‌های پلکانی (به همراه `--stagger-delay`) اعمال می‌شود.
 
-#### ۲. المان‌های تکی، `data-trig-once` و پریست‌های آماده (ChronoTrig v5.2.0)
+#### ۲. المان‌های تکی، `data-trig-once` و پریست‌های آماده (ChronoTrig v6.1.0)
 
-کافی است صفت `data-trig` را روی هر بخش، کارت یا عنوان قرار دهید:
+کافی است صفت `data-trig` و برای بخش‌های ثابت `data-trig-once="true"` را روی هر بخش، کارت یا عنوان قرار دهید:
 
 ```astro
-<!-- انیمیشن یک‌باره (پس از اجرا متوقف می‌شود و سربار اسکرول به صفر می‌رسد) -->
+<!-- انیمیشن یک‌باره (پس از اجرا متوقف می‌شود، will-change آزاد شده و سربار اسکرول به صفر می‌رسد) -->
 <div class="max-w-3xl fadeInUpSm" data-trig data-trig-once="true">
   <h1 class="text-4xl font-extrabold text-fg">عنوان اصلی</h1>
   <p class="mt-4 text-muted">متن توضیحی</p>
 </div>
 ```
 
-* بدون `data-trig-once="true"` انیمیشن هنگام ورود/خروج دوباره پخش می‌شود؛ با `data-trig-once="true"` یک‌بار اجرا شده، `will-change` آزاد می‌شود و از `IntersectionObserver` خارج می‌گردد.
-* در فایل‌های محتوای `.mdx` عنوان‌های `.prose h2/h3/h4` به‌طور خودکار توسط `setupChronoTrig()` در `src/scripts/chronotrig.ts` علامت‌گذاری می‌شوند.
-* **پریست‌ها و اصلاحگرهای آماده در `src/styles/chronotrig.css`**: کلاس‌های `.fadeInUpSm`، `.blurIn` (در موبایل به‌صورت خودکار به `.fadeInUpSm` بدون بلور تبدیل می‌شود)، `.clipUp`، `.clipStart`، `.fadeIn`، `.fadeInDown`، `.zoomIn`، `.zoomOut`، `.trig-directional` و اصلاحگرهای `.trig-delay-100..1000`، `.trig-duration-300..2000`، `.trig-ease-*` و `.trig-reactive-*` همگی زیر `.js [data-trig]` ایزوله هستند تا بدون JS یا در چاپ صفحه‌پرش (CLS) صفر باشد.
+* بدون `data-trig-once="true"` انیمیشن هنگام ورود/خروج دوباره پخش می‌شود؛ با `data-trig-once="true"` یک‌بار اجرا شده، `will-change` آزاد می‌شود و از `IntersectionObserver` خارج می‌گردد (در صفحات بلند و مثل صفحهٔ `/components/` استفاده از `data-trig-once="true"` حیاتی است).
+* در فایل‌های محتوای `.mdx` عنوان‌های `.prose h2/h3/h4` به‌طور خودکار توسط `setupChronoTrig()` در `src/scripts/chronotrig.ts` با `data-trig` و `data-trig-once="true"` علامت‌گذاری می‌شوند.
+* **پریست‌ها و اصلاحگرهای آماده در `src/styles/chronotrig.css`**: کلاس‌های `.fadeInUpSm`، `.blurIn` (در موبایل به‌صورت خودکار به `.fadeInUpSm` بدون بلور تبدیل می‌شود)، `.clipUp`، `.clipStart`، `.fadeIn`، `.fadeInDown`، `.zoomIn`، `.zoomOut`، `.trig-directional` و اصلاحگرهای `.trig-delay-100..1000`، `.trig-duration-300..2000`، `.trig-ease-*` و `.trig-reactive-*` همگی زیر `.js [data-trig]` ایزوله هستند تا بدون JS یا در چاپ صفحه‌پرش (CLS) صفر باشد. هرگز صفت غیرمعتبر `data-trig-delay` ننویسید.
 
 #### ۳. جهت‌های منطقی آگاه از RTL (`start` و `end`)
 
 برای انیمیشن‌های افقی هرگز از `left` / `right` استفاده نکنید؛ از `data-trig-direction` با مقادیر منطقی یا کلاس `.clipStart` استفاده کنید تا در `fa` و `ar` به‌طور خودکار آینه شود:
 
 ```astro
-<aside data-trig data-trig-direction="start" class="p-6">از ابتدای خواندن</aside>
-<aside data-trig data-trig-direction="end" class="trig-delay-100 p-6">از انتهای خواندن</aside>
+<aside data-trig data-trig-once="true" data-trig-direction="start" class="p-6">از ابتدای خواندن</aside>
+<aside data-trig data-trig-once="true" data-trig-direction="end" class="trig-delay-100 p-6">از انتهای خواندن</aside>
 ```
 
 `chronotrig.css` این جهت‌ها را با `:where([dir="rtl"])` معکوس می‌کند، پس هیچ کلاس فیزیکی لازم نیست.
@@ -1394,13 +1396,13 @@ pre, code, .math {
   data-trig-stagger-delay="0.06"
   data-trig-once="true"
 >
-  <div data-trig class="card">کارت ۱</div>
-  <div data-trig class="card">کارت ۲</div>
-  <div data-trig class="card">کارت ۳</div>
+  <div data-trig data-trig-once="true" class="card">کارت ۱</div>
+  <div data-trig data-trig-once="true" class="card">کارت ۲</div>
+  <div data-trig data-trig-once="true" class="card">کارت ۳</div>
 </div>
 ```
 
-* ChronoTrig v5.2.0 حالت‌های `data-trig-stagger-mode` شامل `linear`، `wave`، `center` و `reverse` را پشتیبانی می‌کند و `--stagger-index`، `--stagger-delay` و `--stagger-total` را محاسبه کرده و آیتم‌ها را با `.trig-stagger-active` فعال می‌سازد (در حالت موبایل `lightweight` تأخیر به حداکثر `0.04s` محدود می‌شود). کارت‌های پلکانی از مدت `1.1s` و جابه‌جایی `44px` استفاده می‌کنند.
+* ChronoTrig v6.1.0 حالت‌های `data-trig-stagger-mode` شامل `linear`، `wave`، `center` و `reverse` را پشتیبانی می‌کند، `--stagger-index`، `--stagger-delay` و `--stagger-total` را محاسبه کرده و آیتم‌ها را با `.trig-stagger-active` (و پس از اتمام `.trig-stagger-settled` برای واکنش فوری hover) فعال می‌سازد (در حالت موبایل `lightweight` تأخیر به حداکثر `0.04s` محدود می‌شود). کارت‌های پلکانی از جابه‌جایی `44px` استفاده می‌کنند.
 * **بخش‌های پین‌شده و تایم‌لاین**: با `[data-trig-pin]` (`data-trig-pin-distance`، `data-trig-pin-horizontal="true"` + `[data-trig-pin-track]`، `data-trig-pin-media`) و `[data-trig-timeline]` می‌توانید صحنه‌های چسبان و انیمیشن‌های چندمرحله‌ای بسازید. برای اینکه `position: sticky` از کار نیفتد، در `src/styles/global.css` روی `body` از `overflow-x: clip` (و نه `overflow-x: hidden`) استفاده شده است.
 
 > **نکته:** کارت‌هایی که با `card.hidden = true` پنهان می‌شوند باید استایل `[data-post-card][hidden] { display: none !important; }` داشته باشند، چون کلاس‌های `flex` / `grid` در Tailwind رفتار پیش‌فرض `[hidden]` را خنثی می‌کنند.
@@ -1453,11 +1455,17 @@ refreshChronoTrig();
 </div>
 ```
 
-#### ۷. هماهنگی با Lenis و تنظیم حرکت
+#### ۷. هماهنگی با Lenis، تنظیم حرکت و قواعد کارایی GPU
 
-* **Lenis (`src/scripts/lenis.ts`)**: با `lerp: 0.085` و `syncTouch: false` راه‌اندازی می‌شود، در رویداد اسکرول با `window.chronoTrig.trigScroll?.()` همگام می‌شود، لینک‌های `#hash` هم‌صفحه را با آفست هدر ثابت (`-96px`) مدیریت می‌کند و در `astro:page-load` بازسازی می‌شود.
+* **Lenis (`src/scripts/lenis.ts`)**: با `lerp: 0.125` و `syncTouch: false` راه‌اندازی می‌شود، با فراخوانی `window.chronoTrig?.setExternalScroll?.(true)` شنوندهٔ تکراری اسکرول ChronoTrig را غیرفعال کرده و مستقیماً در رویداد اسکرول با `window.chronoTrig.sync(instance.scroll)` همگام می‌شود، لینک‌های `#hash` هم‌صفحه را با آفست هدر ثابت (`-96px`) مدیریت می‌کند و در `astro:page-load` بازسازی می‌شود.
 * **پنل‌های اسکرول داخلی**: روی هر مودال/کشو/پنل با `overflow-y-auto` صفت `data-lenis-prevent` بگذارید.
-* **تنظیم حرکت**: تابع `resolveMotion()` در `<head>` (در `BaseLayout.astro`) مقدار `localStorage.motion` یا در صورت نبود آن تنظیم سیستمی `(prefers-reduced-motion: reduce)` را می‌خواند و `data-motion="reduced" | "full"` را روی `<html>` می‌نشاند. ChronoTrig v5.2.0 (`respectReducedMotion` + `body.chronotrig-mobile-disabled`)، `chronotrig.css`، Lenis و `[data-cookie-banner]` و `@media print` به‌صورت یکپارچه به آن احترام می‌گذارند.
+* **تنظیم حرکت**: تابع `resolveMotion()` در `<head>` (در `BaseLayout.astro`) مقدار `localStorage.motion` یا در صورت نبود آن تنظیم سیستمی `(prefers-reduced-motion: reduce)` را می‌خواند و `data-motion="reduced" | "full"` را روی `<html>` می‌نشاند. ChronoTrig v6.1.0 (`respectReducedMotion` + `body.chronotrig-mobile-disabled`)، `chronotrig.css`، Lenis و `[data-cookie-banner]` و `@media print` به‌صورت یکپارچه به آن احترام می‌گذارند.
+* **قواعد کارایی سخت‌افزاری (Zero-Lag)**:
+  1. روی عناصر ثابت از `data-trig-once="true"` استفاده کنید تا پس از ورود از ناظر خارج شوند.
+  2. از لایه‌های سنگین `blur-2xl` / `blur-3xl` پرهیز کنید (به‌جای آن از `.hero-glow-primary` / `.hero-glow-accent` در `global.css` استفاده کنید) و `backdrop-blur` را تو در تو نچینید.
+  3. تصاویر زیر خط دید (و همچنین `<PageHero compact />`) را با `loading="lazy"` بارگذاری کنید (`priority` فقط برای تصویر هیروی بالای صفحه).
+  4. اسکرول پارالاکس (`ParallaxSection`)، شمارنده/نوار پیشرفت (`UiProgress`) و حرکت مداوم اسلایدر (`TestimonialMarquee`) همگی با `IntersectionObserver` در خارج از دید متوقف می‌شوند تا GPU/CPU بیکار نماند.
+  5. متغیرهای سراسری `:root` (`--scroll-progress` و `--scroll-y`) در ChronoTrig به‌صورت پیش‌فرض خاموش (`rootScrollVars: false`) هستند تا در صفحات حجیم باعث بازمحاسبهٔ استایل کل DOM هنگام اسکرول نشوند (در صورت نیاز می‌توانید با صفت `data-trig-root-vars` روی `<html>` فعال کنید). در صفحات کاتالوگ طولانی مثل جدول‌ها و بلاک‌های کد در `ComponentDoc.astro` نیز از `[content-visibility:auto]` برای صرفه‌جویی در چیدمان و رسم خارج از دید استفاده شده است.
 
 ### استایل متن محتوا — `src/styles/prose.css`
 
@@ -1899,7 +1907,7 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 ```bash
 npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
 npm run lint           # کامپایل پیام‌ها + astro check + tsc --noEmit
-npm test               # ۲۵ فایل تست واحد Vitest (۲۶۰ تست)
+npm test               # ۲۵ فایل تست واحد Vitest (۲۶۲ تست)
 npm run audit:i18n
 SITE_URL=https://example.com npm run build
 npm run smoke          # تست دود روی dist/
@@ -1938,7 +1946,7 @@ npm run verify:cli     # ۹۵ ادعا دربارهٔ گردش‌کارهای CL
 | `src/libs/ui/icons.test.ts` | یکتایی و kebab-case بودن `SITE_ICONS` (۶۶ آیکون هسته)، `resolveIconName`، آیکون‌های جهت‌دار RTL و پوشش آیکون‌های ناوبری |
 | `src/libs/ui/blocks.test.ts` | بلوک‌های آمادهٔ شرکتی/لندینگ (خواص منطقی، نبود `<svg>` خام، کلیدهای Paraglide و توکن‌های معنایی) |
 
-> **۲۵ فایل تست واحد (۲۶۰ تست).** ماژول `astro:content` در Vitest با
+> **۲۵ فایل تست واحد (۲۶۲ تست).** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -2139,7 +2147,7 @@ dist/
 | `npm run messages:compile` | ادغام `messages/core/` + `client/messages/` و کامپایل به `src/paraglide/` |
 | `npm run check` | `astro check` |
 | `npm run lint` | کامپایل پیام‌ها + astro check + tsc |
-| `npm test` | تست‌های Vitest (۲۵ فایل، ۲۶۰ تست) |
+| `npm test` | تست‌های Vitest (۲۵ فایل، ۲۶۲ تست) |
 | `npm run build` | بیلد تولیدی + Pagefind |
 | `npm run preview` | پیش‌نمایش خروجی |
 | `npm run smoke` | تست دود روی `dist/` |
@@ -2182,7 +2190,7 @@ dist/
 
 ### `block_*` (۳۱۳ کلید) و `doc_*` (۸ کلید)
 
-- `block_*`: متن‌های بومی‌پیش‌فرض ۱۹ بلوک سکشن شرکتی/لندینگ و ۳ پریمیتیو رابط (`LandingHeroSplit`، `PricingSection`، `TestimonialGrid`، `FaqAccordion`، `ContactSplitSection` و…).
+- `block_*`: متن‌های بومی‌پیش‌فرض ۳۶ بلوک آمادهٔ PrebuiltUI (۲۳ بلوک سکشن شرکتی/لندینگ و ۱۳ پریمیتیو رابط) به‌همراه ۴ بلوک تعاملی/حرکتی (`LandingHeroSplit`، `PricingSection`، `TestimonialGrid`، `FaqAccordion`، `ContactSplitSection`، `ParallaxSection` و…).
 - `doc_*`: برچسب‌های مستندسازی درون‌خطی برای `ComponentDoc.astro`.
 
 ### `common_*` (۲۵ کلید)
@@ -2319,8 +2327,8 @@ dist/
 
 | فایل | خروجی‌ها | کاربرد |
 | --- | --- | --- |
-| `lenis.ts` | `initLenis()` · `destroyLenis()` · `getLenis()` | راه‌اندازی، پاک‌سازی در View Transitions و دسترسی به نمونهٔ فعال `Lenis` |
-| `chronotrig.ts` | `setupChronoTrig()` · `refreshChronoTrig()` | تایپ‌های ChronoTrig v5.2.0، علامت‌گذاری عنوان‌های `.prose` و `[data-trig-once]`، هماهنگی `astro:page-load` و `refresh()` پس از تزریق یا فیلتر پویا |
+| `lenis.ts` | `initLenis()` · `destroyLenis()` · `getLenis()` | راه‌اندازی (`setExternalScroll(true)` + `sync`)، پاک‌سازی در View Transitions و دسترسی به نمونهٔ فعال `Lenis` |
+| `chronotrig.ts` | `setupChronoTrig()` · `refreshChronoTrig()` | تایپ‌های ChronoTrig v6.1.0، علامت‌گذاری عنوان‌های `.prose` و `[data-trig-once]`، هماهنگی `astro:page-load` و `refresh()` پس از تزریق یا فیلتر پویا |
 
 ### `scripts/lib/locales.mjs`
 

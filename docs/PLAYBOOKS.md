@@ -83,10 +83,11 @@ npm run upstream:check && npm run doctor && npm run lint && npm test && npm run 
    While running `npm run dev`, open the floating **DEV Theme Studio** (`src/components/DevThemePreview.astro`, strictly excluded from production builds) to preview light/dark mode, palettes, custom primary/accent hex overrides, and Latin/RTL fonts live, then copy the generated JSON snippet straight into `client/config.json`.
    Need optional demo pages, posts, and projects to preview or copy blocks from? Run `npm run starter:seed -- --blueprint=corporate` (and `npm run starter:seed -- --clean --yes` to strip demo items cleanly).
 
-2. **Start From the 22 Built-In PrebuiltUI-Adapted Blocks (`src/components/`)**:
-   Before building custom markup from scratch, check the starter's 19 RTL/LTR-safe section blocks and 3 UI primitives — all work with zero props using localized Paraglide defaults (`locale` auto-detects from URL) or custom overrides:
-   - **Sections (19):** `LandingHeroSplit.astro`, `PromoBanner.astro`, `PartnerLogos.astro`, `AboutSplitSection.astro`, `BentoCapabilities.astro`, `FeatureTabsSection.astro`, `ProcessSteps.astro`, `FeatureCardGrid.astro`, `ProofStatsRow.astro`, `ComparisonTable.astro`, `PricingSection.astro`, `TestimonialGrid.astro`, `ImageGallerySection.astro`, `LatestPostsSection.astro`, `TeamSection.astro`, `FaqAccordion.astro`, `ContactSplitSection.astro`, `NewsletterBanner.astro`, and `CtaBanner.astro`.
-   - **UI Primitives (3):** `UiBadge.astro`, `UiAlert.astro`, and `AvatarGroup.astro`.
+2. **Start From the 36 Built-In PrebuiltUI-Adapted Blocks (`src/components/`)**:
+   Before building custom markup from scratch, check the starter's **23 RTL/LTR-safe section blocks**, **13 UI primitives**, and **4 interactive/motion showcase blocks** — all work with zero props using localized Paraglide defaults (`locale` auto-detects from URL) or custom overrides:
+   - **Sections (23):** `LandingHeroSplit.astro`, `PromoBanner.astro`, `PartnerLogos.astro`, `AboutSplitSection.astro`, `BentoCapabilities.astro`, `FeatureTabsSection.astro`, `ProcessSteps.astro`, `FeatureCardGrid.astro`, `ProofStatsRow.astro`, `ComparisonTable.astro`, `PricingSection.astro`, `TestimonialGrid.astro`, `ImageGallerySection.astro`, `LatestPostsSection.astro`, `TeamSection.astro`, `FaqAccordion.astro`, `ContactSplitSection.astro`, `NewsletterBanner.astro`, `CtaBanner.astro`, `CarouselSection.astro`, `ProductShowcaseGrid.astro`, `AuthFormCard.astro`, and `ParallaxSection.astro`.
+   - **UI Primitives (13):** `UiBadge.astro`, `UiAlert.astro`, `AvatarGroup.astro`, `Breadcrumbs.astro`, `UiPagination.astro`, `UiModal.astro`, `UiTooltip.astro`, `UiProgress.astro`, `UiSwitch.astro`, `UiCheckbox.astro`, `UiInput.astro`, `UiDropdown.astro`, and `SocialLinks.astro`.
+   - **Interactive Showcase Blocks (4):** `BentoGrid.astro`, `LatestPostsCarousel.astro`, `SwipeableTabs.astro`, and `TestimonialMarquee.astro`.
    - Use `npm run new:page <key> -- --preset=landing` to scaffold a multi-locale landing page pre-wired with canvas layout and composable blocks.
 
 3. **Tailwind Blocks RTL & Token Adaptation**:
@@ -272,27 +273,27 @@ npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke
 
 ---
 
-## Playbook 7: Implementing Viewport Reveals, Staggered Grids & ChronoTrig v5.2.0 Motion
+## Playbook 7: Implementing Viewport Reveals, Staggered Grids & ChronoTrig v6.1.0 Motion
 
-### 1. The ChronoTrig v5.2.0 Reveal Contract
+### 1. The ChronoTrig v6.1.0 Reveal Contract
 * Never hide elements with `display: none` / `hidden` or unscoped Tailwind `opacity-0` for scroll entrance.
 * `BaseLayout.astro` synchronously adds `.js` on `<html class="js">` in `<head>`. `src/styles/chronotrig.css` scopes initial entrance offsets strictly under `.js [data-trig]` (preserving full layout geometry, zero CLS, and 100% visibility when JS is disabled or printed).
-* When an element enters the viewport, ChronoTrig adds `.trig`, animating `opacity: 1` and `transform: none` over `1.2s` (`1.1s` for stagger cards) with a `cubic-bezier(0.22, 1, 0.36, 1)` curve and a 56px bottom offset.
-* Add `data-trig-once="true"` on `[data-trig]` or `[data-trig-stagger]` when the reveal should play once, release `will-change: auto`, and unobserve cleanly.
-* Reveals hold for `--trig-reveal-delay` (`180ms`, defined once at the top of `chronotrig.css`) before starting, so an entrance is not finished before the element is properly in view.
-* Motion preference is resolved once in `BaseLayout.astro`'s `<head>` (`resolveMotion()`): it checks `localStorage.getItem('motion')` (`'reduced' | 'full'`), otherwise honors the OS `prefers-reduced-motion: reduce` setting, and writes `html[data-motion]`. `chronotrig.css`, `lenis.ts` (syncing via `trigScroll?.()`), `global.css`, ChronoTrig's live `respectReducedMotion` watcher (`body.chronotrig-mobile-disabled`), and `@media print` all flatten reveals, timelines, and `[data-trig-pin]` containers cleanly.
+* When an element enters the viewport, ChronoTrig adds `.trig`, animating `opacity: 1` and `transform: none` over **`1.2s`** (`--trig-duration`) on **`cubic-bezier(0.16, 1, 0.3, 1)`** (`--trig-ease`) with a **`56px`** standard offset (`18px` for `.fadeInUpSm` / `.blurIn`, `44px` for stagger cards) and `--trig-reveal-delay: 0ms`.
+* Add `data-trig-once="true"` on static `[data-trig]` and `[data-trig-stagger]` elements so ChronoTrig triggers once, releases `will-change: auto` (deduplicated via `WeakMap` on `animationend`/`animationcancel`), and unobserves cleanly with zero idle scroll overhead.
+* Motion preference is resolved once in `BaseLayout.astro`'s `<head>` (`resolveMotion()`): it checks `localStorage.getItem('motion')` (`'reduced' | 'full'`), otherwise honors the OS `prefers-reduced-motion: reduce` setting, and writes `html[data-motion]`. `chronotrig.css`, `lenis.ts` (`lerp: 0.125`, calling `setExternalScroll(true)` + `sync()`), `global.css`, ChronoTrig's live `respectReducedMotion` watcher (`body.chronotrig-mobile-disabled`), and `@media print` all flatten reveals, timelines, and `[data-trig-pin]` containers cleanly.
 
 ### 2. Single Elements, Presets & RTL-Safe Directions
-* Add `data-trig` to any element, title, or card for a smooth bottom reveal, optionally paired with v5.2.0 presets/modifiers (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, `.trig-delay-100`..`1000`, `.trig-duration-*`, `.trig-ease-*`, `.trig-reactive-*`). Avoid non-existent attributes like `data-trig-delay`.
+* Add `data-trig data-trig-once="true"` to any element, title, or card for a smooth bottom reveal, optionally paired with v6.1.0 presets/modifiers (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, `.trig-delay-100`..`1000`, `.trig-duration-*`, `.trig-ease-*`, `.trig-reactive-*`). Avoid non-existent attributes like `data-trig-delay`.
 * For split columns or directional entrances, use `data-trig-direction="start"` and `data-trig-direction="end"` or `.clipStart` so horizontal entrances mirror automatically in RTL (`fa` and `ar`).
 
-### 3. Harmonic Stagger Grids (`data-trig-stagger`), Pins & Timelines
-* Add `data-trig-stagger data-trig-stagger-delay="0.08"` (plus optional `data-trig-stagger-mode="linear|wave|center|reverse"` and `data-trig-once="true"`) to the parent grid or list container.
-* ChronoTrig v5.2.0 targets `[data-trig-stagger-item], :scope > *`, computes `--stagger-index`, `--stagger-delay`, and `--stagger-total` natively (clamping delays `<= 0.04s` in lightweight mobile mode), and activates child items via `.trig-stagger-active`.
+### 3. Harmonic Stagger Grids (`data-trig-stagger`), Pins, Timelines & GPU Hygiene
+* Add `data-trig-stagger data-trig-once="true" data-trig-stagger-delay="0.08"` (plus optional `data-trig-stagger-mode="linear|wave|center|reverse"`) to the parent grid or list container.
+* ChronoTrig v6.1.0 targets `[data-trig-stagger-item], :scope > *`, computes `--stagger-index`, `--stagger-delay`, and `--stagger-total` natively (clamping delays `<= 0.04s` in lightweight mobile mode), activates child items via `.trig-stagger-active`, and resets transition delays via `.trig-stagger-settled` so hover transitions remain instant.
 * For pinned scrollytelling (`[data-trig-pin]`, `data-trig-pin-distance`, `data-trig-pin-horizontal="true"` + `[data-trig-pin-track]`, `data-trig-pin-media`) and multi-step `[data-trig-timeline]` waypoints, ensure ancestor wrappers never use `overflow-x: hidden` (`src/styles/global.css` uses `overflow-x: clip` on `body`).
+* Avoid `blur-2xl` / `blur-3xl` glow layers (use `.hero-glow-primary` / `.hero-glow-accent` from `global.css`), never nest `backdrop-blur` layers, set `loading="lazy"` on below-the-fold `<Image>` elements, and gate continuous scroll/marquee/counter loops with `IntersectionObserver` + `data-motion="reduced"`.
 
 ### 4. Dynamic Filtering, Re-scans & Filter Replays
-* When dynamically appending cards in client scripts, call `refreshChronoTrig()` from `@/scripts/chronotrig` (which calls `window.chronoTrig.refresh()` to re-measure viewport, tracks, and observers; use `trigScroll?.()` instead of removed `onScroll()` inside scroll handlers).
+* When dynamically appending cards in client scripts, call `refreshChronoTrig()` from `@/scripts/chronotrig` (which calls `window.chronoTrig.refresh()` to re-measure viewport, tracks, and observers; use `window.chronoTrig.sync(scrollY)` or `trigScroll?.(true)` inside scroll callbacks).
 * A filter change is different: hiding cards leaves the surviving ones with `.trig`, so they would appear without animating. Reset the grid first (`replayGridReveals()` in `BlogIndexView.astro`), force a reflow, then call `refreshChronoTrig()` — and skip that replay on the initial render, otherwise the page entrance restarts.
 
 ---
