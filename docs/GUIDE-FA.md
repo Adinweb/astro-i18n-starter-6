@@ -1426,7 +1426,9 @@ const replayGridReveals = (grid: HTMLElement) => {
   if (typeof window.chronoTrig === 'undefined') return;
   grid.classList.remove('trig-stagger-active');
   for (const child of Array.from(grid.children)) {
-    child.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active');
+    const el = child as HTMLElement;
+    el.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active', 'trig-stagger-settled');
+    el.style.willChange = 'auto';
   }
   void grid.offsetHeight; // تثبیت حالت پنهان پیش از مشاهدهٔ مجدد
 };
@@ -1434,12 +1436,15 @@ const replayGridReveals = (grid: HTMLElement) => {
 // فقط در تغییر واقعی فیلتر/تب، نه در رندر اولیه:
 replayGridReveals(grid);
 refreshChronoTrig();
+syncVisibleStaggerDelays(); // بازمحاسبهٔ --stagger-index و --stagger-delay فقط برای کارت‌های !el.hidden
 ```
 
-**دو قاعدهٔ مهم:**
+**چهار قاعدهٔ مهم:**
 
 1. این بازپخش را در **رندر اولیه** فراخوانی نکنید؛ در غیر این صورت انیمیشن ورود صفحه از نو شروع می‌شود و پرش دیده می‌شود.
 2. بازپخش را تنها زمانی انجام دهید که وضعیت فیلتر واقعاً تغییر کرده باشد (`areBlogFiltersEqual`).
+3. **جداسازی `transition` از ریشهٔ `[data-trig]`**: ChronoTrig روی المان‌های `[data-trig]` به رویدادهای `transitionend`/`transitioncancel` نیز گوش می‌دهد تا پس از اتمام، کلاس `.trig-stagger-settled` (`animation: none`) را اعمال کند. بنابراین هرگز کلاس `transition` Tailwind (مثل ترنزیشن hover کارت) را مستقیم روی تگ `[data-trig]` نگذارید؛ آن را روی لایهٔ داخلی کارت (`<div>` یا `<a>` مثل `PostCard.astro` و `CollectionIndexView.astro`) منتقل کنید تا انیمیشن ورود نیمه‌کاره بریده نشود.
+4. **پاک‌کردن فاصله‌های پلکانی کارت‌های مخفی**: پس از `refreshChronoTrig()`، متغیرهای `--stagger-*` را از کارت‌های `[hidden]` پاک کرده و فقط روی کارت‌های مرئی (`!el.hidden`) دوباره شماره‌گذاری کنید (و روی گریدهای زیر هدر بلند از `data-trig-root-margin="0px"` استفاده کنید).
 
 #### ۶. استفاده در فایل‌های محتوای `.mdx`
 

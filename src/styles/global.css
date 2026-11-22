@@ -302,6 +302,7 @@ summary::-webkit-details-marker {
   }
 
   .chip[aria-selected='true'],
+  .chip[aria-pressed='true'],
   .chip[aria-current='true'],
   .chip[aria-current='page'] {
     @apply border-primary bg-primary text-primary-fg shadow-xs hover:border-primary hover:bg-primary/90 hover:text-primary-fg;

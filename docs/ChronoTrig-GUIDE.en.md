@@ -380,6 +380,7 @@ const paneEngine = new ChronoTrig({
 2. **Dynamic layout shifts below an expanding accordion**: Add `data-trig-dynamic="true"` on scrubbers below the accordion or call `chronoTrig.refresh()` after toggling.
 3. **Large documentation / component showcase pages (5,000+ DOM nodes)**: Keep `rootScrollVars: false` (default) so ChronoTrig never triggers full-DOM `:root` style recalculations on scroll, and add `content-visibility: auto; contain-intrinsic-size: auto 600px;` to heavy off-screen sections/tables/code blocks to skip off-screen layout & paint.
 4. **Inspect runtime performance**: Call `chronoTrig.getFrameMetrics()` in DevTools to verify `layoutReads === 0` and confirm reveal elements stay out of `activeScrubbers`.
+5. **Choppy or cut-off card entrances when filtering stagger grids**: ChronoTrig attaches `transitionend`/`transitioncancel` listeners on `[data-trig]` elements to settle animations (`.trig-stagger-settled`). Never put Tailwind `transition` classes directly on `[data-trig]` roots—move hover transitions to an inner child wrapper. Also clear `willChange = 'auto'` during grid replay, recompute `--stagger-index` / `--stagger-delay` / `--stagger-total` strictly over visible (`!el.hidden`) children after `refresh()`, and add `data-trig-root-margin="0px"` on filtered grids positioned below tall heroes.
 
 ---
 

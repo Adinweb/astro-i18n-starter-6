@@ -5,6 +5,7 @@ import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import PageHero from '@/components/PageHero.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import Icon from '@/components/Icon.astro';
+import UiBadge from '@/components/UiBadge.astro';
 import {
   buildBreadcrumbSchema,
   getBreadcrumbs,
@@ -129,7 +130,7 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
             <dl class="flex flex-wrap items-baseline gap-x-8 gap-y-3">
               {metaItems.map((item) => (
                 <div class="flex items-baseline gap-2">
-                  <dt class="text-xs font-semibold uppercase tracking-wider text-muted">
+                  <dt class="text-xs font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
                     {item.label}
                   </dt>
                   <dd class="text-fg">{item.value}</dd>
@@ -137,12 +138,12 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
               ))}
               {stack.length > 0 && (
                 <div class="flex flex-wrap items-baseline gap-2">
-                  <dt class="text-xs font-semibold uppercase tracking-wider text-muted">
+                  <dt class="text-xs font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
                     {m.projects_stack({}, { locale })}
                   </dt>
-                  <dd class="flex flex-wrap gap-1.5">
+                  <dd class="flex flex-wrap items-center gap-1.5">
                     {stack.map((item) => (
-                      <span class="chip px-2.5 py-0.5 text-xs">{item}</span>
+                      <UiBadge label={item} variant="neutral" size="sm" locale={locale} class="font-medium" />
                     ))}
                   </dd>
                 </div>

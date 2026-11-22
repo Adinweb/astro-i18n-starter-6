@@ -175,7 +175,7 @@ const ogContext: SocialCardContext = {
             data-pager-aria-label={m.blog_pagination_label({}, { locale })}
           >
             <nav class="flex flex-wrap items-center gap-2" aria-label={m.blog_filter_by_category({}, { locale })}>
-              <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+              <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
                 {m.blog_categories({}, { locale })}
               </span>
               <a
@@ -203,7 +203,7 @@ const ogContext: SocialCardContext = {
             <div class="h-px bg-border"></div>
 
             <div class="flex flex-wrap items-center gap-2" role="group" aria-label={m.blog_filter_by_tag({}, { locale })}>
-              <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+              <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
                 {m.blog_tags({}, { locale })}
               </span>
               {
@@ -214,7 +214,7 @@ const ogContext: SocialCardContext = {
                     data-filter-tag={tag}
                     class="chip px-3 py-1.5 text-xs"
                   >
-                    <span class="me-1 text-muted/70" aria-hidden="true" dir="ltr">#</span>
+                    <span class="me-1 opacity-75" aria-hidden="true" dir="ltr">#</span>
                     {getTagLabel(tag, locale)}
                   </a>
                 ))
@@ -445,17 +445,23 @@ const ogContext: SocialCardContext = {
 
     if (post.tagLabels.length > 0) {
       const tagList = document.createElement('ul');
-      tagList.className = 'flex flex-wrap items-center gap-1.5 text-[11px] text-muted';
+      tagList.className = 'flex flex-wrap items-center gap-1.5';
+      const badgeClass =
+        'inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] font-medium text-muted';
       for (const label of post.tagLabels) {
         const li = document.createElement('li');
-        li.className = 'chip px-2 py-0.5 text-[11px]';
-        li.textContent = label;
+        const badge = document.createElement('span');
+        badge.className = badgeClass;
+        badge.textContent = label;
+        li.append(badge);
         tagList.append(li);
       }
       if (post.hiddenTagCount > 0) {
         const more = document.createElement('li');
-        more.className = 'chip px-2 py-0.5 text-[11px]';
-        more.textContent = `+${formatNumber(post.hiddenTagCount, post.locale)}`;
+        const badge = document.createElement('span');
+        badge.className = badgeClass;
+        badge.textContent = `+${formatNumber(post.hiddenTagCount, post.locale)}`;
+        more.append(badge);
         tagList.append(more);
       }
       content.append(tagList);

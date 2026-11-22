@@ -2,6 +2,7 @@
 import type { CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
 import Icon from '@/components/Icon.astro';
+import UiBadge from '@/components/UiBadge.astro';
 import type { Locale } from '@/i18n/locales';
 import { formatDate, formatNumber } from '@/i18n/format';
 import { siteConfig } from '@/libs/config/app';
@@ -96,15 +97,15 @@ const hiddenTagCount = tags.length - visibleTags.length;
 
     {
       visibleTags.length > 0 && (
-        <ul class="flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
+        <ul class="flex flex-wrap items-center gap-1.5">
           {visibleTags.map((tag) => (
-            <li class="chip px-2 py-0.5 text-[11px]">
-              {getTagLabel(tag, locale)}
+            <li>
+              <UiBadge label={getTagLabel(tag, locale)} variant="neutral" size="sm" locale={locale} class="font-medium" />
             </li>
           ))}
           {hiddenTagCount > 0 && (
-            <li class="chip px-2 py-0.5 text-[11px]">
-              +{formatNumber(hiddenTagCount, locale)}
+            <li>
+              <UiBadge label={`+${formatNumber(hiddenTagCount, locale)}`} variant="neutral" size="sm" locale={locale} class="font-medium" />
             </li>
           )}
         </ul>

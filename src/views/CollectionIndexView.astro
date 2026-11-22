@@ -4,6 +4,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Icon from '@/components/Icon.astro';
 import PageHeader from '@/components/PageHeader.astro';
+import UiBadge from '@/components/UiBadge.astro';
 import UiPagination from '@/components/UiPagination.astro';
 import {
   buildBreadcrumbSchema,
@@ -189,17 +190,19 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
               </div>
             </div>
 
+            {(categories.length > 0 || stacks.length > 0) && <div class="h-px bg-border"></div>}
+
             {categories.length > 0 && (
               <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-flex items-center gap-1 text-xs font-semibold text-muted">
+                <span class="me-1 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
                   <Icon name="filter" size={13} />
-                  <span>{m.collection_filter_category({}, { locale })}:</span>
+                  <span>{m.collection_filter_category({}, { locale })}</span>
                 </span>
                 <button
                   type="button"
                   data-collection-category=""
                   aria-pressed="true"
-                  class="chip cursor-pointer border-primary bg-primary/10 text-primary"
+                  class="chip cursor-pointer px-3 py-1.5 text-xs"
                 >
                   {m.collection_filter_all({}, { locale })}
                 </button>
@@ -208,7 +211,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
                     type="button"
                     data-collection-category={cat}
                     aria-pressed="false"
-                    class="chip cursor-pointer transition-colors hover:border-primary/40"
+                    class="chip cursor-pointer px-3 py-1.5 text-xs"
                   >
                     {cat}
                   </button>
@@ -216,17 +219,19 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
               </div>
             )}
 
+            {categories.length > 0 && stacks.length > 0 && <div class="h-px bg-border"></div>}
+
             {stacks.length > 0 && (
               <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-flex items-center gap-1 text-xs font-semibold text-muted">
+                <span class="me-1 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
                   <Icon name="tag" size={13} />
-                  <span>{m.collection_filter_stack({}, { locale })}:</span>
+                  <span>{m.collection_filter_stack({}, { locale })}</span>
                 </span>
                 <button
                   type="button"
                   data-collection-stack=""
                   aria-pressed="true"
-                  class="chip cursor-pointer border-primary bg-primary/10 text-primary"
+                  class="chip cursor-pointer px-3 py-1.5 text-xs"
                 >
                   {m.collection_filter_all({}, { locale })}
                 </button>
@@ -235,7 +240,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
                     type="button"
                     data-collection-stack={tech}
                     aria-pressed="false"
-                    class="chip cursor-pointer transition-colors hover:border-primary/40"
+                    class="chip cursor-pointer px-3 py-1.5 text-xs"
                   >
                     {tech}
                   </button>
@@ -302,12 +307,19 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
                       </p>
                     )}
                     {entryStack.length > 0 && (
-                      <div class="mt-2 flex flex-wrap gap-1.5">
+                      <div class="mt-2 flex flex-wrap items-center gap-1.5">
                         {entryStack.slice(0, 3).map((tech) => (
-                          <span class="rounded-md border border-border/80 bg-bg/70 px-2 py-0.5 text-[11px] font-medium text-muted">
-                            {tech}
-                          </span>
+                          <UiBadge label={tech} variant="neutral" size="sm" locale={locale} class="font-medium" />
                         ))}
+                        {entryStack.length > 3 && (
+                          <UiBadge
+                            label={`+${formatNumber(entryStack.length - 3, locale)}`}
+                            variant="neutral"
+                            size="sm"
+                            locale={locale}
+                            class="font-medium"
+                          />
+                        )}
                       </div>
                     )}
                     {(entry.data.client || entry.data.year) && (
@@ -373,7 +385,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
       const stackButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-collection-stack]')];
 
       let activeCategory = '';
-      let activeStack = '';
+      const activeStacks = new Set<string>();
       let query = '';
 
       const parseList = (raw: string | undefined): string[] => {
@@ -391,9 +403,14 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
           const val = (btn.getAttribute(attrKey) ?? '').trim();
           const active = val === current;
           btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-          btn.classList.toggle('border-primary', active);
-          btn.classList.toggle('bg-primary/10', active);
-          btn.classList.toggle('text-primary', active);
+        });
+      };
+
+      const syncStackChipStyles = () => {
+        stackButtons.forEach((btn) => {
+          const val = (btn.dataset.collectionStack ?? '').trim();
+          const active = val === '' ? activeStacks.size === 0 : activeStacks.has(val);
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
       };
 
@@ -407,7 +424,8 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
           const haystack = card.dataset.search || '';
 
           const matchesCat = !activeCategory || cats.includes(activeCategory);
-          const matchesStack = !activeStack || stack.includes(activeStack);
+          const matchesStack =
+            activeStacks.size === 0 || [...activeStacks].every((selected) => stack.includes(selected));
           const matchesSearch = !needle || haystack.includes(needle);
           const show = matchesCat && matchesStack && matchesSearch;
 
@@ -421,7 +439,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
             .replace('__V__', formatNumber(visibleCount, locale))
             .replace('__T__', formatNumber(total, locale));
         }
-        const hasFilter = Boolean(activeCategory || activeStack || needle);
+        const hasFilter = Boolean(activeCategory || activeStacks.size > 0 || needle);
         if (clearBtn) clearBtn.hidden = !hasFilter;
         if (emptyEl) emptyEl.hidden = visibleCount > 0;
         if (grid) {
@@ -469,7 +487,9 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
 
       catButtons.forEach((btn) => {
         btn.addEventListener('click', () => {
-          activeCategory = (btn.dataset.collectionCategory ?? '').trim();
+          const nextCategory = (btn.dataset.collectionCategory ?? '').trim();
+          if (nextCategory === activeCategory) return;
+          activeCategory = nextCategory;
           syncChipStyles(catButtons, activeCategory, 'data-collection-category');
           applyFilters();
         });
@@ -477,8 +497,16 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
 
       stackButtons.forEach((btn) => {
         btn.addEventListener('click', () => {
-          activeStack = (btn.dataset.collectionStack ?? '').trim();
-          syncChipStyles(stackButtons, activeStack, 'data-collection-stack');
+          const val = (btn.dataset.collectionStack ?? '').trim();
+          if (val === '') {
+            if (activeStacks.size === 0) return;
+            activeStacks.clear();
+          } else if (activeStacks.has(val)) {
+            activeStacks.delete(val);
+          } else {
+            activeStacks.add(val);
+          }
+          syncStackChipStyles();
           applyFilters();
         });
       });
@@ -490,11 +518,11 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
 
       clearBtn?.addEventListener('click', () => {
         activeCategory = '';
-        activeStack = '';
+        activeStacks.clear();
         query = '';
         if (searchInput) searchInput.value = '';
         syncChipStyles(catButtons, '', 'data-collection-category');
-        syncChipStyles(stackButtons, '', 'data-collection-stack');
+        syncStackChipStyles();
         applyFilters();
       });
     });

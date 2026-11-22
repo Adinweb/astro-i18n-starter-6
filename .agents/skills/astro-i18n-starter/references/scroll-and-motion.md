@@ -123,19 +123,36 @@ grid.append(...newCards);
 refreshChronoTrig();
 ```
 
-When a client-side filter only toggles `card.hidden`, reset the grid's reveal classes first, then call `refreshChronoTrig()` (`replayGridReveals()` in `src/views/BlogIndexView.astro`, and collection filter handlers in `src/views/CollectionIndexView.astro`):
+When a client-side filter toggles `card.hidden` (or replaces filtered cards), reset the grid's reveal classes and `willChange`, force a reflow, call `refreshChronoTrig()`, and recompute stagger variables **only across visible (`!el.hidden`) cards** (`replayGridReveals()` + `syncVisibleStaggerDelays()` in `src/views/BlogIndexView.astro`, and `applyFilters()` in `src/views/CollectionIndexView.astro`):
 
 ```typescript
 // User-triggered filter/tab change only — never on the initial render.
 if (typeof window.chronoTrig !== 'undefined') {
   grid.classList.remove('trig-stagger-active');
   for (const child of Array.from(grid.children)) {
-    child.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active', 'trig-stagger-settled');
+    const el = child as HTMLElement;
+    el.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active', 'trig-stagger-settled');
+    el.style.willChange = 'auto';
   }
   void grid.offsetHeight;
 }
 refreshChronoTrig();
+
+// ChronoTrig `.scan()` includes `[hidden]` children in `--stagger-index`, creating ghost gaps.
+// Strip stagger vars from hidden cards and re-index strictly over `!el.hidden` cards:
+const visibleChildren = Array.from(grid.children).filter(
+  (el): el is HTMLElement => el instanceof HTMLElement && !el.hidden
+);
+visibleChildren.forEach((el, index) => {
+  el.style.setProperty('--stagger-index', String(index));
+  el.style.setProperty('--stagger-delay', `${(index * step).toFixed(3)}s`);
+  el.style.setProperty('--stagger-total', String(visibleChildren.length));
+});
 ```
+
+Two additional rules prevent laggy or cut-off filter animations:
+* **Isolate CSS `transition` from `[data-trig]` roots**: ChronoTrig v6.1.0 attaches WeakMap-deduplicated `transitionend` and `transitioncancel` listeners directly on `[data-trig]` elements alongside `animationend` to trigger `.trig-stagger-settled` (`animation: none; opacity: 1; transform: none;`). Putting Tailwind's `transition` (which transitions `opacity` and `transform`) on `<article data-trig>` collides with `@keyframes trig-reveal-up` and settles cards prematurely mid-flight. Keep the `[data-trig]` root free of `transition` utilities and put hover/border/shadow transitions on an inner card wrapper (`<div>` or `<a>`, as in `PostCard.astro` and `CollectionIndexView.astro`).
+* **Override root margin below tall heroes**: Filtered grids sitting under tall hero headers (e.g. `[data-blog-grid]`) should set `data-trig-root-margin="0px"` so surviving cards below the filter bar trigger immediately instead of waiting for the default `-8%` bottom margin.
 
 ---
 
@@ -211,3 +228,4 @@ Follow these rules when authoring landing pages or custom components (modeled af
 4. **Viewport-gate continuous scripts (`IntersectionObserver`)**: Scroll scrubbers (`ParallaxSection.astro` toggling `data-parallax-active="true"`), progress/counter animations (`UiProgress.astro` using CSS `scaleX()` transitions), and `AutoScroll` marquees (`TestimonialMarquee.astro`) must pause when off-screen and disable gracefully under `html[data-motion="reduced"]`. Never call `getBoundingClientRect()` or `getComputedStyle()` across hidden elements in a global scroll loop.
 5. **Lazy-load below-the-fold `<Image>` elements**: Set `loading="lazy"` on cards, galleries, split-section photos, compact mid-page `<PageHero compact />`, and non-priority parallax bands. Reserve `loading="eager"` + `fetchpriority="high"` strictly for top-of-page hero media (`LandingHeroSplit` default mode, `ParallaxSection priority`).
 6. **Contain dense off-screen sub-blocks**: For very long catalog/docs routes with many tables or code blocks (e.g., `ComponentDoc.astro`), apply `[content-visibility:auto]` + `[contain-intrinsic-size:auto_<h>px]` on inner tables/code blocks (never hiding outer `[data-trig]` wrappers or Embla viewports) so layout and text shaping skip off-screen weight cleanly.
+7. **Keep CSS `transition` off `[data-trig]` roots**: Never put Tailwind `transition` or `transition-transform`/`transition-opacity` on an element carrying `data-trig` (especially stagger cards); put hover transitions on an inner wrapper element so ChronoTrig's `transitionend`/`transitioncancel` handler never aborts entrance keyframes prematurely.

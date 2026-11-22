@@ -216,7 +216,12 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
 
   it('replays grid reveals on filter changes without transition conflicts or hidden-card stagger gaps', () => {
     const view = fs.readFileSync(path.join(rootDir, 'src/views/BlogIndexView.astro'), 'utf-8');
+    const collectionView = fs.readFileSync(
+      path.join(rootDir, 'src/views/CollectionIndexView.astro'),
+      'utf-8'
+    );
     const postCard = fs.readFileSync(path.join(rootDir, 'src/components/PostCard.astro'), 'utf-8');
+    const globalCss = fs.readFileSync(path.join(rootDir, 'src/styles/global.css'), 'utf-8');
 
     expect(view).toContain('const replayGridReveals = () =>');
     expect(view).toContain('const syncVisibleStaggerDelays = () =>');
@@ -232,6 +237,17 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(postCardRoot).toContain('data-trig');
     expect(postCardRoot).not.toMatch(/\btransition\b/);
     expect(view).toContain("article.className = 'flex h-full'");
+    expect(postCard).toContain('UiBadge');
+
+    // Collection index shares chip filter sizing/active state, UiBadge stack pills, and visible-only stagger sync.
+    expect(globalCss).toContain(".chip[aria-pressed='true']");
+    expect(view).not.toContain('text-muted/70');
+    expect(collectionView).toContain('UiBadge');
+    expect(collectionView).toContain('class="chip cursor-pointer px-3 py-1.5 text-xs"');
+    expect(collectionView).toContain('const activeStacks = new Set<string>()');
+    expect(collectionView).toContain('activeStacks.delete(val)');
+    expect(collectionView).toContain('visibleChildren.forEach');
+    expect(collectionView).toContain("el.style.willChange = 'auto'");
   });
 
   it('wires BaseLayout.astro with /chronotrig.min.js inline script and module coordinator', () => {

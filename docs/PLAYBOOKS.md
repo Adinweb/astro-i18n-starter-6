@@ -294,7 +294,8 @@ npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke
 
 ### 4. Dynamic Filtering, Re-scans & Filter Replays
 * When dynamically appending cards in client scripts, call `refreshChronoTrig()` from `@/scripts/chronotrig` (which calls `window.chronoTrig.refresh()` to re-measure viewport, tracks, and observers; use `window.chronoTrig.sync(scrollY)` or `trigScroll?.(true)` inside scroll callbacks).
-* A filter change is different: hiding cards leaves the surviving ones with `.trig`, so they would appear without animating. Reset the grid first (`replayGridReveals()` in `BlogIndexView.astro`), force a reflow, then call `refreshChronoTrig()` — and skip that replay on the initial render, otherwise the page entrance restarts.
+* Keep CSS `transition` utilities off `[data-trig]` card roots (`PostCard.astro`, `CollectionIndexView.astro`) and place hover/shadow transitions on an inner child wrapper so ChronoTrig's `transitionend`/`transitioncancel` handler never settles cards mid-entrance.
+* A filter change is different: hiding cards leaves the surviving ones with `.trig`, and `.scan()` still counts `[hidden]` children in `--stagger-index`. Reset the grid's reveal classes and `willChange = 'auto'` first (`replayGridReveals()` in `BlogIndexView.astro`), force a reflow, call `refreshChronoTrig()`, and then strip stagger vars from hidden cards while re-indexing `--stagger-index` / `--stagger-delay` / `--stagger-total` strictly over visible (`!el.hidden`) cards (with `data-trig-root-margin="0px"` on filtered grids below tall heroes) — and skip that replay on the initial render.
 
 ---
 
