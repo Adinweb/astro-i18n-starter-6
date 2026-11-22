@@ -681,3 +681,273 @@ html:not([data-motion="full"]) body.chronotrig-mobile-disabled [data-parallax-st
     height: auto !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   10. BentoGrid Internal Visual Animations ([data-bento-card])
+   -------------------------------------------------------------------------- */
+@keyframes bento-emblem-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bento-orbit-in {
+  from {
+    opacity: 0;
+    transform: scale(0.74) rotate(-18deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bento-orbit-in-rtl {
+  from {
+    opacity: 0;
+    transform: scale(0.74) rotate(18deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bento-radar-pulse {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bento-bar-rise {
+  from {
+    opacity: 0.25;
+    transform: scaleY(0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bento-pill-expand {
+  from {
+    opacity: 0;
+    transform: scaleX(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bento-window-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bento-row-slide {
+  from {
+    opacity: 0;
+    transform: translate3d(-20px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bento-row-slide-rtl {
+  from {
+    opacity: 0;
+    transform: translate3d(20px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Initial .js hidden/pre-transform states for zero CLS & no-JS safety */
+.js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-emblem] {
+  opacity: 0;
+  transform: scale(0.82);
+}
+
+.js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-orbit] {
+  opacity: 0;
+  transform: scale(0.74) rotate(-18deg);
+}
+
+:where([dir="rtl"]) .js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-orbit] {
+  transform: scale(0.74) rotate(18deg);
+}
+
+.js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-radar] {
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+.js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-metric],
+.js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-chip],
+.js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-dot] {
+  opacity: 0;
+  transform: scale(0.86);
+}
+
+.js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-bar] {
+  opacity: 0.25;
+  transform: scaleY(0);
+}
+
+.js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-pill] {
+  opacity: 0;
+  transform: scaleX(0.2);
+}
+
+.js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-window] {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+}
+
+.js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-row] {
+  opacity: 0;
+  transform: translate3d(-20px, 0, 0);
+}
+
+:where([dir="rtl"]) .js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-row] {
+  transform: translate3d(20px, 0, 0);
+}
+
+/* Transform origins */
+[data-bento-bar] {
+  transform-origin: bottom center;
+}
+
+[data-bento-pill] {
+  transform-origin: left center;
+}
+
+:where([dir="rtl"]) [data-bento-pill] {
+  transform-origin: right center;
+}
+
+/* Active reveal animations synchronized with parent card's --stagger-delay */
+.js [data-bento-card].trig [data-bento-emblem],
+.js [data-bento-card].trig-stagger-active [data-bento-emblem],
+.js [data-bento-card].trig [data-bento-metric],
+.js [data-bento-card].trig-stagger-active [data-bento-metric],
+.js [data-bento-card].trig [data-bento-chip],
+.js [data-bento-card].trig-stagger-active [data-bento-chip],
+.js [data-bento-card].trig [data-bento-dot],
+.js [data-bento-card].trig-stagger-active [data-bento-dot] {
+  animation: bento-emblem-pop 760ms var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation-delay: calc(var(--stagger-delay, 0s) + var(--bento-delay, 80ms));
+}
+
+.js [data-bento-card].trig [data-bento-orbit],
+.js [data-bento-card].trig-stagger-active [data-bento-orbit] {
+  animation: bento-orbit-in 900ms var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation-delay: calc(var(--stagger-delay, 0s) + var(--bento-delay, 120ms));
+}
+
+:where([dir="rtl"]) .js [data-bento-card].trig [data-bento-orbit],
+:where([dir="rtl"]) .js [data-bento-card].trig-stagger-active [data-bento-orbit] {
+  animation-name: bento-orbit-in-rtl;
+}
+
+.js [data-bento-card].trig [data-bento-radar],
+.js [data-bento-card].trig-stagger-active [data-bento-radar] {
+  animation: bento-radar-pulse 860ms var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation-delay: calc(var(--stagger-delay, 0s) + var(--bento-delay, 90ms));
+}
+
+.js [data-bento-card].trig [data-bento-bar],
+.js [data-bento-card].trig-stagger-active [data-bento-bar] {
+  animation: bento-bar-rise 780ms var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation-delay: calc(var(--stagger-delay, 0s) + var(--bento-delay, 60ms));
+}
+
+.js [data-bento-card].trig [data-bento-pill],
+.js [data-bento-card].trig-stagger-active [data-bento-pill] {
+  animation: bento-pill-expand 680ms var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation-delay: calc(var(--stagger-delay, 0s) + var(--bento-delay, 100ms));
+}
+
+.js [data-bento-card].trig [data-bento-window],
+.js [data-bento-card].trig-stagger-active [data-bento-window] {
+  animation: bento-window-rise 840ms var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation-delay: calc(var(--stagger-delay, 0s) + var(--bento-delay, 40ms));
+}
+
+.js [data-bento-card].trig [data-bento-row],
+.js [data-bento-card].trig-stagger-active [data-bento-row] {
+  animation: bento-row-slide 760ms var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
+  animation-delay: calc(var(--stagger-delay, 0s) + var(--bento-delay, 100ms));
+}
+
+:where([dir="rtl"]) .js [data-bento-card].trig [data-bento-row],
+:where([dir="rtl"]) .js [data-bento-card].trig-stagger-active [data-bento-row] {
+  animation-name: bento-row-slide-rtl;
+}
+
+/* Reduced-motion, mobile-disabled, and print flattening for BentoGrid internals */
+html[data-motion="reduced"] .js [data-bento-card] [data-bento-emblem],
+html[data-motion="reduced"] .js [data-bento-card] [data-bento-orbit],
+html[data-motion="reduced"] .js [data-bento-card] [data-bento-radar],
+html[data-motion="reduced"] .js [data-bento-card] [data-bento-metric],
+html[data-motion="reduced"] .js [data-bento-card] [data-bento-chip],
+html[data-motion="reduced"] .js [data-bento-card] [data-bento-dot],
+html[data-motion="reduced"] .js [data-bento-card] [data-bento-bar],
+html[data-motion="reduced"] .js [data-bento-card] [data-bento-pill],
+html[data-motion="reduced"] .js [data-bento-card] [data-bento-window],
+html[data-motion="reduced"] .js [data-bento-card] [data-bento-row],
+body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-emblem],
+body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-orbit],
+body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-radar],
+body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-metric],
+body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-chip],
+body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-dot],
+body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-bar],
+body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-pill],
+body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-window],
+body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-row] {
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+@media print {
+  [data-bento-emblem],
+  [data-bento-orbit],
+  [data-bento-radar],
+  [data-bento-metric],
+  [data-bento-chip],
+  [data-bento-dot],
+  [data-bento-bar],
+  [data-bento-pill],
+  [data-bento-window],
+  [data-bento-row] {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}

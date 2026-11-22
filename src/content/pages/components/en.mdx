@@ -1137,14 +1137,15 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
     name="BentoGrid"
     category="Features & Content"
     title="BentoGrid"
-    summary="Asymmetric 5-card, 6-column Bento Grid with a featured metric highlight, circular ring emblem, sparkline performance card, and two wide split preview cards. Adapts automatically to OKLCH theme tokens, dark mode, and RTL."
+    summary="Asymmetric 5-card, 6-column Bento Grid with ChronoTrig-synced GPU internal reveals (orbital ring, radar pulse, equalizer sparkline, animated chart bars, and RTL-aware workflow rows) across 4 layouts and 3 surface styles."
     propsList={[
-      { name: "layout", type: "'classic' | 'spotlight' | 'mosaic'", defaultVal: "'classic'", description: "Switches grid arrangement: 3+2 classic, tall spotlight + full-width footer, or reversed 2+3 mosaic." },
-      { name: "metricCard", type: "BentoGridMetricCard", defaultVal: "100% Customizable", description: "Featured top-start metric card ({ metric, title, href? })." },
-      { name: "securityCard", type: "BentoGridFeatureCard", defaultVal: "Secure by default", description: "Centered double-ring icon card ({ title, description, icon?, href? })." },
-      { name: "speedCard", type: "BentoGridFeatureCard", defaultVal: "Faster than light", description: "Performance card with CSS sparkline bars." },
-      { name: "analyticsCard", type: "BentoGridFeatureCard", defaultVal: "Built-in insights", description: "Wide 2-column split card with inset chart preview." },
-      { name: "collaborationCard", type: "BentoGridFeatureCard", defaultVal: "Team-ready workflow", description: "Wide 2-column split card with stacked workflow rows." },
+      { name: "layout", type: "'classic' | 'spotlight' | 'mosaic' | 'showcase'", defaultVal: "'classic'", description: "Grid arrangement: 3+2 classic, tall spotlight-start, reversed 2+3 mosaic, or top-banner showcase." },
+      { name: "variant", type: "'default' | 'elevated' | 'tinted'", defaultVal: "'default'", description: "Card visual treatment: crisp flat surface, subtle depth gradient, or primary-tinted radial aura." },
+      { name: "metricCard", type: "BentoGridMetricCard", defaultVal: "100% Customizable", description: "Featured metric card ({ metric, title, description?, badge?, href? })." },
+      { name: "securityCard", type: "BentoGridFeatureCard", defaultVal: "Secure by default", description: "Centered double-radar icon card ({ title, description, icon?, badge?, href? })." },
+      { name: "speedCard", type: "BentoGridFeatureCard", defaultVal: "Faster than light", description: "Performance card with animated GPU equalizer sparkline bars." },
+      { name: "analyticsCard", type: "BentoGridFeatureCard", defaultVal: "Built-in insights", description: "Wide 2-column split card with animated window chart preview." },
+      { name: "collaborationCard", type: "BentoGridFeatureCard", defaultVal: "Team-ready workflow", description: "Wide 2-column split card with staggered RTL-aware workflow rows." },
       { name: "contained", type: "boolean", defaultVal: "false", description: "Skips redundant .layout-container padding when nested." }
     ]}
     usage={`import BentoGrid from '@/components/BentoGrid.astro';
@@ -1152,18 +1153,23 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
 <!-- Classic 3+2 grid (default) -->
 <BentoGrid />
 
-<!-- Tall Spotlight + Full-Width Row -->
-<BentoGrid layout="spotlight" />
+<!-- Top-Banner Showcase + Elevated Depth -->
+<BentoGrid
+  layout="showcase"
+  variant="elevated"
+  metricCard={{ metric: "10x", badge: "Edge AI", title: "Faster Inference" }}
+/>
 
-<!-- Reversed 2+3 Mosaic with custom cards -->
+<!-- Tinted Aura + Custom Badges -->
 <BentoGrid
   layout="mosaic"
-  metricCard={{ metric: "99.9%", title: "Uptime SLA", href: "/features/" }}
+  variant="tinted"
+  metricCard={{ metric: "99.9%", badge: "SLA", title: "Static Uptime", href: "/features/" }}
 />`}
   >
     <div class="space-y-12">
       <div>
-        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Layout: Classic (3 + 2 Default)</p>
+        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Layout: Classic (3 + 2 Default with Synced Internal Animations)</p>
         <BentoGrid
           contained
           layout="classic"
@@ -1185,7 +1191,7 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
       </div>
 
       <div>
-        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Layout: Mosaic (Reversed 2 + 3 with Custom Props)</p>
+        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Layout: Mosaic (Reversed 2 + 3 with Edge Infrastructure Badges)</p>
         <BentoGrid
           contained
           layout="mosaic"
@@ -1194,29 +1200,125 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
           subheading={null}
           metricCard={{
             metric: "99.9%",
+            badge: "Enterprise SLA",
             title: "Static Uptime",
             href: "/features/"
           }}
           securityCard={{
             icon: "lock",
+            badge: "HTTP/3",
             title: "Zero-Trust Headers",
             description: "Strict CSP, HSTS, and zero third-party runtime trackers out of the box.",
             href: "/features/"
           }}
           speedCard={{
             icon: "rocket",
+            badge: "< 50ms",
             title: "Sub-50ms TTFB",
             description: "Pre-rendered HTML and WebP assets served directly from global edge nodes."
           }}
           analyticsCard={{
             icon: "compass",
+            badge: "100 / 100",
             title: "Core Web Vitals",
             description: "Zero CLS scroll reveals and lightweight client bundles keep Lighthouse at 100."
           }}
           collaborationCard={{
             icon: "layers",
+            badge: "Typed MDX",
             title: "Multi-Locale Content",
             description: "Typed content collections keep English and Persian pages in strict parity.",
+            href: "/about/"
+          }}
+        />
+      </div>
+
+      <div>
+        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Layout: Showcase + Elevated Variant (AI Platform & Real-Time Telemetry)</p>
+        <BentoGrid
+          contained
+          layout="showcase"
+          variant="elevated"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+          metricCard={{
+            metric: "10x",
+            badge: "Edge Compute",
+            title: "Faster Inference",
+            description: "Zero cold starts across 35 globally distributed edge locations.",
+            href: "/features/"
+          }}
+          securityCard={{
+            icon: "lock",
+            badge: "SOC 2 Type II",
+            title: "Isolated Workspaces",
+            description: "Hardware-backed tenant isolation with automatic key rotation and audit logs.",
+            href: "/features/"
+          }}
+          speedCard={{
+            icon: "bolt",
+            badge: "< 12ms",
+            title: "Adaptive Streaming",
+            description: "Progressive token delivery keeps interactive dashboards responsive under load."
+          }}
+          analyticsCard={{
+            icon: "compass",
+            badge: "Live Signals",
+            title: "Conversion & Retention Telemetry",
+            description: "Track cohort velocity, latency percentiles, and deployment health in real time.",
+            href: "/features/"
+          }}
+          collaborationCard={{
+            icon: "rocket",
+            badge: "GitOps Ready",
+            title: "Instant Preview Deployments",
+            description: "Every pull request spins up a localized staging URL for instant stakeholder sign-off.",
+            href: "/about/"
+          }}
+        />
+      </div>
+
+      <div>
+        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Variant: Tinted Aura (Global Commerce & Multilingual Operations)</p>
+        <BentoGrid
+          contained
+          layout="classic"
+          variant="tinted"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+          metricCard={{
+            metric: "24/7",
+            badge: "RTL + LTR",
+            title: "Global Storefronts",
+            description: "Native currency formatting, Solar Hijri calendars, and localized feeds.",
+            href: "/pricing/"
+          }}
+          securityCard={{
+            icon: "shield",
+            badge: "GDPR Compliant",
+            title: "Consent Gatekeeper",
+            description: "Blocks analytics and third-party scripts cleanly until explicit visitor approval."
+          }}
+          speedCard={{
+            icon: "shopping-bag",
+            badge: "98% Checkout",
+            title: "Frictionless Conversion",
+            description: "Instant edge caching eliminates cart step delays on mobile and desktop."
+          }}
+          analyticsCard={{
+            icon: "star-filled",
+            badge: "NPS +74",
+            title: "Regional Revenue Attribution",
+            description: "Compare organic discovery and campaign lift cleanly across every market.",
+            href: "/pricing/"
+          }}
+          collaborationCard={{
+            icon: "globe",
+            badge: "Hreflang Auto",
+            title: "Cross-Border Publishing",
+            description: "Manage localized product launches, sitemaps, and branded social cards from one repo.",
             href: "/about/"
           }}
         />

@@ -19,6 +19,8 @@ import * as m from '@/paraglide/messages';
 export interface BentoGridMetricCard {
   metric: string;
   title: string;
+  description?: string;
+  badge?: string;
   href?: string;
 }
 
@@ -26,6 +28,7 @@ export interface BentoGridFeatureCard {
   title: string;
   description: string;
   icon?: string;
+  badge?: string;
   href?: string;
 }
 
@@ -40,7 +43,8 @@ interface Props {
   speedCard?: BentoGridFeatureCard;
   analyticsCard?: BentoGridFeatureCard;
   collaborationCard?: BentoGridFeatureCard;
-  layout?: 'classic' | 'spotlight' | 'mosaic';
+  layout?: 'classic' | 'spotlight' | 'mosaic' | 'showcase';
+  variant?: 'default' | 'elevated' | 'tinted';
   contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'sm' | 'md' | 'lg';
@@ -58,6 +62,7 @@ const {
   analyticsCard,
   collaborationCard,
   layout = 'classic',
+  variant = 'default',
   contained = false,
   surface = 'default',
   spacing = 'md',
@@ -117,8 +122,23 @@ const resolvedCollaboration: BentoGridFeatureCard = collaborationCard ?? {
 };
 
 const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
-const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
-const insetSurface = !contained && surface === 'surface' ? 'bg-surface/75' : 'bg-bg/75';
+const isInvertedSurface = !contained && surface === 'surface';
+
+const cardVariantClass =
+  variant === 'elevated'
+    ? isInvertedSurface
+      ? 'border-border bg-linear-to-b from-bg to-surface/75 shadow-sm'
+      : 'border-border bg-linear-to-b from-surface to-bg/85 shadow-sm'
+    : variant === 'tinted'
+      ? isInvertedSurface
+        ? 'border-primary/25 bg-bg'
+        : 'border-primary/25 bg-surface'
+      : isInvertedSurface
+        ? 'border-border bg-bg'
+        : 'border-border bg-surface';
+
+const insetSurface = isInvertedSurface ? 'bg-surface/75' : 'bg-bg/75';
+const isTinted = variant === 'tinted';
 
 const LAYOUT_CLASSES = {
   classic: {
@@ -142,6 +162,13 @@ const LAYOUT_CLASSES = {
     security: 'col-span-full sm:col-span-3 lg:col-span-2 lg:order-4',
     speed: 'col-span-full sm:col-span-3 lg:col-span-2 lg:order-5',
   },
+  showcase: {
+    collaboration: 'col-span-full lg:col-span-6 lg:order-1',
+    analytics: 'col-span-full lg:col-span-4 lg:order-2',
+    metric: 'col-span-full lg:col-span-2 lg:row-span-2 lg:order-3',
+    security: 'col-span-full sm:col-span-3 lg:col-span-2 lg:order-4',
+    speed: 'col-span-full sm:col-span-3 lg:col-span-2 lg:order-5',
+  },
 } as const;
 
 const span = LAYOUT_CLASSES[layout];
@@ -149,9 +176,9 @@ const span = LAYOUT_CLASSES[layout];
 const SPARKLINE_BARS = [32, 48, 40, 66, 54, 78, 68, 92, 84, 100] as const;
 const CHART_BARS = [34, 52, 44, 68, 60, 82, 74, 96, 88] as const;
 const WORKFLOW_ROWS = [
-  { icon: 'layers', dot: 'bg-success', barA: 'w-24', barB: 'w-14' },
-  { icon: 'code', dot: 'bg-primary', barA: 'w-20', barB: 'w-16' },
-  { icon: 'rocket', dot: 'bg-accent', barA: 'w-28', barB: 'w-12' },
+  { icon: 'layers', dot: 'bg-success', barA: 'w-24', barB: 'w-14', hoverDelay: 'group-hover:delay-0' },
+  { icon: 'code', dot: 'bg-primary', barA: 'w-20', barB: 'w-16', hoverDelay: 'group-hover:delay-75' },
+  { icon: 'rocket', dot: 'bg-accent', barA: 'w-28', barB: 'w-12', hoverDelay: 'group-hover:delay-150' },
 ] as const;
 ---
 
@@ -179,29 +206,64 @@ const WORKFLOW_ROWS = [
     <article
       data-trig
       data-trig-once="true"
+      data-bento-card
       class:list={[
-        'group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+        'group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
         span.metric,
-        cardSurface,
+        cardVariantClass,
       ]}
     >
       <div
         aria-hidden="true"
-        class="pointer-events-none absolute -top-16 start-1/2 size-44 -translate-x-1/2 rounded-full hero-glow-primary opacity-45 rtl:translate-x-1/2 print:hidden"
+        class:list={[
+          'pointer-events-none absolute -top-16 start-1/2 size-44 -translate-x-1/2 rounded-full hero-glow-primary transition-opacity duration-500 rtl:translate-x-1/2 print:hidden',
+          isTinted ? 'opacity-65 group-hover:opacity-90' : 'opacity-45 group-hover:opacity-75',
+        ]}
       >
       </div>
 
-      <div
-        class="relative mx-auto flex aspect-square size-32 items-center justify-center rounded-full border border-border bg-surface-hover/50 before:pointer-events-none before:absolute before:-inset-2 before:rounded-full before:border before:border-border/60"
-      >
-        <span
-          class="bg-linear-to-r from-primary to-accent bg-clip-text text-4xl font-extrabold tracking-tight text-transparent tabular-nums rtl:bg-linear-to-l print:bg-none print:text-fg"
+      <div class="relative mx-auto flex aspect-square size-32 items-center justify-center">
+        <div
+          aria-hidden="true"
+          data-bento-orbit
+          style="--bento-delay: 120ms"
+          class="pointer-events-none absolute -inset-2.5 rounded-full border border-dashed border-primary/35 transition-transform duration-700 ease-out group-hover:rotate-12 group-hover:scale-105 rtl:group-hover:-rotate-12"
         >
-          {resolvedMetric.metric}
-        </span>
+        </div>
+
+        <div
+          data-bento-emblem
+          style="--bento-delay: 40ms"
+          class="relative flex size-full items-center justify-center rounded-full border border-border bg-surface-hover/50 transition-transform duration-300 group-hover:scale-105 before:pointer-events-none before:absolute before:-inset-1.5 before:rounded-full before:border before:border-border/60"
+        >
+          <span
+            data-bento-metric
+            style="--bento-delay: 150ms"
+            class="bg-linear-to-r from-primary to-accent bg-clip-text text-4xl font-extrabold tracking-tight text-transparent tabular-nums rtl:bg-linear-to-l print:bg-none print:text-fg"
+          >
+            {resolvedMetric.metric}
+          </span>
+        </div>
       </div>
 
-      <h3 class="relative z-10 mt-6 text-2xl font-bold tracking-tight text-fg">
+      {
+        resolvedMetric.badge && (
+          <span
+            data-bento-chip
+            style="--bento-delay: 200ms"
+            class="relative z-10 mt-5 inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary"
+          >
+            {resolvedMetric.badge}
+          </span>
+        )
+      }
+
+      <h3
+        class:list={[
+          'relative z-10 text-2xl font-bold tracking-tight text-fg',
+          resolvedMetric.badge ? 'mt-2.5' : 'mt-6',
+        ]}
+      >
         {
           resolvedMetric.href ? (
             <a
@@ -215,26 +277,72 @@ const WORKFLOW_ROWS = [
           )
         }
       </h3>
+
+      {
+        resolvedMetric.description && (
+          <p class="relative z-10 mt-2 max-w-[26ch] text-sm leading-relaxed text-muted">
+            {resolvedMetric.description}
+          </p>
+        )
+      }
     </article>
 
-    <!-- Card 2: Security / Ring Emblem -->
+    <!-- Card 2: Security / Radar Ring Emblem -->
     <article
       data-trig
       data-trig-once="true"
+      data-bento-card
       class:list={[
-        'group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+        'group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
         span.security,
-        cardSurface,
+        cardVariantClass,
       ]}
     >
-      <div
-        class="relative mx-auto mt-2 flex aspect-square size-28 items-center justify-center rounded-full border border-border bg-surface-hover/60 text-primary before:pointer-events-none before:absolute before:-inset-2 before:rounded-full before:border before:border-border/60"
-        aria-hidden="true"
-      >
-        <Icon name={resolvedSecurity.icon ?? 'shield'} size={36} />
+      {
+        isTinted && (
+          <div
+            aria-hidden="true"
+            class="pointer-events-none absolute -bottom-16 start-1/2 size-40 -translate-x-1/2 rounded-full hero-glow-accent opacity-30 transition-opacity duration-500 group-hover:opacity-55 rtl:translate-x-1/2 print:hidden"
+          />
+        )
+      }
+
+      <div class="relative mx-auto mt-2 flex aspect-square size-28 items-center justify-center" aria-hidden="true">
+        <span
+          data-bento-radar
+          style="--bento-delay: 160ms"
+          class="pointer-events-none absolute -inset-3 rounded-full border border-primary/20 transition duration-500 group-hover:scale-110 group-hover:border-primary/45"
+        />
+        <span
+          data-bento-radar
+          style="--bento-delay: 90ms"
+          class="pointer-events-none absolute -inset-1.5 rounded-full border border-border/70 transition duration-300 group-hover:scale-105 group-hover:border-primary/30"
+        />
+        <div
+          data-bento-emblem
+          style="--bento-delay: 40ms"
+          class="relative flex size-full items-center justify-center rounded-full border border-border bg-surface-hover/60 text-primary transition-transform duration-300 group-hover:scale-105"
+        >
+          <Icon
+            name={resolvedSecurity.icon ?? 'shield'}
+            size={36}
+            class="transition-transform duration-300 group-hover:scale-110"
+          />
+        </div>
       </div>
 
       <div class="relative z-10 mt-6 space-y-2">
+        {
+          resolvedSecurity.badge && (
+            <span
+              data-bento-chip
+              style="--bento-delay: 180ms"
+              class="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary"
+            >
+              {resolvedSecurity.badge}
+            </span>
+          )
+        }
         <h3 class="text-lg font-bold tracking-tight text-fg">
           {
             resolvedSecurity.href ? (
@@ -253,45 +361,60 @@ const WORKFLOW_ROWS = [
       </div>
     </article>
 
-    <!-- Card 3: Performance / Sparkline Visual -->
+    <!-- Card 3: Performance / Equalizer Sparkline Visual -->
     <article
       data-trig
       data-trig-once="true"
+      data-bento-card
       class:list={[
-        'group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+        'group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
         span.speed,
-        cardSurface,
+        cardVariantClass,
       ]}
     >
       <div
         aria-hidden="true"
         class:list={[
-          'mx-auto w-full rounded-xl border border-border/80 p-4',
+          'mx-auto w-full rounded-xl border border-border/80 p-4 transition-colors duration-300 group-hover:border-primary/30',
           insetSurface,
         ]}
       >
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-2">
           <span
-            class="inline-flex size-7 items-center justify-center rounded-full border border-border bg-surface text-primary"
+            data-bento-emblem
+            style="--bento-delay: 40ms"
+            class="inline-flex size-7 items-center justify-center rounded-full border border-border bg-surface text-primary transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
           >
             <Icon name={resolvedSpeed.icon ?? 'bolt'} size={15} />
           </span>
-          <span class="h-2 w-16 rounded-full bg-border/80"></span>
+          <div class="flex items-center gap-2">
+            <span
+              data-bento-dot
+              style="--bento-delay: 140ms"
+              class="size-2 rounded-full bg-primary/80 transition-transform duration-300 group-hover:scale-125"
+            />
+            <span
+              data-bento-pill
+              style="--bento-delay: 110ms"
+              class="h-2 w-16 rounded-full bg-border/80"
+            />
+          </div>
         </div>
 
         <div class="mt-4 flex h-16 items-end gap-1.5">
           {
             SPARKLINE_BARS.map((height, idx) => (
               <span
+                data-bento-bar
                 class:list={[
-                  'flex-1 rounded-t-sm transition-all duration-300',
+                  'flex-1 rounded-t-sm transition-transform duration-300 group-hover:scale-y-105',
                   idx >= SPARKLINE_BARS.length - 2
                     ? 'bg-primary'
                     : idx >= SPARKLINE_BARS.length - 4
                       ? 'bg-primary/55'
                       : 'bg-primary/25',
                 ]}
-                style={`height: ${height}%`}
+                style={`height: ${height}%; --bento-delay: ${80 + idx * 45}ms`}
               />
             ))
           }
@@ -299,6 +422,17 @@ const WORKFLOW_ROWS = [
       </div>
 
       <div class="relative z-10 mt-6 space-y-2">
+        {
+          resolvedSpeed.badge && (
+            <span
+              data-bento-chip
+              style="--bento-delay: 220ms"
+              class="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary"
+            >
+              {resolvedSpeed.badge}
+            </span>
+          )
+        }
         <h3 class="text-lg font-bold tracking-tight text-fg">
           {
             resolvedSpeed.href ? (
@@ -321,19 +455,45 @@ const WORKFLOW_ROWS = [
     <article
       data-trig
       data-trig-once="true"
+      data-bento-card
       class:list={[
-        'group relative overflow-hidden rounded-2xl border border-border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+        'group relative overflow-hidden rounded-2xl border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
         span.analytics,
-        cardSurface,
+        cardVariantClass,
       ]}
     >
+      {
+        isTinted && (
+          <div
+            aria-hidden="true"
+            class="pointer-events-none absolute -top-20 end-6 size-48 rounded-full hero-glow-accent opacity-35 transition-opacity duration-500 group-hover:opacity-65 print:hidden"
+          />
+        )
+      }
+
       <div class="grid h-full gap-6 sm:grid-cols-2">
         <div class="relative z-10 flex flex-col justify-between space-y-8">
-          <div
-            class="relative flex aspect-square size-12 items-center justify-center rounded-full border border-border bg-surface-hover/60 text-primary before:pointer-events-none before:absolute before:-inset-1.5 before:rounded-full before:border before:border-border/60"
-            aria-hidden="true"
-          >
-            <Icon name={resolvedAnalytics.icon ?? 'sparkles'} size={20} />
+          <div class="flex flex-wrap items-center gap-3">
+            <div
+              data-bento-emblem
+              style="--bento-delay: 40ms"
+              class="relative flex aspect-square size-12 items-center justify-center rounded-full border border-border bg-surface-hover/60 text-primary transition-transform duration-300 group-hover:scale-105 before:pointer-events-none before:absolute before:-inset-1.5 before:rounded-full before:border before:border-border/60"
+              aria-hidden="true"
+            >
+              <Icon name={resolvedAnalytics.icon ?? 'sparkles'} size={20} />
+            </div>
+
+            {
+              resolvedAnalytics.badge && (
+                <span
+                  data-bento-chip
+                  style="--bento-delay: 140ms"
+                  class="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary"
+                >
+                  {resolvedAnalytics.badge}
+                </span>
+              )
+            }
           </div>
 
           <div class="space-y-2 text-start">
@@ -357,30 +517,45 @@ const WORKFLOW_ROWS = [
 
         <div
           aria-hidden="true"
+          data-bento-window
+          style="--bento-delay: 50ms"
           class:list={[
-            'relative -mb-6 -me-6 mt-2 flex flex-col justify-end rounded-ss-2xl border-s border-t border-border p-5 pt-9 sm:-mb-7 sm:-me-7 sm:ms-2 sm:mt-0',
+            'relative -mb-6 -me-6 mt-2 flex flex-col justify-end rounded-ss-2xl border-s border-t border-border p-5 pt-9 transition-transform duration-300 group-hover:-translate-y-0.5 sm:-mb-7 sm:-me-7 sm:ms-2 sm:mt-0',
             insetSurface,
           ]}
         >
           <div class="absolute start-4 top-3 flex items-center gap-1.5">
-            <span class="block size-2 rounded-full border border-border bg-surface-hover"></span>
-            <span class="block size-2 rounded-full border border-border bg-surface-hover"></span>
-            <span class="block size-2 rounded-full border border-border bg-surface-hover"></span>
+            <span
+              data-bento-dot
+              style="--bento-delay: 80ms"
+              class="block size-2 rounded-full border border-border bg-surface-hover"
+            />
+            <span
+              data-bento-dot
+              style="--bento-delay: 140ms"
+              class="block size-2 rounded-full border border-border bg-surface-hover"
+            />
+            <span
+              data-bento-dot
+              style="--bento-delay: 200ms"
+              class="block size-2 rounded-full border border-border bg-surface-hover transition-colors duration-300 group-hover:bg-primary/60"
+            />
           </div>
 
           <div class="flex h-32 items-end gap-2">
             {
               CHART_BARS.map((height, idx) => (
                 <span
+                  data-bento-bar
                   class:list={[
-                    'flex-1 rounded-t-md',
+                    'flex-1 rounded-t-md transition-transform duration-300 group-hover:scale-y-105',
                     idx === CHART_BARS.length - 1
                       ? 'bg-accent'
                       : idx >= CHART_BARS.length - 3
                         ? 'bg-primary'
                         : 'bg-primary/30',
                   ]}
-                  style={`height: ${height}%`}
+                  style={`height: ${height}%; --bento-delay: ${100 + idx * 55}ms`}
                 />
               ))
             }
@@ -393,19 +568,45 @@ const WORKFLOW_ROWS = [
     <article
       data-trig
       data-trig-once="true"
+      data-bento-card
       class:list={[
-        'group relative overflow-hidden rounded-2xl border border-border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+        'group relative overflow-hidden rounded-2xl border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
         span.collaboration,
-        cardSurface,
+        cardVariantClass,
       ]}
     >
+      {
+        isTinted && (
+          <div
+            aria-hidden="true"
+            class="pointer-events-none absolute -bottom-20 end-8 size-48 rounded-full hero-glow-primary opacity-30 transition-opacity duration-500 group-hover:opacity-60 print:hidden"
+          />
+        )
+      }
+
       <div class="grid h-full gap-6 sm:grid-cols-2">
         <div class="relative z-10 flex flex-col justify-between space-y-8">
-          <div
-            class="relative flex aspect-square size-12 items-center justify-center rounded-full border border-border bg-surface-hover/60 text-primary before:pointer-events-none before:absolute before:-inset-1.5 before:rounded-full before:border before:border-border/60"
-            aria-hidden="true"
-          >
-            <Icon name={resolvedCollaboration.icon ?? 'users'} size={20} />
+          <div class="flex flex-wrap items-center gap-3">
+            <div
+              data-bento-emblem
+              style="--bento-delay: 40ms"
+              class="relative flex aspect-square size-12 items-center justify-center rounded-full border border-border bg-surface-hover/60 text-primary transition-transform duration-300 group-hover:scale-105 before:pointer-events-none before:absolute before:-inset-1.5 before:rounded-full before:border before:border-border/60"
+              aria-hidden="true"
+            >
+              <Icon name={resolvedCollaboration.icon ?? 'users'} size={20} />
+            </div>
+
+            {
+              resolvedCollaboration.badge && (
+                <span
+                  data-bento-chip
+                  style="--bento-delay: 140ms"
+                  class="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary"
+                >
+                  {resolvedCollaboration.badge}
+                </span>
+              )
+            }
           </div>
 
           <div class="space-y-2 text-start">
@@ -429,22 +630,43 @@ const WORKFLOW_ROWS = [
 
         <div
           aria-hidden="true"
+          data-bento-window
+          style="--bento-delay: 50ms"
           class:list={[
             'relative -mb-6 -me-6 mt-2 flex flex-col justify-center gap-2.5 rounded-ss-2xl border-s border-t border-border p-5 sm:-mb-7 sm:-me-7 sm:ms-2 sm:mt-0',
             insetSurface,
           ]}
         >
           {
-            WORKFLOW_ROWS.map((row) => (
-              <div class="flex items-center gap-3 rounded-xl border border-border/80 bg-surface px-3 py-2.5 shadow-xs">
+            WORKFLOW_ROWS.map((row, idx) => (
+              <div
+                data-bento-row
+                style={`--bento-delay: ${100 + idx * 95}ms`}
+                class:list={[
+                  'flex items-center gap-3 rounded-xl border border-border/80 bg-surface px-3 py-2.5 shadow-xs transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1',
+                  row.hoverDelay,
+                ]}
+              >
                 <span class="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-hover/70 text-primary">
                   <Icon name={row.icon} size={16} />
                 </span>
                 <div class="min-w-0 flex-1 space-y-1.5">
-                  <span class:list={['block h-2 rounded-full bg-fg/20', row.barA]} />
-                  <span class:list={['block h-1.5 rounded-full bg-muted/25', row.barB]} />
+                  <span
+                    data-bento-pill
+                    style={`--bento-delay: ${170 + idx * 95}ms`}
+                    class:list={['block h-2 rounded-full bg-fg/20', row.barA]}
+                  />
+                  <span
+                    data-bento-pill
+                    style={`--bento-delay: ${220 + idx * 95}ms`}
+                    class:list={['block h-1.5 rounded-full bg-muted/25', row.barB]}
+                  />
                 </div>
-                <span class:list={['size-2 shrink-0 rounded-full', row.dot]} />
+                <span
+                  data-bento-dot
+                  style={`--bento-delay: ${250 + idx * 95}ms`}
+                  class:list={['size-2 shrink-0 rounded-full', row.dot]}
+                />
               </div>
             ))
           }

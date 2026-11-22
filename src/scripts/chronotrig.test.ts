@@ -468,4 +468,35 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(setProps['--parallax-y']).toBe('0px');
     expect(mockStage.dataset.parallaxActive).toBe('false');
   });
+
+  it('syncs BentoGrid internal visual animations with ChronoTrig reveals, RTL mirroring, and reduced-motion/print flattening', () => {
+    const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
+    const bentoGrid = fs.readFileSync(path.join(rootDir, 'src/components/BentoGrid.astro'), 'utf-8');
+
+    // Card hook & internal animated visual targets
+    expect(bentoGrid).toContain('data-bento-card');
+    expect(bentoGrid).toContain('data-bento-orbit');
+    expect(bentoGrid).toContain('data-bento-radar');
+    expect(bentoGrid).toContain('data-bento-bar');
+    expect(bentoGrid).toContain('data-bento-window');
+    expect(bentoGrid).toContain('data-bento-row');
+    expect(bentoGrid).toContain('data-bento-pill');
+    expect(bentoGrid).toContain('--bento-delay:');
+
+    // New layout & surface variants remain semantic-only without raw SVG or hex tokens
+    const bentoMarkup = bentoGrid.split(/^---$/m).slice(2).join('---');
+    expect(bentoGrid).toContain('showcase');
+    expect(bentoGrid).toContain('elevated');
+    expect(bentoGrid).toContain('tinted');
+    expect(bentoMarkup).not.toMatch(/<svg[\s>]/i);
+    expect(bentoMarkup).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+
+    // Compositor-only bar growth (scaleY) & RTL-mirrored workflow slide-in keyframes
+    expect(css).toContain('bento-bar-rise');
+    expect(css).toContain('transform: scaleY(0)');
+    expect(css).toContain('bento-row-slide-rtl');
+    expect(css).toContain('calc(var(--stagger-delay, 0s) + var(--bento-delay');
+    expect(css).toContain('html[data-motion="reduced"] .js [data-bento-card] [data-bento-bar]');
+    expect(css).toContain('body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-row]');
+  });
 });

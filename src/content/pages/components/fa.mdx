@@ -1136,15 +1136,16 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
     surface="surface"
     name="BentoGrid"
     category="امکانات و محتوا"
-    title="BentoGrid (شبکه بنتو ۵کارته)"
-    summary="شبکه نامتقارن ۵کارته و ۶ستونه شامل کارت شاخص عددی، نشان دایره‌ای دوحلقه‌ای، کارت نمودار عملکرد و دو کارت عریض دو‌بخشی؛ کاملاً هماهنگ با توکن‌های OKLCH، حالت تیره و راست‌به‌چپ."
+    title="BentoGrid (شبکه بنتو ۵کارته انیمیت‌شده)"
+    summary="شبکه نامتقارن ۵کارته و ۶ستونه با انیمیشن هماهنگ‌شده اجزای داخلی روی GPU (حلقه مداری، امواج رادار، اکولایزر عملکرد، نمودار میله‌ای و ردیف‌های جریان کار سازگار با RTL) در ۴ چیدمان و ۳ سبک ظاهری."
     propsList={[
-      { name: "layout", type: "'classic' | 'spotlight' | 'mosaic'", defaultVal: "'classic'", description: "نوع چیدمان جدول: کلاسیک (۳+۲)، کانونی (کارت عمودی بلند + بنر تمام‌عرض) یا موزاییک معکوس (۲+۳)." },
-      { name: "metricCard", type: "BentoGridMetricCard", defaultVal: "۱۰۰٪ قابل سفارشی‌سازی", description: "کارت شاخص عددی ردیف اول ({ metric, title, href? })." },
-      { name: "securityCard", type: "BentoGridFeatureCard", defaultVal: "امن به‌صورت پیش‌فرض", description: "کارت میانی با نشان آیکون دوحلقه‌ای ({ title, description, icon?, href? })." },
-      { name: "speedCard", type: "BentoGridFeatureCard", defaultVal: "سرعت فوق‌العاده", description: "کارت عملکرد همراه با نمودار میله‌ای CSS." },
-      { name: "analyticsCard", type: "BentoGridFeatureCard", defaultVal: "تحلیل و بینش داخلی", description: "کارت عریض دو‌ستونه با پنجره پیش‌نمایش نمودار." },
-      { name: "collaborationCard", type: "BentoGridFeatureCard", defaultVal: "هماهنگ برای کار تیمی", description: "کارت عریض دو‌ستونه با ردیف‌های جریان کار." },
+      { name: "layout", type: "'classic' | 'spotlight' | 'mosaic' | 'showcase'", defaultVal: "'classic'", description: "چیدمان جدول: کلاسیک (۳+۲)، کانونی، موزاییک معکوس یا نمایشگاهی (بنر تمام‌عرض بالا + ستون عمودی انتها)." },
+      { name: "variant", type: "'default' | 'elevated' | 'tinted'", defaultVal: "'default'", description: "سبک کارت‌ها: سطح استاندارد، عمق گرادیانی برجسته یا هاله رنگی ملایم." },
+      { name: "metricCard", type: "BentoGridMetricCard", defaultVal: "۱۰۰٪ قابل سفارشی‌سازی", description: "کارت شاخص عددی برجسته ({ metric, title, description?, badge?, href? })." },
+      { name: "securityCard", type: "BentoGridFeatureCard", defaultVal: "امن به‌صورت پیش‌فرض", description: "کارت میانی با امواج رادار دوحلقه‌ای ({ title, description, icon?, badge?, href? })." },
+      { name: "speedCard", type: "BentoGridFeatureCard", defaultVal: "سرعت فوق‌العاده", description: "کارت عملکرد همراه با میله‌های اکولایزر انیمیت‌شده بر پایه scaleY." },
+      { name: "analyticsCard", type: "BentoGridFeatureCard", defaultVal: "تحلیل و بینش داخلی", description: "کارت عریض دو‌ستونه با پنجره پیش‌نمایش نمودار پویا." },
+      { name: "collaborationCard", type: "BentoGridFeatureCard", defaultVal: "هماهنگ برای کار تیمی", description: "کارت عریض دو‌ستونه با ردیف‌های لغزنده جریان کار در جهت مطالعه." },
       { name: "contained", type: "boolean", defaultVal: "false", description: "حذف حاشیه اضافه هنگام استفاده در چیدمان‌های تو‌در‌تو." }
     ]}
     usage={`import BentoGrid from '@/components/BentoGrid.astro';
@@ -1152,18 +1153,23 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
 <!-- چیدمان کلاسیک ۳+۲ (پیش‌فرض) -->
 <BentoGrid />
 
-<!-- چیدمان کانونی با کارت عمودی بلند و ردیف تمام‌عرض -->
-<BentoGrid layout="spotlight" />
+<!-- چیدمان نمایشگاهی با سطح برجسته -->
+<BentoGrid
+  layout="showcase"
+  variant="elevated"
+  metricCard={{ metric: "۱۰×", badge: "پردازش لبه", title: "سرعت پردازش بالاتر" }}
+/>
 
-<!-- چیدمان موزاییک معکوس ۲+۳ با کارت‌های سفارشی -->
+<!-- سبک هاله رنگی با نشان‌های سفارشی -->
 <BentoGrid
   layout="mosaic"
-  metricCard={{ metric: "۹۹٫۹٪", title: "پایداری استاتیک", href: "/fa/ویژگی‌ها/" }}
+  variant="tinted"
+  metricCard={{ metric: "۹۹٫۹٪", badge: "SLA", title: "پایداری استاتیک", href: "/fa/ویژگی‌ها/" }}
 />`}
   >
     <div class="space-y-12">
       <div>
-        <p class="mb-3 text-xs font-semibold text-muted">چیدمان کلاسیک (Classic — ردیف اول ۳ کارت، ردیف دوم ۲ کارت عریض)</p>
+        <p class="mb-3 text-xs font-semibold text-muted">چیدمان کلاسیک (Classic — انیمیشن همزمان حلقه‌ها، اکولایزر، نمودار و ردیف‌های جریان کار)</p>
         <BentoGrid
           contained
           layout="classic"
@@ -1185,7 +1191,7 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
       </div>
 
       <div>
-        <p class="mb-3 text-xs font-semibold text-muted">چیدمان موزاییک معکوس (Mosaic — ردیف اول ۲ کارت عریض، ردیف دوم ۳ کارت با داده‌های سفارشی)</p>
+        <p class="mb-3 text-xs font-semibold text-muted">چیدمان موزاییک معکوس (Mosaic — همراه با نشان‌های وضعیت و داده‌های زیرساخت)</p>
         <BentoGrid
           contained
           layout="mosaic"
@@ -1194,29 +1200,125 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
           subheading={null}
           metricCard={{
             metric: "۹۹٫۹٪",
+            badge: "تضمین سرویس",
             title: "پایداری استاتیک",
             href: "/fa/ویژگی‌ها/"
           }}
           securityCard={{
             icon: "lock",
+            badge: "HTTP/3",
             title: "هدرهای امنیتی آماده",
             description: "پیکربندی استاندارد CSP و HSTS بدون ردیاب‌های سنگین جانبی.",
             href: "/fa/ویژگی‌ها/"
           }}
           speedCard={{
             icon: "rocket",
+            badge: "< ۵۰ms",
             title: "پاسخ‌دهی زیر ۵۰ میلی‌ثانیه",
             description: "تحویل مستقیم HTML استاتیک و تصاویر WebP از نزدیک‌ترین نود CDN."
           }}
           analyticsCard={{
             icon: "compass",
+            badge: "۱۰۰ / ۱۰۰",
             title: "امتیاز کامل Core Web Vitals",
             description: "انیمیشن‌های بدون CLS و باندل سبک کلاینت برای حداکثر سرعت اجرا."
           }}
           collaborationCard={{
             icon: "layers",
+            badge: "MDX تایپ‌شده",
             title: "محتوای چندزبانه یکپارچه",
             description: "کالکشن‌های تایپ‌شده برای همگام نگه داشتن صفحات فارسی و انگلیسی.",
+            href: "/fa/درباره-ما/"
+          }}
+        />
+      </div>
+
+      <div>
+        <p class="mb-3 text-xs font-semibold text-muted">چیدمان نمایشگاهی + سطح برجسته (Showcase Elevated — پلتفرم هوش مصنوعی و تله‌متری لحظه‌ای)</p>
+        <BentoGrid
+          contained
+          layout="showcase"
+          variant="elevated"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+          metricCard={{
+            metric: "۱۰×",
+            badge: "پردازش لبه",
+            title: "استنتاج فوق‌سریع",
+            description: "اجرای آنی بدون تاخیر راه‌اندازی در ۳۵ مرکز لبه جهانی.",
+            href: "/fa/ویژگی‌ها/"
+          }}
+          securityCard={{
+            icon: "lock",
+            badge: "SOC 2 Type II",
+            title: "فضاهای کاری ایزوله",
+            description: "جداسازی سخت‌افزاری داده‌های سازمانی همراه با چرخش خودکار کلید و گزارش ممیزی.",
+            href: "/fa/ویژگی‌ها/"
+          }}
+          speedCard={{
+            icon: "bolt",
+            badge: "< ۱۲ms",
+            title: "استریمینگ تطبیقی",
+            description: "ارسال پیوسته خروجی‌ها برای حفظ روانی کامل رابط کاربری در ترافیک بالا."
+          }}
+          analyticsCard={{
+            icon: "compass",
+            badge: "پایش زنده",
+            title: "شاخص‌های تبدیل و پایداری",
+            description: "تحلیل لحظه‌ای نرخ ماندگاری کاربران، صدک‌های تاخیر و سلامت انتشار نسخه‌ها.",
+            href: "/fa/ویژگی‌ها/"
+          }}
+          collaborationCard={{
+            icon: "rocket",
+            badge: "همگام با GitOps",
+            title: "پیش‌نمایش آنی تغییرات",
+            description: "هر نسخه آزمایشی بلافاصله با نشانی مجزای چندزبانه برای تایید تیم و مشتری آماده می‌شود.",
+            href: "/fa/درباره-ما/"
+          }}
+        />
+      </div>
+
+      <div>
+        <p class="mb-3 text-xs font-semibold text-muted">سبک هاله رنگی (Tinted Aura — تجارت الکترونیک و عملیات بین‌المللی)</p>
+        <BentoGrid
+          contained
+          layout="classic"
+          variant="tinted"
+          eyebrow={null}
+          heading={null}
+          subheading={null}
+          metricCard={{
+            metric: "۲۴/۷",
+            badge: "RTL + LTR",
+            title: "فروشگاه‌های جهانی",
+            description: "فرمت بومی مبالغ، تاریخ شمسی و خوراک سئو برای هر بازار منطقه‌ای.",
+            href: "/fa/قیمت‌گذاری/"
+          }}
+          securityCard={{
+            icon: "shield",
+            badge: "منطبق با GDPR",
+            title: "مدیریت هوشمند رضایت",
+            description: "اسکریپت‌های تحلیلی و ردیاب‌ها تنها پس از تایید صریح بازدیدکننده بارگذاری می‌شوند."
+          }}
+          speedCard={{
+            icon: "shopping-bag",
+            badge: "۹۸٪ تکمیل خرید",
+            title: "فرآیند پرداخت بی‌درنگ",
+            description: "کش استاتیک لبه تمام مکث‌های اضافی در مراحل سبد خرید موبایل را حذف می‌کند."
+          }}
+          analyticsCard={{
+            icon: "star-filled",
+            badge: "NPS +۷۴",
+            title: "سنجش دقیق بازگشت سرمایه",
+            description: "مقایسه عملکرد کشف ارگانیک و کمپین‌ها در بازارهای مختلف با یک داشبورد واحد.",
+            href: "/fa/قیمت‌گذاری/"
+          }}
+          collaborationCard={{
+            icon: "globe",
+            badge: "Hreflang خودکار",
+            title: "انتشار هماهنگ مرزی",
+            description: "مدیریت همزمان کمپین‌ها، نقشه سایت و کارت‌های شبکه اجتماعی از یک مخزن مرکزی.",
             href: "/fa/درباره-ما/"
           }}
         />
