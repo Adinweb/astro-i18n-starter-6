@@ -509,6 +509,12 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(css).toContain('.js [data-ui-progress-ring]:not([data-progress-active="true"]) [data-ui-progress-ring-track]');
     expect(css).toContain('html[data-motion="reduced"] .js [data-ui-progress-ring-track]');
 
+    // RTL selectors must match <html dir="rtl" class="js"> on the same element (never descendant-only :where([dir="rtl"]) .js)
+    expect(css).not.toMatch(/:where\(\[dir="rtl"\]\)\s+\.js\b/);
+    expect(css).toContain(':is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-ui-progress-bar] [data-ui-progress-fill]');
+    expect(css).toContain(':is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-ui-progress-steps] [data-ui-progress-step-fill]');
+    expect(progress).toContain("'flex w-full overflow-hidden rounded-full bg-surface-hover'");
+
     // ComponentDoc previews skip heavy outer [data-trig] promotion by default
     expect(doc).toContain('animatePreview = false');
     expect(enMdx).toContain('id="doc-progress"');

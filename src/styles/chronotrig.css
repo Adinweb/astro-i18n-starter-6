@@ -256,10 +256,10 @@ body.chronotrig-mobile-lightweight .js [data-trig].blurIn.trig {
   clip-path: inset(0 0 0 0);
   animation-name: trig-clip-start;
 }
-:where([dir="rtl"]) .js [data-trig].clipStart:not(.trig) {
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-trig].clipStart:not(.trig) {
   clip-path: inset(0 0 0 100%);
 }
-:where([dir="rtl"]) .js [data-trig].clipStart.trig {
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-trig].clipStart.trig {
   animation-name: trig-clip-start-rtl;
 }
 
@@ -314,12 +314,11 @@ body.trig-scroll-up .js [data-trig].trig-directional.trig {
   animation: trig-reveal-start var(--trig-duration, 1.2s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
   animation-delay: var(--trig-reveal-delay, 0ms);
 }
-:where([dir="rtl"]) .js [data-trig][data-trig-direction="start"]:not(.trig) {
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-trig][data-trig-direction="start"]:not(.trig) {
   transform: translate3d(56px, 0, 0);
 }
-:where([dir="rtl"]) .js [data-trig][data-trig-direction="start"].trig {
-  animation: trig-reveal-start-rtl var(--trig-duration, 1.2s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
-  animation-delay: var(--trig-reveal-delay, 0ms);
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-trig][data-trig-direction="start"].trig {
+  animation-name: trig-reveal-start-rtl;
 }
 
 /* Inline-end: enters from the reading end (right in LTR, left in RTL) */
@@ -330,12 +329,11 @@ body.trig-scroll-up .js [data-trig].trig-directional.trig {
   animation: trig-reveal-end var(--trig-duration, 1.2s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
   animation-delay: var(--trig-reveal-delay, 0ms);
 }
-:where([dir="rtl"]) .js [data-trig][data-trig-direction="end"]:not(.trig) {
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-trig][data-trig-direction="end"]:not(.trig) {
   transform: translate3d(-56px, 0, 0);
 }
-:where([dir="rtl"]) .js [data-trig][data-trig-direction="end"].trig {
-  animation: trig-reveal-end-rtl var(--trig-duration, 1.2s) var(--trig-ease, cubic-bezier(0.16, 1, 0.3, 1)) backwards;
-  animation-delay: var(--trig-reveal-delay, 0ms);
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-trig][data-trig-direction="end"].trig {
+  animation-name: trig-reveal-end-rtl;
 }
 
 /* --------------------------------------------------------------------------
@@ -570,7 +568,7 @@ html[data-motion="reduced"] [data-trig-pin] {
   transition: transform 850ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-:where([dir="rtl"]) .js [data-ui-progress-bar] [data-ui-progress-fill] {
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-ui-progress-bar] [data-ui-progress-fill] {
   transform-origin: right center;
 }
 
@@ -587,7 +585,7 @@ html[data-motion="reduced"] [data-trig-pin] {
   transition: transform 550ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-:where([dir="rtl"]) .js [data-ui-progress-steps] [data-ui-progress-step-fill] {
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-ui-progress-steps] [data-ui-progress-step-fill] {
   transform-origin: right center;
 }
 
@@ -813,7 +811,7 @@ html:not([data-motion="full"]) body.chronotrig-mobile-disabled [data-parallax-st
   transform: scale(0.74) rotate(-18deg);
 }
 
-:where([dir="rtl"]) .js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-orbit] {
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-orbit] {
   transform: scale(0.74) rotate(18deg);
 }
 
@@ -849,7 +847,7 @@ html:not([data-motion="full"]) body.chronotrig-mobile-disabled [data-parallax-st
   transform: translate3d(-20px, 0, 0);
 }
 
-:where([dir="rtl"]) .js [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-row] {
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-bento-card]:not(.trig):not(.trig-stagger-active) [data-bento-row] {
   transform: translate3d(20px, 0, 0);
 }
 
@@ -885,8 +883,8 @@ html:not([data-motion="full"]) body.chronotrig-mobile-disabled [data-parallax-st
   animation-delay: calc(var(--stagger-delay, 0s) + var(--bento-delay, 120ms));
 }
 
-:where([dir="rtl"]) .js [data-bento-card].trig [data-bento-orbit],
-:where([dir="rtl"]) .js [data-bento-card].trig-stagger-active [data-bento-orbit] {
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-bento-card].trig [data-bento-orbit],
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-bento-card].trig-stagger-active [data-bento-orbit] {
   animation-name: bento-orbit-in-rtl;
 }
 
@@ -920,8 +918,8 @@ html:not([data-motion="full"]) body.chronotrig-mobile-disabled [data-parallax-st
   animation-delay: calc(var(--stagger-delay, 0s) + var(--bento-delay, 100ms));
 }
 
-:where([dir="rtl"]) .js [data-bento-card].trig [data-bento-row],
-:where([dir="rtl"]) .js [data-bento-card].trig-stagger-active [data-bento-row] {
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-bento-card].trig [data-bento-row],
+:is(.js[dir="rtl"], .js [dir="rtl"], [dir="rtl"] .js) [data-bento-card].trig-stagger-active [data-bento-row] {
   animation-name: bento-row-slide-rtl;
 }
 

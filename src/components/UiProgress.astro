@@ -216,11 +216,11 @@ const RING_SIZES = {
           )}
         </div>
       )}
-      <div class:list={['w-full overflow-hidden rounded-full bg-surface-hover', BAR_HEIGHTS[size]]}>
+      <div class:list={['flex w-full overflow-hidden rounded-full bg-surface-hover', BAR_HEIGHTS[size]]}>
         <div
           data-ui-progress-fill
           class:list={[
-            'h-full rounded-full',
+            'h-full shrink-0 rounded-full',
             TONE_FILL[tone],
           ]}
           style={`width: ${percent}%;`}
