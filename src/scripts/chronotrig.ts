@@ -111,31 +111,6 @@ declare global {
 }
 
 let lifecycleBound = false;
-const settledBound = typeof WeakSet !== 'undefined' ? new WeakSet<HTMLElement>() : null;
-
-function bindOneShotSettle(el: HTMLElement): void {
-  if (typeof el.getAttribute !== 'function' || typeof el.setAttribute !== 'function') return;
-  if (el.getAttribute('data-trig-settled') === 'true') return;
-
-  if (el.classList?.contains('trig-stagger-settled')) {
-    el.setAttribute('data-trig-settled', 'true');
-    return;
-  }
-
-  if (!settledBound || settledBound.has(el) || typeof el.addEventListener !== 'function') return;
-  settledBound.add(el);
-
-  el.addEventListener('animationend', (event: Event) => {
-    if (event.target !== el) return;
-    if (
-      el.classList?.contains('trig-stagger-active') ||
-      el.classList?.contains('trig-stagger-settled') ||
-      el.classList?.contains('trig')
-    ) {
-      el.setAttribute('data-trig-settled', 'true');
-    }
-  });
-}
 
 /**
  * Automatically attributes prose titles, subtitles, and section headers for zero-cost
@@ -170,7 +145,7 @@ export function setupChronoTrig(): void {
 
   // Ensure stagger children participate in IntersectionObserver reveals while
   // delegating `--stagger-index`, `--stagger-delay` (`linear` | `wave` | `center` | `reverse`),
-  // `--stagger-total`, and mobile lightweight clamping to ChronoTrig v6.1.0.
+  // `--stagger-total`, hidden-child exclusion, and mobile clamping to ChronoTrig v6.1.0.
   try {
     const staggers = document.querySelectorAll<HTMLElement>('[data-trig-stagger]');
     if (staggers && typeof staggers.forEach === 'function') {
@@ -187,22 +162,10 @@ export function setupChronoTrig(): void {
               if (inheritOnce && !child.hasAttribute('data-trig-once')) {
                 child.setAttribute('data-trig-once', 'true');
               }
-              if (inheritOnce || child.getAttribute?.('data-trig-once') === 'true') {
-                bindOneShotSettle(child);
-              }
             }
           });
         }
       });
-    }
-  } catch (_) {}
-
-  // Lock standalone one-shot reveals once their entrance animation ends so later
-  // `refreshChronoTrig()` calls (e.g. filter/search updates) never replay them.
-  try {
-    const oneShots = document.querySelectorAll<HTMLElement>('[data-trig][data-trig-once="true"]');
-    if (oneShots && typeof oneShots.forEach === 'function') {
-      oneShots.forEach((el) => bindOneShotSettle(el));
     }
   } catch (_) {}
 

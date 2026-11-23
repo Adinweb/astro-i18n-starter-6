@@ -559,6 +559,7 @@ const ogContext: SocialCardContext = {
       // otherwise the cards would stay stuck at the hidden entrance state.
       if (!grid || typeof window.chronoTrig === 'undefined') return;
       grid.classList.remove('trig-stagger-active');
+      grid.removeAttribute('data-trig-settled');
       for (const child of Array.from(grid.children)) {
         const el = child as HTMLElement;
         el.classList.remove(
@@ -573,37 +574,6 @@ const ogContext: SocialCardContext = {
       }
       // Flush the hidden entrance state before ChronoTrig re-observes the grid.
       void grid.offsetHeight;
-    };
-
-    const syncVisibleStaggerDelays = () => {
-      if (!grid) return;
-      const rawStep =
-        Number.parseFloat(grid.getAttribute('data-trig-stagger-delay') || '0.08') || 0.08;
-      const isLightweightMobile =
-        typeof window.chronoTrig?.isMobile === 'function' &&
-        window.chronoTrig.isMobile() &&
-        window.chronoTrig.getMobileBehavior?.() === 'lightweight';
-      const step = isLightweightMobile ? Math.min(0.04, rawStep) : rawStep;
-
-      const allChildren = Array.from(grid.children).filter(
-        (el): el is HTMLElement => el instanceof HTMLElement
-      );
-      const visibleChildren = allChildren.filter((el) => !el.hidden);
-      const total = visibleChildren.length;
-
-      for (const el of allChildren) {
-        if (el.hidden) {
-          el.style.removeProperty('--stagger-index');
-          el.style.removeProperty('--stagger-delay');
-          el.style.removeProperty('--stagger-total');
-        }
-      }
-
-      visibleChildren.forEach((el, index) => {
-        el.style.setProperty('--stagger-index', String(index));
-        el.style.setProperty('--stagger-delay', `${(index * step).toFixed(3)}s`);
-        el.style.setProperty('--stagger-total', String(total));
-      });
     };
 
     const restoreServerPager = () => {
@@ -734,7 +704,6 @@ const ogContext: SocialCardContext = {
           renderFilteredPager(slice.page, slice.totalPages);
           if (replay) replayGridReveals();
           refreshChronoTrig();
-          syncVisibleStaggerDelays();
 
           if (status) {
             status.textContent = allTemplate
@@ -777,7 +746,6 @@ const ogContext: SocialCardContext = {
       if (replay || visibilityChanged) {
         if (replay) replayGridReveals();
         refreshChronoTrig();
-        syncVisibleStaggerDelays();
       }
 
       const statusTemplate = active ? allTemplate : pageTemplate;

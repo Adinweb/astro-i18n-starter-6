@@ -133,12 +133,12 @@ Add `data-trig` + `data-trig-once="true"` for standard reveals:
 
 ---
 
-## 4. Ready-Made CSS Presets (`trig-animations.css`)
+## 4. Ready-Made CSS Presets (`trig-animations.css` / `src/styles/chronotrig.css`)
 
-Customize timing globally via CSS custom properties on `:root` (`0.55s` default in `trig-animations.css`, or override e.g. `1.2s` for editorial pacing):
+Customize timing globally via CSS custom properties on `:root` (`0.55s` default in standalone `trig-animations.css`; this Astro starter loads `src/styles/chronotrig.css` with `--trig-duration: 1.2s` for editorial pacing):
 ```css
 :root {
-  --trig-duration: 0.55s;
+  --trig-duration: 0.55s; /* 1.2s in this Astro starter's src/styles/chronotrig.css */
   --trig-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --trig-reveal-delay: 0ms;
 }

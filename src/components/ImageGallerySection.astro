@@ -292,6 +292,7 @@ const gridColsClass =
 
           if (grid && typeof window.chronoTrig !== 'undefined') {
             grid.classList.remove('trig-stagger-active');
+            grid.removeAttribute('data-trig-settled');
             cards.forEach((card) => {
               card.classList.remove(
                 'trig',

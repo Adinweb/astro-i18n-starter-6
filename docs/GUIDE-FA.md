@@ -1425,6 +1425,7 @@ const replayGridReveals = (grid: HTMLElement) => {
   // اگر موتور بارگذاری نشده باشد، کارت‌ها نباید در حالت پنهان گیر کنند
   if (typeof window.chronoTrig === 'undefined') return;
   grid.classList.remove('trig-stagger-active');
+  grid.removeAttribute('data-trig-settled');
   for (const child of Array.from(grid.children)) {
     const el = child as HTMLElement;
     el.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active', 'trig-stagger-settled');
@@ -1434,18 +1435,16 @@ const replayGridReveals = (grid: HTMLElement) => {
   void grid.offsetHeight; // تثبیت حالت پنهان پیش از مشاهدهٔ مجدد
 };
 
-// فقط در تغییر واقعی فیلتر/تب، نه در رندر اولیه:
+// فقط در تغییر واقعی فیلتر/تب و تغییر کارت‌های مرئی، نه در رندر اولیه:
 replayGridReveals(grid);
 refreshChronoTrig();
-syncVisibleStaggerDelays(); // بازمحاسبهٔ --stagger-index و --stagger-delay فقط برای کارت‌های !el.hidden
 ```
 
-**چهار قاعدهٔ مهم:**
+**سه قاعدهٔ مهم:**
 
-1. این بازپخش را در **رندر اولیه** فراخوانی نکنید؛ در غیر این صورت انیمیشن ورود صفحه از نو شروع می‌شود و پرش دیده می‌شود.
-2. بازپخش را تنها زمانی انجام دهید که وضعیت فیلتر واقعاً تغییر کرده باشد (`areBlogFiltersEqual`).
-3. **جداسازی `transition` از ریشهٔ `[data-trig]`**: ChronoTrig روی المان‌های `[data-trig]` به رویدادهای `transitionend`/`transitioncancel` نیز گوش می‌دهد تا پس از اتمام، کلاس `.trig-stagger-settled` (`animation: none`) را اعمال کند. بنابراین هرگز کلاس `transition` Tailwind (مثل ترنزیشن hover کارت) را مستقیم روی تگ `[data-trig]` نگذارید؛ آن را روی لایهٔ داخلی کارت (`<div>` یا `<a>` مثل `PostCard.astro` و `CollectionIndexView.astro`) منتقل کنید تا انیمیشن ورود نیمه‌کاره بریده نشود.
-4. **پاک‌کردن فاصله‌های پلکانی کارت‌های مخفی**: پس از `refreshChronoTrig()`، متغیرهای `--stagger-*` را از کارت‌های `[hidden]` پاک کرده و فقط روی کارت‌های مرئی (`!el.hidden`) دوباره شماره‌گذاری کنید (و روی گریدهای زیر هدر بلند از `data-trig-root-margin="0px"` استفاده کنید).
+1. این بازپخش را در **رندر اولیه** یا وقتی کارت‌های مرئی تغییر نکرده‌اند فراخوانی نکنید؛ در غیر این صورت انیمیشن ورود صفحه بدون دلیل از نو شروع می‌شود.
+2. پیش از `refreshChronoTrig()` صفت `data-trig-settled` را هم از روی خود کانتینر گرید و هم کارت‌های آن بردارید (در نسخهٔ جدید ChronoTrig، سایر بخش‌های `data-trig-once="true"` مثل عنوان صفحه به‌صورت خودکار قفل می‌مانند و در `scan()` دوباره پخش نمی‌شوند).
+3. **جداسازی `transition` از ریشهٔ `[data-trig]` و ریشهٔ گریدهای فیلتر:** کلاس‌های `transition` کارت را روی لایهٔ داخلی (`<div>` یا `<a>`) بگذارید و روی گریدهای زیر هدر بلند از `data-trig-root-margin="0px"` استفاده کنید؛ ChronoTrig خودش کارت‌های `[hidden]` را از محاسبهٔ `--stagger-index` و `--stagger-total` کنار می‌گذارد.
 
 #### ۶. استفاده در فایل‌های محتوای `.mdx`
 

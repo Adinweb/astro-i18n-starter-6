@@ -134,77 +134,206 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(refreshSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('locks one-shot reveals with data-trig-settled="true" after animationend so later refresh() calls never replay headers', () => {
-    const refreshSpy = vi.fn();
-    const listeners = new Map<string, (event: { target: unknown }) => void>();
-    const attrs = new Map<string, string>();
-    const activeClasses = new Set<string>(['trig', 'trig-stagger-active']);
+  it('natively locks settled data-trig-once reveals across refresh(), excludes [hidden] stagger children, and supports explicit grid replay', () => {
+    const minJs = fs.readFileSync(path.join(rootDir, 'public/chronotrig.min.js'), 'utf-8');
 
-    const headerTitle = {
-      hasAttribute: (attr: string) => attrs.has(attr),
-      getAttribute: (attr: string) => attrs.get(attr) ?? null,
-      setAttribute: (attr: string, val: string) => {
-        attrs.set(attr, val);
-      },
-      classList: {
-        contains: (cls: string) => activeClasses.has(cls),
-      },
-      addEventListener: vi.fn((event: string, cb: (event: { target: unknown }) => void) => {
-        listeners.set(event, cb);
-      }),
-    };
+    const observed = new Set<unknown>();
+    const ioCallbacks: Array<(entries: Array<{ target: unknown; isIntersecting: boolean }>) => void> = [];
 
-    const alreadySettledAttrs = new Map<string, string>();
-    const alreadySettledSubtitle = {
-      hasAttribute: (attr: string) => alreadySettledAttrs.has(attr),
-      getAttribute: (attr: string) => alreadySettledAttrs.get(attr) ?? null,
-      setAttribute: (attr: string, val: string) => {
-        alreadySettledAttrs.set(attr, val);
-      },
-      classList: {
-        contains: (cls: string) => cls === 'trig-stagger-settled',
-      },
-      addEventListener: vi.fn(),
-    };
+    class MockIntersectionObserver {
+      constructor(cb: (entries: Array<{ target: unknown; isIntersecting: boolean }>) => void) {
+        ioCallbacks.push(cb);
+      }
+      observe(el: unknown) {
+        observed.add(el);
+      }
+      unobserve(el: unknown) {
+        observed.delete(el);
+      }
+      disconnect() {
+        observed.clear();
+      }
+    }
 
-    const headerContainer = {
-      getAttribute: vi.fn((attr: string) => (attr === 'data-trig-once' ? 'true' : 'linear')),
-      querySelectorAll: vi.fn().mockReturnValue([headerTitle, alreadySettledSubtitle]),
-    };
+    function createMockEl(attrsInit: Record<string, string> = {}, initialHidden = false) {
+      const attrs = new Map<string, string>(Object.entries(attrsInit));
+      const classes = new Set<string>();
+      const props = new Map<string, string>();
+      const listeners = new Map<string, Set<(e: Record<string, unknown>) => void>>();
+      let _hidden = initialHidden;
 
-    const mockDocument = {
-      querySelectorAll: vi.fn((selector: string) => {
-        if (selector === '[data-trig-stagger]') return [headerContainer];
-        if (selector === '[data-trig][data-trig-once="true"]') return [headerTitle];
-        return [];
-      }),
-      addEventListener: vi.fn(),
+      const el = {
+        dataset: {} as Record<string, string>,
+        get hidden() {
+          return _hidden;
+        },
+        set hidden(v: boolean) {
+          _hidden = v;
+        },
+        style: {
+          willChange: '',
+          transform: '',
+          opacity: '',
+          filter: '',
+          animationName: '',
+          animationDuration: '',
+          setProperty: (k: string, v: string) => props.set(k, v),
+          getPropertyValue: (k: string) => props.get(k) ?? '',
+          removeProperty: (k: string) => props.delete(k),
+        },
+        classList: {
+          add: (...c: string[]) => c.forEach((x) => classes.add(x)),
+          remove: (...c: string[]) => c.forEach((x) => classes.delete(x)),
+          toggle: (c: string, force?: boolean) => {
+            if (force === undefined) {
+              classes.has(c) ? classes.delete(c) : classes.add(c);
+            } else if (force) {
+              classes.add(c);
+            } else {
+              classes.delete(c);
+            }
+          },
+          contains: (c: string) => classes.has(c),
+        },
+        hasAttribute: (k: string) => attrs.has(k),
+        getAttribute: (k: string) => attrs.get(k) ?? null,
+        setAttribute: (k: string, v: string) => attrs.set(k, String(v)),
+        removeAttribute: (k: string) => attrs.delete(k),
+        addEventListener: (ev: string, cb: (e: Record<string, unknown>) => void) => {
+          if (!listeners.has(ev)) listeners.set(ev, new Set());
+          listeners.get(ev)!.add(cb);
+        },
+        removeEventListener: (ev: string, cb: (e: Record<string, unknown>) => void) => {
+          listeners.get(ev)?.delete(cb);
+        },
+        dispatchEvent: (ev: Record<string, unknown>) => {
+          const set = listeners.get(String(ev.type));
+          set?.forEach((cb) => cb({ ...ev, target: ev.target ?? el }));
+        },
+        querySelectorAll: () => [],
+        closest: () => null,
+        getBoundingClientRect: () => ({ top: 0, bottom: 100, height: 100 }),
+        _props: props,
+      };
+      return el;
+    }
+
+    const headerTitle = createMockEl();
+    const header = createMockEl({ 'data-trig-stagger': '', 'data-trig-once': 'true' });
+    header.querySelectorAll = (() => [headerTitle]) as () => never[];
+
+    const card1 = createMockEl();
+    const card2Hidden = createMockEl({}, true);
+    const card3 = createMockEl();
+    card2Hidden._props.set('--stagger-index', '99');
+    const grid = createMockEl({
+      'data-trig-stagger': '',
+      'data-trig-once': 'true',
+      'data-trig-stagger-delay': '0.1',
+    });
+    grid.querySelectorAll = (() => [card1, card2Hidden, card3]) as () => never[];
+
+    const fakeBody = createMockEl();
+    const fakeDocEl = createMockEl();
+    Object.assign(fakeDocEl, { scrollHeight: 1000, dir: 'ltr' });
+
+    const fakeDoc = {
       readyState: 'complete',
+      body: fakeBody,
+      documentElement: fakeDocEl,
+      querySelectorAll: (sel: string) => {
+        if (sel === '[data-trig-stagger]') return [header, grid];
+        return [];
+      },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
     };
 
-    (globalThis as Record<string, unknown>).document = mockDocument;
-    (globalThis as Record<string, unknown>).window = {
-      chronoTrig: { refresh: refreshSpy },
+    const fakeWin: Record<string, unknown> = {
+      innerHeight: 900,
+      innerWidth: 1280,
+      scrollY: 0,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      matchMedia: () => ({ matches: false }),
+      setTimeout: globalThis.setTimeout.bind(globalThis),
+      clearTimeout: globalThis.clearTimeout.bind(globalThis),
     };
 
-    setupChronoTrig();
+    const prevWin = (globalThis as Record<string, unknown>).window;
+    const prevDoc = (globalThis as Record<string, unknown>).document;
+    const prevIO = (globalThis as Record<string, unknown>).IntersectionObserver;
+    const prevRAF = (globalThis as Record<string, unknown>).requestAnimationFrame;
+    const prevCAF = (globalThis as Record<string, unknown>).cancelAnimationFrame;
 
-    // Settled child is stamped immediately; active child waits for its own animationend.
-    expect(alreadySettledAttrs.get('data-trig-settled')).toBe('true');
-    expect(alreadySettledSubtitle.addEventListener).not.toHaveBeenCalled();
-    expect(attrs.get('data-trig-settled')).toBeUndefined();
-    expect(headerTitle.addEventListener).toHaveBeenCalledTimes(1);
+    try {
+      (globalThis as Record<string, unknown>).window = fakeWin;
+      (globalThis as Record<string, unknown>).document = fakeDoc;
+      (globalThis as Record<string, unknown>).IntersectionObserver = MockIntersectionObserver;
+      (globalThis as Record<string, unknown>).requestAnimationFrame = (cb: () => void) => {
+        cb();
+        return 1;
+      };
+      (globalThis as Record<string, unknown>).cancelAnimationFrame = vi.fn();
 
-    // Calling setupChronoTrig() again (e.g. refreshChronoTrig on filter change) must not duplicate listeners.
-    setupChronoTrig();
-    expect(headerTitle.addEventListener).toHaveBeenCalledTimes(1);
+      const boot = new Function('window', 'document', 'IntersectionObserver', 'requestAnimationFrame', 'cancelAnimationFrame', minJs);
+      boot(fakeWin, fakeDoc, MockIntersectionObserver, globalThis.requestAnimationFrame, globalThis.cancelAnimationFrame);
 
-    // Bubbled animationend from a child node must be ignored; target === element locks it.
-    listeners.get('animationend')?.({ target: {} });
-    expect(attrs.get('data-trig-settled')).toBeUndefined();
+      const engine = fakeWin.chronoTrig as { refresh: () => void; destroy: () => void };
+      expect(observed.has(header)).toBe(true);
+      expect(observed.has(grid)).toBe(true);
 
-    listeners.get('animationend')?.({ target: headerTitle });
-    expect(attrs.get('data-trig-settled')).toBe('true');
+      // Hidden card is excluded from stagger vars; visible cards are indexed 0 and 1 (total 2).
+      expect(card1._props.get('--stagger-index')).toBe('0');
+      expect(card1._props.get('--stagger-delay')).toBe('0.000s');
+      expect(card1._props.get('--stagger-total')).toBe('2');
+      expect(card2Hidden._props.has('--stagger-index')).toBe(false);
+      expect(card3._props.get('--stagger-index')).toBe('1');
+      expect(card3._props.get('--stagger-delay')).toBe('0.100s');
+
+      // Header intersects and finishes animation -> both headerTitle & header settle with data-trig-settled="true".
+      ioCallbacks.at(-1)?.([{ target: header, isIntersecting: true }]);
+      expect(headerTitle.classList.contains('trig-stagger-active')).toBe(true);
+      headerTitle.dispatchEvent({ type: 'animationend', target: headerTitle });
+      expect(headerTitle.classList.contains('trig-stagger-settled')).toBe(true);
+      expect(headerTitle.getAttribute('data-trig-settled')).toBe('true');
+      expect(header.getAttribute('data-trig-settled')).toBe('true');
+
+      // Filtering/refreshing later must NOT re-observe the settled header, so its animation never replays.
+      observed.clear();
+      engine.refresh();
+      expect(observed.has(header)).toBe(false);
+      expect(headerTitle.classList.contains('trig-stagger-settled')).toBe(true);
+      expect(headerTitle.getAttribute('data-trig-settled')).toBe('true');
+
+      // Explicit grid replay clears settled flags on grid + children and re-observes grid.
+      ioCallbacks.at(-1)?.([{ target: grid, isIntersecting: true }]);
+      card1.dispatchEvent({ type: 'animationend', target: card1 });
+      card3.dispatchEvent({ type: 'animationend', target: card3 });
+      expect(grid.getAttribute('data-trig-settled')).toBe('true');
+
+      grid.classList.remove('trig-stagger-active');
+      grid.removeAttribute('data-trig-settled');
+      [card1, card2Hidden, card3].forEach((c) => {
+        c.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active', 'trig-stagger-settled');
+        c.removeAttribute('data-trig-settled');
+      });
+      card2Hidden.hidden = false;
+
+      engine.refresh();
+      expect(observed.has(header)).toBe(false);
+      expect(observed.has(grid)).toBe(true);
+      expect(card2Hidden._props.get('--stagger-index')).toBe('1');
+      expect(card3._props.get('--stagger-total')).toBe('3');
+
+      engine.destroy();
+    } finally {
+      (globalThis as Record<string, unknown>).window = prevWin;
+      (globalThis as Record<string, unknown>).document = prevDoc;
+      (globalThis as Record<string, unknown>).IntersectionObserver = prevIO;
+      (globalThis as Record<string, unknown>).requestAnimationFrame = prevRAF;
+      (globalThis as Record<string, unknown>).cancelAnimationFrame = prevCAF;
+    }
   });
 
   it('configures chronotrig.css, global.css, and BaseLayout.astro for v6.1.0 performance & accessibility', () => {
@@ -269,13 +398,15 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(doc).toContain('[content-visibility:auto]');
     expect(pageHero).toContain("loading={compact ? 'lazy' : 'eager'}");
 
-    // ChronoTrig v6.1.0 bundle: version 6.1.0, WeakMap listener cleanup on animationcancel,
+    // ChronoTrig v6.1.0 bundle: version 6.1.0, settled one-shot tracking, hidden child exclusion,
     // isExternalScroll(), and opt-in :root --scroll-progress / --scroll-y mutations
     expect(minJs).toContain('version="6.1.0"');
     expect(minJs).toContain('rootScrollVars:!1');
     expect(minJs).toContain('data-trig-root-vars');
+    expect(minJs).toContain('data-trig-settled');
     expect(minJs).toContain('isExternalScroll()');
     expect(minJs).toContain('animationcancel');
+    expect(minJs).toContain('getAnimations');
 
     // Hero and Bento decorative glows use radial gradients instead of costly blur-2xl/blur-3xl compositing layers
     const bentoGrid = fs.readFileSync(path.join(rootDir, 'src/components/BentoGrid.astro'), 'utf-8');
@@ -289,7 +420,7 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(layout).toContain('doc.documentElement.dataset.motion = motion');
   });
 
-  it('replays grid reveals on filter changes without transition conflicts or hidden-card stagger gaps', () => {
+  it('replays grid reveals on filter changes cleanly while delegating hidden-card stagger math to ChronoTrig', () => {
     const view = fs.readFileSync(path.join(rootDir, 'src/views/BlogIndexView.astro'), 'utf-8');
     const collectionView = fs.readFileSync(
       path.join(rootDir, 'src/views/CollectionIndexView.astro'),
@@ -301,35 +432,35 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     const globalCss = fs.readFileSync(path.join(rootDir, 'src/styles/global.css'), 'utf-8');
 
     expect(view).toContain('const replayGridReveals = () =>');
-    expect(view).toContain('const syncVisibleStaggerDelays = () =>');
     expect(view).toContain("typeof window.chronoTrig === 'undefined'");
     expect(view).toContain('trig-stagger-settled');
+    expect(view).toContain("grid.removeAttribute('data-trig-settled')");
     expect(view).toContain("el.removeAttribute('data-trig-settled')");
     expect(view).toContain('if (replay || visibilityChanged)');
     expect(view).toContain('render({ updateUrl: false, replay: false })');
-    expect(view).toContain('syncVisibleStaggerDelays()');
 
-    // Hover transitions must live on the inner card surface so ChronoTrig's
-    // transitionend/transitioncancel listener on [data-trig] never settles cards prematurely.
+    // Hover transitions live on the inner card surface so card hovers stay isolated from [data-trig].
     const postCardRoot = postCard.match(/<article\b[^>]*>/)?.[0] ?? '';
     expect(postCardRoot).toContain('data-trig');
     expect(postCardRoot).not.toMatch(/\btransition\b/);
     expect(view).toContain("article.className = 'flex h-full'");
     expect(postCard).toContain('UiBadge');
 
-    // Collection index shares chip filter sizing/active state, UiBadge stack pills, and visible-only stagger sync.
+    // Collection index shares chip filter sizing/active state, UiBadge stack pills, and grid settle reset.
     expect(globalCss).toContain(".chip[aria-pressed='true']");
     expect(view).not.toContain('text-muted/70');
     expect(collectionView).toContain('UiBadge');
     expect(collectionView).toContain('class="chip cursor-pointer px-3 py-1.5 text-xs"');
     expect(collectionView).toContain('const activeStacks = new Set<string>()');
     expect(collectionView).toContain('activeStacks.delete(val)');
-    expect(collectionView).toContain('visibleChildren.forEach');
+    expect(collectionView).toContain("grid.removeAttribute('data-trig-settled')");
     expect(collectionView).toContain("el.style.willChange = 'auto'");
     expect(collectionView).toContain("el.removeAttribute('data-trig-settled')");
     expect(collectionView).toContain('if (grid && visibilityChanged)');
-    expect(gallery).toContain("removeAttribute('data-trig-settled')");
-    expect(showcase).toContain("removeAttribute('data-trig-settled')");
+    expect(gallery).toContain("grid.removeAttribute('data-trig-settled')");
+    expect(gallery).toContain("card.removeAttribute('data-trig-settled')");
+    expect(showcase).toContain("grid.removeAttribute('data-trig-settled')");
+    expect(showcase).toContain("card.removeAttribute('data-trig-settled')");
   });
 
   it('wires BaseLayout.astro with /chronotrig.min.js inline script and module coordinator', () => {
