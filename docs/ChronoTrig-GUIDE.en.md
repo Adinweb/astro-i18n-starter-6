@@ -45,8 +45,10 @@ Traditional scroll libraries mutate inline styles synchronously or measure `getB
 
 | File | Size | Purpose |
 | :--- | :--- | :--- |
-| `chronotrig.min.js` | **24.0 KB min (7.8 KB gzip)** | Standalone zero-dependency browser bundle loaded globally by `BaseLayout.astro` (sets `window.chronoTrig`, `window.trig`, `window.ChronoTrig`). |
-| `src/styles/chronotrig.css` | Starter Stylesheet | Calibrated `1.2s` / `56px` preset suite (`0.55s` in upstream standalone), hover-safe `.trig-stagger-item`, and reduced-motion/print fallbacks. |
+| `chronotrig.min.js` | **26.6 KB min (8.5 KB gzip)** | Standalone zero-dependency browser bundle (sets `window.chronoTrig`, `window.trig`, `window.ChronoTrig`). |
+| `chronotrig.esm.js` | **26.7 KB min (8.5 KB gzip)** | Modern ES Module for Vite, Next.js, Rollup, or Webpack. |
+| `trig-animations.css` | **13.6 KB** | Calibrated `0.55s` preset suite, RTL-native `.clipStart`, hover-safe `.trig-stagger-item`, CSS `@supports (animation-timeline: view())` helper, and reduced-motion/print fallbacks. |
+| `chronotrig.d.ts` | **2.8 KB** | Full TypeScript definitions including `FrameMetrics` and v6.1 options. |
 
 ### Option A: Vanilla HTML `<script>` Drop-In
 ```html
@@ -66,8 +68,8 @@ Traditional scroll libraries mutate inline styles synchronously or measure `getB
 </html>
 ```
 
-### Option B: ES Module with Synchronous Lenis Driving
-> **Starter Note:** In this Astro starter, `BaseLayout.astro` loads `/chronotrig.min.js` globally as `window.chronoTrig`, and `src/scripts/lenis.ts` drives `window.chronoTrig.setExternalScroll(true)` + `window.chronoTrig.sync(instance.scroll)` automatically (no separate `chronotrig.esm.js` is shipped in `public/`). The standalone ESM example below applies when bundling `chronotrig.esm.js` directly in external projects:
+### Option B: ES Module (or Global `window.chronoTrig`) with Synchronous Lenis Driving
+> **Framework / Astro Tip:** If your layout loads `/chronotrig.min.js` globally as `window.chronoTrig`, drive it directly inside your Lenis script via `window.chronoTrig.setExternalScroll(true)` and `lenis.on('scroll', ({ scroll }) => window.chronoTrig.sync(scroll))` without bundling `chronotrig.esm.js` a second time. When importing as an ES module:
 ```javascript
 import Lenis from 'lenis';
 import { ChronoTrig } from './chronotrig.esm.js';
@@ -133,16 +135,16 @@ Add `data-trig` + `data-trig-once="true"` for standard reveals:
 
 ## 4. Ready-Made CSS Presets (`trig-animations.css`)
 
-Customize timing globally via CSS custom properties on `:root` (`src/styles/chronotrig.css` configures `1.2s` by default in this starter):
+Customize timing globally via CSS custom properties on `:root` (`0.55s` default in `trig-animations.css`, or override e.g. `1.2s` for editorial pacing):
 ```css
 :root {
-  --trig-duration: 1.2s;
+  --trig-duration: 0.55s;
   --trig-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --trig-reveal-delay: 0ms;
 }
 ```
 
-* **Modern Reveals**: `.fadeInUpSm`, `.blurIn` (falls back to `.fadeInUpSm` on mobile lightweight mode), `.clipUp`, `.clipStart` (RTL-native) / `.clipLeft`, `.trig-stagger-item` (automatically receives `.trig-stagger-settled` after reveal so Tailwind hover transitions stay instant).
+* **Modern Reveals**: `.fadeInUpSm`, `.blurIn` (falls back to `.fadeInUpSm` on mobile lightweight mode), `.clipUp`, `.clipStart` (RTL-native) / `.clipLeft`, `.trig-stagger-item` (automatically receives `.trig-stagger-settled` after reveal so Tailwind hover transitions stay instant). All presets also include `@media print` visibility fallbacks.
 * **Progressive Native CSS View Timeline**: `.trig-view-reveal` uses `@supports (animation-timeline: view())` for compositor-native reveals without JS.
 * **Classic Presets**: `.fadeIn`, `.fadeInUp`, `.fadeInDown`, `.fadeInLeft`, `.fadeInRight`, `.zoomIn`, `.zoomInUp`, `.zoomInDown`, `.zoomOut`, `.flipInX`, `.flipInY`, `.rotateIn`, `.rotateInDownLeft`, `.rotateInDownRight`, `.bounceIn`, `.bounceInUp`, `.bounceInDown`, `.slideInUp`, `.slideInDown`, `.slideInLeft`, `.slideInRight`, `.trig-directional`.
 * **Utilities**: `.trig-delay-100`..`1000`, `.trig-duration-300`..`2000`, `.trig-ease-smooth|spring|bounce|in-out`, `.trig-reactive-x|x-reverse|y|rotate|px`.
@@ -380,7 +382,6 @@ const paneEngine = new ChronoTrig({
 2. **Dynamic layout shifts below an expanding accordion**: Add `data-trig-dynamic="true"` on scrubbers below the accordion or call `chronoTrig.refresh()` after toggling.
 3. **Large documentation / component showcase pages (5,000+ DOM nodes)**: Keep `rootScrollVars: false` (default) so ChronoTrig never triggers full-DOM `:root` style recalculations on scroll, and add `content-visibility: auto; contain-intrinsic-size: auto 600px;` to heavy off-screen sections/tables/code blocks to skip off-screen layout & paint.
 4. **Inspect runtime performance**: Call `chronoTrig.getFrameMetrics()` in DevTools to verify `layoutReads === 0` and confirm reveal elements stay out of `activeScrubbers`.
-5. **Choppy or cut-off card entrances when filtering stagger grids**: ChronoTrig attaches `transitionend`/`transitioncancel` listeners on `[data-trig]` elements to settle animations (`.trig-stagger-settled`). Never put Tailwind `transition` classes directly on `[data-trig]` roots—move hover transitions to an inner child wrapper. Also clear `willChange = 'auto'` during grid replay, recompute `--stagger-index` / `--stagger-delay` / `--stagger-total` strictly over visible (`!el.hidden`) children after `refresh()`, and add `data-trig-root-margin="0px"` on filtered grids positioned below tall heroes.
 
 ---
 
