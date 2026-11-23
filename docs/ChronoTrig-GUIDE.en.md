@@ -1,14 +1,12 @@
-# ChronoTrig v6.1.0 — Complete English Guide & Practical Examples
+# ChronoTrig v6.2.0 — Complete English Guide & Practical Examples
 
 > **Zero-Dependency CSS Scroll Engine & Synchronous Keyframe Timeline Orchestrator**  
-> Built on the lightweight, CSS-first foundation of Trig.js v4.2.1 — re-engineered in **v6.1.0** for **zero layout reads per scroll frame**, **zero global `:root` style recalculations**, **zero-cost reveal fast paths**, **synchronous Lenis integration**, **RTL horizontal tracks**, **sub-pixel precision**, and **custom scroll roots**.
-
-🌐 **Language / زبان**: **English (`GUIDE.md`)** · [فارسی (`GUIDE.fa.md`)](./GUIDE.fa.md)
+> Built on the lightweight, CSS-first foundation of Trig.js v4.2.1 — re-engineered in **v6.2.0** for **zero layout reads per scroll frame**, **zero global `:root` style recalculations**, **zero-cost reveal fast paths**, **Tailwind-aligned mobile JS bypass**, **synchronous Lenis integration**, **RTL horizontal tracks**, **sub-pixel precision**, and **custom scroll roots**.
 
 ---
 
 ## Table of Contents
-1. [v6.1 Architecture: Zero-Cost Reveals & Cached Geometry Math](#1-v61-architecture-zero-cost-reveals--cached-geometry-math)
+1. [v6.2 Architecture: Zero-Cost Reveals & Cached Geometry Math](#1-v62-architecture-zero-cost-reveals--cached-geometry-math)
 2. [Installation & Setup (HTML, ESM, Lenis Sync, TypeScript, React)](#2-installation--setup-html-esm-lenis-sync-typescript-react)
 3. [Everyday Animations, Tight Trigger Margins & `data-trig-once`](#3-everyday-animations-tight-trigger-margins--data-trig-once)
 4. [Ready-Made CSS Presets (`trig-animations.css`)](#4-ready-made-css-presets-trig-animationscss)
@@ -24,9 +22,9 @@
 
 ---
 
-## 1. v6.1 Architecture: Zero-Cost Reveals & Cached Geometry Math
+## 1. v6.2 Architecture: Zero-Cost Reveals & Cached Geometry Math
 
-Traditional scroll libraries mutate inline styles synchronously or measure `getBoundingClientRect()` on every element every frame, causing layout thrashing and battery drain. **ChronoTrig v6.1** runs on a three-tier zero-waste pipeline:
+Traditional scroll libraries mutate inline styles synchronously or measure `getBoundingClientRect()` on every element every frame, causing layout thrashing and battery drain. **ChronoTrig v6.2** runs on a three-tier zero-waste pipeline:
 
 1. **Zero-Cost Reveal Fast Path**:
    Plain `[data-trig]` reveal elements and default entrance staggers **never enter the scroll loop**. They are managed exclusively by pooled `IntersectionObserver`s (`rootMargin: "0px 0px -8% 0px"`), consuming **0% rAF CPU** and **0 layout reads** while scrolling.
@@ -45,10 +43,10 @@ Traditional scroll libraries mutate inline styles synchronously or measure `getB
 
 | File | Size | Purpose |
 | :--- | :--- | :--- |
-| `chronotrig.min.js` | **26.6 KB min (8.5 KB gzip)** | Standalone zero-dependency browser bundle (sets `window.chronoTrig`, `window.trig`, `window.ChronoTrig`). |
-| `chronotrig.esm.js` | **26.7 KB min (8.5 KB gzip)** | Modern ES Module for Vite, Next.js, Rollup, or Webpack. |
-| `trig-animations.css` | **13.6 KB** | Calibrated `0.55s` preset suite, RTL-native `.clipStart`, hover-safe `.trig-stagger-item`, CSS `@supports (animation-timeline: view())` helper, and reduced-motion/print fallbacks. |
-| `chronotrig.d.ts` | **2.8 KB** | Full TypeScript definitions including `FrameMetrics` and v6.1 options. |
+| `chronotrig.min.js` | **31.6 KB min (9.7 KB gzip)** | Standalone zero-dependency browser bundle (sets `window.chronoTrig`, `window.trig`, `window.ChronoTrig`). |
+| `chronotrig.esm.js` | **31.7 KB min (9.7 KB gzip)** | Modern ES Module for Vite, Next.js, Rollup, or Webpack. |
+| `trig-animations.css` | **16.4 KB** | Calibrated `0.55s` preset suite, RTL-native `.clipStart`, Tailwind `<md`/`<lg` mobile fallbacks, hover-safe `.trig-stagger-item`, and print/reduced-motion rules. |
+| `chronotrig.d.ts` | **3.3 KB** | Full TypeScript definitions including `FrameMetrics`, shared math helpers, and v6.2 options. |
 
 ### Option A: Vanilla HTML `<script>` Drop-In
 ```html
@@ -122,7 +120,7 @@ function ProductSection({ items }: { items: string[] }) {
 
 ## 3. Everyday Animations, Tight Trigger Margins & `data-trig-once`
 
-ChronoTrig v6.1 uses a tightened default viewport margin (`"0px 0px -8% 0px"`) so below-the-fold elements reveal only once they actually cross cleanly into view rather than pre-firing prematurely off-screen. You can override margins per element (`data-trig-root-margin="0px 0px -20% 0px"` and `data-trig-threshold="0.25"`)—observers are pooled automatically.
+ChronoTrig v6.2 uses a tightened default viewport margin (`"0px 0px -8% 0px"`) so below-the-fold elements reveal only once they actually cross cleanly into view rather than pre-firing prematurely off-screen. You can override margins per element (`data-trig-root-margin="0px 0px -20% 0px"` and `data-trig-threshold="0.25"`)—observers are pooled automatically.
 
 Add `data-trig` + `data-trig-once="true"` for standard reveals:
 ```html
@@ -133,12 +131,12 @@ Add `data-trig` + `data-trig-once="true"` for standard reveals:
 
 ---
 
-## 4. Ready-Made CSS Presets (`trig-animations.css` / `src/styles/chronotrig.css`)
+## 4. Ready-Made CSS Presets (`trig-animations.css`)
 
-Customize timing globally via CSS custom properties on `:root` (`0.55s` default in standalone `trig-animations.css`; this Astro starter loads `src/styles/chronotrig.css` with `--trig-duration: 1.2s` for editorial pacing):
+Customize timing globally via CSS custom properties on `:root` (`0.55s` default in `trig-animations.css`, or override e.g. `1.2s` for editorial pacing):
 ```css
 :root {
-  --trig-duration: 0.55s; /* 1.2s in this Astro starter's src/styles/chronotrig.css */
+  --trig-duration: 0.55s;
   --trig-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --trig-reveal-delay: 0ms;
 }
@@ -153,7 +151,7 @@ Customize timing globally via CSS custom properties on `:root` (`0.55s` default 
 
 ## 5. Trig.js Parity (Sub-Pixel CSS Variables, 10-Step Selectors, Body Classes)
 
-* **Selective Sub-Pixel Variables**: Enable only what you animate (`data-trig-var="true"`, `data-trig-pixels="true"`, or `data-trig-degrees="true"`). v6.1 formats continuous values to `precision` decimals (default `2`, e.g., `12.45px`) for jitter-free parallax.
+* **Selective Sub-Pixel Variables**: Enable only what you animate (`data-trig-var="true"`, `data-trig-pixels="true"`, or `data-trig-degrees="true"`). v6.2 formats continuous values to `precision` decimals (default `2`, e.g., `12.45px`) for jitter-free parallax.
 * **10-Step Attribute Selectors**: `data-trig-val`, `data-trig-var`, `data-trig-pixels`, and `data-trig-degrees` continue to update in crisp integer increments of `10` (`0, 10, 20... 100`).
 * **Global Scope**: `data-trig-global="true"` writes `--trig-[id]` onto `:root`.
 * **Body Milestones**: `trig-scroll-down`, `trig-scroll-up`, `trig-scroll-top`, `trig-scroll-25`, `trig-scroll-50`, `trig-scroll-75`, `trig-scroll-bottom`.
@@ -177,7 +175,7 @@ Customize timing globally via CSS custom properties on `:root` (`0.55s` default 
 ```
 
 ### Horizontal Pinned Track with Automatic RTL Support
-When `dir="rtl"` is active on `<html>`, an ancestor container, or the pinned section itself, ChronoTrig v6.1 automatically mirrors horizontal track motion smoothly to `+maxTranslate` (positive X) instead of `-maxTranslate`. Override per track with `data-trig-pin-rtl="true" | "false" | "auto"`.
+When `dir="rtl"` is active on `<html>`, an ancestor container, or the pinned section itself, ChronoTrig v6.2 automatically mirrors horizontal track motion smoothly to `+maxTranslate` (positive X) instead of `-maxTranslate`. Override per track with `data-trig-pin-rtl="true" | "false" | "auto"`.
 
 ```html
 <section
@@ -246,6 +244,25 @@ engine.setRoot(anotherScrollPane);
 | **`'disable'`** | **0% CPU** — stops scroll/RAF processing, collapses pins to `height: auto`, reveals all animated elements cleanly in natural resting state. |
 | **`'full'`** | Keeps full 3D & pinned behavior across all devices. |
 
+### Per-Element Tailwind-Aligned Bypass & Custom Mobile Animations
+Relying solely on CSS `@media` leaves `IntersectionObserver` and scroll math running in JavaScript. Use ChronoTrig's hybrid attributes to drop elements out of JS completely while still allowing lightweight CSS-only mobile motion:
+
+* `data-trig-disable-mobile="true"` *(Tailwind `< lg`, `< 1024px`)* or `"mobile"` *(Tailwind `< md`, `< 768px`)* — removes any `[data-trig]`, `[data-trig-stagger]`, `[data-trig-timeline]`, or `[data-trig-pin]` node from JS observers and scroll ticks (`0% CPU`) and marks `data-trig-mobile-disabled="true"` with zero-FOUC CSS fallback.
+* `data-trig-media="(min-width: 1024px)"` — universal CSS media query gate for any ChronoTrig element.
+* `data-trig-mobile-preset="fadeInUpSm"` — swaps heavy desktop preset classes (e.g., `flipInX`, `blurIn`) for a lighter preset on mobile/tablet (and triggers CSS-only presets when combined with `data-trig-disable-mobile`).
+* `.trig-mobile-custom` — add alongside `data-trig-disable-mobile` so ChronoTrig skips all JS loops while letting your own `@media (max-width: 767.98px)` / `@media (max-width: 1023.98px)` `@keyframes` (or `.trig-mobile-fade` / `.trig-view-reveal`) animate freely.
+
+```html
+<!-- 1. Phones (<768px) skip JS completely; tablets & desktops animate -->
+<section class="blurIn" data-trig data-trig-disable-mobile="mobile">...</section>
+
+<!-- 2. Zero JS on mobile/tablet (<1024px) + custom CSS mobile animation -->
+<div class="trig-mobile-custom mobile-slide-card" data-trig data-trig-disable-mobile="true">...</div>
+
+<!-- 3. Auto-swap heavy 3D desktop flip to lightweight fade on mobile -->
+<article class="flipInX" data-trig data-trig-mobile-preset="fadeInUpSm">...</article>
+```
+
 ---
 
 ## 11. Complete API Reference
@@ -263,7 +280,8 @@ engine.setRoot(anotherScrollPane);
 | `precision` | `number` | `2` | Decimal places for continuous CSS variables (`0`–`4`). |
 | `autoScan` | `boolean` | `false` | Enables debounced `MutationObserver` DOM scanning. |
 | `mobileBehavior` | `'disable' \| 'lightweight' \| 'full'` | `'lightweight'` | Mobile optimization strategy. |
-| `mobileBreakpoint` | `number` | `1024` | Viewport width breakpoint in `px`. |
+| `mobileBreakpoint` | `number` | `1024` | Tablet+mobile viewport breakpoint (`px`, Tailwind `lg`). |
+| `phoneBreakpoint` | `number` | `768` | Phone-only viewport breakpoint (`px`, Tailwind `md`). |
 | `disableBlurOnMobile` | `boolean` | `true` | Removes `filter: blur()` on mobile/tablet. |
 | `disable3DOnMobile` | `boolean` | `true` | Flattens `z`, `rotateX`, `rotateY` to 2D on mobile/tablet. |
 | `respectReducedMotion` | `boolean` | `true` | Respects OS `prefers-reduced-motion: reduce`. |
@@ -281,7 +299,7 @@ engine.setRoot(anotherScrollPane);
 * `engine.subscribe(cb)` — Subscribe `{ scrollY, direction, progress, isMobile }` updates; returns `unsubscribe()`.
 * `engine.setLerp(val)` / `engine.getLerp()`
 * `engine.setMobileBehavior(mode)` / `engine.getMobileBehavior()`
-* `engine.setSimulatedMobile(bool | null)` / `engine.isMobile()` / `engine.isDisabled()`
+* `engine.setSimulatedMobile(bool | null)` / `engine.isMobile()` / `engine.isPhone()` / `engine.isDisabled()`
 * `engine.setDebugMarkers(bool)` / `engine.isDebugMarkers()`
 * `engine.getLastUpdateMs()` — Returns execution time (in ms) of last update.
 * `engine.applyTimelineInterpolation(el, steps, progressPercent, directOverride?)`
