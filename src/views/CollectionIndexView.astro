@@ -255,6 +255,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
           class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
           data-trig-stagger
           data-trig-stagger-delay="0.06"
+          data-trig-root-margin="0px"
           data-trig-once="true"
         >
           {pageEntries.map((entry) => {
@@ -417,6 +418,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
       const applyFilters = () => {
         const needle = query.trim().toLowerCase();
         let visibleCount = 0;
+        let visibilityChanged = false;
 
         cards.forEach((card) => {
           const cats = parseList(card.dataset.categories);
@@ -428,9 +430,11 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
             activeStacks.size === 0 || [...activeStacks].every((selected) => stack.includes(selected));
           const matchesSearch = !needle || haystack.includes(needle);
           const show = matchesCat && matchesStack && matchesSearch;
+          const nextHidden = !show;
 
-          card.hidden = !show;
-          card.classList.toggle('hidden', !show);
+          if (card.hidden !== nextHidden) visibilityChanged = true;
+          card.hidden = nextHidden;
+          card.classList.toggle('hidden', nextHidden);
           if (show) visibleCount += 1;
         });
 
@@ -442,7 +446,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
         const hasFilter = Boolean(activeCategory || activeStacks.size > 0 || needle);
         if (clearBtn) clearBtn.hidden = !hasFilter;
         if (emptyEl) emptyEl.hidden = visibleCount > 0;
-        if (grid) {
+        if (grid && visibilityChanged) {
           if (typeof window.chronoTrig !== 'undefined') {
             grid.classList.remove('trig-stagger-active');
             for (const child of Array.from(grid.children)) {
@@ -454,6 +458,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
                 'trig-stagger-active',
                 'trig-stagger-settled'
               );
+              el.removeAttribute('data-trig-settled');
               el.style.willChange = 'auto';
             }
             void grid.offsetHeight;

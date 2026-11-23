@@ -4,7 +4,8 @@
 // progress direction is identical in RTL and LTR documents.
 ---
 
-<div dir="ltr"
+<div
+  dir="ltr"
   id="nprogress"
   transition:persist="top-loading-bar"
   aria-hidden="true"
@@ -21,11 +22,13 @@
     transform: scaleX(0);
     transform-origin: 0 50%;
     transition:
-      transform 0.25s ease,
-      opacity 0.25s ease;
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 200ms ease;
     z-index: 999999;
     opacity: 0;
     pointer-events: none;
+    view-transition-name: top-loading-bar;
+    will-change: transform, opacity;
   }
 
   #nprogress.loading {
@@ -36,24 +39,52 @@
     transform: scaleX(1);
   }
 
+  /* Keep the persisted live bar above root View Transitions without ghosting the old snapshot */
+  ::view-transition-group(top-loading-bar) {
+    animation: none;
+    z-index: 999999;
+  }
+
+  ::view-transition-old(top-loading-bar) {
+    display: none;
+  }
+
+  ::view-transition-new(top-loading-bar) {
+    animation: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     #nprogress {
-      /* No width animation: the bar still appears and completes, but only
-         fades, so reduced-motion users get the same state feedback. */
-      transition: opacity 0.1s linear;
+      /* No width slide: reduced-motion users still get crisp state feedback via opacity. */
+      transition: opacity 100ms linear;
     }
+  }
+
+  html[data-motion='reduced'] #nprogress {
+    transition: opacity 100ms linear;
   }
 </style>
 
 <script>
-  const TRICKLE_INTERVAL_MS = 180;
-  const HIDE_DELAY_MS = 280;
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const TRICKLE_INTERVAL_MS = 160;
+  const COMPLETE_HOLD_MS = 240;
+  const FADE_OUT_MS = 220;
+  const INITIAL_PROGRESS = 0.14;
+  const MAX_FAKE_PROGRESS = 0.9;
 
   let trickleTimer: number | null = null;
   let hideTimer: number | null = null;
+  let cleanupTimer: number | null = null;
   let progress = 0;
   let isActive = false;
+  let runId = 0;
+
+  function isReducedMotion(): boolean {
+    return (
+      document.documentElement?.dataset?.motion === 'reduced' ||
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+    );
+  }
 
   function clearTimers() {
     if (trickleTimer !== null) {
@@ -64,65 +95,129 @@
       clearTimeout(hideTimer);
       hideTimer = null;
     }
+    if (cleanupTimer !== null) {
+      clearTimeout(cleanupTimer);
+      cleanupTimer = null;
+    }
+  }
+
+  function snapTransform(el: HTMLElement, value: number) {
+    el.style.transition = 'none';
+    el.style.transform = `scaleX(${value})`;
+    void el.offsetWidth;
+    el.style.transition = '';
+  }
+
+  function nextTrickleProgress(current: number): number {
+    let minStep = 0.005;
+    let maxStep = 0.008;
+    if (current < 0.25) {
+      minStep = 0.06;
+      maxStep = 0.11;
+    } else if (current < 0.55) {
+      minStep = 0.03;
+      maxStep = 0.065;
+    } else if (current < 0.8) {
+      minStep = 0.012;
+      maxStep = 0.03;
+    }
+    const delta = minStep + Math.random() * (maxStep - minStep);
+    return Math.min(MAX_FAKE_PROGRESS, current + delta);
   }
 
   /**
-   * Reveals the bar immediately. Navigation feedback is state, not decoration,
-   * so it is shown even when reduced motion is requested — the bar is simply
-   * static at a fixed progress instead of trickling.
+   * Starts a monotonic fake-loading sweep from 0 -> INITIAL_PROGRESS -> up to 90%.
+   * Snapping to 0 without transition first guarantees rapid clicks never glide backward.
    */
   function start() {
+    runId += 1;
     clearTimers();
     progress = 0;
 
     const el = document.getElementById('nprogress');
     if (!el) return;
 
+    const reduced = isReducedMotion();
     el.classList.remove('done');
+
+    if (reduced) {
+      el.classList.add('loading');
+      snapTransform(el, 0.35);
+      el.style.opacity = '1';
+      isActive = true;
+      return;
+    }
+
+    // Reset silently to 0 before revealing so any prior `scaleX(1)` never animates backward.
+    snapTransform(el, 0);
     el.classList.add('loading');
     el.style.opacity = '1';
-    el.style.transform = `scaleX(${prefersReducedMotion ? 0.35 : 0.08})`;
+    progress = INITIAL_PROGRESS;
+    el.style.transform = `scaleX(${progress})`;
     isActive = true;
 
-    if (prefersReducedMotion) return;
-
     trickleTimer = window.setInterval(() => {
-      const remaining = 90 - progress;
-      progress = Math.min(progress + Math.random() * Math.max(remaining * 0.12, 1), 90);
-      el.style.transform = `scaleX(${progress / 100})`;
+      if (!isActive) return;
+      progress = nextTrickleProgress(progress);
+      el.style.transform = `scaleX(${progress})`;
     }, TRICKLE_INTERVAL_MS);
   }
 
   function finish() {
     // `astro:after-preparation` and `astro:page-load` both report completion;
-    // only the first one owns the hide timer, the repeat must not cancel it.
+    // only the first one finishes the active run.
     if (!isActive) return;
-    clearTimers();
+    if (trickleTimer !== null) {
+      clearInterval(trickleTimer);
+      trickleTimer = null;
+    }
     isActive = false;
 
     const bar = document.getElementById('nprogress');
     if (!bar) return;
 
+    const activeRun = runId;
+    const reduced = isReducedMotion();
+    progress = 1;
     bar.classList.add('done');
-    bar.style.transform = 'scaleX(1)';
 
-    // Keep the completed state on screen briefly, so a navigation that resolves
-    // in a few milliseconds still reads as feedback instead of a flicker.
+    if (reduced) {
+      snapTransform(bar, 1);
+    } else {
+      bar.style.transform = 'scaleX(1)';
+    }
+
+    // Hold at 100% until the sweep completes, then fade opacity ONLY while keeping scaleX(1).
     hideTimer = window.setTimeout(() => {
       hideTimer = null;
-      reset();
-    }, HIDE_DELAY_MS);
+      if (activeRun !== runId) return;
+
+      const currentBar = document.getElementById('nprogress');
+      if (!currentBar) return;
+
+      currentBar.classList.remove('loading');
+      currentBar.style.opacity = '0';
+
+      // Reset scaleX(0) only after the bar is completely invisible.
+      cleanupTimer = window.setTimeout(() => {
+        cleanupTimer = null;
+        if (activeRun !== runId) return;
+
+        const targetBar = document.getElementById('nprogress');
+        if (!targetBar) return;
+
+        targetBar.classList.remove('done');
+        snapTransform(targetBar, 0);
+        progress = 0;
+      }, reduced ? 120 : FADE_OUT_MS);
+    }, reduced ? 120 : COMPLETE_HOLD_MS);
   }
 
   /**
-   * Puts the bar back into its hidden state.
-   *
-   * Used when the page is being put into the back/forward cache: the timers are
-   * frozen together with the page, so a bar that was left in its "done" state
-   * would greet the visitor with a full-width stripe the moment the page is
-   * restored.
+   * Immediately hides the bar and resets transform without transition (used on bfcache pagehide).
    */
   function reset() {
+    runId += 1;
     clearTimers();
     isActive = false;
     progress = 0;
@@ -131,8 +226,8 @@
     if (!bar) return;
 
     bar.classList.remove('loading', 'done');
-    bar.style.transform = 'scaleX(0)';
     bar.style.opacity = '0';
+    snapTransform(bar, 0);
   }
 
   if (document.documentElement.dataset.topLoadingBarBound !== 'true') {

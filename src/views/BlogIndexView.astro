@@ -568,6 +568,7 @@ const ogContext: SocialCardContext = {
           'trig-stagger-active',
           'trig-stagger-settled'
         );
+        el.removeAttribute('data-trig-settled');
         el.style.willChange = 'auto';
       }
       // Flush the hidden entrance state before ChronoTrig re-observes the grid.
@@ -765,14 +766,19 @@ const ogContext: SocialCardContext = {
       }
 
       let visible = 0;
+      let visibilityChanged = false;
       for (const card of cards) {
         const matches = matchesBlogFilters(card.taxonomy, filters);
-        card.element.hidden = !matches;
+        const nextHidden = !matches;
+        if (card.element.hidden !== nextHidden) visibilityChanged = true;
+        card.element.hidden = nextHidden;
         if (matches) visible += 1;
       }
-      if (replay) replayGridReveals();
-      refreshChronoTrig();
-      syncVisibleStaggerDelays();
+      if (replay || visibilityChanged) {
+        if (replay) replayGridReveals();
+        refreshChronoTrig();
+        syncVisibleStaggerDelays();
+      }
 
       const statusTemplate = active ? allTemplate : pageTemplate;
       if (status) {

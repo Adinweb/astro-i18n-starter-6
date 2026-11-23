@@ -1428,6 +1428,7 @@ const replayGridReveals = (grid: HTMLElement) => {
   for (const child of Array.from(grid.children)) {
     const el = child as HTMLElement;
     el.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active', 'trig-stagger-settled');
+    el.removeAttribute('data-trig-settled');
     el.style.willChange = 'auto';
   }
   void grid.offsetHeight; // تثبیت حالت پنهان پیش از مشاهدهٔ مجدد

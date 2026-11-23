@@ -292,15 +292,17 @@ const gridColsClass =
 
           if (grid && typeof window.chronoTrig !== 'undefined') {
             grid.classList.remove('trig-stagger-active');
-            cards.forEach((card) =>
+            cards.forEach((card) => {
               card.classList.remove(
                 'trig',
                 'trig-up',
                 'trig-down',
                 'trig-stagger-active',
                 'trig-stagger-settled'
-              )
-            );
+              );
+              card.removeAttribute('data-trig-settled');
+              card.style.willChange = 'auto';
+            });
             void grid.offsetHeight;
           }
           refreshChronoTrig();

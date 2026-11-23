@@ -415,6 +415,24 @@ body.trig-scroll-up .js [data-trig].trig-directional.trig {
   will-change: auto;
 }
 
+/*
+ * Once-only reveals stamped with [data-trig-settled="true"] stay locked across
+ * subsequent `window.chronoTrig.refresh()` / `scan()` calls (e.g. blog or
+ * collection filter changes) until an explicit grid replay clears the flag.
+ */
+.js [data-trig][data-trig-settled="true"],
+.js [data-trig-stagger] > *[data-trig-settled="true"],
+.js [data-trig-stagger] [data-trig-stagger-item][data-trig-settled="true"],
+.js [data-trig-stagger] .trig-stagger-item[data-trig-settled="true"] {
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+  clip-path: none !important;
+  animation: none !important;
+  transition-delay: 0s;
+  will-change: auto !important;
+}
+
 .js [data-trig-stagger][data-trig-once="true"] > *.trig-stagger-active,
 .js [data-trig-stagger][data-trig-once="true"] [data-trig-stagger-item].trig-stagger-active,
 .js [data-trig-stagger][data-trig-once="true"] .trig-stagger-item.trig-stagger-active {

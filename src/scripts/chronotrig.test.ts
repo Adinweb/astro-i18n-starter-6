@@ -134,6 +134,79 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(refreshSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('locks one-shot reveals with data-trig-settled="true" after animationend so later refresh() calls never replay headers', () => {
+    const refreshSpy = vi.fn();
+    const listeners = new Map<string, (event: { target: unknown }) => void>();
+    const attrs = new Map<string, string>();
+    const activeClasses = new Set<string>(['trig', 'trig-stagger-active']);
+
+    const headerTitle = {
+      hasAttribute: (attr: string) => attrs.has(attr),
+      getAttribute: (attr: string) => attrs.get(attr) ?? null,
+      setAttribute: (attr: string, val: string) => {
+        attrs.set(attr, val);
+      },
+      classList: {
+        contains: (cls: string) => activeClasses.has(cls),
+      },
+      addEventListener: vi.fn((event: string, cb: (event: { target: unknown }) => void) => {
+        listeners.set(event, cb);
+      }),
+    };
+
+    const alreadySettledAttrs = new Map<string, string>();
+    const alreadySettledSubtitle = {
+      hasAttribute: (attr: string) => alreadySettledAttrs.has(attr),
+      getAttribute: (attr: string) => alreadySettledAttrs.get(attr) ?? null,
+      setAttribute: (attr: string, val: string) => {
+        alreadySettledAttrs.set(attr, val);
+      },
+      classList: {
+        contains: (cls: string) => cls === 'trig-stagger-settled',
+      },
+      addEventListener: vi.fn(),
+    };
+
+    const headerContainer = {
+      getAttribute: vi.fn((attr: string) => (attr === 'data-trig-once' ? 'true' : 'linear')),
+      querySelectorAll: vi.fn().mockReturnValue([headerTitle, alreadySettledSubtitle]),
+    };
+
+    const mockDocument = {
+      querySelectorAll: vi.fn((selector: string) => {
+        if (selector === '[data-trig-stagger]') return [headerContainer];
+        if (selector === '[data-trig][data-trig-once="true"]') return [headerTitle];
+        return [];
+      }),
+      addEventListener: vi.fn(),
+      readyState: 'complete',
+    };
+
+    (globalThis as Record<string, unknown>).document = mockDocument;
+    (globalThis as Record<string, unknown>).window = {
+      chronoTrig: { refresh: refreshSpy },
+    };
+
+    setupChronoTrig();
+
+    // Settled child is stamped immediately; active child waits for its own animationend.
+    expect(alreadySettledAttrs.get('data-trig-settled')).toBe('true');
+    expect(alreadySettledSubtitle.addEventListener).not.toHaveBeenCalled();
+    expect(attrs.get('data-trig-settled')).toBeUndefined();
+    expect(headerTitle.addEventListener).toHaveBeenCalledTimes(1);
+
+    // Calling setupChronoTrig() again (e.g. refreshChronoTrig on filter change) must not duplicate listeners.
+    setupChronoTrig();
+    expect(headerTitle.addEventListener).toHaveBeenCalledTimes(1);
+
+    // Bubbled animationend from a child node must be ignored; target === element locks it.
+    listeners.get('animationend')?.({ target: {} });
+    expect(attrs.get('data-trig-settled')).toBeUndefined();
+
+    listeners.get('animationend')?.({ target: headerTitle });
+    expect(attrs.get('data-trig-settled')).toBe('true');
+  });
+
   it('configures chronotrig.css, global.css, and BaseLayout.astro for v6.1.0 performance & accessibility', () => {
     const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
     const globalCss = fs.readFileSync(path.join(rootDir, 'src/styles/global.css'), 'utf-8');
@@ -159,6 +232,8 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(css).toContain('.js [data-trig].trig');
     expect(css).toContain('transform: none');
     expect(css).toContain('.trig-stagger-settled');
+    expect(css).toContain('[data-trig-settled="true"]');
+    expect(css).toContain('animation: none !important');
     expect(css).toContain('transition-delay: 0s');
 
     // Presets, utility modifiers, stagger items, and timeline/pin flattening
@@ -220,6 +295,8 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
       path.join(rootDir, 'src/views/CollectionIndexView.astro'),
       'utf-8'
     );
+    const gallery = fs.readFileSync(path.join(rootDir, 'src/components/ImageGallerySection.astro'), 'utf-8');
+    const showcase = fs.readFileSync(path.join(rootDir, 'src/components/ProductShowcaseGrid.astro'), 'utf-8');
     const postCard = fs.readFileSync(path.join(rootDir, 'src/components/PostCard.astro'), 'utf-8');
     const globalCss = fs.readFileSync(path.join(rootDir, 'src/styles/global.css'), 'utf-8');
 
@@ -227,7 +304,8 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(view).toContain('const syncVisibleStaggerDelays = () =>');
     expect(view).toContain("typeof window.chronoTrig === 'undefined'");
     expect(view).toContain('trig-stagger-settled');
-    expect(view).toContain('if (replay) replayGridReveals();');
+    expect(view).toContain("el.removeAttribute('data-trig-settled')");
+    expect(view).toContain('if (replay || visibilityChanged)');
     expect(view).toContain('render({ updateUrl: false, replay: false })');
     expect(view).toContain('syncVisibleStaggerDelays()');
 
@@ -248,6 +326,10 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(collectionView).toContain('activeStacks.delete(val)');
     expect(collectionView).toContain('visibleChildren.forEach');
     expect(collectionView).toContain("el.style.willChange = 'auto'");
+    expect(collectionView).toContain("el.removeAttribute('data-trig-settled')");
+    expect(collectionView).toContain('if (grid && visibilityChanged)');
+    expect(gallery).toContain("removeAttribute('data-trig-settled')");
+    expect(showcase).toContain("removeAttribute('data-trig-settled')");
   });
 
   it('wires BaseLayout.astro with /chronotrig.min.js inline script and module coordinator', () => {

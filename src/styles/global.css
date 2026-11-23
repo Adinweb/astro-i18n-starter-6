@@ -469,6 +469,7 @@ html:not([data-motion="reduced"]) [data-cookie-banner]:not([hidden]) {
   header,
   footer nav,
   #top-loading-bar,
+  #nprogress,
   [data-mobile-menu],
   [data-search-modal],
   [data-cookie-banner],

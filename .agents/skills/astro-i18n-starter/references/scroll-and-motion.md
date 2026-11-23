@@ -126,12 +126,13 @@ refreshChronoTrig();
 When a client-side filter toggles `card.hidden` (or replaces filtered cards), reset the grid's reveal classes and `willChange`, force a reflow, call `refreshChronoTrig()`, and recompute stagger variables **only across visible (`!el.hidden`) cards** (`replayGridReveals()` + `syncVisibleStaggerDelays()` in `src/views/BlogIndexView.astro`, and `applyFilters()` in `src/views/CollectionIndexView.astro`):
 
 ```typescript
-// User-triggered filter/tab change only — never on the initial render.
+// User-triggered filter/tab change when visible cards changed — never on the initial render.
 if (typeof window.chronoTrig !== 'undefined') {
   grid.classList.remove('trig-stagger-active');
   for (const child of Array.from(grid.children)) {
     const el = child as HTMLElement;
     el.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active', 'trig-stagger-settled');
+    el.removeAttribute('data-trig-settled');
     el.style.willChange = 'auto';
   }
   void grid.offsetHeight;
