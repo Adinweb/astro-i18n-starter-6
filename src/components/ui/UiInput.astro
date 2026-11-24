@@ -1,11 +1,8 @@
 ---
 /**
  * Reusable accessible input / textarea primitive inspired by PrebuiltUI input components.
- * Supports leading `<Icon>`, optional password visibility toggle (`eye`/`eye-off`),
- * `aria-invalid` error state + `aria-describedby` helper/error text, automatic `dir="ltr"`
- * handling for emails/URLs in RTL pages, OKLCH tokens, and Paraglide defaults.
  */
-import Icon from '@/components/Icon.astro';
+import Icon from '@/components/ui/Icon.astro';
 import type { Locale } from '@/i18n/locales';
 import { resolveComponentLocale } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';

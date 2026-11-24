@@ -9,11 +9,11 @@
  * `container: "canvas"` pages (`contained = false`) and inside `.prose-wide`
  * pages (`contained = true`).
  */
-import Button from '@/components/Button.astro';
-import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
-import UiBadge from '@/components/UiBadge.astro';
+import Button from '@/components/ui/Button.astro';
+import IconBox from '@/components/ui/IconBox.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
@@ -339,12 +339,14 @@ function formatTierPrice(
                 <ul class="mt-6 space-y-2.5 border-t border-border pt-5 text-sm text-fg">
                   {tier.features.map((feature) => (
                     <li class="flex items-start gap-2.5">
-                      <span
-                        class="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
-                        aria-hidden="true"
-                      >
-                        <Icon name="check" size={13} />
-                      </span>
+                      <IconBox
+                        icon="check"
+                        size="xs"
+                        radius="full"
+                        tone="primary"
+                        iconSize={13}
+                        class="mt-0.5 size-5"
+                      />
                       <span>{feature}</span>
                     </li>
                   ))}

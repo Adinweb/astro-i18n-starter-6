@@ -73,6 +73,9 @@ const CORE_SITE_ICONS = [
   'map',
   'refresh',
   'wand',
+  'cloud-computing',
+  'headset',
+  'player-play',
 ] as const;
 
 export type CoreIconName = (typeof CORE_SITE_ICONS)[number];

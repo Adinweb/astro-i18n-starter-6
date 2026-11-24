@@ -1,10 +1,6 @@
 ---
 /**
  * Scroll-driven GPU parallax background layer for Hero Section components.
- *
- * Uses ChronoTrig `[data-parallax-stage]` / `[data-parallax-media]` rules from
- * `src/styles/chronotrig.css` so overscanning, compositor `will-change`, reduced-motion
- * flattening, and `@media print` behave identically to `<ParallaxSection />`.
  */
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
@@ -40,7 +36,7 @@ const widths = [...new Set([480, 768, 1024, 1440, image.width])]
 
 <div
   data-parallax-stage
-  data-hero-parallax
+  data-hero-parallax="true"
   data-parallax-speed={speed}
   data-locale={activeLocale}
   aria-hidden="true"
@@ -79,8 +75,8 @@ const widths = [...new Set([480, 768, 1024, 1440, image.width])]
       </>
     ) : (
       <>
-        <div class="absolute inset-0 bg-hero-base/65" />
-        <div class="absolute inset-0 bg-linear-to-b from-hero-base/65 via-hero-base/45 to-hero-base/90" />
+        <div class="absolute inset-0 bg-hero-base/35" />
+        <div class="absolute inset-0 bg-linear-to-b from-hero-base/55 via-hero-base/30 to-hero-base/80" />
       </>
     )
   }
@@ -141,9 +137,7 @@ const widths = [...new Set([480, 768, 1024, 1440, image.width])]
   function initHeroParallax(): void {
     destroyHeroParallax();
 
-    const stageNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-hero-parallax]')).filter(
-      (stage) => stage.dataset.parallaxActive === undefined
-    );
+    const stageNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-hero-parallax]'));
     if (stageNodes.length === 0) return;
 
     const hasIO = typeof IntersectionObserver === 'function';
@@ -322,11 +316,7 @@ const widths = [...new Set([480, 768, 1024, 1440, image.width])]
     };
   }
 
-  function scheduleHeroParallaxInit(): void {
-    queueMicrotask(initHeroParallax);
-  }
-
   document.addEventListener('astro:before-swap', destroyHeroParallax);
-  document.addEventListener('astro:page-load', scheduleHeroParallaxInit);
-  scheduleHeroParallaxInit();
+  document.addEventListener('astro:page-load', initHeroParallax);
+  initHeroParallax();
 </script>

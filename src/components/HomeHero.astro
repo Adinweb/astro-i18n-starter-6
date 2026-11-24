@@ -1,30 +1,14 @@
 ---
 /**
- * Home hero band — the downloaded marketing block, rebuilt to this starter's
- * rules instead of pasted in.
- *
- * What changed from the original Tailwind snippet, and why:
- *
- *  - Physical offsets (`pl-4 … xl:pl-32`) became `.layout-container`, the one
- *    place the standard desktop width and inline gutters are defined.
- *  - Hardcoded colours (`#BE945A`, `#1D1919`, `orange-200`, `zinc-600`) became
- *    the hero roles (`bg-hero-base`, `text-hero-fg`, `text-accent`) that
- *    `src/styles/global.css` owns, so the band follows the theme and keeps its
- *    contrast in light, dark and print.
- *  - The hand-rolled buttons became `<Button>` (`variant` + `size`): both
- *    controls navigate, so the component renders them as links, not
- *    `<button>`s.
- *  - Five inline SVGs (including a duplicated `clipPath` id) became sprite
- *    icons rendered by `<Icon>`.
- *  - Every string moved into the dictionaries (`home_hero_*`), and the copy
- *    points at real pages instead of a mortgage product.
- *  - Logical properties only (`ps-*`, `border-s`, `end-*`) plus
- *    `rtl:rotate-180` on the arrow, so the band mirrors in Persian.
- *  - Reveals use `data-trig` / `data-trig-stagger`, and print flattens the band
- *    to a light surface with no decorative layers.
+ * Home hero band — composed from `@/components/ui/*` primitives (`BackdropLayer`,
+ * `HeroHeadline`, `Button`, `Icon`, `IconBox`) with OKLCH semantic roles and
+ * CSS logical properties so the band adapts across themes, light/dark, print, and RTL.
  */
-import Icon from '@/components/Icon.astro';
-import Button from '@/components/Button.astro';
+import BackdropLayer from '@/components/ui/BackdropLayer.astro';
+import Button from '@/components/ui/Button.astro';
+import HeroHeadline from '@/components/ui/HeroHeadline.astro';
+import Icon from '@/components/ui/Icon.astro';
+import IconBox from '@/components/ui/IconBox.astro';
 import { HERO_TITLE_ID } from '@/libs/config/app';
 import type { Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
@@ -65,13 +49,7 @@ const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
     compact && 'rounded-3xl',
   ]}
 >
-  <!-- Atmosphere: two soft brand glows instead of a flat black panel. -->
-  <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 print:hidden">
-    <div class="hero-glow-primary absolute -top-40 end-[-6rem] size-[30rem] rounded-full">
-    </div>
-    <div class="hero-glow-accent absolute -bottom-48 start-[-8rem] size-[26rem] rounded-full">
-    </div>
-  </div>
+  <BackdropLayer backdrop="glow" surface="hero" />
 
   <div
     class:list={[
@@ -93,34 +71,14 @@ const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
         {m.home_hero_kicker({}, { locale })}
       </p>
 
-      {
-        headingTag === 'h2' ? (
-          <h2 class="mt-6 text-balance text-3xl font-extrabold leading-[1.08] tracking-tight sm:text-4xl lg:text-5xl">
-            {m.home_hero_title_lead({}, { locale })}{' '}
-            <span class="bg-linear-to-r from-accent to-hero-fg bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-to-l">
-              {m.home_hero_title_accent({}, { locale })}
-            </span>
-          </h2>
-        ) : (
-          <h1
-            id={titleId}
-            class="mt-6 text-balance text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
-          >
-            {m.home_hero_title_lead({}, { locale })}{' '}
-            <!--
-              The band is dark in both themes, so the gradient may only use roles
-              that stay bright: `accent` (6.9:1 on the band) and the hero
-              foreground (18:1). Ending on `primary` measured 3.0:1 in light mode —
-              the bare minimum for large text, and the tail of the phrase sat on it.
-            -->
-            <span
-              class="bg-linear-to-r from-accent to-hero-fg bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-to-l"
-            >
-              {m.home_hero_title_accent({}, { locale })}
-            </span>
-          </h1>
-        )
-      }
+      <HeroHeadline
+        headingTag={headingTag}
+        id={titleId}
+        lead={m.home_hero_title_lead({}, { locale })}
+        accent={m.home_hero_title_accent({}, { locale })}
+        surface="hero"
+        class="mt-6"
+      />
 
       {
         description && (
@@ -158,12 +116,7 @@ const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
             data-trig
             data-trig-once="true"
           >
-            <span
-              class="flex size-12 shrink-0 items-center justify-center rounded-full border border-hero-fg/15 bg-hero-fg/10 text-accent"
-              aria-hidden="true"
-            >
-              <Icon name={item.icon} size={22} />
-            </span>
+            <IconBox icon={item.icon} size="lg" radius="full" tone="hero" />
             <span class="min-w-0">
               <span class="block text-sm font-semibold">{item.title}</span>
               <span class="mt-1 block text-xs leading-relaxed text-hero-fg/80">

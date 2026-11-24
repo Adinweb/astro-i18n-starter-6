@@ -4,11 +4,11 @@
  * quick-messaging buttons (Phone / WhatsApp / Telegram), and a privacy-first
  * lazy-loaded map embed with the starter's Pure-SSG `<ContactForm embedded />`.
  */
-import Button from '@/components/Button.astro';
 import ContactForm from '@/components/ContactForm.astro';
-import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
+import Button from '@/components/ui/Button.astro';
+import IconBox from '@/components/ui/IconBox.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
 import type { Locale } from '@/i18n/locales';
 import { BUSINESS_CONFIG, siteConfig } from '@/libs/config/app';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
@@ -214,12 +214,13 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
                   cardSurface,
                 ]}
               >
-                <span
-                  aria-hidden="true"
-                  class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
-                >
-                  <Icon name={item.icon ?? 'mail'} size={18} />
-                </span>
+                <IconBox
+                  icon={item.icon ?? 'mail'}
+                  size="md"
+                  radius="xl"
+                  tone="primary"
+                  iconSize={18}
+                />
                 <div class="min-w-0">
                   <p class="text-xs font-semibold text-muted">{item.label}</p>
                   {item.href ? (
@@ -279,12 +280,14 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
               data-map-placeholder
               class="flex flex-col items-center justify-center gap-3 px-6 py-8 text-center"
             >
-              <span
-                aria-hidden="true"
-                class="inline-flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
-              >
-                <Icon name="map" size={20} />
-              </span>
+              <IconBox
+                icon="map"
+                size="lg"
+                radius="xl"
+                tone="primary"
+                iconSize={20}
+                class="size-11"
+              />
               <div class="space-y-1">
                 <p class="text-sm font-bold text-fg">
                   {m.block_contact_map_title({}, { locale: activeLocale })}

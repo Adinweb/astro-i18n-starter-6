@@ -1,0 +1,106 @@
+---
+/**
+ * Pill announcement link or badge strip used in centered, split, prompt, and dashboard heroes.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  badge?: string;
+  badgeVariant?: 'primary' | 'accent' | 'success' | 'neutral';
+  label?: string;
+  href?: string;
+  ctaLabel?: string;
+  pulse?: boolean;
+  surface?: 'default' | 'hero';
+  align?: 'start' | 'center';
+  locale?: Locale | string;
+  class?: string;
+}
+
+const {
+  badge,
+  badgeVariant = 'primary',
+  label,
+  href,
+  ctaLabel,
+  pulse = false,
+  surface = 'default',
+  align = 'center',
+  locale,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const resolvedLabel = label ?? m.block_hero_centered_announcement({}, { locale: activeLocale });
+const isHero = surface === 'hero';
+const Tag = href ? 'a' : 'div';
+---
+
+<div class:list={['not-prose flex', align === 'center' ? 'justify-center' : 'justify-start', className]}>
+  <Tag
+    href={href}
+    class:list={[
+      'group inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium shadow-xs transition-colors',
+      isHero
+        ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg hover:border-hero-fg/35 print:border-border print:bg-surface print:text-fg'
+        : 'border-border bg-surface text-fg hover:border-primary/45',
+    ]}
+  >
+    {
+      pulse && (
+        <span class="relative flex size-2 shrink-0" aria-hidden="true">
+          <span
+            class:list={[
+              'absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 [[data-motion=reduced]_&]:hidden',
+              isHero ? 'bg-accent print:bg-primary' : 'bg-primary',
+            ]}
+          />
+          <span
+            class:list={[
+              'relative inline-flex size-2 rounded-full',
+              isHero ? 'bg-accent print:bg-primary' : 'bg-primary',
+            ]}
+          />
+        </span>
+      )
+    }
+
+    {
+      badge && (
+        <UiBadge
+          label={badge}
+          variant={isHero ? 'accent' : badgeVariant}
+          size="sm"
+          class={isHero ? 'border-accent/40 bg-accent text-hero-base print:bg-primary print:text-primary-fg' : undefined}
+        />
+      )
+    }
+
+    <span class="truncate">{resolvedLabel}</span>
+
+    {
+      ctaLabel && (
+        <span class:list={['font-semibold', isHero ? 'text-accent print:text-primary' : 'text-primary']}>
+          {ctaLabel}
+        </span>
+      )
+    }
+
+    {
+      href && (
+        <Icon
+          name="arrow-right"
+          size={13}
+          class:list={[
+            'shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5',
+            isHero ? 'text-accent print:text-primary' : 'text-primary',
+          ]}
+        />
+      )
+    }
+  </Tag>
+</div>

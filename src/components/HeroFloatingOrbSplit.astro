@@ -1,0 +1,543 @@
+---
+/**
+ * Orbital Split Hero with Floating Telemetry/Service Cards, Highlighted
+ * Headline, Star Rating, Play/Action Badge, Optional Accent Partner Strip, and
+ * Optional ChronoTrig Parallax Background, composed from `@/components/ui/*`.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import BackdropLayer from '@/components/ui/BackdropLayer.astro';
+import Button from '@/components/ui/Button.astro';
+import Card from '@/components/ui/Card.astro';
+import HeroHeadline from '@/components/ui/HeroHeadline.astro';
+import HeroParallaxLayer, {
+  type HeroParallaxOverlay,
+  type HeroParallaxSpeed,
+} from '@/components/ui/HeroParallaxLayer.astro';
+import HeroPreviewNav, {
+  type HeroPreviewNavLink,
+  type HeroPreviewNavVariant,
+} from '@/components/ui/HeroPreviewNav.astro';
+import Icon from '@/components/ui/Icon.astro';
+import IconBox from '@/components/ui/IconBox.astro';
+import PartnerStrip from '@/components/ui/PartnerStrip.astro';
+import RatingStars from '@/components/ui/RatingStars.astro';
+import UiProgress from '@/components/ui/UiProgress.astro';
+import type { Locale } from '@/i18n/locales';
+import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import type { HeroCtaAction, HeroPartnerPill } from '@/libs/ui/types';
+import * as m from '@/paraglide/messages';
+
+export interface HeroFloatingFeatureCard {
+  icon?: string;
+  eyebrow?: string;
+  title: string;
+  subtitle?: string;
+}
+
+export interface HeroFloatingProgressCard {
+  title: string;
+  label: string;
+  percent?: number;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  surface?: 'default' | 'hero' | 'surface' | 'subtle';
+  backdrop?: 'none' | 'glow' | 'grid' | 'dots' | 'orbital' | 'wash';
+  parallaxImage?: ImageMetadata | null;
+  parallaxAlt?: string;
+  parallaxSpeed?: HeroParallaxSpeed;
+  parallaxOverlay?: HeroParallaxOverlay;
+  showPreviewNav?: boolean;
+  previewNavVariant?: HeroPreviewNavVariant;
+  previewBrand?: string;
+  previewLinks?: readonly HeroPreviewNavLink[];
+  previewCta?: HeroCtaAction | null;
+  rating?: number | null;
+  eyebrow?: string | null;
+  titleHighlight?: string | null;
+  titleLead?: string;
+  titleSecondary?: string | null;
+  description?: string | null;
+  primaryCta?: HeroCtaAction | null;
+  secondaryCta?: HeroCtaAction | null;
+  image?: ImageMetadata | null;
+  imageAlt?: string;
+  playBadgeIcon?: string | null;
+  playBadgeHref?: string | null;
+  playBadgeAriaLabel?: string;
+  topCard?: HeroFloatingFeatureCard | null;
+  progressCard?: HeroFloatingProgressCard | null;
+  bottomCard?: HeroFloatingFeatureCard | null;
+  partnerLogos?: readonly HeroPartnerPill[] | null;
+  partnerBarTone?: 'accent' | 'primary' | 'surface';
+  flipColumns?: boolean;
+  headingTag?: 'h1' | 'h2';
+  compact?: boolean;
+}
+
+const {
+  id,
+  locale,
+  surface = 'default',
+  backdrop = 'dots',
+  parallaxImage = null,
+  parallaxAlt = '',
+  parallaxSpeed = 'medium',
+  parallaxOverlay = 'hero',
+  showPreviewNav = false,
+  previewNavVariant = 'minimal',
+  previewBrand,
+  previewLinks,
+  previewCta,
+  rating = 5,
+  eyebrow,
+  titleHighlight,
+  titleLead,
+  titleSecondary,
+  description,
+  primaryCta,
+  secondaryCta,
+  image,
+  imageAlt = '',
+  playBadgeIcon = 'player-play',
+  playBadgeHref = null,
+  playBadgeAriaLabel,
+  topCard,
+  progressCard,
+  bottomCard,
+  partnerLogos,
+  partnerBarTone = 'accent',
+  flipColumns = false,
+  headingTag = 'h1',
+  compact = false,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = titleLead === undefined && titleHighlight === undefined;
+
+const [featuresHref, contactHref, homeHref] =
+  usingDefaults && (primaryCta === undefined || secondaryCta === undefined)
+    ? await Promise.all([
+        getPageUrl('features', activeLocale),
+        getPageUrl('contact', activeLocale),
+        getHomeHref(activeLocale),
+      ])
+    : [null, null, ''];
+
+const resolvedEyebrow =
+  eyebrow === null
+    ? undefined
+    : eyebrow ?? (usingDefaults ? m.block_hero_orb_eyebrow({}, { locale: activeLocale }) : undefined);
+
+const resolvedTitleHighlight =
+  titleHighlight === null
+    ? undefined
+    : titleHighlight ??
+      (usingDefaults ? m.block_hero_orb_title_highlight({}, { locale: activeLocale }) : undefined);
+
+const resolvedTitleLead =
+  titleLead ?? m.block_hero_orb_title_lead({}, { locale: activeLocale });
+
+const resolvedTitleSecondary =
+  titleSecondary === null
+    ? undefined
+    : titleSecondary ??
+      (usingDefaults ? m.block_hero_orb_title_secondary({}, { locale: activeLocale }) : undefined);
+
+const resolvedDescription =
+  description === null
+    ? undefined
+    : description ??
+      (usingDefaults ? m.block_hero_orb_desc({}, { locale: activeLocale }) : undefined);
+
+const resolvedPrimaryCta: HeroCtaAction | undefined =
+  primaryCta === null
+    ? undefined
+    : primaryCta ??
+      (usingDefaults
+        ? {
+            label: m.block_hero_orb_cta_primary({}, { locale: activeLocale }),
+            href: contactHref ?? homeHref,
+            icon: 'phone',
+            variant: 'secondary',
+          }
+        : undefined);
+
+const resolvedSecondaryCta: HeroCtaAction | undefined =
+  secondaryCta === null
+    ? undefined
+    : secondaryCta ??
+      (usingDefaults
+        ? {
+            label: m.block_hero_orb_cta_secondary({}, { locale: activeLocale }),
+            href: featuresHref ?? homeHref,
+            icon: 'brand-whatsapp',
+            variant: 'secondary',
+          }
+        : undefined);
+
+const resolvedTopCard: HeroFloatingFeatureCard | undefined =
+  topCard === null
+    ? undefined
+    : topCard ??
+      (usingDefaults
+        ? {
+            icon: 'cloud-computing',
+            eyebrow: m.block_hero_orb_top_eyebrow({}, { locale: activeLocale }),
+            title: m.block_hero_orb_top_title({}, { locale: activeLocale }),
+          }
+        : undefined);
+
+const resolvedProgressCard: HeroFloatingProgressCard | undefined =
+  progressCard === null
+    ? undefined
+    : progressCard ??
+      (usingDefaults
+        ? {
+            title: m.block_hero_orb_progress_title({}, { locale: activeLocale }),
+            label: m.block_hero_orb_progress_label({}, { locale: activeLocale }),
+            percent: 84,
+          }
+        : undefined);
+
+const resolvedBottomCard: HeroFloatingFeatureCard | undefined =
+  bottomCard === null
+    ? undefined
+    : bottomCard ??
+      (usingDefaults
+        ? {
+            icon: 'headset',
+            title: m.block_hero_orb_bottom_title({}, { locale: activeLocale }),
+            subtitle: m.block_hero_orb_bottom_subtitle({}, { locale: activeLocale }),
+          }
+        : undefined);
+
+const resolvedPartnerLogos: readonly HeroPartnerPill[] | undefined =
+  partnerLogos === null
+    ? undefined
+    : partnerLogos ??
+      (usingDefaults
+        ? [
+            { icon: 'cloud-computing', name: m.block_hero_orb_partner_1({}, { locale: activeLocale }) },
+            { icon: 'layers', name: m.block_hero_orb_partner_2({}, { locale: activeLocale }) },
+            { icon: 'shield', name: m.block_hero_orb_partner_3({}, { locale: activeLocale }) },
+            { icon: 'bolt', name: m.block_hero_orb_partner_4({}, { locale: activeLocale }) },
+          ]
+        : undefined);
+
+const resolvedImage = image === null ? undefined : image ?? DEFAULT_HERO_IMAGE;
+const hasParallax = Boolean(parallaxImage);
+const isHeroSurface = hasParallax || surface === 'hero';
+const effectiveNavSurface = hasParallax ? 'hero' : surface;
+
+const clampedRating =
+  rating === null ? 0 : Math.max(0, Math.min(5, Math.round(rating)));
+const ratingAria = m.block_hero_orb_rating_aria({}, { locale: activeLocale });
+---
+
+<section
+  id={id}
+  class:list={[
+    'hero-orb-band relative isolate overflow-hidden',
+    compact
+      ? showPreviewNav
+        ? 'rounded-3xl py-8 sm:py-12'
+        : 'rounded-3xl py-10 sm:py-14'
+      : showPreviewNav
+        ? 'pt-10 pb-14 sm:pt-14 sm:pb-20 lg:pb-24'
+        : 'pt-28 pb-14 sm:pt-36 sm:pb-20 lg:pt-40 lg:pb-24',
+    id && 'scroll-mt-24',
+    isHeroSurface
+      ? 'bg-hero-base text-hero-fg print:bg-bg print:text-fg'
+      : surface === 'surface'
+        ? 'border border-border bg-surface text-fg'
+        : surface === 'subtle'
+          ? 'border border-border bg-surface/60 text-fg'
+          : 'border-b border-border bg-bg text-fg',
+  ]}
+  data-hero-surface={isHeroSurface ? 'hero' : 'standard'}
+>
+  {
+    parallaxImage && (
+      <HeroParallaxLayer
+        locale={activeLocale}
+        image={parallaxImage}
+        alt={parallaxAlt || resolvedTitleLead}
+        speed={parallaxSpeed}
+        overlay={parallaxOverlay}
+        priority={!compact}
+      />
+    )
+  }
+
+  <BackdropLayer backdrop={backdrop} surface={isHeroSurface ? 'hero' : 'default'} />
+
+  <div class="layout-container">
+    {
+      showPreviewNav && (
+        <HeroPreviewNav
+          locale={activeLocale}
+          surface={effectiveNavSurface}
+          variant={previewNavVariant}
+          brand={previewBrand}
+          links={previewLinks}
+          cta={previewCta}
+          compact={compact}
+        />
+      )
+    }
+
+    <div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
+      <div
+        class:list={['lg:col-span-6', flipColumns && 'lg:order-last']}
+        data-trig-stagger
+        data-trig-stagger-mode="linear"
+        data-trig-stagger-delay="0.06"
+        data-trig-once="true"
+      >
+        {
+          clampedRating > 0 && (
+            <RatingStars
+              rating={clampedRating}
+              size={18}
+              tone="warning"
+              ariaLabel={ratingAria}
+              locale={activeLocale}
+              class="mb-4"
+            />
+          )
+        }
+
+        {
+          resolvedEyebrow && (
+            <p
+              class:list={[
+                'text-xs font-semibold uppercase tracking-[0.14em] rtl:tracking-normal',
+                isHeroSurface ? 'text-accent print:text-primary' : 'text-primary',
+              ]}
+            >
+              {resolvedEyebrow}
+            </p>
+          )
+        }
+
+        <HeroHeadline
+          headingTag={headingTag}
+          lead={resolvedTitleLead}
+          highlight={resolvedTitleHighlight}
+          secondary={resolvedTitleSecondary}
+          size="split"
+          surface={isHeroSurface ? 'hero' : 'default'}
+          class="mt-2"
+        />
+
+        {
+          resolvedDescription && (
+            <p
+              class:list={[
+                'mt-5 max-w-xl text-lg leading-relaxed text-pretty sm:text-xl',
+                isHeroSurface ? 'text-hero-fg/90 print:text-muted' : 'text-muted',
+              ]}
+            >
+              {resolvedDescription}
+            </p>
+          )
+        }
+
+        {
+          (resolvedPrimaryCta || resolvedSecondaryCta) && (
+            <div class="mt-7 flex flex-wrap items-center gap-3 print:hidden">
+              {resolvedPrimaryCta && (
+                <Button
+                  href={resolvedPrimaryCta.href}
+                  variant={resolvedPrimaryCta.variant ?? (isHeroSurface ? 'primary' : 'secondary')}
+                  size="lg"
+                  icon={resolvedPrimaryCta.icon ?? 'phone'}
+                  iconPosition="start"
+                  external={resolvedPrimaryCta.external}
+                >
+                  <span dir="ltr" class="tabular-nums">{resolvedPrimaryCta.label}</span>
+                </Button>
+              )}
+              {resolvedSecondaryCta && (
+                <Button
+                  href={resolvedSecondaryCta.href}
+                  variant={resolvedSecondaryCta.variant ?? (isHeroSurface ? 'hero' : 'secondary')}
+                  size="lg"
+                  icon={resolvedSecondaryCta.icon ?? 'brand-whatsapp'}
+                  iconPosition="start"
+                  external={resolvedSecondaryCta.external}
+                >
+                  {resolvedSecondaryCta.label}
+                </Button>
+              )}
+            </div>
+          )
+        }
+      </div>
+
+      <div
+        class:list={['lg:col-span-6 trig-delay-100', flipColumns && 'lg:order-first']}
+        data-trig
+        data-trig-direction={flipColumns ? 'start' : 'end'}
+        data-trig-once="true"
+      >
+        <div class="relative mx-auto flex min-h-[20rem] w-full max-w-[33rem] flex-col items-center justify-center px-2 sm:min-h-[29rem] sm:px-6 lg:min-h-[32rem]">
+          {/* Glowing circular gradient orb behind showcase photo */}
+          <div
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 flex items-center justify-center"
+          >
+            <div
+              class="size-[17rem] rounded-full bg-linear-to-tl from-primary via-primary/75 to-primary/35 shadow-floating sm:size-[23rem] lg:size-[26rem]"
+            />
+            <div
+              class:list={[
+                'absolute size-[20rem] rounded-full border border-dashed sm:size-[26.5rem] lg:size-[29.5rem]',
+                isHeroSurface ? 'border-hero-fg/20' : 'border-primary/25',
+              ]}
+            />
+          </div>
+
+          {
+            resolvedImage && (
+              <div
+                class:list={[
+                  'relative z-[2] w-[82%] max-w-[23rem] overflow-hidden rounded-3xl border shadow-floating',
+                  isHeroSurface
+                    ? 'border-hero-fg/20 bg-hero-base/50 print:border-border print:bg-surface'
+                    : 'border-border bg-surface',
+                ]}
+              >
+                <Image
+                  src={resolvedImage}
+                  alt={imageAlt || resolvedTitleSecondary || resolvedTitleLead}
+                  widths={[480, 768, 1024]}
+                  sizes="(min-width: 1024px) 24rem, 80vw"
+                  class="aspect-[4/3] w-full object-cover"
+                  loading={compact ? 'lazy' : 'eager'}
+                  fetchpriority={compact ? undefined : 'high'}
+                />
+              </div>
+            )
+          }
+
+          {
+            playBadgeIcon && (
+              playBadgeHref ? (
+                <a
+                  href={playBadgeHref}
+                  aria-label={playBadgeAriaLabel ?? resolvedTitleSecondary ?? resolvedTitleLead}
+                  class="absolute top-1 end-2 z-[4] inline-flex size-16 items-center justify-center rounded-full bg-accent text-hero-base shadow-floating transition-transform duration-200 hover:scale-105 sm:top-4 sm:end-6 sm:size-20 print:hidden"
+                >
+                  <Icon name={playBadgeIcon} size={26} />
+                </a>
+              ) : (
+                <span
+                  aria-hidden="true"
+                  class="pointer-events-none absolute top-1 end-2 z-[4] inline-flex size-16 items-center justify-center rounded-full bg-accent text-hero-base shadow-floating sm:top-4 sm:end-6 sm:size-20 print:hidden"
+                >
+                  <Icon name={playBadgeIcon} size={26} />
+                </span>
+              )
+            )
+          }
+
+          {/* Floating telemetry & service cards: compact responsive grid on mobile, orbital overlays on sm+ */}
+          <div class="relative z-[5] mt-6 grid w-full gap-3 sm:pointer-events-none sm:static sm:mt-0">
+            {
+              resolvedTopCard && (
+                <Card
+                  variant="glass"
+                  padding="sm"
+                  class="glass-surface bg-surface/95! text-fg shadow-floating sm:pointer-events-auto sm:absolute sm:top-8 sm:start-0 sm:w-56"
+                >
+                  <div class="flex items-center gap-3">
+                    <IconBox
+                      icon={resolvedTopCard.icon ?? 'cloud-computing'}
+                      size="lg"
+                      radius="full"
+                      tone="primary"
+                    />
+                    <div class="min-w-0 text-start">
+                      {resolvedTopCard.eyebrow && (
+                        <p class="truncate text-xs text-muted">{resolvedTopCard.eyebrow}</p>
+                      )}
+                      <p class="truncate text-sm font-bold text-fg">{resolvedTopCard.title}</p>
+                    </div>
+                  </div>
+                </Card>
+              )
+            }
+
+            {
+              resolvedProgressCard && (
+                <Card
+                  variant="glass"
+                  padding="sm"
+                  class="glass-surface bg-surface/95! text-fg shadow-floating sm:pointer-events-auto sm:absolute sm:top-1/2 sm:end-0 sm:w-52 sm:-translate-y-1/2"
+                >
+                  <p class="mb-2 text-start text-sm font-bold text-fg">
+                    {resolvedProgressCard.title}
+                  </p>
+                  <UiProgress
+                    locale={activeLocale}
+                    value={resolvedProgressCard.percent ?? 84}
+                    max={100}
+                    label={resolvedProgressCard.label}
+                    variant="bar"
+                    tone="primary"
+                    size="sm"
+                    once={true}
+                  />
+                </Card>
+              )
+            }
+
+            {
+              resolvedBottomCard && (
+                <Card
+                  variant="glass"
+                  padding="sm"
+                  class="glass-surface bg-surface/95! text-fg shadow-floating sm:pointer-events-auto sm:absolute sm:bottom-4 sm:start-4 sm:w-56"
+                >
+                  <div class="flex items-center gap-3">
+                    <IconBox
+                      icon={resolvedBottomCard.icon ?? 'headset'}
+                      size="lg"
+                      radius="full"
+                      tone="primary"
+                    />
+                    <div class="min-w-0 text-start">
+                      <p class="truncate text-sm font-bold text-fg">{resolvedBottomCard.title}</p>
+                      {resolvedBottomCard.subtitle && (
+                        <p class="truncate text-xs text-muted">{resolvedBottomCard.subtitle}</p>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              )
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {
+      resolvedPartnerLogos && resolvedPartnerLogos.length > 0 && (
+        <PartnerStrip
+          items={resolvedPartnerLogos}
+          variant="bar"
+          barTone={partnerBarTone}
+          surface={isHeroSurface ? 'hero' : 'default'}
+          class="mt-10 rounded-2xl px-5 py-5 shadow-sm"
+        />
+      )
+    }
+  </div>
+</section>

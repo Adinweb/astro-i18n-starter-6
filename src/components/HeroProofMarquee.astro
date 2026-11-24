@@ -1,27 +1,30 @@
 ---
 /**
- * Social-Proof & Trusted Brand Marquee Hero adapted from PrebuiltUI hero-section
- * examples featuring an optional rounded preview navigation bar, user review avatar stack,
- * OKLCH headline, CTAs, and an infinite RTL-aware Embla AutoScroll marquee strip.
+ * Social-Proof & Trusted Brand Marquee Hero composed from shared UI primitives:
+ * `<BackdropLayer>`, `<HeroPreviewNav>`, `<UiBadge>`, `<AvatarGroup>`, `<HeroHeadline>`,
+ * `<Button>`, `<Card>`, `<IconBox>`, `<HeroParallaxLayer>`, and Embla AutoScroll marquee.
  */
 import type { ImageMetadata } from 'astro';
-import AvatarGroup, { type AvatarItem } from '@/components/AvatarGroup.astro';
-import Button from '@/components/Button.astro';
+import AvatarGroup, { type AvatarItem } from '@/components/ui/AvatarGroup.astro';
+import BackdropLayer from '@/components/ui/BackdropLayer.astro';
+import Button from '@/components/ui/Button.astro';
+import Card from '@/components/ui/Card.astro';
+import HeroHeadline from '@/components/ui/HeroHeadline.astro';
 import HeroParallaxLayer, {
   type HeroParallaxOverlay,
   type HeroParallaxSpeed,
-} from '@/components/HeroParallaxLayer.astro';
+} from '@/components/ui/HeroParallaxLayer.astro';
 import HeroPreviewNav, {
   type HeroPreviewNavLink,
   type HeroPreviewNavVariant,
-} from '@/components/HeroPreviewNav.astro';
-import Icon from '@/components/Icon.astro';
-import type { HeroCtaAction } from '@/components/LandingHeroSplit.astro';
-import UiBadge from '@/components/UiBadge.astro';
+} from '@/components/ui/HeroPreviewNav.astro';
+import IconBox from '@/components/ui/IconBox.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
 import type { Locale } from '@/i18n/locales';
 import { getBlogIndexHref, getHomeHref, getPageUrl } from '@/libs/content/service';
 import { getContentType, getContentTypeIndexHref } from '@/libs/content/types';
 import { resolveComponentLocale } from '@/libs/ui/locale';
+import type { HeroCtaAction } from '@/libs/ui/types';
 import * as m from '@/paraglide/messages';
 
 export interface HeroMarqueePartner {
@@ -220,49 +223,7 @@ const maskEdgeClass = isHeroSurface
     )
   }
 
-  {
-    resolvedBackdrop !== 'none' && (
-      <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden print:hidden">
-        {(resolvedBackdrop === 'grid' || resolvedBackdrop === 'dots' || resolvedBackdrop === 'noise') && (
-          <div
-            class:list={[
-              'hero-marquee-pattern absolute inset-0',
-              resolvedBackdrop === 'dots' ? 'is-dots' : resolvedBackdrop === 'noise' ? 'is-noise' : 'is-grid',
-            ]}
-          />
-        )}
-        {resolvedBackdrop === 'wash' && <div class="hero-marquee-wash absolute inset-0" />}
-        {resolvedBackdrop === 'orbital' && (
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div
-              class:list={[
-                'size-[26rem] rounded-full border sm:size-[38rem]',
-                isHeroSurface ? 'border-hero-fg/12' : 'border-border/70',
-              ]}
-            />
-            <div
-              class:list={[
-                'absolute size-[18rem] rounded-full border sm:size-[26rem]',
-                isHeroSurface ? 'border-accent/25' : 'border-primary/20',
-              ]}
-            />
-          </div>
-        )}
-        <div
-          class:list={[
-            'hero-glow-primary absolute -top-36 end-[-6rem] size-[28rem] rounded-full',
-            !isHeroSurface && 'opacity-50',
-          ]}
-        />
-        <div
-          class:list={[
-            'hero-glow-accent absolute -bottom-40 start-[-8rem] size-[24rem] rounded-full',
-            !isHeroSurface && 'opacity-45',
-          ]}
-        />
-      </div>
-    )
-  }
+  <BackdropLayer backdrop={resolvedBackdrop} surface={isHeroSurface ? 'hero' : 'default'} />
 
   <div class="layout-container">
     <div
@@ -286,267 +247,181 @@ const maskEdgeClass = isHeroSurface
         )
       }
 
-    <div
-      class="mx-auto max-w-3xl text-center"
-      data-trig-stagger
-      data-trig-stagger-mode="linear"
-      data-trig-stagger-delay="0.05"
-      data-trig-once="true"
-    >
-      <div class="mb-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+      <div
+        class="mx-auto max-w-3xl text-center"
+        data-trig-stagger
+        data-trig-stagger-mode="linear"
+        data-trig-stagger-delay="0.05"
+        data-trig-once="true"
+      >
+        <div class="mb-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          {
+            resolvedBadge && (
+              <UiBadge
+                label={resolvedBadge}
+                variant={isHeroSurface ? 'accent' : 'primary'}
+                icon="shield"
+                class={isHeroSurface ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg print:text-fg' : undefined}
+              />
+            )
+          }
+          {
+            resolvedReviewLabel && (
+              <div
+                class:list={[
+                  'inline-flex items-center rounded-full border px-3.5 py-1.5',
+                  isHeroSurface
+                    ? 'border-hero-fg/15 bg-hero-fg/5 text-hero-fg print:border-border print:bg-surface print:text-fg'
+                    : 'border-border bg-surface text-fg',
+                ]}
+              >
+                <AvatarGroup
+                  locale={activeLocale}
+                  items={avatarItems}
+                  extraCount={avatarCount}
+                  label={resolvedReviewLabel}
+                  rating={5}
+                  size="sm"
+                />
+              </div>
+            )
+          }
+        </div>
+
+        <HeroHeadline
+          headingTag={headingTag}
+          lead={resolvedTitleLead}
+          accent={resolvedTitleAccent}
+          surface={isHeroSurface ? 'hero' : 'default'}
+        />
+
         {
-          resolvedBadge && (
-            <UiBadge
-              label={resolvedBadge}
-              variant={isHeroSurface ? 'accent' : 'primary'}
-              icon="shield"
-              class={isHeroSurface ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg print:text-fg' : undefined}
-            />
-          )
-        }
-        {
-          resolvedReviewLabel && (
-            <div
+          resolvedDescription && (
+            <p
               class:list={[
-                'inline-flex items-center rounded-full border px-3.5 py-1.5',
-                isHeroSurface
-                  ? 'border-hero-fg/15 bg-hero-fg/5 text-hero-fg print:border-border print:bg-surface print:text-fg'
-                  : 'border-border bg-surface text-fg',
+                'mx-auto mt-5 max-w-2xl text-base leading-relaxed text-pretty sm:text-lg',
+                isHeroSurface ? 'text-hero-fg/88 print:text-muted' : 'text-muted',
               ]}
             >
-              <AvatarGroup
-                locale={activeLocale}
-                items={avatarItems}
-                extraCount={avatarCount}
-                label={resolvedReviewLabel}
-                rating={5}
-                size="sm"
-              />
+              {resolvedDescription}
+            </p>
+          )
+        }
+
+        {
+          (resolvedPrimaryCta || resolvedSecondaryCta) && (
+            <div class="mt-8 flex flex-wrap items-center justify-center gap-3 print:hidden">
+              {resolvedPrimaryCta && (
+                <Button
+                  href={resolvedPrimaryCta.href}
+                  variant="primary"
+                  size="lg"
+                  glow
+                  icon={resolvedPrimaryCta.icon ?? 'arrow-right'}
+                  external={resolvedPrimaryCta.external}
+                >
+                  {resolvedPrimaryCta.label}
+                </Button>
+              )}
+              {resolvedSecondaryCta && (
+                <Button
+                  href={resolvedSecondaryCta.href}
+                  variant={isHeroSurface ? 'hero' : 'secondary'}
+                  size="lg"
+                  external={resolvedSecondaryCta.external}
+                >
+                  {resolvedSecondaryCta.label}
+                </Button>
+              )}
             </div>
           )
         }
       </div>
 
       {
-        headingTag === 'h2' ? (
-          <h2 class="text-3xl font-extrabold leading-[1.1] tracking-tight text-balance sm:text-4xl lg:text-5xl">
-            {resolvedTitleLead}
-            {resolvedTitleAccent && (
-              <>
-                {' '}
-                <span
-                  class:list={[
-                    'bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-l',
-                    isHeroSurface
-                      ? 'bg-linear-to-r from-accent to-hero-fg'
-                      : 'bg-linear-to-r from-primary to-secondary',
-                  ]}
-                >
-                  {resolvedTitleAccent}
-                </span>
-              </>
-            )}
-          </h2>
-        ) : (
-          <h1 class="text-[clamp(2.25rem,4.4vw,3.9rem)] font-extrabold leading-[1.08] tracking-tight text-balance">
-            {resolvedTitleLead}
-            {resolvedTitleAccent && (
-              <>
-                {' '}
-                <span
-                  class:list={[
-                    'bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-l',
-                    isHeroSurface
-                      ? 'bg-linear-to-r from-accent to-hero-fg'
-                      : 'bg-linear-to-r from-primary to-secondary',
-                  ]}
-                >
-                  {resolvedTitleAccent}
-                </span>
-              </>
-            )}
-          </h1>
-        )
-      }
-
-      {
-        resolvedDescription && (
-          <p
-            class:list={[
-              'mx-auto mt-5 max-w-2xl text-base leading-relaxed text-pretty sm:text-lg',
-              isHeroSurface ? 'text-hero-fg/88 print:text-muted' : 'text-muted',
-            ]}
-          >
-            {resolvedDescription}
-          </p>
-        )
-      }
-
-      {
-        (resolvedPrimaryCta || resolvedSecondaryCta) && (
-          <div class="mt-8 flex flex-wrap items-center justify-center gap-3 print:hidden">
-            {resolvedPrimaryCta && (
-              <Button
-                href={resolvedPrimaryCta.href}
-                variant="primary"
-                size="lg"
-                glow
-                icon={resolvedPrimaryCta.icon ?? 'arrow-right'}
-                external={resolvedPrimaryCta.external}
+        marqueePartners.length > 0 && (
+          <div class="mt-12">
+            {resolvedMarqueeLabel && (
+              <p
+                class:list={[
+                  'mb-4 text-center text-xs font-semibold uppercase tracking-[0.14em] rtl:tracking-normal',
+                  isHeroSurface ? 'text-hero-fg/65 print:text-muted' : 'text-muted',
+                ]}
               >
-                {resolvedPrimaryCta.label}
-              </Button>
+                {resolvedMarqueeLabel}
+              </p>
             )}
-            {resolvedSecondaryCta && (
-              <Button
-                href={resolvedSecondaryCta.href}
-                variant={isHeroSurface ? 'hero' : 'secondary'}
-                size="lg"
-                external={resolvedSecondaryCta.external}
-              >
-                {resolvedSecondaryCta.label}
-              </Button>
-            )}
-          </div>
-        )
-      }
-    </div>
 
-    {
-      marqueePartners.length > 0 && (
-        <div class="mt-12">
-          {resolvedMarqueeLabel && (
-            <p
+            <div
+              data-hero-embla-marquee
+              data-speed={String(speed)}
+              role="region"
+              aria-roledescription="carousel"
+              aria-label={resolvedMarqueeLabel ?? resolvedTitleLead}
               class:list={[
-                'mb-4 text-center text-xs font-semibold uppercase tracking-[0.14em] rtl:tracking-normal',
-                isHeroSurface ? 'text-hero-fg/65 print:text-muted' : 'text-muted',
+                'relative select-none',
+                hasParallax && '[mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]',
               ]}
             >
-              {resolvedMarqueeLabel}
-            </p>
-          )}
+              {!hasParallax && (
+                <>
+                  <div
+                    aria-hidden="true"
+                    class:list={[
+                      'pointer-events-none absolute inset-y-0 start-0 z-10 w-10 bg-linear-to-r to-transparent sm:w-16 rtl:bg-linear-l print:hidden',
+                      maskEdgeClass,
+                    ]}
+                  ></div>
+                  <div
+                    aria-hidden="true"
+                    class:list={[
+                      'pointer-events-none absolute inset-y-0 end-0 z-10 w-10 bg-linear-to-l to-transparent sm:w-16 rtl:bg-linear-r print:hidden',
+                      maskEdgeClass,
+                    ]}
+                  ></div>
+                </>
+              )}
 
-          <div
-            data-hero-embla-marquee
-            data-speed={String(speed)}
-            role="region"
-            aria-roledescription="carousel"
-            aria-label={resolvedMarqueeLabel ?? resolvedTitleLead}
-            class:list={[
-              'relative select-none',
-              hasParallax && '[mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]',
-            ]}
-          >
-            {!hasParallax && (
-              <>
-                <div
-                  aria-hidden="true"
-                  class:list={[
-                    'pointer-events-none absolute inset-y-0 start-0 z-10 w-10 bg-linear-to-r to-transparent sm:w-16 rtl:bg-linear-l print:hidden',
-                    maskEdgeClass,
-                  ]}
-                ></div>
-                <div
-                  aria-hidden="true"
-                  class:list={[
-                    'pointer-events-none absolute inset-y-0 end-0 z-10 w-10 bg-linear-to-l to-transparent sm:w-16 rtl:bg-linear-r print:hidden',
-                    maskEdgeClass,
-                  ]}
-                ></div>
-              </>
-            )}
-
-            <div data-embla-viewport class="cursor-grab overflow-hidden active:cursor-grabbing">
-              <div class="flex touch-pan-y">
-                {marqueePartners.map((partner) => (
-                  <div class="min-w-0 shrink-0 basis-[64%] pe-3 sm:basis-[34%] lg:basis-[22%]">
-                    <div
-                      class:list={[
-                        'flex items-center gap-3 rounded-2xl border px-4 py-3 text-start',
-                        isHeroSurface
-                          ? 'border-hero-fg/15 bg-hero-fg/5 text-hero-fg print:border-border print:bg-surface print:text-fg'
-                          : 'border-border bg-surface text-fg shadow-xs',
-                      ]}
-                    >
-                      <span
-                        class:list={[
-                          'inline-flex size-9 shrink-0 items-center justify-center rounded-xl',
-                          isHeroSurface
-                            ? 'bg-hero-fg/10 text-accent print:bg-primary/10 print:text-primary'
-                            : 'bg-primary/10 text-primary',
-                        ]}
-                        aria-hidden="true"
+              <div data-embla-viewport class="cursor-grab overflow-hidden active:cursor-grabbing">
+                <div class="flex touch-pan-y">
+                  {marqueePartners.map((partner) => (
+                    <div class="min-w-0 shrink-0 basis-[64%] pe-3 sm:basis-[34%] lg:basis-[22%]">
+                      <Card
+                        variant={isHeroSurface ? 'hero' : 'surface'}
+                        padding="xs"
+                        class="flex items-center gap-3 px-4 py-3 text-start"
                       >
-                        <Icon name={partner.icon ?? 'building'} size={17} />
-                      </span>
-                      <div class="min-w-0">
-                        <p class="truncate text-xs font-bold sm:text-sm">{partner.name}</p>
-                        {partner.tag && (
-                          <p
-                            class:list={[
-                              'truncate text-[11px]',
-                              isHeroSurface ? 'text-hero-fg/65 print:text-muted' : 'text-muted',
-                            ]}
-                          >
-                            {partner.tag}
-                          </p>
-                        )}
-                      </div>
+                        <IconBox
+                          icon={partner.icon ?? 'building'}
+                          size="sm"
+                          radius="xl"
+                          tone={isHeroSurface ? 'hero' : 'primary'}
+                        />
+                        <div class="min-w-0">
+                          <p class="truncate text-xs font-bold sm:text-sm">{partner.name}</p>
+                          {partner.tag && (
+                            <p
+                              class:list={[
+                                'truncate text-[11px]',
+                                isHeroSurface ? 'text-hero-fg/65 print:text-muted' : 'text-muted',
+                              ]}
+                            >
+                              {partner.tag}
+                            </p>
+                          )}
+                        </div>
+                      </Card>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )
-    }
+        )
+      }
     </div>
   </div>
 </section>
-
-<style>
-  .hero-marquee-pattern.is-grid {
-    background-image:
-      linear-gradient(to right, color-mix(in oklch, var(--color-border) 55%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklch, var(--color-border) 55%, transparent) 1px, transparent 1px);
-    background-size: 40px 40px;
-    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 20%, transparent 100%);
-  }
-
-  .hero-marquee-band[data-hero-surface='hero'] .hero-marquee-pattern.is-grid {
-    background-image:
-      linear-gradient(to right, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px);
-  }
-
-  .hero-marquee-pattern.is-dots {
-    background-image: radial-gradient(
-      circle,
-      color-mix(in oklch, var(--color-muted) 35%, transparent) 1.25px,
-      transparent 1.25px
-    );
-    background-size: 22px 22px;
-    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 25%, transparent 100%);
-  }
-
-  .hero-marquee-pattern.is-noise {
-    background-image:
-      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-fg) 18%, transparent) 1px, transparent 1px),
-      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-primary) 20%, transparent) 1px, transparent 1px);
-    background-size: 10px 10px, 14px 14px;
-    opacity: 0.45;
-  }
-
-  .hero-marquee-wash {
-    background: linear-gradient(
-      140deg,
-      color-mix(in oklch, var(--color-primary) 11%, transparent),
-      color-mix(in oklch, var(--color-accent) 13%, transparent) 50%,
-      color-mix(in oklch, var(--color-secondary) 9%, transparent)
-    );
-  }
-</style>
 
 <script>
   import EmblaCarousel, { type EmblaCarouselType } from 'embla-carousel';

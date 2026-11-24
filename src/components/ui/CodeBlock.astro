@@ -1,0 +1,238 @@
+---
+/**
+ * Accessible LTR-isolated code & interactive CLI command viewer.
+ *
+ * Supports either a single `code` snippet (documentation usage, terminal output) or
+ * multi-tab `commands` (e.g. `npm` / `pnpm` / `bun`), with instant copy-to-clipboard
+ * and polite screen-reader status announcement.
+ */
+import Button from '@/components/ui/Button.astro';
+import Icon from '@/components/ui/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface CodeCommandTab {
+  label: string;
+  command: string;
+}
+
+interface Props {
+  title?: string;
+  icon?: string;
+  code?: string;
+  commands?: readonly CodeCommandTab[];
+  showPrompt?: boolean;
+  surface?: 'default' | 'hero' | 'surface';
+  copyLabel?: string;
+  copyAriaLabel?: string;
+  locale?: Locale | string;
+  class?: string;
+}
+
+const {
+  title,
+  icon = 'file',
+  code,
+  commands,
+  showPrompt = false,
+  surface = 'default',
+  copyLabel,
+  copyAriaLabel,
+  locale,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const resolvedCopy = copyLabel ?? m.common_copy_code({}, { locale: activeLocale });
+const resolvedCopied = m.common_copied({}, { locale: activeLocale });
+const tablistAria = m.block_code_tablist_aria({}, { locale: activeLocale });
+const isHeroSurface = surface === 'hero';
+const hasTabs = Boolean(commands && commands.length > 0);
+const initialCode = hasTabs ? (commands?.[0]?.command ?? '') : (code ?? '');
+---
+
+<div
+  data-ui-codeblock
+  dir="ltr"
+  class:list={[
+    'not-prose flex flex-col overflow-hidden rounded-2xl border shadow-xs text-start',
+    isHeroSurface
+      ? 'border-hero-fg/20 bg-hero-base/80 text-hero-fg backdrop-blur-md print:border-border print:bg-surface print:text-fg'
+      : surface === 'surface'
+        ? 'border-border bg-bg'
+        : 'border-border bg-surface',
+    className,
+  ]}
+>
+  {
+    (title || hasTabs) && (
+      <div
+        class:list={[
+          'flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5 sm:px-5',
+          isHeroSurface ? 'border-hero-fg/15 print:border-border' : 'border-border',
+        ]}
+      >
+        <div class="flex flex-wrap items-center gap-2">
+          {hasTabs ? (
+            <div role="tablist" aria-label={tablistAria} class="inline-flex flex-wrap items-center gap-1">
+              {commands!.map((cmd, idx) => (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={idx === 0 ? 'true' : 'false'}
+                  data-ui-code-tab
+                  data-command={cmd.command}
+                  class:list={[
+                    'cursor-pointer rounded-lg px-2.5 py-1 font-mono text-xs font-semibold transition-colors',
+                    idx === 0
+                      ? isHeroSurface
+                        ? 'bg-accent text-hero-base print:bg-primary print:text-primary-fg'
+                        : 'bg-primary text-primary-fg'
+                      : isHeroSurface
+                        ? 'text-hero-fg/75 hover:bg-hero-fg/10 hover:text-hero-fg print:text-muted print:hover:text-fg'
+                        : 'text-muted hover:bg-surface-hover hover:text-fg',
+                  ]}
+                >
+                  {cmd.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div class="flex items-center gap-2">
+              <Icon name={icon} size={16} class={isHeroSurface ? 'text-accent' : 'text-primary'} />
+              <span class="text-xs font-bold sm:text-sm">{title}</span>
+            </div>
+          )}
+        </div>
+
+        <Button
+          type="button"
+          variant={isHeroSurface ? 'hero' : 'ghost'}
+          size="sm"
+          icon="copy"
+          iconPosition="start"
+          aria-label={copyAriaLabel ?? resolvedCopy}
+          data-ui-code-copy
+          data-code={initialCode}
+          data-label-copy={resolvedCopy}
+          data-label-copied={resolvedCopied}
+          data-hero-surface={isHeroSurface ? 'true' : 'false'}
+          class="print:hidden"
+        >
+          <span data-ui-code-copy-label>{resolvedCopy}</span>
+        </Button>
+      </div>
+    )
+  }
+
+  <div class="relative flex items-start justify-between gap-3">
+    <pre
+      dir="ltr"
+      class:list={[
+        'flex-1 overflow-x-auto p-4 font-mono text-xs leading-relaxed sm:p-5 sm:text-[13px] [content-visibility:auto] [contain-intrinsic-size:auto_140px]',
+        !title && !hasTabs && 'rounded-2xl',
+        isHeroSurface
+          ? 'text-hero-fg print:text-fg'
+          : surface === 'surface'
+            ? 'bg-bg text-fg'
+            : 'bg-bg/70 text-fg',
+      ]}>{showPrompt && (
+        <span
+          aria-hidden="true"
+          class:list={[
+            'me-2 font-bold select-none',
+            isHeroSurface ? 'text-accent print:text-primary' : 'text-primary',
+          ]}
+        >
+          $
+        </span>
+      )}<code dir="ltr" data-ui-code-output>{initialCode}</code></pre>
+
+    {
+      !title && !hasTabs && (
+        <div class="shrink-0 p-2.5 print:hidden">
+          <Button
+            type="button"
+            variant={isHeroSurface ? 'hero' : 'ghost'}
+            size="sm"
+            icon="copy"
+            iconPosition="start"
+            aria-label={copyAriaLabel ?? resolvedCopy}
+            data-ui-code-copy
+            data-code={initialCode}
+            data-label-copy={resolvedCopy}
+            data-label-copied={resolvedCopied}
+            data-hero-surface={isHeroSurface ? 'true' : 'false'}
+          >
+            <span data-ui-code-copy-label>{resolvedCopy}</span>
+          </Button>
+        </div>
+      )
+    }
+  </div>
+
+  <span class="sr-only" role="status" aria-live="polite" data-ui-code-live />
+</div>
+
+<script>
+  function initUiCodeBlocks() {
+    document.querySelectorAll<HTMLElement>('[data-ui-codeblock]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const tabs = root.querySelectorAll<HTMLButtonElement>('[data-ui-code-tab]');
+      const outputEl = root.querySelector<HTMLElement>('[data-ui-code-output]');
+      const copyBtn = root.querySelector<HTMLButtonElement>('[data-ui-code-copy]');
+      const copyLabel = root.querySelector<HTMLElement>('[data-ui-code-copy-label]');
+      const liveEl = root.querySelector<HTMLElement>('[data-ui-code-live]');
+
+      const isHero = copyBtn?.dataset.heroSurface === 'true';
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const cmd = tab.dataset.command ?? '';
+          tabs.forEach((other) => {
+            const active = other === tab;
+            other.setAttribute('aria-selected', String(active));
+            if (isHero) {
+              other.classList.toggle('bg-accent', active);
+              other.classList.toggle('text-hero-base', active);
+              other.classList.toggle('text-hero-fg/75', !active);
+            } else {
+              other.classList.toggle('bg-primary', active);
+              other.classList.toggle('text-primary-fg', active);
+              other.classList.toggle('text-muted', !active);
+            }
+          });
+          if (outputEl) outputEl.textContent = cmd;
+          if (copyBtn) copyBtn.dataset.code = cmd;
+        });
+      });
+
+      let resetTimer = 0;
+      copyBtn?.addEventListener('click', async () => {
+        const text = copyBtn.dataset.code ?? outputEl?.textContent ?? '';
+        const defaultText = copyBtn.dataset.labelCopy ?? '';
+        const copiedText = copyBtn.dataset.labelCopied ?? '';
+        if (!text) return;
+
+        try {
+          await navigator.clipboard.writeText(text);
+          if (copyLabel) copyLabel.textContent = copiedText;
+          if (liveEl) liveEl.textContent = copiedText;
+          window.clearTimeout(resetTimer);
+          resetTimer = window.setTimeout(() => {
+            if (copyLabel) copyLabel.textContent = defaultText;
+            if (liveEl) liveEl.textContent = '';
+          }, 1800);
+        } catch {
+          // Clipboard access may be blocked in restricted sandboxes.
+        }
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initUiCodeBlocks);
+  initUiCodeBlocks();
+</script>

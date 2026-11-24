@@ -1,0 +1,113 @@
+---
+/**
+ * Reusable anchor, filter, or prompt selection chip strip.
+ *
+ * Replaces duplicated chip rows across catalog index anchors, hero numbered jump pills,
+ * category filter bars, and interactive prompt suggestions.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface ChipGroupItem {
+  label: string;
+  href?: string;
+  value?: string;
+  active?: boolean;
+  highlight?: boolean;
+  count?: number;
+  icon?: string;
+  external?: boolean;
+  dir?: 'ltr' | 'rtl' | 'auto';
+}
+
+interface Props {
+  items: readonly ChipGroupItem[];
+  mode?: 'links' | 'filter' | 'select';
+  size?: 'xs' | 'sm' | 'md';
+  surface?: 'default' | 'hero';
+  align?: 'start' | 'center';
+  wrap?: boolean;
+  ariaLabel?: string;
+  dataFilterGroup?: string;
+  locale?: Locale | string;
+  class?: string;
+}
+
+const {
+  items,
+  mode = 'links',
+  size = 'sm',
+  surface = 'default',
+  align = 'start',
+  wrap = true,
+  ariaLabel,
+  dataFilterGroup,
+  locale,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const resolvedAriaLabel = ariaLabel ?? m.block_chip_group_aria({}, { locale: activeLocale });
+const isHero = surface === 'hero';
+
+const SIZES = {
+  xs: 'px-2.5 py-1 text-xs',
+  sm: 'px-3.5 py-1.5 text-xs',
+  md: 'px-4 py-2 text-xs sm:text-sm',
+} as const;
+---
+
+<nav
+  aria-label={resolvedAriaLabel}
+  data-ui-chip-group={mode}
+  class:list={[
+    'not-prose flex items-center gap-2',
+    wrap ? 'flex-wrap' : 'overflow-x-auto pb-1',
+    align === 'center' && 'justify-center',
+    className,
+  ]}
+>
+  {
+    items.map((item) => {
+      const Tag = item.href ? 'a' : 'button';
+      const toneClass = item.active
+        ? 'border-primary bg-primary text-primary-fg shadow-xs'
+        : item.highlight
+          ? isHero
+            ? 'border-accent/45 bg-accent/15 text-hero-fg hover:border-accent hover:bg-accent/25 print:border-primary/40 print:bg-primary/10 print:text-primary'
+            : 'border-primary/35 bg-primary/10 text-primary hover:border-primary hover:bg-primary/20'
+          : isHero
+            ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg hover:border-hero-fg/40 hover:bg-hero-fg/15 print:border-border print:bg-surface print:text-fg'
+            : 'border-border bg-surface text-muted hover:border-primary/50 hover:text-fg';
+
+      return (
+        <Tag
+          href={item.href}
+          type={item.href ? undefined : 'button'}
+          dir={item.dir}
+          target={item.href && item.external ? '_blank' : undefined}
+          rel={item.href && item.external ? 'noreferrer noopener' : undefined}
+          aria-pressed={!item.href ? (item.active ? 'true' : 'false') : undefined}
+          data-filter-btn={mode === 'filter' ? '' : undefined}
+          data-filter-value={item.value}
+          data-filter-group={dataFilterGroup}
+          data-chip-value={item.value ?? item.label}
+          class:list={[
+            'inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+            SIZES[size],
+            toneClass,
+          ]}
+        >
+          {item.icon && <Icon name={item.icon} size={size === 'xs' ? 12 : 14} class="shrink-0" />}
+          <span>{item.label}</span>
+          {item.count !== undefined && (
+            <span class="tabular-nums opacity-75">({formatNumber(item.count, activeLocale)})</span>
+          )}
+        </Tag>
+      );
+    })
+  }
+</nav>

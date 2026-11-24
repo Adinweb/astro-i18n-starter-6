@@ -1,0 +1,90 @@
+---
+/**
+ * Semantic reusable Card surface primitive.
+ *
+ * Unifies rounded card containers across MDX showcases, feature grids, testimonials,
+ * contact/step cards, hero floating panels, and pricing/info blocks while delegating
+ * hover elevation cleanly without interfering with ChronoTrig `[data-trig]` transitions.
+ */
+export type CardVariant =
+  | 'default'
+  | 'surface'
+  | 'subtle'
+  | 'elevated'
+  | 'tinted'
+  | 'glass'
+  | 'hero'
+  | 'dashed';
+
+export type CardPadding = 'none' | 'xs' | 'sm' | 'md' | 'lg';
+export type CardRadius = 'xl' | '2xl' | '3xl';
+
+interface Props {
+  as?: 'div' | 'article' | 'li' | 'figure';
+  href?: string;
+  external?: boolean;
+  variant?: CardVariant;
+  padding?: CardPadding;
+  radius?: CardRadius;
+  hover?: boolean;
+  class?: string;
+  [attribute: string]: unknown;
+}
+
+const {
+  as = 'div',
+  href,
+  external = false,
+  variant = 'surface',
+  padding = 'md',
+  radius = '2xl',
+  hover = false,
+  class: className,
+  ...rest
+} = Astro.props;
+
+const VARIANTS: Record<CardVariant, string> = {
+  default: 'border border-border bg-bg shadow-xs',
+  surface: 'border border-border bg-surface shadow-xs',
+  subtle: 'border border-border bg-surface/60',
+  elevated: 'border border-border bg-surface shadow-floating',
+  tinted: 'border border-primary/25 bg-primary/5',
+  glass: 'border border-border bg-surface/85 backdrop-blur-md shadow-xl',
+  hero: 'border border-hero-fg/15 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg',
+  dashed: 'border border-dashed border-border bg-surface/50',
+};
+
+const PADDINGS: Record<CardPadding, string> = {
+  none: 'p-0',
+  xs: 'p-3',
+  sm: 'p-4',
+  md: 'p-5 sm:p-6',
+  lg: 'p-6 sm:p-8',
+};
+
+const RADII: Record<CardRadius, string> = {
+  xl: 'rounded-xl',
+  '2xl': 'rounded-2xl',
+  '3xl': 'rounded-3xl',
+};
+
+const hoverClasses = hover
+  ? variant === 'hero'
+    ? 'transition-all duration-200 hover:-translate-y-0.5 hover:border-hero-fg/35 hover:bg-hero-fg/15'
+    : 'transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md'
+  : '';
+
+const classes = ['not-prose', VARIANTS[variant], PADDINGS[padding], RADII[radius], hoverClasses, className];
+const attributes = rest as Record<string, string | number | boolean | undefined>;
+const Tag = href ? 'a' : as;
+---
+
+<Tag
+  href={href}
+  target={href && external ? '_blank' : undefined}
+  rel={href && external ? 'noreferrer noopener' : undefined}
+  class:list={classes}
+  {...attributes}
+>
+  <slot />
+</Tag>

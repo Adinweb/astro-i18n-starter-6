@@ -1,0 +1,105 @@
+---
+/**
+ * Unified hero display heading supporting gradient-clipped OKLCH accent spans,
+ * angled highlight blocks, secondary subtitles, and responsive heading scale.
+ */
+interface Props {
+  headingTag?: 'h1' | 'h2' | 'h3';
+  id?: string;
+  lead: string;
+  accent?: string;
+  highlight?: string;
+  secondary?: string;
+  size?: 'editorial' | 'split' | 'compact';
+  surface?: 'default' | 'hero';
+  newLineSecondary?: boolean;
+  class?: string;
+}
+
+const {
+  headingTag = 'h2',
+  id,
+  lead,
+  accent,
+  highlight,
+  secondary,
+  size = 'editorial',
+  surface = 'default',
+  newLineSecondary = true,
+  class: className,
+} = Astro.props;
+
+const HeadingTag = headingTag;
+const isHero = surface === 'hero';
+
+const SIZE_CLASS =
+  size === 'split'
+    ? headingTag === 'h1'
+      ? 'text-3xl sm:text-4xl lg:text-5xl xl:text-[3.35rem]'
+      : 'text-2xl sm:text-3xl lg:text-4xl'
+    : size === 'compact'
+      ? headingTag === 'h1'
+        ? 'text-3xl sm:text-4xl lg:text-5xl'
+        : 'text-2xl sm:text-3xl lg:text-4xl'
+      : headingTag === 'h1'
+        ? 'text-4xl sm:text-5xl lg:text-6xl'
+        : 'text-3xl sm:text-4xl lg:text-5xl';
+---
+
+<HeadingTag
+  id={id}
+  class:list={[
+    'font-extrabold leading-[1.1] tracking-tight text-balance',
+    SIZE_CLASS,
+    className,
+  ]}
+>
+  {lead}
+  {
+    accent && (
+      <>
+        {' '}
+        <span
+          class:list={[
+            'bg-clip-text text-transparent print:bg-none print:text-fg',
+            isHero
+              ? 'bg-linear-to-r from-accent to-hero-fg rtl:bg-linear-to-l'
+              : 'bg-linear-to-r from-primary to-secondary rtl:bg-linear-to-l',
+          ]}
+        >
+          {accent}
+        </span>
+      </>
+    )
+  }
+  {
+    highlight && (
+      <>
+        {' '}
+        <span
+          class:list={[
+            'mt-1 inline-block rounded-xl px-3 py-0.5 text-[0.92em] shadow-sm transition-transform duration-300 ltr:-rotate-1 rtl:rotate-1 hover:rotate-0 print:border print:border-border print:bg-surface print:text-fg',
+            isHero
+              ? 'bg-accent text-hero-base'
+              : 'bg-primary text-primary-fg',
+          ]}
+        >
+          {highlight}
+        </span>
+      </>
+    )
+  }
+  {
+    secondary && (
+      <span
+        class:list={[
+          'font-bold leading-[1.35]',
+          newLineSecondary ? 'mt-2.5 block text-xl sm:text-2xl lg:text-[1.7rem]' : 'ms-2 text-[0.65em]',
+          isHero ? 'text-hero-fg/90 print:text-fg' : 'text-fg/85',
+        ]}
+      >
+        {secondary}
+      </span>
+    )
+  }
+</HeadingTag>

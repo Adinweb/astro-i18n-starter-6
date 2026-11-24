@@ -1,0 +1,76 @@
+---
+/**
+ * Full-width top announcement ribbon used at the upper edge of hero bands.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  badge?: string;
+  label?: string;
+  href?: string;
+  ctaLabel?: string;
+  surface?: 'default' | 'hero';
+  locale?: Locale | string;
+  class?: string;
+}
+
+const {
+  badge,
+  label,
+  href,
+  ctaLabel,
+  surface = 'default',
+  locale,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const resolvedLabel = label ?? m.block_promo_message({}, { locale: activeLocale });
+const resolvedCta = ctaLabel ?? m.block_promo_cta({}, { locale: activeLocale });
+const isHero = surface === 'hero';
+---
+
+<div
+  class:list={[
+    'not-prose relative z-20 border-b px-4 py-2.5 text-center text-xs font-medium',
+    isHero
+      ? 'border-hero-fg/15 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg'
+      : 'border-primary/20 bg-primary/8 text-fg',
+    className,
+  ]}
+>
+  <div class="layout-container flex flex-wrap items-center justify-center gap-2">
+    {
+      badge && (
+        <span
+          class:list={[
+            'rounded-full px-2.5 py-0.5 text-[11px] font-bold',
+            isHero
+              ? 'bg-accent text-hero-base print:bg-primary print:text-primary-fg'
+              : 'bg-primary text-primary-fg',
+          ]}
+        >
+          {badge}
+        </span>
+      )
+    }
+    <span>{resolvedLabel}</span>
+    {
+      href && (
+        <a
+          href={href}
+          class:list={[
+            'inline-flex items-center gap-1 font-bold underline-offset-4 hover:underline',
+            isHero ? 'text-accent print:text-primary' : 'text-primary',
+          ]}
+        >
+          <span>{resolvedCta}</span>
+          <Icon name="arrow-right" size={13} class="rtl:rotate-180" />
+        </a>
+      )
+    }
+  </div>
+</div>

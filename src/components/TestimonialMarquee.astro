@@ -8,9 +8,11 @@
  * - Native RTL/LTR direction detection (`document.documentElement.dir`).
  * - Semantic OKLCH tokens, logical CSS properties, and Paraglide localized defaults.
  */
-import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
+import Card from '@/components/ui/Card.astro';
+import Icon from '@/components/ui/Icon.astro';
+import RatingStars from '@/components/ui/RatingStars.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
 import type { Locale } from '@/i18n/locales';
 import { getInitials } from '@/libs/ui/initials';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
@@ -95,7 +97,7 @@ const resolvedItems =
   baseItems.length > 0 && baseItems.length < 6 ? [...baseItems, ...baseItems] : baseItems;
 
 const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
-const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
+const cardVariant = !contained && surface === 'surface' ? 'default' : 'surface';
 ---
 
 <PageSection
@@ -140,20 +142,22 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
             const initials = getInitials(item.author);
             return (
               <div class="min-w-0 shrink-0 basis-[85%] pe-4 sm:basis-[52%] md:basis-[40%] lg:basis-[32%]">
-                <figure
-                  class:list={[
-                    'flex h-full flex-col justify-between rounded-2xl border border-border p-6 shadow-xs transition-colors hover:border-primary/40',
-                    cardSurface,
-                  ]}
+                <Card
+                  as="figure"
+                  variant={cardVariant}
+                  padding="md"
+                  radius="2xl"
+                  class="flex h-full flex-col justify-between transition-colors hover:border-primary/40"
                 >
                   <div>
                     <div class="flex items-center justify-between gap-3">
                       {rating > 0 ? (
-                        <div class="flex items-center gap-0.5 text-accent" aria-hidden="true">
-                          {Array.from({ length: rating }).map(() => (
-                            <Icon name="star-filled" size={14} />
-                          ))}
-                        </div>
+                        <RatingStars
+                          rating={rating}
+                          size={14}
+                          tone="accent"
+                          locale={activeLocale}
+                        />
                       ) : (
                         <span />
                       )}
@@ -179,7 +183,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
                       )}
                     </div>
                   </figcaption>
-                </figure>
+                </Card>
               </div>
             );
           })

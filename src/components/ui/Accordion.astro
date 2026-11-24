@@ -1,0 +1,149 @@
+---
+/**
+ * Accessible native `<details>/<summary>` Accordion disclosure component.
+ *
+ * Can render either a list of structured `items` (`variant`: `'cards'` | `'flush'`)
+ * or wrap arbitrary rich slot content inside a single collapsible panel via `title` + `open`.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import UiBadge, { type BadgeVariant } from '@/components/ui/UiBadge.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface AccordionItem {
+  id?: string;
+  title: string;
+  content: string;
+  badge?: string;
+  badgeVariant?: BadgeVariant;
+  open?: boolean;
+}
+
+interface Props {
+  items?: readonly AccordionItem[];
+  title?: string;
+  badge?: string;
+  badgeVariant?: BadgeVariant;
+  open?: boolean;
+  openFirst?: boolean;
+  variant?: 'cards' | 'flush';
+  surface?: 'default' | 'surface' | 'hero';
+  locale?: Locale | string;
+  class?: string;
+}
+
+const {
+  items,
+  title,
+  badge,
+  badgeVariant = 'primary',
+  open = false,
+  openFirst = false,
+  variant = 'cards',
+  surface = 'default',
+  locale,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const hasSlot = Astro.slots.has('default');
+
+const resolvedItems: readonly AccordionItem[] =
+  items ??
+  (!hasSlot
+    ? [
+        {
+          title: m.block_faq_1_q({}, { locale: activeLocale }),
+          content: m.block_faq_1_a({}, { locale: activeLocale }),
+        },
+        {
+          title: m.block_faq_2_q({}, { locale: activeLocale }),
+          content: m.block_faq_2_a({}, { locale: activeLocale }),
+        },
+        {
+          title: m.block_faq_3_q({}, { locale: activeLocale }),
+          content: m.block_faq_3_a({}, { locale: activeLocale }),
+        },
+      ]
+    : []);
+
+const isHero = surface === 'hero';
+const itemShellClass =
+  variant === 'flush'
+    ? 'border-b border-border last:border-b-0'
+    : isHero
+      ? 'rounded-2xl border border-hero-fg/15 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg'
+      : surface === 'surface'
+        ? 'rounded-2xl border border-border bg-bg transition-colors open:border-primary/40'
+        : 'rounded-2xl border border-border bg-surface transition-colors open:border-primary/40';
+---
+
+<div
+  class:list={[
+    'not-prose',
+    variant === 'flush'
+      ? 'overflow-hidden rounded-2xl border border-border bg-surface px-5 sm:px-6'
+      : 'space-y-3',
+    className,
+  ]}
+>
+  {
+    hasSlot ? (
+      <details open={open} class:list={['group', itemShellClass]}>
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-start text-sm font-bold text-fg select-none [&::-webkit-details-marker]:hidden sm:text-base">
+          <span class="flex flex-wrap items-center gap-2.5">
+            {badge && <UiBadge label={badge} variant={badgeVariant} size="sm" />}
+            <span>{title ?? m.block_faq_1_q({}, { locale: activeLocale })}</span>
+          </span>
+          <span class="inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-muted transition-transform duration-200 group-open:rotate-180 group-open:text-primary [[data-motion=reduced]_&]:transition-none">
+            <Icon name="chevron-down" size={16} />
+          </span>
+        </summary>
+        <div class="border-t border-border/60 px-5 pb-5 pt-4">
+          <slot />
+        </div>
+      </details>
+    ) : (
+      resolvedItems.map((item, idx) => (
+        <details
+          id={item.id}
+          open={item.open ?? (openFirst && idx === 0)}
+          class:list={['group', itemShellClass]}
+        >
+          <summary
+            class:list={[
+              'flex cursor-pointer list-none items-center justify-between gap-4 text-start text-sm font-semibold select-none [&::-webkit-details-marker]:hidden sm:text-base',
+              variant === 'flush' ? 'py-4' : 'px-5 py-4 sm:px-6 sm:py-5',
+              isHero ? 'text-hero-fg print:text-fg' : 'text-fg',
+            ]}
+          >
+            <span class="flex flex-wrap items-center gap-2">
+              {item.badge && <UiBadge label={item.badge} variant={item.badgeVariant ?? 'primary'} size="sm" />}
+              <span>{item.title}</span>
+            </span>
+            <span
+              class:list={[
+                'inline-flex size-7 shrink-0 items-center justify-center rounded-full border transition-transform duration-200 group-open:rotate-180 [[data-motion=reduced]_&]:transition-none',
+                isHero
+                  ? 'border-hero-fg/20 bg-hero-fg/10 text-accent print:border-border print:bg-surface print:text-primary'
+                  : 'border-border bg-bg text-muted group-open:border-primary/40 group-open:text-primary',
+              ]}
+            >
+              <Icon name="chevron-down" size={16} />
+            </span>
+          </summary>
+          <div
+            class:list={[
+              'text-sm leading-relaxed sm:text-base text-pretty',
+              variant === 'flush' ? 'pb-4' : 'px-5 pb-5 sm:px-6 sm:pb-6',
+              isHero ? 'text-hero-fg/80 print:text-muted' : 'text-muted',
+            ]}
+          >
+            <p>{item.content}</p>
+          </div>
+        </details>
+      ))
+    )
+  }
+</div>

@@ -1,0 +1,40 @@
+---
+/**
+ * Icon-only button sharing `.glass-control` / `.ghost-control` from `src/styles/global.css`.
+ */
+import Icon from '@/components/ui/Icon.astro';
+
+interface Props {
+  icon?: string;
+  label: string;
+  size?: number;
+  variant?: 'glass' | 'ghost';
+  class?: string;
+  [key: string]: unknown;
+}
+
+const {
+  icon,
+  label,
+  size = 18,
+  variant = 'glass',
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const hasSlot = Astro.slots.has('default');
+---
+
+<button
+  type="button"
+  class:list={[
+    variant === 'glass' ? 'glass-control' : 'ghost-control',
+    'h-9 w-9 shrink-0 cursor-pointer',
+    className,
+  ]}
+  {...rest}
+  aria-label={label}
+  title={label}
+>
+  {hasSlot ? <slot /> : icon && <Icon name={icon} size={size} />}
+</button>

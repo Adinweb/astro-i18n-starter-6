@@ -10,11 +10,11 @@ draft: false
 ---
 import AboutSplitSection from '@/components/AboutSplitSection.astro';
 import AuthFormCard from '@/components/AuthFormCard.astro';
-import AvatarGroup from '@/components/AvatarGroup.astro';
+import AvatarGroup from '@/components/ui/AvatarGroup.astro';
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
 import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
-import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import Button from '@/components/Button.astro';
+import Breadcrumbs from '@/components/ui/Breadcrumbs.astro';
+import Button from '@/components/ui/Button.astro';
 import CarouselSection from '@/components/CarouselSection.astro';
 import ComparisonTable from '@/components/ComparisonTable.astro';
 import ComponentDoc from '@/components/ComponentDoc.astro';
@@ -26,8 +26,8 @@ import FeatureCardGrid from '@/components/FeatureCardGrid.astro';
 import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import HomeHero from '@/components/HomeHero.astro';
-import Icon from '@/components/Icon.astro';
-import IconButton from '@/components/IconButton.astro';
+import Icon from '@/components/ui/Icon.astro';
+import IconButton from '@/components/ui/IconButton.astro';
 import ImageGallerySection from '@/components/ImageGallerySection.astro';
 import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
 import LatestPostsSection from '@/components/LatestPostsSection.astro';
@@ -41,20 +41,20 @@ import ProcessSteps from '@/components/ProcessSteps.astro';
 import ProductShowcaseGrid from '@/components/ProductShowcaseGrid.astro';
 import PromoBanner from '@/components/PromoBanner.astro';
 import ProofStatsRow from '@/components/ProofStatsRow.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
-import SocialLinks from '@/components/SocialLinks.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import SocialLinks from '@/components/ui/SocialLinks.astro';
 import TeamSection from '@/components/TeamSection.astro';
 import TestimonialGrid from '@/components/TestimonialGrid.astro';
-import UiAlert from '@/components/UiAlert.astro';
-import UiBadge from '@/components/UiBadge.astro';
-import UiCheckbox from '@/components/UiCheckbox.astro';
-import UiDropdown from '@/components/UiDropdown.astro';
-import UiInput from '@/components/UiInput.astro';
-import UiModal from '@/components/UiModal.astro';
-import UiPagination from '@/components/UiPagination.astro';
-import UiProgress from '@/components/UiProgress.astro';
-import UiSwitch from '@/components/UiSwitch.astro';
-import UiTooltip from '@/components/UiTooltip.astro';
+import UiAlert from '@/components/ui/UiAlert.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
+import UiCheckbox from '@/components/ui/UiCheckbox.astro';
+import UiDropdown from '@/components/ui/UiDropdown.astro';
+import UiInput from '@/components/ui/UiInput.astro';
+import UiModal from '@/components/ui/UiModal.astro';
+import UiPagination from '@/components/ui/UiPagination.astro';
+import UiProgress from '@/components/ui/UiProgress.astro';
+import UiSwitch from '@/components/ui/UiSwitch.astro';
+import UiTooltip from '@/components/ui/UiTooltip.astro';
 import heroVisual from './components.png';
 
 <LandingHeroSplit
@@ -99,7 +99,7 @@ import heroVisual from './components.png';
       { name: "glow", type: "boolean", defaultVal: "false", description: "افزودن هاله و درخشش رنگی متناسب با رنگ اصلی پالت در حالت هاور." },
       { name: "block", type: "boolean", defaultVal: "false", description: "گسترش عرض دکمه به کل عرض ظرف والد." }
     ]}
-    usage={`import Button from '@/components/Button.astro';
+    usage={`import Button from '@/components/ui/Button.astro';
 
 <Button href="/fa/قیمت-گذاری" variant="primary" size="lg" glow icon="arrow-right">
   مشاهده تعرفه‌ها
@@ -135,8 +135,8 @@ import heroVisual from './components.png';
       { name: "variant", type: "'glass' | 'ghost'", defaultVal: "'glass'", description: "نمای شیشه‌ای برای هدر یا ساده برای پنل‌ها." },
       { name: "size", type: "number", defaultVal: "18", description: "اندازه آیکون درون دکمه بر حسب پیکسل." }
     ]}
-    usage={`import Icon from '@/components/Icon.astro';
-import IconButton from '@/components/IconButton.astro';
+    usage={`import Icon from '@/components/ui/Icon.astro';
+import IconButton from '@/components/ui/IconButton.astro';
 
 <IconButton icon="search" label="جستجو" variant="glass" />
 <IconButton icon="bell" label="اعلان‌ها" variant="ghost" />
@@ -173,7 +173,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "icon", type: "IconName", description: "آیکون اختیاری پیش از متن." },
       { name: "href", type: "string", description: "در صورت ارسال، نشان به تگ <a> تعاملی تبدیل می‌شود." }
     ]}
-    usage={`import UiBadge from '@/components/UiBadge.astro';
+    usage={`import UiBadge from '@/components/ui/UiBadge.astro';
 
 <UiBadge label="آماده انتشار" variant="success" icon="circle-check" />
 <UiBadge label="نسخه ۵.۱" variant="info" size="sm" href="#doc-ui-badge" />`}
@@ -205,7 +205,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "action", type: "AlertAction", description: "دکمه اکشن با ساختار { label, href, icon?, external? }." },
       { name: "dismissible", type: "boolean", defaultVal: "false", description: "دکمه بستن پیام را فعال می‌کند." }
     ]}
-    usage={`import UiAlert from '@/components/UiAlert.astro';
+    usage={`import UiAlert from '@/components/ui/UiAlert.astro';
 
 <UiAlert
   variant="success"
@@ -248,7 +248,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "label", type: "string | null", defaultVal: "m.block_avatar_trust_label", description: "متن توضیح کنار گروه آواتارها." },
       { name: "size", type: "'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "قطر دایره آواتارها." }
     ]}
-    usage={`import AvatarGroup from '@/components/AvatarGroup.astro';
+    usage={`import AvatarGroup from '@/components/ui/AvatarGroup.astro';
 
 <AvatarGroup extraCount={40} rating={5} size="md" />`}
   >
@@ -271,7 +271,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "surface / size", type: "'default' | 'hero' · 'xs' | 'sm'", defaultVal: "'default' / 'sm'", description: "تطبیق کنتراست برای سرصفحه یا پس‌زمینه تیره هیرو." },
       { name: "compact / truncateLast", type: "boolean", defaultVal: "false", description: "فاصله فشرده‌تر و کوتاه‌سازی عنوان پایانی با سه‌نقطه." }
     ]}
-    usage={`import Breadcrumbs from '@/components/Breadcrumbs.astro';
+    usage={`import Breadcrumbs from '@/components/ui/Breadcrumbs.astro';
 
 <Breadcrumbs
   items={[
@@ -313,7 +313,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "hrefTemplate / hrefBuilder", type: "string | ((page) => string)", description: "الگوی نشانی یا تابع سازنده لینک برای مسیرهای استاتیک؛ در نبود آن دکمه‌های <button> رندر می‌شوند." },
       { name: "interactive", type: "boolean", defaultVal: "true", description: "تغییر وضعیت زنده در مستندات و پیش‌نمایش." }
     ]}
-    usage={`import UiPagination from '@/components/UiPagination.astro';
+    usage={`import UiPagination from '@/components/ui/UiPagination.astro';
 
 <UiPagination currentPage={3} totalPages={8} variant="rounded" />
 <UiPagination currentPage={2} totalPages={5} hrefTemplate="/fa/blog/page/{page}/" interactive={false} />`}
@@ -339,7 +339,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "title / description", type: "string", description: "تیتر و متن اصلی درون پنجره." },
       { name: "footer", type: "slot", description: "اسلات اختیاری برای سفارشی‌سازی دکمه‌های پایین مودال." }
     ]}
-    usage={`import UiModal from '@/components/UiModal.astro';
+    usage={`import UiModal from '@/components/ui/UiModal.astro';
 
 <UiModal variant="confirm" triggerLabel="باز کردن تاییدیه" title="انتشار نسخه جدید؟">
   تمام فایل‌های استاتیک بررسی شده و آماده انتشار هستند.
@@ -391,7 +391,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "variant", type: "'neutral' | 'primary'", defaultVal: "'neutral'", description: "طیف رنگی زمینه راهنما." },
       { name: "default slot", type: "slot", description: "قراردادن هر کنترل سفارشی مانند <IconButton> به عنوان محرک." }
     ]}
-    usage={`import UiTooltip from '@/components/UiTooltip.astro';
+    usage={`import UiTooltip from '@/components/ui/UiTooltip.astro';
 
 <UiTooltip placement="top" text="در حالت RTL به‌صورت خودکار آینه می‌شود" />
 <UiTooltip placement="bottom" variant="primary" text="کپی کد">
@@ -422,7 +422,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "tone", type: "'primary' | 'success' | 'info' | 'warning' | 'error'", defaultVal: "'primary'", description: "رنگ معنایی پرشدن نشانگر." },
       { name: "steps / currentStep", type: "string[] / number", description: "برچسب مراحل و گام فعال در حالت steps." }
     ]}
-    usage={`import UiProgress from '@/components/UiProgress.astro';
+    usage={`import UiProgress from '@/components/ui/UiProgress.astro';
 
 <UiProgress variant="bar" value={76} tone="primary" />
 <UiProgress variant="ring" value={88} tone="success" />
@@ -459,7 +459,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "size", type: "'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "ابعاد ریل و دکمه لغزنده." },
       { name: "name", type: "string", description: "ایجاد فیلد مخفی همگام برای ارسال در فرم‌ها." }
     ]}
-    usage={`import UiSwitch from '@/components/UiSwitch.astro';
+    usage={`import UiSwitch from '@/components/ui/UiSwitch.astro';
 
 <UiSwitch label="کاهش انیمیشن" checked size="md" />`}
   >
@@ -502,7 +502,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "size / disabled", type: "'sm' | 'md' / boolean", defaultVal: "'md' / false", description: "مقیاس کادر و ویژگی غیرفعال‌سازی." },
       { name: "label / description", type: "string", defaultVal: "مقادیر پیش‌فرض بومی", description: "عنوان گزینه و متن راهنما." }
     ]}
-    usage={`import UiCheckbox from '@/components/UiCheckbox.astro';
+    usage={`import UiCheckbox from '@/components/ui/UiCheckbox.astro';
 
 <UiCheckbox variant="card" checked label="فعال‌سازی اعلان‌ها" />`}
   >
@@ -543,7 +543,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "required / disabled", type: "boolean", defaultVal: "false", description: "قید الزامی‌بودن با نشانگر ستاره و استایل غیرفعال." },
       { name: "error / icon", type: "string / IconName", description: "وضعیت خطا با aria-invalid='true' و آیکون ابتدای فیلد." }
     ]}
-    usage={`import UiInput from '@/components/UiInput.astro';
+    usage={`import UiInput from '@/components/ui/UiInput.astro';
 
 <UiInput type="email" icon="mail" required label="ایمیل" placeholder="you@domain.com" />
 <UiInput type="password" icon="lock" label="رمز عبور" />
@@ -619,7 +619,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "items", type: "DropdownMenuItem[]", defaultVal: "۳ گزینه نمونه", description: "آرایه گزینه‌ها با { label, href?, icon?, badge?, danger?, dividerBefore? }." },
       { name: "align / variant", type: "'start' | 'end' · 'secondary' | 'primary' | 'ghost'", defaultVal: "'start' / 'secondary'", description: "تراز منطقی و سبک دکمه بازکننده." }
     ]}
-    usage={`import UiDropdown from '@/components/UiDropdown.astro';
+    usage={`import UiDropdown from '@/components/ui/UiDropdown.astro';
 
 <UiDropdown
   align="end"
@@ -663,7 +663,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "showShare", type: "boolean", defaultVal: "true", description: "نمایش دکمه کپی لینک برای اشتراک‌گذاری." },
       { name: "items", type: "SocialLinkItem[]", defaultVal: "siteConfig.social", description: "لیست اختیاری شبکه‌ها برای بازنویسی تنظیمات app.config.json." }
     ]}
-    usage={`import SocialLinks from '@/components/SocialLinks.astro';
+    usage={`import SocialLinks from '@/components/ui/SocialLinks.astro';
 
 <SocialLinks variant="pills" showShare />`}
   >
@@ -691,7 +691,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "align", type: "'start' | 'center'", defaultVal: "'start'", description: "تراز ابتدایی یا وسط‌چین متن سرعنوان." }
     ]}
     usage={`import PageSection from '@/components/PageSection.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
 
 <PageSection surface="subtle" spacing="md" borderTop>
   <SectionHeader

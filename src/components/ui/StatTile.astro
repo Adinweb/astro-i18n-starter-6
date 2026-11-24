@@ -1,0 +1,121 @@
+---
+/**
+ * Reusable KPI & metric tile (`card` | `divider` | `glass` | `hero`) with localized
+ * tabular numerals, optional prefix/suffix/count, context line, and icon badge.
+ */
+import IconBox from '@/components/ui/IconBox.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export type StatTileVariant = 'card' | 'divider' | 'glass' | 'hero';
+
+interface Props {
+  label?: string;
+  value?: string;
+  count?: number;
+  prefix?: string;
+  suffix?: string;
+  context?: string | null;
+  icon?: string;
+  accent?: boolean;
+  variant?: StatTileVariant;
+  align?: 'start' | 'center';
+  locale?: Locale | string;
+  class?: string;
+}
+
+const {
+  label,
+  value,
+  count,
+  prefix = '',
+  suffix = '',
+  context,
+  icon,
+  accent = false,
+  variant = 'card',
+  align = 'start',
+  locale,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = label === undefined && value === undefined && count === undefined;
+const resolvedLabel = label ?? m.block_stat_default_label({}, { locale: activeLocale });
+const resolvedContext =
+  context === null
+    ? undefined
+    : context ?? (usingDefaults ? m.block_stat_default_context({}, { locale: activeLocale }) : undefined);
+
+const displayValue =
+  value ??
+  (count !== undefined
+    ? `${prefix}${formatNumber(count, activeLocale)}${suffix}`
+    : m.block_stat_default_value({}, { locale: activeLocale }));
+
+const VARIANT_CLASSES: Record<StatTileVariant, string> = {
+  card: 'rounded-2xl border border-border bg-surface p-5 shadow-xs',
+  divider: 'py-2 sm:px-5 sm:border-s sm:border-border sm:first:border-s-0 sm:first:ps-0',
+  glass: 'rounded-2xl border border-border/80 bg-surface/90 p-3.5 backdrop-blur-md shadow-xs',
+  hero: 'rounded-xl border border-hero-fg/15 bg-hero-fg/10 p-3 text-hero-fg print:border-border print:bg-surface print:text-fg',
+};
+---
+
+<div
+  class:list={[
+    'not-prose',
+    VARIANT_CLASSES[variant],
+    align === 'center' && 'text-center',
+    className,
+  ]}
+>
+  {
+    icon && (
+      <div class:list={['mb-2.5 flex', align === 'center' ? 'justify-center' : 'justify-start']}>
+        <IconBox
+          icon={icon}
+          size="sm"
+          radius="xl"
+          tone={variant === 'hero' ? 'hero' : 'primary'}
+        />
+      </div>
+    )
+  }
+  <p
+    class:list={[
+      'font-extrabold tracking-tight tabular-nums',
+      variant === 'glass' || variant === 'hero' ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl',
+      variant === 'hero'
+        ? accent
+          ? 'text-accent print:text-primary'
+          : 'text-hero-fg print:text-fg'
+        : accent
+          ? 'text-primary'
+          : 'text-fg',
+    ]}
+  >
+    {displayValue}
+  </p>
+  <p
+    class:list={[
+      'mt-1 text-xs font-semibold',
+      variant === 'hero' ? 'text-hero-fg/80 print:text-muted' : 'text-fg',
+    ]}
+  >
+    {resolvedLabel}
+  </p>
+  {
+    resolvedContext && (
+      <p
+        class:list={[
+          'mt-1 text-xs leading-relaxed',
+          variant === 'hero' ? 'text-hero-fg/65 print:text-muted' : 'text-muted',
+        ]}
+      >
+        {resolvedContext}
+      </p>
+    )
+  }
+</div>

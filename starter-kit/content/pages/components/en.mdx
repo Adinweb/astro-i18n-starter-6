@@ -10,11 +10,11 @@ draft: false
 ---
 import AboutSplitSection from '@/components/AboutSplitSection.astro';
 import AuthFormCard from '@/components/AuthFormCard.astro';
-import AvatarGroup from '@/components/AvatarGroup.astro';
+import AvatarGroup from '@/components/ui/AvatarGroup.astro';
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
 import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
-import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import Button from '@/components/Button.astro';
+import Breadcrumbs from '@/components/ui/Breadcrumbs.astro';
+import Button from '@/components/ui/Button.astro';
 import CarouselSection from '@/components/CarouselSection.astro';
 import ComparisonTable from '@/components/ComparisonTable.astro';
 import ComponentDoc from '@/components/ComponentDoc.astro';
@@ -26,8 +26,8 @@ import FeatureCardGrid from '@/components/FeatureCardGrid.astro';
 import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import HomeHero from '@/components/HomeHero.astro';
-import Icon from '@/components/Icon.astro';
-import IconButton from '@/components/IconButton.astro';
+import Icon from '@/components/ui/Icon.astro';
+import IconButton from '@/components/ui/IconButton.astro';
 import ImageGallerySection from '@/components/ImageGallerySection.astro';
 import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
 import LatestPostsSection from '@/components/LatestPostsSection.astro';
@@ -41,20 +41,20 @@ import ProcessSteps from '@/components/ProcessSteps.astro';
 import ProductShowcaseGrid from '@/components/ProductShowcaseGrid.astro';
 import PromoBanner from '@/components/PromoBanner.astro';
 import ProofStatsRow from '@/components/ProofStatsRow.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
-import SocialLinks from '@/components/SocialLinks.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import SocialLinks from '@/components/ui/SocialLinks.astro';
 import TeamSection from '@/components/TeamSection.astro';
 import TestimonialGrid from '@/components/TestimonialGrid.astro';
-import UiAlert from '@/components/UiAlert.astro';
-import UiBadge from '@/components/UiBadge.astro';
-import UiCheckbox from '@/components/UiCheckbox.astro';
-import UiDropdown from '@/components/UiDropdown.astro';
-import UiInput from '@/components/UiInput.astro';
-import UiModal from '@/components/UiModal.astro';
-import UiPagination from '@/components/UiPagination.astro';
-import UiProgress from '@/components/UiProgress.astro';
-import UiSwitch from '@/components/UiSwitch.astro';
-import UiTooltip from '@/components/UiTooltip.astro';
+import UiAlert from '@/components/ui/UiAlert.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
+import UiCheckbox from '@/components/ui/UiCheckbox.astro';
+import UiDropdown from '@/components/ui/UiDropdown.astro';
+import UiInput from '@/components/ui/UiInput.astro';
+import UiModal from '@/components/ui/UiModal.astro';
+import UiPagination from '@/components/ui/UiPagination.astro';
+import UiProgress from '@/components/ui/UiProgress.astro';
+import UiSwitch from '@/components/ui/UiSwitch.astro';
+import UiTooltip from '@/components/ui/UiTooltip.astro';
 import heroVisual from './components.png';
 
 <LandingHeroSplit
@@ -99,7 +99,7 @@ import heroVisual from './components.png';
       { name: "glow", type: "boolean", defaultVal: "false", description: "Adds an ambient OKLCH primary glow ring that intensifies on hover." },
       { name: "block", type: "boolean", defaultVal: "false", description: "Expands button width to fill its parent container." }
     ]}
-    usage={`import Button from '@/components/Button.astro';
+    usage={`import Button from '@/components/ui/Button.astro';
 
 <Button href="/pricing" variant="primary" size="lg" glow icon="arrow-right">
   Explore pricing
@@ -135,8 +135,8 @@ import heroVisual from './components.png';
       { name: "variant", type: "'glass' | 'ghost'", defaultVal: "'glass'", description: "Visual surface style for frosted headers or opaque panels." },
       { name: "size", type: "number", defaultVal: "18", description: "Icon size in pixels inside the control." }
     ]}
-    usage={`import Icon from '@/components/Icon.astro';
-import IconButton from '@/components/IconButton.astro';
+    usage={`import Icon from '@/components/ui/Icon.astro';
+import IconButton from '@/components/ui/IconButton.astro';
 
 <IconButton icon="search" label="Open search" variant="glass" />
 <IconButton icon="bell" label="Notifications" variant="ghost" />
@@ -173,7 +173,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "icon", type: "IconName", description: "Optional leading icon aligned via logical flex gap." },
       { name: "href", type: "string", description: "Optional destination URL converting the badge to an interactive <a>." }
     ]}
-    usage={`import UiBadge from '@/components/UiBadge.astro';
+    usage={`import UiBadge from '@/components/ui/UiBadge.astro';
 
 <UiBadge label="Ready" variant="success" icon="circle-check" />
 <UiBadge label="v5.1" variant="info" size="sm" href="/features" />`}
@@ -205,7 +205,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "action", type: "AlertAction", description: "Optional { label, href, icon?, external? } action button." },
       { name: "dismissible", type: "boolean", defaultVal: "false", description: "Displays a close IconButton that hides the alert." }
     ]}
-    usage={`import UiAlert from '@/components/UiAlert.astro';
+    usage={`import UiAlert from '@/components/ui/UiAlert.astro';
 
 <UiAlert
   variant="success"
@@ -248,7 +248,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "label", type: "string | null", defaultVal: "m.block_avatar_trust_label", description: "Supporting caption beside the avatar stack." },
       { name: "size", type: "'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "Diameter of each circular avatar." }
     ]}
-    usage={`import AvatarGroup from '@/components/AvatarGroup.astro';
+    usage={`import AvatarGroup from '@/components/ui/AvatarGroup.astro';
 
 <AvatarGroup extraCount={40} rating={5} size="md" />`}
   >
@@ -271,7 +271,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "surface / size", type: "'default' | 'hero' · 'xs' | 'sm'", defaultVal: "'default' / 'sm'", description: "Adapts link contrast for page headers or dark hero bands." },
       { name: "compact / truncateLast", type: "boolean", defaultVal: "false", description: "Tightens padding and truncates long current titles on small screens." }
     ]}
-    usage={`import Breadcrumbs from '@/components/Breadcrumbs.astro';
+    usage={`import Breadcrumbs from '@/components/ui/Breadcrumbs.astro';
 
 <Breadcrumbs
   items={[
@@ -313,7 +313,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "hrefTemplate / hrefBuilder", type: "string | ((page) => string)", description: "Static route pattern or builder function; renders <button> controls when omitted." },
       { name: "interactive", type: "boolean", defaultVal: "true", description: "Allows client-side preview state switching in documentation." }
     ]}
-    usage={`import UiPagination from '@/components/UiPagination.astro';
+    usage={`import UiPagination from '@/components/ui/UiPagination.astro';
 
 <UiPagination currentPage={3} totalPages={8} variant="rounded" />
 <UiPagination currentPage={2} totalPages={5} hrefTemplate="/blog/page/{page}/" interactive={false} />`}
@@ -339,7 +339,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "title / description", type: "string", description: "Dialog heading and body copy." },
       { name: "footer", type: "slot", description: "Optional named slot to customize modal footer actions." }
     ]}
-    usage={`import UiModal from '@/components/UiModal.astro';
+    usage={`import UiModal from '@/components/ui/UiModal.astro';
 
 <UiModal variant="confirm" triggerLabel="Open confirmation" title="Deploy release?">
   Static assets are verified and ready for edge delivery.
@@ -391,7 +391,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "variant", type: "'neutral' | 'primary'", defaultVal: "'neutral'", description: "Surface tone for the floating tooltip." },
       { name: "default slot", type: "slot", description: "Wraps any custom trigger control such as <IconButton>." }
     ]}
-    usage={`import UiTooltip from '@/components/UiTooltip.astro';
+    usage={`import UiTooltip from '@/components/ui/UiTooltip.astro';
 
 <UiTooltip placement="top" text="Mirrors start/end in RTL automatically" />
 <UiTooltip placement="bottom" variant="primary" text="Copy configuration snippet">
@@ -422,7 +422,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "tone", type: "'primary' | 'success' | 'info' | 'warning' | 'error'", defaultVal: "'primary'", description: "OKLCH indicator fill color." },
       { name: "steps / currentStep", type: "string[] / number", description: "Milestone labels and active step index for variant='steps'." }
     ]}
-    usage={`import UiProgress from '@/components/UiProgress.astro';
+    usage={`import UiProgress from '@/components/ui/UiProgress.astro';
 
 <UiProgress variant="bar" value={76} tone="primary" />
 <UiProgress variant="ring" value={88} tone="success" />
@@ -459,7 +459,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "size", type: "'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "Track and thumb dimensions." },
       { name: "name", type: "string", description: "Emits a hidden synced checkbox when submitting inside forms." }
     ]}
-    usage={`import UiSwitch from '@/components/UiSwitch.astro';
+    usage={`import UiSwitch from '@/components/ui/UiSwitch.astro';
 
 <UiSwitch label="Reduced motion" checked size="md" />`}
   >
@@ -502,7 +502,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "size / disabled", type: "'sm' | 'md' / boolean", defaultVal: "'md' / false", description: "Box scale and disabled attribute support." },
       { name: "label / description", type: "string", defaultVal: "Localized defaults", description: "Visible option label and helper text." }
     ]}
-    usage={`import UiCheckbox from '@/components/UiCheckbox.astro';
+    usage={`import UiCheckbox from '@/components/ui/UiCheckbox.astro';
 
 <UiCheckbox variant="card" checked label="Enable notifications" />`}
   >
@@ -543,7 +543,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "required / disabled", type: "boolean", defaultVal: "false", description: "HTML validation constraint, asterisk indicator, and disabled styling." },
       { name: "error / icon", type: "string / IconName", description: "Validation state with aria-invalid='true' and optional leading icon." }
     ]}
-    usage={`import UiInput from '@/components/UiInput.astro';
+    usage={`import UiInput from '@/components/ui/UiInput.astro';
 
 <UiInput type="email" icon="mail" required label="Email" placeholder="you@domain.com" />
 <UiInput type="password" icon="lock" label="Password" />
@@ -619,7 +619,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "items", type: "DropdownMenuItem[]", defaultVal: "3 sample links", description: "Menu entries with { label, href?, icon?, badge?, danger?, dividerBefore? }." },
       { name: "align / variant", type: "'start' | 'end' · 'secondary' | 'primary' | 'ghost'", defaultVal: "'start' / 'secondary'", description: "Logical alignment and trigger surface." }
     ]}
-    usage={`import UiDropdown from '@/components/UiDropdown.astro';
+    usage={`import UiDropdown from '@/components/ui/UiDropdown.astro';
 
 <UiDropdown
   align="end"
@@ -663,7 +663,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "showShare", type: "boolean", defaultVal: "true", description: "Adds a one-click Copy Link share action." },
       { name: "items", type: "SocialLinkItem[]", defaultVal: "siteConfig.social", description: "Optional custom channel list overriding app.config.json." }
     ]}
-    usage={`import SocialLinks from '@/components/SocialLinks.astro';
+    usage={`import SocialLinks from '@/components/ui/SocialLinks.astro';
 
 <SocialLinks variant="pills" showShare />`}
   >
@@ -691,7 +691,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "align", type: "'start' | 'center'", defaultVal: "'start'", description: "SectionHeader horizontal alignment." }
     ]}
     usage={`import PageSection from '@/components/PageSection.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
 
 <PageSection surface="subtle" spacing="md" borderTop>
   <SectionHeader

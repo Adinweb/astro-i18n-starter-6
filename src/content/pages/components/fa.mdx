@@ -9,30 +9,41 @@ flushTop: true
 draft: false
 ---
 import AboutSplitSection from '@/components/AboutSplitSection.astro';
+import Accordion from '@/components/ui/Accordion.astro';
+import AnnouncementPill from '@/components/ui/AnnouncementPill.astro';
 import AuthFormCard from '@/components/AuthFormCard.astro';
-import AvatarGroup from '@/components/AvatarGroup.astro';
+import AvatarGroup from '@/components/ui/AvatarGroup.astro';
+import BackdropLayer from '@/components/ui/BackdropLayer.astro';
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
 import BentoGrid from '@/components/BentoGrid.astro';
 import LatestPostsCarousel from '@/components/LatestPostsCarousel.astro';
 import SwipeableTabs from '@/components/SwipeableTabs.astro';
 import TestimonialMarquee from '@/components/TestimonialMarquee.astro';
 import BlogPostHeroContent from '@/components/BlogPostHeroContent.astro';
-import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import Button from '@/components/Button.astro';
+import Breadcrumbs from '@/components/ui/Breadcrumbs.astro';
+import Button from '@/components/ui/Button.astro';
+import Card from '@/components/ui/Card.astro';
 import CarouselSection from '@/components/CarouselSection.astro';
+import ChipGroup from '@/components/ui/ChipGroup.astro';
+import CodeBlock from '@/components/ui/CodeBlock.astro';
 import ComparisonTable from '@/components/ComparisonTable.astro';
 import ComponentDoc from '@/components/ComponentDoc.astro';
 import ContactForm from '@/components/ContactForm.astro';
 import ContactSplitSection from '@/components/ContactSplitSection.astro';
 import CtaBanner from '@/components/CtaBanner.astro';
+import Divider from '@/components/ui/Divider.astro';
 import FaqAccordion from '@/components/FaqAccordion.astro';
 import FeatureCardGrid from '@/components/FeatureCardGrid.astro';
 import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
+import HeroHeadline from '@/components/ui/HeroHeadline.astro';
+import HeroPreviewNav from '@/components/ui/HeroPreviewNav.astro';
 import HomeHero from '@/components/HomeHero.astro';
-import Icon from '@/components/Icon.astro';
-import IconButton from '@/components/IconButton.astro';
+import Icon from '@/components/ui/Icon.astro';
+import IconBox from '@/components/ui/IconBox.astro';
+import IconButton from '@/components/ui/IconButton.astro';
 import ImageGallerySection from '@/components/ImageGallerySection.astro';
+import Kbd from '@/components/ui/Kbd.astro';
 import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
 import LatestPostsSection from '@/components/LatestPostsSection.astro';
 import NewsletterBanner from '@/components/NewsletterBanner.astro';
@@ -41,25 +52,30 @@ import PageHero from '@/components/PageHero.astro';
 import PageSection from '@/components/PageSection.astro';
 import ParallaxSection from '@/components/ParallaxSection.astro';
 import PartnerLogos from '@/components/PartnerLogos.astro';
+import PartnerStrip from '@/components/ui/PartnerStrip.astro';
 import PricingSection from '@/components/PricingSection.astro';
 import ProcessSteps from '@/components/ProcessSteps.astro';
 import ProductShowcaseGrid from '@/components/ProductShowcaseGrid.astro';
 import PromoBanner from '@/components/PromoBanner.astro';
 import ProofStatsRow from '@/components/ProofStatsRow.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
-import SocialLinks from '@/components/SocialLinks.astro';
+import RatingStars from '@/components/ui/RatingStars.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import Skeleton from '@/components/ui/Skeleton.astro';
+import SocialLinks from '@/components/ui/SocialLinks.astro';
+import StatTile from '@/components/ui/StatTile.astro';
 import TeamSection from '@/components/TeamSection.astro';
 import TestimonialGrid from '@/components/TestimonialGrid.astro';
-import UiAlert from '@/components/UiAlert.astro';
-import UiBadge from '@/components/UiBadge.astro';
-import UiCheckbox from '@/components/UiCheckbox.astro';
-import UiDropdown from '@/components/UiDropdown.astro';
-import UiInput from '@/components/UiInput.astro';
-import UiModal from '@/components/UiModal.astro';
-import UiPagination from '@/components/UiPagination.astro';
-import UiProgress from '@/components/UiProgress.astro';
-import UiSwitch from '@/components/UiSwitch.astro';
-import UiTooltip from '@/components/UiTooltip.astro';
+import TopBanner from '@/components/ui/TopBanner.astro';
+import UiAlert from '@/components/ui/UiAlert.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
+import UiCheckbox from '@/components/ui/UiCheckbox.astro';
+import UiDropdown from '@/components/ui/UiDropdown.astro';
+import UiInput from '@/components/ui/UiInput.astro';
+import UiModal from '@/components/ui/UiModal.astro';
+import UiPagination from '@/components/ui/UiPagination.astro';
+import UiProgress from '@/components/ui/UiProgress.astro';
+import UiSwitch from '@/components/ui/UiSwitch.astro';
+import UiTooltip from '@/components/ui/UiTooltip.astro';
 import heroVisual from './components.png';
 import parallaxArchPhoto from '@/assets/germancert/hq-tuntenhausen.jpg';
 import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
@@ -70,25 +86,31 @@ import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
   eyebrow="کتابخانه کامپوننت‌ها"
   title="بلوک‌ها و اجزای آماده رابط کاربری"
   description="تمامی کامپوننت‌ها به‌صورت خودکار با پالت رنگی OKLCH برند، حالت روشن و تاریک و چیدمان راست‌چین/چپ‌چین هماهنگ می‌شوند و هم با مقادیر پیش‌فرض و هم با پراپ‌های دلخواه کار می‌کنند."
-  primaryCta={{ label: "اجزای پایه UI", href: "#sec-primitives", icon: "arrow-right" }}
-  secondaryCta={{ label: "سرصفحه و هیرو", href: "#sec-hero" }}
-  trustNote="۵۳ کامپوننت قابل استفاده مجدد · پراپ‌های اختیاری · هندسه منطقی CSS"
+  primaryCta={{ label: "اجزای پایه UI (۳۵)", href: "#sec-primitives", icon: "arrow-right" }}
+  secondaryCta={{ label: "بخش‌های آماده", href: "#sec-hero" }}
+  trustNote="۳۵ جزء پایه UI در ui/ · ۴۲ بلوک بخشی · هندسه منطقی CSS"
   image={heroVisual}
   imageAlt="کتابخانه کامپوننت‌های استارتر"
 />
 
 <PageSection id="catalog-nav" surface="surface" spacing="sm" borderBottom>
   <div class="flex flex-wrap items-center justify-between gap-4">
-    <div class="flex flex-wrap items-center gap-2">
-      <a href="#sec-primitives" class="chip px-3.5 py-1.5 text-xs font-semibold">اجزای پایه UI</a>
-      <a href="#sec-hero" class="chip px-3.5 py-1.5 text-xs font-semibold">سرصفحه و هیرو</a>
-      <a href="/fa/کامپوننت‌ها/herosections/" class="chip border-primary/40 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary">زیرصفحه Hero Sections</a>
-      <a href="#sec-features" class="chip px-3.5 py-1.5 text-xs font-semibold">امکانات و مراحل</a>
-      <a href="#sec-proof" class="chip px-3.5 py-1.5 text-xs font-semibold">تعرفه، گالری و دیدگاه‌ها</a>
-      <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">تماس و فراخوان</a>
-      <a href="#sec-motion" class="chip px-3.5 py-1.5 text-xs font-semibold">انیمیشن و اسکرول</a>
-    </div>
-    <span class="text-xs font-medium text-muted">۵۳ کامپوننت آماده و قابل ترکیب</span>
+    <ChipGroup
+      locale="fa"
+      mode="links"
+      size="sm"
+      ariaLabel="بخش‌های کاتالوگ"
+      items={[
+        { label: "اجزای پایه UI (۳۵)", href: "#sec-primitives" },
+        { label: "سرصفحه و هیرو", href: "#sec-hero" },
+        { label: "زیرصفحه Hero Sections", href: "/fa/کامپوننت‌ها/herosections/", highlight: true },
+        { label: "امکانات و مراحل", href: "#sec-features" },
+        { label: "تعرفه، گالری و دیدگاه‌ها", href: "#sec-proof" },
+        { label: "تماس و فراخوان", href: "#sec-conversion" },
+        { label: "انیمیشن و اسکرول", href: "#sec-motion" }
+      ]}
+    />
+    <span class="text-xs font-medium text-muted">۷۷ جزء پایه و بلوک آماده</span>
   </div>
 </PageSection>
 
@@ -108,7 +130,7 @@ import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
       { name: "glow", type: "boolean", defaultVal: "false", description: "افزودن هاله و درخشش رنگی متناسب با رنگ اصلی پالت در حالت هاور." },
       { name: "block", type: "boolean", defaultVal: "false", description: "گسترش عرض دکمه به کل عرض ظرف والد." }
     ]}
-    usage={`import Button from '@/components/Button.astro';
+    usage={`import Button from '@/components/ui/Button.astro';
 
 <Button href="/fa/قیمت-گذاری" variant="primary" size="lg" glow icon="arrow-right">
   مشاهده تعرفه‌ها
@@ -144,8 +166,8 @@ import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
       { name: "variant", type: "'glass' | 'ghost'", defaultVal: "'glass'", description: "نمای شیشه‌ای برای هدر یا ساده برای پنل‌ها." },
       { name: "size", type: "number", defaultVal: "18", description: "اندازه آیکون درون دکمه بر حسب پیکسل." }
     ]}
-    usage={`import Icon from '@/components/Icon.astro';
-import IconButton from '@/components/IconButton.astro';
+    usage={`import Icon from '@/components/ui/Icon.astro';
+import IconButton from '@/components/ui/IconButton.astro';
 
 <IconButton icon="search" label="جستجو" variant="glass" />
 <IconButton icon="bell" label="اعلان‌ها" variant="ghost" />
@@ -158,13 +180,13 @@ import IconButton from '@/components/IconButton.astro';
         <IconButton icon="sun" label="نمونه پوسته" variant="glass" />
         <IconButton icon="copy" label="نمونه کپی" variant="ghost" />
       </div>
-      <div class="flex flex-wrap items-center gap-3 text-primary">
-        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="sparkles" size={18} /></span>
-        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="globe" size={18} /></span>
-        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="shield" size={18} /></span>
-        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="rocket" size={18} /></span>
-        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="palette" size={18} /></span>
-        <span class="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-surface"><Icon name="award" size={18} /></span>
+      <div class="flex flex-wrap items-center gap-3">
+        <IconBox icon="sparkles" tone="surface" />
+        <IconBox icon="globe" tone="surface" />
+        <IconBox icon="shield" tone="surface" />
+        <IconBox icon="rocket" tone="surface" />
+        <IconBox icon="palette" tone="surface" />
+        <IconBox icon="award" tone="surface" />
       </div>
     </div>
   </ComponentDoc>
@@ -182,7 +204,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "icon", type: "IconName", description: "آیکون اختیاری پیش از متن." },
       { name: "href", type: "string", description: "در صورت ارسال، نشان به تگ <a> تعاملی تبدیل می‌شود." }
     ]}
-    usage={`import UiBadge from '@/components/UiBadge.astro';
+    usage={`import UiBadge from '@/components/ui/UiBadge.astro';
 
 <UiBadge label="آماده انتشار" variant="success" icon="circle-check" />
 <UiBadge label="نسخه ۵.۱" variant="info" size="sm" href="#doc-ui-badge" />`}
@@ -214,7 +236,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "action", type: "AlertAction", description: "دکمه اکشن با ساختار { label, href, icon?, external? }." },
       { name: "dismissible", type: "boolean", defaultVal: "false", description: "دکمه بستن پیام را فعال می‌کند." }
     ]}
-    usage={`import UiAlert from '@/components/UiAlert.astro';
+    usage={`import UiAlert from '@/components/ui/UiAlert.astro';
 
 <UiAlert
   variant="success"
@@ -257,7 +279,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "label", type: "string | null", defaultVal: "m.block_avatar_trust_label", description: "متن توضیح کنار گروه آواتارها." },
       { name: "size", type: "'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "قطر دایره آواتارها." }
     ]}
-    usage={`import AvatarGroup from '@/components/AvatarGroup.astro';
+    usage={`import AvatarGroup from '@/components/ui/AvatarGroup.astro';
 
 <AvatarGroup extraCount={40} rating={5} size="md" />`}
   >
@@ -280,7 +302,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "surface / size", type: "'default' | 'hero' · 'xs' | 'sm'", defaultVal: "'default' / 'sm'", description: "تطبیق کنتراست برای سرصفحه یا پس‌زمینه تیره هیرو." },
       { name: "compact / truncateLast", type: "boolean", defaultVal: "false", description: "فاصله فشرده‌تر و کوتاه‌سازی عنوان پایانی با سه‌نقطه." }
     ]}
-    usage={`import Breadcrumbs from '@/components/Breadcrumbs.astro';
+    usage={`import Breadcrumbs from '@/components/ui/Breadcrumbs.astro';
 
 <Breadcrumbs
   items={[
@@ -322,7 +344,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "hrefTemplate / hrefBuilder", type: "string | ((page) => string)", description: "الگوی نشانی یا تابع سازنده لینک برای مسیرهای استاتیک؛ در نبود آن دکمه‌های <button> رندر می‌شوند." },
       { name: "interactive", type: "boolean", defaultVal: "true", description: "تغییر وضعیت زنده در مستندات و پیش‌نمایش." }
     ]}
-    usage={`import UiPagination from '@/components/UiPagination.astro';
+    usage={`import UiPagination from '@/components/ui/UiPagination.astro';
 
 <UiPagination currentPage={3} totalPages={8} variant="rounded" />
 <UiPagination currentPage={2} totalPages={5} hrefTemplate="/fa/blog/page/{page}/" interactive={false} />`}
@@ -348,7 +370,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "title / description", type: "string", description: "تیتر و متن اصلی درون پنجره." },
       { name: "footer", type: "slot", description: "اسلات اختیاری برای سفارشی‌سازی دکمه‌های پایین مودال." }
     ]}
-    usage={`import UiModal from '@/components/UiModal.astro';
+    usage={`import UiModal from '@/components/ui/UiModal.astro';
 
 <UiModal variant="confirm" triggerLabel="باز کردن تاییدیه" title="انتشار نسخه جدید؟">
   تمام فایل‌های استاتیک بررسی شده و آماده انتشار هستند.
@@ -400,7 +422,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "variant", type: "'neutral' | 'primary'", defaultVal: "'neutral'", description: "طیف رنگی زمینه راهنما." },
       { name: "default slot", type: "slot", description: "قراردادن هر کنترل سفارشی مانند <IconButton> به عنوان محرک." }
     ]}
-    usage={`import UiTooltip from '@/components/UiTooltip.astro';
+    usage={`import UiTooltip from '@/components/ui/UiTooltip.astro';
 
 <UiTooltip placement="top" text="در حالت RTL به‌صورت خودکار آینه می‌شود" />
 <UiTooltip placement="bottom" variant="primary" text="کپی کد">
@@ -433,7 +455,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "once", type: "boolean", defaultVal: "true", description: "اجرای یک‌باره هنگام ورود به دید یا ریست و اجرای مجدد با مقدار false." },
       { name: "steps / currentStep", type: "string[] / number", description: "برچسب مراحل و گام فعال در حالت steps." }
     ]}
-    usage={`import UiProgress from '@/components/UiProgress.astro';
+    usage={`import UiProgress from '@/components/ui/UiProgress.astro';
 
 <!-- انیمیشن تکی هنگام ورود به محدوده دید -->
 <UiProgress variant="bar" value={84} tone="primary" size="lg" label="گرم‌سازی کش لبه" />
@@ -523,7 +545,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "size", type: "'sm' | 'md' | 'lg'", defaultVal: "'md'", description: "ابعاد ریل و دکمه لغزنده." },
       { name: "name", type: "string", description: "ایجاد فیلد مخفی همگام برای ارسال در فرم‌ها." }
     ]}
-    usage={`import UiSwitch from '@/components/UiSwitch.astro';
+    usage={`import UiSwitch from '@/components/ui/UiSwitch.astro';
 
 <UiSwitch label="کاهش انیمیشن" checked size="md" />`}
   >
@@ -566,7 +588,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "size / disabled", type: "'sm' | 'md' / boolean", defaultVal: "'md' / false", description: "مقیاس کادر و ویژگی غیرفعال‌سازی." },
       { name: "label / description", type: "string", defaultVal: "مقادیر پیش‌فرض بومی", description: "عنوان گزینه و متن راهنما." }
     ]}
-    usage={`import UiCheckbox from '@/components/UiCheckbox.astro';
+    usage={`import UiCheckbox from '@/components/ui/UiCheckbox.astro';
 
 <UiCheckbox variant="card" checked label="فعال‌سازی اعلان‌ها" />`}
   >
@@ -607,7 +629,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "required / disabled", type: "boolean", defaultVal: "false", description: "قید الزامی‌بودن با نشانگر ستاره و استایل غیرفعال." },
       { name: "error / icon", type: "string / IconName", description: "وضعیت خطا با aria-invalid='true' و آیکون ابتدای فیلد." }
     ]}
-    usage={`import UiInput from '@/components/UiInput.astro';
+    usage={`import UiInput from '@/components/ui/UiInput.astro';
 
 <UiInput type="email" icon="mail" required label="ایمیل" placeholder="you@domain.com" />
 <UiInput type="password" icon="lock" label="رمز عبور" />
@@ -683,7 +705,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "items", type: "DropdownMenuItem[]", defaultVal: "۳ گزینه نمونه", description: "آرایه گزینه‌ها با { label, href?, icon?, badge?, danger?, dividerBefore? }." },
       { name: "align / variant", type: "'start' | 'end' · 'secondary' | 'primary' | 'ghost'", defaultVal: "'start' / 'secondary'", description: "تراز منطقی و سبک دکمه بازکننده." }
     ]}
-    usage={`import UiDropdown from '@/components/UiDropdown.astro';
+    usage={`import UiDropdown from '@/components/ui/UiDropdown.astro';
 
 <UiDropdown
   align="end"
@@ -727,7 +749,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "showShare", type: "boolean", defaultVal: "true", description: "نمایش دکمه کپی لینک برای اشتراک‌گذاری." },
       { name: "items", type: "SocialLinkItem[]", defaultVal: "siteConfig.social", description: "لیست اختیاری شبکه‌ها برای بازنویسی تنظیمات app.config.json." }
     ]}
-    usage={`import SocialLinks from '@/components/SocialLinks.astro';
+    usage={`import SocialLinks from '@/components/ui/SocialLinks.astro';
 
 <SocialLinks variant="pills" showShare />`}
   >
@@ -755,7 +777,7 @@ import IconButton from '@/components/IconButton.astro';
       { name: "align", type: "'start' | 'center'", defaultVal: "'start'", description: "تراز ابتدایی یا وسط‌چین متن سرعنوان." }
     ]}
     usage={`import PageSection from '@/components/PageSection.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
 
 <PageSection surface="subtle" spacing="md" borderTop>
   <SectionHeader
@@ -766,19 +788,327 @@ import SectionHeader from '@/components/SectionHeader.astro';
 </PageSection>`}
   >
     <div class="grid gap-6 md:grid-cols-2">
-      <div class="rounded-2xl border border-border bg-surface p-6">
+      <Card variant="surface">
         <SectionHeader
           eyebrow="تراز ابتدا (Start)"
           heading="سرعنوان منطقی راست‌چین/چپ‌چین"
           subheading="در فارسی راست‌چین و در انگلیسی چپ‌چین می‌شود."
         />
-      </div>
-      <div class="rounded-2xl border border-border bg-surface/60 p-6">
+      </Card>
+      <Card variant="subtle">
         <SectionHeader
           align="center"
           eyebrow="وسط‌چین (Center)"
           heading="سرعنوان متمرکز"
           subheading="مناسب برای بخش تعرفه‌ها، دیدگاه‌ها و پرسش‌های متداول."
+        />
+      </Card>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-card"
+    name="Card"
+    category="اجزای پایه UI"
+    title="Card (کارت چندریختی)"
+    summary="ظرف استاندارد سطح (`div` | `article` | `li` | `figure` | `a`) برای یکپارچه‌سازی حاشیه، پس‌زمینه معنایی، حالات شیشه‌ای/هیرو، فاصله داخلی و سایه هاور سازگار با ChronoTrig."
+    propsList={[
+      { name: "variant", type: "'default' | 'surface' | 'subtle' | 'elevated' | 'tinted' | 'glass' | 'hero' | 'dashed'", defaultVal: "'surface'", description: "تم رنگی، کادر و سایه سطح کارت." },
+      { name: "padding / radius", type: "'none'..'lg' / 'xl' | '2xl' | '3xl'", defaultVal: "'md' / '2xl'", description: "مقیاس فاصله داخلی و گردی گوشه‌ها." },
+      { name: "hover / href", type: "boolean / string", defaultVal: "false", description: "افزودن جلوه هاور نرم یا تبدیل کارت به تگ لینک <a>." }
+    ]}
+    usage={`import Card from '@/components/ui/Card.astro';
+
+<Card variant="elevated" hover>کارت برجسته</Card>
+<Card variant="tinted" href="/fa/ویژگی‌ها/">کارت قابل کلیک</Card>`}
+  >
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Card variant="surface" padding="sm">
+        <p class="text-xs font-bold text-fg">کارت استاندارد (Surface)</p>
+        <p class="mt-1 text-xs text-muted">کارت پایه با پس‌زمینه سطح و حاشیه ملایم.</p>
+      </Card>
+      <Card variant="elevated" padding="sm" hover>
+        <p class="text-xs font-bold text-primary">برجسته + هاور (Elevated)</p>
+        <p class="mt-1 text-xs text-muted">سایه و حرکت تعاملی ایزوله‌شده از انیمیشن اسکرول.</p>
+      </Card>
+      <Card variant="tinted" padding="sm">
+        <p class="text-xs font-bold text-primary">ته‌رنگ برند (Tinted)</p>
+        <p class="mt-1 text-xs text-muted">سطح ملایم با رنگ اصلی برند برای کادرهای تاکیدی.</p>
+      </Card>
+      <Card variant="hero" padding="sm">
+        <p class="text-xs font-bold text-hero-fg print:text-fg">سطح تیره (Hero)</p>
+        <p class="mt-1 text-xs text-hero-fg/75 print:text-muted">ظرف شیشه‌ای کنتراست‌بالا برای بخش‌های تیره.</p>
+      </Card>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-icon-box"
+    surface="surface"
+    name="IconBox"
+    category="اجزای پایه UI"
+    title="IconBox (قاب آیکون معنایی)"
+    summary="قاب آیکون یکپارچه با ۵ اندازه (xs تا xl)، ۴ گردی گوشه، ۹ رنگ معنایی OKLCH و پشتیبانی خودکار از بزرگ‌نمایی روی هاور کارت والد."
+    propsList={[
+      { name: "icon", type: "IconName", required: true, description: "کلید آیکون ثبت‌شده در SITE_ICONS." },
+      { name: "size / radius", type: "'xs' | 'sm' | 'md' | 'lg' | 'xl' / 'lg' | 'xl' | '2xl' | 'full'", defaultVal: "'md' / 'xl'", description: "ابعاد قاب و میزان انحنای گوشه‌ها." },
+      { name: "tone", type: "'primary' | 'accent' | 'surface' | 'hero' | 'success' | 'warning' | 'error' | 'info' | 'neutral'", defaultVal: "'primary'", description: "ترکیب رنگ پس‌زمینه و آیکون بر اساس پالت OKLCH." }
+    ]}
+    usage={`import IconBox from '@/components/ui/IconBox.astro';
+
+<IconBox icon="shield" size="lg" radius="2xl" tone="success" />`}
+  >
+    <div class="flex flex-wrap items-center gap-3">
+      <IconBox icon="sparkles" size="sm" tone="primary" />
+      <IconBox icon="bolt" size="md" tone="accent" />
+      <IconBox icon="circle-check" size="md" tone="success" />
+      <IconBox icon="info" size="md" tone="info" />
+      <IconBox icon="alert-triangle" size="md" tone="warning" />
+      <IconBox icon="alert-circle" size="md" tone="error" />
+      <IconBox icon="globe" size="lg" radius="2xl" tone="surface" />
+      <span class="inline-flex rounded-2xl bg-hero-base p-2">
+        <IconBox icon="rocket" size="md" radius="full" tone="hero" />
+      </span>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-stat-tile"
+    name="StatTile"
+    category="اجزای پایه UI"
+    title="StatTile (کارت شاخص و آمار KPI)"
+    summary="کاشی نمایش شاخص عددی با ارقام هم‌عرض (tabular-nums)، تبدیل خودکار اعداد بومی با Intl، پیشوند/پسوند، قاب آیکون و ۴ سبک سطح."
+    propsList={[
+      { name: "count / value", type: "number / string", description: "قالب‌بندی عدد به زبان فعال یا نمایش متن دلخواه شاخص." },
+      { name: "variant", type: "'card' | 'divider' | 'glass' | 'hero'", defaultVal: "'card'", description: "سبک کارتی، ستون جداکننده منطقی، شیشه‌ای یا تیره هیرو." },
+      { name: "icon / accent", type: "IconName / boolean", defaultVal: "false", description: "نمایش IconBox بالایی و رنگ تاکیدی برای مقدار عدد." }
+    ]}
+    usage={`import StatTile from '@/components/ui/StatTile.astro';
+
+<StatTile count={100} suffix="%" label="خروجی استاتیک" context="بدون سرور زمان اجرا" icon="bolt" accent />`}
+  >
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <StatTile locale="fa" count={100} suffix="%" label="خروجی HTML استاتیک" context="رندر پیش‌ساخته هنگام بیلد" icon="bolt" accent />
+      <StatTile locale="fa" value="< ۵۰ms" label="تاخیر لبه CDN" context="کش سراسری" icon="rocket" />
+      <StatTile locale="fa" variant="glass" count={35} suffix="+" label="اجزای پایه UI" context="حالت شیشه‌ای" icon="layers" accent />
+      <div class="rounded-2xl bg-hero-base p-2">
+        <StatTile locale="fa" variant="hero" count={2} label="زبان بومی" context="فارسی RTL + انگلیسی LTR" icon="globe" accent />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-rating-stars"
+    surface="surface"
+    name="RatingStars"
+    category="اجزای پایه UI"
+    title="RatingStars (ردیف امتیاز ستاره‌ای)"
+    summary="نمایش دسترس‌پذیر امتیاز ۵ ستاره همراه با برچسب خلاصه ARIA بومی، سقف امتیاز قابل تنظیم، رنگ اخطار یا تاکیدی و متن توضیح."
+    propsList={[
+      { name: "rating / max", type: "number / number", defaultVal: "5 / 5", description: "تعداد ستاره‌های پرشده و سقف امتیاز." },
+      { name: "tone / size", type: "'warning' | 'accent' / number", defaultVal: "'warning' / 14", description: "نقش رنگی ستاره‌های پر و اندازه آیکون بر حسب پیکسل." },
+      { name: "reviewLabel", type: "string | null", description: "متن اختیاری تعداد دیدگاه یا خلاصه امتیاز کنار ستاره‌ها." }
+    ]}
+    usage={`import RatingStars from '@/components/ui/RatingStars.astro';
+
+<RatingStars rating={5} reviewLabel="۴٫۹ از ۵ بر اساس ۱,۲۸۰ دیدگاه" />`}
+  >
+    <div class="flex flex-wrap items-center gap-8">
+      <RatingStars locale="fa" rating={5} reviewLabel="۵٫۰ · آژانس‌های تاییدشده" />
+      <RatingStars locale="fa" rating={4} size={18} tone="accent" reviewLabel="۴٫۰ · رنگ تاکیدی" />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-chip-group"
+    name="ChipGroup"
+    category="ناوبری و بازشوها"
+    title="ChipGroup (گروه چیپ‌های لینک و فیلتر)"
+    summary="ردیف چیپ دسترس‌پذیر برای پیوندهای پرش بخش، فیلترهای تعاملی دسته‌بندی (`aria-pressed`) یا پرامپت‌های پیشنهادی."
+    propsList={[
+      { name: "items", type: "ChipGroupItem[]", required: true, description: "آیتم‌ها با ساختار { label, href?, value?, active?, highlight?, count?, icon? }." },
+      { name: "mode", type: "'links' | 'filter' | 'select'", defaultVal: "'links'", description: "لینک‌های ناوبری، دکمه‌های فیلتر با data-filter یا انتخاب سریع." },
+      { name: "size / surface", type: "'xs' | 'sm' | 'md' / 'default' | 'hero'", defaultVal: "'sm' / 'default'", description: "اندازه پدینگ چیپ‌ها و کنتراست سطح تیره." }
+    ]}
+    usage={`import ChipGroup from '@/components/ui/ChipGroup.astro';
+
+<ChipGroup mode="links" items={[{ label: "مرور کلی", href: "#top", active: true }, { label: "API", href: "#api" }]} />`}
+  >
+    <div class="space-y-4">
+      <ChipGroup
+        locale="fa"
+        mode="select"
+        items={[
+          { label: "همه بلوک‌ها", icon: "sparkles", active: true, count: 77 },
+          { label: "اجزای پایه", icon: "layers", count: 35 },
+          { label: "قالب‌های هیرو", icon: "rocket", highlight: true, count: 43 },
+          { label: "سازگار RTL", icon: "globe" }
+        ]}
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-accordion"
+    surface="surface"
+    name="Accordion"
+    category="ناوبری و بازشوها"
+    title="Accordion (آکاردئون بدون جاوااسکریپت)"
+    summary="پنل‌های بازشو مبتنی بر تگ بومی `<details>/<summary>` بدون جاوااسکریپت زمان اجرا، در دو حالت کارتی یا متصل همراه با اسلات محتوای دلخواه."
+    propsList={[
+      { name: "items", type: "AccordionItem[]", description: "لیست ساختاریافته پنل‌ها شامل { title, content, badge?, open? }." },
+      { name: "variant / surface", type: "'cards' | 'flush' / 'default' | 'surface' | 'hero'", defaultVal: "'cards' / 'default'", description: "جداسازی کارتی یا کادر واحد با خط‌کش افقی." },
+      { name: "title / default slot", type: "string / slot", description: "حالت تک‌پنلی برای دربرگرفتن جداول، فرم‌ها یا راهنماهای دلخواه." }
+    ]}
+    usage={`import Accordion from '@/components/ui/Accordion.astro';
+
+<Accordion variant="flush" openFirst items={[{ title: "بدون نیاز به JS؟", content: "مبتنی بر تگ بومی details و summary." }]} />`}
+  >
+    <div class="grid gap-6 md:grid-cols-2">
+      <Accordion
+        locale="fa"
+        variant="cards"
+        openFirst
+        items={[
+          { badge: "بومی HTML", title: "صفر جاوااسکریپت زمان اجرا", content: "بر پایه تگ استاندارد <details>/<summary> همراه با چرخش نرم آیکون." },
+          { title: "پشتیبانی از محتوای slot سفارشی", content: "جداول راهنما یا فهرست‌ها را بدون کد تکراری داخل آکاردئون قرار دهید." }
+        ]}
+      />
+      <Accordion
+        locale="fa"
+        variant="flush"
+        items={[
+          { title: "حالت کادر یکپارچه (Flush)", content: "تمام ردیف‌ها درون یک کادر واحد با جداکننده نازک قرار می‌گیرند.", open: true },
+          { title: "سازگار با کاهش حرکت", content: "هنگام فعال‌بودن data-motion='reduced' انیمیشن چرخش غیرفعال می‌شود." }
+        ]}
+      />
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-code-block"
+    name="CodeBlock & Kbd"
+    category="اجزای پایه UI"
+    title="CodeBlock و Kbd (بلوک کد و میانبر)"
+    summary="CodeBlock قطعات کد ایزوله‌شده LTR یا تب‌های انتخاب مدیر بسته (npm/pnpm/bun) با دکمه کپی فوری می‌سازد؛ Kbd کلیدهای میانبر و توکن‌های خطی را نمایش می‌دهد."
+    propsList={[
+      { name: "code / commands", type: "string / CodeCommandTab[]", description: "کد ثابت تک‌بخشی یا نوار دستورات تعاملی چندتب." },
+      { name: "showPrompt / surface", type: "boolean / 'default' | 'hero' | 'surface'", defaultVal: "false / 'default'", description: "نمایش علامت خط فرمان و انتخاب سطح روشن یا تیره." },
+      { name: "Kbd (variant / as)", type: "'default' | 'primary' | 'subtle' | 'hero' | 'pill' / 'code' | 'kbd'", description: "برچسب کد درون‌خطی یا کلید صفحه‌کلید." }
+    ]}
+    usage={`import CodeBlock from '@/components/ui/CodeBlock.astro';
+import Kbd from '@/components/ui/Kbd.astro';
+
+<CodeBlock commands={[{ label: "npm", command: "npm run lint" }, { label: "bun", command: "bun run lint" }]} showPrompt />
+<Kbd as="kbd" variant="default">⌘K</Kbd>`}
+  >
+    <div class="space-y-5">
+      <CodeBlock
+        locale="fa"
+        title="راه‌اندازی خط فرمان"
+        showPrompt
+        commands={[
+          { label: "npm", command: "npm run dev" },
+          { label: "pnpm", command: "pnpm dev" },
+          { label: "bun", command: "bun run dev" }
+        ]}
+      />
+      <div class="flex flex-wrap items-center gap-3">
+        <Kbd as="kbd" variant="default" size="sm">⌘K</Kbd>
+        <Kbd as="kbd" variant="subtle" size="xs">ESC</Kbd>
+        <Kbd variant="primary" size="sm">@/components/ui/Card.astro</Kbd>
+        <Kbd variant="pill" size="sm">&lt;Button /&gt;</Kbd>
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-divider"
+    surface="surface"
+    name="Divider"
+    category="اجزای پایه UI"
+    title="Divider (خط جداکننده)"
+    summary="جداکننده دسترس‌پذیر با نقش ARIA separator در دو جهت افقی (ساده، خط‌چین یا همراه با برچسب میانی) و عمودی درون ردیف‌های Flex."
+    propsList={[
+      { name: "orientation / dashed", type: "'horizontal' | 'vertical' / boolean", defaultVal: "'horizontal' / false", description: "محور افقی یا عمودی و خط ممتد یا نقطه‌چین." },
+      { name: "label / surface", type: "string / 'default' | 'hero'", defaultVal: "'default'", description: "متن میانی اختیاری و کنتراست سطح تیره." }
+    ]}
+    usage={`import Divider from '@/components/ui/Divider.astro';
+
+<Divider label="یا ادامه با" />
+<Divider dashed />`}
+  >
+    <div class="space-y-4">
+      <Divider locale="fa" label="یا ادامه با" />
+      <Divider locale="fa" dashed />
+      <div class="flex items-center gap-4 text-xs font-medium text-muted">
+        <span>LTR / RTL</span>
+        <Divider orientation="vertical" />
+        <span>بدون جاوااسکریپت</span>
+        <Divider orientation="vertical" dashed />
+        <span>توکن‌های OKLCH</span>
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-skeleton"
+    name="Skeleton"
+    category="اجزای پایه UI"
+    title="Skeleton (جای‌نگهدار بارگذاری)"
+    summary="نگهدارنده بارگذاری کاملاً CSS با ویژگی `role='status'` در قالب متن، دایره، مستطیل یا کارت کامل؛ همراه با توقف خودکار انیمیشن در حالت کاهش حرکت و پرینت."
+    propsList={[
+      { name: "variant / lines", type: "'text' | 'circle' | 'rect' | 'card' / number", defaultVal: "'text' / 3", description: "شکل جای‌نگهدار و تعداد سطرهای متنی." },
+      { name: "animated", type: "boolean", defaultVal: "true", description: "افکت نبض نرم که زیر data-motion='reduced' متوقف می‌شود." }
+    ]}
+    usage={`import Skeleton from '@/components/ui/Skeleton.astro';
+
+<Skeleton variant="card" />`}
+  >
+    <div class="grid gap-6 md:grid-cols-2">
+      <Skeleton locale="fa" variant="card" />
+      <div class="space-y-4">
+        <div class="flex items-center gap-4">
+          <Skeleton locale="fa" variant="circle" />
+          <Skeleton locale="fa" variant="text" lines={2} class="flex-1" />
+        </div>
+        <Skeleton locale="fa" variant="rect" class="h-16" />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-hero-primitives"
+    surface="surface"
+    name="Hero UI Primitives"
+    category="اجزای پایه UI"
+    title="اجزای سازنده هیرو (BackdropLayer، TopBanner، AnnouncementPill، HeroHeadline، PartnerStrip، HeroPreviewNav)"
+    summary="زیرمجموعه ماژولار تشکیل‌دهنده هر ۴۳ بخش هیرو بدون تکرار کد: پس‌زمینه الگوهای CSS، نوار اعلان بالایی، قرص معرفی، تیتر گرادیانی، ردیف لوگوهای همکاران، نوار ناوبری نمایشی، کارت‌های نمایشگاه و لایه پارالاکس."
+    propsList={[
+      { name: "BackdropLayer", type: "'glow' | 'grid' | 'dots' | 'orbital' | 'wash' | 'noise' | 'net'", defaultVal: "'glow'", description: "الگوهای پس‌زمینه شبکه‌ای، نقطه‌ای، مداری، نویز و هاله OKLCH." },
+      { name: "TopBanner / AnnouncementPill", type: "نوارها و برچسب‌های هیرو", description: "نوار باریک اطلاع‌رسانی بالا و قرص خبر تعاملی." },
+      { name: "HeroHeadline / PartnerStrip / HeroPreviewNav", type: "تایپوگرافی و کروم هیرو", description: "تیتر نمایشی با گرادیان منطقی، ردیف همکاران و منوی درون‌هیرو." }
+    ]}
+    usage={`import BackdropLayer from '@/components/ui/BackdropLayer.astro';
+import AnnouncementPill from '@/components/ui/AnnouncementPill.astro';
+import HeroHeadline from '@/components/ui/HeroHeadline.astro';
+import PartnerStrip from '@/components/ui/PartnerStrip.astro';`}
+  >
+    <div class="relative overflow-hidden rounded-2xl border border-border bg-bg">
+      <BackdropLayer backdrop="grid" surface="default" />
+      <TopBanner locale="fa" badge="TopBanner" label="اجزای پایه ماژولار هر ۴۳ چیدمان هیرو را بدون کد تکراری می‌سازند" href="/fa/کامپوننت‌ها/herosections/" ctaLabel="مشاهده ۴۳ هیرو" />
+      <div class="p-6 text-center sm:p-8">
+        <HeroPreviewNav brand="HeroPreviewNav" variant="pill" locale="fa" class="mb-6" />
+        <AnnouncementPill locale="fa" badge="AnnouncementPill" label="قرص اطلاعیه قابل استفاده مجدد با نقطه نبض‌دار" pulse href="/fa/کامپوننت‌ها/herosections/" class="mb-4" />
+        <HeroHeadline headingTag="h3" size="compact" lead="تیتر نمایشی HeroHeadline" accent="با گرادیان رنگی OKLCH" class="mx-auto max-w-xl" />
+        <PartnerStrip
+          variant="pills"
+          class="mt-6"
+          items={[
+            { icon: "palette", name: "BackdropLayer" },
+            { icon: "sparkles", name: "AnnouncementPill" },
+            { icon: "layers", name: "PartnerStrip" }
+          ]}
         />
       </div>
     </div>
@@ -787,23 +1117,23 @@ import SectionHeader from '@/components/SectionHeader.astro';
 
 <div id="sec-hero" class="scroll-mt-24">
   <PageSection surface="subtle" spacing="sm" borderTop>
-    <div class="flex flex-col gap-4 rounded-2xl border border-primary/25 bg-surface p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <Card variant="surface" class="flex flex-col gap-4 border-primary/25 sm:flex-row sm:items-center sm:justify-between">
       <div class="space-y-1.5">
         <div class="flex flex-wrap items-center gap-2">
           <UiBadge label="زیرصفحه اختصاصی" variant="primary" size="sm" icon="sparkles" />
-          <code dir="ltr" class="font-mono text-xs text-muted">/fa/کامپوننت‌ها/herosections/</code>
+          <Kbd variant="subtle">/fa/کامپوننت‌ها/herosections/</Kbd>
         </div>
         <h2 class="text-lg font-bold tracking-tight text-fg sm:text-xl">
-          مجموعه کامل بخش‌های هیرو (هر ۴۲ نمونه PrebuiltUI + پارالاکس)
+          مجموعه کامل بخش‌های هیرو (هر ۴۳ نمونه قابل ارجاع + پارالاکس)
         </h2>
         <p class="max-w-2xl text-sm text-muted text-pretty">
-          مشاهده تمامی ۴۲ الگوی بخش هیرو شامل پس‌زمینه‌های پارالاکس اسکرولی ChronoTrig، الگوهای شبکه‌ای/نویز/مداری، داشبوردهای SaaS، چیدمان‌های دوستونه، جستجو و تولید کد، ترمینال CLI و نوار متحرک برندها.
+          مشاهده تمامی ۴۳ الگوی شماره‌گذاری‌شده بخش هیرو شامل هیروی مداری کارت‌های شناور RTL، پس‌زمینه‌های پارالاکس اسکرولی ChronoTrig، الگوهای شبکه‌ای/نویز/مداری، داشبوردهای SaaS، چیدمان‌های دوستونه، جستجو و تولید کد، ترمینال CLI و نوار متحرک برندها.
         </p>
       </div>
       <Button href="/fa/کامپوننت‌ها/herosections/" variant="primary" size="md" icon="arrow-right" class="shrink-0">
         مشاهده Hero Sections
       </Button>
-    </div>
+    </Card>
   </PageSection>
 
   <ComponentDoc
@@ -953,22 +1283,16 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
         secondaryCta={{ label: "مشاهده تعرفه‌ها", href: "/fa/قیمت‌گذاری/" }}
         trustNote="گرید ۱۲ ستونه واکنش‌گرا · بدون کلاس‌های فیزیکی"
       >
-        <div slot="media" class="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <Card slot="media" variant="surface" padding="sm" class="shadow-sm">
           <div class="flex items-center justify-between border-b border-border pb-3">
             <span class="text-xs font-semibold text-fg">پیش‌نمایش اسلات media</span>
             <UiBadge label="slot='media'" variant="info" size="sm" />
           </div>
           <div class="mt-4 grid grid-cols-2 gap-3">
-            <div class="rounded-xl border border-border bg-bg p-3">
-              <p class="text-xs text-muted">خروجی نهایی</p>
-              <p class="mt-1 text-lg font-extrabold text-primary tabular-nums">۱۰۰٪ SSG</p>
-            </div>
-            <div class="rounded-xl border border-border bg-bg p-3">
-              <p class="text-xs text-muted">زبان‌های فعال</p>
-              <p class="mt-1 text-lg font-extrabold text-fg tabular-nums">FA + EN</p>
-            </div>
+            <StatTile locale="fa" variant="card" value="۱۰۰٪ SSG" label="خروجی نهایی" accent />
+            <StatTile locale="fa" variant="card" value="FA + EN" label="زبان‌های فعال" />
           </div>
-        </div>
+        </Card>
       </LandingHeroSplit>
 
       <HomeHero
@@ -1084,7 +1408,7 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
           ]}
           primaryCta={{ label: "مشاهده ویژگی‌ها", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
         >
-          <div slot="media" class="rounded-3xl border border-border bg-surface p-6 shadow-sm">
+          <Card slot="media" variant="surface" radius="3xl" class="shadow-sm">
             <p class="section-kicker">اسلات سفارشی media</p>
             <h3 class="mt-2 text-lg font-bold text-fg">درج ویجت یا شاخص دلخواه</h3>
             <p class="mt-1.5 text-sm text-muted">گزینه‌ای مناسب برای داشبوردهای خلاصه، معماری فنی یا نوارهای پیشرفت.</p>
@@ -1092,7 +1416,7 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
               <UiProgress variant="bar" value={100} tone="success" size="sm" label="خروجی استاتیک HTML و WebP" />
               <UiProgress variant="bar" value={96} tone="primary" size="sm" label="پوشش کامل کلاس‌های منطقی RTL" />
             </div>
-          </div>
+          </Card>
         </AboutSplitSection>
       </div>
     </div>
@@ -2124,18 +2448,9 @@ import ContactSplitSection from '@/components/ContactSplitSection.astro';
         secondaryCta={null}
       >
         <div class="mx-auto grid max-w-2xl grid-cols-3 gap-3 text-center">
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/85 px-4 py-3">
-            <p class="text-lg font-extrabold text-accent tabular-nums">۶۰ فریم</p>
-            <p class="text-xs text-hero-fg/85">پردازش با GPU</p>
-          </div>
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/85 px-4 py-3">
-            <p class="text-lg font-extrabold text-hero-fg tabular-nums">بدون CLS</p>
-            <p class="text-xs text-hero-fg/85">حاشیه اطمینان تصویر</p>
-          </div>
-          <div class="rounded-2xl border border-hero-fg/15 bg-hero-base/85 px-4 py-3">
-            <p class="text-lg font-extrabold text-hero-fg tabular-nums">RTL/LTR</p>
-            <p class="text-xs text-hero-fg/85">لایه کنتراست منطقی</p>
-          </div>
+          <StatTile locale="fa" variant="hero" align="center" value="۶۰ فریم" label="پردازش با GPU" accent />
+          <StatTile locale="fa" variant="hero" align="center" value="بدون CLS" label="حاشیه اطمینان تصویر" />
+          <StatTile locale="fa" variant="hero" align="center" value="RTL/LTR" label="لایه کنتراست منطقی" />
         </div>
       </ParallaxSection>
     </div>

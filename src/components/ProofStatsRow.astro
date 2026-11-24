@@ -5,8 +5,8 @@
  * and render with `tabular-nums` alignment.
  */
 import PageSection from '@/components/PageSection.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
-import { formatNumber } from '@/i18n/format';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import StatTile from '@/components/ui/StatTile.astro';
 import type { Locale } from '@/i18n/locales';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
@@ -104,7 +104,7 @@ const gridColsClass =
     class={resolvedEyebrow || resolvedHeading ? 'mb-8' : undefined}
   />
 
-  <dl
+  <div
     class:list={['grid gap-8', gridColsClass]}
     data-trig-stagger
     data-trig-stagger-mode="center"
@@ -112,26 +112,26 @@ const gridColsClass =
     data-trig-once="true"
   >
     {
-      resolvedItems.map((item) => {
-        const displayValue =
-          item.value ??
-          `${item.prefix ?? ''}${item.count !== undefined ? formatNumber(item.count, activeLocale) : ''}${item.suffix ?? ''}`;
-        return (
-          <div
-            data-trig
-            data-trig-once="true"
-            class="border-t border-border pt-4 sm:border-t-0 sm:border-s sm:pt-0 sm:ps-6 sm:first:border-s-0 sm:first:ps-0"
-          >
-            <dt class="text-sm font-medium text-muted">{item.label}</dt>
-            <dd class="mt-2 text-3xl font-extrabold tracking-tight text-primary tabular-nums sm:text-4xl">
-              {displayValue}
-            </dd>
-            {item.context && (
-              <p class="mt-1.5 text-xs leading-relaxed text-muted">{item.context}</p>
-            )}
-          </div>
-        );
-      })
+      resolvedItems.map((item) => (
+        <div
+          data-trig
+          data-trig-once="true"
+          class="border-t border-border pt-4 sm:border-t-0 sm:border-s sm:pt-0 sm:ps-6 sm:first:border-s-0 sm:first:ps-0"
+        >
+          <StatTile
+            variant="divider"
+            accent
+            label={item.label}
+            value={item.value}
+            count={item.count}
+            prefix={item.prefix}
+            suffix={item.suffix}
+            context={item.context ?? null}
+            locale={activeLocale}
+            class="border-none! p-0!"
+          />
+        </div>
+      ))
     }
-  </dl>
+  </div>
 </PageSection>

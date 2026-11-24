@@ -1,7 +1,8 @@
 ---
 import * as m from '@/paraglide/messages';
-import Icon from '@/components/Icon.astro';
-import IconButton from '@/components/IconButton.astro';
+import Icon from '@/components/ui/Icon.astro';
+import IconButton from '@/components/ui/IconButton.astro';
+import Kbd from '@/components/ui/Kbd.astro';
 import type { Locale } from '@/i18n/locales';
 
 interface Props {
@@ -65,11 +66,11 @@ const { locale } = Astro.props;
     </div>
 
     <div class="flex items-center justify-between border-t border-border bg-bg/50 px-4 py-2 text-xs text-muted">
-      <span>
-        <kbd class="rounded border border-border bg-surface px-1.5 py-0.5">ESC</kbd>
+      <span class="inline-flex items-center gap-1.5">
+        <Kbd as="kbd" variant="default" size="xs">ESC</Kbd>
         <span id="search-esc-hint">{m.common_press_esc({}, { locale })}</span>
       </span>
-      <span><kbd class="rounded border border-border bg-surface px-1.5 py-0.5">⌘K</kbd></span>
+      <Kbd as="kbd" variant="default" size="xs">⌘K</Kbd>
     </div>
   </div>
 </dialog>

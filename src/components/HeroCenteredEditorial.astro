@@ -1,58 +1,46 @@
 ---
 /**
- * Centered & Editorial Hero Section adapted from PrebuiltUI hero-section archetypes:
- * - Light Hero Section with Grid Effect
- * - Hero with Dashed Container Rails & Feature Cards
- * - Hero with Rounded Floating Navbar & Arch-Top Showcase Image
- * - Hero with Embedded Navbar, Inline Tag & Gradient Wash
- *
- * Combines `<slot name="prelude">`, optional `<HeroPreviewNav>`, announcement pill or
- * `<AvatarGroup />`, OKLCH gradient headline, `<Button>` CTAs, and optional feature cards,
- * partner pills, or bottom arch/rounded photography.
+ * Centered & Editorial Hero Section composed with shared UI primitives:
+ * `<BackdropLayer>`, `<TopBanner>`, `<HeroPreviewNav>`, `<AnnouncementPill>`,
+ * `<AvatarGroup>`, `<HeroHeadline>`, `<Button>`, `<Card>`, `<IconBox>`,
+ * `<PartnerStrip>`, and `<HeroParallaxLayer>`.
  */
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
-import AvatarGroup, { type AvatarItem } from '@/components/AvatarGroup.astro';
-import Button from '@/components/Button.astro';
+import AnnouncementPill from '@/components/ui/AnnouncementPill.astro';
+import AvatarGroup, { type AvatarItem } from '@/components/ui/AvatarGroup.astro';
+import BackdropLayer from '@/components/ui/BackdropLayer.astro';
+import Button from '@/components/ui/Button.astro';
+import Card from '@/components/ui/Card.astro';
+import HeroHeadline from '@/components/ui/HeroHeadline.astro';
 import HeroParallaxLayer, {
   type HeroParallaxOverlay,
   type HeroParallaxSpeed,
-} from '@/components/HeroParallaxLayer.astro';
+} from '@/components/ui/HeroParallaxLayer.astro';
 import HeroPreviewNav, {
   type HeroPreviewNavLink,
   type HeroPreviewNavVariant,
-} from '@/components/HeroPreviewNav.astro';
-import Icon from '@/components/Icon.astro';
-import type { HeroCtaAction } from '@/components/LandingHeroSplit.astro';
+} from '@/components/ui/HeroPreviewNav.astro';
+import IconBox from '@/components/ui/IconBox.astro';
+import PartnerStrip from '@/components/ui/PartnerStrip.astro';
+import TopBanner from '@/components/ui/TopBanner.astro';
 import type { Locale } from '@/i18n/locales';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale } from '@/libs/ui/locale';
+import type {
+  HeroAnnouncement,
+  HeroCtaAction,
+  HeroPartnerPill,
+  HeroTopBanner,
+} from '@/libs/ui/types';
 import * as m from '@/paraglide/messages';
+
+export type { HeroAnnouncement, HeroPartnerPill, HeroTopBanner };
 
 export interface HeroFeatureCard {
   icon?: string;
   title: string;
   description: string;
-}
-
-export interface HeroPartnerPill {
-  icon?: string;
-  name: string;
-}
-
-export interface HeroAnnouncement {
-  badge?: string;
-  label: string;
-  href?: string;
-  ctaLabel?: string;
-  pulse?: boolean;
-}
-
-export interface HeroTopBanner {
-  badge?: string;
-  label: string;
-  href?: string;
-  ctaLabel?: string;
 }
 
 interface Props {
@@ -258,98 +246,23 @@ const isBottomCroppedArch = Boolean(bottomImage && bottomImageStyle === 'arch');
     )
   }
 
-  {
-    backdrop !== 'none' && (
-      <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden print:hidden">
-        {(backdrop === 'grid' || backdrop === 'dots' || backdrop === 'noise' || backdrop === 'net') && (
-          <div
-            class:list={[
-              'hero-pattern-layer absolute inset-0',
-              backdrop === 'dots'
-                ? 'is-dots'
-                : backdrop === 'noise'
-                  ? 'is-noise'
-                  : backdrop === 'net'
-                    ? 'is-net'
-                    : 'is-grid',
-            ]}
-          />
-        )}
-        {backdrop === 'wash' && <div class="hero-wash-layer absolute inset-0" />}
-        {backdrop === 'orbital' && (
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div
-              class:list={[
-                'size-[26rem] rounded-full border sm:size-[38rem]',
-                isHeroSurface ? 'border-hero-fg/12' : 'border-border/70',
-              ]}
-            />
-            <div
-              class:list={[
-                'absolute size-[18rem] rounded-full border sm:size-[26rem]',
-                isHeroSurface ? 'border-accent/25' : 'border-primary/20',
-              ]}
-            />
-            <div
-              class:list={[
-                'absolute size-[11rem] rounded-full border border-dashed sm:size-[15rem]',
-                isHeroSurface ? 'border-hero-fg/15' : 'border-primary/25',
-              ]}
-            />
-          </div>
-        )}
-        <div
-          class:list={[
-            'hero-glow-primary absolute -top-40 end-[-6rem] size-[28rem] rounded-full',
-            !isHeroSurface && 'opacity-50',
-          ]}
-        />
-        <div
-          class:list={[
-            'hero-glow-accent absolute -bottom-44 start-[-8rem] size-[24rem] rounded-full',
-            !isHeroSurface && 'opacity-45',
-          ]}
-        />
-      </div>
-    )
-  }
+  <BackdropLayer
+    backdrop={backdrop}
+    surface={isHeroSurface ? 'hero' : 'default'}
+    orbitalScale="wide"
+  />
 
   {
     topBanner && (
-      <div
-        class:list={[
-          'mb-8 border-b px-4 py-2.5 text-center text-xs font-medium print:hidden',
-          isHeroSurface
-            ? 'border-hero-fg/15 bg-hero-fg/10 text-hero-fg'
-            : 'border-border bg-primary/10 text-fg',
-        ]}
-      >
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-2">
-          {topBanner.badge && (
-            <span
-              class:list={[
-                'rounded-full px-2.5 py-0.5 text-[11px] font-bold',
-                isHeroSurface ? 'bg-accent text-hero-base' : 'bg-primary text-primary-fg',
-              ]}
-            >
-              {topBanner.badge}
-            </span>
-          )}
-          <span>{topBanner.label}</span>
-          {topBanner.href && (
-            <a
-              href={topBanner.href}
-              class:list={[
-                'inline-flex items-center gap-1 font-bold underline underline-offset-4 transition-opacity hover:opacity-80',
-                isHeroSurface ? 'text-accent' : 'text-primary',
-              ]}
-            >
-              <span>{topBanner.ctaLabel ?? resolvedPrimaryCta?.label}</span>
-              <Icon name="arrow-right" size={12} class="rtl:rotate-180" />
-            </a>
-          )}
-        </div>
-      </div>
+      <TopBanner
+        badge={topBanner.badge}
+        label={topBanner.label}
+        href={topBanner.href}
+        ctaLabel={topBanner.ctaLabel ?? resolvedPrimaryCta?.label}
+        surface={isHeroSurface ? 'hero' : 'default'}
+        locale={activeLocale}
+        class="mb-8 print:hidden"
+      />
     )
   }
 
@@ -416,77 +329,17 @@ const isBottomCroppedArch = Boolean(bottomImage && bottomImageStyle === 'arch');
 
         {
           resolvedAnnouncement && (
-            <div class="mb-6 flex justify-center">
-              {resolvedAnnouncement.href ? (
-                <a
-                  href={resolvedAnnouncement.href}
-                  class:list={[
-                    'group inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full border p-1 pe-3.5 text-xs font-medium transition-colors',
-                    isHeroSurface
-                      ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/90 hover:border-hero-fg/35 hover:bg-hero-fg/15 print:border-border print:bg-surface print:text-fg'
-                      : 'border-border bg-surface text-muted shadow-xs hover:border-primary/45 hover:text-fg',
-                  ]}
-                >
-                  {resolvedAnnouncement.badge && (
-                    <span
-                      class:list={[
-                        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
-                        isHeroSurface
-                          ? 'bg-accent text-hero-base print:bg-primary print:text-primary-fg'
-                          : 'bg-primary text-primary-fg',
-                      ]}
-                    >
-                      {resolvedAnnouncement.pulse && <Icon name="sparkles" size={11} class="shrink-0" />}
-                      {resolvedAnnouncement.badge}
-                    </span>
-                  )}
-                  <span class="truncate ps-1.5">{resolvedAnnouncement.label}</span>
-                  {resolvedAnnouncement.ctaLabel ? (
-                    <span
-                      class:list={[
-                        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors',
-                        isHeroSurface
-                          ? 'bg-hero-fg/15 text-hero-fg print:bg-surface-hover print:text-fg'
-                          : 'bg-surface-hover text-fg group-hover:bg-primary group-hover:text-primary-fg',
-                      ]}
-                    >
-                      <span>{resolvedAnnouncement.ctaLabel}</span>
-                      <Icon name="arrow-right" size={11} class="shrink-0 rtl:rotate-180" />
-                    </span>
-                  ) : (
-                    <Icon
-                      name="chevron-right"
-                      size={14}
-                      class="shrink-0 opacity-75 transition-transform duration-200 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
-                    />
-                  )}
-                </a>
-              ) : (
-                <span
-                  class:list={[
-                    'inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full border px-3 py-1 text-xs font-medium',
-                    isHeroSurface
-                      ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/90 print:border-border print:bg-surface print:text-fg'
-                      : 'border-border bg-surface text-muted shadow-xs',
-                  ]}
-                >
-                  {resolvedAnnouncement.badge && (
-                    <span
-                      class:list={[
-                        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
-                        isHeroSurface
-                          ? 'bg-accent text-hero-base print:bg-primary print:text-primary-fg'
-                          : 'bg-primary text-primary-fg',
-                      ]}
-                    >
-                      {resolvedAnnouncement.pulse && <Icon name="sparkles" size={11} class="shrink-0" />}
-                      {resolvedAnnouncement.badge}
-                    </span>
-                  )}
-                  <span>{resolvedAnnouncement.label}</span>
-                </span>
-              )}
-            </div>
+            <AnnouncementPill
+              badge={resolvedAnnouncement.badge}
+              label={resolvedAnnouncement.label}
+              href={resolvedAnnouncement.href}
+              ctaLabel={resolvedAnnouncement.ctaLabel}
+              pulse={resolvedAnnouncement.pulse}
+              surface={isHeroSurface ? 'hero' : 'default'}
+              align="center"
+              locale={activeLocale}
+              class="mb-6"
+            />
           )
         }
 
@@ -503,47 +356,13 @@ const isBottomCroppedArch = Boolean(bottomImage && bottomImageStyle === 'arch');
           )
         }
 
-        {
-          headingTag === 'h2' ? (
-            <h2 class="mt-2 text-3xl font-extrabold leading-[1.1] tracking-tight text-balance sm:text-4xl lg:text-5xl">
-              {resolvedTitleLead}
-              {resolvedTitleAccent && (
-                <>
-                  {' '}
-                  <span
-                    class:list={[
-                      'bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-l',
-                      isHeroSurface
-                        ? 'bg-linear-to-r from-accent to-hero-fg'
-                        : 'bg-linear-to-r from-primary to-secondary',
-                    ]}
-                  >
-                    {resolvedTitleAccent}
-                  </span>
-                </>
-              )}
-            </h2>
-          ) : (
-            <h1 class="mt-2 text-[clamp(2.25rem,4.6vw,4.15rem)] font-extrabold leading-[1.08] tracking-tight text-balance">
-              {resolvedTitleLead}
-              {resolvedTitleAccent && (
-                <>
-                  {' '}
-                  <span
-                    class:list={[
-                      'bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-l',
-                      isHeroSurface
-                        ? 'bg-linear-to-r from-accent to-hero-fg'
-                        : 'bg-linear-to-r from-primary to-secondary',
-                    ]}
-                  >
-                    {resolvedTitleAccent}
-                  </span>
-                </>
-              )}
-            </h1>
-          )
-        }
+        <HeroHeadline
+          headingTag={headingTag}
+          lead={resolvedTitleLead}
+          accent={resolvedTitleAccent}
+          surface={isHeroSurface ? 'hero' : 'default'}
+          class="mt-2"
+        />
 
         {
           resolvedDescription && (
@@ -613,25 +432,18 @@ const isBottomCroppedArch = Boolean(bottomImage && bottomImageStyle === 'arch');
           >
             {resolvedFeatureCards.map((card) => (
               <li data-trig data-trig-once="true">
-                <div
-                  class:list={[
-                    'h-full rounded-2xl border p-5 text-start transition-colors duration-200',
-                    isHeroSurface
-                      ? 'border-hero-fg/15 bg-hero-fg/5 hover:border-hero-fg/30 print:border-border print:bg-surface'
-                      : 'border-border bg-surface/90 shadow-xs hover:border-primary/40',
-                  ]}
+                <Card
+                  variant={isHeroSurface ? 'hero' : 'surface'}
+                  padding="md"
+                  hover
+                  class="h-full text-start"
                 >
-                  <span
-                    class:list={[
-                      'inline-flex size-10 items-center justify-center rounded-xl',
-                      isHeroSurface
-                        ? 'bg-hero-fg/10 text-accent print:bg-primary/10 print:text-primary'
-                        : 'bg-primary/10 text-primary',
-                    ]}
-                    aria-hidden="true"
-                  >
-                    <Icon name={card.icon ?? 'sparkles'} size={18} />
-                  </span>
+                  <IconBox
+                    icon={card.icon ?? 'sparkles'}
+                    size="md"
+                    radius="xl"
+                    tone={isHeroSurface ? 'hero' : 'primary'}
+                  />
                   <p class="mt-3.5 text-sm font-bold">{card.title}</p>
                   <p
                     class:list={[
@@ -641,7 +453,7 @@ const isBottomCroppedArch = Boolean(bottomImage && bottomImageStyle === 'arch');
                   >
                     {card.description}
                   </p>
-                </div>
+                </Card>
               </li>
             ))}
           </ul>
@@ -650,63 +462,23 @@ const isBottomCroppedArch = Boolean(bottomImage && bottomImageStyle === 'arch');
 
       {
         resolvedPartnerPills && resolvedPartnerPills.length > 0 && (
-          <ul
-            class="mx-auto mt-10 flex max-w-4xl flex-wrap items-center justify-center gap-2.5"
-            data-trig-stagger
-            data-trig-stagger-mode="center"
-            data-trig-stagger-delay="0.04"
-            data-trig-once="true"
-          >
-            {resolvedPartnerPills.map((pill) => (
-              <li
-                data-trig
-                data-trig-once="true"
-                class:list={[
-                  'inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold',
-                  isHeroSurface
-                    ? 'border-hero-fg/15 bg-hero-fg/10 text-hero-fg/90 print:border-border print:bg-surface print:text-fg'
-                    : 'border-border bg-surface text-fg shadow-xs',
-                ]}
-              >
-                <Icon
-                  name={pill.icon ?? 'building'}
-                  size={14}
-                  class={isHeroSurface ? 'text-accent print:text-primary' : 'text-primary'}
-                />
-                <span>{pill.name}</span>
-              </li>
-            ))}
-          </ul>
+          <PartnerStrip
+            items={resolvedPartnerPills}
+            variant="pills"
+            surface={isHeroSurface ? 'hero' : 'default'}
+            class="mt-10"
+          />
         )
       }
 
       {
         resolvedPartnerLogos && resolvedPartnerLogos.length > 0 && (
-          <ul
-            class="mx-auto mt-10 flex max-w-4xl flex-wrap items-center justify-center gap-x-8 gap-y-4"
-            data-trig-stagger
-            data-trig-stagger-mode="center"
-            data-trig-stagger-delay="0.04"
-            data-trig-once="true"
-          >
-            {resolvedPartnerLogos.map((partner) => (
-              <li
-                data-trig
-                data-trig-once="true"
-                class:list={[
-                  'inline-flex items-center gap-2 text-xs font-bold tracking-wide sm:text-sm',
-                  isHeroSurface ? 'text-hero-fg/75 print:text-muted' : 'text-muted',
-                ]}
-              >
-                <Icon
-                  name={partner.icon ?? 'building'}
-                  size={16}
-                  class={isHeroSurface ? 'text-accent print:text-primary' : 'text-primary'}
-                />
-                <span>{partner.name}</span>
-              </li>
-            ))}
-          </ul>
+          <PartnerStrip
+            items={resolvedPartnerLogos}
+            variant="logos"
+            surface={isHeroSurface ? 'hero' : 'default'}
+            class="mt-10"
+          />
         )
       }
 
@@ -747,89 +519,3 @@ const isBottomCroppedArch = Boolean(bottomImage && bottomImageStyle === 'arch');
     </div>
   </div>
 </section>
-
-<style>
-  .hero-pattern-layer.is-grid {
-    background-image:
-      linear-gradient(to right, color-mix(in oklch, var(--color-border) 60%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklch, var(--color-border) 60%, transparent) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 20%, transparent 100%);
-  }
-
-  .hero-centered-band[data-hero-surface='hero'] .hero-pattern-layer.is-grid {
-    background-image:
-      linear-gradient(to right, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px);
-  }
-
-  .hero-pattern-layer.is-dots {
-    background-image: radial-gradient(
-      circle,
-      color-mix(in oklch, var(--color-muted) 35%, transparent) 1.25px,
-      transparent 1.25px
-    );
-    background-size: 24px 24px;
-    mask-image: radial-gradient(ellipse 78% 72% at 50% 44%, black 25%, transparent 100%);
-  }
-
-  .hero-centered-band[data-hero-surface='hero'] .hero-pattern-layer.is-dots {
-    background-image: radial-gradient(
-      circle,
-      color-mix(in oklch, var(--color-hero-fg) 24%, transparent) 1.25px,
-      transparent 1.25px
-    );
-  }
-
-  .hero-pattern-layer.is-noise {
-    background-image:
-      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-fg) 18%, transparent) 1px, transparent 1px),
-      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-primary) 20%, transparent) 1px, transparent 1px);
-    background-size: 10px 10px, 14px 14px;
-    opacity: 0.45;
-  }
-
-  .hero-centered-band[data-hero-surface='hero'] .hero-pattern-layer.is-noise {
-    background-image:
-      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-hero-fg) 22%, transparent) 1px, transparent 1px),
-      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-accent) 22%, transparent) 1px, transparent 1px);
-  }
-
-  .hero-pattern-layer.is-net {
-    background-image:
-      repeating-linear-gradient(
-        60deg,
-        color-mix(in oklch, var(--color-border) 55%, transparent) 0 1px,
-        transparent 1px 28px
-      ),
-      repeating-linear-gradient(
-        -60deg,
-        color-mix(in oklch, var(--color-border) 55%, transparent) 0 1px,
-        transparent 1px 28px
-      );
-    mask-image: radial-gradient(ellipse 82% 72% at 50% 42%, black 22%, transparent 100%);
-  }
-
-  .hero-centered-band[data-hero-surface='hero'] .hero-pattern-layer.is-net {
-    background-image:
-      repeating-linear-gradient(
-        60deg,
-        color-mix(in oklch, var(--color-hero-fg) 14%, transparent) 0 1px,
-        transparent 1px 28px
-      ),
-      repeating-linear-gradient(
-        -60deg,
-        color-mix(in oklch, var(--color-hero-fg) 14%, transparent) 0 1px,
-        transparent 1px 28px
-      );
-  }
-
-  .hero-wash-layer {
-    background: linear-gradient(
-      145deg,
-      color-mix(in oklch, var(--color-primary) 12%, transparent),
-      color-mix(in oklch, var(--color-accent) 14%, transparent) 48%,
-      color-mix(in oklch, var(--color-secondary) 10%, transparent)
-    );
-  }
-</style>

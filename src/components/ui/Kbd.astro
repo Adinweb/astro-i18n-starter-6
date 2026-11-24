@@ -1,0 +1,48 @@
+---
+/**
+ * Compact LTR-isolated inline code token / keyboard shortcut cap (`<code>` or `<kbd>`).
+ */
+interface Props {
+  as?: 'code' | 'kbd';
+  variant?: 'default' | 'primary' | 'subtle' | 'hero' | 'pill';
+  size?: 'xs' | 'sm';
+  href?: string;
+  class?: string;
+}
+
+const {
+  as = 'code',
+  variant = 'default',
+  size = 'xs',
+  href,
+  class: className,
+} = Astro.props;
+
+const VARIANTS = {
+  default: 'border-border bg-surface text-fg',
+  primary: 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20',
+  subtle: 'border-border/70 bg-bg text-muted',
+  hero: 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg',
+  pill: 'border-border bg-surface text-fg',
+} as const;
+
+const SIZES = {
+  xs: 'px-2 py-0.5 text-[11px]',
+  sm: 'px-2.5 py-0.5 text-xs',
+} as const;
+
+const classes = [
+  'inline-flex items-center border font-mono font-semibold',
+  variant === 'pill' ? 'rounded-full px-3 py-0.5' : 'rounded-md',
+  VARIANTS[variant],
+  SIZES[size],
+  href && 'transition-colors',
+  className,
+];
+
+const Tag = href ? 'a' : as;
+---
+
+<Tag href={href} dir="ltr" class:list={classes}>
+  <slot />
+</Tag>

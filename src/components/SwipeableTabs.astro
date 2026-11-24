@@ -8,9 +8,10 @@
  * - Full keyboard navigation (`ArrowLeft` / `ArrowRight` respecting RTL, `Home`, `End`).
  * - Native RTL/LTR Embla direction, semantic OKLCH tokens, and Paraglide defaults.
  */
-import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
+import Icon from '@/components/ui/Icon.astro';
+import IconBox from '@/components/ui/IconBox.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
 import type { Locale } from '@/i18n/locales';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
@@ -176,12 +177,14 @@ const instancePrefix = id ?? `embla-tabs-${Math.random().toString(36).slice(2, 8
             >
               <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
                 {tab.icon && (
-                  <span
-                    class="inline-flex size-12 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-hover/70 text-primary"
-                    aria-hidden="true"
-                  >
-                    <Icon name={tab.icon} size={22} />
-                  </span>
+                  <IconBox
+                    icon={tab.icon}
+                    size="lg"
+                    radius="xl"
+                    tone="surface"
+                    iconSize={22}
+                    class="bg-surface-hover/70 text-primary"
+                  />
                 )}
 
                 <div class="min-w-0 flex-1 text-start">

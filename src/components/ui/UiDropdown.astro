@@ -1,12 +1,9 @@
 ---
 /**
  * Accessible dropdown menu primitive inspired by PrebuiltUI dropdown-menu components.
- * Supports `role="menu"` / `role="menuitem"`, keyboard ArrowDown/ArrowUp/Home/End/Escape
- * navigation, click-outside dismissal, CSS logical `align` (`start` | `end`), OKLCH styling,
- * and Paraglide defaults.
  */
-import Icon from '@/components/Icon.astro';
-import UiBadge from '@/components/UiBadge.astro';
+import Icon from '@/components/ui/Icon.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
 import type { Locale } from '@/i18n/locales';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale } from '@/libs/ui/locale';

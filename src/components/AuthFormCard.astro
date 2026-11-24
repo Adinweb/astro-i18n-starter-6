@@ -5,13 +5,14 @@
  * external auth `endpoint` or when `preview={true}` is explicitly set for UI documentation,
  * and falls back cleanly to a `mailto:` support card when unconfigured.
  */
-import Button from '@/components/Button.astro';
-import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
-import UiBadge from '@/components/UiBadge.astro';
-import UiCheckbox from '@/components/UiCheckbox.astro';
-import UiInput from '@/components/UiInput.astro';
+import Button from '@/components/ui/Button.astro';
+import Divider from '@/components/ui/Divider.astro';
+import IconBox from '@/components/ui/IconBox.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
+import UiCheckbox from '@/components/ui/UiCheckbox.astro';
+import UiInput from '@/components/ui/UiInput.astro';
 import { resolveApiEndpoint } from '@/libs/api/client';
 import { API_CONFIG, siteConfig } from '@/libs/config/app';
 import type { Locale } from '@/i18n/locales';
@@ -151,12 +152,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
       {
         !isInteractive ? (
           <div class="rounded-2xl border border-dashed border-border bg-bg p-6 text-center">
-            <span
-              class="inline-flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
-              aria-hidden="true"
-            >
-              <Icon name="lock" size={20} />
-            </span>
+            <IconBox icon="lock" size="lg" radius="xl" tone="primary" iconSize={20} class="size-11" />
             <p class="mt-4 text-sm leading-relaxed text-muted">
               {emailHref ? copy.fallbackDesc : copy.unavailableDesc}
             </p>
@@ -250,11 +246,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
                   </Button>
                 </div>
 
-                <div class="my-6 flex items-center gap-3 text-xs font-medium text-muted">
-                  <span class="h-px flex-1 bg-border" />
-                  <span>{copy.orContinue}</span>
-                  <span class="h-px flex-1 bg-border" />
-                </div>
+                <Divider label={copy.orContinue} locale={activeLocale} class="my-6" />
               </div>
             )}
 

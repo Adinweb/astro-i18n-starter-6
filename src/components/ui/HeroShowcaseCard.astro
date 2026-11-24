@@ -1,0 +1,112 @@
+---
+/**
+ * Addressable showcase wrapper for Hero catalog variations (`#hero-01` .. `#hero-43`).
+ */
+import Button from '@/components/ui/Button.astro';
+import Kbd from '@/components/ui/Kbd.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  id: string;
+  index: string;
+  total?: string;
+  title: string;
+  component: string;
+  propsSummary?: string;
+  agentRef: string;
+  parallax?: boolean;
+  locale?: Locale | string;
+}
+
+const {
+  id,
+  index,
+  total = '43',
+  title,
+  component,
+  propsSummary,
+  agentRef,
+  parallax = false,
+  locale,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const copyLabel = m.doc_hero_copy_ref({}, { locale: activeLocale });
+const copiedLabel = m.doc_hero_copied({}, { locale: activeLocale });
+const copyAria = m.doc_hero_copy_ref_aria({ heroId: `#${id}` }, { locale: activeLocale });
+const parallaxLabel = m.doc_hero_parallax_badge({}, { locale: activeLocale });
+---
+
+<div id={id} class="scroll-mt-24 space-y-3" data-hero-showcase-id={id} data-hero-component={component}>
+  <div class="flex flex-wrap items-center justify-between gap-2.5">
+    <div class="flex flex-wrap items-center gap-2">
+      <UiBadge label={`${index} / ${total}`} variant="primary" size="sm" />
+      <Kbd href={`#${id}`} variant="primary" size="xs" class="font-bold">
+        #{id}
+      </Kbd>
+      {parallax && <UiBadge label={parallaxLabel} variant="success" size="sm" icon="photo" />}
+      <p class="text-sm font-bold text-fg">{title}</p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <Kbd variant="default" size="xs">
+        {`<${component} />`}
+      </Kbd>
+      {propsSummary && (
+        <span dir="ltr" class="text-xs text-muted">
+          {propsSummary}
+        </span>
+      )}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        icon="copy"
+        iconPosition="start"
+        data-hero-ref-copy
+        data-ref={agentRef}
+        data-label-copy={copyLabel}
+        data-label-copied={copiedLabel}
+        aria-label={copyAria}
+        class="print:hidden"
+      >
+        <span data-hero-ref-label>{copyLabel}</span>
+      </Button>
+    </div>
+  </div>
+
+  <slot />
+</div>
+
+<script>
+  function initHeroRefCopyButtons() {
+    document.querySelectorAll<HTMLButtonElement>('[data-hero-ref-copy]').forEach((btn) => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+
+      btn.addEventListener('click', async () => {
+        const refText = btn.dataset.ref ?? '';
+        const labelEl = btn.querySelector<HTMLElement>('[data-hero-ref-label]');
+        const copyText = btn.dataset.labelCopy ?? '';
+        const copiedText = btn.dataset.labelCopied ?? '';
+        if (!refText) return;
+
+        try {
+          await navigator.clipboard.writeText(refText);
+          if (labelEl) labelEl.textContent = copiedText;
+          window.setTimeout(() => {
+            if (labelEl) labelEl.textContent = copyText;
+          }, 1800);
+        } catch {
+          // Clipboard access may be restricted inside some preview sandboxes.
+        }
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initHeroRefCopyButtons);
+  initHeroRefCopyButtons();
+</script>

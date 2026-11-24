@@ -5,9 +5,10 @@
  * when any card sets `wide: true` and a clean symmetric grid otherwise.
  * Supports optional props with full localized defaults.
  */
-import Icon from '@/components/Icon.astro';
 import PageSection from '@/components/PageSection.astro';
-import SectionHeader from '@/components/SectionHeader.astro';
+import Icon from '@/components/ui/Icon.astro';
+import IconBox from '@/components/ui/IconBox.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
@@ -138,12 +139,14 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
             <div>
               <div class="flex items-center justify-between gap-3">
                 {item.icon ? (
-                  <span
-                    class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-hover/70 text-primary"
-                    aria-hidden="true"
-                  >
-                    <Icon name={item.icon} size={20} />
-                  </span>
+                  <IconBox
+                    icon={item.icon}
+                    size="md"
+                    radius="xl"
+                    tone="surface"
+                    iconSize={20}
+                    class="bg-surface-hover/70 text-primary"
+                  />
                 ) : (
                   <span />
                 )}

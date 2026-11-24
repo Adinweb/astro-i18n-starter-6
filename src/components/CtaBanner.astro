@@ -3,8 +3,9 @@
  * Focused closing conversion banner inspired by PrebuiltUI CTA sections.
  * Supports optional overrides with full Paraglide defaults in active locale.
  */
-import Button from '@/components/Button.astro';
 import PageSection from '@/components/PageSection.astro';
+import BackdropLayer from '@/components/ui/BackdropLayer.astro';
+import Button from '@/components/ui/Button.astro';
 import type { Locale } from '@/i18n/locales';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { getContentType, getContentTypeIndexHref } from '@/libs/content/types';
@@ -104,14 +105,7 @@ const isHero = surface === 'hero';
         : 'border-border bg-surface text-fg',
     ]}
   >
-    {
-      isHero && (
-        <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 print:hidden">
-          <div class="hero-glow-primary absolute -bottom-32 end-[-4rem] size-80 rounded-full" />
-          <div class="hero-glow-accent absolute -top-32 start-[-4rem] size-72 rounded-full" />
-        </div>
-      )
-    }
+    {isHero && <BackdropLayer backdrop="glow" surface="hero" />}
 
     <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
       <div class="max-w-3xl">

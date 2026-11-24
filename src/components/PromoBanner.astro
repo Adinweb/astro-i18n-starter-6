@@ -5,10 +5,10 @@
  * `surface`, `accent`), optional dismiss toggle, `<Icon>`, `<Button>`, and full
  * Paraglide-localized defaults.
  */
-import Button from '@/components/Button.astro';
-import Icon from '@/components/Icon.astro';
-import IconButton from '@/components/IconButton.astro';
 import PageSection from '@/components/PageSection.astro';
+import Button from '@/components/ui/Button.astro';
+import IconBox from '@/components/ui/IconBox.astro';
+import IconButton from '@/components/ui/IconButton.astro';
 import type { Locale } from '@/i18n/locales';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale } from '@/libs/ui/locale';
@@ -103,19 +103,17 @@ const isDarkSurface = variant === 'primary' || variant === 'hero';
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2.5 sm:gap-3">
         {icon && (
-          <span
-            aria-hidden="true"
+          <IconBox
+            icon={icon}
+            size="sm"
+            radius="xl"
+            tone={variant === 'hero' ? 'hero' : 'primary'}
+            iconSize={17}
             class:list={[
-              'inline-flex size-8 shrink-0 items-center justify-center rounded-xl',
-              variant === 'primary'
-                ? 'bg-primary-fg/15 text-primary-fg'
-                : variant === 'hero'
-                  ? 'bg-hero-fg/10 text-accent print:bg-primary/10 print:text-primary'
-                  : 'bg-primary/10 text-primary',
+              'size-8',
+              variant === 'primary' && 'bg-primary-fg/15! text-primary-fg!',
             ]}
-          >
-            <Icon name={icon} size={17} />
-          </span>
+          />
         )}
 
         {resolvedBadge && (

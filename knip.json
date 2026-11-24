@@ -4,7 +4,8 @@
     "src/pages/**/*.{astro,ts}",
     "src/content/**/*.mdx",
     "client/**/*.{astro,ts}",
-    "src/components/{HomeHero,SectionHeader,ComponentDoc,UiBadge,UiAlert,AvatarGroup,Breadcrumbs,UiPagination,UiModal,UiTooltip,UiProgress,UiSwitch,UiCheckbox,UiInput,UiDropdown,SocialLinks,HeroPreviewNav,HeroParallaxLayer,LandingHeroSplit,HeroCenteredEditorial,HeroDashboardShowcase,HeroCommandCli,HeroInteractivePrompt,HeroProofMarquee,BentoCapabilities,BentoGrid,ParallaxSection,ProofStatsRow,FaqAccordion,CtaBanner,PricingSection,TestimonialGrid,TestimonialMarquee,TeamSection,PartnerLogos,NewsletterBanner,PromoBanner,AboutSplitSection,ProcessSteps,FeatureTabsSection,SwipeableTabs,ComparisonTable,FeatureCardGrid,ImageGallerySection,LatestPostsSection,ContactSplitSection,CarouselSection,ProductShowcaseGrid,AuthFormCard}.astro",
+    "src/components/ui/*.astro",
+    "src/components/{HomeHero,ComponentDoc,LandingHeroSplit,HeroCenteredEditorial,HeroDashboardShowcase,HeroCommandCli,HeroInteractivePrompt,HeroProofMarquee,HeroFloatingOrbSplit,BentoCapabilities,BentoGrid,ParallaxSection,ProofStatsRow,FaqAccordion,CtaBanner,PricingSection,TestimonialGrid,TestimonialMarquee,TeamSection,PartnerLogos,NewsletterBanner,PromoBanner,AboutSplitSection,ProcessSteps,FeatureTabsSection,SwipeableTabs,ComparisonTable,FeatureCardGrid,ImageGallerySection,LatestPostsSection,LatestPostsCarousel,ContactSplitSection,CarouselSection,ProductShowcaseGrid,AuthFormCard}.astro",
     "scripts/**/*.mjs",
     "src/**/*.test.ts"
   ],

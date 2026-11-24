@@ -1,10 +1,8 @@
 ---
 /**
  * Reusable accessible breadcrumbs navigation inspired by PrebuiltUI breadcrumbs.
- * Supports `chevron` or `slash` separators, RTL chevron rotation (`rtl:rotate-180`),
- * optional home icon on the first crumb, OKLCH tokens, and Paraglide defaults.
  */
-import Icon from '@/components/Icon.astro';
+import Icon from '@/components/ui/Icon.astro';
 import type { Locale } from '@/i18n/locales';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale } from '@/libs/ui/locale';

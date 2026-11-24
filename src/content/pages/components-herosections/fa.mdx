@@ -1,26 +1,30 @@
 ---
 title: "بخش‌های هیرو (Hero Sections)"
 slug: "کامپوننت‌ها/herosections"
-description: "نمایش کامل هر ۴۲ الگوی Hero Section از PrebuiltUI، هماهنگ‌شده با پالت رنگی OKLCH، پس‌زمینه‌های پارالاکس ChronoTrig و پشتیبانی بومی از RTL/LTR در Astro v7."
+description: "نمایش کامل هر ۴۳ الگوی Hero Section از PrebuiltUI، هماهنگ‌شده با پالت رنگی OKLCH، پس‌زمینه‌های پارالاکس ChronoTrig و پشتیبانی بومی از RTL/LTR در Astro v7."
 image: "./herosections.jpg"
 hero: "none"
 container: "canvas"
 flushTop: true
 draft: false
 ---
-import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import Button from '@/components/Button.astro';
+import Accordion from '@/components/ui/Accordion.astro';
+import Breadcrumbs from '@/components/ui/Breadcrumbs.astro';
+import Button from '@/components/ui/Button.astro';
+import ChipGroup from '@/components/ui/ChipGroup.astro';
 import ComponentDoc from '@/components/ComponentDoc.astro';
 import CtaBanner from '@/components/CtaBanner.astro';
 import HeroCenteredEditorial from '@/components/HeroCenteredEditorial.astro';
 import HeroCommandCli from '@/components/HeroCommandCli.astro';
 import HeroDashboardShowcase from '@/components/HeroDashboardShowcase.astro';
+import HeroFloatingOrbSplit from '@/components/HeroFloatingOrbSplit.astro';
 import HeroInteractivePrompt from '@/components/HeroInteractivePrompt.astro';
 import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
+import HeroShowcaseCard from '@/components/ui/HeroShowcaseCard.astro';
 import HomeHero from '@/components/HomeHero.astro';
 import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
 import PageSection from '@/components/PageSection.astro';
-import UiBadge from '@/components/UiBadge.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
 import heroVisual from './herosections.jpg';
 import hero0Visual from '@/assets/hero/hero-0.jpg';
 import auditVisual from '@/assets/germancert/hero-audit.jpg';
@@ -36,17 +40,17 @@ import trustVisual from '@/assets/germancert/trustmark.jpg';
   parallaxOverlay="hero"
   backdrop="orbital"
   announcement={{
-    badge: "کامل · ۴۲ از ۴۲",
-    label: "هر ۴۲ الگوی بخش هیرو PrebuiltUI + پس‌زمینه‌های پارالاکس ChronoTrig",
+    badge: "کامل · ۴۳ از ۴۳",
+    label: "هر ۴۳ الگوی بخش هیرو (PrebuiltUI + سکشن اختصاصی مداری RTL) و پارالاکس ChronoTrig",
     href: "/fa/کامپوننت‌ها/",
     pulse: true
   }}
-  titleLead="هر ۴۲ الگوی بخش هیرو،"
+  titleLead="هر ۴۳ الگوی بخش هیرو،"
   titleAccent="بومی برای تم و RTL"
-  description="تمامی ۴۲ الگوی هیروی PrebuiltUI با متغیرهای معنایی OKLCH، ویژگی‌های منطقی CSS، اجزای دسترس‌پذیر <Button> و <HeroPreviewNav>، پس‌زمینه‌های پارالاکس اسکرولی ChronoTrig و فرهنگ‌لغت Paraglide پیاده‌سازی شده‌اند."
-  primaryCta={{ label: "مشاهده هر ۴۲ نمونه هیرو", href: "#hero-showcase-list", icon: "arrow-right" }}
+  description="تمامی ۴۳ الگوی هیروی مدرن شامل مجموعه PrebuiltUI و الگوی اختصاصی کارت‌های شناور RTL با متغیرهای معنایی OKLCH، ویژگی‌های منطقی CSS، اجزای دسترس‌پذیر <Button> و <HeroPreviewNav>، پس‌زمینه‌های پارالاکس اسکرولی ChronoTrig و فرهنگ‌لغت Paraglide پیاده‌سازی شده‌اند."
+  primaryCta={{ label: "مشاهده هر ۴۳ نمونه هیرو", href: "#hero-showcase-list", icon: "arrow-right" }}
   secondaryCta={{ label: "همه کامپوننت‌ها", href: "/fa/کامپوننت‌ها/" }}
-  trustNote="۴۲ الگوی شماره‌گذاری‌شده PrebuiltUI · ۹ نمونه مجهز به پس‌زمینه پارالاکس GPU · بدون کد رنگ هگز"
+  trustNote="۴۳ الگوی شماره‌گذاری‌شده و قابل ارجاع به ایجنت · ۹ نمونه مجهز به پس‌زمینه پارالاکس GPU · بدون کد رنگ هگز"
   partnerPills={[
     { icon: "palette", name: "موتور تم OKLCH" },
     { icon: "photo", name: "پس‌زمینه پارالاکس ChronoTrig" },
@@ -72,60 +76,353 @@ import trustVisual from '@/assets/germancert/trustmark.jpg';
 <PageSection id="hero-catalog-nav" surface="surface" spacing="sm" borderBottom>
   <div class="flex flex-col gap-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex flex-wrap items-center gap-2">
-        <a href="#doc-centered-hero" class="chip px-3 py-1.5 text-xs font-bold text-primary">وسط‌چین و پارالاکس (۱۲)</a>
-        <a href="#doc-dashboard-hero" class="chip px-3 py-1.5 text-xs font-bold text-primary">داشبورد و آمار (۱۰)</a>
-        <a href="#doc-split-hero" class="chip px-3 py-1.5 text-xs font-bold text-primary">دوستونه نامتقارن (۱۰)</a>
-        <a href="#doc-interactive-prompt" class="chip px-3 py-1.5 text-xs font-bold text-primary">پرامپت، جستجو، کد، CLI و مارکی (۱۰)</a>
-      </div>
+      <ChipGroup
+        locale="fa"
+        mode="links"
+        size="sm"
+        ariaLabel="دسته‌بندی‌های هیرو"
+        items={[
+          { label: "وسط‌چین و پارالاکس (۱۲)", href: "#doc-centered-hero", highlight: true },
+          { label: "داشبورد و آمار (۱۰)", href: "#doc-dashboard-hero", highlight: true },
+          { label: "دوستونه نامتقارن (۱۰)", href: "#doc-split-hero", highlight: true },
+          { label: "پرامپت، جستجو، کد، CLI و مارکی (۱۰)", href: "#doc-interactive-prompt", highlight: true },
+          { label: "مداری و کارت‌های شناور RTL (۱)", href: "#doc-floating-orb-hero", highlight: true }
+        ]}
+      />
       <Button href="/fa/کامپوننت‌ها/" variant="ghost" size="sm" icon="arrow-right">
         بازگشت به کامپوننت‌ها
       </Button>
     </div>
-    <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
-      <a href="#hero-01" class="chip px-2.5 py-1 font-medium">۰۱</a>
-      <a href="#hero-02" class="chip px-2.5 py-1 font-medium">۰۲</a>
-      <a href="#hero-03" class="chip px-2.5 py-1 font-medium">۰۳</a>
-      <a href="#hero-04" class="chip px-2.5 py-1 font-medium">۰۴</a>
-      <a href="#hero-05" class="chip px-2.5 py-1 font-medium">۰۵</a>
-      <a href="#hero-06" class="chip px-2.5 py-1 font-medium">۰۶</a>
-      <a href="#hero-07" class="chip px-2.5 py-1 font-medium">۰۷</a>
-      <a href="#hero-08" class="chip px-2.5 py-1 font-medium">۰۸</a>
-      <a href="#hero-09" class="chip px-2.5 py-1 font-medium">۰۹</a>
-      <a href="#hero-10" class="chip px-2.5 py-1 font-medium">۱۰</a>
-      <a href="#hero-11" class="chip px-2.5 py-1 font-medium">۱۱</a>
-      <a href="#hero-12" class="chip px-2.5 py-1 font-medium">۱۲</a>
-      <a href="#hero-13" class="chip px-2.5 py-1 font-medium">۱۳</a>
-      <a href="#hero-14" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">۱۴ پارالاکس</a>
-      <a href="#hero-15" class="chip px-2.5 py-1 font-medium">۱۵</a>
-      <a href="#hero-16" class="chip px-2.5 py-1 font-medium">۱۶</a>
-      <a href="#hero-17" class="chip px-2.5 py-1 font-medium">۱۷</a>
-      <a href="#hero-18" class="chip px-2.5 py-1 font-medium">۱۸</a>
-      <a href="#hero-19" class="chip px-2.5 py-1 font-medium">۱۹</a>
-      <a href="#hero-20" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">۲۰ پارالاکس</a>
-      <a href="#hero-21" class="chip px-2.5 py-1 font-medium">۲۱</a>
-      <a href="#hero-22" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">۲۲ پارالاکس</a>
-      <a href="#hero-23" class="chip px-2.5 py-1 font-medium">۲۳</a>
-      <a href="#hero-24" class="chip px-2.5 py-1 font-medium">۲۴</a>
-      <a href="#hero-25" class="chip px-2.5 py-1 font-medium">۲۵</a>
-      <a href="#hero-26" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">۲۶ پارالاکس</a>
-      <a href="#hero-27" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">۲۷ پارالاکس</a>
-      <a href="#hero-28" class="chip px-2.5 py-1 font-medium">۲۸</a>
-      <a href="#hero-29" class="chip px-2.5 py-1 font-medium">۲۹</a>
-      <a href="#hero-30" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">۳۰ پارالاکس</a>
-      <a href="#hero-31" class="chip px-2.5 py-1 font-medium">۳۱</a>
-      <a href="#hero-32" class="chip px-2.5 py-1 font-medium">۳۲</a>
-      <a href="#hero-33" class="chip px-2.5 py-1 font-medium">۳۳</a>
-      <a href="#hero-34" class="chip px-2.5 py-1 font-medium">۳۴</a>
-      <a href="#hero-35" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">۳۵ پارالاکس</a>
-      <a href="#hero-36" class="chip px-2.5 py-1 font-medium">۳۶</a>
-      <a href="#hero-37" class="chip px-2.5 py-1 font-medium">۳۷</a>
-      <a href="#hero-38" class="chip px-2.5 py-1 font-medium">۳۸</a>
-      <a href="#hero-39" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">۳۹ پارالاکس</a>
-      <a href="#hero-40" class="chip px-2.5 py-1 font-medium">۴۰</a>
-      <a href="#hero-41" class="chip px-2.5 py-1 font-medium">۴۱</a>
-      <a href="#hero-42" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">۴۲ پارالاکس</a>
-    </div>
+    <ChipGroup
+      locale="fa"
+      mode="links"
+      size="xs"
+      ariaLabel="پرش به نمونه هیرو"
+      items={[
+        { label: "۰۱", href: "#hero-01" },
+        { label: "۰۲", href: "#hero-02" },
+        { label: "۰۳", href: "#hero-03" },
+        { label: "۰۴", href: "#hero-04" },
+        { label: "۰۵", href: "#hero-05" },
+        { label: "۰۶", href: "#hero-06" },
+        { label: "۰۷", href: "#hero-07" },
+        { label: "۰۸", href: "#hero-08" },
+        { label: "۰۹", href: "#hero-09" },
+        { label: "۱۰", href: "#hero-10" },
+        { label: "۱۱", href: "#hero-11" },
+        { label: "۱۲", href: "#hero-12" },
+        { label: "۱۳", href: "#hero-13" },
+        { label: "۱۴ پارالاکس", href: "#hero-14", highlight: true },
+        { label: "۱۵", href: "#hero-15" },
+        { label: "۱۶", href: "#hero-16" },
+        { label: "۱۷", href: "#hero-17" },
+        { label: "۱۸", href: "#hero-18" },
+        { label: "۱۹", href: "#hero-19" },
+        { label: "۲۰ پارالاکس", href: "#hero-20", highlight: true },
+        { label: "۲۱", href: "#hero-21" },
+        { label: "۲۲ پارالاکس", href: "#hero-22", highlight: true },
+        { label: "۲۳", href: "#hero-23" },
+        { label: "۲۴", href: "#hero-24" },
+        { label: "۲۵", href: "#hero-25" },
+        { label: "۲۶ پارالاکس", href: "#hero-26", highlight: true },
+        { label: "۲۷ پارالاکس", href: "#hero-27", highlight: true },
+        { label: "۲۸", href: "#hero-28" },
+        { label: "۲۹", href: "#hero-29" },
+        { label: "۳۰ پارالاکس", href: "#hero-30", highlight: true },
+        { label: "۳۱", href: "#hero-31" },
+        { label: "۳۲", href: "#hero-32" },
+        { label: "۳۳", href: "#hero-33" },
+        { label: "۳۴", href: "#hero-34" },
+        { label: "۳۵ پارالاکس", href: "#hero-35", highlight: true },
+        { label: "۳۶", href: "#hero-36" },
+        { label: "۳۷", href: "#hero-37" },
+        { label: "۳۸", href: "#hero-38" },
+        { label: "۳۹ پارالاکس", href: "#hero-39", highlight: true },
+        { label: "۴۰", href: "#hero-40" },
+        { label: "۴۱", href: "#hero-41" },
+        { label: "۴۲ پارالاکس", href: "#hero-42", highlight: true },
+        { label: "۴۳ مداری RTL", href: "#hero-43", highlight: true }
+      ]}
+    />
+    <Accordion
+      locale="fa"
+      badge="۴۳ هیرو"
+      badgeVariant="primary"
+      title="فهرست ارجاع سریع برای ایجنت هوش مصنوعی (#hero-01 تا #hero-43 · نام کامپوننت و پراپ‌ها)"
+    >
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-start text-xs">
+          <thead>
+            <tr class="border-b border-border bg-surface-hover/50 text-muted">
+              <th scope="col" class="px-3 py-2 text-start font-semibold">شناسه</th>
+              <th scope="col" class="px-3 py-2 text-start font-semibold">کامپوننت</th>
+              <th scope="col" class="px-3 py-2 text-start font-semibold">عنوان الگو</th>
+              <th scope="col" class="px-3 py-2 text-start font-semibold">پراپ‌ها / ویژگی‌ها</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-01" dir="ltr" class="text-primary hover:underline">#hero-01</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۰۱ — هیروی روشن همراه با پس‌زمینه شبکه‌ای (Grid)</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="grid" · surface="subtle"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-02" dir="ltr" class="text-primary hover:underline">#hero-02</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">۰۲ — هیروی تیره مخصوص معرفی عامل‌های هوش مصنوعی</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">surface="hero" · frame="clean"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-03" dir="ltr" class="text-primary hover:underline">#hero-03</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">۰۳ — هیروی دوستونه با شبکه، گرادیان و امتیاز ۵ ستاره</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="grid" · showAvatarGroup</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-04" dir="ltr" class="text-primary hover:underline">#hero-04</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">۰۴ — هیروی دوستونه با تم تیره و کپسول جامعه کاربران</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">surface="hero" · showAvatarPill · secondaryCta.icon</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-05" dir="ltr" class="text-primary hover:underline">#hero-05</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">۰۵ — هیروی مدرن SaaS با گرادیان تیره و داشبورد هاله‌دار</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">cropBottom · glowBehindShowcase · badgeVariant="success"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-06" dir="ltr" class="text-primary hover:underline">#hero-06</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">۰۶ — هیروی دوستونه SaaS همراه با منو و تصویر چسبیده به لبه</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">showPreviewNav · featuresRow · edgeBleedFrame</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-07" dir="ltr" class="text-primary hover:underline">#hero-07</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۰۷ — هیروی مدرن با کادر خط‌چین و ۳ کارت ویژگی</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">framedRails="dashed" · backdrop="dots"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-08" dir="ltr" class="text-primary hover:underline">#hero-08</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۰۸ — هیرو با نوار ناوبری کپسولی و تصویر قوس‌دار</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">previewNavVariant="pill" · bottomImageStyle="arch"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-09" dir="ltr" class="text-primary hover:underline">#hero-09</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۰۹ — هیرو با منوی خط‌دار، برچسب تعاملی و پس‌زمینه گرادیان</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">previewNavVariant="bordered" · backdrop="wash"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-10" dir="ltr" class="text-primary hover:underline">#hero-10</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">۱۰ — هیرو با منوی مینیمال، تیتر گرادیانی و داشبورد</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">showPreviewNav · backdrop="wash" · glowBehindShowcase</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-11" dir="ltr" class="text-primary hover:underline">#hero-11</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">۱۱ — هیروی مدرن پلتفرم با منوی کشویی و تصویر تمام‌عرض</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">previewNavVariant="dropdown" · frame="clean" · cropBottom</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-12" dir="ltr" class="text-primary hover:underline">#hero-12</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">۱۲ — هیرو با باکس پرامپت هوش مصنوعی و ردیف‌های پیشنهادی</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">mode="prompt" · backdrop="dots" · chipLayout="grid"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-13" dir="ltr" class="text-primary hover:underline">#hero-13</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">۱۳ — هیروی قاب‌دار با دکمه انیمیشنی و پیش‌نمایش داشبورد</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">framedRails="solid" · primaryCtaHoverSwap · cropBottom</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-14" dir="ltr" class="text-primary hover:underline">#hero-14</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۱۴ — هیرو با منوی کپسولی و تصویر پس‌زمینه پارالاکس · پارالاکس</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">parallaxImage · parallaxSpeed="medium" · previewNavVariant="pill"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-15" dir="ltr" class="text-primary hover:underline">#hero-15</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۱۵ — هیروی گرادیانی برندهای معتبر با ردیف لوگوها</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="wash" · partnerLogos</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-16" dir="ltr" class="text-primary hover:underline">#hero-16</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۱۶ — هیروی هوش مصنوعی با حلقه‌های مداری تیره (Orbital)</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">surface="hero" · backdrop="orbital"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-17" dir="ltr" class="text-primary hover:underline">#hero-17</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۱۷ — هیروی مداری روشن همراه با منوی خط‌چین بالایی</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">previewNavVariant="dashed" · backdrop="orbital"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-18" dir="ltr" class="text-primary hover:underline">#hero-18</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۱۸ — بافت نویز ملایم (Noise) و تصویر نمایشی گوشه‌گرد</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="noise" · bottomImageStyle="rounded"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-19" dir="ltr" class="text-primary hover:underline">#hero-19</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۱۹ — شبکه مورب مهندسی (Net Grid) و نوار برندها</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="net" · partnerLogos</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-20" dir="ltr" class="text-primary hover:underline">#hero-20</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۲۰ — هیرو با بنر پروموشن بالا و پارالاکس عمیق عکس · پارالاکس</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">topBanner · parallaxImage · parallaxSpeed="deep"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-21" dir="ltr" class="text-primary hover:underline">#hero-21</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">۲۱ — هیروی تیره شبکه‌ای با کپسول آواتار و قاب قوس‌دار</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">surface="hero" · showAvatarPill · bottomImageStyle="arch"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-22" dir="ltr" class="text-primary hover:underline">#hero-22</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">۲۲ — داشبورد مدرن روی پس‌زمینه تیره پارالاکس · پارالاکس</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">parallaxImage · parallaxOverlay="dark" · cropBottom</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-23" dir="ltr" class="text-primary hover:underline">#hero-23</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">۲۳ — نمایش نظرات ۵ ستاره کاربران روی بافت نویز</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">showAvatarGroup · backdrop="noise" · frame="clean"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-24" dir="ltr" class="text-primary hover:underline">#hero-24</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">۲۴ — هیروی عملکرد وب‌سایت با نوار شاخص‌های کلیدی (KPI)</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="orbital" · metricsStrip · cropBottom</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-25" dir="ltr" class="text-primary hover:underline">#hero-25</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">۲۵ — رابط پرسرعت با شبکه مورب و نوار ناوبری کپسولی</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="net" · previewNavVariant="pill" · metricsStrip</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-26" dir="ltr" class="text-primary hover:underline">#hero-26</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">۲۶ — داشبورد SaaS با بنر بالا و پارالاکس ملایم تصویر · پارالاکس</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">topBanner · parallaxImage · primaryCtaHoverSwap</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-27" dir="ltr" class="text-primary hover:underline">#hero-27</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">۲۷ — هیروی دوستونه گرادیانی با پس‌زمینه پارالاکس · پارالاکس</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">parallaxImage · parallaxOverlay="gradient" · showPreviewNav</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-28" dir="ltr" class="text-primary hover:underline">#hero-28</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">۲۸ — هیروی مشاوره و مالی با کارت‌های آمار شناور روی عکس</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="wash" · mediaStatsOverlay</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-29" dir="ltr" class="text-primary hover:underline">#hero-29</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">۲۹ — چیدمان معکوس منطقی (ستون تصویر در ابتدا) با شبکه مورب</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">flipColumns · backdrop="net" · showAvatarGroup</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-30" dir="ltr" class="text-primary hover:underline">#hero-30</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">۳۰ — خبرنامه و تصویر عمودی با پارالاکس عمیق پس‌زمینه · پارالاکس</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">parallaxImage · showInlineSubscribe · parallaxSpeed="deep"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-31" dir="ltr" class="text-primary hover:underline">#hero-31</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">۳۱ — هیروی شبکه‌ای با فرم اشتراک درون‌خطی و تصویر چسبیده به لبه</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="grid" · showInlineSubscribe · edgeBleedFrame</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-32" dir="ltr" class="text-primary hover:underline">#hero-32</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">۳۲ — هیروی تیره پروفایل و تولیدکنندگان محتوا با نشان‌های شناور</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">surface="hero" · flipColumns · mediaStatsOverlay</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-33" dir="ltr" class="text-primary hover:underline">#hero-33</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">۳۳ — هیروی راهکارهای سازمانی با منوی خط‌چین و ۳ شاخص</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">previewNavVariant="dashed" · backdrop="dots" · featuresRow</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-34" dir="ltr" class="text-primary hover:underline">#hero-34</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">۳۴ — باکس فضای کاری هوشمند با کادر خط‌چین و چیپ‌های کپسولی</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">framedRails="dashed" · backdrop="wash" · chipLayout="pills"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-35" dir="ltr" class="text-primary hover:underline">#hero-35</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">۳۵ — هیروی پیام هوشمند تیره روی پس‌زمینه پارالاکس · پارالاکس</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">parallaxImage · mode="prompt" · previewNavVariant="pill"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-36" dir="ltr" class="text-primary hover:underline">#hero-36</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">۳۶ — باکس جستجوی کپسولی با بافت نویز و منوی خط‌دار</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">mode="search" · backdrop="noise" · previewNavVariant="bordered"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-37" dir="ltr" class="text-primary hover:underline">#hero-37</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">۳۷ — جستجوی دایرکتوری مداری (Orbital) همراه با نوار لوگوها</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">mode="search" · backdrop="orbital" · partnerLogos</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-38" dir="ltr" class="text-primary hover:underline">#hero-38</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">۳۸ — باکس تولید کد با تب‌های انتخاب استک فنی</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">mode="code" · stackTabs · surface="hero"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-39" dir="ltr" class="text-primary hover:underline">#hero-39</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCommandCli /&gt;</td>
+            <td class="px-3 py-2 text-fg">۳۹ — ترمینال CLI و کپی دستور روی پس‌زمینه پارالاکس عمیق · پارالاکس</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">HeroCommandCli · parallaxImage · showPreviewNav</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-40" dir="ltr" class="text-primary hover:underline">#hero-40</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">۴۰ — کپسول عضویت خبرنامه و لیست انتظار انتشار</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">HeroInteractivePrompt mode="newsletter"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-41" dir="ltr" class="text-primary hover:underline">#hero-41</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroProofMarquee /&gt;</td>
+            <td class="px-3 py-2 text-fg">۴۱ — امتیاز ۵ ستاره و کاروسل پیوسته همکاران با Embla</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">HeroProofMarquee · Embla AutoScroll · backdrop="dots"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-42" dir="ltr" class="text-primary hover:underline">#hero-42</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroProofMarquee /&gt;</td>
+            <td class="px-3 py-2 text-fg">۴۲ — نوار متحرک برندها با کادر خط‌چین و پس‌زمینه پارالاکس · پارالاکس</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">HeroProofMarquee · parallaxImage · framedRails="dashed"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-43" dir="ltr" class="text-primary hover:underline">#hero-43</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroFloatingOrbSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">۴۳ — هیروی مداری دو‌ستونه با کارت‌های شناور، امتیاز ستاره و نوار همکاران (الگوی ایده پردازان نیک آوا)</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="dots" · topCard · progressCard · bottomCard · partnerLogos</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </Accordion>
   </div>
 </PageSection>
 
@@ -156,14 +453,16 @@ import heroPhoto from './herosections.jpg';
 />`}
   >
     <div class="space-y-12">
-      <div id="hero-01" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۰۱ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۰۱ — هیروی روشن همراه با پس‌زمینه شبکه‌ای (Grid)</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="grid" · surface="subtle"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-01"
+        index="۰۱"
+        total="۴۳"
+        locale="fa"
+        title="۰۱ — هیروی روشن همراه با پس‌زمینه شبکه‌ای (Grid)"
+        component="HeroCenteredEditorial"
+        propsSummary={"backdrop=\"grid\" · surface=\"subtle\""}
+        agentRef={"Hero #01 (#hero-01) — <HeroCenteredEditorial backdrop=\"grid\" surface=\"subtle\" />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           surface="subtle"
@@ -182,16 +481,18 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "شروع سریع", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
           secondaryCta={{ label: "بیشتر بدانید", href: "/fa/قیمت‌گذاری/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-07" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۰۷ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۰۷ — هیروی مدرن با کادر خط‌چین و ۳ کارت ویژگی</p>
-          </div>
-          <span class="text-xs text-muted">framedRails="dashed" · backdrop="dots"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-07"
+        index="۰۷"
+        total="۴۳"
+        locale="fa"
+        title="۰۷ — هیروی مدرن با کادر خط‌چین و ۳ کارت ویژگی"
+        component="HeroCenteredEditorial"
+        propsSummary={"framedRails=\"dashed\" · backdrop=\"dots\""}
+        agentRef={"Hero #07 (#hero-07) — <HeroCenteredEditorial framedRails=\"dashed\" backdrop=\"dots\" />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           surface="default"
@@ -216,16 +517,18 @@ import heroPhoto from './herosections.jpg';
             { icon: "users", title: "ساختار مناسب تیم‌ها", description: "جداسازی پوشه client از هسته، شخصی‌سازی‌ها را در بروزرسانی‌ها حفظ می‌کند." }
           ]}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-08" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۰۸ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۰۸ — هیرو با نوار ناوبری کپسولی و تصویر قوس‌دار</p>
-          </div>
-          <span class="text-xs text-muted">previewNavVariant="pill" · bottomImageStyle="arch"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-08"
+        index="۰۸"
+        total="۴۳"
+        locale="fa"
+        title="۰۸ — هیرو با نوار ناوبری کپسولی و تصویر قوس‌دار"
+        component="HeroCenteredEditorial"
+        propsSummary={"previewNavVariant=\"pill\" · bottomImageStyle=\"arch\""}
+        agentRef={"Hero #08 (#hero-08) — <HeroCenteredEditorial previewNavVariant=\"pill\" bottomImageStyle=\"arch\" />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           surface="subtle"
@@ -249,16 +552,18 @@ import heroPhoto from './herosections.jpg';
           bottomImageAlt="نمای استودیو درون قاب قوس‌دار پایین هیرو"
           bottomImageStyle="arch"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-09" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۰۹ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۰۹ — هیرو با منوی خط‌دار، برچسب تعاملی و پس‌زمینه گرادیان</p>
-          </div>
-          <span class="text-xs text-muted">previewNavVariant="bordered" · backdrop="wash"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-09"
+        index="۰۹"
+        total="۴۳"
+        locale="fa"
+        title="۰۹ — هیرو با منوی خط‌دار، برچسب تعاملی و پس‌زمینه گرادیان"
+        component="HeroCenteredEditorial"
+        propsSummary={"previewNavVariant=\"bordered\" · backdrop=\"wash\""}
+        agentRef={"Hero #09 (#hero-09) — <HeroCenteredEditorial previewNavVariant=\"bordered\" backdrop=\"wash\" />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           surface="surface"
@@ -280,17 +585,19 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "شروع کنید", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
           secondaryCta={{ label: "رزرو دمو", href: "/fa/تماس/", variant: "ghost", icon: "arrow-right" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-14" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۱۴ / ۴۲" variant="primary" size="sm" />
-            <UiBadge label="پارالاکس" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">۱۴ — هیرو با منوی کپسولی و تصویر پس‌زمینه پارالاکس</p>
-          </div>
-          <span class="text-xs text-muted">parallaxImage · parallaxSpeed="medium" · previewNavVariant="pill"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-14"
+        index="۱۴"
+        total="۴۳"
+        locale="fa"
+        title="۱۴ — هیرو با منوی کپسولی و تصویر پس‌زمینه پارالاکس"
+        component="HeroCenteredEditorial"
+        propsSummary={"parallaxImage · parallaxSpeed=\"medium\" · previewNavVariant=\"pill\""}
+        parallax
+        agentRef={"Hero #14 (#hero-14) — <HeroCenteredEditorial parallaxImage parallaxSpeed=\"medium\" previewNavVariant=\"pill\" />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           parallaxImage={heroVisual}
@@ -314,16 +621,18 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "شروع پروژه", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
           secondaryCta={{ label: "مشاهده تعرفه‌ها", href: "/fa/قیمت‌گذاری/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-15" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۱۵ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۱۵ — هیروی گرادیانی برندهای معتبر با ردیف لوگوها</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="wash" · partnerLogos</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-15"
+        index="۱۵"
+        total="۴۳"
+        locale="fa"
+        title="۱۵ — هیروی گرادیانی برندهای معتبر با ردیف لوگوها"
+        component="HeroCenteredEditorial"
+        propsSummary={"backdrop=\"wash\" · partnerLogos"}
+        agentRef={"Hero #15 (#hero-15) — <HeroCenteredEditorial backdrop=\"wash\" partnerLogos />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           surface="subtle"
@@ -344,16 +653,18 @@ import heroPhoto from './herosections.jpg';
             { icon: "compass", name: "وی‌پوینت" }
           ]}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-16" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۱۶ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۱۶ — هیروی هوش مصنوعی با حلقه‌های مداری تیره (Orbital)</p>
-          </div>
-          <span class="text-xs text-muted">surface="hero" · backdrop="orbital"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-16"
+        index="۱۶"
+        total="۴۳"
+        locale="fa"
+        title="۱۶ — هیروی هوش مصنوعی با حلقه‌های مداری تیره (Orbital)"
+        component="HeroCenteredEditorial"
+        propsSummary={"surface=\"hero\" · backdrop=\"orbital\""}
+        agentRef={"Hero #16 (#hero-16) — <HeroCenteredEditorial surface=\"hero\" backdrop=\"orbital\" />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           surface="hero"
@@ -372,16 +683,18 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "بررسی قابلیت‌ها", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
           secondaryCta={{ label: "مشاوره معماری", href: "/fa/تماس/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-17" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۱۷ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۱۷ — هیروی مداری روشن همراه با منوی خط‌چین بالایی</p>
-          </div>
-          <span class="text-xs text-muted">previewNavVariant="dashed" · backdrop="orbital"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-17"
+        index="۱۷"
+        total="۴۳"
+        locale="fa"
+        title="۱۷ — هیروی مداری روشن همراه با منوی خط‌چین بالایی"
+        component="HeroCenteredEditorial"
+        propsSummary={"previewNavVariant=\"dashed\" · backdrop=\"orbital\""}
+        agentRef={"Hero #17 (#hero-17) — <HeroCenteredEditorial previewNavVariant=\"dashed\" backdrop=\"orbital\" />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           surface="default"
@@ -398,16 +711,18 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "شروع کنید", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
           secondaryCta={{ label: "مستندات", href: "/fa/کامپوننت‌ها/", variant: "ghost" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-18" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۱۸ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۱۸ — بافت نویز ملایم (Noise) و تصویر نمایشی گوشه‌گرد</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="noise" · bottomImageStyle="rounded"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-18"
+        index="۱۸"
+        total="۴۳"
+        locale="fa"
+        title="۱۸ — بافت نویز ملایم (Noise) و تصویر نمایشی گوشه‌گرد"
+        component="HeroCenteredEditorial"
+        propsSummary={"backdrop=\"noise\" · bottomImageStyle=\"rounded\""}
+        agentRef={"Hero #18 (#hero-18) — <HeroCenteredEditorial backdrop=\"noise\" bottomImageStyle=\"rounded\" />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           surface="subtle"
@@ -428,16 +743,18 @@ import heroPhoto from './herosections.jpg';
           bottomImageAlt="تصویر عریض محیط کاری روی پس‌زمینه بافت نویز"
           bottomImageStyle="rounded"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-19" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۱۹ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۱۹ — شبکه مورب مهندسی (Net Grid) و نوار برندها</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="net" · partnerLogos</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-19"
+        index="۱۹"
+        total="۴۳"
+        locale="fa"
+        title="۱۹ — شبکه مورب مهندسی (Net Grid) و نوار برندها"
+        component="HeroCenteredEditorial"
+        propsSummary={"backdrop=\"net\" · partnerLogos"}
+        agentRef={"Hero #19 (#hero-19) — <HeroCenteredEditorial backdrop=\"net\" partnerLogos />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           surface="surface"
@@ -457,17 +774,19 @@ import heroPhoto from './herosections.jpg';
             { icon: "search", name: "PAGEFIND RTL" }
           ]}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-20" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۲۰ / ۴۲" variant="primary" size="sm" />
-            <UiBadge label="پارالاکس" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">۲۰ — هیرو با بنر پروموشن بالا و پارالاکس عمیق عکس</p>
-          </div>
-          <span class="text-xs text-muted">topBanner · parallaxImage · parallaxSpeed="deep"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-20"
+        index="۲۰"
+        total="۴۳"
+        locale="fa"
+        title="۲۰ — هیرو با بنر پروموشن بالا و پارالاکس عمیق عکس"
+        component="HeroCenteredEditorial"
+        propsSummary={"topBanner · parallaxImage · parallaxSpeed=\"deep\""}
+        parallax
+        agentRef={"Hero #20 (#hero-20) — <HeroCenteredEditorial topBanner parallaxImage parallaxSpeed=\"deep\" />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           parallaxImage={hqVisual}
@@ -488,16 +807,18 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "دریافت استارتر", href: "/fa/قیمت‌گذاری/", icon: "arrow-right" }}
           secondaryCta={{ label: "نمونه کارها", href: "/fa/projects/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-21" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۲۱ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۲۱ — هیروی تیره شبکه‌ای با کپسول آواتار و قاب قوس‌دار</p>
-          </div>
-          <span class="text-xs text-muted">surface="hero" · showAvatarPill · bottomImageStyle="arch"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-21"
+        index="۲۱"
+        total="۴۳"
+        locale="fa"
+        title="۲۱ — هیروی تیره شبکه‌ای با کپسول آواتار و قاب قوس‌دار"
+        component="HeroCenteredEditorial"
+        propsSummary={"surface=\"hero\" · showAvatarPill · bottomImageStyle=\"arch\""}
+        agentRef={"Hero #21 (#hero-21) — <HeroCenteredEditorial surface=\"hero\" showAvatarPill bottomImageStyle=\"arch\" />"}
+      >
         <HeroCenteredEditorial
           locale="fa"
           surface="hero"
@@ -516,7 +837,7 @@ import heroPhoto from './herosections.jpg';
           bottomImageAlt="پیش‌نمایش قوس‌دار استودیو در بخش پایینی هیروی تیره"
           bottomImageStyle="arch"
         />
-      </div>
+      </HeroShowcaseCard>
     </div>
   </ComponentDoc>
 
@@ -549,14 +870,16 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
 />`}
   >
     <div class="space-y-12">
-      <div id="hero-02" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۰۲ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۰۲ — هیروی تیره مخصوص معرفی عامل‌های هوش مصنوعی</p>
-          </div>
-          <span class="text-xs text-muted">surface="hero" · frame="clean"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-02"
+        index="۰۲"
+        total="۴۳"
+        locale="fa"
+        title="۰۲ — هیروی تیره مخصوص معرفی عامل‌های هوش مصنوعی"
+        component="HeroDashboardShowcase"
+        propsSummary={"surface=\"hero\" · frame=\"clean\""}
+        agentRef={"Hero #02 (#hero-02) — <HeroDashboardShowcase surface=\"hero\" frame=\"clean\" />"}
+      >
         <HeroDashboardShowcase
           locale="fa"
           surface="hero"
@@ -577,16 +900,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           image={heroVisual}
           imageAlt="پیش‌نمایش رابط سیستم هوشمند درون هیروی تیره"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-05" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۰۵ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۰۵ — هیروی مدرن SaaS با گرادیان تیره و داشبورد هاله‌دار</p>
-          </div>
-          <span class="text-xs text-muted">cropBottom · glowBehindShowcase · badgeVariant="success"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-05"
+        index="۰۵"
+        total="۴۳"
+        locale="fa"
+        title="۰۵ — هیروی مدرن SaaS با گرادیان تیره و داشبورد هاله‌دار"
+        component="HeroDashboardShowcase"
+        propsSummary={"cropBottom · glowBehindShowcase · badgeVariant=\"success\""}
+        agentRef={"Hero #05 (#hero-05) — <HeroDashboardShowcase cropBottom glowBehindShowcase badgeVariant=\"success\" />"}
+      >
         <HeroDashboardShowcase
           locale="fa"
           surface="hero"
@@ -607,16 +932,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "شروع دوره آزمایشی", href: "/fa/قیمت‌گذاری/", icon: "arrow-right" }}
           secondaryCta={{ label: "رزرو دمو", href: "/fa/تماس/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-10" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۱۰ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۱۰ — هیرو با منوی مینیمال، تیتر گرادیانی و داشبورد</p>
-          </div>
-          <span class="text-xs text-muted">showPreviewNav · backdrop="wash" · glowBehindShowcase</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-10"
+        index="۱۰"
+        total="۴۳"
+        locale="fa"
+        title="۱۰ — هیرو با منوی مینیمال، تیتر گرادیانی و داشبورد"
+        component="HeroDashboardShowcase"
+        propsSummary={"showPreviewNav · backdrop=\"wash\" · glowBehindShowcase"}
+        agentRef={"Hero #10 (#hero-10) — <HeroDashboardShowcase showPreviewNav backdrop=\"wash\" glowBehindShowcase />"}
+      >
         <HeroDashboardShowcase
           locale="fa"
           surface="subtle"
@@ -638,16 +965,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "شروع کنید", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
           secondaryCta={{ label: "قابلیت‌های هوشمند", href: "/fa/ویژگی‌ها/", icon: "sparkles" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-11" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۱۱ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۱۱ — هیروی مدرن پلتفرم با منوی کشویی و تصویر تمام‌عرض</p>
-          </div>
-          <span class="text-xs text-muted">previewNavVariant="dropdown" · frame="clean" · cropBottom</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-11"
+        index="۱۱"
+        total="۴۳"
+        locale="fa"
+        title="۱۱ — هیروی مدرن پلتفرم با منوی کشویی و تصویر تمام‌عرض"
+        component="HeroDashboardShowcase"
+        propsSummary={"previewNavVariant=\"dropdown\" · frame=\"clean\" · cropBottom"}
+        agentRef={"Hero #11 (#hero-11) — <HeroDashboardShowcase previewNavVariant=\"dropdown\" frame=\"clean\" cropBottom />"}
+      >
         <HeroDashboardShowcase
           locale="fa"
           surface="default"
@@ -673,16 +1002,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           image={auditVisual}
           imageAlt="داشبورد مهندسی درون قاب تمام‌عرض پایین هیرو"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-13" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۱۳ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۱۳ — هیروی قاب‌دار با دکمه انیمیشنی و پیش‌نمایش داشبورد</p>
-          </div>
-          <span class="text-xs text-muted">framedRails="solid" · primaryCtaHoverSwap · cropBottom</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-13"
+        index="۱۳"
+        total="۴۳"
+        locale="fa"
+        title="۱۳ — هیروی قاب‌دار با دکمه انیمیشنی و پیش‌نمایش داشبورد"
+        component="HeroDashboardShowcase"
+        propsSummary={"framedRails=\"solid\" · primaryCtaHoverSwap · cropBottom"}
+        agentRef={"Hero #13 (#hero-13) — <HeroDashboardShowcase framedRails=\"solid\" primaryCtaHoverSwap cropBottom />"}
+      >
         <HeroDashboardShowcase
           locale="fa"
           surface="default"
@@ -706,17 +1037,19 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "شروع کنید", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
           secondaryCta={{ label: "مرور مستندات", href: "/fa/کامپوننت‌ها/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-22" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۲۲ / ۴۲" variant="primary" size="sm" />
-            <UiBadge label="پارالاکس" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">۲۲ — داشبورد مدرن روی پس‌زمینه تیره پارالاکس</p>
-          </div>
-          <span class="text-xs text-muted">parallaxImage · parallaxOverlay="dark" · cropBottom</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-22"
+        index="۲۲"
+        total="۴۳"
+        locale="fa"
+        title="۲۲ — داشبورد مدرن روی پس‌زمینه تیره پارالاکس"
+        component="HeroDashboardShowcase"
+        propsSummary={"parallaxImage · parallaxOverlay=\"dark\" · cropBottom"}
+        parallax
+        agentRef={"Hero #22 (#hero-22) — <HeroDashboardShowcase parallaxImage parallaxOverlay=\"dark\" cropBottom />"}
+      >
         <HeroDashboardShowcase
           locale="fa"
           parallaxImage={auditVisual}
@@ -734,16 +1067,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "بررسی شاخص‌ها", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
           secondaryCta={{ label: "درخواست دمو", href: "/fa/تماس/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-23" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۲۳ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۲۳ — نمایش نظرات ۵ ستاره کاربران روی بافت نویز</p>
-          </div>
-          <span class="text-xs text-muted">showAvatarGroup · backdrop="noise" · frame="clean"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-23"
+        index="۲۳"
+        total="۴۳"
+        locale="fa"
+        title="۲۳ — نمایش نظرات ۵ ستاره کاربران روی بافت نویز"
+        component="HeroDashboardShowcase"
+        propsSummary={"showAvatarGroup · backdrop=\"noise\" · frame=\"clean\""}
+        agentRef={"Hero #23 (#hero-23) — <HeroDashboardShowcase showAvatarGroup backdrop=\"noise\" frame=\"clean\" />"}
+      >
         <HeroDashboardShowcase
           locale="fa"
           surface="subtle"
@@ -764,16 +1099,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           image={trustVisual}
           imageAlt="نشان کیفیت درون قاب نمایش تمیز"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-24" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۲۴ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۲۴ — هیروی عملکرد وب‌سایت با نوار شاخص‌های کلیدی (KPI)</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="orbital" · metricsStrip · cropBottom</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-24"
+        index="۲۴"
+        total="۴۳"
+        locale="fa"
+        title="۲۴ — هیروی عملکرد وب‌سایت با نوار شاخص‌های کلیدی (KPI)"
+        component="HeroDashboardShowcase"
+        propsSummary={"backdrop=\"orbital\" · metricsStrip · cropBottom"}
+        agentRef={"Hero #24 (#hero-24) — <HeroDashboardShowcase backdrop=\"orbital\" metricsStrip cropBottom />"}
+      >
         <HeroDashboardShowcase
           locale="fa"
           surface="hero"
@@ -794,16 +1131,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "اجرای بنچمارک", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
           secondaryCta={{ label: "مشاهده تعرفه‌ها", href: "/fa/قیمت‌گذاری/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-25" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۲۵ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۲۵ — رابط پرسرعت با شبکه مورب و نوار ناوبری کپسولی</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="net" · previewNavVariant="pill" · metricsStrip</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-25"
+        index="۲۵"
+        total="۴۳"
+        locale="fa"
+        title="۲۵ — رابط پرسرعت با شبکه مورب و نوار ناوبری کپسولی"
+        component="HeroDashboardShowcase"
+        propsSummary={"backdrop=\"net\" · previewNavVariant=\"pill\" · metricsStrip"}
+        agentRef={"Hero #25 (#hero-25) — <HeroDashboardShowcase backdrop=\"net\" previewNavVariant=\"pill\" metricsStrip />"}
+      >
         <HeroDashboardShowcase
           locale="fa"
           surface="surface"
@@ -828,17 +1167,19 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           image={hqVisual}
           imageAlt="نمای استودیو مهندسی درون قاب پنجره مرورگر"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-26" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۲۶ / ۴۲" variant="primary" size="sm" />
-            <UiBadge label="پارالاکس" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">۲۶ — داشبورد SaaS با بنر بالا و پارالاکس ملایم تصویر</p>
-          </div>
-          <span class="text-xs text-muted">topBanner · parallaxImage · primaryCtaHoverSwap</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-26"
+        index="۲۶"
+        total="۴۳"
+        locale="fa"
+        title="۲۶ — داشبورد SaaS با بنر بالا و پارالاکس ملایم تصویر"
+        component="HeroDashboardShowcase"
+        propsSummary={"topBanner · parallaxImage · primaryCtaHoverSwap"}
+        parallax
+        agentRef={"Hero #26 (#hero-26) — <HeroDashboardShowcase topBanner parallaxImage primaryCtaHoverSwap />"}
+      >
         <HeroDashboardShowcase
           locale="fa"
           parallaxImage={hero0Visual}
@@ -862,7 +1203,7 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "شروع کنید", href: "/fa/ویژگی‌ها/", icon: "arrow-right" }}
           secondaryCta={{ label: "تماس با فروش", href: "/fa/تماس/" }}
         />
-      </div>
+      </HeroShowcaseCard>
     </div>
   </ComponentDoc>
 
@@ -890,14 +1231,16 @@ import showcaseImg from './herosections.jpg';
 />`}
   >
     <div class="space-y-12">
-      <div id="hero-03" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۰۳ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۰۳ — هیروی دوستونه با شبکه، گرادیان و امتیاز ۵ ستاره</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="grid" · showAvatarGroup</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-03"
+        index="۰۳"
+        total="۴۳"
+        locale="fa"
+        title="۰۳ — هیروی دوستونه با شبکه، گرادیان و امتیاز ۵ ستاره"
+        component="LandingHeroSplit"
+        propsSummary={"backdrop=\"grid\" · showAvatarGroup"}
+        agentRef={"Hero #03 (#hero-03) — <LandingHeroSplit backdrop=\"grid\" showAvatarGroup />"}
+      >
         <LandingHeroSplit
           locale="fa"
           surface="subtle"
@@ -917,16 +1260,18 @@ import showcaseImg from './herosections.jpg';
           image={auditVisual}
           imageAlt="پیش‌نمایش فضای کاری مهندسی در چیدمان دوستونه"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-04" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۰۴ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۰۴ — هیروی دوستونه با تم تیره و کپسول جامعه کاربران</p>
-          </div>
-          <span class="text-xs text-muted">surface="hero" · showAvatarPill · secondaryCta.icon</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-04"
+        index="۰۴"
+        total="۴۳"
+        locale="fa"
+        title="۰۴ — هیروی دوستونه با تم تیره و کپسول جامعه کاربران"
+        component="LandingHeroSplit"
+        propsSummary={"surface=\"hero\" · showAvatarPill · secondaryCta.icon"}
+        agentRef={"Hero #04 (#hero-04) — <LandingHeroSplit surface=\"hero\" showAvatarPill secondaryCta.icon />"}
+      >
         <LandingHeroSplit
           locale="fa"
           surface="hero"
@@ -946,16 +1291,18 @@ import showcaseImg from './herosections.jpg';
           image={hqVisual}
           imageAlt="تصویر معماری در ستون کناری هیروی تیره"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-06" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۰۶ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۰۶ — هیروی دوستونه SaaS همراه با منو و تصویر چسبیده به لبه</p>
-          </div>
-          <span class="text-xs text-muted">showPreviewNav · featuresRow · edgeBleedFrame</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-06"
+        index="۰۶"
+        total="۴۳"
+        locale="fa"
+        title="۰۶ — هیروی دوستونه SaaS همراه با منو و تصویر چسبیده به لبه"
+        component="LandingHeroSplit"
+        propsSummary={"showPreviewNav · featuresRow · edgeBleedFrame"}
+        agentRef={"Hero #06 (#hero-06) — <LandingHeroSplit showPreviewNav featuresRow edgeBleedFrame />"}
+      >
         <LandingHeroSplit
           locale="fa"
           surface="surface"
@@ -986,17 +1333,19 @@ import showcaseImg from './herosections.jpg';
           image={heroVisual}
           imageAlt="قاب تصویر متمایل به لبه پایانی کانتینر"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-27" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۲۷ / ۴۲" variant="primary" size="sm" />
-            <UiBadge label="پارالاکس" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">۲۷ — هیروی دوستونه گرادیانی با پس‌زمینه پارالاکس</p>
-          </div>
-          <span class="text-xs text-muted">parallaxImage · parallaxOverlay="gradient" · showPreviewNav</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-27"
+        index="۲۷"
+        total="۴۳"
+        locale="fa"
+        title="۲۷ — هیروی دوستونه گرادیانی با پس‌زمینه پارالاکس"
+        component="LandingHeroSplit"
+        propsSummary={"parallaxImage · parallaxOverlay=\"gradient\" · showPreviewNav"}
+        parallax
+        agentRef={"Hero #27 (#hero-27) — <LandingHeroSplit parallaxImage parallaxOverlay=\"gradient\" showPreviewNav />"}
+      >
         <LandingHeroSplit
           locale="fa"
           parallaxImage={hqVisual}
@@ -1018,16 +1367,18 @@ import showcaseImg from './herosections.jpg';
           image={auditVisual}
           imageAlt="تصویر برجسته در چیدمان دوستونه روی پس‌زمینه پارالاکس"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-28" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۲۸ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۲۸ — هیروی مشاوره و مالی با کارت‌های آمار شناور روی عکس</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="wash" · mediaStatsOverlay</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-28"
+        index="۲۸"
+        total="۴۳"
+        locale="fa"
+        title="۲۸ — هیروی مشاوره و مالی با کارت‌های آمار شناور روی عکس"
+        component="LandingHeroSplit"
+        propsSummary={"backdrop=\"wash\" · mediaStatsOverlay"}
+        agentRef={"Hero #28 (#hero-28) — <LandingHeroSplit backdrop=\"wash\" mediaStatsOverlay />"}
+      >
         <LandingHeroSplit
           locale="fa"
           surface="subtle"
@@ -1048,16 +1399,18 @@ import showcaseImg from './herosections.jpg';
           image={trustVisual}
           imageAlt="نشان اعتماد همراه با کارت‌های شیشه‌ای شاخص"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-29" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۲۹ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۲۹ — چیدمان معکوس منطقی (ستون تصویر در ابتدا) با شبکه مورب</p>
-          </div>
-          <span class="text-xs text-muted">flipColumns · backdrop="net" · showAvatarGroup</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-29"
+        index="۲۹"
+        total="۴۳"
+        locale="fa"
+        title="۲۹ — چیدمان معکوس منطقی (ستون تصویر در ابتدا) با شبکه مورب"
+        component="LandingHeroSplit"
+        propsSummary={"flipColumns · backdrop=\"net\" · showAvatarGroup"}
+        agentRef={"Hero #29 (#hero-29) — <LandingHeroSplit flipColumns backdrop=\"net\" showAvatarGroup />"}
+      >
         <LandingHeroSplit
           locale="fa"
           surface="default"
@@ -1078,17 +1431,19 @@ import showcaseImg from './herosections.jpg';
           image={auditVisual}
           imageAlt="ستون تصویر جابه‌جاشده روی پس‌زمینه شبکه مورب"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-30" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۳۰ / ۴۲" variant="primary" size="sm" />
-            <UiBadge label="پارالاکس" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">۳۰ — خبرنامه و تصویر عمودی با پارالاکس عمیق پس‌زمینه</p>
-          </div>
-          <span class="text-xs text-muted">parallaxImage · showInlineSubscribe · parallaxSpeed="deep"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-30"
+        index="۳۰"
+        total="۴۳"
+        locale="fa"
+        title="۳۰ — خبرنامه و تصویر عمودی با پارالاکس عمیق پس‌زمینه"
+        component="LandingHeroSplit"
+        propsSummary={"parallaxImage · showInlineSubscribe · parallaxSpeed=\"deep\""}
+        parallax
+        agentRef={"Hero #30 (#hero-30) — <LandingHeroSplit parallaxImage showInlineSubscribe parallaxSpeed=\"deep\" />"}
+      >
         <LandingHeroSplit
           locale="fa"
           parallaxImage={hero0Visual}
@@ -1106,16 +1461,18 @@ import showcaseImg from './herosections.jpg';
           image={hqVisual}
           imageAlt="تصویر استودیو در هیروی دوستونه خبرنامه"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-31" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۳۱ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۳۱ — هیروی شبکه‌ای با فرم اشتراک درون‌خطی و تصویر چسبیده به لبه</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="grid" · showInlineSubscribe · edgeBleedFrame</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-31"
+        index="۳۱"
+        total="۴۳"
+        locale="fa"
+        title="۳۱ — هیروی شبکه‌ای با فرم اشتراک درون‌خطی و تصویر چسبیده به لبه"
+        component="LandingHeroSplit"
+        propsSummary={"backdrop=\"grid\" · showInlineSubscribe · edgeBleedFrame"}
+        agentRef={"Hero #31 (#hero-31) — <LandingHeroSplit backdrop=\"grid\" showInlineSubscribe edgeBleedFrame />"}
+      >
         <LandingHeroSplit
           locale="fa"
           surface="surface"
@@ -1132,16 +1489,18 @@ import showcaseImg from './herosections.jpg';
           image={heroVisual}
           imageAlt="قاب نمایش محصول چسبیده به لبه در کنار فرم اشتراک"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-32" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۳۲ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۳۲ — هیروی تیره پروفایل و تولیدکنندگان محتوا با نشان‌های شناور</p>
-          </div>
-          <span class="text-xs text-muted">surface="hero" · flipColumns · mediaStatsOverlay</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-32"
+        index="۳۲"
+        total="۴۳"
+        locale="fa"
+        title="۳۲ — هیروی تیره پروفایل و تولیدکنندگان محتوا با نشان‌های شناور"
+        component="LandingHeroSplit"
+        propsSummary={"surface=\"hero\" · flipColumns · mediaStatsOverlay"}
+        agentRef={"Hero #32 (#hero-32) — <LandingHeroSplit surface=\"hero\" flipColumns mediaStatsOverlay />"}
+      >
         <LandingHeroSplit
           locale="fa"
           surface="hero"
@@ -1163,16 +1522,18 @@ import showcaseImg from './herosections.jpg';
           image={trustVisual}
           imageAlt="نشان پروفایل با کارت‌های شیشه‌ای آمار تعامل"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-33" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۳۳ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۳۳ — هیروی راهکارهای سازمانی با منوی خط‌چین و ۳ شاخص</p>
-          </div>
-          <span class="text-xs text-muted">previewNavVariant="dashed" · backdrop="dots" · featuresRow</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-33"
+        index="۳۳"
+        total="۴۳"
+        locale="fa"
+        title="۳۳ — هیروی راهکارهای سازمانی با منوی خط‌چین و ۳ شاخص"
+        component="LandingHeroSplit"
+        propsSummary={"previewNavVariant=\"dashed\" · backdrop=\"dots\" · featuresRow"}
+        agentRef={"Hero #33 (#hero-33) — <LandingHeroSplit previewNavVariant=\"dashed\" backdrop=\"dots\" featuresRow />"}
+      >
         <LandingHeroSplit
           locale="fa"
           surface="subtle"
@@ -1202,7 +1563,7 @@ import showcaseImg from './herosections.jpg';
           image={auditVisual}
           imageAlt="کنسول مهندسی سازمانی در چیدمان دوستونه"
         />
-      </div>
+      </HeroShowcaseCard>
     </div>
   </ComponentDoc>
 
@@ -1228,14 +1589,16 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
 <HeroProofMarquee parallaxImage={bgPhoto} framedRails="dashed" />`}
   >
     <div class="space-y-12">
-      <div id="hero-12" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۱۲ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۱۲ — هیرو با باکس پرامپت هوش مصنوعی و ردیف‌های پیشنهادی</p>
-          </div>
-          <span class="text-xs text-muted">mode="prompt" · backdrop="dots" · chipLayout="grid"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-12"
+        index="۱۲"
+        total="۴۳"
+        locale="fa"
+        title="۱۲ — هیرو با باکس پرامپت هوش مصنوعی و ردیف‌های پیشنهادی"
+        component="HeroInteractivePrompt"
+        propsSummary={"mode=\"prompt\" · backdrop=\"dots\" · chipLayout=\"grid\""}
+        agentRef={"Hero #12 (#hero-12) — <HeroInteractivePrompt mode=\"prompt\" backdrop=\"dots\" chipLayout=\"grid\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-12-prompt"
           locale="fa"
@@ -1250,16 +1613,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-34" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۳۴ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۳۴ — باکس فضای کاری هوشمند با کادر خط‌چین و چیپ‌های کپسولی</p>
-          </div>
-          <span class="text-xs text-muted">framedRails="dashed" · backdrop="wash" · chipLayout="pills"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-34"
+        index="۳۴"
+        total="۴۳"
+        locale="fa"
+        title="۳۴ — باکس فضای کاری هوشمند با کادر خط‌چین و چیپ‌های کپسولی"
+        component="HeroInteractivePrompt"
+        propsSummary={"framedRails=\"dashed\" · backdrop=\"wash\" · chipLayout=\"pills\""}
+        agentRef={"Hero #34 (#hero-34) — <HeroInteractivePrompt framedRails=\"dashed\" backdrop=\"wash\" chipLayout=\"pills\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-34-workspace"
           locale="fa"
@@ -1279,17 +1644,19 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-35" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۳۵ / ۴۲" variant="primary" size="sm" />
-            <UiBadge label="پارالاکس" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">۳۵ — هیروی پیام هوشمند تیره روی پس‌زمینه پارالاکس</p>
-          </div>
-          <span class="text-xs text-muted">parallaxImage · mode="prompt" · previewNavVariant="pill"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-35"
+        index="۳۵"
+        total="۴۳"
+        locale="fa"
+        title="۳۵ — هیروی پیام هوشمند تیره روی پس‌زمینه پارالاکس"
+        component="HeroInteractivePrompt"
+        propsSummary={"parallaxImage · mode=\"prompt\" · previewNavVariant=\"pill\""}
+        parallax
+        agentRef={"Hero #35 (#hero-35) — <HeroInteractivePrompt parallaxImage mode=\"prompt\" previewNavVariant=\"pill\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-35-parallax-prompt"
           locale="fa"
@@ -1308,16 +1675,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-36" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۳۶ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۳۶ — باکس جستجوی کپسولی با بافت نویز و منوی خط‌دار</p>
-          </div>
-          <span class="text-xs text-muted">mode="search" · backdrop="noise" · previewNavVariant="bordered"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-36"
+        index="۳۶"
+        total="۴۳"
+        locale="fa"
+        title="۳۶ — باکس جستجوی کپسولی با بافت نویز و منوی خط‌دار"
+        component="HeroInteractivePrompt"
+        propsSummary={"mode=\"search\" · backdrop=\"noise\" · previewNavVariant=\"bordered\""}
+        agentRef={"Hero #36 (#hero-36) — <HeroInteractivePrompt mode=\"search\" backdrop=\"noise\" previewNavVariant=\"bordered\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-36-search"
           locale="fa"
@@ -1334,16 +1703,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-37" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۳۷ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۳۷ — جستجوی دایرکتوری مداری (Orbital) همراه با نوار لوگوها</p>
-          </div>
-          <span class="text-xs text-muted">mode="search" · backdrop="orbital" · partnerLogos</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-37"
+        index="۳۷"
+        total="۴۳"
+        locale="fa"
+        title="۳۷ — جستجوی دایرکتوری مداری (Orbital) همراه با نوار لوگوها"
+        component="HeroInteractivePrompt"
+        propsSummary={"mode=\"search\" · backdrop=\"orbital\" · partnerLogos"}
+        agentRef={"Hero #37 (#hero-37) — <HeroInteractivePrompt mode=\"search\" backdrop=\"orbital\" partnerLogos />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-37-orbital-search"
           locale="fa"
@@ -1363,16 +1734,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-38" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۳۸ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۳۸ — باکس تولید کد با تب‌های انتخاب استک فنی</p>
-          </div>
-          <span class="text-xs text-muted">mode="code" · stackTabs · surface="hero"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-38"
+        index="۳۸"
+        total="۴۳"
+        locale="fa"
+        title="۳۸ — باکس تولید کد با تب‌های انتخاب استک فنی"
+        component="HeroInteractivePrompt"
+        propsSummary={"mode=\"code\" · stackTabs · surface=\"hero\""}
+        agentRef={"Hero #38 (#hero-38) — <HeroInteractivePrompt mode=\"code\" stackTabs surface=\"hero\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-38-code"
           locale="fa"
@@ -1392,17 +1765,19 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-39" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۳۹ / ۴۲" variant="primary" size="sm" />
-            <UiBadge label="پارالاکس" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">۳۹ — ترمینال CLI و کپی دستور روی پس‌زمینه پارالاکس عمیق</p>
-          </div>
-          <span class="text-xs text-muted">HeroCommandCli · parallaxImage · showPreviewNav</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-39"
+        index="۳۹"
+        total="۴۳"
+        locale="fa"
+        title="۳۹ — ترمینال CLI و کپی دستور روی پس‌زمینه پارالاکس عمیق"
+        component="HeroCommandCli"
+        propsSummary={"HeroCommandCli · parallaxImage · showPreviewNav"}
+        parallax
+        agentRef={"Hero #39 (#hero-39) — <HeroCommandCli parallaxImage showPreviewNav />"}
+      >
         <HeroCommandCli
           locale="fa"
           parallaxImage={auditVisual}
@@ -1421,16 +1796,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-40" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۴۰ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۴۰ — کپسول عضویت خبرنامه و لیست انتظار انتشار</p>
-          </div>
-          <span class="text-xs text-muted">HeroInteractivePrompt mode="newsletter"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-40"
+        index="۴۰"
+        total="۴۳"
+        locale="fa"
+        title="۴۰ — کپسول عضویت خبرنامه و لیست انتظار انتشار"
+        component="HeroInteractivePrompt"
+        propsSummary={"HeroInteractivePrompt mode=\"newsletter\""}
+        agentRef={"Hero #40 (#hero-40) — <HeroInteractivePrompt mode=\"newsletter\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-40-newsletter"
           locale="fa"
@@ -1443,16 +1820,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           title="از انتشار بلوک‌های جدید باخبر شوید"
           description="دارای بررسی اعتبار فرمت ایمیل در سمت کلاینت، وضعیت خطای aria-invalid و پیام وضعیت با رنگ‌های معنایی OKLCH."
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-41" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۴۱ / ۴۲" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">۴۱ — امتیاز ۵ ستاره و کاروسل پیوسته همکاران با Embla</p>
-          </div>
-          <span class="text-xs text-muted">HeroProofMarquee · Embla AutoScroll · backdrop="dots"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-41"
+        index="۴۱"
+        total="۴۳"
+        locale="fa"
+        title="۴۱ — امتیاز ۵ ستاره و کاروسل پیوسته همکاران با Embla"
+        component="HeroProofMarquee"
+        propsSummary={"HeroProofMarquee · Embla AutoScroll · backdrop=\"dots\""}
+        agentRef={"Hero #41 (#hero-41) — <HeroProofMarquee backdrop=\"dots\" />"}
+      >
         <HeroProofMarquee
           locale="fa"
           surface="subtle"
@@ -1461,17 +1840,19 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           headingTag="h2"
           previewBrand="استارتر فارسی"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-42" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="۴۲ / ۴۲" variant="primary" size="sm" />
-            <UiBadge label="پارالاکس" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">۴۲ — نوار متحرک برندها با کادر خط‌چین و پس‌زمینه پارالاکس</p>
-          </div>
-          <span class="text-xs text-muted">HeroProofMarquee · parallaxImage · framedRails="dashed"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-42"
+        index="۴۲"
+        total="۴۳"
+        locale="fa"
+        title="۴۲ — نوار متحرک برندها با کادر خط‌چین و پس‌زمینه پارالاکس"
+        component="HeroProofMarquee"
+        propsSummary={"HeroProofMarquee · parallaxImage · framedRails=\"dashed\""}
+        parallax
+        agentRef={"Hero #42 (#hero-42) — <HeroProofMarquee parallaxImage framedRails=\"dashed\" />"}
+      >
         <HeroProofMarquee
           locale="fa"
           parallaxImage={heroVisual}
@@ -1489,9 +1870,80 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="doc-hero-variants" class="scroll-mt-24 space-y-3 pt-4 border-t border-border">
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-floating-orb-hero"
+    name="HeroFloatingOrbSplit"
+    category="چیدمان مداری و کارت‌های شناور"
+    title="HeroFloatingOrbSplit (۱ نوع · نمونه ۴۳)"
+    summary="الگوی هیروی اختصاصی RTL/LTR برگرفته از بخش معرفی شرکتی فارسی: شامل امتیاز ۵ ستاره، تیتر دوخطی با هایلایت خط‌کش اریب زیر برند، دکمه‌های تماس و واتساپ، مدار دایره‌ای گرادیانی، نشان پخش ویدئو، سه کارت شناور شیشه‌ای و نوار لوگوی همکاران در پایین هیرو."
+    propsList={[
+      { name: "titleHighlight / titleLead / titleSecondary", type: "string", description: "تیتر ترکیبی برند همراه با خط زیرین کج و زیرتیتر فارسی." },
+      { name: "topCard / progressCard / bottomCard", type: "HeroFloatingFeatureCard / HeroFloatingProgressCard", description: "سه کارت شیشه‌ای شناور در اطراف تصویر مداری (در موبایل به‌صورت ریسپانسیو و بدون هم‌پوشانی چیده می‌شوند)." },
+      { name: "partnerLogos / partnerBarTone", type: "HeroMarqueePartner[] / 'accent' | 'primary' | 'surface'", defaultVal: "'accent'", description: "نوار تمام‌عرض نشان‌های همکاران تجاری دقیقاً زیر گرید دو‌ستونه هیرو." },
+      { name: "parallaxImage / flipColumns", type: "ImageMetadata / boolean", defaultVal: "null / false", description: "پشتیبانی اختیاری از پس‌زمینه پارالاکس ChronoTrig و جابه‌جایی ستون‌ها." }
+    ]}
+    usage={`import HeroFloatingOrbSplit from '@/components/HeroFloatingOrbSplit.astro';
+import showcaseImg from '@/assets/germancert/hero-audit.jpg';
+
+<HeroFloatingOrbSplit
+  locale="fa"
+  image={showcaseImg}
+  titleHighlight="NIK AVA"
+  titleLead="IDEATION"
+  titleSecondary="ایده پردازان نیک آوا"
+  topCard={{ icon: "cloud-computing", eyebrow: "رایانش ابری", title: "شبکه و امنیت" }}
+  progressCard={{ title: "مدیریت نرم‌افزاری", label: "روند کاری", percent: 84 }}
+  bottomCard={{ icon: "headset", title: "پشتیبانی 24/7", subtitle: "دپارتمان" }}
+/>`}
+  >
+    <div class="space-y-12">
+      <HeroShowcaseCard
+        id="hero-43"
+        index="۴۳"
+        total="۴۳"
+        locale="fa"
+        title="۴۳ — هیروی مداری دو‌ستونه با کارت‌های شناور، امتیاز ستاره و نوار همکاران (الگوی ایده پردازان نیک آوا)"
+        component="HeroFloatingOrbSplit"
+        propsSummary={'backdrop="dots" · topCard · progressCard · bottomCard · partnerLogos'}
+        agentRef={'Hero #43 (#hero-43) — <HeroFloatingOrbSplit backdrop="dots" topCard progressCard bottomCard partnerLogos />'}
+      >
+        <HeroFloatingOrbSplit
+          locale="fa"
+          surface="subtle"
+          backdrop="dots"
+          compact
+          headingTag="h2"
+          image={auditVisual}
+          imageAlt="تیم مهندسی شبکه و زیرساخت ایده پردازان نیک آوا"
+          titleHighlight="NIK AVA"
+          titleLead="IDEATION"
+          titleSecondary="ایده پردازان نیک آوا"
+          description="آینده‌ات را با فناوری امروز بساز؛ مشاوره، طراحی، اجرا و پشتیبانی زیرساخت‌های شبکه، رایانش ابری و امنیت سازمانی."
+          primaryCta={{ label: "021-82806316", href: "/fa/تماس/", icon: "phone", variant: "secondary" }}
+          secondaryCta={{ label: "واتساپ", href: "/fa/تماس/", icon: "brand-whatsapp", variant: "secondary" }}
+          topCard={{ icon: "cloud-computing", eyebrow: "رایانش ابری", title: "شبکه و امنیت" }}
+          progressCard={{ title: "مدیریت نرم‌افزاری", label: "روند کاری", percent: 84 }}
+          bottomCard={{ icon: "headset", title: "پشتیبانی 24/7", subtitle: "دپارتمان" }}
+          partnerLogos={[
+            { icon: "cloud-computing", name: "CISCO" },
+            { icon: "layers", name: "DELL EMC" },
+            { icon: "shield", name: "FORTINET" },
+            { icon: "bolt", name: "VMWARE" },
+            { icon: "globe", name: "JUNIPER" }
+          ]}
+        />
+      </HeroShowcaseCard>
+    </div>
+  </ComponentDoc>
+
+  <PageSection surface="subtle" spacing="md" borderTop>
+    <div class="space-y-12">
+      <div id="doc-hero-variants" class="scroll-mt-24 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2.5">
             <UiBadge label="مرجع هسته" variant="success" size="sm" />
@@ -1516,7 +1968,7 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
         />
       </div>
     </div>
-  </ComponentDoc>
+  </PageSection>
 </div>
 
 <CtaBanner

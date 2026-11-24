@@ -1,11 +1,8 @@
 ---
 /**
  * Accessible progress indicator inspired by PrebuiltUI progress-bar components.
- * Supports linear `bar`, circular CSS `conic-gradient` `ring` (zero raw SVG), and
- * multi-milestone `steps` variants with `formatNumber()` numerals, OKLCH roles,
- * Paraglide defaults, and ChronoTrig v6.1.0 entrance + compositor fill/sweep animations.
  */
-import Icon from '@/components/Icon.astro';
+import Icon from '@/components/ui/Icon.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
 import { resolveComponentLocale } from '@/libs/ui/locale';
@@ -392,7 +389,6 @@ const RING_SIZES = {
 
           root.setAttribute('data-progress-active', 'true');
 
-          // Linear bars animate via CSS compositor scaleX() transition; only run RAF if counter or ring needs numeric updates
           if (isSteps || target === 0 || (!ringTrack && !valueEl)) {
             if (target === 0) setNumericVisual(0);
             if (once) io?.unobserve(root);

@@ -1,0 +1,87 @@
+---
+/**
+ * Reusable semantic icon badge box.
+ *
+ * Replaces repeated `inline-flex size-* shrink-0 items-center justify-center rounded-*`
+ * wrappers across alerts, modals, social links, feature cards, hero badges, and banners.
+ */
+import Icon from '@/components/ui/Icon.astro';
+
+export type IconBoxSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+export type IconBoxRadius = 'lg' | 'xl' | '2xl' | 'full';
+export type IconBoxTone =
+  | 'primary'
+  | 'accent'
+  | 'surface'
+  | 'hero'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'info'
+  | 'neutral';
+
+interface Props {
+  icon: string;
+  size?: IconBoxSize;
+  radius?: IconBoxRadius;
+  tone?: IconBoxTone;
+  hoverGroup?: boolean;
+  iconSize?: number;
+  class?: string;
+}
+
+const {
+  icon,
+  size = 'md',
+  radius = 'xl',
+  tone = 'primary',
+  hoverGroup = false,
+  iconSize,
+  class: className,
+} = Astro.props;
+
+const SIZES: Record<IconBoxSize, { box: string; icon: number }> = {
+  xs: { box: 'size-7', icon: 14 },
+  sm: { box: 'size-9', icon: 17 },
+  md: { box: 'size-10', icon: 18 },
+  lg: { box: 'size-12', icon: 22 },
+  xl: { box: 'size-14', icon: 24 },
+};
+
+const RADII: Record<IconBoxRadius, string> = {
+  lg: 'rounded-lg',
+  xl: 'rounded-xl',
+  '2xl': 'rounded-2xl',
+  full: 'rounded-full',
+};
+
+const TONES: Record<IconBoxTone, string> = {
+  primary: 'bg-primary/10 text-primary',
+  accent: 'bg-accent text-hero-base print:bg-primary print:text-primary-fg',
+  surface: 'bg-surface-hover text-fg border border-border/70',
+  hero: 'border border-hero-fg/15 bg-hero-fg/10 text-accent print:border-border print:bg-surface print:text-primary',
+  success: 'bg-success/15 text-success',
+  warning: 'bg-warning/20 text-fg',
+  error: 'bg-error/15 text-error',
+  info: 'bg-info/15 text-info',
+  neutral: 'bg-surface-hover text-muted',
+};
+
+const dim = SIZES[size];
+---
+
+<span
+  aria-hidden="true"
+  class:list={[
+    'inline-flex shrink-0 items-center justify-center',
+    dim.box,
+    RADII[radius],
+    TONES[tone],
+    hoverGroup &&
+      tone === 'primary' &&
+      'transition-colors group-hover:bg-primary group-hover:text-primary-fg',
+    className,
+  ]}
+>
+  <Icon name={icon} size={iconSize ?? dim.icon} />
+</span>

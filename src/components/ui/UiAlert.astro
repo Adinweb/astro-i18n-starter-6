@@ -3,12 +3,10 @@
  * Reusable notification / callout alert inspired by PrebuiltUI alert cards.
  * Uses semantic OKLCH status roles paired with explicit Tabler icons and
  * optional dismiss control (`<IconButton>` + idempotent `dataset.bound`).
- * Follows starter rules: crisp full borders (no thick physical side bars) and
- * 100% localized defaults.
  */
-import Button from '@/components/Button.astro';
-import Icon from '@/components/Icon.astro';
-import IconButton from '@/components/IconButton.astro';
+import Button from '@/components/ui/Button.astro';
+import IconBox, { type IconBoxTone } from '@/components/ui/IconBox.astro';
+import IconButton from '@/components/ui/IconButton.astro';
 import type { Locale } from '@/i18n/locales';
 import { resolveComponentLocale } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
@@ -56,30 +54,30 @@ const resolvedDescription =
     : (description ?? (usingDefaults ? m.block_alert_default_desc({}, { locale: activeLocale }) : undefined));
 const dismissLabel = m.block_alert_dismiss({}, { locale: activeLocale });
 
-const VARIANTS: Record<AlertVariant, { container: string; badge: string; defaultIcon: string }> = {
+const VARIANTS: Record<AlertVariant, { container: string; iconTone: IconBoxTone; defaultIcon: string }> = {
   info: {
     container: 'border-info/30 bg-info/10 text-fg',
-    badge: 'bg-info/15 text-info',
+    iconTone: 'info',
     defaultIcon: 'info',
   },
   success: {
     container: 'border-success/30 bg-success/10 text-fg',
-    badge: 'bg-success/15 text-success',
+    iconTone: 'success',
     defaultIcon: 'circle-check',
   },
   warning: {
     container: 'border-warning/40 bg-warning/15 text-fg',
-    badge: 'bg-warning/25 text-fg',
+    iconTone: 'warning',
     defaultIcon: 'alert-triangle',
   },
   error: {
     container: 'border-error/30 bg-error/10 text-fg',
-    badge: 'bg-error/15 text-error',
+    iconTone: 'error',
     defaultIcon: 'alert-circle',
   },
   neutral: {
     container: 'border-border bg-surface text-fg',
-    badge: 'bg-surface-hover text-muted',
+    iconTone: 'neutral',
     defaultIcon: 'bell',
   },
 };
@@ -101,15 +99,7 @@ const roleAttr = variant === 'error' || variant === 'warning' ? 'alert' : 'statu
     className,
   ]}
 >
-  <span
-    aria-hidden="true"
-    class:list={[
-      'inline-flex size-9 shrink-0 items-center justify-center rounded-xl',
-      style.badge,
-    ]}
-  >
-    <Icon name={resolvedIcon} size={18} />
-  </span>
+  <IconBox icon={resolvedIcon} size="sm" radius="xl" tone={style.iconTone} />
 
   <div class="min-w-0 flex-1">
     <p class="text-sm font-bold text-fg">{resolvedTitle}</p>

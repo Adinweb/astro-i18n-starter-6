@@ -1,26 +1,30 @@
 ---
 title: "Hero Sections"
 slug: "components/herosections"
-description: "Complete showcase of all 42 PrebuiltUI Hero Section patterns adapted to Astro v7 SSG, OKLCH semantic themes, scroll-driven ChronoTrig parallax backgrounds, and bidirectional RTL/LTR layouts."
+description: "Complete showcase of all 43 PrebuiltUI & custom RTL Hero Section patterns adapted to Astro v7 SSG, OKLCH semantic themes, scroll-driven ChronoTrig parallax backgrounds, and bidirectional RTL/LTR layouts."
 image: "./herosections.jpg"
 hero: "none"
 container: "canvas"
 flushTop: true
 draft: false
 ---
-import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import Button from '@/components/Button.astro';
+import Accordion from '@/components/ui/Accordion.astro';
+import Breadcrumbs from '@/components/ui/Breadcrumbs.astro';
+import Button from '@/components/ui/Button.astro';
+import ChipGroup from '@/components/ui/ChipGroup.astro';
 import ComponentDoc from '@/components/ComponentDoc.astro';
 import CtaBanner from '@/components/CtaBanner.astro';
 import HeroCenteredEditorial from '@/components/HeroCenteredEditorial.astro';
 import HeroCommandCli from '@/components/HeroCommandCli.astro';
 import HeroDashboardShowcase from '@/components/HeroDashboardShowcase.astro';
+import HeroFloatingOrbSplit from '@/components/HeroFloatingOrbSplit.astro';
 import HeroInteractivePrompt from '@/components/HeroInteractivePrompt.astro';
 import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
+import HeroShowcaseCard from '@/components/ui/HeroShowcaseCard.astro';
 import HomeHero from '@/components/HomeHero.astro';
 import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
 import PageSection from '@/components/PageSection.astro';
-import UiBadge from '@/components/UiBadge.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
 import heroVisual from './herosections.jpg';
 import hero0Visual from '@/assets/hero/hero-0.jpg';
 import auditVisual from '@/assets/germancert/hero-audit.jpg';
@@ -36,17 +40,17 @@ import trustVisual from '@/assets/germancert/trustmark.jpg';
   parallaxOverlay="hero"
   backdrop="orbital"
   announcement={{
-    badge: "PrebuiltUI 42/42",
-    label: "All 42 Hero Sections + ChronoTrig Parallax Backgrounds",
+    badge: "Complete 43/43",
+    label: "All 43 Hero Sections + Floating Orb RTL + Parallax BGs",
     href: "/components/",
     pulse: true
   }}
-  titleLead="All 42 Hero Sections,"
+  titleLead="All 43 Hero Sections,"
   titleAccent="Adapted for Astro v7"
-  description="Every hero section archetype from PrebuiltUI rebuilt with OKLCH semantic theme roles, CSS logical properties, accessible <Button>, <Icon>, and <HeroPreviewNav> primitives, ChronoTrig scroll-driven parallax backgrounds, and Paraglide i18n."
-  primaryCta={{ label: "Browse All 42 Heroes", href: "#hero-showcase-list", icon: "arrow-right" }}
+  description="Every PrebuiltUI hero archetype plus custom floating-orb RTL layouts rebuilt with OKLCH semantic theme roles, CSS logical properties, accessible <Button>, <Icon>, and <HeroPreviewNav> primitives, ChronoTrig scroll-driven parallax backgrounds, and Paraglide i18n."
+  primaryCta={{ label: "Browse All 43 Heroes", href: "#hero-showcase-list", icon: "arrow-right" }}
   secondaryCta={{ label: "All Components", href: "/components/" }}
-  trustNote="42 numbered hero templates · 9 GPU parallax backdrop demos · Zero hardcoded hex colors"
+  trustNote="43 numbered agent-ready hero templates · 9 GPU parallax backdrop demos · Zero hardcoded hex colors"
   partnerPills={[
     { icon: "palette", name: "OKLCH Theme Engine" },
     { icon: "photo", name: "ChronoTrig Parallax BG" },
@@ -72,60 +76,353 @@ import trustVisual from '@/assets/germancert/trustmark.jpg';
 <PageSection id="hero-catalog-nav" surface="surface" spacing="sm" borderBottom>
   <div class="flex flex-col gap-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex flex-wrap items-center gap-2">
-        <a href="#doc-centered-hero" class="chip px-3 py-1.5 text-xs font-bold text-primary">Centered &amp; Parallax (12)</a>
-        <a href="#doc-dashboard-hero" class="chip px-3 py-1.5 text-xs font-bold text-primary">Dashboards &amp; Metrics (10)</a>
-        <a href="#doc-split-hero" class="chip px-3 py-1.5 text-xs font-bold text-primary">Asymmetric Splits (10)</a>
-        <a href="#doc-interactive-prompt" class="chip px-3 py-1.5 text-xs font-bold text-primary">AI Prompt, Search, Code, CLI &amp; Marquee (10)</a>
-      </div>
+      <ChipGroup
+        locale="en"
+        mode="links"
+        size="sm"
+        ariaLabel="Hero categories"
+        items={[
+          { label: "Centered & Parallax (12)", href: "#doc-centered-hero", highlight: true },
+          { label: "Dashboards & Metrics (10)", href: "#doc-dashboard-hero", highlight: true },
+          { label: "Asymmetric Splits (10)", href: "#doc-split-hero", highlight: true },
+          { label: "AI Prompt, Search, Code, CLI & Marquee (10)", href: "#doc-interactive-prompt", highlight: true },
+          { label: "Floating Orb & Cards (1)", href: "#doc-floating-orb-hero", highlight: true }
+        ]}
+      />
       <Button href="/components/" variant="ghost" size="sm" icon="arrow-right">
         Back to Components
       </Button>
     </div>
-    <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
-      <a href="#hero-01" class="chip px-2.5 py-1 font-medium">01</a>
-      <a href="#hero-02" class="chip px-2.5 py-1 font-medium">02</a>
-      <a href="#hero-03" class="chip px-2.5 py-1 font-medium">03</a>
-      <a href="#hero-04" class="chip px-2.5 py-1 font-medium">04</a>
-      <a href="#hero-05" class="chip px-2.5 py-1 font-medium">05</a>
-      <a href="#hero-06" class="chip px-2.5 py-1 font-medium">06</a>
-      <a href="#hero-07" class="chip px-2.5 py-1 font-medium">07</a>
-      <a href="#hero-08" class="chip px-2.5 py-1 font-medium">08</a>
-      <a href="#hero-09" class="chip px-2.5 py-1 font-medium">09</a>
-      <a href="#hero-10" class="chip px-2.5 py-1 font-medium">10</a>
-      <a href="#hero-11" class="chip px-2.5 py-1 font-medium">11</a>
-      <a href="#hero-12" class="chip px-2.5 py-1 font-medium">12</a>
-      <a href="#hero-13" class="chip px-2.5 py-1 font-medium">13</a>
-      <a href="#hero-14" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">14 Parallax</a>
-      <a href="#hero-15" class="chip px-2.5 py-1 font-medium">15</a>
-      <a href="#hero-16" class="chip px-2.5 py-1 font-medium">16</a>
-      <a href="#hero-17" class="chip px-2.5 py-1 font-medium">17</a>
-      <a href="#hero-18" class="chip px-2.5 py-1 font-medium">18</a>
-      <a href="#hero-19" class="chip px-2.5 py-1 font-medium">19</a>
-      <a href="#hero-20" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">20 Parallax</a>
-      <a href="#hero-21" class="chip px-2.5 py-1 font-medium">21</a>
-      <a href="#hero-22" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">22 Parallax</a>
-      <a href="#hero-23" class="chip px-2.5 py-1 font-medium">23</a>
-      <a href="#hero-24" class="chip px-2.5 py-1 font-medium">24</a>
-      <a href="#hero-25" class="chip px-2.5 py-1 font-medium">25</a>
-      <a href="#hero-26" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">26 Parallax</a>
-      <a href="#hero-27" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">27 Parallax</a>
-      <a href="#hero-28" class="chip px-2.5 py-1 font-medium">28</a>
-      <a href="#hero-29" class="chip px-2.5 py-1 font-medium">29</a>
-      <a href="#hero-30" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">30 Parallax</a>
-      <a href="#hero-31" class="chip px-2.5 py-1 font-medium">31</a>
-      <a href="#hero-32" class="chip px-2.5 py-1 font-medium">32</a>
-      <a href="#hero-33" class="chip px-2.5 py-1 font-medium">33</a>
-      <a href="#hero-34" class="chip px-2.5 py-1 font-medium">34</a>
-      <a href="#hero-35" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">35 Parallax</a>
-      <a href="#hero-36" class="chip px-2.5 py-1 font-medium">36</a>
-      <a href="#hero-37" class="chip px-2.5 py-1 font-medium">37</a>
-      <a href="#hero-38" class="chip px-2.5 py-1 font-medium">38</a>
-      <a href="#hero-39" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">39 Parallax</a>
-      <a href="#hero-40" class="chip px-2.5 py-1 font-medium">40</a>
-      <a href="#hero-41" class="chip px-2.5 py-1 font-medium">41</a>
-      <a href="#hero-42" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">42 Parallax</a>
-    </div>
+    <ChipGroup
+      locale="en"
+      mode="links"
+      size="xs"
+      ariaLabel="Jump to hero variation"
+      items={[
+        { label: "01", href: "#hero-01" },
+        { label: "02", href: "#hero-02" },
+        { label: "03", href: "#hero-03" },
+        { label: "04", href: "#hero-04" },
+        { label: "05", href: "#hero-05" },
+        { label: "06", href: "#hero-06" },
+        { label: "07", href: "#hero-07" },
+        { label: "08", href: "#hero-08" },
+        { label: "09", href: "#hero-09" },
+        { label: "10", href: "#hero-10" },
+        { label: "11", href: "#hero-11" },
+        { label: "12", href: "#hero-12" },
+        { label: "13", href: "#hero-13" },
+        { label: "14 Parallax", href: "#hero-14", highlight: true },
+        { label: "15", href: "#hero-15" },
+        { label: "16", href: "#hero-16" },
+        { label: "17", href: "#hero-17" },
+        { label: "18", href: "#hero-18" },
+        { label: "19", href: "#hero-19" },
+        { label: "20 Parallax", href: "#hero-20", highlight: true },
+        { label: "21", href: "#hero-21" },
+        { label: "22 Parallax", href: "#hero-22", highlight: true },
+        { label: "23", href: "#hero-23" },
+        { label: "24", href: "#hero-24" },
+        { label: "25", href: "#hero-25" },
+        { label: "26 Parallax", href: "#hero-26", highlight: true },
+        { label: "27 Parallax", href: "#hero-27", highlight: true },
+        { label: "28", href: "#hero-28" },
+        { label: "29", href: "#hero-29" },
+        { label: "30 Parallax", href: "#hero-30", highlight: true },
+        { label: "31", href: "#hero-31" },
+        { label: "32", href: "#hero-32" },
+        { label: "33", href: "#hero-33" },
+        { label: "34", href: "#hero-34" },
+        { label: "35 Parallax", href: "#hero-35", highlight: true },
+        { label: "36", href: "#hero-36" },
+        { label: "37", href: "#hero-37" },
+        { label: "38", href: "#hero-38" },
+        { label: "39 Parallax", href: "#hero-39", highlight: true },
+        { label: "40", href: "#hero-40" },
+        { label: "41", href: "#hero-41" },
+        { label: "42 Parallax", href: "#hero-42", highlight: true },
+        { label: "43 Orb Split", href: "#hero-43", highlight: true }
+      ]}
+    />
+    <Accordion
+      locale="en"
+      badge="43 Heroes"
+      badgeVariant="primary"
+      title="Quick Agent Reference Index (#hero-01 to #hero-43 · Component Handles & Key Props)"
+    >
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-start text-xs">
+          <thead>
+            <tr class="border-b border-border bg-surface-hover/50 text-muted">
+              <th scope="col" class="px-3 py-2 text-start font-semibold">ID</th>
+              <th scope="col" class="px-3 py-2 text-start font-semibold">Component</th>
+              <th scope="col" class="px-3 py-2 text-start font-semibold">Pattern</th>
+              <th scope="col" class="px-3 py-2 text-start font-semibold">Key Props</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border">
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-01" dir="ltr" class="text-primary hover:underline">#hero-01</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">01 — Light Hero Section with Grid Effect</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="grid" · surface="subtle"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-02" dir="ltr" class="text-primary hover:underline">#hero-02</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">02 — Hero Section for AI Agent Website</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">surface="hero" · frame="clean"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-03" dir="ltr" class="text-primary hover:underline">#hero-03</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">03 — Hero Section with Grid, Gradient &amp; 5-Star Rating Group</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="grid" · showAvatarGroup</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-04" dir="ltr" class="text-primary hover:underline">#hero-04</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">04 — Hero Section Dark Theme with Community Pill</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">surface="hero" · showAvatarPill · secondaryCta.icon</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-05" dir="ltr" class="text-primary hover:underline">#hero-05</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">05 — Modern SaaS Hero Section With Dark Gradient</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">cropBottom · glowBehindShowcase · badgeVariant="success"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-06" dir="ltr" class="text-primary hover:underline">#hero-06</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">06 — Modern SaaS Split Hero With Nav &amp; Edge-Bleed Preview</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">showPreviewNav · featuresRow · edgeBleedFrame</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-07" dir="ltr" class="text-primary hover:underline">#hero-07</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">07 — Modern Hero Section With Feature Cards (Dashed Rails)</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">framedRails="dashed" · backdrop="dots"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-08" dir="ltr" class="text-primary hover:underline">#hero-08</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">08 — Hero Section with Rounded Pill Navbar &amp; Arch Showcase</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">previewNavVariant="pill" · bottomImageStyle="arch"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-09" dir="ltr" class="text-primary hover:underline">#hero-09</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">09 — Hero Section with Embedded Nav, Tag &amp; Gradient Wash</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">previewNavVariant="bordered" · backdrop="wash"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-10" dir="ltr" class="text-primary hover:underline">#hero-10</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">10 — Hero Section with Minimal Nav &amp; Gradient Dashboard</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">showPreviewNav · backdrop="wash" · glowBehindShowcase</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-11" dir="ltr" class="text-primary hover:underline">#hero-11</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">11 — Modern Platform Hero With Dropdown Navigation</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">previewNavVariant="dropdown" · frame="clean" · cropBottom</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-12" dir="ltr" class="text-primary hover:underline">#hero-12</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">12 — Hero Section with AI Prompt Input &amp; Divided Suggestions</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">mode="prompt" · backdrop="dots" · chipLayout="grid"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-13" dir="ltr" class="text-primary hover:underline">#hero-13</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">13 — Modern Hero Section with Dashboard Preview &amp; Framed Rails</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">framedRails="solid" · primaryCtaHoverSwap · cropBottom</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-14" dir="ltr" class="text-primary hover:underline">#hero-14</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">14 — Hero with Pill Navbar &amp; Parallax Photo Backdrop · Parallax</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">parallaxImage · parallaxSpeed="medium" · previewNavVariant="pill"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-15" dir="ltr" class="text-primary hover:underline">#hero-15</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">15 — Trusted Brand Gradient Hero with Monochrome Partner Logos</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="wash" · partnerLogos</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-16" dir="ltr" class="text-primary hover:underline">#hero-16</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">16 — Dark Orbital Gradient AI Hero</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">surface="hero" · backdrop="orbital"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-17" dir="ltr" class="text-primary hover:underline">#hero-17</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">17 — Light Orbital Studio Hero with Dashed Top Navigation</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">previewNavVariant="dashed" · backdrop="orbital"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-18" dir="ltr" class="text-primary hover:underline">#hero-18</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">18 — Fine Noise Texture Editorial &amp; Rounded Capture</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="noise" · bottomImageStyle="rounded"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-19" dir="ltr" class="text-primary hover:underline">#hero-19</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">19 — Architectural Net Grid with Dual Actions &amp; Partner Strip</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="net" · partnerLogos</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-20" dir="ltr" class="text-primary hover:underline">#hero-20</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">20 — Top Launch Promo Banner with Deep Parallax Photography · Parallax</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">topBanner · parallaxImage · parallaxSpeed="deep"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-21" dir="ltr" class="text-primary hover:underline">#hero-21</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCenteredEditorial /&gt;</td>
+            <td class="px-3 py-2 text-fg">21 — Dark Grid Editorial Hero with Avatar Pill &amp; Arch Preview</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">surface="hero" · showAvatarPill · bottomImageStyle="arch"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-22" dir="ltr" class="text-primary hover:underline">#hero-22</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">22 — Modern Interface Dashboard with Dark Parallax Backdrop · Parallax</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">parallaxImage · parallaxOverlay="dark" · cropBottom</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-23" dir="ltr" class="text-primary hover:underline">#hero-23</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">23 — Verified 5-Star Reviews &amp; Noise Texture Product Stage</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">showAvatarGroup · backdrop="noise" · frame="clean"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-24" dir="ltr" class="text-primary hover:underline">#hero-24</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">24 — Website Performance Hero with KPI Strip &amp; Orbital Glow</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="orbital" · metricsStrip · cropBottom</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-25" dir="ltr" class="text-primary hover:underline">#hero-25</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">25 — Lightning Interface Hero with Net-Grid &amp; Pill Nav</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="net" · previewNavVariant="pill" · metricsStrip</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-26" dir="ltr" class="text-primary hover:underline">#hero-26</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroDashboardShowcase /&gt;</td>
+            <td class="px-3 py-2 text-fg">26 — Promo Banner SaaS Dashboard with Subtle Photo Parallax · Parallax</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">topBanner · parallaxImage · primaryCtaHoverSwap</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-27" dir="ltr" class="text-primary hover:underline">#hero-27</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">27 — Editorial Gradient Split with Parallax Background · Parallax</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">parallaxImage · parallaxOverlay="gradient" · showPreviewNav</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-28" dir="ltr" class="text-primary hover:underline">#hero-28</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">28 — Mortgage &amp; Advisory Split with Floating Stats Overlay</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="wash" · mediaStatsOverlay</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-29" dir="ltr" class="text-primary hover:underline">#hero-29</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">29 — Mirrored Split Hero with Flipped Columns &amp; Net Grid</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">flipColumns · backdrop="net" · showAvatarGroup</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-30" dir="ltr" class="text-primary hover:underline">#hero-30</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">30 — Newsletter Capture &amp; Portrait Split with Deep Parallax · Parallax</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">parallaxImage · showInlineSubscribe · parallaxSpeed="deep"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-31" dir="ltr" class="text-primary hover:underline">#hero-31</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">31 — Grid Gradient Split with Inline Lead Capture &amp; Edge Bleed</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="grid" · showInlineSubscribe · edgeBleedFrame</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-32" dir="ltr" class="text-primary hover:underline">#hero-32</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">32 — Dark Creator Profile Split with Flipped Glass Overlays</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">surface="hero" · flipColumns · mediaStatsOverlay</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-33" dir="ltr" class="text-primary hover:underline">#hero-33</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;LandingHeroSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">33 — Enterprise Solutions Split with Dashed Nav &amp; Highlights</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">previewNavVariant="dashed" · backdrop="dots" · featuresRow</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-34" dir="ltr" class="text-primary hover:underline">#hero-34</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">34 — AI Workspace Prompt Composer with Dashed Rails</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">framedRails="dashed" · backdrop="wash" · chipLayout="pills"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-35" dir="ltr" class="text-primary hover:underline">#hero-35</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">35 — Dark AI Message Prompt with Atmospheric Parallax BG · Parallax</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">parallaxImage · mode="prompt" · previewNavVariant="pill"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-36" dir="ltr" class="text-primary hover:underline">#hero-36</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">36 — Search Box Hero with Noise Backdrop &amp; Bordered Nav</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">mode="search" · backdrop="noise" · previewNavVariant="bordered"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-37" dir="ltr" class="text-primary hover:underline">#hero-37</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">37 — Orbital Directory Search Hero with Partner Logo Strip</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">mode="search" · backdrop="orbital" · partnerLogos</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-38" dir="ltr" class="text-primary hover:underline">#hero-38</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">38 — Code Prompt Composer with Stack Selector Tabs</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">mode="code" · stackTabs · surface="hero"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-39" dir="ltr" class="text-primary hover:underline">#hero-39</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroCommandCli /&gt;</td>
+            <td class="px-3 py-2 text-fg">39 — Dark CLI Copy Command Hero with Photo Parallax BG · Parallax</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">HeroCommandCli · parallaxImage · showPreviewNav</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-40" dir="ltr" class="text-primary hover:underline">#hero-40</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroInteractivePrompt /&gt;</td>
+            <td class="px-3 py-2 text-fg">40 — Rounded Newsletter &amp; Launch Waitlist Capsule</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">HeroInteractivePrompt mode="newsletter"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-41" dir="ltr" class="text-primary hover:underline">#hero-41</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroProofMarquee /&gt;</td>
+            <td class="px-3 py-2 text-fg">41 — 5-Star Social Proof &amp; RTL-Aware Embla Partner Marquee</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">HeroProofMarquee · Embla AutoScroll · backdrop="dots"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-42" dir="ltr" class="text-primary hover:underline">#hero-42</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroProofMarquee /&gt;</td>
+            <td class="px-3 py-2 text-fg">42 — Automate Faster Partner Marquee with Parallax BG &amp; Dashed Rails · Parallax</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">HeroProofMarquee · parallaxImage · framedRails="dashed"</td>
+          </tr>
+          <tr class="hover:bg-surface-hover/40">
+            <td class="whitespace-nowrap px-3 py-2 font-mono font-bold"><a href="#hero-43" dir="ltr" class="text-primary hover:underline">#hero-43</a></td>
+            <td class="whitespace-nowrap px-3 py-2 font-mono text-fg" dir="ltr">&lt;HeroFloatingOrbSplit /&gt;</td>
+            <td class="px-3 py-2 text-fg">43 — Floating Orb Split with Service Telemetry Cards, Rating & Partner Strip</td>
+            <td class="px-3 py-2 font-mono text-[11px] text-muted" dir="ltr">backdrop="dots" · topCard · progressCard · bottomCard · partnerLogos</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </Accordion>
   </div>
 </PageSection>
 
@@ -156,14 +453,16 @@ import heroPhoto from './herosections.jpg';
 />`}
   >
     <div class="space-y-12">
-      <div id="hero-01" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="01 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">01 — Light Hero Section with Grid Effect</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="grid" · surface="subtle"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-01"
+        index="01"
+        total="43"
+        locale="en"
+        title="01 — Light Hero Section with Grid Effect"
+        component="HeroCenteredEditorial"
+        propsSummary={"backdrop=\"grid\" · surface=\"subtle\""}
+        agentRef={"Hero #01 (#hero-01) — <HeroCenteredEditorial backdrop=\"grid\" surface=\"subtle\" />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           surface="subtle"
@@ -182,16 +481,18 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
           secondaryCta={{ label: "Learn more", href: "/pricing/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-07" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="07 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">07 — Modern Hero Section With Feature Cards (Dashed Rails)</p>
-          </div>
-          <span class="text-xs text-muted">framedRails="dashed" · backdrop="dots"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-07"
+        index="07"
+        total="43"
+        locale="en"
+        title="07 — Modern Hero Section With Feature Cards (Dashed Rails)"
+        component="HeroCenteredEditorial"
+        propsSummary={"framedRails=\"dashed\" · backdrop=\"dots\""}
+        agentRef={"Hero #07 (#hero-07) — <HeroCenteredEditorial framedRails=\"dashed\" backdrop=\"dots\" />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           surface="default"
@@ -216,16 +517,18 @@ import heroPhoto from './herosections.jpg';
             { icon: "users", title: "Team-Friendly Structure", description: "Strict client workspace separation keeps customizations upgrade-safe." }
           ]}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-08" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="08 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">08 — Hero Section with Rounded Pill Navbar &amp; Arch Showcase</p>
-          </div>
-          <span class="text-xs text-muted">previewNavVariant="pill" · bottomImageStyle="arch"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-08"
+        index="08"
+        total="43"
+        locale="en"
+        title="08 — Hero Section with Rounded Pill Navbar &amp; Arch Showcase"
+        component="HeroCenteredEditorial"
+        propsSummary={"previewNavVariant=\"pill\" · bottomImageStyle=\"arch\""}
+        agentRef={"Hero #08 (#hero-08) — <HeroCenteredEditorial previewNavVariant=\"pill\" bottomImageStyle=\"arch\" />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           surface="subtle"
@@ -249,16 +552,18 @@ import heroPhoto from './herosections.jpg';
           bottomImageAlt="Architectural studio office facade cropped in arch-top hero frame"
           bottomImageStyle="arch"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-09" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="09 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">09 — Hero Section with Embedded Nav, Tag &amp; Gradient Wash</p>
-          </div>
-          <span class="text-xs text-muted">previewNavVariant="bordered" · backdrop="wash"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-09"
+        index="09"
+        total="43"
+        locale="en"
+        title="09 — Hero Section with Embedded Nav, Tag &amp; Gradient Wash"
+        component="HeroCenteredEditorial"
+        propsSummary={"previewNavVariant=\"bordered\" · backdrop=\"wash\""}
+        agentRef={"Hero #09 (#hero-09) — <HeroCenteredEditorial previewNavVariant=\"bordered\" backdrop=\"wash\" />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           surface="surface"
@@ -280,17 +585,19 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
           secondaryCta={{ label: "Book a demo", href: "/contact/", variant: "ghost", icon: "arrow-right" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-14" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="14 / 42" variant="primary" size="sm" />
-            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">14 — Hero with Pill Navbar &amp; Parallax Photo Backdrop</p>
-          </div>
-          <span class="text-xs text-muted">parallaxImage · parallaxSpeed="medium" · previewNavVariant="pill"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-14"
+        index="14"
+        total="43"
+        locale="en"
+        title="14 — Hero with Pill Navbar &amp; Parallax Photo Backdrop"
+        component="HeroCenteredEditorial"
+        propsSummary={"parallaxImage · parallaxSpeed=\"medium\" · previewNavVariant=\"pill\""}
+        parallax
+        agentRef={"Hero #14 (#hero-14) — <HeroCenteredEditorial parallaxImage parallaxSpeed=\"medium\" previewNavVariant=\"pill\" />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           parallaxImage={heroVisual}
@@ -314,16 +621,18 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "Launch site", href: "/features/", icon: "arrow-right" }}
           secondaryCta={{ label: "View pricing", href: "/pricing/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-15" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="15 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">15 — Trusted Brand Gradient Hero with Monochrome Partner Logos</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="wash" · partnerLogos</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-15"
+        index="15"
+        total="43"
+        locale="en"
+        title="15 — Trusted Brand Gradient Hero with Monochrome Partner Logos"
+        component="HeroCenteredEditorial"
+        propsSummary={"backdrop=\"wash\" · partnerLogos"}
+        agentRef={"Hero #15 (#hero-15) — <HeroCenteredEditorial backdrop=\"wash\" partnerLogos />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           surface="subtle"
@@ -344,16 +653,18 @@ import heroPhoto from './herosections.jpg';
             { icon: "compass", name: "WAYPOINT" }
           ]}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-16" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="16 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">16 — Dark Orbital Gradient AI Hero</p>
-          </div>
-          <span class="text-xs text-muted">surface="hero" · backdrop="orbital"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-16"
+        index="16"
+        total="43"
+        locale="en"
+        title="16 — Dark Orbital Gradient AI Hero"
+        component="HeroCenteredEditorial"
+        propsSummary={"surface=\"hero\" · backdrop=\"orbital\""}
+        agentRef={"Hero #16 (#hero-16) — <HeroCenteredEditorial surface=\"hero\" backdrop=\"orbital\" />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           surface="hero"
@@ -372,16 +683,18 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "Explore features", href: "/features/", icon: "arrow-right" }}
           secondaryCta={{ label: "Book architecture call", href: "/contact/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-17" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="17 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">17 — Light Orbital Studio Hero with Dashed Top Navigation</p>
-          </div>
-          <span class="text-xs text-muted">previewNavVariant="dashed" · backdrop="orbital"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-17"
+        index="17"
+        total="43"
+        locale="en"
+        title="17 — Light Orbital Studio Hero with Dashed Top Navigation"
+        component="HeroCenteredEditorial"
+        propsSummary={"previewNavVariant=\"dashed\" · backdrop=\"orbital\""}
+        agentRef={"Hero #17 (#hero-17) — <HeroCenteredEditorial previewNavVariant=\"dashed\" backdrop=\"orbital\" />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           surface="default"
@@ -398,16 +711,18 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
           secondaryCta={{ label: "Read docs", href: "/components/", variant: "ghost" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-18" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="18 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">18 — Fine Noise Texture Editorial &amp; Rounded Capture</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="noise" · bottomImageStyle="rounded"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-18"
+        index="18"
+        total="43"
+        locale="en"
+        title="18 — Fine Noise Texture Editorial &amp; Rounded Capture"
+        component="HeroCenteredEditorial"
+        propsSummary={"backdrop=\"noise\" · bottomImageStyle=\"rounded\""}
+        agentRef={"Hero #18 (#hero-18) — <HeroCenteredEditorial backdrop=\"noise\" bottomImageStyle=\"rounded\" />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           surface="subtle"
@@ -428,16 +743,18 @@ import heroPhoto from './herosections.jpg';
           bottomImageAlt="Wide workspace audit photography framed beneath noise backdrop"
           bottomImageStyle="rounded"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-19" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="19 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">19 — Architectural Net Grid with Dual Actions &amp; Partner Strip</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="net" · partnerLogos</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-19"
+        index="19"
+        total="43"
+        locale="en"
+        title="19 — Architectural Net Grid with Dual Actions &amp; Partner Strip"
+        component="HeroCenteredEditorial"
+        propsSummary={"backdrop=\"net\" · partnerLogos"}
+        agentRef={"Hero #19 (#hero-19) — <HeroCenteredEditorial backdrop=\"net\" partnerLogos />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           surface="surface"
@@ -457,17 +774,19 @@ import heroPhoto from './herosections.jpg';
             { icon: "search", name: "PAGEFIND RTL" }
           ]}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-20" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="20 / 42" variant="primary" size="sm" />
-            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">20 — Top Launch Promo Banner with Deep Parallax Photography</p>
-          </div>
-          <span class="text-xs text-muted">topBanner · parallaxImage · parallaxSpeed="deep"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-20"
+        index="20"
+        total="43"
+        locale="en"
+        title="20 — Top Launch Promo Banner with Deep Parallax Photography"
+        component="HeroCenteredEditorial"
+        propsSummary={"topBanner · parallaxImage · parallaxSpeed=\"deep\""}
+        parallax
+        agentRef={"Hero #20 (#hero-20) — <HeroCenteredEditorial topBanner parallaxImage parallaxSpeed=\"deep\" />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           parallaxImage={hqVisual}
@@ -488,16 +807,18 @@ import heroPhoto from './herosections.jpg';
           primaryCta={{ label: "Claim starter kit", href: "/pricing/", icon: "arrow-right" }}
           secondaryCta={{ label: "Browse demos", href: "/projects/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-21" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="21 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">21 — Dark Grid Editorial Hero with Avatar Pill &amp; Arch Preview</p>
-          </div>
-          <span class="text-xs text-muted">surface="hero" · showAvatarPill · bottomImageStyle="arch"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-21"
+        index="21"
+        total="43"
+        locale="en"
+        title="21 — Dark Grid Editorial Hero with Avatar Pill &amp; Arch Preview"
+        component="HeroCenteredEditorial"
+        propsSummary={"surface=\"hero\" · showAvatarPill · bottomImageStyle=\"arch\""}
+        agentRef={"Hero #21 (#hero-21) — <HeroCenteredEditorial surface=\"hero\" showAvatarPill bottomImageStyle=\"arch\" />"}
+      >
         <HeroCenteredEditorial
           locale="en"
           surface="hero"
@@ -516,7 +837,7 @@ import heroPhoto from './herosections.jpg';
           bottomImageAlt="Studio interface framed in dark arch editorial preview"
           bottomImageStyle="arch"
         />
-      </div>
+      </HeroShowcaseCard>
     </div>
   </ComponentDoc>
 
@@ -549,14 +870,16 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
 />`}
   >
     <div class="space-y-12">
-      <div id="hero-02" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="02 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">02 — Hero Section for AI Agent Website</p>
-          </div>
-          <span class="text-xs text-muted">surface="hero" · frame="clean"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-02"
+        index="02"
+        total="43"
+        locale="en"
+        title="02 — Hero Section for AI Agent Website"
+        component="HeroDashboardShowcase"
+        propsSummary={"surface=\"hero\" · frame=\"clean\""}
+        agentRef={"Hero #02 (#hero-02) — <HeroDashboardShowcase surface=\"hero\" frame=\"clean\" />"}
+      >
         <HeroDashboardShowcase
           locale="en"
           surface="hero"
@@ -577,16 +900,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           image={heroVisual}
           imageAlt="AI workflow showcase interface inside dark hero container"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-05" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="05 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">05 — Modern SaaS Hero Section With Dark Gradient</p>
-          </div>
-          <span class="text-xs text-muted">cropBottom · glowBehindShowcase · badgeVariant="success"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-05"
+        index="05"
+        total="43"
+        locale="en"
+        title="05 — Modern SaaS Hero Section With Dark Gradient"
+        component="HeroDashboardShowcase"
+        propsSummary={"cropBottom · glowBehindShowcase · badgeVariant=\"success\""}
+        agentRef={"Hero #05 (#hero-05) — <HeroDashboardShowcase cropBottom glowBehindShowcase badgeVariant=\"success\" />"}
+      >
         <HeroDashboardShowcase
           locale="en"
           surface="hero"
@@ -607,16 +932,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "Start your free trial", href: "/pricing/", icon: "arrow-right" }}
           secondaryCta={{ label: "Book a demo", href: "/contact/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-10" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="10 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">10 — Hero Section with Minimal Nav &amp; Gradient Dashboard</p>
-          </div>
-          <span class="text-xs text-muted">showPreviewNav · backdrop="wash" · glowBehindShowcase</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-10"
+        index="10"
+        total="43"
+        locale="en"
+        title="10 — Hero Section with Minimal Nav &amp; Gradient Dashboard"
+        component="HeroDashboardShowcase"
+        propsSummary={"showPreviewNav · backdrop=\"wash\" · glowBehindShowcase"}
+        agentRef={"Hero #10 (#hero-10) — <HeroDashboardShowcase showPreviewNav backdrop=\"wash\" glowBehindShowcase />"}
+      >
         <HeroDashboardShowcase
           locale="en"
           surface="subtle"
@@ -638,16 +965,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
           secondaryCta={{ label: "Platform features", href: "/features/", icon: "sparkles" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-11" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="11 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">11 — Modern Platform Hero With Dropdown Navigation</p>
-          </div>
-          <span class="text-xs text-muted">previewNavVariant="dropdown" · frame="clean" · cropBottom</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-11"
+        index="11"
+        total="43"
+        locale="en"
+        title="11 — Modern Platform Hero With Dropdown Navigation"
+        component="HeroDashboardShowcase"
+        propsSummary={"previewNavVariant=\"dropdown\" · frame=\"clean\" · cropBottom"}
+        agentRef={"Hero #11 (#hero-11) — <HeroDashboardShowcase previewNavVariant=\"dropdown\" frame=\"clean\" cropBottom />"}
+      >
         <HeroDashboardShowcase
           locale="en"
           surface="default"
@@ -673,16 +1002,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           image={auditVisual}
           imageAlt="Engineering audit dashboard visual anchored at bottom of hero"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-13" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="13 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">13 — Modern Hero Section with Dashboard Preview &amp; Framed Rails</p>
-          </div>
-          <span class="text-xs text-muted">framedRails="solid" · primaryCtaHoverSwap · cropBottom</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-13"
+        index="13"
+        total="43"
+        locale="en"
+        title="13 — Modern Hero Section with Dashboard Preview &amp; Framed Rails"
+        component="HeroDashboardShowcase"
+        propsSummary={"framedRails=\"solid\" · primaryCtaHoverSwap · cropBottom"}
+        agentRef={"Hero #13 (#hero-13) — <HeroDashboardShowcase framedRails=\"solid\" primaryCtaHoverSwap cropBottom />"}
+      >
         <HeroDashboardShowcase
           locale="en"
           surface="default"
@@ -706,17 +1037,19 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
           secondaryCta={{ label: "Browse docs", href: "/components/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-22" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="22 / 42" variant="primary" size="sm" />
-            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">22 — Modern Interface Dashboard with Dark Parallax Backdrop</p>
-          </div>
-          <span class="text-xs text-muted">parallaxImage · parallaxOverlay="dark" · cropBottom</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-22"
+        index="22"
+        total="43"
+        locale="en"
+        title="22 — Modern Interface Dashboard with Dark Parallax Backdrop"
+        component="HeroDashboardShowcase"
+        propsSummary={"parallaxImage · parallaxOverlay=\"dark\" · cropBottom"}
+        parallax
+        agentRef={"Hero #22 (#hero-22) — <HeroDashboardShowcase parallaxImage parallaxOverlay=\"dark\" cropBottom />"}
+      >
         <HeroDashboardShowcase
           locale="en"
           parallaxImage={auditVisual}
@@ -734,16 +1067,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "Inspect metrics", href: "/features/", icon: "arrow-right" }}
           secondaryCta={{ label: "Request walkthrough", href: "/contact/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-23" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="23 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">23 — Verified 5-Star Reviews &amp; Noise Texture Product Stage</p>
-          </div>
-          <span class="text-xs text-muted">showAvatarGroup · backdrop="noise" · frame="clean"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-23"
+        index="23"
+        total="43"
+        locale="en"
+        title="23 — Verified 5-Star Reviews &amp; Noise Texture Product Stage"
+        component="HeroDashboardShowcase"
+        propsSummary={"showAvatarGroup · backdrop=\"noise\" · frame=\"clean\""}
+        agentRef={"Hero #23 (#hero-23) — <HeroDashboardShowcase showAvatarGroup backdrop=\"noise\" frame=\"clean\" />"}
+      >
         <HeroDashboardShowcase
           locale="en"
           surface="subtle"
@@ -764,16 +1099,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           image={trustVisual}
           imageAlt="Quality verification emblem inside clean showcase frame"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-24" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="24 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">24 — Website Performance Hero with KPI Strip &amp; Orbital Glow</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="orbital" · metricsStrip · cropBottom</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-24"
+        index="24"
+        total="43"
+        locale="en"
+        title="24 — Website Performance Hero with KPI Strip &amp; Orbital Glow"
+        component="HeroDashboardShowcase"
+        propsSummary={"backdrop=\"orbital\" · metricsStrip · cropBottom"}
+        agentRef={"Hero #24 (#hero-24) — <HeroDashboardShowcase backdrop=\"orbital\" metricsStrip cropBottom />"}
+      >
         <HeroDashboardShowcase
           locale="en"
           surface="hero"
@@ -794,16 +1131,18 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "Run benchmark", href: "/features/", icon: "arrow-right" }}
           secondaryCta={{ label: "Explore pricing", href: "/pricing/" }}
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-25" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="25 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">25 — Lightning Interface Hero with Net-Grid &amp; Pill Nav</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="net" · previewNavVariant="pill" · metricsStrip</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-25"
+        index="25"
+        total="43"
+        locale="en"
+        title="25 — Lightning Interface Hero with Net-Grid &amp; Pill Nav"
+        component="HeroDashboardShowcase"
+        propsSummary={"backdrop=\"net\" · previewNavVariant=\"pill\" · metricsStrip"}
+        agentRef={"Hero #25 (#hero-25) — <HeroDashboardShowcase backdrop=\"net\" previewNavVariant=\"pill\" metricsStrip />"}
+      >
         <HeroDashboardShowcase
           locale="en"
           surface="surface"
@@ -828,17 +1167,19 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           image={hqVisual}
           imageAlt="Studio engineering building showcased inside macOS window chrome"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-26" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="26 / 42" variant="primary" size="sm" />
-            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">26 — Promo Banner SaaS Dashboard with Subtle Photo Parallax</p>
-          </div>
-          <span class="text-xs text-muted">topBanner · parallaxImage · primaryCtaHoverSwap</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-26"
+        index="26"
+        total="43"
+        locale="en"
+        title="26 — Promo Banner SaaS Dashboard with Subtle Photo Parallax"
+        component="HeroDashboardShowcase"
+        propsSummary={"topBanner · parallaxImage · primaryCtaHoverSwap"}
+        parallax
+        agentRef={"Hero #26 (#hero-26) — <HeroDashboardShowcase topBanner parallaxImage primaryCtaHoverSwap />"}
+      >
         <HeroDashboardShowcase
           locale="en"
           parallaxImage={hero0Visual}
@@ -862,7 +1203,7 @@ import bgPhoto from '@/assets/germancert/hero-audit.jpg';
           primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
           secondaryCta={{ label: "Contact sales", href: "/contact/" }}
         />
-      </div>
+      </HeroShowcaseCard>
     </div>
   </ComponentDoc>
 
@@ -890,14 +1231,16 @@ import showcaseImg from './herosections.jpg';
 />`}
   >
     <div class="space-y-12">
-      <div id="hero-03" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="03 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">03 — Hero Section with Grid, Gradient &amp; 5-Star Rating Group</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="grid" · showAvatarGroup</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-03"
+        index="03"
+        total="43"
+        locale="en"
+        title="03 — Hero Section with Grid, Gradient &amp; 5-Star Rating Group"
+        component="LandingHeroSplit"
+        propsSummary={"backdrop=\"grid\" · showAvatarGroup"}
+        agentRef={"Hero #03 (#hero-03) — <LandingHeroSplit backdrop=\"grid\" showAvatarGroup />"}
+      >
         <LandingHeroSplit
           locale="en"
           surface="subtle"
@@ -917,16 +1260,18 @@ import showcaseImg from './herosections.jpg';
           image={auditVisual}
           imageAlt="Engineering workspace grid preview"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-04" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="04 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">04 — Hero Section Dark Theme with Community Pill</p>
-          </div>
-          <span class="text-xs text-muted">surface="hero" · showAvatarPill · secondaryCta.icon</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-04"
+        index="04"
+        total="43"
+        locale="en"
+        title="04 — Hero Section Dark Theme with Community Pill"
+        component="LandingHeroSplit"
+        propsSummary={"surface=\"hero\" · showAvatarPill · secondaryCta.icon"}
+        agentRef={"Hero #04 (#hero-04) — <LandingHeroSplit surface=\"hero\" showAvatarPill secondaryCta.icon />"}
+      >
         <LandingHeroSplit
           locale="en"
           surface="hero"
@@ -946,16 +1291,18 @@ import showcaseImg from './herosections.jpg';
           image={hqVisual}
           imageAlt="Architectural dark theme product showcase"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-06" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="06 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">06 — Modern SaaS Split Hero With Nav &amp; Edge-Bleed Preview</p>
-          </div>
-          <span class="text-xs text-muted">showPreviewNav · featuresRow · edgeBleedFrame</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-06"
+        index="06"
+        total="43"
+        locale="en"
+        title="06 — Modern SaaS Split Hero With Nav &amp; Edge-Bleed Preview"
+        component="LandingHeroSplit"
+        propsSummary={"showPreviewNav · featuresRow · edgeBleedFrame"}
+        agentRef={"Hero #06 (#hero-06) — <LandingHeroSplit showPreviewNav featuresRow edgeBleedFrame />"}
+      >
         <LandingHeroSplit
           locale="en"
           surface="surface"
@@ -986,17 +1333,19 @@ import showcaseImg from './herosections.jpg';
           image={heroVisual}
           imageAlt="Dark SaaS visual card offset to logical container end"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-27" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="27 / 42" variant="primary" size="sm" />
-            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">27 — Editorial Gradient Split with Parallax Background</p>
-          </div>
-          <span class="text-xs text-muted">parallaxImage · parallaxOverlay="gradient" · showPreviewNav</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-27"
+        index="27"
+        total="43"
+        locale="en"
+        title="27 — Editorial Gradient Split with Parallax Background"
+        component="LandingHeroSplit"
+        propsSummary={"parallaxImage · parallaxOverlay=\"gradient\" · showPreviewNav"}
+        parallax
+        agentRef={"Hero #27 (#hero-27) — <LandingHeroSplit parallaxImage parallaxOverlay=\"gradient\" showPreviewNav />"}
+      >
         <LandingHeroSplit
           locale="en"
           parallaxImage={hqVisual}
@@ -1018,16 +1367,18 @@ import showcaseImg from './herosections.jpg';
           image={auditVisual}
           imageAlt="Featured editorial visual alongside parallax background"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-28" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="28 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">28 — Mortgage &amp; Advisory Split with Floating Stats Overlay</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="wash" · mediaStatsOverlay</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-28"
+        index="28"
+        total="43"
+        locale="en"
+        title="28 — Mortgage &amp; Advisory Split with Floating Stats Overlay"
+        component="LandingHeroSplit"
+        propsSummary={"backdrop=\"wash\" · mediaStatsOverlay"}
+        agentRef={"Hero #28 (#hero-28) — <LandingHeroSplit backdrop=\"wash\" mediaStatsOverlay />"}
+      >
         <LandingHeroSplit
           locale="en"
           surface="subtle"
@@ -1048,16 +1399,18 @@ import showcaseImg from './herosections.jpg';
           image={trustVisual}
           imageAlt="Advisory verification hallmark with glass overlay metrics"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-29" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="29 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">29 — Mirrored Split Hero with Flipped Columns &amp; Net Grid</p>
-          </div>
-          <span class="text-xs text-muted">flipColumns · backdrop="net" · showAvatarGroup</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-29"
+        index="29"
+        total="43"
+        locale="en"
+        title="29 — Mirrored Split Hero with Flipped Columns &amp; Net Grid"
+        component="LandingHeroSplit"
+        propsSummary={"flipColumns · backdrop=\"net\" · showAvatarGroup"}
+        agentRef={"Hero #29 (#hero-29) — <LandingHeroSplit flipColumns backdrop=\"net\" showAvatarGroup />"}
+      >
         <LandingHeroSplit
           locale="en"
           surface="default"
@@ -1078,17 +1431,19 @@ import showcaseImg from './herosections.jpg';
           image={auditVisual}
           imageAlt="Flipped media column over diagonal blueprint grid"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-30" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="30 / 42" variant="primary" size="sm" />
-            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">30 — Newsletter Capture &amp; Portrait Split with Deep Parallax</p>
-          </div>
-          <span class="text-xs text-muted">parallaxImage · showInlineSubscribe · parallaxSpeed="deep"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-30"
+        index="30"
+        total="43"
+        locale="en"
+        title="30 — Newsletter Capture &amp; Portrait Split with Deep Parallax"
+        component="LandingHeroSplit"
+        propsSummary={"parallaxImage · showInlineSubscribe · parallaxSpeed=\"deep\""}
+        parallax
+        agentRef={"Hero #30 (#hero-30) — <LandingHeroSplit parallaxImage showInlineSubscribe parallaxSpeed=\"deep\" />"}
+      >
         <LandingHeroSplit
           locale="en"
           parallaxImage={hero0Visual}
@@ -1106,16 +1461,18 @@ import showcaseImg from './herosections.jpg';
           image={hqVisual}
           imageAlt="Portrait photography in deep parallax newsletter split"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-31" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="31 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">31 — Grid Gradient Split with Inline Lead Capture &amp; Edge Bleed</p>
-          </div>
-          <span class="text-xs text-muted">backdrop="grid" · showInlineSubscribe · edgeBleedFrame</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-31"
+        index="31"
+        total="43"
+        locale="en"
+        title="31 — Grid Gradient Split with Inline Lead Capture &amp; Edge Bleed"
+        component="LandingHeroSplit"
+        propsSummary={"backdrop=\"grid\" · showInlineSubscribe · edgeBleedFrame"}
+        agentRef={"Hero #31 (#hero-31) — <LandingHeroSplit backdrop=\"grid\" showInlineSubscribe edgeBleedFrame />"}
+      >
         <LandingHeroSplit
           locale="en"
           surface="surface"
@@ -1132,16 +1489,18 @@ import showcaseImg from './herosections.jpg';
           image={heroVisual}
           imageAlt="Edge-bleeding showcase beside inline subscription bar"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-32" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="32 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">32 — Dark Creator Profile Split with Flipped Glass Overlays</p>
-          </div>
-          <span class="text-xs text-muted">surface="hero" · flipColumns · mediaStatsOverlay</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-32"
+        index="32"
+        total="43"
+        locale="en"
+        title="32 — Dark Creator Profile Split with Flipped Glass Overlays"
+        component="LandingHeroSplit"
+        propsSummary={"surface=\"hero\" · flipColumns · mediaStatsOverlay"}
+        agentRef={"Hero #32 (#hero-32) — <LandingHeroSplit surface=\"hero\" flipColumns mediaStatsOverlay />"}
+      >
         <LandingHeroSplit
           locale="en"
           surface="hero"
@@ -1163,16 +1522,18 @@ import showcaseImg from './herosections.jpg';
           image={trustVisual}
           imageAlt="Creator profile visual with glass engagement stat badges"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-33" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="33 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">33 — Enterprise Solutions Split with Dashed Nav &amp; Highlights</p>
-          </div>
-          <span class="text-xs text-muted">previewNavVariant="dashed" · backdrop="dots" · featuresRow</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-33"
+        index="33"
+        total="43"
+        locale="en"
+        title="33 — Enterprise Solutions Split with Dashed Nav &amp; Highlights"
+        component="LandingHeroSplit"
+        propsSummary={"previewNavVariant=\"dashed\" · backdrop=\"dots\" · featuresRow"}
+        agentRef={"Hero #33 (#hero-33) — <LandingHeroSplit previewNavVariant=\"dashed\" backdrop=\"dots\" featuresRow />"}
+      >
         <LandingHeroSplit
           locale="en"
           surface="subtle"
@@ -1202,7 +1563,7 @@ import showcaseImg from './herosections.jpg';
           image={auditVisual}
           imageAlt="Enterprise engineering console alongside feature highlights"
         />
-      </div>
+      </HeroShowcaseCard>
     </div>
   </ComponentDoc>
 
@@ -1228,14 +1589,16 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
 <HeroProofMarquee parallaxImage={bgPhoto} framedRails="dashed" />`}
   >
     <div class="space-y-12">
-      <div id="hero-12" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="12 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">12 — Hero Section with AI Prompt Input &amp; Divided Suggestions</p>
-          </div>
-          <span class="text-xs text-muted">mode="prompt" · backdrop="dots" · chipLayout="grid"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-12"
+        index="12"
+        total="43"
+        locale="en"
+        title="12 — Hero Section with AI Prompt Input &amp; Divided Suggestions"
+        component="HeroInteractivePrompt"
+        propsSummary={"mode=\"prompt\" · backdrop=\"dots\" · chipLayout=\"grid\""}
+        agentRef={"Hero #12 (#hero-12) — <HeroInteractivePrompt mode=\"prompt\" backdrop=\"dots\" chipLayout=\"grid\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-12-prompt"
           locale="en"
@@ -1250,16 +1613,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-34" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="34 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">34 — AI Workspace Prompt Composer with Dashed Rails</p>
-          </div>
-          <span class="text-xs text-muted">framedRails="dashed" · backdrop="wash" · chipLayout="pills"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-34"
+        index="34"
+        total="43"
+        locale="en"
+        title="34 — AI Workspace Prompt Composer with Dashed Rails"
+        component="HeroInteractivePrompt"
+        propsSummary={"framedRails=\"dashed\" · backdrop=\"wash\" · chipLayout=\"pills\""}
+        agentRef={"Hero #34 (#hero-34) — <HeroInteractivePrompt framedRails=\"dashed\" backdrop=\"wash\" chipLayout=\"pills\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-34-workspace"
           locale="en"
@@ -1279,17 +1644,19 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-35" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="35 / 42" variant="primary" size="sm" />
-            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">35 — Dark AI Message Prompt with Atmospheric Parallax BG</p>
-          </div>
-          <span class="text-xs text-muted">parallaxImage · mode="prompt" · previewNavVariant="pill"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-35"
+        index="35"
+        total="43"
+        locale="en"
+        title="35 — Dark AI Message Prompt with Atmospheric Parallax BG"
+        component="HeroInteractivePrompt"
+        propsSummary={"parallaxImage · mode=\"prompt\" · previewNavVariant=\"pill\""}
+        parallax
+        agentRef={"Hero #35 (#hero-35) — <HeroInteractivePrompt parallaxImage mode=\"prompt\" previewNavVariant=\"pill\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-35-parallax-prompt"
           locale="en"
@@ -1308,16 +1675,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-36" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="36 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">36 — Search Box Hero with Noise Backdrop &amp; Bordered Nav</p>
-          </div>
-          <span class="text-xs text-muted">mode="search" · backdrop="noise" · previewNavVariant="bordered"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-36"
+        index="36"
+        total="43"
+        locale="en"
+        title="36 — Search Box Hero with Noise Backdrop &amp; Bordered Nav"
+        component="HeroInteractivePrompt"
+        propsSummary={"mode=\"search\" · backdrop=\"noise\" · previewNavVariant=\"bordered\""}
+        agentRef={"Hero #36 (#hero-36) — <HeroInteractivePrompt mode=\"search\" backdrop=\"noise\" previewNavVariant=\"bordered\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-36-search"
           locale="en"
@@ -1334,16 +1703,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-37" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="37 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">37 — Orbital Directory Search Hero with Partner Logo Strip</p>
-          </div>
-          <span class="text-xs text-muted">mode="search" · backdrop="orbital" · partnerLogos</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-37"
+        index="37"
+        total="43"
+        locale="en"
+        title="37 — Orbital Directory Search Hero with Partner Logo Strip"
+        component="HeroInteractivePrompt"
+        propsSummary={"mode=\"search\" · backdrop=\"orbital\" · partnerLogos"}
+        agentRef={"Hero #37 (#hero-37) — <HeroInteractivePrompt mode=\"search\" backdrop=\"orbital\" partnerLogos />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-37-orbital-search"
           locale="en"
@@ -1363,16 +1734,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-38" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="38 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">38 — Code Prompt Composer with Stack Selector Tabs</p>
-          </div>
-          <span class="text-xs text-muted">mode="code" · stackTabs · surface="hero"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-38"
+        index="38"
+        total="43"
+        locale="en"
+        title="38 — Code Prompt Composer with Stack Selector Tabs"
+        component="HeroInteractivePrompt"
+        propsSummary={"mode=\"code\" · stackTabs · surface=\"hero\""}
+        agentRef={"Hero #38 (#hero-38) — <HeroInteractivePrompt mode=\"code\" stackTabs surface=\"hero\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-38-code"
           locale="en"
@@ -1392,17 +1765,19 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-39" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="39 / 42" variant="primary" size="sm" />
-            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">39 — Dark CLI Copy Command Hero with Photo Parallax BG</p>
-          </div>
-          <span class="text-xs text-muted">HeroCommandCli · parallaxImage · showPreviewNav</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-39"
+        index="39"
+        total="43"
+        locale="en"
+        title="39 — Dark CLI Copy Command Hero with Photo Parallax BG"
+        component="HeroCommandCli"
+        propsSummary={"HeroCommandCli · parallaxImage · showPreviewNav"}
+        parallax
+        agentRef={"Hero #39 (#hero-39) — <HeroCommandCli parallaxImage showPreviewNav />"}
+      >
         <HeroCommandCli
           locale="en"
           parallaxImage={auditVisual}
@@ -1421,16 +1796,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-40" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="40 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">40 — Rounded Newsletter &amp; Launch Waitlist Capsule</p>
-          </div>
-          <span class="text-xs text-muted">HeroInteractivePrompt mode="newsletter"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-40"
+        index="40"
+        total="43"
+        locale="en"
+        title="40 — Rounded Newsletter &amp; Launch Waitlist Capsule"
+        component="HeroInteractivePrompt"
+        propsSummary={"HeroInteractivePrompt mode=\"newsletter\""}
+        agentRef={"Hero #40 (#hero-40) — <HeroInteractivePrompt mode=\"newsletter\" />"}
+      >
         <HeroInteractivePrompt
           id="demo-hero-40-newsletter"
           locale="en"
@@ -1443,16 +1820,18 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           title="Get notified when new blocks ship"
           description="Includes instant regex validation, aria-invalid error states, and semantic OKLCH success/error status feedback."
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-41" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="41 / 42" variant="primary" size="sm" />
-            <p class="text-sm font-bold text-fg">41 — 5-Star Social Proof &amp; RTL-Aware Embla Partner Marquee</p>
-          </div>
-          <span class="text-xs text-muted">HeroProofMarquee · Embla AutoScroll · backdrop="dots"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-41"
+        index="41"
+        total="43"
+        locale="en"
+        title="41 — 5-Star Social Proof &amp; RTL-Aware Embla Partner Marquee"
+        component="HeroProofMarquee"
+        propsSummary={"HeroProofMarquee · Embla AutoScroll · backdrop=\"dots\""}
+        agentRef={"Hero #41 (#hero-41) — <HeroProofMarquee backdrop=\"dots\" />"}
+      >
         <HeroProofMarquee
           locale="en"
           surface="subtle"
@@ -1461,17 +1840,19 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           headingTag="h2"
           previewBrand="Starter Studio"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="hero-42" class="scroll-mt-24 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5">
-            <UiBadge label="42 / 42" variant="primary" size="sm" />
-            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
-            <p class="text-sm font-bold text-fg">42 — Automate Faster Partner Marquee with Parallax BG &amp; Dashed Rails</p>
-          </div>
-          <span class="text-xs text-muted">HeroProofMarquee · parallaxImage · framedRails="dashed"</span>
-        </div>
+      <HeroShowcaseCard
+        id="hero-42"
+        index="42"
+        total="43"
+        locale="en"
+        title="42 — Automate Faster Partner Marquee with Parallax BG &amp; Dashed Rails"
+        component="HeroProofMarquee"
+        propsSummary={"HeroProofMarquee · parallaxImage · framedRails=\"dashed\""}
+        parallax
+        agentRef={"Hero #42 (#hero-42) — <HeroProofMarquee parallaxImage framedRails=\"dashed\" />"}
+      >
         <HeroProofMarquee
           locale="en"
           parallaxImage={heroVisual}
@@ -1489,9 +1870,80 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
           compact
           headingTag="h2"
         />
-      </div>
+      </HeroShowcaseCard>
 
-      <div id="doc-hero-variants" class="scroll-mt-24 space-y-3 pt-4 border-t border-border">
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-floating-orb-hero"
+    name="HeroFloatingOrbSplit"
+    category="Orbital Split & Telemetry Cards"
+    title="HeroFloatingOrbSplit (1 Variation · #43)"
+    summary="Converts an agency RTL/LTR hero into an Astro v7 orbital split featuring a 5-star rating strip, angled marker-highlighted brand heading, phone/WhatsApp action buttons, glowing circular backdrop orb, play badge, three floating telemetry/service glass cards, and an accent partner logo strip."
+    propsList={[
+      { name: "titleHighlight / titleLead / titleSecondary", type: "string", description: "Split display typography pairing an angled marker highlight with brand suffix and secondary tagline." },
+      { name: "topCard / progressCard / bottomCard", type: "HeroFloatingFeatureCard / HeroFloatingProgressCard", description: "Three glass-surface cards floating around the orbital showcase (automatically stacked cleanly on mobile)." },
+      { name: "partnerLogos / partnerBarTone", type: "HeroMarqueePartner[] / 'accent' | 'primary' | 'surface'", defaultVal: "'accent'", description: "Full-width rounded partner bar anchored directly underneath the 12-column hero stage." },
+      { name: "parallaxImage / flipColumns", type: "ImageMetadata / boolean", defaultVal: "null / false", description: "Optional GPU parallax backdrop and logical desktop column reversal." }
+    ]}
+    usage={`import HeroFloatingOrbSplit from '@/components/HeroFloatingOrbSplit.astro';
+import showcaseImg from '@/assets/germancert/hero-audit.jpg';
+
+<HeroFloatingOrbSplit
+  locale="en"
+  image={showcaseImg}
+  titleHighlight="NIK AVA"
+  titleLead="IDEATION"
+  titleSecondary="Enterprise Cloud & Network Security"
+  topCard={{ icon: "cloud-computing", eyebrow: "Cloud Computing", title: "Network & Security" }}
+  progressCard={{ title: "Software Delivery", label: "Workflow Progress", percent: 84 }}
+  bottomCard={{ icon: "headset", title: "24/7 Support", subtitle: "Engineering Desk" }}
+/>`}
+  >
+    <div class="space-y-12">
+      <HeroShowcaseCard
+        id="hero-43"
+        index="43"
+        total="43"
+        locale="en"
+        title="43 — Floating Orb Split with Service Telemetry Cards, Rating &amp; Partner Strip"
+        component="HeroFloatingOrbSplit"
+        propsSummary={'backdrop="dots" · topCard · progressCard · bottomCard · partnerLogos'}
+        agentRef={'Hero #43 (#hero-43) — <HeroFloatingOrbSplit backdrop="dots" topCard progressCard bottomCard partnerLogos />'}
+      >
+        <HeroFloatingOrbSplit
+          locale="en"
+          surface="subtle"
+          backdrop="dots"
+          compact
+          headingTag="h2"
+          image={auditVisual}
+          imageAlt="Enterprise IT consulting team reviewing infrastructure metrics"
+          titleHighlight="NIK AVA"
+          titleLead="IDEATION"
+          titleSecondary="Next-Gen Cloud &amp; Security Systems"
+          description="Build your tomorrow with today's technology: cloud computing, resilient networking, virtualization, and 24/7 managed enterprise infrastructure."
+          primaryCta={{ label: "+1 (555) 240-8810", href: "/contact/", icon: "phone", variant: "secondary" }}
+          secondaryCta={{ label: "WhatsApp", href: "/contact/", icon: "brand-whatsapp", variant: "secondary" }}
+          topCard={{ icon: "cloud-computing", eyebrow: "Cloud Computing", title: "Network &amp; Security" }}
+          progressCard={{ title: "Software Delivery", label: "Workflow Progress", percent: 84 }}
+          bottomCard={{ icon: "headset", title: "24/7 Support", subtitle: "Engineering Desk" }}
+          partnerLogos={[
+            { icon: "cloud-computing", name: "CISCO" },
+            { icon: "layers", name: "DELL EMC" },
+            { icon: "shield", name: "FORTINET" },
+            { icon: "bolt", name: "VMWARE" },
+            { icon: "globe", name: "JUNIPER" }
+          ]}
+        />
+      </HeroShowcaseCard>
+    </div>
+  </ComponentDoc>
+
+  <PageSection surface="subtle" spacing="md" borderTop>
+    <div class="space-y-12">
+      <div id="doc-hero-variants" class="scroll-mt-24 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex items-center gap-2.5">
             <UiBadge label="Core Reference" variant="success" size="sm" />
@@ -1516,7 +1968,7 @@ import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
         />
       </div>
     </div>
-  </ComponentDoc>
+  </PageSection>
 </div>
 
 <CtaBanner

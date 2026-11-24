@@ -1,31 +1,31 @@
 ---
 /**
- * Interactive Prompt & Newsletter Hero Section adapted from PrebuiltUI AI/Search input
- * and Subscription/Lead-capture hero templates.
- *
- * - `mode="prompt"` renders an elevated prompt composer textarea with either clickable
- *   pill chips (`chipLayout="pills"`) or a 2-column hairline-divided suggestion grid
- *   (`chipLayout="grid"`), plus optional embedded `<HeroPreviewNav>`.
- * - `mode="newsletter"` renders an accessible pill/rounded email subscription bar with
- *   client-side format validation, optional external endpoint submission, and live status.
+ * Interactive Prompt, Code, Search & Newsletter Hero Section composed from
+ * shared UI primitives: `<BackdropLayer>`, `<HeroPreviewNav>`, `<AnnouncementPill>`,
+ * `<UiBadge>`, `<HeroHeadline>`, `<Button>`, `<ChipGroup>`, `<PartnerStrip>`, and
+ * `<HeroParallaxLayer>`.
  */
 import type { ImageMetadata } from 'astro';
-import Button from '@/components/Button.astro';
-import type { HeroPartnerPill } from '@/components/HeroCenteredEditorial.astro';
+import AnnouncementPill from '@/components/ui/AnnouncementPill.astro';
+import BackdropLayer from '@/components/ui/BackdropLayer.astro';
+import Button from '@/components/ui/Button.astro';
+import ChipGroup from '@/components/ui/ChipGroup.astro';
+import HeroHeadline from '@/components/ui/HeroHeadline.astro';
 import HeroParallaxLayer, {
   type HeroParallaxOverlay,
   type HeroParallaxSpeed,
-} from '@/components/HeroParallaxLayer.astro';
+} from '@/components/ui/HeroParallaxLayer.astro';
 import HeroPreviewNav, {
   type HeroPreviewNavLink,
   type HeroPreviewNavVariant,
-} from '@/components/HeroPreviewNav.astro';
-import Icon from '@/components/Icon.astro';
-import type { HeroCtaAction, HeroSplitAnnouncement } from '@/components/LandingHeroSplit.astro';
-import UiBadge from '@/components/UiBadge.astro';
+} from '@/components/ui/HeroPreviewNav.astro';
+import Icon from '@/components/ui/Icon.astro';
+import PartnerStrip from '@/components/ui/PartnerStrip.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
 import type { Locale } from '@/i18n/locales';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale } from '@/libs/ui/locale';
+import type { HeroAnnouncement, HeroCtaAction, HeroPartnerPill } from '@/libs/ui/types';
 import * as m from '@/paraglide/messages';
 
 interface Props {
@@ -44,7 +44,7 @@ interface Props {
   previewBrand?: string;
   previewLinks?: readonly HeroPreviewNavLink[];
   previewCta?: HeroCtaAction | null;
-  announcement?: HeroSplitAnnouncement | null;
+  announcement?: HeroAnnouncement | null;
   badge?: string | null;
   title?: string;
   description?: string | null;
@@ -208,49 +208,7 @@ const promptOkMsg =
     )
   }
 
-  {
-    backdrop !== 'none' && (
-      <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden print:hidden">
-        {(backdrop === 'grid' || backdrop === 'dots' || backdrop === 'noise') && (
-          <div
-            class:list={[
-              'hero-prompt-pattern absolute inset-0',
-              backdrop === 'dots' ? 'is-dots' : backdrop === 'noise' ? 'is-noise' : 'is-grid',
-            ]}
-          />
-        )}
-        {backdrop === 'wash' && <div class="hero-prompt-wash absolute inset-0" />}
-        {backdrop === 'orbital' && (
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div
-              class:list={[
-                'size-[24rem] rounded-full border sm:size-[34rem]',
-                isHeroSurface ? 'border-hero-fg/12' : 'border-border/70',
-              ]}
-            />
-            <div
-              class:list={[
-                'absolute size-[16rem] rounded-full border sm:size-[23rem]',
-                isHeroSurface ? 'border-accent/25' : 'border-primary/20',
-              ]}
-            />
-          </div>
-        )}
-        <div
-          class:list={[
-            'hero-glow-primary absolute -top-36 end-[-6rem] size-[26rem] rounded-full',
-            !isHeroSurface && 'opacity-50',
-          ]}
-        />
-        <div
-          class:list={[
-            'hero-glow-accent absolute -bottom-40 start-[-8rem] size-[24rem] rounded-full',
-            !isHeroSurface && 'opacity-45',
-          ]}
-        />
-      </div>
-    )
-  }
+  <BackdropLayer backdrop={backdrop} surface={isHeroSurface ? 'hero' : 'default'} />
 
   <div class="layout-container">
     <div
@@ -283,55 +241,15 @@ const promptOkMsg =
       >
         {
           announcement && (
-            <div class="mb-5 flex justify-center">
-              {announcement.href ? (
-                <a
-                  href={announcement.href}
-                  class:list={[
-                    'group inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border p-1 pe-3.5 text-xs font-medium transition-colors',
-                    isHeroSurface
-                      ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/90 hover:border-hero-fg/35 print:border-border print:bg-surface print:text-fg'
-                      : 'border-border bg-surface text-muted shadow-xs hover:border-primary/45 hover:text-fg',
-                  ]}
-                >
-                  {announcement.badge && (
-                    <span
-                      class:list={[
-                        'rounded-full px-2.5 py-0.5 text-[11px] font-bold',
-                        isHeroSurface
-                          ? 'bg-accent text-hero-base print:bg-primary print:text-primary-fg'
-                          : 'bg-primary text-primary-fg',
-                      ]}
-                    >
-                      {announcement.badge}
-                    </span>
-                  )}
-                  <span class="truncate">{announcement.label}</span>
-                  <Icon name="chevron-right" size={13} class="shrink-0 opacity-75 rtl:rotate-180" />
-                </a>
-              ) : (
-                <span
-                  class:list={[
-                    'inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium',
-                    isHeroSurface
-                      ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/90 print:border-border print:bg-surface print:text-fg'
-                      : 'border-border bg-surface text-muted shadow-xs',
-                  ]}
-                >
-                  {announcement.badge && (
-                    <span
-                      class:list={[
-                        'rounded-full px-2.5 py-0.5 text-[11px] font-bold',
-                        isHeroSurface ? 'bg-accent text-hero-base' : 'bg-primary text-primary-fg',
-                      ]}
-                    >
-                      {announcement.badge}
-                    </span>
-                  )}
-                  <span>{announcement.label}</span>
-                </span>
-              )}
-            </div>
+            <AnnouncementPill
+              badge={announcement.badge}
+              label={announcement.label}
+              href={announcement.href}
+              surface={isHeroSurface ? 'hero' : 'default'}
+              align="center"
+              locale={activeLocale}
+              class="mb-5"
+            />
           )
         }
 
@@ -356,17 +274,11 @@ const promptOkMsg =
           )
         }
 
-        {
-          headingTag === 'h2' ? (
-            <h2 class="text-3xl font-extrabold leading-[1.1] tracking-tight text-balance sm:text-4xl lg:text-5xl">
-              {resolvedTitle}
-            </h2>
-          ) : (
-            <h1 class="text-[clamp(2.25rem,4.4vw,3.8rem)] font-extrabold leading-[1.08] tracking-tight text-balance">
-              {resolvedTitle}
-            </h1>
-          )
-        }
+        <HeroHeadline
+          headingTag={headingTag}
+          lead={resolvedTitle}
+          surface={isHeroSurface ? 'hero' : 'default'}
+        />
 
         {
           resolvedDescription && (
@@ -436,24 +348,24 @@ const promptOkMsg =
                 <label for={fieldId} class="sr-only">
                   {resolvedTitle}
                 </label>
-              <textarea
-                id={fieldId}
-                rows={3}
-                placeholder={resolvedPlaceholder}
-                class:list={[
-                  'w-full resize-none bg-transparent px-1.5 py-1 text-sm leading-relaxed focus:outline-none sm:text-base',
-                  isHeroSurface
-                    ? 'text-hero-fg placeholder:text-hero-fg/55 print:text-fg print:placeholder:text-muted'
-                    : 'text-fg placeholder:text-muted/75',
-                ]}
-              ></textarea>
+                <textarea
+                  id={fieldId}
+                  rows={3}
+                  placeholder={resolvedPlaceholder}
+                  class:list={[
+                    'w-full resize-none bg-transparent px-1.5 py-1 text-sm leading-relaxed focus:outline-none sm:text-base',
+                    isHeroSurface
+                      ? 'text-hero-fg placeholder:text-hero-fg/55 print:text-fg print:placeholder:text-muted'
+                      : 'text-fg placeholder:text-muted/75',
+                  ]}
+                ></textarea>
 
-              <div
-                class:list={[
-                  'mt-2 flex items-center justify-between gap-3 border-t pt-3',
-                  isHeroSurface ? 'border-hero-fg/15 print:border-border' : 'border-border',
-                ]}
-              >
+                <div
+                  class:list={[
+                    'mt-2 flex items-center justify-between gap-3 border-t pt-3',
+                    isHeroSurface ? 'border-hero-fg/15 print:border-border' : 'border-border',
+                  ]}
+                >
                   <span
                     class:list={[
                       'inline-flex items-center gap-1.5 text-xs',
@@ -474,288 +386,214 @@ const promptOkMsg =
                 </div>
               </form>
 
-            {resolvedChips && resolvedChips.length > 0 && (
-              chipLayout === 'grid' ? (
-                <div class="mx-auto mt-6 grid max-w-2xl gap-x-8 sm:grid-cols-2">
-                  {resolvedChips.map((chipText) => (
-                    <button
-                      type="button"
-                      data-hero-prompt-chip
-                      data-chip-value={chipText}
-                      aria-pressed="false"
-                      class:list={[
-                        'group flex cursor-pointer items-center justify-between gap-3 border-t py-3 text-start text-xs font-medium transition-colors sm:text-sm',
-                        isHeroSurface
-                          ? 'border-hero-fg/15 text-hero-fg/80 hover:text-hero-fg print:border-border print:text-muted print:hover:text-fg'
-                          : 'border-border text-muted hover:text-fg',
-                      ]}
-                    >
-                      <span class="truncate">{chipText}</span>
-                      <Icon
-                        name="chevron-right"
-                        size={14}
-                        class="shrink-0 opacity-60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:opacity-100 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
-                      />
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
-                  {resolvedChips.map((chipText) => (
-                    <button
-                      type="button"
-                      data-hero-prompt-chip
-                      data-chip-value={chipText}
-                      aria-pressed="false"
-                      class:list={[
-                        'chip px-3 py-1.5 text-xs font-medium',
-                        isHeroSurface && 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/85 hover:border-accent/60 hover:text-hero-fg print:border-border print:bg-surface print:text-fg',
-                      ]}
-                    >
-                      {chipText}
-                    </button>
-                  ))}
-                </div>
-              )
-            )}
+              {resolvedChips && resolvedChips.length > 0 && (
+                chipLayout === 'grid' ? (
+                  <div class="mx-auto mt-6 grid max-w-2xl gap-x-8 sm:grid-cols-2">
+                    {resolvedChips.map((chipText) => (
+                      <button
+                        type="button"
+                        data-hero-prompt-chip
+                        data-chip-value={chipText}
+                        aria-pressed="false"
+                        class:list={[
+                          'group flex cursor-pointer items-center justify-between gap-3 border-t py-3 text-start text-xs font-medium transition-colors sm:text-sm',
+                          isHeroSurface
+                            ? 'border-hero-fg/15 text-hero-fg/80 hover:text-hero-fg print:border-border print:text-muted print:hover:text-fg'
+                            : 'border-border text-muted hover:text-fg',
+                        ]}
+                      >
+                        <span class="truncate">{chipText}</span>
+                        <Icon
+                          name="chevron-right"
+                          size={14}
+                          class="shrink-0 opacity-60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:opacity-100 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <ChipGroup
+                    mode="select"
+                    size="xs"
+                    align="center"
+                    surface={isHeroSurface ? 'hero' : 'default'}
+                    locale={activeLocale}
+                    items={resolvedChips.map((chipText) => ({ label: chipText, value: chipText }))}
+                    class="mt-4"
+                  />
+                )
+              )}
 
-            <div
-              data-hero-prompt-feedback
-              role="status"
-              aria-live="polite"
-              hidden
-              class:list={[
-                'mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 text-start text-sm',
-                isHeroSurface
-                  ? 'border-accent/40 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg'
-                  : 'border-primary/30 bg-primary/10 text-fg',
-              ]}
-            >
-              <p class="min-w-0 flex-1 text-xs leading-relaxed sm:text-sm">{promptOkMsg}</p>
-              <Button href={resolvedActionHref} variant="primary" size="sm" icon="arrow-right">
-                {resolvedActionLabel}
-              </Button>
-            </div>
-          </div>
-        ) : mode === 'search' ? (
-          <div data-hero-prompt-root class="mx-auto mt-8 max-w-2xl">
-            <form
-              data-hero-prompt-form
-              novalidate
-              class:list={[
-                'flex flex-col gap-2 rounded-2xl border p-2 shadow-floating transition-colors focus-within:border-primary sm:flex-row sm:items-center sm:rounded-full',
-                isHeroSurface
-                  ? 'border-hero-fg/20 bg-hero-fg/10 print:border-border print:bg-surface'
-                  : 'border-border bg-surface',
-              ]}
-            >
-              <label for={fieldId} class="sr-only">
-                {resolvedTitle}
-              </label>
-              <div class="flex min-w-0 flex-1 items-center gap-2.5 ps-3">
-                <Icon
-                  name="search"
-                  size={17}
-                  class:list={['shrink-0', isHeroSurface ? 'text-accent print:text-primary' : 'text-primary']}
-                />
-                <input
-                  id={fieldId}
-                  type="search"
-                  placeholder={resolvedPlaceholder}
-                  class:list={[
-                    'min-w-0 flex-1 bg-transparent py-2 pe-2 text-start text-sm focus:outline-none',
-                    isHeroSurface
-                      ? 'text-hero-fg placeholder:text-hero-fg/55 print:text-fg print:placeholder:text-muted'
-                      : 'text-fg placeholder:text-muted/75',
-                  ]}
-                />
+              <div
+                data-hero-prompt-feedback
+                role="status"
+                aria-live="polite"
+                hidden
+                class:list={[
+                  'mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 text-start text-sm',
+                  isHeroSurface
+                    ? 'border-accent/40 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg'
+                    : 'border-primary/30 bg-primary/10 text-fg',
+                ]}
+              >
+                <p class="min-w-0 flex-1 text-xs leading-relaxed sm:text-sm">{promptOkMsg}</p>
+                <Button href={resolvedActionHref} variant="primary" size="sm" icon="arrow-right">
+                  {resolvedActionLabel}
+                </Button>
               </div>
-              <Button type="submit" variant="primary" size="lg" icon="search" class="shrink-0">
-                {resolvedSubmitLabel}
-              </Button>
-            </form>
-
-            {resolvedChips && resolvedChips.length > 0 && (
-              <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
-                {resolvedChips.map((chipText) => (
-                  <button
-                    type="button"
-                    data-hero-prompt-chip
-                    data-chip-value={chipText}
-                    aria-pressed="false"
+            </div>
+          ) : mode === 'search' ? (
+            <div data-hero-prompt-root class="mx-auto mt-8 max-w-2xl">
+              <form
+                data-hero-prompt-form
+                novalidate
+                class:list={[
+                  'flex flex-col gap-2 rounded-2xl border p-2 shadow-floating transition-colors focus-within:border-primary sm:flex-row sm:items-center sm:rounded-full',
+                  isHeroSurface
+                    ? 'border-hero-fg/20 bg-hero-fg/10 print:border-border print:bg-surface'
+                    : 'border-border bg-surface',
+                ]}
+              >
+                <label for={fieldId} class="sr-only">
+                  {resolvedTitle}
+                </label>
+                <div class="flex min-w-0 flex-1 items-center gap-2.5 ps-3">
+                  <Icon
+                    name="search"
+                    size={17}
+                    class:list={['shrink-0', isHeroSurface ? 'text-accent print:text-primary' : 'text-primary']}
+                  />
+                  <input
+                    id={fieldId}
+                    type="search"
+                    placeholder={resolvedPlaceholder}
                     class:list={[
-                      'chip px-3 py-1.5 text-xs font-medium',
-                      isHeroSurface && 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/85 hover:border-accent/60 hover:text-hero-fg print:border-border print:bg-surface print:text-fg',
+                      'min-w-0 flex-1 bg-transparent py-2 pe-2 text-start text-sm focus:outline-none',
+                      isHeroSurface
+                        ? 'text-hero-fg placeholder:text-hero-fg/55 print:text-fg print:placeholder:text-muted'
+                        : 'text-fg placeholder:text-muted/75',
                     ]}
-                  >
-                    {chipText}
-                  </button>
-                ))}
-              </div>
-            )}
+                  />
+                </div>
+                <Button type="submit" variant="primary" size="lg" icon="search" class="shrink-0">
+                  {resolvedSubmitLabel}
+                </Button>
+              </form>
 
-            <div
-              data-hero-prompt-feedback
-              role="status"
-              aria-live="polite"
-              hidden
-              class:list={[
-                'mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 text-start text-sm',
-                isHeroSurface
-                  ? 'border-accent/40 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg'
-                  : 'border-primary/30 bg-primary/10 text-fg',
-              ]}
-            >
-              <p class="min-w-0 flex-1 text-xs leading-relaxed sm:text-sm">{promptOkMsg}</p>
-              <Button href={resolvedActionHref} variant="primary" size="sm" icon="arrow-right">
-                {resolvedActionLabel}
-              </Button>
+              {resolvedChips && resolvedChips.length > 0 && (
+                <ChipGroup
+                  mode="select"
+                  size="xs"
+                  align="center"
+                  surface={isHeroSurface ? 'hero' : 'default'}
+                  locale={activeLocale}
+                  items={resolvedChips.map((chipText) => ({ label: chipText, value: chipText }))}
+                  class="mt-4"
+                />
+              )}
+
+              <div
+                data-hero-prompt-feedback
+                role="status"
+                aria-live="polite"
+                hidden
+                class:list={[
+                  'mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 text-start text-sm',
+                  isHeroSurface
+                    ? 'border-accent/40 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg'
+                    : 'border-primary/30 bg-primary/10 text-fg',
+                ]}
+              >
+                <p class="min-w-0 flex-1 text-xs leading-relaxed sm:text-sm">{promptOkMsg}</p>
+                <Button href={resolvedActionHref} variant="primary" size="sm" icon="arrow-right">
+                  {resolvedActionLabel}
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div data-hero-newsletter-root class="mx-auto mt-8 max-w-lg">
-            <form
-              data-hero-newsletter-form
-              data-endpoint={endpoint}
-              data-err-invalid={invalidEmailMsg}
-              data-msg-ok={subOkMsg}
-              novalidate
-              class:list={[
-                'flex flex-col gap-2 rounded-2xl border p-2 shadow-sm sm:flex-row sm:items-center sm:rounded-full',
-                isHeroSurface
-                  ? 'border-hero-fg/20 bg-hero-fg/10 print:border-border print:bg-surface'
-                  : 'border-border bg-surface',
-              ]}
-            >
-              <label for={fieldId} class="sr-only">
-                {emailLabel}
-              </label>
-              <div class="flex min-w-0 flex-1 items-center gap-2.5 ps-3">
-                <Icon
-                  name="mail"
-                  size={17}
-                  class:list={[
-                    'shrink-0',
-                    isHeroSurface ? 'text-hero-fg/70 print:text-muted' : 'text-muted',
-                  ]}
-                />
-                <input
-                  id={fieldId}
-                  name="email"
-                  type="email"
-                  dir="ltr"
-                  required
-                  autocomplete="email"
-                  placeholder={resolvedPlaceholder}
-                  class:list={[
-                    'min-w-0 flex-1 bg-transparent py-2 pe-2 text-start text-sm focus:outline-none rtl:text-end',
-                    isHeroSurface
-                      ? 'text-hero-fg placeholder:text-hero-fg/55 print:text-fg print:placeholder:text-muted'
-                      : 'text-fg placeholder:text-muted/75',
-                  ]}
-                />
-              </div>
-              <Button type="submit" variant="primary" size="lg" icon="arrow-right" class="shrink-0">
-                {resolvedSubmitLabel}
-              </Button>
-            </form>
+          ) : (
+            <div data-hero-newsletter-root class="mx-auto mt-8 max-w-lg">
+              <form
+                data-hero-newsletter-form
+                data-endpoint={endpoint}
+                data-err-invalid={invalidEmailMsg}
+                data-msg-ok={subOkMsg}
+                novalidate
+                class:list={[
+                  'flex flex-col gap-2 rounded-2xl border p-2 shadow-sm sm:flex-row sm:items-center sm:rounded-full',
+                  isHeroSurface
+                    ? 'border-hero-fg/20 bg-hero-fg/10 print:border-border print:bg-surface'
+                    : 'border-border bg-surface',
+                ]}
+              >
+                <label for={fieldId} class="sr-only">
+                  {emailLabel}
+                </label>
+                <div class="flex min-w-0 flex-1 items-center gap-2.5 ps-3">
+                  <Icon
+                    name="mail"
+                    size={17}
+                    class:list={[
+                      'shrink-0',
+                      isHeroSurface ? 'text-hero-fg/70 print:text-muted' : 'text-muted',
+                    ]}
+                  />
+                  <input
+                    id={fieldId}
+                    name="email"
+                    type="email"
+                    dir="ltr"
+                    required
+                    autocomplete="email"
+                    placeholder={resolvedPlaceholder}
+                    class:list={[
+                      'min-w-0 flex-1 bg-transparent py-2 pe-2 text-start text-sm focus:outline-none rtl:text-end',
+                      isHeroSurface
+                        ? 'text-hero-fg placeholder:text-hero-fg/55 print:text-fg print:placeholder:text-muted'
+                        : 'text-fg placeholder:text-muted/75',
+                    ]}
+                  />
+                </div>
+                <Button type="submit" variant="primary" size="lg" icon="arrow-right" class="shrink-0">
+                  {resolvedSubmitLabel}
+                </Button>
+              </form>
 
-            <p
-              data-hero-newsletter-feedback
-              role="status"
-              aria-live="polite"
-              hidden
-              class="mt-3 rounded-xl border px-4 py-2.5 text-xs font-medium leading-relaxed"
-            ></p>
-
-            {resolvedTrustNote && (
               <p
-                class:list={[
-                  'mt-3 text-xs leading-relaxed',
-                  isHeroSurface ? 'text-hero-fg/75 print:text-muted' : 'text-muted',
-                ]}
-              >
-                {resolvedTrustNote}
-              </p>
-            )}
-          </div>
-        )
-      }
+                data-hero-newsletter-feedback
+                role="status"
+                aria-live="polite"
+                hidden
+                class="mt-3 rounded-xl border px-4 py-2.5 text-xs font-medium leading-relaxed"
+              ></p>
 
-      {
-        partnerLogos && partnerLogos.length > 0 && (
-          <ul class="mx-auto mt-9 flex max-w-4xl flex-wrap items-center justify-center gap-x-7 gap-y-3">
-            {partnerLogos.map((partner) => (
-              <li
-                class:list={[
-                  'inline-flex items-center gap-2 text-xs font-bold tracking-wide sm:text-sm',
-                  isHeroSurface ? 'text-hero-fg/75 print:text-muted' : 'text-muted',
-                ]}
-              >
-                <Icon
-                  name={partner.icon ?? 'building'}
-                  size={15}
-                  class={isHeroSurface ? 'text-accent print:text-primary' : 'text-primary'}
-                />
-                <span>{partner.name}</span>
-              </li>
-            ))}
-          </ul>
-        )
-      }
+              {resolvedTrustNote && (
+                <p
+                  class:list={[
+                    'mt-3 text-xs leading-relaxed',
+                    isHeroSurface ? 'text-hero-fg/75 print:text-muted' : 'text-muted',
+                  ]}
+                >
+                  {resolvedTrustNote}
+                </p>
+              )}
+            </div>
+          )
+        }
+
+        {
+          partnerLogos && partnerLogos.length > 0 && (
+            <PartnerStrip
+              items={partnerLogos}
+              variant="logos"
+              surface={isHeroSurface ? 'hero' : 'default'}
+              class="mt-9"
+            />
+          )
+        }
+      </div>
     </div>
   </div>
-  </div>
 </section>
-
-<style>
-  .hero-prompt-pattern.is-grid {
-    background-image:
-      linear-gradient(to right, color-mix(in oklch, var(--color-border) 55%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklch, var(--color-border) 55%, transparent) 1px, transparent 1px);
-    background-size: 40px 40px;
-    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 20%, transparent 100%);
-  }
-
-  .hero-prompt-band[data-hero-surface='hero'] .hero-prompt-pattern.is-grid {
-    background-image:
-      linear-gradient(to right, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px);
-  }
-
-  .hero-prompt-pattern.is-dots {
-    background-image: radial-gradient(
-      circle,
-      color-mix(in oklch, var(--color-muted) 35%, transparent) 1.25px,
-      transparent 1.25px
-    );
-    background-size: 22px 22px;
-    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 25%, transparent 100%);
-  }
-
-  .hero-prompt-pattern.is-noise {
-    background-image:
-      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-fg) 18%, transparent) 1px, transparent 1px),
-      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-primary) 20%, transparent) 1px, transparent 1px);
-    background-size: 10px 10px, 14px 14px;
-    opacity: 0.45;
-  }
-
-  .hero-prompt-band[data-hero-surface='hero'] .hero-prompt-pattern.is-noise {
-    background-image:
-      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-hero-fg) 22%, transparent) 1px, transparent 1px),
-      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-accent) 22%, transparent) 1px, transparent 1px);
-  }
-
-  .hero-prompt-wash {
-    background: linear-gradient(
-      140deg,
-      color-mix(in oklch, var(--color-primary) 11%, transparent),
-      color-mix(in oklch, var(--color-accent) 13%, transparent) 50%,
-      color-mix(in oklch, var(--color-secondary) 9%, transparent)
-    );
-  }
-</style>
 
 <script>
   function initHeroInteractivePrompts() {
@@ -765,7 +603,7 @@ const promptOkMsg =
 
       const form = root.querySelector<HTMLFormElement>('[data-hero-prompt-form]');
       const inputEl = root.querySelector<HTMLTextAreaElement | HTMLInputElement>('textarea, input[type="search"]');
-      const chips = root.querySelectorAll<HTMLButtonElement>('[data-hero-prompt-chip]');
+      const chips = root.querySelectorAll<HTMLButtonElement>('[data-hero-prompt-chip], [data-ui-chip-group="select"] [data-chip-value]');
       const stackBtns = root.querySelectorAll<HTMLButtonElement>('[data-hero-stack-tab]');
       const feedback = root.querySelector<HTMLElement>('[data-hero-prompt-feedback]');
 

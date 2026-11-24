@@ -1,0 +1,59 @@
+---
+/**
+ * Accessible star rating row with localized `aria-label` and optional review text.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  rating?: number;
+  max?: number;
+  size?: number;
+  reviewLabel?: string | null;
+  ariaLabel?: string;
+  tone?: 'warning' | 'accent';
+  locale?: Locale | string;
+  class?: string;
+}
+
+const {
+  rating = 5,
+  max = 5,
+  size = 14,
+  reviewLabel,
+  ariaLabel,
+  tone = 'warning',
+  locale,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const safeMax = Math.max(1, Math.min(10, Math.round(max)));
+const safeRating = Math.min(safeMax, Math.max(0, Math.round(rating)));
+const stars = Array.from({ length: safeMax }, (_, idx) => idx < safeRating);
+const ariaText =
+  ariaLabel ??
+  m.testimonials_rating_aria(
+    { rating: formatNumber(safeRating, activeLocale) },
+    { locale: activeLocale }
+  );
+const filledColor = tone === 'accent' ? 'text-accent' : 'text-warning';
+---
+
+<div class:list={['not-prose inline-flex flex-wrap items-center gap-2', className]}>
+  <div class="inline-flex items-center gap-0.5" aria-label={ariaText} role="img">
+    {
+      stars.map((filled) => (
+        <Icon
+          name={filled ? 'star-filled' : 'star'}
+          size={size}
+          class={filled ? filledColor : 'text-border'}
+        />
+      ))
+    }
+  </div>
+  {reviewLabel && <span class="text-xs font-medium text-muted">{reviewLabel}</span>}
+</div>

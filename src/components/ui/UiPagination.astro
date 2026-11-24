@@ -1,12 +1,8 @@
 ---
 /**
  * Reusable accessible pagination bar inspired by PrebuiltUI pagination components.
- * Uses the starter's `buildPageWindow()` + `PAGE_GAP` helpers and `formatNumber()` for
- * locale-native numerals (`fa`/`ar` digits). Renders `<a href>` links when
- * `hrefTemplate` is supplied for multi-page routes, or `<button type="button">`
- * controls when used as an interactive in-page pager.
  */
-import Icon from '@/components/Icon.astro';
+import Icon from '@/components/ui/Icon.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
 import { buildPageWindow, PAGE_GAP } from '@/libs/content/pagination';

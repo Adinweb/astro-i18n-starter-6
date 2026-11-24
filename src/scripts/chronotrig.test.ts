@@ -400,7 +400,7 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
 
     // ChronoTrig v6.1.0 bundle: version 6.1.0, settled one-shot tracking, hidden child exclusion,
     // isExternalScroll(), and opt-in :root --scroll-progress / --scroll-y mutations
-    expect(minJs).toContain('version="6.1.0"');
+    expect(minJs).toContain('version="6.2.0"');
     expect(minJs).toContain('rootScrollVars:!1');
     expect(minJs).toContain('data-trig-root-vars');
     expect(minJs).toContain('data-trig-settled');
@@ -410,8 +410,15 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
 
     // Hero and Bento decorative glows use radial gradients instead of costly blur-2xl/blur-3xl compositing layers
     const bentoGrid = fs.readFileSync(path.join(rootDir, 'src/components/BentoGrid.astro'), 'utf-8');
-    expect(homeHero).toContain('hero-glow-primary');
+    const backdropLayer = fs.readFileSync(
+      path.join(rootDir, 'src/components/ui/BackdropLayer.astro'),
+      'utf-8'
+    );
+    expect(homeHero).toContain('BackdropLayer');
     expect(homeHero).not.toContain('blur-3xl');
+    expect(backdropLayer).toContain('hero-glow-primary');
+    expect(backdropLayer).not.toContain('blur-3xl');
+    expect(backdropLayer).not.toContain('blur-2xl');
     expect(bentoGrid).toContain('hero-glow-primary');
     expect(bentoGrid).not.toContain('blur-2xl');
 
@@ -482,7 +489,7 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
 
   it('integrates UiProgress bar, circular ring, and steps variants with pure IntersectionObserver + compositor animations', () => {
     const css = fs.readFileSync(path.join(rootDir, 'src/styles/chronotrig.css'), 'utf-8');
-    const progress = fs.readFileSync(path.join(rootDir, 'src/components/UiProgress.astro'), 'utf-8');
+    const progress = fs.readFileSync(path.join(rootDir, 'src/components/ui/UiProgress.astro'), 'utf-8');
     const doc = fs.readFileSync(path.join(rootDir, 'src/components/ComponentDoc.astro'), 'utf-8');
     const enMdx = fs.readFileSync(path.join(rootDir, 'src/content/pages/components/en.mdx'), 'utf-8');
     const faMdx = fs.readFileSync(path.join(rootDir, 'src/content/pages/components/fa.mdx'), 'utf-8');
@@ -712,6 +719,130 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     }
     expect(setProps['--parallax-y']).toBe('0px');
     expect(mockStage.dataset.parallaxActive).toBe('false');
+  });
+
+  it('keeps HeroParallaxLayer listeners active across astro:page-load re-inits and isolates from ParallaxSection', () => {
+    const heroLayer = fs.readFileSync(path.join(rootDir, 'src/components/ui/HeroParallaxLayer.astro'), 'utf-8');
+    const parallaxSection = fs.readFileSync(path.join(rootDir, 'src/components/ParallaxSection.astro'), 'utf-8');
+
+    expect(heroLayer).toContain('data-hero-parallax="true"');
+    expect(heroLayer).not.toContain('stage.dataset.parallaxActive === undefined');
+    expect(parallaxSection).toContain('stage.dataset?.heroParallax === undefined');
+
+    const scriptMatch = heroLayer.match(/<script>([\s\S]*?)<\/script>/);
+    expect(scriptMatch).toBeTruthy();
+    const rawScript = ts.transpileModule(scriptMatch![1], {
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.ESNext,
+      },
+    }).outputText;
+
+    const setProps: Record<string, string> = {};
+    let simulatedTop = 420;
+    let fakeTime = 1000;
+    const docListeners = new Map<string, Array<() => void>>();
+    const scrollListeners: Array<() => void> = [];
+    const ioCallbacks: Array<(entries: Array<{ target: unknown; isIntersecting: boolean }>) => void> = [];
+
+    const mockMedia = {
+      style: {
+        setProperty: (k: string, v: string) => {
+          setProps[k] = v;
+        },
+      },
+    };
+    const mockHeroStage = {
+      dataset: { heroParallax: 'true', parallaxSpeed: 'medium' } as Record<string, string>,
+      querySelector: () => mockMedia,
+      getBoundingClientRect: () => ({ top: simulatedTop, bottom: simulatedTop + 500, height: 500 }),
+    };
+
+    const docElement = { clientHeight: 900, dataset: { motion: 'full' } };
+    const fakeDoc = {
+      documentElement: docElement,
+      body: { classList: { contains: () => false } },
+      querySelectorAll: (sel: string) => (sel === '[data-hero-parallax]' ? [mockHeroStage] : []),
+      addEventListener: (ev: string, cb: () => void) => {
+        if (!docListeners.has(ev)) docListeners.set(ev, []);
+        docListeners.get(ev)!.push(cb);
+      },
+    };
+    const fakeWin = {
+      innerHeight: 900,
+      chronoTrig: {
+        isDisabled: () => false,
+        getMobileBehavior: () => 'lightweight',
+        isMobile: () => false,
+        subscribe: () => () => {},
+      },
+      addEventListener: (ev: string, cb: () => void) => {
+        if (ev === 'scroll') scrollListeners.push(cb);
+      },
+      removeEventListener: vi.fn(),
+    };
+
+    const rafQueue: Array<(frameTime: number) => void> = [];
+    class FakeObserver {
+      observe() {}
+      disconnect() {}
+    }
+    class FakeIntersectionObserver {
+      constructor(cb: (entries: Array<{ target: unknown; isIntersecting: boolean }>) => void) {
+        ioCallbacks.push(cb);
+      }
+      observe() {}
+      disconnect() {}
+    }
+
+    const runHeroParallax = new Function(
+      'document',
+      'window',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'MutationObserver',
+      'IntersectionObserver',
+      'performance',
+      rawScript
+    );
+
+    runHeroParallax(
+      fakeDoc,
+      fakeWin,
+      (cb: (frameTime: number) => void) => {
+        rafQueue.push(cb);
+        return rafQueue.length;
+      },
+      vi.fn(),
+      FakeObserver,
+      FakeIntersectionObserver,
+      { now: () => fakeTime }
+    );
+
+    // Simulate Astro ClientRouter firing astro:page-load right after initial execution
+    docListeners.get('astro:page-load')?.forEach((cb) => cb());
+    while (rafQueue.length > 0) {
+      fakeTime += 16.67;
+      rafQueue.shift()?.(fakeTime);
+    }
+
+    expect(ioCallbacks.length).toBe(2);
+    expect(scrollListeners.length).toBe(2);
+
+    // Latest IntersectionObserver & scroll listener remain active after double-init
+    ioCallbacks.at(-1)?.([{ target: mockHeroStage, isIntersecting: true }]);
+    expect(mockHeroStage.dataset.parallaxActive).toBe('true');
+
+    const beforeScroll = Number.parseFloat(setProps['--parallax-y']);
+    simulatedTop = -180;
+    fakeTime += 16.67;
+    scrollListeners.at(-1)?.();
+    while (rafQueue.length > 0) {
+      fakeTime += 16.67;
+      rafQueue.shift()?.(fakeTime);
+    }
+    const afterScroll = Number.parseFloat(setProps['--parallax-y']);
+    expect(afterScroll).toBeGreaterThan(beforeScroll);
   });
 
   it('syncs BentoGrid internal visual animations with ChronoTrig reveals, RTL mirroring, and reduced-motion/print flattening', () => {

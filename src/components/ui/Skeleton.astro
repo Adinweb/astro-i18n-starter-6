@@ -1,0 +1,72 @@
+---
+/**
+ * Zero-JS pure-CSS accessible loading placeholder respecting `html[data-motion="reduced"]`.
+ */
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  variant?: 'text' | 'circle' | 'rect' | 'card';
+  lines?: number;
+  animated?: boolean;
+  ariaLabel?: string;
+  locale?: Locale | string;
+  class?: string;
+}
+
+const {
+  variant = 'text',
+  lines = 3,
+  animated = true,
+  ariaLabel,
+  locale,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const loadingLabel = ariaLabel ?? m.block_skeleton_loading({}, { locale: activeLocale });
+const lineCount = Math.max(1, Math.min(8, Math.round(lines)));
+const lineWidths = ['w-full', 'w-11/12', 'w-4/5', 'w-3/4', 'w-5/6', 'w-2/3', 'w-11/12', 'w-3/5'] as const;
+const pulseClass = animated
+  ? 'animate-pulse [[data-motion=reduced]_&]:animate-none print:animate-none'
+  : '';
+const barBase = `rounded-lg bg-surface-hover ${pulseClass}`;
+---
+
+<div
+  role="status"
+  aria-busy="true"
+  aria-label={loadingLabel}
+  class:list={['not-prose', className]}
+>
+  <span class="sr-only">{loadingLabel}</span>
+  {
+    variant === 'circle' ? (
+      <div class:list={['size-12 rounded-full bg-surface-hover', pulseClass]} aria-hidden="true" />
+    ) : variant === 'rect' ? (
+      <div class:list={['h-32 w-full rounded-2xl bg-surface-hover', pulseClass]} aria-hidden="true" />
+    ) : variant === 'card' ? (
+      <div class="space-y-4 rounded-2xl border border-border bg-surface p-5" aria-hidden="true">
+        <div class="flex items-center gap-3">
+          <div class:list={['size-10 shrink-0 rounded-full bg-surface-hover', pulseClass]} />
+          <div class="flex-1 space-y-2">
+            <div class:list={['h-3.5 w-2/5', barBase]} />
+            <div class:list={['h-3 w-1/3', barBase]} />
+          </div>
+        </div>
+        <div class="space-y-2.5">
+          <div class:list={['h-3 w-full', barBase]} />
+          <div class:list={['h-3 w-5/6', barBase]} />
+          <div class:list={['h-3 w-2/3', barBase]} />
+        </div>
+      </div>
+    ) : (
+      <div class="space-y-2.5" aria-hidden="true">
+        {Array.from({ length: lineCount }, (_, idx) => (
+          <div class:list={['h-3.5', lineWidths[idx % lineWidths.length], barBase]} />
+        ))}
+      </div>
+    )
+  }
+</div>

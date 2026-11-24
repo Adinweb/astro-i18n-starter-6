@@ -1,0 +1,188 @@
+---
+/**
+ * Consolidated backdrop pattern & radial ambient glow layer for Hero bands and
+ * decorative atmospheric containers (`glow` | `grid` | `dots` | `orbital` | `wash` | `noise` | `net` | `none`).
+ *
+ * Centralizes all OKLCH pattern masks and hero radial glows in a single scoped stylesheet
+ * instead of duplicating CSS across every Hero component.
+ */
+export type BackdropVariant =
+  | 'glow'
+  | 'grid'
+  | 'dots'
+  | 'orbital'
+  | 'wash'
+  | 'noise'
+  | 'net'
+  | 'none';
+
+interface Props {
+  backdrop?: BackdropVariant;
+  surface?: 'default' | 'hero';
+  orbitalScale?: 'compact' | 'wide';
+  class?: string;
+}
+
+const {
+  backdrop = 'glow',
+  surface = 'default',
+  orbitalScale = 'compact',
+  class: className,
+} = Astro.props;
+
+const isHero = surface === 'hero';
+const isPattern =
+  backdrop === 'grid' || backdrop === 'dots' || backdrop === 'noise' || backdrop === 'net';
+---
+
+{
+  backdrop !== 'none' && (
+    <div
+      aria-hidden="true"
+      data-hero-surface={isHero ? 'hero' : 'standard'}
+      class:list={[
+        'ui-backdrop-layer pointer-events-none absolute inset-0 -z-10 overflow-hidden print:hidden',
+        className,
+      ]}
+    >
+      {isPattern && (
+        <div
+          class:list={[
+            'ui-backdrop-pattern absolute inset-0',
+            backdrop === 'dots'
+              ? 'is-dots'
+              : backdrop === 'noise'
+                ? 'is-noise'
+                : backdrop === 'net'
+                  ? 'is-net'
+                  : 'is-grid',
+          ]}
+        />
+      )}
+
+      {backdrop === 'wash' && <div class="ui-backdrop-wash absolute inset-0" />}
+
+      {backdrop === 'orbital' && (
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div
+            class:list={[
+              'rounded-full border',
+              orbitalScale === 'wide'
+                ? 'size-[26rem] sm:size-[40rem]'
+                : 'size-[24rem] sm:size-[34rem]',
+              isHero ? 'border-hero-fg/12' : 'border-border/70',
+            ]}
+          />
+          <div
+            class:list={[
+              'absolute rounded-full border',
+              orbitalScale === 'wide'
+                ? 'size-[18rem] sm:size-[28rem]'
+                : 'size-[16rem] sm:size-[23rem]',
+              isHero ? 'border-accent/25' : 'border-primary/20',
+            ]}
+          />
+        </div>
+      )}
+
+      <div
+        class:list={[
+          'hero-glow-primary absolute -top-36 end-[-6rem] size-[28rem] rounded-full',
+          !isHero && 'opacity-50',
+        ]}
+      />
+      <div
+        class:list={[
+          'hero-glow-accent absolute -bottom-44 start-[-8rem] size-[25rem] rounded-full',
+          !isHero && 'opacity-45',
+        ]}
+      />
+    </div>
+  )
+}
+
+<style>
+  .ui-backdrop-pattern.is-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--color-border) 58%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--color-border) 58%, transparent) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(ellipse 76% 72% at 50% 42%, black 22%, transparent 100%);
+  }
+
+  .ui-backdrop-layer[data-hero-surface='hero'] .ui-backdrop-pattern.is-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px);
+  }
+
+  .ui-backdrop-pattern.is-dots {
+    background-image: radial-gradient(
+      circle,
+      color-mix(in oklch, var(--color-muted) 34%, transparent) 1.25px,
+      transparent 1.25px
+    );
+    background-size: 22px 22px;
+    mask-image: radial-gradient(ellipse 78% 72% at 50% 44%, black 25%, transparent 100%);
+  }
+
+  .ui-backdrop-layer[data-hero-surface='hero'] .ui-backdrop-pattern.is-dots {
+    background-image: radial-gradient(
+      circle,
+      color-mix(in oklch, var(--color-hero-fg) 22%, transparent) 1.25px,
+      transparent 1.25px
+    );
+  }
+
+  .ui-backdrop-pattern.is-noise {
+    background-image:
+      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-fg) 18%, transparent) 1px, transparent 1px),
+      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-primary) 20%, transparent) 1px, transparent 1px);
+    background-size: 10px 10px, 14px 14px;
+    opacity: 0.45;
+  }
+
+  .ui-backdrop-layer[data-hero-surface='hero'] .ui-backdrop-pattern.is-noise {
+    background-image:
+      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-hero-fg) 22%, transparent) 1px, transparent 1px),
+      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-accent) 22%, transparent) 1px, transparent 1px);
+  }
+
+  .ui-backdrop-pattern.is-net {
+    background-image:
+      repeating-linear-gradient(
+        60deg,
+        color-mix(in oklch, var(--color-border) 55%, transparent) 0 1px,
+        transparent 1px 28px
+      ),
+      repeating-linear-gradient(
+        -60deg,
+        color-mix(in oklch, var(--color-border) 55%, transparent) 0 1px,
+        transparent 1px 28px
+      );
+    mask-image: radial-gradient(ellipse 80% 72% at 50% 42%, black 22%, transparent 100%);
+  }
+
+  .ui-backdrop-layer[data-hero-surface='hero'] .ui-backdrop-pattern.is-net {
+    background-image:
+      repeating-linear-gradient(
+        60deg,
+        color-mix(in oklch, var(--color-hero-fg) 14%, transparent) 0 1px,
+        transparent 1px 28px
+      ),
+      repeating-linear-gradient(
+        -60deg,
+        color-mix(in oklch, var(--color-hero-fg) 14%, transparent) 0 1px,
+        transparent 1px 28px
+      );
+  }
+
+  .ui-backdrop-wash {
+    background: linear-gradient(
+      140deg,
+      color-mix(in oklch, var(--color-primary) 11%, transparent),
+      color-mix(in oklch, var(--color-accent) 13%, transparent) 50%,
+      color-mix(in oklch, var(--color-secondary) 9%, transparent)
+    );
+  }
+</style>

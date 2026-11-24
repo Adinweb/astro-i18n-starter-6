@@ -6,20 +6,6 @@
  * semantic name from `src/libs/ui/icons.ts` (`home`, `shield`, `chevron-left`,
  * …) instead of a vendor component name, so replacing the icon set stays a
  * one-file change.
- *
- * Why per-icon imports instead of the package barrel: `import { IconSun } from
- * '@tabler/icons-astro'` re-exports the entire 6,258-module set, and Vite has to
- * load every one of them before tree-shaking discards the unused icons — it
- * still produces the same HTML, but costs ≈ +2–7 s on every build here (measured
- * 5.0–9.8 s against 3.2–3.9 s with per-icon imports). Importing the individual
- * `dist/esm/icons/*` modules (typed in `src/types/tabler-icons-astro.d.ts`) keeps
- * the build graph to the icons this file lists and nothing else.
- *
- * Icons render inline: one request less than a sprite, no empty `<use>` tiles
- * while a sprite loads, and a newly added icon can never be hidden by a cached
- * sprite. Icons that appear later (pager chevrons, code-copy state) are cloned
- * from a server-rendered `<template>`, and the theme toggle renders both glyphs
- * for CSS to choose between, so client code never carries SVG paths of its own.
  */
 import IconAdjustmentsHorizontal from '@tabler/icons-astro/dist/esm/icons/adjustments-horizontal.mjs';
 import IconAlertCircle from '@tabler/icons-astro/dist/esm/icons/alert-circle.mjs';
@@ -44,6 +30,7 @@ import IconChevronRight from '@tabler/icons-astro/dist/esm/icons/chevron-right.m
 import IconChevronUp from '@tabler/icons-astro/dist/esm/icons/chevron-up.mjs';
 import IconCircleCheck from '@tabler/icons-astro/dist/esm/icons/circle-check.mjs';
 import IconClock from '@tabler/icons-astro/dist/esm/icons/clock.mjs';
+import IconCloudComputing from '@tabler/icons-astro/dist/esm/icons/cloud-computing.mjs';
 import IconCode from '@tabler/icons-astro/dist/esm/icons/code.mjs';
 import IconCompass from '@tabler/icons-astro/dist/esm/icons/compass.mjs';
 import IconCopy from '@tabler/icons-astro/dist/esm/icons/copy.mjs';
@@ -54,6 +41,7 @@ import IconEye from '@tabler/icons-astro/dist/esm/icons/eye.mjs';
 import IconFile from '@tabler/icons-astro/dist/esm/icons/file.mjs';
 import IconFilter from '@tabler/icons-astro/dist/esm/icons/filter.mjs';
 import IconFolder from '@tabler/icons-astro/dist/esm/icons/folder.mjs';
+import IconHeadset from '@tabler/icons-astro/dist/esm/icons/headset.mjs';
 import IconHeart from '@tabler/icons-astro/dist/esm/icons/heart.mjs';
 import IconHome from '@tabler/icons-astro/dist/esm/icons/home.mjs';
 import IconInfoCircle from '@tabler/icons-astro/dist/esm/icons/info-circle.mjs';
@@ -69,6 +57,7 @@ import IconNews from '@tabler/icons-astro/dist/esm/icons/news.mjs';
 import IconPalette from '@tabler/icons-astro/dist/esm/icons/palette.mjs';
 import IconPhone from '@tabler/icons-astro/dist/esm/icons/phone.mjs';
 import IconPhoto from '@tabler/icons-astro/dist/esm/icons/photo.mjs';
+import IconPlayerPlay from '@tabler/icons-astro/dist/esm/icons/player-play.mjs';
 import IconQuote from '@tabler/icons-astro/dist/esm/icons/quote.mjs';
 import IconRefresh from '@tabler/icons-astro/dist/esm/icons/refresh.mjs';
 import IconRocket from '@tabler/icons-astro/dist/esm/icons/rocket.mjs';
@@ -162,6 +151,9 @@ const CORE_ICONS: Record<CoreIconName, TablerIcon> = {
   map: IconMap,
   refresh: IconRefresh,
   wand: IconWand,
+  'cloud-computing': IconCloudComputing,
+  headset: IconHeadset,
+  'player-play': IconPlayerPlay,
 };
 
 interface Props {

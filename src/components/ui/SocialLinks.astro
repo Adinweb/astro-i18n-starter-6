@@ -1,11 +1,9 @@
 ---
 /**
  * Reusable social channel links & share bar inspired by PrebuiltUI social-media components.
- * Reads `siteConfig.social` automatically or accepts custom `items`, uses explicit Tabler
- * `brand-*` icons (`<Icon>`), supports `icons` | `pills` | `cards` variants plus an
- * optional copy-current-link share action, OKLCH styling, and Paraglide defaults.
  */
-import Icon from '@/components/Icon.astro';
+import Icon from '@/components/ui/Icon.astro';
+import IconBox from '@/components/ui/IconBox.astro';
 import type { Locale } from '@/i18n/locales';
 import { siteConfig } from '@/libs/config/app';
 import { resolveComponentLocale } from '@/libs/ui/locale';
@@ -86,9 +84,7 @@ const resolvedItems: readonly SocialLinkItem[] =
             class="group flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-3.5 transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-xs"
           >
             <div class="flex min-w-0 items-center gap-3">
-              <span class="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-fg">
-                <Icon name={item.icon} size={18} />
-              </span>
+              <IconBox icon={item.icon} size="sm" radius="xl" tone="primary" hoverGroup />
               <div class="min-w-0">
                 <p class="truncate text-sm font-semibold text-fg">{item.name}</p>
                 {item.handle && <p dir="ltr" class="truncate text-xs text-muted text-start">{item.handle}</p>}
@@ -107,9 +103,7 @@ const resolvedItems: readonly SocialLinkItem[] =
             class="group flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-dashed border-border bg-surface p-3.5 text-start transition-all hover:border-primary/50 hover:bg-surface-hover print:hidden"
           >
             <span class="flex min-w-0 items-center gap-3">
-              <span class="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-surface-hover text-fg">
-                <Icon name="share" size={18} />
-              </span>
+              <IconBox icon="share" size="sm" radius="xl" tone="neutral" class="text-fg" />
               <span class="min-w-0">
                 <span class="block text-sm font-semibold text-fg">{shareLabel}</span>
                 <span data-social-copy-label class="block text-xs text-muted">{copyLabel}</span>

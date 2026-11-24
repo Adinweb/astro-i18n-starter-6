@@ -13,6 +13,7 @@ const HERO_SECTIONS = [
   'HeroCommandCli',
   'HeroInteractivePrompt',
   'HeroProofMarquee',
+  'HeroFloatingOrbSplit',
 ] as const;
 
 const COMPOSABLE_SECTIONS = [
@@ -22,6 +23,7 @@ const COMPOSABLE_SECTIONS = [
   'HeroCommandCli',
   'HeroInteractivePrompt',
   'HeroProofMarquee',
+  'HeroFloatingOrbSplit',
   'BentoCapabilities',
   'ProofStatsRow',
   'FaqAccordion',
@@ -46,13 +48,14 @@ const COMPOSABLE_SECTIONS = [
   'ParallaxSection',
 ] as const;
 
-const UI_PRIMITIVES = [
+const LOCALIZED_UI_PRIMITIVES = [
   'UiBadge',
   'UiAlert',
   'AvatarGroup',
   'Breadcrumbs',
   'HeroPreviewNav',
   'HeroParallaxLayer',
+  'HeroShowcaseCard',
   'UiPagination',
   'UiModal',
   'UiTooltip',
@@ -62,18 +65,58 @@ const UI_PRIMITIVES = [
   'UiInput',
   'UiDropdown',
   'SocialLinks',
+  'Accordion',
+  'AnnouncementPill',
+  'ChipGroup',
+  'CodeBlock',
+  'Divider',
+  'RatingStars',
+  'Skeleton',
+  'StatTile',
+  'TopBanner',
 ] as const;
 
-const ALL_REUSABLE_COMPONENTS = [...COMPOSABLE_SECTIONS, ...UI_PRIMITIVES] as const;
+const PURE_UI_PRIMITIVES = [
+  'BackdropLayer',
+  'Button',
+  'Card',
+  'HeroHeadline',
+  'Icon',
+  'IconBox',
+  'IconButton',
+  'Kbd',
+  'PartnerStrip',
+  'SectionHeader',
+] as const;
+
+const UI_PRIMITIVES = [...LOCALIZED_UI_PRIMITIVES, ...PURE_UI_PRIMITIVES] as const;
+
+const ALL_REUSABLE_ENTRIES = [
+  ...COMPOSABLE_SECTIONS.map((name) => ({
+    name,
+    relPath: `src/components/${name}.astro`,
+    requiresLocale: true,
+  })),
+  ...LOCALIZED_UI_PRIMITIVES.map((name) => ({
+    name,
+    relPath: `src/components/ui/${name}.astro`,
+    requiresLocale: true,
+  })),
+  ...PURE_UI_PRIMITIVES.map((name) => ({
+    name,
+    relPath: `src/components/ui/${name}.astro`,
+    requiresLocale: false,
+  })),
+] as const;
 
 const FORBIDDEN_PHYSICAL_CLASS =
   /^(?:-?m[lr]-|p[lr]-|-?(?:left|right)-|text-(?:left|right)$|border-[lr](?:$|-)|rounded-(?:[tb])?[lr](?:$|-))/;
 
 describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
   it('all reusable blocks/primitives exist and use RTL logical properties without raw <svg> blobs or hex colors', () => {
-    for (const component of ALL_REUSABLE_COMPONENTS) {
-      const filePath = path.join(rootDir, `src/components/${component}.astro`);
-      expect(fs.existsSync(filePath), `Missing component: ${component}`).toBe(true);
+    for (const { name, relPath, requiresLocale } of ALL_REUSABLE_ENTRIES) {
+      const filePath = path.join(rootDir, relPath);
+      expect(fs.existsSync(filePath), `Missing component: ${relPath}`).toBe(true);
 
       const source = fs.readFileSync(filePath, 'utf-8');
       expect(source).not.toMatch(/<svg[\s>]/i);
@@ -87,12 +130,14 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
           const utility = token.replace(/^(?:[a-z0-9-[\]=]+:)+/, '');
           expect(
             FORBIDDEN_PHYSICAL_CLASS.test(utility),
-            `Physical class "${token}" found in ${component}.astro`
+            `Physical class "${token}" found in ${name}.astro`
           ).toBe(false);
         }
       }
 
-      expect(source).toContain('resolveComponentLocale');
+      if (requiresLocale) {
+        expect(source).toContain('resolveComponentLocale');
+      }
     }
   });
 
@@ -118,10 +163,10 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
     }
   });
 
-  it('all 13 UI primitives never emit competing <h1> tags', () => {
+  it('all 35 UI primitives never emit hardcoded <h1> tags', () => {
     for (const primitive of UI_PRIMITIVES) {
       const source = fs.readFileSync(
-        path.join(rootDir, `src/components/${primitive}.astro`),
+        path.join(rootDir, `src/components/ui/${primitive}.astro`),
         'utf-8'
       );
       expect(source).not.toMatch(/<h1[\s>]/i);
@@ -134,7 +179,7 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
         path.join(rootDir, `src/components/${heroName}.astro`),
         'utf-8'
       );
-      expect(hero).toMatch(/<h1[\s>]/);
+      expect(hero).toMatch(/<h1[\s>]|<HeroHeadline[\s>]/);
       expect(hero).toContain("headingTag = 'h1'");
     }
   });

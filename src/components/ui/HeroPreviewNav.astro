@@ -1,18 +1,15 @@
 ---
 /**
  * Embedded Preview Navigation Bar for standalone PrebuiltUI-style Hero Sections.
- *
- * Renders an accessible `role="region"` visual navbar strip inside hero previews
- * (supporting minimal, pill capsule, bordered, dashed, and dropdown styles) without
- * emitting duplicate `<nav>` landmarks or global mobile drawer IDs.
  */
-import Button from '@/components/Button.astro';
-import Icon from '@/components/Icon.astro';
-import type { HeroCtaAction } from '@/components/LandingHeroSplit.astro';
+import Button from '@/components/ui/Button.astro';
+import Icon from '@/components/ui/Icon.astro';
+import IconBox from '@/components/ui/IconBox.astro';
 import type { Locale } from '@/i18n/locales';
 import { getBlogIndexHref, getHomeHref, getPageUrl } from '@/libs/content/service';
 import { getContentType, getContentTypeIndexHref } from '@/libs/content/types';
 import { resolveComponentLocale } from '@/libs/ui/locale';
+import type { HeroCtaAction } from '@/libs/ui/types';
 import * as m from '@/paraglide/messages';
 
 export interface HeroPreviewNavLink {
@@ -123,17 +120,11 @@ const wrapperClass =
     href={homeHref}
     class="inline-flex items-center gap-2 text-xs font-bold tracking-tight transition-opacity hover:opacity-85 sm:text-sm"
   >
-    <span
-      class:list={[
-        'inline-flex size-7 shrink-0 items-center justify-center rounded-lg',
-        isHeroSurface
-          ? 'bg-accent text-hero-base print:bg-primary print:text-primary-fg'
-          : 'bg-primary text-primary-fg',
-      ]}
-      aria-hidden="true"
-    >
-      <Icon name="sparkles" size={14} />
-    </span>
+    {isHeroSurface ? (
+      <IconBox icon="sparkles" size="xs" radius="lg" tone="accent" />
+    ) : (
+      <IconBox icon="sparkles" size="xs" radius="lg" tone="primary" class="bg-primary text-primary-fg" />
+    )}
     <span>{resolvedBrand}</span>
   </a>
 

@@ -1,0 +1,69 @@
+---
+/**
+ * Semantic horizontal or vertical hairline divider with optional label or dashed style.
+ */
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  orientation?: 'horizontal' | 'vertical';
+  label?: string;
+  useDefaultLabel?: boolean;
+  dashed?: boolean;
+  surface?: 'default' | 'hero';
+  locale?: Locale | string;
+  class?: string;
+}
+
+const {
+  orientation = 'horizontal',
+  label,
+  useDefaultLabel = false,
+  dashed = false,
+  surface = 'default',
+  locale,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const resolvedLabel =
+  label ?? (useDefaultLabel ? m.block_divider_default_label({}, { locale: activeLocale }) : undefined);
+const borderTone =
+  surface === 'hero' ? 'border-hero-fg/20 print:border-border' : 'border-border';
+const lineClass = ['flex-1 border-t', dashed ? 'border-dashed' : 'border-solid', borderTone];
+---
+
+{
+  orientation === 'vertical' ? (
+    <span
+      role="separator"
+      aria-orientation="vertical"
+      class:list={[
+        'inline-block h-5 self-stretch border-s',
+        dashed ? 'border-dashed' : 'border-solid',
+        borderTone,
+        className,
+      ]}
+    />
+  ) : resolvedLabel ? (
+    <div
+      role="separator"
+      aria-orientation="horizontal"
+      class:list={['not-prose flex items-center gap-3', className]}
+    >
+      <span class:list={lineClass} />
+      <span
+        class:list={[
+          'text-xs font-medium',
+          surface === 'hero' ? 'text-hero-fg/75 print:text-muted' : 'text-muted',
+        ]}
+      >
+        {resolvedLabel}
+      </span>
+      <span class:list={lineClass} />
+    </div>
+  ) : (
+    <hr class:list={['border-0 border-t', dashed ? 'border-dashed' : 'border-solid', borderTone, className]} />
+  )
+}
