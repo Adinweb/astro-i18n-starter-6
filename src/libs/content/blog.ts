@@ -108,6 +108,14 @@ export function areBlogFiltersEqual(a: BlogFilters, b: BlogFilters): boolean {
   return a.tags.every((tag) => bTags.has(tag));
 }
 
+/** Toggles a category in the current filter state without mutating the input. */
+export function toggleBlogCategory(filters: BlogFilters, category: string): BlogFilters {
+  return {
+    category: filters.category === category ? null : category,
+    tags: filters.tags,
+  };
+}
+
 /** Toggles a tag in the current filter state without mutating the input. */
 export function toggleBlogTag(filters: BlogFilters, tag: string): BlogFilters {
   const active = filters.tags.includes(tag);

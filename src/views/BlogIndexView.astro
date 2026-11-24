@@ -317,6 +317,7 @@ const ogContext: SocialCardContext = {
     matchesBlogFilters,
     parseBlogFilterPage,
     parseBlogFilters,
+    toggleBlogCategory,
     toggleBlogTag,
     type BlogFilters,
     type BlogTaxonomy,
@@ -773,7 +774,7 @@ const ogContext: SocialCardContext = {
           nextFilters = NO_FILTERS;
         } else if (target.dataset.filterCategory !== undefined) {
           const category = target.dataset.filterCategory || null;
-          nextFilters = category === null ? NO_FILTERS : { category, tags: filters.tags };
+          nextFilters = category === null ? NO_FILTERS : toggleBlogCategory(filters, category);
         } else if (target.dataset.filterTag) {
           nextFilters = toggleBlogTag(filters, target.dataset.filterTag);
         }

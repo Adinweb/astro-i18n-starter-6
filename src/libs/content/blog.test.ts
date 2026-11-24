@@ -14,6 +14,7 @@ import {
   matchesBlogFilters,
   parseBlogFilterPage,
   parseBlogFilters,
+  toggleBlogCategory,
   toggleBlogTag,
 } from './blog';
 
@@ -87,7 +88,23 @@ describe('src/libs/content/blog.ts', () => {
     });
   });
 
-  describe('toggleBlogTag', () => {
+  describe('toggleBlogCategory & toggleBlogTag', () => {
+    it('selects, switches, and deselects categories while preserving tags and input immutability', () => {
+      const base = { category: null, tags: ['astro'] };
+      const selected = toggleBlogCategory(base, 'guides');
+      expect(selected).toEqual({ category: 'guides', tags: ['astro'] });
+      expect(base.category).toBeNull();
+
+      expect(toggleBlogCategory(selected, 'engineering')).toEqual({
+        category: 'engineering',
+        tags: ['astro'],
+      });
+      expect(toggleBlogCategory(selected, 'guides')).toEqual({
+        category: null,
+        tags: ['astro'],
+      });
+    });
+
     it('adds and removes tags without mutating the input', () => {
       const base = { category: 'guides', tags: ['astro'] };
       const added = toggleBlogTag(base, 'rtl');
