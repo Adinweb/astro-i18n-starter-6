@@ -4,18 +4,22 @@ slug: "features"
 description: "Explore native RTL/LTR layout support, OKLCH brand theming presets, ChronoTrig scroll reveals, and multilingual Pagefind search."
 image: "./features.png"
 hero: "default"
-container: "contained"
+container: "canvas"
 draft: false
 ---
 
+import AboutSplitSection from '@/components/AboutSplitSection.astro';
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
+import BentoGrid from '@/components/BentoGrid.astro';
 import CtaBanner from '@/components/CtaBanner.astro';
-import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
 import ProcessSteps from '@/components/ProcessSteps.astro';
 import ProofStatsRow from '@/components/ProofStatsRow.astro';
+import SwipeableTabs from '@/components/SwipeableTabs.astro';
+import featuresImage from './features.png';
 
 <ProofStatsRow
-  contained
+  surface="surface"
+  spacing="md"
   locale="en"
   eyebrow="Architecture Metrics"
   heading="Built for Speed, Reach, and Consistency"
@@ -29,7 +33,8 @@ import ProofStatsRow from '@/components/ProofStatsRow.astro';
 />
 
 <BentoCapabilities
-  contained
+  surface="default"
+  spacing="md"
   locale="en"
   heading="Everything Included Out of the Box"
   subheading="Modular architecture engineered for fast client onboarding, strict type safety, and polished typography in every script."
@@ -62,33 +67,78 @@ import ProofStatsRow from '@/components/ProofStatsRow.astro';
   ]}
 />
 
-<FeatureTabsSection
-  contained
+<SwipeableTabs
+  surface="surface"
+  spacing="md"
   locale="en"
   variant="underline"
   eyebrow="Interactive Architecture"
   heading="Inspect Each Layer"
-  subheading="Switch tabs to explore how routing, Perso-Arabic search, and verification checks work together."
+  subheading="Switch or swipe tabs to explore how routing, Perso-Arabic search, and verification checks work together."
 />
 
-<section id="rtl" class="scroll-mt-28">
+<AboutSplitSection
+  id="rtl"
+  surface="default"
+  spacing="md"
+  locale="en"
+  image={featuresImage}
+  imageAlt="Bidirectional RTL and LTR layout geometry"
+  mediaPosition="end"
+  eyebrow="Bidirectional UI"
+  heading="Native RTL/LTR Architecture"
+  description="Directional styling relies exclusively on CSS logical properties so every margin, padding, gradient, and scroll reveal flips cleanly between English and Persian without duplicate stylesheets."
+  highlights={[
+    'CSS logical utilities (ms-*, me-*, ps-*, pe-*, start-*, text-start) enforced by automated audits',
+    'Code blocks and inline snippets remain strictly LTR for clean technical readability',
+    'Directional gradients (bg-linear-to-r rtl:bg-linear-to-l) and ChronoTrig offsets mirror automatically',
+  ]}
+  primaryCta={null}
+/>
 
-## Native RTL/LTR Architecture
-
-Directional styling relies exclusively on CSS logical properties (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`, and `text-start`). Code blocks remain strictly LTR for readability, while directional gradients (`bg-linear-to-r rtl:bg-linear-to-l`) and ChronoTrig slide offsets (`data-trig-direction="start"`) adapt automatically per locale.
-
-</section>
-
-<section id="design" class="scroll-mt-28">
-
-## Design System & Brand Tokens
-
-Semantic color roles live once in `src/styles/global.css` and resolve dynamically from `app.config.json` and `theme-presets.json`. Composable surface utilities (`.glass-surface`, `.layout-container`) and primitive UI controls (`<Button>`, `<IconButton>`, `<Icon>`) keep contrast, spacing, and typography consistent across every page.
-
-</section>
+<BentoGrid
+  id="design"
+  surface="surface"
+  spacing="md"
+  layout="classic"
+  variant="elevated"
+  locale="en"
+  eyebrow="Design Tokens"
+  heading="Design System & Brand Tokens"
+  subheading="Semantic OKLCH color roles, composable surface primitives, and typography presets stay aligned across every page."
+  metricCard={{
+    metric: '6',
+    title: 'Curated OKLCH Brand Presets',
+    badge: 'Single Source of Truth',
+    description: 'Calibrated contrast ratios for light, dark, and hero surfaces switched directly from configuration.',
+  }}
+  securityCard={{
+    title: 'Unified UI Primitives',
+    description: 'Shared <Button>, <IconButton>, <Card>, and <Icon> contracts guarantee accessible focus rings and contrast.',
+    icon: 'shield',
+    badge: 'WCAG',
+  }}
+  speedCard={{
+    title: 'Zero Runtime Style Bloat',
+    description: 'Tailwind v4 tokens and scoped utilities ship only the CSS actually used in your build.',
+    icon: 'bolt',
+  }}
+  analyticsCard={{
+    title: 'Dynamic Font Pairings',
+    description: 'Dedicated LTR and RTL webfont stacks swap automatically via html[dir] and locale configuration.',
+    icon: 'palette',
+  }}
+  collaborationCard={{
+    title: 'Three-Tier Token Overrides',
+    description: 'Keep upstream core tokens intact in src/ while customizing brand values safely inside client/.',
+    icon: 'layers',
+    badge: 'Upgrade Safe',
+  }}
+/>
 
 <ProcessSteps
-  contained
+  surface="default"
+  spacing="md"
   locale="en"
   variant="timeline"
   eyebrow="Client Delivery Flow"
@@ -97,9 +147,9 @@ Semantic color roles live once in `src/styles/global.css` and resolve dynamicall
 />
 
 <CtaBanner
-  contained
   locale="en"
   surface="hero"
+  spacing="md"
   eyebrow="Interactive Catalog"
   title="Preview Every UI Primitive & Section Live"
   description="Browse interactive buttons, modals, inputs, pricing tables, galleries, and carousels in both English and Persian."

@@ -67,7 +67,7 @@ const {
   locale,
   mode = 'prompt',
   surface = 'default',
-  backdrop = 'glow',
+  backdrop,
   framedRails = 'none',
   parallaxImage = null,
   parallaxAlt = '',
@@ -163,10 +163,14 @@ const resolvedTrustNote =
 const hasParallax = Boolean(parallaxImage);
 const isHeroSurface = hasParallax || surface === 'hero';
 const effectiveNavSurface = hasParallax ? 'hero' : surface;
+const resolvedBackdrop = backdrop ?? (hasParallax ? 'none' : 'glow');
 const fieldId = `${id ?? `hero-${mode}-${crypto.randomUUID().slice(0, 6)}`}-input-${activeLocale}`;
 const emailLabel = m.block_hero_sub_email_label({}, { locale: activeLocale });
 const invalidEmailMsg = m.block_hero_sub_invalid({}, { locale: activeLocale });
 const subOkMsg = m.block_hero_sub_preview_ok({}, { locale: activeLocale });
+const subLiveOkMsg = m.newsletter_success_desc({}, { locale: activeLocale });
+const subErrHttpMsg = m.newsletter_error_http({}, { locale: activeLocale });
+const subErrNetworkMsg = m.newsletter_error_network({}, { locale: activeLocale });
 const promptOkMsg =
   mode === 'search'
     ? m.block_hero_search_feedback({}, { locale: activeLocale })
@@ -212,7 +216,7 @@ const promptOkMsg =
     Astro.slots.has('backdrop') ? (
       <slot name="backdrop" />
     ) : (
-      <BackdropLayer backdrop={backdrop} surface={isHeroSurface ? 'hero' : 'default'} />
+      <BackdropLayer backdrop={resolvedBackdrop} surface={isHeroSurface ? 'hero' : 'default'} />
     )
   }
 
@@ -522,7 +526,10 @@ const promptOkMsg =
                 data-hero-newsletter-form
                 data-endpoint={endpoint}
                 data-err-invalid={invalidEmailMsg}
+                data-err-http={subErrHttpMsg}
+                data-err-network={subErrNetworkMsg}
                 data-msg-ok={subOkMsg}
+                data-msg-live-ok={subLiveOkMsg}
                 novalidate
                 class:list={[
                   'flex flex-col gap-2 rounded-2xl border p-2 shadow-sm sm:flex-row sm:items-center sm:rounded-full',
@@ -668,10 +675,25 @@ const promptOkMsg =
 
       const form = root.querySelector<HTMLFormElement>('[data-hero-newsletter-form]');
       const input = root.querySelector<HTMLInputElement>('input[name="email"]');
+      const submitBtn = root.querySelector<HTMLButtonElement>('button[type="submit"]');
       const feedback = root.querySelector<HTMLElement>('[data-hero-newsletter-feedback]');
       if (!form || !input || !feedback) return;
 
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      const showError = (msg: string) => {
+        feedback.hidden = false;
+        feedback.className =
+          'mt-3 rounded-xl border border-error/35 bg-error/10 px-4 py-2.5 text-xs font-medium leading-relaxed text-fg';
+        feedback.textContent = msg;
+      };
+
+      const showSuccess = (msg: string) => {
+        feedback.hidden = false;
+        feedback.className =
+          'mt-3 rounded-xl border border-success/35 bg-success/10 px-4 py-2.5 text-xs font-medium leading-relaxed text-fg';
+        feedback.textContent = msg;
+      };
 
       input.addEventListener('input', () => {
         input.removeAttribute('aria-invalid');
@@ -679,36 +701,43 @@ const promptOkMsg =
 
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (submitBtn?.disabled) return;
+
         const email = input.value.trim();
         if (!emailPattern.test(email)) {
           input.setAttribute('aria-invalid', 'true');
           input.focus();
-          feedback.hidden = false;
-          feedback.className =
-            'mt-3 rounded-xl border border-error/35 bg-error/10 px-4 py-2.5 text-xs font-medium leading-relaxed text-fg';
-          feedback.textContent = form.dataset.errInvalid ?? '';
+          showError(form.dataset.errInvalid ?? '');
           return;
         }
 
-        const endpoint = form.dataset.endpoint ?? '';
-        if (endpoint) {
-          try {
-            await fetch(endpoint, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email }),
-            });
-          } catch {
-            // Static showcase gracefully confirms input validation when offline/sandboxed.
-          }
+        const endpoint = (form.dataset.endpoint ?? '').trim();
+        if (!endpoint) {
+          form.reset();
+          input.removeAttribute('aria-invalid');
+          showSuccess(form.dataset.msgOk ?? '');
+          return;
         }
 
-        form.reset();
-        input.removeAttribute('aria-invalid');
-        feedback.hidden = false;
-        feedback.className =
-          'mt-3 rounded-xl border border-success/35 bg-success/10 px-4 py-2.5 text-xs font-medium leading-relaxed text-fg';
-        feedback.textContent = form.dataset.msgOk ?? '';
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          if (!response.ok) {
+            showError(form.dataset.errHttp ?? '');
+            return;
+          }
+          form.reset();
+          input.removeAttribute('aria-invalid');
+          showSuccess(form.dataset.msgLiveOk ?? form.dataset.msgOk ?? '');
+        } catch {
+          showError(form.dataset.errNetwork ?? '');
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
       });
     });
   }

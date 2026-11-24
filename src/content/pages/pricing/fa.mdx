@@ -4,18 +4,19 @@ slug: "قیمت‌گذاری"
 description: "طرح‌های شفاف برای راه‌اندازی وب‌سایت استاتیک، توسعه چندزبانه و ارسال درخواست همکاری."
 image: "./pricing.png"
 hero: "minimal"
-container: "contained"
+container: "canvas"
 draft: false
 ---
 
 import ComparisonTable from '@/components/ComparisonTable.astro';
-import ContactForm from '@/components/ContactForm.astro';
+import ContactSplitSection from '@/components/ContactSplitSection.astro';
 import FaqAccordion from '@/components/FaqAccordion.astro';
 import PricingSection from '@/components/PricingSection.astro';
 
 <PricingSection
-  contained
   billingToggle
+  surface="default"
+  spacing="md"
   locale="fa"
   heading="طرح‌های انعطاف‌پذیر راه‌اندازی"
   subheading="از پایه استاندارد استارتر به‌صورت مستقیم استفاده کنید یا پیاده‌سازی اختصاصی با سیستم طراحی برند خودتان را سفارش دهید."
@@ -25,7 +26,7 @@ import PricingSection from '@/components/PricingSection.astro';
       name: 'استارتر متن‌باز',
       amount: 0,
       annualAmount: 0,
-      currencySuffix: ' تومان',
+      currencyPrefix: '$',
       period: '/ ماهانه',
       annualPeriod: '/ سالانه',
       description: 'ساختار کامل Astro v7 با پشتیبانی بومی RTL/LTR، ابزارهای CLI و جستجوی استاتیک Pagefind.',
@@ -72,7 +73,8 @@ import PricingSection from '@/components/PricingSection.astro';
 />
 
 <ComparisonTable
-  contained
+  surface="surface"
+  spacing="md"
   locale="fa"
   eyebrow="مقایسه جزئیات"
   heading="مقایسه نسخه‌های راه‌اندازی"
@@ -80,8 +82,9 @@ import PricingSection from '@/components/PricingSection.astro';
 />
 
 <FaqAccordion
-  contained
   emitSchema
+  surface="default"
+  spacing="md"
   locale="fa"
   eyebrow="شفافیت همکاری"
   heading="پرسش‌های متداول تعرفه"
@@ -101,4 +104,12 @@ import PricingSection from '@/components/PricingSection.astro';
   ]}
 />
 
-<ContactForm locale="fa" />
+<ContactSplitSection
+  id="contact-inquiry"
+  surface="surface"
+  spacing="md"
+  locale="fa"
+  eyebrow="درخواست پروژه"
+  heading="ثبت سفارش و مشاوره"
+  subheading="زبان‌های هدف، زمان‌بندی پروژه و نیازمندی‌های طراحی خود را بنویسید تا پیشنهاد فنی اختصاصی دریافت کنید."
+/>

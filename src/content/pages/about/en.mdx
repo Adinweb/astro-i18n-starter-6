@@ -4,54 +4,112 @@ slug: "about"
 description: "Learn about the architecture, accessibility standards, and privacy-first cookie governance behind Astro i18n Starter."
 image: "./about.png"
 hero: "minimal"
-container: "prose"
+container: "canvas"
 draft: false
 ---
+
+import AboutSplitSection from '@/components/AboutSplitSection.astro';
+import FeatureCardGrid from '@/components/FeatureCardGrid.astro';
+import PageSection from '@/components/PageSection.astro';
 import Button from '@/components/ui/Button.astro';
+import Card from '@/components/ui/Card.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
 import SocialLinks from '@/components/ui/SocialLinks.astro';
 import UiAlert from '@/components/ui/UiAlert.astro';
+import aboutImage from './about.png';
 
-**Astro i18n Starter** is a production-ready static site foundation built for multilingual, bidirectional web projects. Every layer—from routing and content schemas to color tokens and scroll choreography—follows strict Single Source of Truth principles.
-
-## Core Design Principles
-
-1. **Symmetrical Content Collections:** Every page, article, and case study resolves per-locale routes and `hreflang` alternates automatically from a single folder structure.
-2. **Accessible by Default:** Semantic HTML landmarks, WCAG-compliant focus rings, unified `data-motion` reduced-motion controls, and print-ready styles come built in.
-3. **Zero Vendor Lock-in:** Pure SSG output deploys anywhere static files are hosted, with optional external API adapters for forms and newsletters.
-
-<UiAlert
-  variant="info"
-  title="Three-Tier Upgradeable Workspace"
-  description="Core logic stays in src/, client overrides live cleanly in client/, and optional demo content ships inside starter-kit/."
-  class="not-prose my-8"
+<AboutSplitSection
+  surface="default"
+  spacing="md"
+  locale="en"
+  image={aboutImage}
+  imageAlt="Astro i18n Starter architecture overview"
+  eyebrow="Architecture Overview"
+  heading="Single Source of Truth for Multilingual Web Delivery"
+  description="Astro i18n Starter is a production-ready static site foundation built for multilingual, bidirectional web projects. Every layer—from routing and content schemas to color tokens and scroll choreography—follows strict Single Source of Truth principles."
+  highlights={[
+    'Symmetrical per-locale routing without hardcoded language prefixes',
+    'Calibrated OKLCH theme presets and RTL/LTR typography stacks',
+    'Zero server dependencies—deploy static HTML to any global edge CDN',
+  ]}
+  stats={[
+    { count: 100, suffix: '%', label: 'Static SSG Output' },
+    { count: 77, suffix: '+', label: 'UI Components' },
+    { count: 0, label: 'Server Lock-in' },
+  ]}
+  primaryCta={{ label: 'Explore Features', href: '/features/', icon: 'arrow-right' }}
+  secondaryCta={{ label: 'Cookie Preferences', href: '#privacy', icon: 'shield' }}
 />
 
-<section id="privacy" class="scroll-mt-28">
+<FeatureCardGrid
+  surface="surface"
+  spacing="md"
+  columns={3}
+  locale="en"
+  eyebrow="Foundation"
+  heading="Core Design Principles"
+  subheading="Built-in discipline so client customizations scale cleanly without accumulating technical debt."
+  items={[
+    {
+      title: 'Symmetrical Content Collections',
+      description: 'Every page, article, and case study resolves per-locale routes and hreflang alternates automatically from a single folder structure.',
+      icon: 'folder',
+      badge: 'SSOT',
+    },
+    {
+      title: 'Accessible by Default',
+      description: 'Semantic HTML landmarks, WCAG-compliant focus rings, unified data-motion reduced-motion controls, and print-ready styles come built in.',
+      icon: 'shield',
+      badge: 'WCAG',
+    },
+    {
+      title: 'Zero Vendor Lock-in',
+      description: 'Pure SSG output deploys anywhere static files are hosted, with optional external API adapters for forms and newsletters.',
+      icon: 'rocket',
+      badge: 'Pure SSG',
+    },
+  ]}
+/>
 
-## Privacy & Cookie Policy
+<PageSection id="workspace" surface="default" spacing="sm">
+  <UiAlert
+    locale="en"
+    variant="info"
+    title="Three-Tier Upgradeable Workspace"
+    description="Core logic stays in src/, client overrides live cleanly in client/, and optional demo content ships inside starter-kit/."
+  />
+</PageSection>
 
-Essential browser preferences (such as selected color theme and consent state) operate strictly for core functionality. Optional categories—Preferences, Analytics, and External Media—remain inactive unless explicitly enabled.
+<PageSection id="privacy" surface="surface" spacing="md">
+  <SectionHeader
+    eyebrow="Compliance"
+    heading="Privacy & Cookie Policy"
+    subheading="Essential browser preferences (such as selected color theme and consent state) operate strictly for core functionality. Optional categories—Preferences, Analytics, and External Media—remain inactive unless explicitly enabled."
+  />
 
-You can review or withdraw your consent preferences at any time below:
+  <Card variant="default" padding="lg" class="mt-8">
+    <p class="text-sm leading-relaxed text-muted sm:text-base">
+      You can review or withdraw your consent preferences at any time below:
+    </p>
+    <div class="mt-5 print:hidden">
+      <Button
+        variant="secondary"
+        icon="shield"
+        iconPosition="start"
+        data-open-cookie-settings
+      >
+        Open Cookie Preferences
+      </Button>
+    </div>
+  </Card>
+</PageSection>
 
-<Button
-  variant="secondary"
-  icon="shield"
-  iconPosition="start"
-  data-open-cookie-settings
-  class="not-prose mt-2"
->
-  Open Cookie Preferences
-</Button>
+<PageSection id="terms" surface="default" spacing="md">
+  <SectionHeader
+    eyebrow="Governance"
+    heading="Terms & Licensing"
+    subheading="All starter templates, reusable UI blocks, and CLI automation utilities are structured for rapid client customization via app.config.json, theme-presets.json, and compiled Paraglide message dictionaries."
+  />
 
-</section>
-
-<section id="terms" class="scroll-mt-28">
-
-## Terms & Licensing
-
-All starter templates, reusable UI blocks, and CLI automation utilities are structured for rapid client customization via `app.config.json`, `theme-presets.json`, and compiled Paraglide message dictionaries.
-
-</section>
-
-<SocialLinks variant="pills" showShare class="not-prose mt-10" />
+  <SocialLinks variant="pills" showShare class="mt-8" />
+</PageSection>

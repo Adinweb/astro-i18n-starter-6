@@ -291,7 +291,8 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
       expect(card3._props.get('--stagger-index')).toBe('1');
       expect(card3._props.get('--stagger-delay')).toBe('0.100s');
 
-      // Header intersects and finishes animation -> both headerTitle & header settle with data-trig-settled="true".
+      // Header intersects and finishes animation -> even when headerTitle also carries data-trig="",
+      // both callbacks finish cleanly and refresh() never strips data-trig-settled or replays header.
       ioCallbacks.at(-1)?.([{ target: header, isIntersecting: true }]);
       expect(headerTitle.classList.contains('trig-stagger-active')).toBe(true);
       headerTitle.dispatchEvent({ type: 'animationend', target: headerTitle });
@@ -299,12 +300,36 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
       expect(headerTitle.getAttribute('data-trig-settled')).toBe('true');
       expect(header.getAttribute('data-trig-settled')).toBe('true');
 
-      // Filtering/refreshing later must NOT re-observe the settled header, so its animation never replays.
+      // Dual-observed stagger child (stamped with data-trig + data-trig-once by setupChronoTrig):
+      // firing both container stagger and child [data-trig] intersection must preserve trig-stagger-settled.
+      const dualChild = createMockEl({ 'data-trig': '', 'data-trig-once': 'true' });
+      const dualGrid = createMockEl({ 'data-trig-stagger': '', 'data-trig-once': 'true' });
+      dualGrid.querySelectorAll = (() => [dualChild]) as () => never[];
+      const origQSA = fakeDoc.querySelectorAll;
+      fakeDoc.querySelectorAll = (sel: string) => {
+        if (sel.includes('[data-trig]')) return [dualChild];
+        if (sel === '[data-trig-stagger]') return [header, grid, dualGrid];
+        return origQSA(sel);
+      };
+      engine.refresh();
+      ioCallbacks.at(-1)?.([
+        { target: dualGrid, isIntersecting: true },
+        { target: dualChild, isIntersecting: true },
+      ]);
+      dualChild.dispatchEvent({ type: 'animationend', target: dualChild });
+      expect(dualChild.classList.contains('trig-stagger-settled')).toBe(true);
+      expect(dualChild.getAttribute('data-trig-settled')).toBe('true');
+      expect(dualGrid.getAttribute('data-trig-settled')).toBe('true');
+
+      // Subsequent refresh() must NOT re-observe dualGrid or header or clear their settled flags.
       observed.clear();
       engine.refresh();
       expect(observed.has(header)).toBe(false);
+      expect(observed.has(dualGrid)).toBe(false);
+      expect(observed.has(dualChild)).toBe(false);
       expect(headerTitle.classList.contains('trig-stagger-settled')).toBe(true);
       expect(headerTitle.getAttribute('data-trig-settled')).toBe('true');
+      expect(dualChild.classList.contains('trig-stagger-settled')).toBe(true);
 
       // Explicit grid replay clears settled flags on grid + children and re-observes grid.
       ioCallbacks.at(-1)?.([{ target: grid, isIntersecting: true }]);
@@ -322,6 +347,7 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
 
       engine.refresh();
       expect(observed.has(header)).toBe(false);
+      expect(observed.has(dualGrid)).toBe(false);
       expect(observed.has(grid)).toBe(true);
       expect(card2Hidden._props.get('--stagger-index')).toBe('1');
       expect(card3._props.get('--stagger-total')).toBe('3');

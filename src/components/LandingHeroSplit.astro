@@ -74,6 +74,7 @@ interface Props {
   primaryCta?: HeroCtaAction | null;
   secondaryCta?: HeroCtaAction | null;
   showInlineSubscribe?: boolean;
+  subscribeEndpoint?: string;
   subscribePlaceholder?: string;
   subscribeSubmitLabel?: string;
   featuresRow?: readonly HeroSplitFeature[] | null;
@@ -116,6 +117,7 @@ const {
   primaryCta,
   secondaryCta,
   showInlineSubscribe = false,
+  subscribeEndpoint = '',
   subscribePlaceholder,
   subscribeSubmitLabel,
   featuresRow = null,
@@ -191,6 +193,9 @@ const subPlaceholder = subscribePlaceholder ?? m.block_hero_sub_email_placeholde
 const subSubmit = subscribeSubmitLabel ?? m.block_hero_sub_submit({}, { locale: activeLocale });
 const subInvalidMsg = m.block_hero_sub_invalid({}, { locale: activeLocale });
 const subOkMsg = m.block_hero_sub_preview_ok({}, { locale: activeLocale });
+const subLiveOkMsg = m.newsletter_success_desc({}, { locale: activeLocale });
+const subErrHttpMsg = m.newsletter_error_http({}, { locale: activeLocale });
+const subErrNetworkMsg = m.newsletter_error_network({}, { locale: activeLocale });
 ---
 
 <section
@@ -352,8 +357,12 @@ const subOkMsg = m.block_hero_sub_preview_ok({}, { locale: activeLocale });
             <div data-hero-split-sub-root class="mt-7 max-w-md print:hidden">
               <form
                 data-hero-split-sub-form
+                data-endpoint={subscribeEndpoint}
                 data-err-invalid={subInvalidMsg}
+                data-err-http={subErrHttpMsg}
+                data-err-network={subErrNetworkMsg}
                 data-msg-ok={subOkMsg}
+                data-msg-live-ok={subLiveOkMsg}
                 novalidate
                 class:list={[
                   'flex flex-col gap-2 rounded-2xl border p-1.5 shadow-sm sm:flex-row sm:items-center sm:rounded-full',
@@ -574,34 +583,69 @@ const subOkMsg = m.block_hero_sub_preview_ok({}, { locale: activeLocale });
 
       const form = root.querySelector<HTMLFormElement>('[data-hero-split-sub-form]');
       const input = root.querySelector<HTMLInputElement>('input[name="email"]');
+      const submitBtn = root.querySelector<HTMLButtonElement>('button[type="submit"]');
       const feedback = root.querySelector<HTMLElement>('[data-hero-split-sub-feedback]');
       if (!form || !input || !feedback) return;
 
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+      const showError = (msg: string) => {
+        feedback.hidden = false;
+        feedback.className =
+          'mt-2.5 rounded-xl border border-error/35 bg-error/10 px-3.5 py-2 text-xs font-medium leading-relaxed text-fg';
+        feedback.textContent = msg;
+      };
+
+      const showSuccess = (msg: string) => {
+        feedback.hidden = false;
+        feedback.className =
+          'mt-2.5 rounded-xl border border-success/35 bg-success/10 px-3.5 py-2 text-xs font-medium leading-relaxed text-fg';
+        feedback.textContent = msg;
+      };
+
       input.addEventListener('input', () => {
         input.removeAttribute('aria-invalid');
       });
 
-      form.addEventListener('submit', (event) => {
+      form.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (submitBtn?.disabled) return;
+
         const email = input.value.trim();
         if (!emailPattern.test(email)) {
           input.setAttribute('aria-invalid', 'true');
           input.focus();
-          feedback.hidden = false;
-          feedback.className =
-            'mt-2.5 rounded-xl border border-error/35 bg-error/10 px-3.5 py-2 text-xs font-medium leading-relaxed text-fg';
-          feedback.textContent = form.dataset.errInvalid ?? '';
+          showError(form.dataset.errInvalid ?? '');
           return;
         }
 
-        form.reset();
-        input.removeAttribute('aria-invalid');
-        feedback.hidden = false;
-        feedback.className =
-          'mt-2.5 rounded-xl border border-success/35 bg-success/10 px-3.5 py-2 text-xs font-medium leading-relaxed text-fg';
-        feedback.textContent = form.dataset.msgOk ?? '';
+        const endpoint = (form.dataset.endpoint ?? '').trim();
+        if (!endpoint) {
+          form.reset();
+          input.removeAttribute('aria-invalid');
+          showSuccess(form.dataset.msgOk ?? '');
+          return;
+        }
+
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          if (!response.ok) {
+            showError(form.dataset.errHttp ?? '');
+            return;
+          }
+          form.reset();
+          input.removeAttribute('aria-invalid');
+          showSuccess(form.dataset.msgLiveOk ?? form.dataset.msgOk ?? '');
+        } catch {
+          showError(form.dataset.errNetwork ?? '');
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
       });
     });
   }

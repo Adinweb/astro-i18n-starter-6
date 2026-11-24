@@ -4,54 +4,112 @@ slug: "درباره-ما"
 description: "آشنایی با معماری، استانداردهای دسترسی‌پذیری و مدیریت حریم خصوصی و کوکی‌ها در قالب استارتر چندزبانه Astro."
 image: "./about.png"
 hero: "minimal"
-container: "prose"
+container: "canvas"
 draft: false
 ---
+
+import AboutSplitSection from '@/components/AboutSplitSection.astro';
+import FeatureCardGrid from '@/components/FeatureCardGrid.astro';
+import PageSection from '@/components/PageSection.astro';
 import Button from '@/components/ui/Button.astro';
+import Card from '@/components/ui/Card.astro';
+import SectionHeader from '@/components/ui/SectionHeader.astro';
 import SocialLinks from '@/components/ui/SocialLinks.astro';
 import UiAlert from '@/components/ui/UiAlert.astro';
+import aboutImage from './about.png';
 
-**استارتر چندزبانه Astro** یک زیرساخت آماده تولید برای ساخت وب‌سایت‌های استاتیک دوزبانه و چندزبانه با پشتیبانی کامل از راست‌به‌چپ و چپ‌به‌راست است. تمامی بخش‌ها از مسیریابی و اسکیمای محتوا تا پالت رنگ و اسکرول نرم بر پایه اصل منبع واحد حقیقت (SSOT) طراحی شده‌اند.
-
-## اصول کلیدی طراحی
-
-1. **ساختار متقارن محتوا:** هر صفحه، مقاله و نمونه کار مسیرهای بومی‌شده و تگ‌های `hreflang` متناظر را به‌صورت خودکار از پوشه خود تولید می‌کند.
-2. **دسترسی‌پذیری پیش‌فرض:** نشانه‌گذاری معنایی HTML، حلقه فوکوس استاندارد، کنترل یکپارچه کاهش حرکت (`data-motion`) و استایل چاپ بدون تغییر دستی فراهم است.
-3. **انتشار استاتیک خالص:** خروجی نهایی بدون وابستگی به سرور اختصاصی روی هر هاست استاتیکی اجرا می‌شود و فرم‌ها به API دلخواه شما متصل می‌شوند.
-
-<UiAlert
-  variant="info"
-  title="معماری سه‌لایه با به‌روزرسانی آسان"
-  description="هسته قالب در پوشه src/، سفارشی‌سازی‌های مشتری در client/ و محتوای دمو به‌صورت مجزا در starter-kit/ نگهداری می‌شوند."
-  class="not-prose my-8"
+<AboutSplitSection
+  surface="default"
+  spacing="md"
+  locale="fa"
+  image={aboutImage}
+  imageAlt="نمای کلی معماری استارتر چندزبانه Astro"
+  eyebrow="معماری سیستم"
+  heading="زیرساخت یکپارچه برای وب‌سایت‌های دو‌زبانه و بین‌المللی"
+  description="استارتر چندزبانه Astro یک زیرساخت آماده تولید برای ساخت وب‌سایت‌های استاتیک دوزبانه و چندزبانه با پشتیبانی کامل از راست‌به‌چپ و چپ‌به‌راست است. تمامی بخش‌ها از مسیریابی و اسکیمای محتوا تا پالت رنگ و اسکرول نرم بر پایه اصل منبع واحد حقیقت (SSOT) طراحی شده‌اند."
+  highlights={[
+    'مسیریابی متقارن برای زبان‌های مختلف بدون پیشوند اجباری در زبان اصلی',
+    'پالت‌های رنگی کالیبره‌شده OKLCH و تایپوگرافی دقیق فارسی و انگلیسی',
+    'خروجی استاتیک خالص بدون نیاز به سرور با قابلیت استقرار روی تمام CDNها',
+  ]}
+  stats={[
+    { count: 100, suffix: '٪', label: 'خروجی استاتیک خالص' },
+    { count: 77, suffix: '+', label: 'کامپوننت آماده' },
+    { count: 0, label: 'وابستگی به سرور' },
+  ]}
+  primaryCta={{ label: 'مشاهده ویژگی‌ها', href: '/fa/ویژگی‌ها/', icon: 'arrow-right' }}
+  secondaryCta={{ label: 'تنظیمات کوکی‌ها', href: '#privacy', icon: 'shield' }}
 />
 
-<section id="privacy" class="scroll-mt-28">
+<FeatureCardGrid
+  surface="surface"
+  spacing="md"
+  columns={3}
+  locale="fa"
+  eyebrow="بنیاد مهندسی"
+  heading="اصول کلیدی طراحی"
+  subheading="ساختاری استاندارد برای اینکه سفارشی‌سازی هر مشتری بدون ایجاد بدهی فنی و به‌سادگی توسعه یابد."
+  items={[
+    {
+      title: 'ساختار متقارن محتوا',
+      description: 'هر صفحه، مقاله و نمونه کار مسیرهای بومی‌شده و تگ‌های hreflang متناظر را به‌صورت خودکار از پوشه خود تولید می‌کند.',
+      icon: 'folder',
+      badge: 'SSOT',
+    },
+    {
+      title: 'دسترسی‌پذیری پیش‌فرض',
+      description: 'نشانه‌گذاری معنایی HTML، حلقه فوکوس استاندارد، کنترل یکپارچه کاهش حرکت (data-motion) و استایل چاپ بدون تغییر دستی فراهم است.',
+      icon: 'shield',
+      badge: 'WCAG',
+    },
+    {
+      title: 'انتشار استاتیک خالص',
+      description: 'خروجی نهایی بدون وابستگی به سرور اختصاصی روی هر هاست استاتیکی اجرا می‌شود و فرم‌ها به API دلخواه شما متصل می‌شوند.',
+      icon: 'rocket',
+      badge: 'Pure SSG',
+    },
+  ]}
+/>
 
-## حریم خصوصی و سیاست کوکی‌ها
+<PageSection id="workspace" surface="default" spacing="sm">
+  <UiAlert
+    locale="fa"
+    variant="info"
+    title="معماری سه‌لایه با به‌روزرسانی آسان"
+    description="هسته قالب در پوشه src/، سفارشی‌سازی‌های مشتری در client/ و محتوای دمو به‌صورت مجزا در starter-kit/ نگهداری می‌شوند."
+  />
+</PageSection>
 
-ذخیره‌سازی ضروری مرورگر (مانند تم رنگی انتخاب‌شده و وضعیت رضایت کوکی) تنها برای عملکرد پایه سایت استفاده می‌شود. دسته‌های اختیاری شامل ترجیحات، آمار و رسانه‌های خارجی بدون تایید صریح شما فعال نمی‌شوند.
+<PageSection id="privacy" surface="surface" spacing="md">
+  <SectionHeader
+    eyebrow="حریم خصوصی"
+    heading="حریم خصوصی و سیاست کوکی‌ها"
+    subheading="ذخیره‌سازی ضروری مرورگر (مانند تم رنگی انتخاب‌شده و وضعیت رضایت کوکی) تنها برای عملکرد پایه سایت استفاده می‌شود. دسته‌های اختیاری شامل ترجیحات، آمار و رسانه‌های خارجی بدون تایید صریح شما فعال نمی‌شوند."
+  />
 
-در هر زمان می‌توانید تنظیمات رضایت کوکی خود را بازبینی یا تغییر دهید:
+  <Card variant="default" padding="lg" class="mt-8">
+    <p class="text-sm leading-relaxed text-muted sm:text-base">
+      در هر زمان می‌توانید تنظیمات رضایت کوکی خود را بازبینی یا تغییر دهید:
+    </p>
+    <div class="mt-5 print:hidden">
+      <Button
+        variant="secondary"
+        icon="shield"
+        iconPosition="start"
+        data-open-cookie-settings
+      >
+        تنظیمات کوکی‌ها
+      </Button>
+    </div>
+  </Card>
+</PageSection>
 
-<Button
-  variant="secondary"
-  icon="shield"
-  iconPosition="start"
-  data-open-cookie-settings
-  class="not-prose mt-2"
->
-  تنظیمات کوکی‌ها
-</Button>
+<PageSection id="terms" surface="default" spacing="md">
+  <SectionHeader
+    eyebrow="شفافیت"
+    heading="شرایط استفاده"
+    subheading="تمامی قالب‌ها، بلوک‌های رابط کاربری و اسکریپت‌های خط فرمان به‌گونه‌ای ساختاردهی شده‌اند که تغییر برند، رنگ‌بندی و زبان برای هر پروژه از طریق app.config.json و دیکشنری‌های Paraglide به‌سرعت انجام شود."
+  />
 
-</section>
-
-<section id="terms" class="scroll-mt-28">
-
-## شرایط استفاده
-
-تمامی قالب‌ها، بلوک‌های رابط کاربری و اسکریپت‌های خط فرمان به‌گونه‌ای ساختاردهی شده‌اند که تغییر برند، رنگ‌بندی و زبان برای هر پروژه از طریق `app.config.json` و دیکشنری‌های Paraglide به‌سرعت انجام شود.
-
-</section>
-
-<SocialLinks variant="pills" showShare class="not-prose mt-10" />
+  <SocialLinks variant="pills" showShare class="mt-8" />
+</PageSection>

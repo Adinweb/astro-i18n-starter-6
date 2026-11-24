@@ -3,14 +3,17 @@
  * Generic starter homepage template (`template: "home"`) shared across all
  * active locales (`src/content/pages/home/<locale>.mdx`).
  *
- * Uses `<HomeHero />`, `.prose-wide` MDX content, and `<CtaBanner />` with
- * compile-time Paraglide messages and registry-driven content links.
+ * Composes `<HomeHero />`, `<BentoGrid />`, `<ProofStatsRow />`,
+ * `<LatestPostsSection />`, optional MDX canvas sections, and `<CtaBanner />`
+ * using compile-time Paraglide messages and registry-driven content links.
  */
 import { render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import HomeHero from '@/components/HomeHero.astro';
-import PageSection from '@/components/PageSection.astro';
+import BentoGrid from '@/components/BentoGrid.astro';
 import CtaBanner from '@/components/CtaBanner.astro';
+import HomeHero from '@/components/HomeHero.astro';
+import LatestPostsSection from '@/components/LatestPostsSection.astro';
+import ProofStatsRow from '@/components/ProofStatsRow.astro';
 import type { Locale } from '@/i18n/locales';
 import { siteConfig } from '@/libs/config/app';
 import { getBlogIndexHref, getPageUrl } from '@/libs/content/service';
@@ -28,7 +31,9 @@ interface Props {
 }
 
 const { entry, locale, alternates, url, schema, ogContext } = Astro.props;
-const { Content } = await render(entry);
+const rawBody = (entry.body ?? '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').trim();
+const hasCustomContent = rawBody.length > 0;
+const { Content } = hasCustomContent ? await render(entry) : { Content: null };
 
 const blogHref = getContentType('blog').enabled ? getBlogIndexHref(locale) : null;
 const projectsHref = getContentType('projects').enabled
@@ -85,11 +90,24 @@ const highlights = [
     highlights={highlights}
   />
 
-  <PageSection surface="default" spacing="lg">
-    <div class="prose prose-wide">
-      <Content />
-    </div>
-  </PageSection>
+  <BentoGrid
+    locale={locale}
+    layout="classic"
+    variant="elevated"
+    surface="default"
+    spacing="lg"
+  />
+
+  <ProofStatsRow locale={locale} surface="surface" spacing="md" />
+
+  {Content ? <Content /> : null}
+
+  <LatestPostsSection
+    locale={locale}
+    limit={3}
+    surface="default"
+    spacing="lg"
+  />
 
   <CtaBanner
     id="get-started"

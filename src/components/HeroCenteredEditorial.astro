@@ -85,7 +85,7 @@ const {
   id,
   locale,
   surface = 'default',
-  backdrop = 'glow',
+  backdrop,
   framedRails = 'none',
   parallaxImage = null,
   parallaxAlt = '',
@@ -196,6 +196,7 @@ const resolvedPartnerLogos = partnerLogos === null ? undefined : partnerLogos;
 const hasParallax = Boolean(parallaxImage);
 const isHeroSurface = hasParallax || surface === 'hero';
 const effectiveNavSurface = hasParallax ? 'hero' : surface;
+const resolvedBackdrop = backdrop ?? (hasParallax ? 'none' : 'glow');
 const hasPrelude = Astro.slots.has('prelude');
 const hasFooterSlot = Astro.slots.has('footer');
 const isBottomCroppedArch = Boolean(bottomImage && bottomImageStyle === 'arch');
@@ -230,7 +231,7 @@ const isBottomCroppedArch = Boolean(bottomImage && bottomImageStyle === 'arch');
           ? 'border border-border bg-surface/60 text-fg'
           : 'border-b border-border bg-bg text-fg',
   ]}
-  data-backdrop={backdrop}
+  data-backdrop={resolvedBackdrop}
   data-hero-surface={isHeroSurface ? 'hero' : 'standard'}
 >
   {
@@ -251,7 +252,7 @@ const isBottomCroppedArch = Boolean(bottomImage && bottomImageStyle === 'arch');
       <slot name="backdrop" />
     ) : (
       <BackdropLayer
-        backdrop={backdrop}
+        backdrop={resolvedBackdrop}
         surface={isHeroSurface ? 'hero' : 'default'}
         orbitalScale="wide"
       />

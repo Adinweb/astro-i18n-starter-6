@@ -4,27 +4,27 @@ slug: "contact"
 description: "Get in touch about multilingual Astro builds, custom design systems, headless API integrations, or onboarding support."
 image: "./contact.png"
 hero: "minimal"
-container: "contained"
+container: "canvas"
 draft: false
 ---
 
 import ContactSplitSection from '@/components/ContactSplitSection.astro';
 import FaqAccordion from '@/components/FaqAccordion.astro';
 
-Planning a bilingual marketing site, documentation hub, or client storefront powered by Astro v7? Share your goals, timeline, and target locales using the channels or inquiry form below.
-
 <ContactSplitSection
   id="contact-inquiry"
-  contained
+  surface="default"
+  spacing="md"
   locale="en"
   eyebrow="Direct Inquiry"
   heading="Start a Conversation"
-  subheading="Reach out for custom theme development, multi-locale architecture reviews, or static deployment guidance."
+  subheading="Planning a bilingual marketing site, documentation hub, or client storefront powered by Astro v7? Share your goals, timeline, and target locales using the channels or inquiry form below."
 />
 
 <FaqAccordion
-  contained
   emitSchema={false}
+  surface="surface"
+  spacing="md"
   locale="en"
   eyebrow="Common Questions"
   heading="Before You Write"

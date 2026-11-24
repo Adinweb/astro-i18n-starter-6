@@ -97,6 +97,8 @@ const wrapperClass =
         : variant === 'dropdown'
           ? 'rounded-2xl border px-4 py-2.5 sm:px-5'
           : 'pb-2';
+const dropdownMenuId =
+  variant === 'dropdown' ? `hero-nav-menu-${crypto.randomUUID().slice(0, 6)}` : undefined;
 ---
 
 <div
@@ -144,26 +146,43 @@ const wrapperClass =
     ))}
 
     {variant === 'dropdown' && (
-      <div class="group relative">
+      <div class="relative" data-hero-nav-dropdown>
         <button
           type="button"
+          aria-haspopup="menu"
+          aria-expanded="false"
+          aria-controls={dropdownMenuId}
+          data-hero-nav-trigger
           class:list={[
-            'inline-flex cursor-pointer items-center gap-1 transition-colors focus-visible:outline-none',
+            'inline-flex cursor-pointer items-center gap-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded-md',
             isHeroSurface
               ? 'text-hero-fg/85 hover:text-hero-fg print:text-muted print:hover:text-fg'
               : 'text-muted hover:text-fg',
           ]}
         >
           <span>{resolvedDropdownLabel}</span>
-          <Icon name="chevron-down" size={13} class="transition-transform duration-200 group-hover:rotate-180" />
+          <Icon
+            name="chevron-down"
+            size={13}
+            data-hero-nav-chevron
+            class="transition-transform duration-200 [[data-motion=reduced]_&]:transition-none"
+          />
         </button>
 
-        <div class="absolute start-0 top-full hidden min-w-44 pt-2 group-hover:block group-focus-within:block">
+        <div
+          id={dropdownMenuId}
+          role="menu"
+          hidden
+          data-hero-nav-menu
+          class="absolute start-0 top-full z-30 min-w-44 pt-2"
+        >
           <div class="rounded-xl border border-border bg-surface p-1.5 text-fg shadow-xl">
             {resolvedDropdownItems.map((sub) => (
               <a
                 href={sub.href}
-                class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs font-medium text-fg transition-colors hover:bg-surface-hover hover:text-primary"
+                role="menuitem"
+                data-hero-nav-item
+                class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs font-medium text-fg transition-colors hover:bg-surface-hover hover:text-primary focus-visible:bg-surface-hover focus-visible:text-primary focus-visible:outline-none"
               >
                 <span>{sub.label}</span>
                 <Icon name="chevron-right" size={12} class="opacity-60 rtl:rotate-180" />
@@ -216,3 +235,109 @@ const wrapperClass =
     </div>
   )}
 </div>
+
+<script>
+  function closeHeroNavDropdown(root: HTMLElement, restoreFocus = false) {
+    const trigger = root.querySelector<HTMLButtonElement>('[data-hero-nav-trigger]');
+    const menu = root.querySelector<HTMLElement>('[data-hero-nav-menu]');
+    const chevron = root.querySelector<HTMLElement>('[data-hero-nav-chevron]');
+    if (!trigger || !menu || menu.hidden) return;
+    menu.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+    chevron?.classList.remove('rotate-180');
+    if (restoreFocus) trigger.focus();
+  }
+
+  function bindGlobalHeroNavListeners() {
+    if (document.documentElement.dataset.heroNavDropdownGlobal === 'true') return;
+    document.documentElement.dataset.heroNavDropdownGlobal = 'true';
+
+    document.addEventListener('click', (event) => {
+      const target = event.target as Node | null;
+      document.querySelectorAll<HTMLElement>('[data-hero-nav-dropdown]').forEach((root) => {
+        if (!target || !root.contains(target)) closeHeroNavDropdown(root, false);
+      });
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      document.querySelectorAll<HTMLElement>('[data-hero-nav-dropdown]').forEach((root) => {
+        const menu = root.querySelector<HTMLElement>('[data-hero-nav-menu]');
+        if (menu && !menu.hidden) {
+          closeHeroNavDropdown(root, root.contains(document.activeElement));
+        }
+      });
+    });
+  }
+
+  function initHeroPreviewNavDropdowns() {
+    bindGlobalHeroNavListeners();
+    const supportsHover =
+      typeof window !== 'undefined' && window.matchMedia?.('(hover: hover)')?.matches;
+
+    document.querySelectorAll<HTMLElement>('[data-hero-nav-dropdown]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const trigger = root.querySelector<HTMLButtonElement>('[data-hero-nav-trigger]');
+      const menu = root.querySelector<HTMLElement>('[data-hero-nav-menu]');
+      const chevron = root.querySelector<HTMLElement>('[data-hero-nav-chevron]');
+      const items = Array.from(root.querySelectorAll<HTMLElement>('[data-hero-nav-item]'));
+      if (!trigger || !menu) return;
+
+      const setOpen = (open: boolean, focusFirst = false) => {
+        if (open) {
+          document.querySelectorAll<HTMLElement>('[data-hero-nav-dropdown]').forEach((other) => {
+            if (other !== root) closeHeroNavDropdown(other, false);
+          });
+        }
+        menu.hidden = !open;
+        trigger.setAttribute('aria-expanded', String(open));
+        chevron?.classList.toggle('rotate-180', open);
+        if (open && focusFirst && items.length > 0) {
+          items[0]?.focus();
+        }
+      };
+
+      trigger.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+        setOpen(!isOpen, false);
+      });
+
+      trigger.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          setOpen(true, true);
+        }
+      });
+
+      if (supportsHover) {
+        root.addEventListener('mouseenter', () => setOpen(true, false));
+        root.addEventListener('mouseleave', () => setOpen(false, false));
+      }
+
+      items.forEach((item, idx) => {
+        item.addEventListener('click', () => setOpen(false, false));
+        item.addEventListener('keydown', (event) => {
+          if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            items[(idx + 1) % items.length]?.focus();
+          } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            items[(idx - 1 + items.length) % items.length]?.focus();
+          } else if (event.key === 'Home') {
+            event.preventDefault();
+            items[0]?.focus();
+          } else if (event.key === 'End') {
+            event.preventDefault();
+            items[items.length - 1]?.focus();
+          }
+        });
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initHeroPreviewNavDropdowns);
+  initHeroPreviewNavDropdowns();
+</script>

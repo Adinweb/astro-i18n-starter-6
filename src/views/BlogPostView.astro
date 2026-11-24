@@ -139,9 +139,9 @@ const schema = [
             <summary class="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold text-fg">
               <span>{m.blog_toc_title({}, { locale })}</span>
               <Icon
-                name="chevron-left"
+                name="chevron-down"
                 size={16}
-                class="-rotate-90 text-muted transition-transform duration-150 group-open:rotate-90"
+                class="text-muted transition-transform duration-200 group-open:rotate-180 [[data-motion=reduced]_&]:transition-none"
               />
             </summary>
             <nav aria-label={m.blog_toc_title({}, { locale })} class="mt-3 border-t border-border pt-3">
@@ -170,7 +170,7 @@ const schema = [
         {
           tags.length > 0 && (
             <div class="mt-10 flex flex-wrap items-center gap-2 border-t border-border pt-5">
-              <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+              <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
                 {m.blog_tags({}, { locale })}
               </span>
               {tags.map((tag) => (

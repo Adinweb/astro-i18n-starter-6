@@ -28,6 +28,8 @@ export interface ProductItem {
   price: number;
   compareAtPrice?: number;
   currency?: string;
+  currencyPrefix?: string;
+  currencySuffix?: string;
   rating?: number;
   reviewCount?: number;
   image?: ImageMetadata;
@@ -195,11 +197,13 @@ const gridColsClass =
     >
       {
         resolvedItems.map((item) => {
-          const currency = item.currency ?? defaultCurrency;
-          const formattedPrice = `${currency}${formatNumber(item.price, activeLocale)}`;
+          const prefix =
+            item.currencyPrefix ?? (item.currencySuffix ? '' : (item.currency ?? defaultCurrency));
+          const suffix = item.currencySuffix ?? '';
+          const formattedPrice = `${prefix}${formatNumber(item.price, activeLocale)}${suffix}`;
           const formattedCompare =
             item.compareAtPrice !== undefined
-              ? `${currency}${formatNumber(item.compareAtPrice, activeLocale)}`
+              ? `${prefix}${formatNumber(item.compareAtPrice, activeLocale)}${suffix}`
               : undefined;
           const formattedRating =
             item.rating !== undefined ? formatNumber(item.rating, activeLocale) : undefined;
@@ -212,11 +216,14 @@ const gridColsClass =
               data-trig-once="true"
               data-product-card
               data-category={item.category ?? ''}
-              class:list={[
-                'group flex flex-col overflow-hidden rounded-2xl border border-border shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md',
-                cardSurface,
-              ]}
+              class="flex"
             >
+              <div
+                class:list={[
+                  'group flex w-full flex-col overflow-hidden rounded-2xl border border-border shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md',
+                  cardSurface,
+                ]}
+              >
               <div class="relative aspect-[16/10] overflow-hidden bg-surface-hover/50">
                 {item.image ? (
                   <Image
@@ -301,6 +308,7 @@ const gridColsClass =
                     </Button>
                   )}
                 </div>
+              </div>
               </div>
             </article>
           );

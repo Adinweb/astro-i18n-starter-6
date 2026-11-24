@@ -4,18 +4,19 @@ slug: "pricing"
 description: "Simple starter tiers for static web delivery, multilingual scaling, and direct project inquiries."
 image: "./pricing.png"
 hero: "minimal"
-container: "contained"
+container: "canvas"
 draft: false
 ---
 
 import ComparisonTable from '@/components/ComparisonTable.astro';
-import ContactForm from '@/components/ContactForm.astro';
+import ContactSplitSection from '@/components/ContactSplitSection.astro';
 import FaqAccordion from '@/components/FaqAccordion.astro';
 import PricingSection from '@/components/PricingSection.astro';
 
 <PricingSection
-  contained
   billingToggle
+  surface="default"
+  spacing="md"
   locale="en"
   heading="Flexible Engagement Options"
   subheading="Use the starter open-source foundation directly or tailor it with bespoke design systems and multilingual workflows."
@@ -72,7 +73,8 @@ import PricingSection from '@/components/PricingSection.astro';
 />
 
 <ComparisonTable
-  contained
+  surface="surface"
+  spacing="md"
   locale="en"
   eyebrow="Capability Breakdown"
   heading="Compare Starter Editions"
@@ -80,8 +82,9 @@ import PricingSection from '@/components/PricingSection.astro';
 />
 
 <FaqAccordion
-  contained
   emitSchema
+  surface="default"
+  spacing="md"
   locale="en"
   eyebrow="Licensing & Scope"
   heading="Pricing Questions"
@@ -101,4 +104,12 @@ import PricingSection from '@/components/PricingSection.astro';
   ]}
 />
 
-<ContactForm locale="en" />
+<ContactSplitSection
+  id="contact-inquiry"
+  surface="surface"
+  spacing="md"
+  locale="en"
+  eyebrow="Project Inquiry"
+  heading="Request a Custom Scope"
+  subheading="Share your target locales, design timeline, and hosting setup to receive a tailored implementation plan."
+/>

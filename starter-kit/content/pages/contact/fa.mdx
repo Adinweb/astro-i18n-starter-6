@@ -4,27 +4,27 @@ slug: "تماس"
 description: "ارتباط برای راه‌اندازی وب‌سایت چندزبانه با Astro، طراحی سیستم بصری اختصاصی، اتصال APIهای خارجی یا پشتیبانی فنی."
 image: "./contact.png"
 hero: "minimal"
-container: "contained"
+container: "canvas"
 draft: false
 ---
 
 import ContactSplitSection from '@/components/ContactSplitSection.astro';
 import FaqAccordion from '@/components/FaqAccordion.astro';
 
-قصد راه‌اندازی وب‌سایت شرکتی دو‌زبانه، پایگاه دانش یا صفحه معرفی محصول با Astro v7 را دارید؟ جزئیات پروژه، زبان‌های هدف و نیازمندی‌های خود را از طریق کانال‌های ارتباطی یا فرم زیر با ما در میان بگذارید.
-
 <ContactSplitSection
   id="contact-inquiry"
-  contained
+  surface="default"
+  spacing="md"
   locale="fa"
   eyebrow="ارتباط مستقیم"
   heading="گفتگو درباره پروژه شما"
-  subheading="برای سفارشی‌سازی تم رنگی، بازبینی معماری چندزبانه یا استقرار استاتیک با تیم ما در ارتباط باشید."
+  subheading="قصد راه‌اندازی وب‌سایت شرکتی دو‌زبانه، پایگاه دانش یا صفحه معرفی محصول با Astro v7 را دارید؟ جزئیات پروژه، زبان‌های هدف و نیازمندی‌های خود را از طریق کانال‌های ارتباطی یا فرم زیر با ما در میان بگذارید."
 />
 
 <FaqAccordion
-  contained
   emitSchema={false}
+  surface="surface"
+  spacing="md"
   locale="fa"
   eyebrow="پرسش‌های پرتکرار"
   heading="پیش از ارسال پیام"

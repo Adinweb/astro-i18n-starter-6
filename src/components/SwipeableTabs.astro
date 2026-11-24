@@ -31,6 +31,7 @@ interface Props {
   heading?: string | null;
   subheading?: string | null;
   tabs?: readonly SwipeableTabItem[];
+  variant?: 'pills' | 'underline';
   contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'sm' | 'md' | 'lg';
@@ -43,6 +44,7 @@ const {
   heading,
   subheading,
   tabs,
+  variant = 'pills',
   contained = false,
   surface = 'default',
   spacing = 'md',
@@ -102,7 +104,7 @@ const resolvedTabs: readonly SwipeableTabItem[] = tabs ?? [
 
 const hasHeader = Boolean(resolvedEyebrow || resolvedHeading || resolvedSubheading);
 const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface';
-const instancePrefix = id ?? `embla-tabs-${Math.random().toString(36).slice(2, 8)}`;
+const instancePrefix = id ?? `embla-tabs-${crypto.randomUUID().slice(0, 6)}`;
 ---
 
 <PageSection
@@ -120,6 +122,7 @@ const instancePrefix = id ?? `embla-tabs-${Math.random().toString(36).slice(2, 8
 
   <div
     data-embla-tabs
+    data-variant={variant}
     class:list={[hasHeader && 'mt-8']}
     data-trig
     data-trig-once="true"
@@ -129,7 +132,10 @@ const instancePrefix = id ?? `embla-tabs-${Math.random().toString(36).slice(2, 8
       role="tablist"
       aria-label={resolvedHeading ?? resolvedEyebrow ?? m.block_tabs_eyebrow({}, { locale: activeLocale })}
       data-embla-tablist
-      class="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      class:list={[
+        'flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+        variant === 'underline' ? 'border-b border-border' : 'pb-2',
+      ]}
     >
       {
         resolvedTabs.map((tab, idx) => {
@@ -144,10 +150,17 @@ const instancePrefix = id ?? `embla-tabs-${Math.random().toString(36).slice(2, 8
               tabindex={active ? 0 : -1}
               data-embla-tab={String(idx)}
               class:list={[
-                'inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
-                active
-                  ? 'border-primary bg-primary text-primary-fg shadow-xs'
-                  : 'border-border bg-surface text-muted hover:border-primary/40 hover:text-fg',
+                'inline-flex shrink-0 cursor-pointer items-center gap-2 text-sm font-semibold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                variant === 'underline'
+                  ? 'border-b-2 px-4 py-2.5'
+                  : 'rounded-xl border px-4 py-2.5',
+                variant === 'underline'
+                  ? active
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted hover:text-fg'
+                  : active
+                    ? 'border-primary bg-primary text-primary-fg shadow-xs'
+                    : 'border-border bg-surface text-muted hover:border-primary/40 hover:text-fg',
               ]}
             >
               {tab.icon && <Icon name={tab.icon} size={16} />}
@@ -240,11 +253,14 @@ const instancePrefix = id ?? `embla-tabs-${Math.random().toString(36).slice(2, 8
   function initEmblaTabs() {
     const roots = document.querySelectorAll<HTMLElement>('[data-embla-tabs]');
     const isRtl = document.documentElement.dir === 'rtl';
+    const isReduced = document.documentElement.dataset.motion === 'reduced';
 
     roots.forEach((root) => {
       if (root.dataset.bound === 'true') return;
       root.dataset.bound = 'true';
 
+      const variant = root.dataset.variant ?? 'pills';
+      const tablist = root.querySelector<HTMLElement>('[data-embla-tablist]');
       const viewport = root.querySelector<HTMLElement>('[data-embla-viewport]');
       const tabButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-embla-tab]'));
       const dots = Array.from(root.querySelectorAll<HTMLElement>('[data-embla-dot]'));
@@ -255,6 +271,7 @@ const instancePrefix = id ?? `embla-tabs-${Math.random().toString(36).slice(2, 8
         direction: isRtl ? 'rtl' : 'ltr',
         align: 'start',
         skipSnaps: false,
+        duration: isReduced ? 0 : 25,
       });
 
       activeTabInstances.push(embla);
@@ -266,18 +283,31 @@ const instancePrefix = id ?? `embla-tabs-${Math.random().toString(36).slice(2, 8
           const active = idx === selected;
           btn.setAttribute('aria-selected', String(active));
           btn.tabIndex = active ? 0 : -1;
-          btn.classList.toggle('border-primary', active);
-          btn.classList.toggle('bg-primary', active);
-          btn.classList.toggle('text-primary-fg', active);
-          btn.classList.toggle('shadow-xs', active);
-          btn.classList.toggle('border-border', !active);
-          btn.classList.toggle('bg-surface', !active);
-          btn.classList.toggle('text-muted', !active);
-          btn.classList.toggle('hover:border-primary/40', !active);
-          btn.classList.toggle('hover:text-fg', !active);
 
-          if (active && scrollTabIntoView) {
-            btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          if (variant === 'underline') {
+            btn.classList.toggle('border-primary', active);
+            btn.classList.toggle('text-primary', active);
+            btn.classList.toggle('border-transparent', !active);
+            btn.classList.toggle('text-muted', !active);
+            btn.classList.toggle('hover:text-fg', !active);
+          } else {
+            btn.classList.toggle('border-primary', active);
+            btn.classList.toggle('bg-primary', active);
+            btn.classList.toggle('text-primary-fg', active);
+            btn.classList.toggle('shadow-xs', active);
+            btn.classList.toggle('border-border', !active);
+            btn.classList.toggle('bg-surface', !active);
+            btn.classList.toggle('text-muted', !active);
+            btn.classList.toggle('hover:border-primary/40', !active);
+            btn.classList.toggle('hover:text-fg', !active);
+          }
+
+          if (active && scrollTabIntoView && tablist && tablist.scrollWidth > tablist.clientWidth) {
+            btn.scrollIntoView({
+              behavior: isReduced ? 'auto' : 'smooth',
+              block: 'nearest',
+              inline: 'center',
+            });
           }
         });
 

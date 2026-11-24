@@ -4,18 +4,22 @@ slug: "ویژگی‌ها"
 description: "آشنایی با پشتیبانی بومی RTL/LTR، پالت‌های رنگی OKLCH، انیمیشن‌های اسکرول ChronoTrig و جستجوی چندزبانه Pagefind."
 image: "./features.png"
 hero: "default"
-container: "contained"
+container: "canvas"
 draft: false
 ---
 
+import AboutSplitSection from '@/components/AboutSplitSection.astro';
 import BentoCapabilities from '@/components/BentoCapabilities.astro';
+import BentoGrid from '@/components/BentoGrid.astro';
 import CtaBanner from '@/components/CtaBanner.astro';
-import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
 import ProcessSteps from '@/components/ProcessSteps.astro';
 import ProofStatsRow from '@/components/ProofStatsRow.astro';
+import SwipeableTabs from '@/components/SwipeableTabs.astro';
+import featuresImage from './features.png';
 
 <ProofStatsRow
-  contained
+  surface="surface"
+  spacing="md"
   locale="fa"
   eyebrow="شاخص‌های معماری"
   heading="طراحی‌شده برای سرعت، دسترس‌پذیری و یکپارچگی"
@@ -29,7 +33,8 @@ import ProofStatsRow from '@/components/ProofStatsRow.astro';
 />
 
 <BentoCapabilities
-  contained
+  surface="default"
+  spacing="md"
   locale="fa"
   heading="امکانات آماده در قلب استارتر"
   subheading="معماری ماژولار برای راه‌اندازی سریع پروژه‌های مشتریان، امنیت نوعی کامل و تایپوگرافی دقیق در زبان‌های فارسی و انگلیسی."
@@ -62,33 +67,78 @@ import ProofStatsRow from '@/components/ProofStatsRow.astro';
   ]}
 />
 
-<FeatureTabsSection
-  contained
+<SwipeableTabs
+  surface="surface"
+  spacing="md"
   locale="fa"
   variant="underline"
   eyebrow="ساختار لایه‌ای"
   heading="بررسی هر لایه از نزدیک"
-  subheading="با جابه‌جایی میان تب‌ها با چرخه مسیریابی، جستجوی فارسی و ابزارهای اعتبارسنجی آشنا شوید."
+  subheading="با کلیک یا کشیدن تب‌ها با چرخه مسیریابی، جستجوی فارسی و ابزارهای اعتبارسنجی آشنا شوید."
 />
 
-<section id="rtl" class="scroll-mt-28">
+<AboutSplitSection
+  id="rtl"
+  surface="default"
+  spacing="md"
+  locale="fa"
+  image={featuresImage}
+  imageAlt="معماری چیدمان بومی راست‌به‌چپ و چپ‌به‌راست"
+  mediaPosition="end"
+  eyebrow="پشتیبانی دوجانبه"
+  heading="معماری بومی RTL/LTR"
+  description="تمامی چیدمان‌ها بر پایه ویژگی‌های منطقی CSS نوشته شده‌اند تا فاصله‌گذاری‌ها، گرادیان‌ها و جهت انیمیشن‌ها بین فارسی و انگلیسی به‌شکل خودکار آینه‌سازی شوند."
+  highlights={[
+    'استفاده انحصاری از کلاس‌های منطقی (ms-*، me-*، ps-*، pe-* و text-start) با کنترل خودکار در ممیزی i18n',
+    'ایزوله‌سازی کامل بلوک‌های کد به جهت چپ‌به‌راست برای خوانایی دقیق اسناد فنی',
+    'تنظیم خودکار گرادیان‌های جهت‌دار و انیمیشن‌های اسکرول ChronoTrig بر اساس جهت زبان صفحه',
+  ]}
+  primaryCta={null}
+/>
 
-## معماری بومی RTL/LTR
-
-تمامی چیدمان‌ها بر پایه ویژگی‌های منطقی CSS مانند `ms-*`، `me-*`، `ps-*`، `pe-*` و `text-start` نوشته شده‌اند. بلوک‌های کد همیشه به‌صورت چپ‌به‌راست ایزوله می‌شوند و گرادیان‌ها و جهت‌های انیمیشن به‌شکل خودکار بر اساس جهت زبان صفحه تنظیم می‌گردند.
-
-</section>
-
-<section id="design" class="scroll-mt-28">
-
-## سیستم طراحی و توکن‌های برند
-
-رنگ‌های معنایی تنها در یک منبع تعریف می‌شوند و از تنظیمات `app.config.json` و `theme-presets.json` مقداردهی می‌گردند. ابزارهای مشترک رابط کاربری مانند `<Button>`، `<IconButton>` و `<Icon>` هماهنگی بصری و دسترس‌پذیری را در تمام صفحات تضمین می‌کنند.
-
-</section>
+<BentoGrid
+  id="design"
+  surface="surface"
+  spacing="md"
+  layout="classic"
+  variant="elevated"
+  locale="fa"
+  eyebrow="سیستم طراحی"
+  heading="سیستم طراحی و توکن‌های برند"
+  subheading="نقش‌های رنگی معنایی OKLCH، سطوح شیشه‌ای و کامپوننت‌های پایه رابط کاربری هماهنگی بصری را در تمام صفحات حفظ می‌کنند."
+  metricCard={{
+    metric: '۶',
+    title: 'پالت کالیبره‌شده OKLCH',
+    badge: 'منبع واحد حقیقت',
+    description: 'کنتراست استاندارد در تم روشن، تاریک و هیرو که مستقیماً از فایل پیکربندی تغییر می‌کند.',
+  }}
+  securityCard={{
+    title: 'اجزای پایه یکپارچه',
+    description: 'کامپوننت‌های مشترک Button، IconButton، Card و Icon دسترس‌پذیری و حلقه فوکوس را تضمین می‌کنند.',
+    icon: 'shield',
+    badge: 'WCAG',
+  }}
+  speedCard={{
+    title: 'استایل بهینه در زمان بیلد',
+    description: 'توکن‌های Tailwind v4 تنها استایل‌های مصرف‌شده را با کمترین حجم به خروجی نهایی منتقل می‌کنند.',
+    icon: 'bolt',
+  }}
+  analyticsCard={{
+    title: 'جفت‌فونت پویا برای هر خط',
+    description: 'پشته فونت فارسی و انگلیسی به‌طور خودکار بر اساس html[dir] و تنظیمات زبان بارگذاری می‌شود.',
+    icon: 'palette',
+  }}
+  collaborationCard={{
+    title: 'سفارشی‌سازی در لایه مشتری',
+    description: 'توکن‌های هسته در src/ دست‌نخورده می‌مانند و متغیرهای برند با امنیت کامل در client/ بازنویسی می‌شوند.',
+    icon: 'layers',
+    badge: 'ارتقا‌پذیر',
+  }}
+/>
 
 <ProcessSteps
-  contained
+  surface="default"
+  spacing="md"
   locale="fa"
   variant="timeline"
   eyebrow="فرآیند تحویل پروژه"
@@ -97,9 +147,9 @@ import ProofStatsRow from '@/components/ProofStatsRow.astro';
 />
 
 <CtaBanner
-  contained
   locale="fa"
   surface="hero"
+  spacing="md"
   eyebrow="کاتالوگ تعاملی"
   title="پیش‌نمایش زنده تمامی اجزا و بلوک‌ها"
   description="دکمه‌ها، مودال‌ها، فرم‌ها، جداول مقایسه، گالری و اسلایدرها را در هر دو زبان فارسی و انگلیسی آزمایش کنید."

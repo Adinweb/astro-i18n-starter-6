@@ -84,7 +84,7 @@ const {
   id,
   locale,
   surface = 'default',
-  backdrop = 'dots',
+  backdrop,
   parallaxImage = null,
   parallaxAlt = '',
   parallaxSpeed = 'medium',
@@ -234,6 +234,10 @@ const resolvedImage = image === null ? undefined : image ?? DEFAULT_HERO_IMAGE;
 const hasParallax = Boolean(parallaxImage);
 const isHeroSurface = hasParallax || surface === 'hero';
 const effectiveNavSurface = hasParallax ? 'hero' : surface;
+const resolvedBackdrop = backdrop ?? (hasParallax ? 'none' : 'dots');
+const isNumericPrimaryCta = resolvedPrimaryCta
+  ? /^[+\d\u06F0-\u06F9\u0660-\u0669\s().\-–]+$/u.test(resolvedPrimaryCta.label.trim())
+  : false;
 
 const clampedRating =
   rating === null ? 0 : Math.max(0, Math.min(5, Math.round(rating)));
@@ -279,7 +283,7 @@ const ratingAria = m.block_hero_orb_rating_aria({}, { locale: activeLocale });
     Astro.slots.has('backdrop') ? (
       <slot name="backdrop" />
     ) : (
-      <BackdropLayer backdrop={backdrop} surface={isHeroSurface ? 'hero' : 'default'} />
+      <BackdropLayer backdrop={resolvedBackdrop} surface={isHeroSurface ? 'hero' : 'default'} />
     )
   }
 
@@ -367,7 +371,11 @@ const ratingAria = m.block_hero_orb_rating_aria({}, { locale: activeLocale });
                   iconPosition="start"
                   external={resolvedPrimaryCta.external}
                 >
-                  <span dir="ltr" class="tabular-nums">{resolvedPrimaryCta.label}</span>
+                  {isNumericPrimaryCta ? (
+                    <span dir="ltr" class="tabular-nums">{resolvedPrimaryCta.label}</span>
+                  ) : (
+                    resolvedPrimaryCta.label
+                  )}
                 </Button>
               )}
               {resolvedSecondaryCta && (

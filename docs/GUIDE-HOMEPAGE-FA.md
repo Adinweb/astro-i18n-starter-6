@@ -216,8 +216,8 @@ draft: false
 
 ```mdx
 import PageSection from '@/components/PageSection.astro';
-import Icon from '@/components/Icon.astro';
-import Button from '@/components/Button.astro';
+import Icon from '@/components/ui/Icon.astro';
+import Button from '@/components/ui/Button.astro';
 ```
 
 ### ۵.۳ هیروی اختصاصی (اولین بخش، زیر هدر شناور)
@@ -309,15 +309,15 @@ import Button from '@/components/Button.astro';
 
 ### ۶.۱ ساخت قالب
 
-فایل `client/templates/StudioHome.astro` (توجه: اگر فایل `<Button>` را استفاده می‌کنید آن را از `@/components/Button.astro` import کنید):
+فایل `client/templates/StudioHome.astro` (توجه: اگر فایل `<Button>` را استفاده می‌کنید آن را از `@/components/ui/Button.astro` import کنید):
 
 ```astro
 ---
 import { render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageSection from '@/components/PageSection.astro';
-import Button from '@/components/Button.astro';
-import Icon from '@/components/Icon.astro';
+import Button from '@/components/ui/Button.astro';
+import Icon from '@/components/ui/Icon.astro';
 import { HERO_TITLE_ID } from '@/libs/config/app';
 import type { Locale } from '@/i18n/locales';
 import { getBlogIndexHref, getPageUrl } from '@/libs/content/service';

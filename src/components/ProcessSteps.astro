@@ -135,38 +135,42 @@ const gridColsClass =
           <li
             data-trig
             data-trig-once="true"
-            class:list={[
-              'relative flex flex-col justify-between rounded-2xl border border-border p-6 transition duration-200 hover:border-primary/40 hover:shadow-md',
-              cardSurface,
-            ]}
+            class="flex"
           >
-            <div>
-              <div class="flex items-center gap-3">
-                <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-extrabold tabular-nums text-primary-fg shadow-xs">
-                  {numberText}
-                </span>
+            <div
+              class:list={[
+                'relative flex w-full flex-col justify-between rounded-2xl border border-border p-6 transition duration-200 hover:border-primary/40 hover:shadow-md',
+                cardSurface,
+              ]}
+            >
+              <div>
+                <div class="flex items-center gap-3">
+                  <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-extrabold tabular-nums text-primary-fg shadow-xs">
+                    {numberText}
+                  </span>
 
-                {variant === 'timeline' && idx < resolvedSteps.length - 1 && (
-                  <span
-                    aria-hidden="true"
-                    class="hidden h-px flex-1 bg-border lg:block"
-                  />
-                )}
+                  {variant === 'timeline' && idx < resolvedSteps.length - 1 && (
+                    <span
+                      aria-hidden="true"
+                      class="hidden h-px flex-1 bg-border lg:block"
+                    />
+                  )}
 
-                {step.icon && (
-                  <IconBox
-                    icon={step.icon}
-                    size="sm"
-                    radius="xl"
-                    tone="surface"
-                    iconSize={18}
-                    class="ms-auto bg-surface-hover/70 text-primary"
-                  />
-                )}
+                  {step.icon && (
+                    <IconBox
+                      icon={step.icon}
+                      size="sm"
+                      radius="xl"
+                      tone="surface"
+                      iconSize={18}
+                      class="ms-auto bg-surface-hover/70 text-primary"
+                    />
+                  )}
+                </div>
+
+                <h3 class="mt-5 text-lg font-bold tracking-tight text-fg">{step.title}</h3>
+                <p class="mt-2 text-sm leading-relaxed text-muted">{step.description}</p>
               </div>
-
-              <h3 class="mt-5 text-lg font-bold tracking-tight text-fg">{step.title}</h3>
-              <p class="mt-2 text-sm leading-relaxed text-muted">{step.description}</p>
             </div>
           </li>
         );

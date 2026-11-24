@@ -167,57 +167,61 @@ const gridColsClass =
               data-trig-once="true"
               data-gallery-card
               data-category={item.category ?? ''}
-              class:list={[
-                'group overflow-hidden rounded-2xl border border-border shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md',
-                cardSurface,
-              ]}
+              class="flex"
             >
-              <div class="relative aspect-[16/10] overflow-hidden bg-surface-hover/50">
-                {item.image ? (
-                  <Image
-                    src={previewImage}
-                    alt={item.alt ?? item.title}
-                    widths={[480, 800]}
-                    sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 94vw"
-                    loading="lazy"
-                    class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                    data-gallery-img
-                  />
-                ) : (
-                  <div class="flex h-full items-center justify-center bg-linear-to-br rtl:bg-linear-to-bl from-primary/15 via-surface-hover to-accent/15 text-primary">
-                    <Icon name="photo" size={36} />
-                  </div>
-                )}
+              <div
+                class:list={[
+                  'group flex w-full flex-col overflow-hidden rounded-2xl border border-border shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md',
+                  cardSurface,
+                ]}
+              >
+                <div class="relative aspect-[16/10] overflow-hidden bg-surface-hover/50">
+                  {item.image ? (
+                    <Image
+                      src={previewImage}
+                      alt={item.alt ?? item.title}
+                      widths={[480, 800]}
+                      sizes="(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 94vw"
+                      loading="lazy"
+                      class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      data-gallery-img
+                    />
+                  ) : (
+                    <div class="flex h-full items-center justify-center bg-linear-to-br rtl:bg-linear-to-bl from-primary/15 via-surface-hover to-accent/15 text-primary">
+                      <Icon name="photo" size={36} />
+                    </div>
+                  )}
 
-                {item.category && (
-                  <span class="hero-badge absolute bottom-3 start-3">
-                    {item.category}
-                  </span>
-                )}
+                  {item.category && (
+                    <span class="hero-badge absolute bottom-3 start-3">
+                      {item.category}
+                    </span>
+                  )}
 
-                {enableLightbox && item.image && (
-                  <IconButton
-                    variant="glass"
-                    icon="external-link"
-                    size={16}
-                    label={m.block_gallery_preview_aria(
-                      { title: item.title },
-                      { locale: activeLocale }
-                    )}
-                    data-gallery-open
-                    data-title={item.title}
-                    data-caption={item.caption ?? ''}
-                    class="absolute top-3 end-3 print:hidden"
-                  />
-                )}
+                  {enableLightbox && item.image && (
+                    <IconButton
+                      variant="glass"
+                      icon="external-link"
+                      size={16}
+                      label={m.block_gallery_preview_aria(
+                        { title: item.title },
+                        { locale: activeLocale }
+                      )}
+                      data-gallery-open
+                      data-title={item.title}
+                      data-caption={item.caption ?? ''}
+                      class="absolute top-3 end-3 print:hidden"
+                    />
+                  )}
+                </div>
+
+                <figcaption class="p-4 sm:p-5">
+                  <p class="text-base font-bold tracking-tight text-fg">{item.title}</p>
+                  {item.caption && (
+                    <p class="mt-1.5 text-sm leading-relaxed text-muted">{item.caption}</p>
+                  )}
+                </figcaption>
               </div>
-
-              <figcaption class="p-4 sm:p-5">
-                <p class="text-base font-bold tracking-tight text-fg">{item.title}</p>
-                {item.caption && (
-                  <p class="mt-1.5 text-sm leading-relaxed text-muted">{item.caption}</p>
-                )}
-              </figcaption>
             </figure>
           );
         })

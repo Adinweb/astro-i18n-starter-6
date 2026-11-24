@@ -23,6 +23,7 @@ import {
 } from '@/libs/content/types';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { buildOgRouteKey, type SocialCardContext } from '@/libs/content/social';
+import { normalizeForFallbackMatch } from '@/libs/search/persian';
 import { formatNumber, formatYear } from '@/i18n/format';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
@@ -263,17 +264,18 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
             const href = getContentTypeEntryHref(contentType, entry.data.slug, locale);
             const entryCategories = entry.data.categories ?? [];
             const entryStack = entry.data.stack ?? [];
-            const searchHaystack = [
-              entry.data.title,
-              entry.data.description,
-              entry.data.client,
-              entry.data.year ? String(entry.data.year) : '',
-              ...entryCategories,
-              ...entryStack,
-            ]
-              .filter(Boolean)
-              .join(' ')
-              .toLowerCase();
+            const searchHaystack = normalizeForFallbackMatch(
+              [
+                entry.data.title,
+                entry.data.description,
+                entry.data.client,
+                entry.data.year ? String(entry.data.year) : '',
+                ...entryCategories,
+                ...entryStack,
+              ]
+                .filter(Boolean)
+                .join(' ')
+            );
 
             return (
               <li
@@ -367,6 +369,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
 
 <script>
   import { formatNumber } from '@/i18n/format';
+  import { normalizeForFallbackMatch } from '@/libs/search/persian';
   import { refreshChronoTrig } from '@/scripts/chronotrig';
 
   function bindCollectionFilters() {
@@ -417,7 +420,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
       };
 
       const applyFilters = () => {
-        const needle = query.trim().toLowerCase();
+        const needle = normalizeForFallbackMatch(query);
         let visibleCount = 0;
         let visibilityChanged = false;
 

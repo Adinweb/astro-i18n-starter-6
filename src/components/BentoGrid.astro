@@ -207,12 +207,14 @@ const WORKFLOW_ROWS = [
       data-trig
       data-trig-once="true"
       data-bento-card
-      class:list={[
-        'group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
-        span.metric,
-        cardVariantClass,
-      ]}
+      class:list={['flex', span.metric]}
     >
+      <div
+        class:list={[
+          'group relative flex w-full flex-col items-center justify-center overflow-hidden rounded-2xl border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+          cardVariantClass,
+        ]}
+      >
       <div
         aria-hidden="true"
         class:list={[
@@ -285,6 +287,7 @@ const WORKFLOW_ROWS = [
           </p>
         )
       }
+      </div>
     </article>
 
     <!-- Card 2: Security / Radar Ring Emblem -->
@@ -292,12 +295,14 @@ const WORKFLOW_ROWS = [
       data-trig
       data-trig-once="true"
       data-bento-card
-      class:list={[
-        'group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
-        span.security,
-        cardVariantClass,
-      ]}
+      class:list={['flex', span.security]}
     >
+      <div
+        class:list={[
+          'group relative flex w-full flex-col justify-between overflow-hidden rounded-2xl border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+          cardVariantClass,
+        ]}
+      >
       {
         isTinted && (
           <div
@@ -359,6 +364,7 @@ const WORKFLOW_ROWS = [
         </h3>
         <p class="text-sm leading-relaxed text-muted">{resolvedSecurity.description}</p>
       </div>
+      </div>
     </article>
 
     <!-- Card 3: Performance / Equalizer Sparkline Visual -->
@@ -366,12 +372,14 @@ const WORKFLOW_ROWS = [
       data-trig
       data-trig-once="true"
       data-bento-card
-      class:list={[
-        'group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
-        span.speed,
-        cardVariantClass,
-      ]}
+      class:list={['flex', span.speed]}
     >
+      <div
+        class:list={[
+          'group relative flex w-full flex-col justify-between overflow-hidden rounded-2xl border p-6 text-center transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+          cardVariantClass,
+        ]}
+      >
       <div
         aria-hidden="true"
         class:list={[
@@ -449,6 +457,7 @@ const WORKFLOW_ROWS = [
         </h3>
         <p class="text-sm leading-relaxed text-muted">{resolvedSpeed.description}</p>
       </div>
+      </div>
     </article>
 
     <!-- Card 4: Wide Split Card (Analytics Window Preview) -->
@@ -456,12 +465,14 @@ const WORKFLOW_ROWS = [
       data-trig
       data-trig-once="true"
       data-bento-card
-      class:list={[
-        'group relative overflow-hidden rounded-2xl border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
-        span.analytics,
-        cardVariantClass,
-      ]}
+      class:list={['flex', span.analytics]}
     >
+      <div
+        class:list={[
+          'group relative w-full overflow-hidden rounded-2xl border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+          cardVariantClass,
+        ]}
+      >
       {
         isTinted && (
           <div
@@ -562,6 +573,7 @@ const WORKFLOW_ROWS = [
           </div>
         </div>
       </div>
+      </div>
     </article>
 
     <!-- Card 5: Wide Split Card (Workflow / Team Stack Preview) -->
@@ -569,12 +581,14 @@ const WORKFLOW_ROWS = [
       data-trig
       data-trig-once="true"
       data-bento-card
-      class:list={[
-        'group relative overflow-hidden rounded-2xl border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
-        span.collaboration,
-        cardVariantClass,
-      ]}
+      class:list={['flex', span.collaboration]}
     >
+      <div
+        class:list={[
+          'group relative w-full overflow-hidden rounded-2xl border p-6 transition duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-md sm:p-7',
+          cardVariantClass,
+        ]}
+      >
       {
         isTinted && (
           <div
@@ -671,6 +685,7 @@ const WORKFLOW_ROWS = [
             ))
           }
         </div>
+      </div>
       </div>
     </article>
   </div>

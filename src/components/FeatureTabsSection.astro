@@ -276,8 +276,6 @@ const panelSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface
 </PageSection>
 
 <script>
-  import { refreshChronoTrig } from '@/scripts/chronotrig';
-
   function initFeatureTabs() {
     const groups = document.querySelectorAll<HTMLElement>('[data-feature-tabs]');
 
@@ -324,7 +322,6 @@ const panelSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface
           panel.hidden = idx !== target;
         });
 
-        refreshChronoTrig();
         if (shouldFocus) triggers[target]?.focus();
       };
 

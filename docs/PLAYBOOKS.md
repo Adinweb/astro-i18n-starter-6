@@ -103,7 +103,7 @@ npm run upstream:check && npm run doctor && npm run lint && npm test && npm run 
    ```
 
 5. **Reach for `<Button>`, not a hand-rolled control**:
-   Every text button in the project is `src/components/Button.astro` — only its colour (`variant`), scale (`size`), label and icon change. It renders `<a>` for navigation and `<button>` for actions, adds the shared hover lift/press, and mirrors directional icons in RTL:
+   Every text button in the project is `src/components/ui/Button.astro` — only its colour (`variant`), scale (`size`), label and icon change. It renders `<a>` for navigation and `<button>` for actions, adds the shared hover lift/press, and mirrors directional icons in RTL:
    ```astro
    <Button href={pricingHref} variant="primary" size="lg" icon="arrow-right">
      {m.common_get_started({}, { locale })}
