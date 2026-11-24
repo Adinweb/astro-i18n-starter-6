@@ -712,7 +712,7 @@ import IconButton from '@/components/ui/IconButton.astro';
   variant="ghost"
   items={[
     { label: "ویژگی‌ها", href: "/fa/ویژگی‌ها/", icon: "sparkles", badge: "جدید" },
-    { label: "بازنشانی", icon: "x", danger: true, dividerBefore: true }
+    { label: "بازنشانی", icon: "close", danger: true, dividerBefore: true }
   ]}
 />`}
   >
@@ -720,7 +720,7 @@ import IconButton from '@/components/ui/IconButton.astro';
       <div class="flex flex-wrap items-center gap-4">
         <UiDropdown id="demo-dropdown-start" align="start" variant="secondary" />
         <UiDropdown id="demo-dropdown-primary" align="start" variant="primary" label="دسترسی سریع" icon="compass" />
-        <UiDropdown id="demo-dropdown-ghost" align="start" variant="ghost" label="منوی شبح (Ghost)" icon="list" />
+        <UiDropdown id="demo-dropdown-ghost" align="start" variant="ghost" label="منوی شبح (Ghost)" icon="menu" />
       </div>
       <UiDropdown
         id="demo-dropdown-custom"
@@ -1389,7 +1389,7 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
         contained
         mediaPosition="end"
         stats={[
-          { label: "کامپوننت آماده", count: 47 },
+          { label: "کامپوننت آماده", count: 77 },
           { label: "پالت رنگ", count: 6 },
           { label: "سرور زمان اجرا", count: 0 }
         ]}

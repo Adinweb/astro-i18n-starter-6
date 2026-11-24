@@ -4,7 +4,7 @@
  * `HeroHeadline`, `Button`, `Icon`, `IconBox`) with OKLCH semantic roles and
  * CSS logical properties so the band adapts across themes, light/dark, print, and RTL.
  */
-import BackdropLayer from '@/components/ui/BackdropLayer.astro';
+import BackdropLayer, { type BackdropVariant } from '@/components/ui/BackdropLayer.astro';
 import Button from '@/components/ui/Button.astro';
 import HeroHeadline from '@/components/ui/HeroHeadline.astro';
 import Icon from '@/components/ui/Icon.astro';
@@ -26,6 +26,7 @@ interface Props {
     title: string;
     description: string;
   }[];
+  backdrop?: BackdropVariant;
   headingTag?: 'h1' | 'h2';
   compact?: boolean;
 }
@@ -36,6 +37,7 @@ const {
   primaryHref,
   secondaryHref,
   highlights,
+  backdrop = 'glow',
   headingTag = 'h1',
   compact = false,
 } = Astro.props;
@@ -49,7 +51,13 @@ const titleId = headingTag === 'h1' ? HERO_TITLE_ID : undefined;
     compact && 'rounded-3xl',
   ]}
 >
-  <BackdropLayer backdrop="glow" surface="hero" />
+  {
+    Astro.slots.has('backdrop') ? (
+      <slot name="backdrop" />
+    ) : (
+      <BackdropLayer backdrop={backdrop} surface="hero" />
+    )
+  }
 
   <div
     class:list={[

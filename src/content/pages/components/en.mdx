@@ -712,7 +712,7 @@ import IconButton from '@/components/ui/IconButton.astro';
   variant="ghost"
   items={[
     { label: "Features", href: "/features/", icon: "sparkles", badge: "New" },
-    { label: "Reset filters", icon: "x", danger: true, dividerBefore: true }
+    { label: "Reset filters", icon: "close", danger: true, dividerBefore: true }
   ]}
 />`}
   >
@@ -720,7 +720,7 @@ import IconButton from '@/components/ui/IconButton.astro';
       <div class="flex flex-wrap items-center gap-4">
         <UiDropdown id="demo-dropdown-start" align="start" variant="secondary" />
         <UiDropdown id="demo-dropdown-primary" align="start" variant="primary" label="Navigate" icon="compass" />
-        <UiDropdown id="demo-dropdown-ghost" align="start" variant="ghost" label="Ghost Menu" icon="list" />
+        <UiDropdown id="demo-dropdown-ghost" align="start" variant="ghost" label="Ghost Menu" icon="menu" />
       </div>
       <UiDropdown
         id="demo-dropdown-custom"
@@ -1389,7 +1389,7 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
         contained
         mediaPosition="end"
         stats={[
-          { label: "Reusable Blocks", count: 47 },
+          { label: "Reusable Blocks", count: 77 },
           { label: "Theme Presets", count: 6 },
           { label: "Server Dependencies", count: 0 }
         ]}

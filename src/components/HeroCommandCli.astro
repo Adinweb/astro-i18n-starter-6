@@ -6,7 +6,7 @@
  */
 import type { ImageMetadata } from 'astro';
 import AvatarGroup from '@/components/ui/AvatarGroup.astro';
-import BackdropLayer from '@/components/ui/BackdropLayer.astro';
+import BackdropLayer, { type BackdropVariant } from '@/components/ui/BackdropLayer.astro';
 import Button from '@/components/ui/Button.astro';
 import CodeBlock, { type CodeCommandTab } from '@/components/ui/CodeBlock.astro';
 import HeroHeadline from '@/components/ui/HeroHeadline.astro';
@@ -33,7 +33,7 @@ interface Props {
   id?: string;
   locale?: Locale | string;
   surface?: 'default' | 'hero' | 'surface' | 'subtle';
-  backdrop?: 'glow' | 'grid' | 'dots' | 'noise' | 'none';
+  backdrop?: BackdropVariant;
   parallaxImage?: ImageMetadata | null;
   parallaxAlt?: string;
   parallaxSpeed?: HeroParallaxSpeed;
@@ -197,7 +197,13 @@ const resolvedBackdrop = backdrop ?? (isHeroSurface ? 'glow' : 'none');
     )
   }
 
-  <BackdropLayer backdrop={resolvedBackdrop} surface={isHeroSurface ? 'hero' : 'default'} />
+  {
+    Astro.slots.has('backdrop') ? (
+      <slot name="backdrop" />
+    ) : (
+      <BackdropLayer backdrop={resolvedBackdrop} surface={isHeroSurface ? 'hero' : 'default'} />
+    )
+  }
 
   <div class="layout-container">
     {

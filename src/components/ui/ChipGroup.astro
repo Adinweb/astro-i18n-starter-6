@@ -83,6 +83,12 @@ const SIZES = {
             ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg hover:border-hero-fg/40 hover:bg-hero-fg/15 print:border-border print:bg-surface print:text-fg'
             : 'border-border bg-surface text-muted hover:border-primary/50 hover:text-fg';
 
+      const pressedClass = !item.href
+        ? isHero
+          ? 'aria-[pressed=true]:!border-accent aria-[pressed=true]:!bg-accent aria-[pressed=true]:!text-hero-base aria-[pressed=true]:shadow-xs'
+          : 'aria-[pressed=true]:!border-primary aria-[pressed=true]:!bg-primary aria-[pressed=true]:!text-primary-fg aria-[pressed=true]:shadow-xs'
+        : undefined;
+
       return (
         <Tag
           href={item.href}
@@ -99,6 +105,7 @@ const SIZES = {
             'inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
             SIZES[size],
             toneClass,
+            pressedClass,
           ]}
         >
           {item.icon && <Icon name={item.icon} size={size === 'xs' ? 12 : 14} class="shrink-0" />}

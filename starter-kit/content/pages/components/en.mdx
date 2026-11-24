@@ -65,7 +65,7 @@ import heroVisual from './components.png';
   description="Every component adapts automatically to OKLCH brand themes, light/dark modes, and RTL/LTR layouts—ready to drop in with defaults or customize via props."
   primaryCta={{ label: "UI Primitives", href: "#sec-primitives", icon: "arrow-right" }}
   secondaryCta={{ label: "Section Blocks", href: "#sec-hero" }}
-  trustNote="47 reusable components · All content props optional · CSS logical geometry"
+  trustNote="77 reusable components · All content props optional · CSS logical geometry"
   image={heroVisual}
   imageAlt="Starter Component Library"
 />
@@ -79,7 +79,7 @@ import heroVisual from './components.png';
       <a href="#sec-proof" class="chip px-3.5 py-1.5 text-xs font-semibold">Pricing, Media &amp; Proof</a>
       <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">Contact &amp; CTA</a>
     </div>
-    <span class="text-xs font-medium text-muted">47 reusable building blocks</span>
+    <span class="text-xs font-medium text-muted">77 reusable building blocks</span>
   </div>
 </PageSection>
 
@@ -626,7 +626,7 @@ import IconButton from '@/components/ui/IconButton.astro';
   variant="ghost"
   items={[
     { label: "Features", href: "/features/", icon: "sparkles", badge: "New" },
-    { label: "Reset filters", icon: "x", danger: true, dividerBefore: true }
+    { label: "Reset filters", icon: "close", danger: true, dividerBefore: true }
   ]}
 />`}
   >
@@ -634,7 +634,7 @@ import IconButton from '@/components/ui/IconButton.astro';
       <div class="flex flex-wrap items-center gap-4">
         <UiDropdown id="demo-dropdown-start" align="start" variant="secondary" />
         <UiDropdown id="demo-dropdown-primary" align="start" variant="primary" label="Navigate" icon="compass" />
-        <UiDropdown id="demo-dropdown-ghost" align="start" variant="ghost" label="Ghost Menu" icon="list" />
+        <UiDropdown id="demo-dropdown-ghost" align="start" variant="ghost" label="Ghost Menu" icon="menu" />
       </div>
       <UiDropdown
         id="demo-dropdown-custom"
@@ -981,7 +981,7 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
         contained
         mediaPosition="end"
         stats={[
-          { label: "Reusable Blocks", count: 47 },
+          { label: "Reusable Blocks", count: 77 },
           { label: "Theme Presets", count: 6 },
           { label: "Server Dependencies", count: 0 }
         ]}

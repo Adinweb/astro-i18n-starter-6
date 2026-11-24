@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Breadcrumbs from '@/components/ui/Breadcrumbs.astro';
+import Divider from '@/components/ui/Divider.astro';
 import PageHero from '@/components/PageHero.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import PostCard from '@/components/PostCard.astro';
@@ -200,7 +201,7 @@ const ogContext: SocialCardContext = {
               }
             </nav>
 
-            <div class="h-px bg-border"></div>
+            <Divider locale={locale} />
 
             <div class="flex flex-wrap items-center gap-2" role="group" aria-label={m.blog_filter_by_tag({}, { locale })}>
               <span class="me-1 text-[11px] font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">

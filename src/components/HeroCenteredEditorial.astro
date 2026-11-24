@@ -9,7 +9,7 @@ import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import AnnouncementPill from '@/components/ui/AnnouncementPill.astro';
 import AvatarGroup, { type AvatarItem } from '@/components/ui/AvatarGroup.astro';
-import BackdropLayer from '@/components/ui/BackdropLayer.astro';
+import BackdropLayer, { type BackdropVariant } from '@/components/ui/BackdropLayer.astro';
 import Button from '@/components/ui/Button.astro';
 import Card from '@/components/ui/Card.astro';
 import HeroHeadline from '@/components/ui/HeroHeadline.astro';
@@ -47,7 +47,7 @@ interface Props {
   id?: string;
   locale?: Locale | string;
   surface?: 'default' | 'hero' | 'surface' | 'subtle';
-  backdrop?: 'glow' | 'grid' | 'dots' | 'orbital' | 'wash' | 'noise' | 'net' | 'none';
+  backdrop?: BackdropVariant;
   framedRails?: 'none' | 'dashed' | 'solid';
   parallaxImage?: ImageMetadata | null;
   parallaxAlt?: string;
@@ -246,11 +246,17 @@ const isBottomCroppedArch = Boolean(bottomImage && bottomImageStyle === 'arch');
     )
   }
 
-  <BackdropLayer
-    backdrop={backdrop}
-    surface={isHeroSurface ? 'hero' : 'default'}
-    orbitalScale="wide"
-  />
+  {
+    Astro.slots.has('backdrop') ? (
+      <slot name="backdrop" />
+    ) : (
+      <BackdropLayer
+        backdrop={backdrop}
+        surface={isHeroSurface ? 'hero' : 'default'}
+        orbitalScale="wide"
+      />
+    )
+  }
 
   {
     topBanner && (

@@ -65,7 +65,7 @@ import heroVisual from './components.png';
   description="تمامی کامپوننت‌ها به‌صورت خودکار با پالت رنگی OKLCH برند، حالت روشن و تاریک و چیدمان راست‌چین/چپ‌چین هماهنگ می‌شوند و هم با مقادیر پیش‌فرض و هم با پراپ‌های دلخواه کار می‌کنند."
   primaryCta={{ label: "اجزای پایه UI", href: "#sec-primitives", icon: "arrow-right" }}
   secondaryCta={{ label: "سرصفحه و هیرو", href: "#sec-hero" }}
-  trustNote="۴۷ کامپوننت قابل استفاده مجدد · پراپ‌های اختیاری · هندسه منطقی CSS"
+  trustNote="۷۷ کامپوننت قابل استفاده مجدد · پراپ‌های اختیاری · هندسه منطقی CSS"
   image={heroVisual}
   imageAlt="کتابخانه کامپوننت‌های استارتر"
 />
@@ -79,7 +79,7 @@ import heroVisual from './components.png';
       <a href="#sec-proof" class="chip px-3.5 py-1.5 text-xs font-semibold">تعرفه، گالری و دیدگاه‌ها</a>
       <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">تماس و فراخوان</a>
     </div>
-    <span class="text-xs font-medium text-muted">۴۷ کامپوننت آماده و قابل ترکیب</span>
+    <span class="text-xs font-medium text-muted">۷۷ کامپوننت آماده و قابل ترکیب</span>
   </div>
 </PageSection>
 
@@ -626,7 +626,7 @@ import IconButton from '@/components/ui/IconButton.astro';
   variant="ghost"
   items={[
     { label: "ویژگی‌ها", href: "/fa/ویژگی‌ها/", icon: "sparkles", badge: "جدید" },
-    { label: "بازنشانی", icon: "x", danger: true, dividerBefore: true }
+    { label: "بازنشانی", icon: "close", danger: true, dividerBefore: true }
   ]}
 />`}
   >
@@ -634,7 +634,7 @@ import IconButton from '@/components/ui/IconButton.astro';
       <div class="flex flex-wrap items-center gap-4">
         <UiDropdown id="demo-dropdown-start" align="start" variant="secondary" />
         <UiDropdown id="demo-dropdown-primary" align="start" variant="primary" label="دسترسی سریع" icon="compass" />
-        <UiDropdown id="demo-dropdown-ghost" align="start" variant="ghost" label="منوی شبح (Ghost)" icon="list" />
+        <UiDropdown id="demo-dropdown-ghost" align="start" variant="ghost" label="منوی شبح (Ghost)" icon="menu" />
       </div>
       <UiDropdown
         id="demo-dropdown-custom"
@@ -981,7 +981,7 @@ import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
         contained
         mediaPosition="end"
         stats={[
-          { label: "کامپوننت آماده", count: 47 },
+          { label: "کامپوننت آماده", count: 77 },
           { label: "پالت رنگ", count: 6 },
           { label: "سرور زمان اجرا", count: 0 }
         ]}

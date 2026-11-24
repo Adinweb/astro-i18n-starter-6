@@ -198,11 +198,19 @@ const initialCode = hasTabs ? (commands?.[0]?.command ?? '') : (code ?? '');
             if (isHero) {
               other.classList.toggle('bg-accent', active);
               other.classList.toggle('text-hero-base', active);
+              other.classList.toggle('print:bg-primary', active);
+              other.classList.toggle('print:text-primary-fg', active);
               other.classList.toggle('text-hero-fg/75', !active);
+              other.classList.toggle('hover:bg-hero-fg/10', !active);
+              other.classList.toggle('hover:text-hero-fg', !active);
+              other.classList.toggle('print:text-muted', !active);
+              other.classList.toggle('print:hover:text-fg', !active);
             } else {
               other.classList.toggle('bg-primary', active);
               other.classList.toggle('text-primary-fg', active);
               other.classList.toggle('text-muted', !active);
+              other.classList.toggle('hover:bg-surface-hover', !active);
+              other.classList.toggle('hover:text-fg', !active);
             }
           });
           if (outputEl) outputEl.textContent = cmd;
