@@ -1,6 +1,6 @@
-# Smooth Scroll (Lenis) & ChronoTrig v6.1.0 Scroll Engine Reference
+# Smooth Scroll (Lenis) & ChronoTrig v6.2.0 Scroll Engine Reference
 
-This reference documents how to animate elements across Astro views, reusable components, and `.mdx` content pages using **ChronoTrig v6.1.0** and **Lenis** smooth scrolling, while preserving 100% RTL/LTR symmetry, progressive enhancement, zero Cumulative Layout Shift (CLS), and Astro `<ClientRouter />` compatibility.
+This reference documents how to animate elements across Astro views, reusable components, and `.mdx` content pages using **ChronoTrig v6.2.0** and **Lenis** smooth scrolling, while preserving 100% RTL/LTR symmetry, progressive enhancement, zero Cumulative Layout Shift (CLS), and Astro `<ClientRouter />` compatibility.
 
 ---
 
@@ -8,10 +8,10 @@ This reference documents how to animate elements across Astro views, reusable co
 
 | File | Responsibility |
 | :--- | :--- |
-| `public/chronotrig.min.js` | Zero-dependency **ChronoTrig v6.1.0** FastDOM CSS scroll engine (2-pass measure/mutate, IntersectionObserver gating, WeakMap caching, deduplicated `animationend`/`animationcancel` `willChange` release, `setExternalScroll(bool)` / `isExternalScroll()`, `rootScrollVars: false` default, `sync(scrollY)`, `autoInit: true`). Drives `[data-trig]`, `[data-trig-pin]`, `[data-trig-stagger]`, `[data-trig-timeline]`, continuous variables (`--trig`, `--trig-px`, `--trig-deg`), body milestone classes, and live OS `prefers-reduced-motion` listeners. |
+| `public/chronotrig.min.js` | Zero-dependency **ChronoTrig v6.2.0** FastDOM CSS scroll engine (2-pass measure/mutate, IntersectionObserver gating, WeakMap caching, multi-callback `q()` settlement queue for dual `[data-trig]` + `[data-trig-stagger]` elements, `animationend`/`animationcancel` `willChange` release, `setExternalScroll(bool)` / `isExternalScroll()`, `rootScrollVars: false` default, `sync(scrollY)`, `autoInit: true`). Drives `[data-trig]`, `[data-trig-pin]`, `[data-trig-stagger]`, `[data-trig-timeline]`, continuous variables (`--trig`, `--trig-px`, `--trig-deg`), body milestone classes, and live OS `prefers-reduced-motion` listeners. |
 | `src/layouts/BaseLayout.astro` | Loads `<script is:inline src="/chronotrig.min.js"></script>`, executes `resolveMotion()` in `<head>` (checks `localStorage.motion`, falls back to OS `prefers-reduced-motion: reduce`, sets `html[data-motion]`), and imports `src/scripts/lenis` and `src/scripts/chronotrig`. |
 | `src/styles/chronotrig.css` | Scopes all entrance states strictly under `.js [data-trig]`, provides calibrated presets (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, etc.) and utility modifiers (`.trig-delay-*`, `.trig-duration-*`, `.trig-ease-*`, `.trig-reactive-*`), handles logical RTL directions and settled stagger items (`.trig-stagger-settled`), and flattens reveals/pins/timelines for `html[data-motion="reduced"]`, `body.chronotrig-mobile-disabled`, and `@media print`. |
-| `src/scripts/chronotrig.ts` | Full v6.1.0 TypeScript declarations (`setExternalScroll`, `isExternalScroll`, `sync`, `refresh`, `version`) and client lifecycle coordinator. Auto-tags `.prose` headings (`data-trig` + `data-trig-once="true"`), propagates `data-trig` + `data-trig-once` to stagger children without clobbering `wave`/`center`/`reverse` delays, calls `window.chronoTrig.refresh()` on initial load and `astro:page-load`, and exports `refreshChronoTrig()`. |
+| `src/scripts/chronotrig.ts` | Full v6.2.0 TypeScript declarations (`setExternalScroll`, `isExternalScroll`, `sync`, `refresh`, `version`) and client lifecycle coordinator. Auto-tags `.prose` headings (`data-trig` + `data-trig-once="true"`), propagates `data-trig` + `data-trig-once` to stagger children without clobbering `wave`/`center`/`reverse` delays, calls `window.chronoTrig.refresh()` on initial load and `astro:page-load`, and exports `refreshChronoTrig()`. |
 | `src/scripts/lenis.ts` | Manages the singleton `Lenis` instance (`lerp: 0.125`), calls `window.chronoTrig.setExternalScroll?.(true)` on init (`false` on destroy) to eliminate duplicate passive scroll listeners, syncs Lenis ticks via `window.chronoTrig.sync(instance.scroll)`, intercepts same-page `#hash` links in the capture phase (`-96px` header offset), isolates nested scroll containers, and honors `data-motion="reduced"`. |
 | `src/styles/global.css` | Sets `html { scroll-behavior: auto; }` (preventing Lenis conflict) and `body { overflow-x: clip; }` (crucial so `position: sticky` inside `[data-trig-pin]` is never broken). |
 
@@ -54,7 +54,7 @@ Hiding elements with `display: none` collapses their bounding box to `0×0`, bre
 ### Automatic Heading Reveals in `.mdx`
 In `src/scripts/chronotrig.ts`, `.prose h2`, `.prose h3`, `.prose h4`, `.prose .section-kicker`, and `[data-prose-reveal]` elements are automatically tagged with `data-trig` during `setupChronoTrig()`.
 
-### v6.1.0 Presets & Utility Modifiers (`src/styles/chronotrig.css`)
+### v6.2.0 Presets & Utility Modifiers (`src/styles/chronotrig.css`)
 All presets remain strictly scoped under `.js [data-trig]` for Zero-CLS and Print/No-JS safety:
 * **Modern Reveals**:
   * `.fadeInUpSm` — Subtle `18px` upward entrance (ideal for SaaS copy and UI cards)
@@ -89,7 +89,7 @@ When elements slide horizontally, **never use physical `left` or `right`**. Alwa
 
 ## 5. Harmonic Stagger Cascades (`[data-trig-stagger]`)
 
-Wrap cards, list items, or spans in `[data-trig-stagger]`. ChronoTrig v6.1.0 targets `[data-trig-stagger-item], :scope > *`, writes `--stagger-index`, `--stagger-delay`, `--stagger-total`, `--child-progress`, `--child-percent`, and toggles `.trig-stagger-active` on children.
+Wrap cards, list items, or spans in `[data-trig-stagger]`. ChronoTrig v6.2.0 targets `[data-trig-stagger-item], :scope > *`, writes `--stagger-index`, `--stagger-delay`, `--stagger-total`, `--child-progress`, `--child-percent`, toggles `.trig-stagger-active`, queues multiple settlement callbacks in `q()` (`c: Function[]`) so elements carrying both `[data-trig]` and parent `[data-trig-stagger]` always finalize both `data-trig-settled="true"` and `.trig-stagger-settled`, and checks `.trig-stagger-settled` + `data-trig-settled="true"` in `scan()` so settled one-shots never replay on `refresh()`.
 
 * **Harmonic Modes (`data-trig-stagger-mode`)**:
   * `linear` *(default)*: `0 -> 1 -> 2 -> ...`
@@ -123,7 +123,7 @@ grid.append(...newCards);
 refreshChronoTrig();
 ```
 
-When a client-side filter toggles `card.hidden` (or replaces filtered cards) and `visibilityChanged` is true, clear the grid's reveal classes, `data-trig-settled`, and `willChange`, force a reflow, and call `refreshChronoTrig()` (`replayGridReveals()` in `src/views/BlogIndexView.astro` and `applyFilters()` in `src/views/CollectionIndexView.astro`). ChronoTrig v6.1.0 natively excludes `[hidden]` children when computing `--stagger-index`, `--stagger-delay`, and `--stagger-total`, while keeping settled `data-trig-once="true"` elements (such as page headers) locked across `refresh()`:
+When a client-side filter toggles `card.hidden` (or replaces filtered cards) and `visibilityChanged` is true, clear the grid's reveal classes, `data-trig-settled`, and `willChange`, force a reflow, and call `refreshChronoTrig()` (`replayGridReveals()` in `src/views/BlogIndexView.astro` and `applyFilters()` in `src/views/CollectionIndexView.astro`). ChronoTrig v6.2.0 natively excludes `[hidden]` children when computing `--stagger-index`, `--stagger-delay`, and `--stagger-total`, while keeping settled `data-trig-once="true"` elements (such as page headers and sibling staggers) locked across `refresh()`:
 
 ```typescript
 // User-triggered filter/tab change when visible cards changed — never on the initial render.
@@ -145,11 +145,13 @@ Two additional rules prevent laggy or cut-off filter animations:
 * **Keep card hover `transition` utilities on inner wrappers**: Put card hover/border/shadow transitions on an inner wrapper (`<div>` or `<a>`, as in `PostCard.astro` and `CollectionIndexView.astro`) rather than the outer `[data-trig]` root so hover styles stay decoupled from reveal keyframes.
 * **Override root margin below tall heroes**: Filtered grids sitting under tall hero headers (e.g. `[data-blog-grid]`, `[data-collection-grid]`) should set `data-trig-root-margin="0px"` so surviving cards below the filter bar trigger immediately instead of waiting for the default `-8%` bottom margin.
 
+* **Do not call `refreshChronoTrig()` on mounted tab switches**: Interactive tab components (`SwipeableTabs.astro` powered by Embla Carousel and `FeatureTabsSection.astro`) keep their tab panels mounted in the DOM — switching tabs must not invoke `refreshChronoTrig()`, preventing unnecessary page-wide re-scans.
+
 ---
 
 ## 6. Pinned / Sticky Sections & Horizontal Tracks (`[data-trig-pin]`)
 
-ChronoTrig v6.1.0 keeps sticky stages fixed across a scroll track and maps progress into `--trig-pin-progress` (`0%`–`100%`), `--trig-pin-t` (`0.0000`–`1.0000`), `--trig-pin-deg`, `--trig-pin-px`, and `data-pin-phase="before|pinned|after"`:
+ChronoTrig v6.2.0 keeps sticky stages fixed across a scroll track and maps progress into `--trig-pin-progress` (`0%`–`100%`), `--trig-pin-t` (`0.0000`–`1.0000`), `--trig-pin-deg`, `--trig-pin-px`, and `data-pin-phase="before|pinned|after"`:
 
 * **Critical CSS Rule**: Never put `overflow-x: hidden` on `body` or ancestor containers around `[data-trig-pin]`, as it breaks `position: sticky`. `src/styles/global.css` sets `body { overflow-x: clip; }`.
 * **Automatic Height & Responsive Media Rules**:
@@ -203,7 +205,7 @@ Interpolate across percentage checkpoints (`at`: `0`–`100`):
 
 * **Engine Instance (`window.chronoTrig`)**: Configured out of the box with `{ lerp: 0, rootMargin: '0px 0px -8% 0px', threshold: [0, 0.1, 0.5, 1], externalScroll: false, measureOnScroll: false, rootScrollVars: false, precision: 2, mobileBehavior: 'lightweight', mobileBreakpoint: 1024, disableBlurOnMobile: true, disable3DOnMobile: true, respectReducedMotion: true }`.
   * Key methods: `refresh()`, `scan()`, `subscribe(cb)`, `sync(scrollY?)`, `setExternalScroll(bool)`, `isExternalScroll()`, `setRoot(el)`, `getFrameMetrics()`, `setLerp(val)` / `getLerp()`, `setMobileBehavior(mode)` / `getMobileBehavior()`, `setDebugMarkers(bool)`, `isMobile()`, `isDisabled()`, `getLastUpdateMs()`, `trigScroll(sync?)`, `destroy()`.
-  * **Important**: v6.1.0 does not expose `onScroll()` or `onResize()`; use `refresh()` after DOM/layout changes and `sync(scrollY)` or `trigScroll?.(true)` in scroll callbacks.
+  * **Important**: v6.2.0 does not expose `onScroll()` or `onResize()`; use `refresh()` after DOM/layout changes and `sync(scrollY)` or `trigScroll?.(true)` in scroll callbacks.
 * **Lenis (`src/scripts/lenis.ts`)**: Initializes with `lerp: 0.125`, `smoothWheel: true`, `-96px` header anchor offset, sets `window.chronoTrig?.setExternalScroll?.(true)` (`false` on destroy), and calls `window.chronoTrig.sync(instance.scroll)` inside `lenis.on('scroll', ...)`. Always add `data-lenis-prevent` on nested `overflow-y-auto` panels/modals.
 * **Unified Reduced Motion (`resolveMotion()`)**: `<head>` sets `html[data-motion="reduced" | "full"]` from `localStorage.motion` or OS `prefers-reduced-motion: reduce`. ChronoTrig's `respectReducedMotion` also watches `prefers-reduced-motion` live (`chronotrig-mobile-disabled`). Together with `chronotrig.css`, `lenis.ts`, `global.css`, and `@media print`, all reveals, timelines, horizontal tracks, and pinned heights flatten cleanly with zero stuck elements.
 

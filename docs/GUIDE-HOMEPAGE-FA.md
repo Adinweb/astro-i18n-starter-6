@@ -431,16 +431,16 @@ flushTop: true
 
 ## ۷. بلوک‌های آماده (کامپوننت‌های شرکتی، لندینگ و رابط کاربری)
 
-به جای کپی کردن HTML خام، از **۳۶ بلوک آمادهٔ پروژه** (**۲۳ بلوک سکشن + ۱۳ پریمیتیو رابط کاربری**، الهام‌گرفته از PrebuiltUI و تحت پوشش `blocks.test.ts`) به‌همراه **۴ بلوک تعاملی/حرکتی** (`BentoGrid`، `LatestPostsCarousel`، `SwipeableTabs`، `TestimonialMarquee`) استفاده کنید. همهٔ آن‌ها با توکن‌های OKLCH، خواص منطقی CSS، Paraglide i18n، آیکون‌های `<Icon>`، تنظیمات بهینهٔ ChronoTrig (`data-trig-once="true"`) و `loading="lazy"` ساخته شده‌اند، حتی **بدون پاس دادن prop** با متن‌های بومی کار می‌کنند و با `contained` داخل صفحات متنی هم قابل استفاده‌اند:
+به جای کپی کردن HTML خام، از **۶۴ بلوک آمادهٔ تحت پوشش `blocks.test.ts`** (**۲۹ بلوک سکشن** شامل **۷ هیرو سکشن** و **۲۲ سکشن محتوا** + **۳۵ پریمیتیو رابط کاربری** در `src/components/ui/`) به‌همراه **۴ بلوک تعاملی/حرکتی** (`BentoGrid`، `LatestPostsCarousel`، `SwipeableTabs` بر پایهٔ Embla Carousel با `variant="pills"|"underline"` و `TestimonialMarquee`) استفاده کنید. همهٔ آن‌ها با توکن‌های OKLCH، خواص منطقی CSS، Paraglide i18n، آیکون‌های `<Icon>`، تنظیمات بهینهٔ ChronoTrig (`data-trig-once="true"`) و `loading="lazy"` ساخته شده‌اند، حتی **بدون پاس دادن prop** با متن‌های بومی کار می‌کنند و با `contained` داخل صفحات متنی هم قابل استفاده‌اند:
 
 | کامپوننت | کاربرد در لندینگ / سایت شرکتی |
 | --- | --- |
-| `LandingHeroSplit.astro` | هیروی دو‌ستونه همراه کارت/ویژوال مقابل |
+| `LandingHeroSplit.astro` (و ۶ هیرو سکشن دیگر: `HeroCenteredEditorial`، `HeroDashboardShowcase`، `HeroCommandCli`، `HeroInteractivePrompt`، `HeroProofMarquee`، `HeroFloatingOrbSplit`) | هیرو سکشن‌های دو‌ستونه، سرمقاله‌ای، داشبورد، CLI، پرامپت و مارکی اثبات اجتماعی |
 | `PromoBanner.astro` | نوار اطلاع‌رسانی / معرفی انتشار تازه با قابلیت بستن |
 | `PartnerLogos.astro` | نوار اعتماد و لوگوی مشتریان/همکاران |
 | `AboutSplitSection.astro` | معرفی شرکت/تیم به صورت دوستونه با فهرست نکات و آمار |
 | `BentoCapabilities.astro` | شبکهٔ بنتو برای معرفی قابلیت‌ها و خدمات |
-| `FeatureTabsSection.astro` | تب‌های تعاملی WAI-ARIA برای معرفی امکانات با تصویر |
+| `SwipeableTabs.astro` / `FeatureTabsSection.astro` | تب‌های تعاملی (اسلایدی/سوئیپ‌شونده با Embla در `SwipeableTabs` یا تب‌های کلاسیک WAI-ARIA در `FeatureTabsSection`) |
 | `ProcessSteps.astro` | مراحل گام‌به‌گام همکاری یا راه‌اندازی با شماره‌گذاری بومی |
 | `FeatureCardGrid.astro` | شبکهٔ کارت‌های ویترینی برای خدمات، نمونه‌کار یا ماژول‌ها |
 | `ProofStatsRow.astro` | ردیف آمار و ارقام اثبات‌شده (با ارقام بومی) |
@@ -448,15 +448,14 @@ flushTop: true
 | `PricingSection.astro` | کارت‌های تعرفه و پلن‌ها (با سوییچ ماهانه/سالانه، نشان پلن پیشنهادی و قیمت بومی) |
 | `TestimonialGrid.astro` | شبکهٔ نظرات مشتریان با امتیاز ستاره‌ای و نقل‌قول |
 | `ImageGallerySection.astro` | گالری دسته‌بندی‌شده با فیلتر و پیش‌نمایش `<dialog>` |
+| `ProductShowcaseGrid.astro` | شبکهٔ محصولات با پشتیبانی از `currency`، `currencyPrefix` و `currencySuffix` (مناسب تومان/ریال) و فیلتر دسته |
 | `LatestPostsSection.astro` | نمایش خودکار آخرین مقاله‌های وبلاگ زبان جاری (یا آیتم دلخواه) |
 | `TeamSection.astro` | معرفی اعضای تیم و مدیران با تصویر یا مونوگرام و لینک شبکه‌ها |
 | `FaqAccordion.astro` | پرسش‌های متداول با خروجی `FAQPage` JSON-LD |
 | `ContactSplitSection.astro` | بخش تماس دوستونه با دکمه‌های تماس سریع (تلفن/واتساپ/تلگرام)، نقشهٔ تنبل و `ContactForm` (پشتیبانی از Web3Forms/Formspree/Basin/Webhook و Turnstile) |
 | `NewsletterBanner.astro` | بنر خبرنامه Pure-SSG متصل به API خارجی/بدون سرور یا `mailto:` |
 | `CtaBanner.astro` | بنر فراخوان پایانی (CTA) پیش از فوتر |
-| `UiBadge.astro` | پریمیتیو نشان وضعیتی/برچسبی در ۸ نقش رنگی معنایی |
-| `UiAlert.astro` | پریمیتیو کارت اعلان/هشدار با دکمهٔ اقدام و بستن |
-| `AvatarGroup.astro` | پریمیتیو پشتهٔ آواتار هم‌پوشان با امتیاز و برچسب اعتماد |
+| `src/components/ui/*` (`UiBadge`، `UiAlert`، `AvatarGroup`، `Button`، `Icon`، `IconButton`، `Card`، `StatTile` و…) | ۳۵ پریمیتیو رابط کاربری با توکن‌های OKLCH و پشتیبانی بومی RTL/LTR |
 
 ### ۷.۱ هیرو و نوار لوگوی مشتریان (`LandingHeroSplit` + `PartnerLogos`)
 
@@ -571,11 +570,11 @@ import CtaBanner from '@/components/CtaBanner.astro';
   کلاس‌های `.cta`، `.btn-secondary`، `.btn-hero-secondary`، `.chip` و `.glass-surface` یک‌جا در `global.css` تعریف شده‌اند؛ در کامپوننت‌ها دوباره نسازید.
 - فقط یک `<h1>` در کل صفحه (تست smoke تعدادش را چک می‌کند).
 - هیچ کلاس فیزیکی (`ml-`، `pr-`، `text-left`، `left-`) ننویسید؛ همیشه `ms-`، `pe-`، `text-start`، `start-*`.
-- آیکون فقط با `<Icon name="…" />`. ۶۶ نام هسته در [icons.ts](../src/libs/ui/icons.ts) ثبت شده‌اند: `search`، `globe`، `close`، `check`،
+- آیکون فقط با `<Icon name="…" />` (`src/components/ui/Icon.astro`). ۶۹ نام هسته در [icons.ts](../src/libs/ui/icons.ts) ثبت شده‌اند: `search`، `globe`، `close`، `check`،
   `menu`، `chevron-left`، `chevron-right`، `chevron-down`، `chevron-up`، `sun`، `moon`، `copy`، `external-link`، `arrow-right`،
   `shield`، `mail`، `layers`، `star`، `star-filled`، `quote`، `users`، `user`، `building`، `alert-circle`، `alert-triangle`،
   `circle-check`، `bell`، `bolt`، `clock`، `map-pin`، `map`، `phone`، `rocket`، `code`، `award`، `layout-grid`، `calendar`،
-  `photo`، `minus`، `eye`، `eye-off`، `shopping-bag`، `heart`، `share`، `filter`، `refresh`، `wand`، `dots-vertical`، `lock`، `adjustments-horizontal`، آیکون‌های شبکهٔ اجتماعی `brand-github`، `brand-x`، `brand-linkedin`، `brand-instagram`، `brand-telegram`، `brand-whatsapp` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
+  `photo`، `minus`، `eye`، `eye-off`، `shopping-bag`، `heart`، `share`، `filter`، `refresh`، `wand`، `dots-vertical`، `lock`، `adjustments-horizontal`، `cloud-computing`، `headset`، `player-play`، آیکون‌های شبکهٔ اجتماعی `brand-github`، `brand-x`، `brand-linkedin`، `brand-instagram`، `brand-telegram`، `brand-whatsapp` و آیکون‌های ناوبری `home`، `info`، `sparkles`، `tag`، `newspaper`،
   `folder`، `compass`، `palette`، `book-open`، `file`.
   آیکون جدید مشتری: نام را در [client/icons.ts](../client/icons.ts) ثبت و در [client/ClientIcons.astro](../client/ClientIcons.astro) با import تک‌فایلی از `@tabler/icons-astro/dist/esm/icons/<name>.mjs` وصل کنید تا نیازی به ویرایش هسته نباشد (هرگز از barrel بستهٔ `@tabler/icons-astro` import نکنید).
 - متن دکمه‌های مشترک را با `m.common_…` از Paraglide بگیرید، نه رشتهٔ ثابت.
@@ -683,7 +682,7 @@ import * as m from '@/paraglide/messages';
 ```bash
 npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
 npm run lint           # messages + astro check + tsc (خطای تایپ/شمای محتوا اینجا گیر می‌افتد)
-npm test               # ۲۵ فایل تست واحد (۲۶۲ تست)
+npm test               # ۲۶ فایل تست واحد (۲۶۹ تست)
 npm run audit:i18n     # هم‌ترازی زبان‌ها، کلیدها، مسیرها، RTL
 npm run doctor         # بررسی سلامت پروژه بدون بیلد
 npm run build          # Astro + Pagefind

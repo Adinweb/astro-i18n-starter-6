@@ -99,7 +99,7 @@ Every role clears **WCAG AA (4.5:1)** contrast against its respective `-fg` coun
 
 ## 5. Icon Catalog (`@tabler/icons-astro` + `client/icons.ts`)
 
-Never embed raw `<svg><path ...></svg>` in templates or write SVG paths in client code. Every glyph comes from the Tabler set through `<Icon name="..." />` or `<IconButton icon="..." label="..." />`; core semantic names (66 icons) live in `src/libs/ui/icons.ts` (`SITE_ICONS`), and client-added names register in `client/icons.ts` (`CLIENT_ICONS`, `CLIENT_DIRECTIONAL_ICONS`) with components mapped in `client/ClientIcons.astro`.
+Never embed raw `<svg><path ...></svg>` in templates or write SVG paths in client code. Every glyph comes from the Tabler set through `<Icon name="..." />` or `<IconButton icon="..." label="..." />` (`src/components/ui/`); core semantic names (69 icons) live in `src/libs/ui/icons.ts` (`SITE_ICONS`), and client-added names register in `client/icons.ts` (`CLIENT_ICONS`, `CLIENT_DIRECTIONAL_ICONS`) with components mapped in `client/ClientIcons.astro`.
 
 **Always import the per-icon module** (`@tabler/icons-astro/dist/esm/icons/<name>.mjs`), never the package barrel: the barrel re-exports all 6,258 icons, so the bundler reads the whole set before tree-shaking it away (measured ≈ +2–7 s per build here, for identical HTML). Types for those deep modules are declared in `src/types/tabler-icons-astro.d.ts`.
 
@@ -124,7 +124,7 @@ Every text button is `<Button>`: colour from `variant` (`primary`/`secondary`/`h
 14. `shield` — privacy and cookie consent (`shield-check`)
 15. `mail` — contact and inquiry notice
 16. `layers` — architecture and Resources markers (`stack-2`)
-17. `home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `star`, `star-filled`, `quote`, `users`, `building`, `alert-circle`, `alert-triangle`, `circle-check`, `bell`, `bolt`, `clock`, `map-pin`, `map`, `phone`, `rocket`, `code`, `award`, `layout-grid`, `calendar`, `photo`, `minus`, `eye`, `eye-off`, `shopping-bag`, `heart`, `share`, `filter`, `refresh`, `wand`, `chevron-up`, `dots-vertical`, `lock`, `user`, `adjustments-horizontal`, `brand-github`, `brand-x`, `brand-linkedin`, `brand-instagram`, `brand-telegram`, `brand-whatsapp`, `file` — navigation, status, filter, business quick-action, UI block, commerce/social, and partner emblem icons (66 core total, plus any names added in `client/icons.ts`); an unknown name resolves to `file`.
+17. `home`, `info`, `sparkles`, `tag`, `newspaper`, `folder`, `compass`, `palette`, `book-open`, `star`, `star-filled`, `quote`, `users`, `building`, `alert-circle`, `alert-triangle`, `circle-check`, `bell`, `bolt`, `clock`, `map-pin`, `map`, `phone`, `rocket`, `code`, `award`, `layout-grid`, `calendar`, `photo`, `minus`, `eye`, `eye-off`, `shopping-bag`, `heart`, `share`, `filter`, `refresh`, `wand`, `chevron-up`, `dots-vertical`, `lock`, `user`, `adjustments-horizontal`, `brand-github`, `brand-x`, `brand-linkedin`, `brand-instagram`, `brand-telegram`, `brand-whatsapp`, `cloud-computing`, `headset`, `player-play`, `file` — navigation, status, filter, business quick-action, UI block, commerce/social, media/cloud, and partner emblem icons (69 core total, plus any names added in `client/icons.ts`); an unknown name resolves to `file`.
 
 ### Navigation Icons:
 The mobile drawer renders one icon tile per row, so every navigation entry carries an `icon` from this catalog (`NavItem.icon` in `client/navigation.ts` / `src/libs/config/navigation.ts`; a row without one falls back to `file`):

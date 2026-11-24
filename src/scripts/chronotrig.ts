@@ -1,5 +1,5 @@
 /**
- * ChronoTrig v6.1.0 client integration & lifecycle coordinator.
+ * ChronoTrig v6.2.0 client integration & lifecycle coordinator.
  *
  * Ensures ChronoTrig scans, measures, and observes elements across initial page
  * loads, Astro View Transitions (`astro:page-load`), and dynamic DOM updates
@@ -145,7 +145,7 @@ export function setupChronoTrig(): void {
 
   // Ensure stagger children participate in IntersectionObserver reveals while
   // delegating `--stagger-index`, `--stagger-delay` (`linear` | `wave` | `center` | `reverse`),
-  // `--stagger-total`, hidden-child exclusion, and mobile clamping to ChronoTrig v6.1.0.
+  // `--stagger-total`, hidden-child exclusion, and mobile clamping to ChronoTrig v6.2.0.
   try {
     const staggers = document.querySelectorAll<HTMLElement>('[data-trig-stagger]');
     if (staggers && typeof staggers.forEach === 'function') {

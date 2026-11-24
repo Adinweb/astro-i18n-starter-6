@@ -1,7 +1,7 @@
 # راهنمای جامع Astro i18n Starter
 
 > استارتر چندزبانهٔ تولیدی و **۱۰۰٪ استاتیک (Pure SSG بدون نیاز به بک‌اند)** بر پایهٔ **Astro v7**
-> با پشتیبانی بومی **RTL/LTR**، ۳۶ بلوک آماده (۲۳ بلوک سکشن + ۱۳ پریمیتیو رابط الهام‌گرفته از PrebuiltUI) به‌همراه ۴ بلوک تعاملی/حرکتی، دسته‌بندی و فیلتر وبلاگ و نمونه‌کارها،
+> با پشتیبانی بومی **RTL/LTR**، ۶۴ بلوک آماده تحت پوشش `blocks.test.ts` (۲۹ بلوک سکشن شامل ۷ هیرو سکشن + ۲۲ سکشن محتوا و ۳۵ پریمیتیو رابط کاربری در `src/components/ui/`) به‌همراه ۴ بلوک تعاملی/حرکتی (`BentoGrid`، `LatestPostsCarousel`، `SwipeableTabs`، `TestimonialMarquee`)، دسته‌بندی و فیلتر وبلاگ و نمونه‌کارها،
 > جستجوی **Pagefind** بهینه‌شده برای زبان فارسی، آداپتور فرم‌های بدون سرور (Web3Forms، Formspree، Basin، Webhook + Turnstile)، بلوپرینت‌های صنعتی، استودیوی زندهٔ تم در DEV، معماری سه‌لایه (`Core` / `client/` / `starter-kit/`) و ۲۸ ابزار خط فرمان.
 
 نسخهٔ ۶٫۰ — مرجع فنی کامل و راهنمای عملیاتی.
@@ -67,7 +67,7 @@
 | **معماری Pure SSG و فرم بدون سرور** | خروجی ۱۰۰٪ استاتیک بدون سرور بک‌اند؛ فرم تماس (`ContactForm.astro`) و خبرنامه (`NewsletterBanner.astro`) از طریق `src/libs/api/client.ts` از ارائه‌دهندگان `custom`، `web3forms`، `formspree`، `basin` و `webhook` به‌همراه Cloudflare Turnstile و Honeypot پشتیبانی می‌کنند + مدیریت رضایت کوکی (`CookieConsent.astro`) |
 | **زبان‌ها و حالت تک‌زبانه** | انگلیسی (`en`) و فارسی (`fa`) به‌صورت پیش‌فرض فعال + آمادگی کامل فونت/فرمت و افزودن تک‌فرمانی زبان‌های دیگر (`ar`, `de`, `fr`, …) با `i18n:add-lang`؛ برای سایت تک‌زبانه، صرفاً `ui.showLanguageSwitcher: false` (+ در صورت نیاز `i18n:set-default`) کافی است (و `i18n:solo` به‌صورت اختیاری مسیرهای اضافی را حذف می‌کند) |
 | **مسیریابی** | دیسپچر تک‌فایلی `[...path].astro` — بدون هیچ فایل مسیر پویا در `src/pages/` |
-| **محتوا، فیلتر نمونه‌کارها و CMS** | کالکشن‌های `pages`، `blog` و `projects` با قرارداد `گروه/زبان.mdx`؛ ۲۳ بلوک سکشن شرکتی/لندینگ + ۱۳ پریمیتیو رابط (`UiBadge`, `UiAlert`, `UiProgress`, `UiModal`, `UiDropdown`, …) + ۴ بلوک تعاملی/حرکتی، فیلتر دسته/پشتهٔ فنی/جستجو در `CollectionIndexView.astro` و پیکربندی آمادهٔ Pages CMS در `.pages.yml` |
+| **محتوا، فیلتر نمونه‌کارها و CMS** | کالکشن‌های `pages`، `blog` و `projects` با قرارداد `گروه/زبان.mdx`؛ ۲۹ بلوک سکشن (۷ هیرو سکشن + ۲۲ سکشن شرکتی/لندینگ) + ۳۵ پریمیتیو رابط در `src/components/ui/` (`Button`, `Icon`, `UiBadge`, `UiAlert`, `UiProgress`, `UiModal`, `UiDropdown`, …) + ۴ بلوک تعاملی/حرکتی (`BentoGrid`، `LatestPostsCarousel`، `SwipeableTabs`، `TestimonialMarquee`)، فیلتر دسته/پشتهٔ فنی/جستجو (`normalizeForFallbackMatch`) در `CollectionIndexView.astro` و پیکربندی آمادهٔ Pages CMS در `.pages.yml` |
 | **RTL و فونت‌های تجاری فارسی** | خواص منطقی CSS (`ms-`, `pe-`, `start-`), ۵ پیش‌تنظیم فونت RTL (`vazirmatn`, `noto-arabic`, `iransans`, `yekan-bakh`, `peyda` با ساختار `@font-face` در `client/styles.css`)، جداسازی `pre/code` به LTR، چرخاندن آیکون پیجر |
 | **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی در کل مجموعهٔ مقالات (`/api/blog-posts/<locale>.json`)، صفحه‌بندی استاتیک، فهرست مطالب خودکار (TOC)، مقالات مرتبط و ناوبری مقالهٔ قبلی/بعدی، دکمهٔ کپی کد، زمان مطالعه و تاریخ به‌روزرسانی، استایل چاپ (`@media print`) |
 | **برندینگ، لوگو، بلوپرینت و DEV Studio** | راه‌اندازی سریع با `site:init --blueprint=corporate\|agency\|portfolio\|medical`، پشتیبانی از لوگوی تصویر/SVG روشن و تیره (`brand.logo`)، ۶ پالت OKLCH آماده و فونت‌های variable نصب‌شده + **استودیوی زندهٔ تم در DEV (`DevThemePreview.astro` با خروجی صفر بایت در بیلد نهایی)** |
@@ -76,9 +76,9 @@
 | **SEO شرکتی و کارت OG فارسی** | canonical، hreflang چندزبانه + `x-default`، کارت PNG برنددار زمان بیلد (`/og/[...slug].png.ts` در حالت `branded`) با شکل‌دهی صحیح حروف RTL در SVG، Twitter Card، اسکیماهای `Organization` / `LocalBusiness` / `Service` / `WebSite` / `WebPage` / `CollectionPage` / `BlogPosting` / `BreadcrumbList` / `FAQPage` (`schema.ts`)، sitemap با `lastmod` کامل، فیدهای Atom مجزا |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک بازگشت به نسخهٔ زبان پیش‌فرض |
 | **ابزار CLI** | ۲۸ اسکریپت (+ ۱۳ ماژول کمکی) برای راه‌اندازی برند و بلوپرینت (`site:init`)، ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا، تزریق/پاک‌سازی دمو (`starter:seed`)، کنترل معماری (`upstream:check`)، تعویض زبان پیش‌فرض، بررسی سلامت پروژه، خزش لینک‌ها، تولید تصاویر و ایندکس Pagefind |
-| **کیفیت و استقرار** | TypeScript strict، `astro check`، ۲۵ فایل تست واحد Vitest (۲۶۲ تست)، ۹۵ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، Prefetch هوشمند و هدرهای آمادهٔ کش/امنیت در `public/_headers` و `docs/deploy/nginx.conf` |
+| **کیفیت و استقرار** | TypeScript strict، `astro check`، ۲۶ فایل تست واحد Vitest (۲۶۹ تست)، ۹۵ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، Prefetch هوشمند و هدرهای آمادهٔ کش/امنیت در `public/_headers` و `docs/deploy/nginx.conf` |
 | **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset` و `loading="lazy"` زیر خط دید، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
-| **حرکت و اسکرول** | اسکرول نرم با **Lenis** (`setExternalScroll` + `sync`) + موتور **ChronoTrig v6.1.0** (`data-trig` + `data-trig-once="true"`) بدون خواندن چیدمان در فریم اسکرول، پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`), پلکانی‌سازی گروهی (`data-trig-stagger`) و بهینه‌سازی خودکار GPU با `IntersectionObserver` |
+| **حرکت و اسکرول** | اسکرول نرم با **Lenis** (`setExternalScroll` + `sync`) + موتور **ChronoTrig v6.2.0** (`data-trig` + `data-trig-once="true"`) بدون خواندن چیدمان در فریم اسکرول، پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`)، پلکانی‌سازی گروهی (`data-trig-stagger`) و بهینه‌سازی خودکار GPU با `IntersectionObserver` |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، پشتیبانی یکپارچه از `prefers-reduced-motion` سیستم و کلید `data-motion` روی `<html>` |
 
 ---
@@ -160,7 +160,7 @@ npx astro dev stop           # توقف سرور
 | `npm run messages:compile` | ادغام `messages/core/*.json` + `client/messages/*.json` در `.paraglide-work/` و کامپایل به `src/paraglide/` |
 | `npm run check` | کامپایل پیام‌ها + `astro check` |
 | `npm run lint` | کامپایل پیام‌ها + `astro check` + `tsc --noEmit` |
-| `npm test` | کامپایل پیام‌ها + `vitest run` (۲۵ فایل، ۲۶۲ تست) |
+| `npm test` | کامپایل پیام‌ها + `vitest run` (۲۶ فایل، ۲۶۹ تست) |
 | `npm run build` | کامپایل پیام‌ها + ممیزی i18n + `astro build` + `node scripts/index-pagefind.mjs` |
 | `npm run preview` | `astro preview` روی خروجی `dist/` |
 | `npm run smoke` | تست دود روی `dist/` |
@@ -238,8 +238,8 @@ SITE_URL=https://example.com npm run build
 ├── docs/                    # GUIDE-FA.md، GUIDE-HOMEPAGE-FA.md، CONTENT-TYPES-FA.md، PRD.md، PLAYBOOKS.md، deploy/nginx.conf
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
-    ├── components/          # کامپوننت‌های هسته (از جمله DevThemePreview.astro فقط در DEV)، ۳ پریمیتیو (UiBadge, UiAlert, AvatarGroup)
-    │                        # و ۱۹ بلوک سکشن شرکتی/لندینگ
+    ├── components/          # کامپوننت‌های هسته (از جمله DevThemePreview.astro فقط در DEV و TopLoadingBar.astro)، ۳۵ پریمیتیو رابط در ui/
+    │                        # و ۲۹ بلوک سکشن (۷ هیرو + ۲۲ سکشن محتوا) به‌همراه ۴ بلوک تعاملی/حرکتی (BentoGrid, LatestPostsCarousel, SwipeableTabs, TestimonialMarquee)
     ├── content/
     │   ├── pages/<گروه>/    # صفحات ایستا: <locale>.mdx + <گروه>.png
     │   ├── blog/<گروه>/     # مقالات: <locale>.mdx + <گروه>.png
@@ -260,7 +260,7 @@ SITE_URL=https://example.com npm run build
     │   ├── content/         # entries, service, types, feed, pagination, blog, blog-catalog, taxonomy, faq, social, og-card, schema
     │   ├── cookies/         # مدل رضایت کوکی و مدیریت اسکریپت‌ها (model.ts, manager.ts)
     │   ├── search/          # client.ts + persian.ts (جستجوی Pagefind و فالبک با نرمال‌سازی فارسی)
-    │   └── ui/              # button.ts (کلاس دکمه‌ها) + icons.ts (۶۶ آیکون هسته + client/icons.ts) + locale.ts + initials.ts
+    │   └── ui/              # button.ts (کلاس دکمه‌ها) + icons.ts (۶۹ آیکون هسته + client/icons.ts) + locale.ts + initials.ts
     ├── pages/               # فقط فایل‌های فیزیکی استاتیک
     │   ├── [...path].astro  # دیسپچر مسیریاب
     │   ├── 404.astro        # صفحهٔ ۴۰۴ locale-aware
@@ -1279,10 +1279,10 @@ pre, code, .math {
 
 | کامپوننت | پراپ‌ها | نقش |
 | --- | --- | --- |
-| `Icon.astro` | `name`, `size` (پیش‌فرض ۲۰), `class`, `aria-hidden`, `aria-label` | آیکون Tabler به‌صورت inline از رجیستری داخلی؛ نام نامعتبر به `file` برمی‌گردد |
-| `Button.astro` | `href?`, `variant` (`primary`/`secondary`/`hero`/`ghost`/`glass`), `size` (`sm`/`md`/`lg`/`auto`), `block?`, `icon?`, `iconPosition?` (`start`/`end`), `flipIcon?`, `type?`, `disabled?`, `external?`, `class?` + هر `data-*`/`aria-*` | تنها دکمهٔ متنی — فقط رنگ/متن/آیکن عوض می‌شود |
+| `Icon.astro` (`ui/`) | `name`, `size` (پیش‌فرض ۲۰), `class`, `aria-hidden`, `aria-label` | آیکون Tabler به‌صورت inline از رجیستری داخلی (`src/components/ui/Icon.astro`)؛ نام نامعتبر به `file` برمی‌گردد |
+| `Button.astro` (`ui/`) | `href?`, `variant` (`primary`/`secondary`/`hero`/`ghost`/`glass`), `size` (`sm`/`md`/`lg`/`auto`), `block?`, `icon?`, `iconPosition?` (`start`/`end`), `flipIcon?`, `type?`, `disabled?`, `external?`, `class?` + هر `data-*`/`aria-*` | تنها دکمهٔ متنی (`src/components/ui/Button.astro`) — فقط رنگ/متن/آیکن عوض می‌شود |
 | `DrawerNavLink.astro` | `item` (یک `NavItem`), `depth` (`0`/`1`/`2`) | ردیف منوی کشو: آیکن + عنوان، با حالت فعال و هاور در هر سه سطح (قاب کاشی فقط در سطح اول) |
-| `IconButton.astro` | `icon`, `label`, `size` (۱۸), `variant` (`glass`/`ghost`), `class` + هر `data-*`/`aria-*` | دکمهٔ فقط-آیکون — دستی نسازید |
+| `IconButton.astro` (`ui/`) | `icon`, `label`, `size` (۱۸), `variant` (`glass`/`ghost`), `class` + هر `data-*`/`aria-*` | دکمهٔ فقط-آیکون (`src/components/ui/IconButton.astro`) — دستی نسازید |
 | `PageHeader.astro` | `title`, `description?`, `locale`, `breadcrumbs?`, `kicker?`, `align?` (`start`/`center`), `class?` | هدر تایپوگرافیک مینیمال برای صفحات `hero: 'minimal'` |
 | `PageSection.astro` | `id?`, `surface?` (`default`/`surface`/`subtle`), `spacing?` (`none`/`sm`/`md`/`lg`), `bleed?` (بدون `.layout-container`), `borderTop?`, `borderBottom?`, `class?`, `containerClass?` | سکشن تمام‌عرض برای صفحات `canvas`؛ به‌طور پیش‌فرض محتوا را داخل `.layout-container` می‌گذارد و با `bleed` لبه‌به‌لبه می‌شود |
 | `HeroCopy.astro` | `title`, `description?`, `size?` (`page`/`post`)؛ اسلات `prelude` و پیش‌فرض | تیتر/توضیح/اسلات‌های مشترک هیرو |
@@ -1294,17 +1294,17 @@ pre, code, .math {
 | `SearchModal.astro` | `locale` | مودال جستجوی دسکتاپ (Pagefind در پروداکشن / fallback استاتیک) |
 | `DrawerSearch.astro` | `locale` | جستجوی درون کشوی موبایل هماهنگ با تب‌بندی کشو |
 | `ContactForm.astro` | `locale` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` (با پشتیبانی از `api.topics`)؛ بدون نشانی، فرم رندر نمی‌شود و پنل `mailto:` (از `site.contactEmail`) جای آن را می‌گیرد |
-| `SectionHeader.astro` | `eyebrow?`, `heading?`, `subheading?`, `align?`, `class?` | سرستون مشترک و DRY برای بلوک‌های سکشن |
-| `UiBadge.astro` | `label?`, `locale?`, `variant?`, `size?`, `icon?`, `href?`, `external?`, `class?` | نشان معنایی وضعیتی/برچسبی در ۸ نقش رنگی |
-| `UiAlert.astro` | `id?`, `locale?`, `variant?`, `title?`, `description?`, `icon?`, `action?`, `dismissible?`, `class?` | هشدار/اعلان با حاشیهٔ کامل منطقی و دکمهٔ بستن |
-| `AvatarGroup.astro` | `locale?`, `items?`, `extraCount?`, `label?`, `rating?`, `size?`, `class?` | پشتهٔ آواتار هم‌پوشان با امتیاز ستاره‌ای و شمارش بومی |
+| `SectionHeader.astro` (`ui/`) | `eyebrow?`, `heading?`, `subheading?`, `align?`, `class?` | سرستون مشترک و DRY برای بلوک‌های سکشن (`src/components/ui/SectionHeader.astro`) |
+| `UiBadge.astro` (`ui/`) | `label?`, `locale?`, `variant?`, `size?`, `icon?`, `href?`, `external?`, `class?` | نشان معنایی وضعیتی/برچسبی در ۸ نقش رنگی |
+| `UiAlert.astro` (`ui/`) | `id?`, `locale?`, `variant?`, `title?`, `description?`, `icon?`, `action?`, `dismissible?`, `class?` | هشدار/اعلان با حاشیهٔ کامل منطقی و دکمهٔ بستن |
+| `AvatarGroup.astro` (`ui/`) | `locale?`, `items?`, `extraCount?`, `label?`, `rating?`, `size?`, `class?` | پشتهٔ آواتار هم‌پوشان با امتیاز ستاره‌ای و شمارش بومی |
 | `NewsletterBanner.astro` | `id?`, `locale?`, `eyebrow?`, `title?`, `subtitle?`, `baseUrl?`, `endpoint?`, `timeoutMs?`, `source?`, `contained?`, `surface?`, `spacing?` | بنر اشتراک خبرنامه Pure-SSG متصل به `api.endpoints.newsletter` / `PUBLIC_NEWSLETTER_API_URL` یا نمایش پنل `mailto:` |
-| `LandingHeroSplit.astro` | `id?`, `locale?`, `eyebrow?`, `title?`, `description?`, `primaryCta?`, `secondaryCta?`, `trustNote?`, `image?`, `imageAlt?`, `surface?` (`default`/`hero`/`subtle`) + اسلات `media` | هیروی دوتایی شرکتی/لندینگ با تصویر یا اسلات ویژوال مقابل (با پیش‌فرض‌های بومی) |
+| `LandingHeroSplit.astro` (+ ۶ هیرو سکشن دیگر) | `id?`, `locale?`, `eyebrow?`, `title?`, `description?`, `headingTag?`, `primaryCta?`, `secondaryCta?`, `trustNote?`, `image?`, `imageAlt?`, `surface?` (`default`/`hero`/`subtle`) + اسلات `media` | ۷ هیرو سکشن آماده (`LandingHeroSplit`, `HeroCenteredEditorial`, `HeroDashboardShowcase`, `HeroCommandCli`, `HeroInteractivePrompt`, `HeroProofMarquee`, `HeroFloatingOrbSplit`) با قابلیت `headingTag` |
 | `PromoBanner.astro` | `id?`, `locale?`, `badge?`, `message?`, `icon?`, `cta?`, `variant?`, `dismissible?`, `contained?`, `spacing?` | نوار اطلاع‌رسانی یا معرفی نسخهٔ تازه با حافظهٔ بستن در نشست |
 | `PartnerLogos.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `columns?`, `contained?`, `surface?`, `spacing?` | نوار اعتماد و لوگوی مشتریان/همکاران (۴، ۵ یا ۶ ستونی) |
 | `AboutSplitSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `highlights?`, `stats?`, `primaryCta?`, `secondaryCta?`, `image?`, `imageAlt?`, `mediaPosition?`, `contained?`, `surface?`, `spacing?` | بخش «درباره ما» دوستونه با فهرست نکات، آمار و جابه‌جایی جهت تصویر (`start`/`end`) |
 | `BentoCapabilities.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `numbered?`, `contained?`, `surface?`, `spacing?` | شبکهٔ بنتو برای معرفی قابلیت‌ها و خدمات |
-| `FeatureTabsSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `tabs?`, `variant?` (`pills`/`underline`), `contained?`, `surface?`, `spacing?` | تب‌های تعاملی دسترس‌پذیر WAI-ARIA با ناوبری صفحه‌کلید منطبق با RTL |
+| `SwipeableTabs.astro` / `FeatureTabsSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `tabs?`, `variant?` (`pills`/`underline`), `contained?`, `surface?`, `spacing?` | تب‌های اسلایدی/سوئیپ‌شونده بر پایهٔ Embla در `SwipeableTabs` (پیشنهادی برای صفحات مدرن) و تب‌های WAI-ARIA در `FeatureTabsSection` |
 | `ProcessSteps.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `steps?`, `variant?` (`cards`/`timeline`), `cta?`, `contained?`, `surface?`, `spacing?` | مراحل گام‌به‌گام اجرا با شماره‌گذاری بومی |
 | `FeatureCardGrid.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `columns?`, `contained?`, `surface?`, `spacing?` | گرید کارت‌های ویترینی با تصویر/آیکن، نشان، برچسب و لینک |
 | `ProofStatsRow.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `contained?`, `surface?`, `spacing?` | ردیف آمار و دستاوردها با قالب‌بندی بومی اعداد |
@@ -1357,7 +1357,7 @@ pre, code, .math {
 
 این زمان‌بندی روی `[data-trig]` (مسافت استاندارد `56px`؛ و `18px` در `.fadeInUpSm` / `.blurIn`) و کارت‌های پلکانی (به همراه `--stagger-delay`) اعمال می‌شود.
 
-#### ۲. المان‌های تکی، `data-trig-once` و پریست‌های آماده (ChronoTrig v6.1.0)
+#### ۲. المان‌های تکی، `data-trig-once` و پریست‌های آماده (ChronoTrig v6.2.0)
 
 کافی است صفت `data-trig` و برای بخش‌های ثابت `data-trig-once="true"` را روی هر بخش، کارت یا عنوان قرار دهید:
 
@@ -1402,7 +1402,7 @@ pre, code, .math {
 </div>
 ```
 
-* ChronoTrig v6.1.0 حالت‌های `data-trig-stagger-mode` شامل `linear`، `wave`، `center` و `reverse` را پشتیبانی می‌کند، `--stagger-index`، `--stagger-delay` و `--stagger-total` را محاسبه کرده و آیتم‌ها را با `.trig-stagger-active` (و پس از اتمام `.trig-stagger-settled` برای واکنش فوری hover) فعال می‌سازد (در حالت موبایل `lightweight` تأخیر به حداکثر `0.04s` محدود می‌شود). کارت‌های پلکانی از جابه‌جایی `44px` استفاده می‌کنند.
+* ChronoTrig v6.2.0 حالت‌های `data-trig-stagger-mode` شامل `linear`، `wave`، `center` و `reverse` را پشتیبانی می‌کند، `--stagger-index`، `--stagger-delay` و `--stagger-total` را محاسبه کرده و آیتم‌ها را با `.trig-stagger-active` (و پس از اتمام، هر دو callback پایان انیمیشن را در `q()` صف‌بندی کرده تا `.trig-stagger-settled` و `data-trig-settled="true"` با هم ثبت شوند و `scan()` هرگز یک‌باره‌پخش‌های تمام‌شده را تکرار نکند) فعال می‌سازد (در حالت موبایل `lightweight` تأخیر به حداکثر `0.04s` محدود می‌شود). کارت‌های پلکانی از جابه‌جایی `44px` استفاده می‌کنند.
 * **بخش‌های پین‌شده و تایم‌لاین**: با `[data-trig-pin]` (`data-trig-pin-distance`، `data-trig-pin-horizontal="true"` + `[data-trig-pin-track]`، `data-trig-pin-media`) و `[data-trig-timeline]` می‌توانید صحنه‌های چسبان و انیمیشن‌های چندمرحله‌ای بسازید. برای اینکه `position: sticky` از کار نیفتد، در `src/styles/global.css` روی `body` از `overflow-x: clip` (و نه `overflow-x: hidden`) استفاده شده است.
 
 > **نکته:** کارت‌هایی که با `card.hidden = true` پنهان می‌شوند باید استایل `[data-post-card][hidden] { display: none !important; }` داشته باشند، چون کلاس‌های `flex` / `grid` در Tailwind رفتار پیش‌فرض `[hidden]` را خنثی می‌کنند.
@@ -1440,11 +1440,12 @@ replayGridReveals(grid);
 refreshChronoTrig();
 ```
 
-**سه قاعدهٔ مهم:**
+**چهار قاعدهٔ مهم:**
 
 1. این بازپخش را در **رندر اولیه** یا وقتی کارت‌های مرئی تغییر نکرده‌اند فراخوانی نکنید؛ در غیر این صورت انیمیشن ورود صفحه بدون دلیل از نو شروع می‌شود.
-2. پیش از `refreshChronoTrig()` صفت `data-trig-settled` را هم از روی خود کانتینر گرید و هم کارت‌های آن بردارید (در نسخهٔ جدید ChronoTrig، سایر بخش‌های `data-trig-once="true"` مثل عنوان صفحه به‌صورت خودکار قفل می‌مانند و در `scan()` دوباره پخش نمی‌شوند).
-3. **جداسازی `transition` از ریشهٔ `[data-trig]` و ریشهٔ گریدهای فیلتر:** کلاس‌های `transition` کارت را روی لایهٔ داخلی (`<div>` یا `<a>`) بگذارید و روی گریدهای زیر هدر بلند از `data-trig-root-margin="0px"` استفاده کنید؛ ChronoTrig خودش کارت‌های `[hidden]` را از محاسبهٔ `--stagger-index` و `--stagger-total` کنار می‌گذارد.
+2. هنگام تعویض تب در کامپوننت‌های تب‌بندی که پنل‌هایشان در DOM مانت باقی می‌مانند (`SwipeableTabs.astro` و `FeatureTabsSection.astro`) هرگز `refreshChronoTrig()` را صدا نزنید تا کل صفحه بیهوده اسکن مجدد نشود.
+3. پیش از `refreshChronoTrig()` در فیلترهای گرید، صفت `data-trig-settled` را هم از روی خود کانتینر گرید و هم کارت‌های آن بردارید (در ChronoTrig v6.2.0، سایر بخش‌های `data-trig-once="true"` مثل عنوان صفحه و استگرهای خواهر به‌صورت خودکار قفل می‌مانند و در `scan()` دوباره پخش نمی‌شوند).
+4. **جداسازی `transition` از ریشهٔ `[data-trig]` و ریشهٔ گریدهای فیلتر:** کلاس‌های `transition` کارت را روی لایهٔ داخلی (`<div>` یا `<a>`) بگذارید و روی گریدهای زیر هدر بلند از `data-trig-root-margin="0px"` استفاده کنید؛ ChronoTrig خودش کارت‌های `[hidden]` را از محاسبهٔ `--stagger-index` و `--stagger-total` کنار می‌گذارد.
 
 #### ۶. استفاده در فایل‌های محتوای `.mdx`
 
@@ -1464,7 +1465,7 @@ refreshChronoTrig();
 
 * **Lenis (`src/scripts/lenis.ts`)**: با `lerp: 0.125` و `syncTouch: false` راه‌اندازی می‌شود، با فراخوانی `window.chronoTrig?.setExternalScroll?.(true)` شنوندهٔ تکراری اسکرول ChronoTrig را غیرفعال کرده و مستقیماً در رویداد اسکرول با `window.chronoTrig.sync(instance.scroll)` همگام می‌شود، لینک‌های `#hash` هم‌صفحه را با آفست هدر ثابت (`-96px`) مدیریت می‌کند و در `astro:page-load` بازسازی می‌شود.
 * **پنل‌های اسکرول داخلی**: روی هر مودال/کشو/پنل با `overflow-y-auto` صفت `data-lenis-prevent` بگذارید.
-* **تنظیم حرکت**: تابع `resolveMotion()` در `<head>` (در `BaseLayout.astro`) مقدار `localStorage.motion` یا در صورت نبود آن تنظیم سیستمی `(prefers-reduced-motion: reduce)` را می‌خواند و `data-motion="reduced" | "full"` را روی `<html>` می‌نشاند. ChronoTrig v6.1.0 (`respectReducedMotion` + `body.chronotrig-mobile-disabled`)، `chronotrig.css`، Lenis و `[data-cookie-banner]` و `@media print` به‌صورت یکپارچه به آن احترام می‌گذارند.
+* **تنظیم حرکت**: تابع `resolveMotion()` در `<head>` (در `BaseLayout.astro`) مقدار `localStorage.motion` یا در صورت نبود آن تنظیم سیستمی `(prefers-reduced-motion: reduce)` را می‌خواند و `data-motion="reduced" | "full"` را روی `<html>` می‌نشاند. ChronoTrig v6.2.0 (`respectReducedMotion` + `body.chronotrig-mobile-disabled`)، `chronotrig.css`، Lenis و `[data-cookie-banner]` و `@media print` به‌صورت یکپارچه به آن احترام می‌گذارند.
 * **قواعد کارایی سخت‌افزاری (Zero-Lag)**:
   1. روی عناصر ثابت از `data-trig-once="true"` استفاده کنید تا پس از ورود از ناظر خارج شوند.
   2. از لایه‌های سنگین `blur-2xl` / `blur-3xl` پرهیز کنید (به‌جای آن از `.hero-glow-primary` / `.hero-glow-accent` در `global.css` استفاده کنید) و `backdrop-blur` را تو در تو نچینید.
@@ -1498,8 +1499,8 @@ refreshChronoTrig();
 
 ### افزودن آیکون
 
-آیکون‌ها از بستهٔ `@tabler/icons-astro` (لایسنس MIT) می‌آیند و با ۶۶ نام هسته از `src/libs/ui/icons.ts` (به همراه آیکون‌های سفارشی مشتری از `client/icons.ts`) صدا زده می‌شوند:
-`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `chevron-up` · `sun` · `moon` · `copy` · `external-link` · `arrow-right` · `shield` · `mail` · `layers` · `home` · `info` · `sparkles` · `tag` · `newspaper` · `folder` · `compass` · `palette` · `book-open` · `star` · `star-filled` · `quote` · `users` · `user` · `building` · `file` · `alert-circle` · `alert-triangle` · `circle-check` · `bell` · `bolt` · `clock` · `map-pin` · `map` · `phone` · `rocket` · `code` · `award` · `layout-grid` · `calendar` · `photo` · `minus` · `eye` · `eye-off` · `shopping-bag` · `heart` · `share` · `filter` · `refresh` · `wand` · `dots-vertical` · `lock` · `adjustments-horizontal` · `brand-github` · `brand-x` · `brand-linkedin` · `brand-instagram` · `brand-telegram` · `brand-whatsapp`.
+آیکون‌ها از بستهٔ `@tabler/icons-astro` (لایسنس MIT) می‌آیند و با ۶۹ نام هسته از `src/libs/ui/icons.ts` (به همراه آیکون‌های سفارشی مشتری از `client/icons.ts`) صدا زده می‌شوند:
+`search` · `globe` · `close` · `check` · `menu` · `chevron-left` · `chevron-right` · `chevron-down` · `chevron-up` · `sun` · `moon` · `copy` · `external-link` · `arrow-right` · `shield` · `mail` · `layers` · `home` · `info` · `sparkles` · `tag` · `newspaper` · `folder` · `compass` · `palette` · `book-open` · `star` · `star-filled` · `quote` · `users` · `user` · `building` · `file` · `alert-circle` · `alert-triangle` · `circle-check` · `bell` · `bolt` · `clock` · `map-pin` · `map` · `phone` · `rocket` · `code` · `award` · `layout-grid` · `calendar` · `photo` · `minus` · `eye` · `eye-off` · `shopping-bag` · `heart` · `share` · `filter` · `refresh` · `wand` · `dots-vertical` · `lock` · `adjustments-horizontal` · `cloud-computing` · `headset` · `player-play` · `brand-github` · `brand-x` · `brand-linkedin` · `brand-instagram` · `brand-telegram` · `brand-whatsapp`.
 
 برای افزودن آیکون اختصاصی مشتری بدون دست‌زدن به هسته:
 
@@ -1706,12 +1707,12 @@ buildPageWindow(page, totalPages, radius = 1)  // پنجرهٔ شماره‌ها
 parseBlogFilters('?category=engineering&tag=astro,performance');
 buildBlogFilterQuery(filters);   // → "?category=engineering&tag=astro%2Cperformance"
 matchesBlogFilters(post, filters);
+toggleBlogCategory(filters, category); // کلیک مجدد روی دستهٔ فعال آن را خاموش می‌کند (برچسب‌ها حفظ می‌شوند)
 toggleBlogTag(filters, tag);
 collectTaxonomyKeys(posts, 'categories');
 ```
 
-یک مقاله وقتی فیلتر را پاس می‌کند که در دستهٔ انتخاب‌شده باشد **و** همهٔ
-برچسب‌های انتخاب‌شده را داشته باشد.
+یک مقاله وقتی فیلتر را پاس می‌کند که در دستهٔ انتخاب‌شده باشد **و** همهٔ برچسب‌های انتخاب‌شده را داشته باشد؛ با کلیک دوباره روی چیپ دستهٔ فعال (`toggleBlogCategory`) آن دسته خاموش می‌شود و «همهٔ نوشته‌ها» هر دو فیلتر را به `NO_FILTERS` برمی‌گرداند.
 
 رفتار فیلتر در سمت کاربر (بدون بارگذاری مجدد):
 
@@ -1912,7 +1913,7 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 ```bash
 npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
 npm run lint           # کامپایل پیام‌ها + astro check + tsc --noEmit
-npm test               # ۲۵ فایل تست واحد Vitest (۲۶۲ تست)
+npm test               # ۲۶ فایل تست واحد Vitest (۲۶۹ تست)
 npm run audit:i18n
 SITE_URL=https://example.com npm run build
 npm run smoke          # تست دود روی dist/
@@ -1948,10 +1949,11 @@ npm run verify:cli     # ۹۵ ادعا دربارهٔ گردش‌کارهای CL
 | `src/scripts/lenis.test.ts` | اسکرول نرم، آفست لینک‌های `#hash` و ایزوله‌سازی پنل‌ها |
 | `src/scripts/chronotrig.test.ts` | قرارداد `.js [data-trig]`، جهت‌های منطقی RTL، پلکانی‌سازی، مکث `--trig-reveal-delay`، `prefers-reduced-motion` و سازگاری Lenis |
 | `src/libs/ui/button.test.ts` | نگاشت `variant`/`size` به کلاس‌های `global.css`، حرکت هاور/فشرده‌سازی و اولویت `className` فراخوان |
-| `src/libs/ui/icons.test.ts` | یکتایی و kebab-case بودن `SITE_ICONS` (۶۶ آیکون هسته)، `resolveIconName`، آیکون‌های جهت‌دار RTL و پوشش آیکون‌های ناوبری |
-| `src/libs/ui/blocks.test.ts` | بلوک‌های آمادهٔ شرکتی/لندینگ (خواص منطقی، نبود `<svg>` خام، کلیدهای Paraglide و توکن‌های معنایی) |
+| `src/components/TopLoadingBar.test.ts` | پیشرفت یکنواخت، محو شدن و ریست سریع نوار بارگذاری بالای صفحه (`#nprogress`)، جداسازی View Transitions و حالت `data-motion="reduced"` |
+| `src/libs/ui/icons.test.ts` | یکتایی و kebab-case بودن `SITE_ICONS` (۶۹ آیکون هسته)، `resolveIconName`، آیکون‌های جهت‌دار RTL و پوشش آیکون‌های ناوبری |
+| `src/libs/ui/blocks.test.ts` | ۶۴ بلوک آماده (۲۹ بلوک سکشن شامل ۷ هیرو + ۳۵ پریمیتیو رابط در `src/components/ui/`)؛ خواص منطقی، نبود `<svg>` خام، کلیدهای Paraglide و توکن‌های معنایی |
 
-> **۲۵ فایل تست واحد (۲۶۲ تست).** ماژول `astro:content` در Vitest با
+> **۲۶ فایل تست واحد (۲۶۹ تست).** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -2152,7 +2154,7 @@ dist/
 | `npm run messages:compile` | ادغام `messages/core/` + `client/messages/` و کامپایل به `src/paraglide/` |
 | `npm run check` | `astro check` |
 | `npm run lint` | کامپایل پیام‌ها + astro check + tsc |
-| `npm test` | تست‌های Vitest (۲۵ فایل، ۲۶۲ تست) |
+| `npm test` | تست‌های Vitest (۲۶ فایل، ۲۶۹ تست) |
 | `npm run build` | بیلد تولیدی + Pagefind |
 | `npm run preview` | پیش‌نمایش خروجی |
 | `npm run smoke` | تست دود روی `dist/` |
@@ -2195,7 +2197,7 @@ dist/
 
 ### `block_*` (۳۱۳ کلید) و `doc_*` (۸ کلید)
 
-- `block_*`: متن‌های بومی‌پیش‌فرض ۳۶ بلوک آمادهٔ PrebuiltUI (۲۳ بلوک سکشن شرکتی/لندینگ و ۱۳ پریمیتیو رابط) به‌همراه ۴ بلوک تعاملی/حرکتی (`LandingHeroSplit`، `PricingSection`، `TestimonialGrid`، `FaqAccordion`، `ContactSplitSection`، `ParallaxSection` و…).
+- `block_*`: متن‌های بومی‌پیش‌فرض ۶۴ بلوک آماده (۲۹ بلوک سکشن شامل ۷ هیرو و ۲۲ سکشن محتوا + ۳۵ پریمیتیو رابط در `src/components/ui/`) به‌همراه ۴ بلوک تعاملی/حرکتی (`LandingHeroSplit`، `PricingSection`، `ProductShowcaseGrid`، `TestimonialGrid`، `FaqAccordion`، `ContactSplitSection`، `SwipeableTabs`، `ParallaxSection` و…).
 - `doc_*`: برچسب‌های مستندسازی درون‌خطی برای `ComponentDoc.astro`.
 
 ### `common_*` (۲۵ کلید)
@@ -2321,7 +2323,7 @@ dist/
 | `entries.ts` | `parseContentEntryId` · `isPublished` · `sortByPublishedAtDesc` · `groupPublishedEntries` · `getPublishedLocaleEntries` · `getSortedLocaleEntries` |
 | `service.ts` | `getBlogIndexHref` · `getBlogPageHref` · `getBlogPostHref` · `getPageUrl` · `getSiteRoutes` · `buildSiteRoutes` · `getBreadcrumbs` · `getRssFeedHref` |
 | `pagination.ts` | `getPageCount` · `clampPage` · `paginate` · `buildPageWindow` · `PAGE_GAP` · `PageSlice` |
-| `blog.ts` | `parseBlogFilters` · `buildBlogFilterQuery` · `matchesBlogFilters` · `filterBlogPosts` · `hasActiveFilters` · `areBlogFiltersEqual` · `toggleBlogTag` · `getReadingTime` · `collectTaxonomyKeys` · `humanizeKey` · `NO_FILTERS` |
+| `blog.ts` | `parseBlogFilters` · `parseBlogFilterPage` · `buildBlogFilterQuery` · `matchesBlogFilters` · `filterBlogPosts` · `hasActiveFilters` · `areBlogFiltersEqual` · `toggleBlogCategory` · `toggleBlogTag` · `getReadingTime` · `collectTaxonomyKeys` · `humanizeKey` · `NO_FILTERS` |
 | `taxonomy.ts` | `getCategoryLabel` · `getTagLabel` |
 | `faq.ts` | `buildFaqSchema` |
 | `schema.ts` | `buildOrganizationSchema` · `buildServiceSchema` · `collectSocialProfiles` |
@@ -2333,7 +2335,7 @@ dist/
 | فایل | خروجی‌ها | کاربرد |
 | --- | --- | --- |
 | `lenis.ts` | `initLenis()` · `destroyLenis()` · `getLenis()` | راه‌اندازی (`setExternalScroll(true)` + `sync`)، پاک‌سازی در View Transitions و دسترسی به نمونهٔ فعال `Lenis` |
-| `chronotrig.ts` | `setupChronoTrig()` · `refreshChronoTrig()` | تایپ‌های ChronoTrig v6.1.0، علامت‌گذاری عنوان‌های `.prose` و `[data-trig-once]`، هماهنگی `astro:page-load` و `refresh()` پس از تزریق یا فیلتر پویا |
+| `chronotrig.ts` | `setupChronoTrig()` · `refreshChronoTrig()` | تایپ‌های ChronoTrig v6.2.0، علامت‌گذاری عنوان‌های `.prose` و `[data-trig-once]`، هماهنگی `astro:page-load` و `refresh()` پس از تزریق یا فیلتر پویا |
 
 ### `scripts/lib/locales.mjs`
 
