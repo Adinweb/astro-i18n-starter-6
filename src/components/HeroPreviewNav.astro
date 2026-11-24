@@ -1,0 +1,227 @@
+---
+/**
+ * Embedded Preview Navigation Bar for standalone PrebuiltUI-style Hero Sections.
+ *
+ * Renders an accessible `role="region"` visual navbar strip inside hero previews
+ * (supporting minimal, pill capsule, bordered, dashed, and dropdown styles) without
+ * emitting duplicate `<nav>` landmarks or global mobile drawer IDs.
+ */
+import Button from '@/components/Button.astro';
+import Icon from '@/components/Icon.astro';
+import type { HeroCtaAction } from '@/components/LandingHeroSplit.astro';
+import type { Locale } from '@/i18n/locales';
+import { getBlogIndexHref, getHomeHref, getPageUrl } from '@/libs/content/service';
+import { getContentType, getContentTypeIndexHref } from '@/libs/content/types';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface HeroPreviewNavLink {
+  label: string;
+  href: string;
+}
+
+export type HeroPreviewNavVariant = 'minimal' | 'pill' | 'bordered' | 'dashed' | 'dropdown';
+
+interface Props {
+  locale?: Locale | string;
+  surface?: 'default' | 'hero' | 'surface' | 'subtle';
+  variant?: HeroPreviewNavVariant;
+  brand?: string;
+  links?: readonly HeroPreviewNavLink[];
+  dropdownLabel?: string;
+  dropdownItems?: readonly HeroPreviewNavLink[];
+  cta?: HeroCtaAction | null;
+  secondaryCta?: HeroCtaAction | null;
+  compact?: boolean;
+  class?: string;
+}
+
+const {
+  locale,
+  surface = 'default',
+  variant = 'pill',
+  brand,
+  links,
+  dropdownLabel,
+  dropdownItems,
+  cta,
+  secondaryCta,
+  compact = false,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const [featuresHref, pricingHref, componentsHref, homeHref] = await Promise.all([
+  getPageUrl('features', activeLocale),
+  getPageUrl('pricing', activeLocale),
+  getPageUrl('components', activeLocale),
+  getHomeHref(activeLocale),
+]);
+
+const blogHref = getBlogIndexHref(activeLocale);
+const projectsType = getContentType('projects');
+const projectsHref = projectsType.enabled
+  ? getContentTypeIndexHref('projects', activeLocale)
+  : homeHref;
+
+const resolvedLinks: readonly HeroPreviewNavLink[] = links ?? [
+  { label: m.nav_home({}, { locale: activeLocale }), href: homeHref },
+  { label: m.block_breadcrumbs_2({}, { locale: activeLocale }), href: componentsHref ?? homeHref },
+  { label: m.nav_projects({}, { locale: activeLocale }), href: projectsHref },
+  { label: m.nav_blog({}, { locale: activeLocale }), href: blogHref },
+];
+
+const resolvedDropdownItems: readonly HeroPreviewNavLink[] = dropdownItems ?? [
+  { label: m.block_hero_nav_page_1({}, { locale: activeLocale }), href: componentsHref ?? homeHref },
+  { label: m.block_hero_nav_page_2({}, { locale: activeLocale }), href: featuresHref ?? homeHref },
+  { label: m.block_hero_nav_page_3({}, { locale: activeLocale }), href: pricingHref ?? homeHref },
+];
+
+const resolvedBrand = brand ?? m.block_hero_nav_brand({}, { locale: activeLocale });
+const resolvedDropdownLabel = dropdownLabel ?? m.block_hero_nav_pages({}, { locale: activeLocale });
+const resolvedCta =
+  cta === null
+    ? undefined
+    : cta ?? {
+        label: m.block_hero_nav_cta({}, { locale: activeLocale }),
+        href: featuresHref ?? homeHref,
+      };
+
+const isHeroSurface = surface === 'hero';
+const ariaLabel = m.block_hero_nav_aria({}, { locale: activeLocale });
+
+const wrapperClass =
+  variant === 'pill'
+    ? 'mx-auto max-w-4xl rounded-full border px-4 py-2 sm:px-5'
+    : variant === 'bordered'
+      ? 'border-b pb-3.5'
+      : variant === 'dashed'
+        ? 'border-b border-dashed pb-3.5'
+        : variant === 'dropdown'
+          ? 'rounded-2xl border px-4 py-2.5 sm:px-5'
+          : 'pb-2';
+---
+
+<div
+  role="region"
+  aria-label={ariaLabel}
+  class:list={[
+    'relative z-20 flex flex-wrap items-center justify-between gap-3',
+    compact ? 'mb-7 sm:mb-9' : 'mb-10 sm:mb-12',
+    wrapperClass,
+    variant === 'pill' || variant === 'dropdown'
+      ? isHeroSurface
+        ? 'border-hero-fg/15 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg'
+        : 'border-border bg-surface text-fg shadow-xs'
+      : isHeroSurface
+        ? 'border-hero-fg/15 text-hero-fg print:border-border print:text-fg'
+        : 'border-border text-fg',
+    className,
+  ]}
+>
+  <a
+    href={homeHref}
+    class="inline-flex items-center gap-2 text-xs font-bold tracking-tight transition-opacity hover:opacity-85 sm:text-sm"
+  >
+    <span
+      class:list={[
+        'inline-flex size-7 shrink-0 items-center justify-center rounded-lg',
+        isHeroSurface
+          ? 'bg-accent text-hero-base print:bg-primary print:text-primary-fg'
+          : 'bg-primary text-primary-fg',
+      ]}
+      aria-hidden="true"
+    >
+      <Icon name="sparkles" size={14} />
+    </span>
+    <span>{resolvedBrand}</span>
+  </a>
+
+  <div class="hidden flex-wrap items-center gap-5 text-xs font-medium md:flex">
+    {resolvedLinks.slice(0, variant === 'dropdown' ? 2 : 4).map((item) => (
+      <a
+        href={item.href}
+        class:list={[
+          'transition-colors',
+          isHeroSurface
+            ? 'text-hero-fg/80 hover:text-hero-fg print:text-muted print:hover:text-fg'
+            : 'text-muted hover:text-fg',
+        ]}
+      >
+        {item.label}
+      </a>
+    ))}
+
+    {variant === 'dropdown' && (
+      <div class="group relative">
+        <button
+          type="button"
+          class:list={[
+            'inline-flex cursor-pointer items-center gap-1 transition-colors focus-visible:outline-none',
+            isHeroSurface
+              ? 'text-hero-fg/85 hover:text-hero-fg print:text-muted print:hover:text-fg'
+              : 'text-muted hover:text-fg',
+          ]}
+        >
+          <span>{resolvedDropdownLabel}</span>
+          <Icon name="chevron-down" size={13} class="transition-transform duration-200 group-hover:rotate-180" />
+        </button>
+
+        <div class="absolute start-0 top-full hidden min-w-44 pt-2 group-hover:block group-focus-within:block">
+          <div class="rounded-xl border border-border bg-surface p-1.5 text-fg shadow-xl">
+            {resolvedDropdownItems.map((sub) => (
+              <a
+                href={sub.href}
+                class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs font-medium text-fg transition-colors hover:bg-surface-hover hover:text-primary"
+              >
+                <span>{sub.label}</span>
+                <Icon name="chevron-right" size={12} class="opacity-60 rtl:rotate-180" />
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+
+    {variant === 'dropdown' &&
+      resolvedLinks.slice(2, 4).map((item) => (
+        <a
+          href={item.href}
+          class:list={[
+            'transition-colors',
+            isHeroSurface
+              ? 'text-hero-fg/80 hover:text-hero-fg print:text-muted print:hover:text-fg'
+              : 'text-muted hover:text-fg',
+          ]}
+        >
+          {item.label}
+        </a>
+      ))}
+  </div>
+
+  {(secondaryCta || resolvedCta) && (
+    <div class="flex items-center gap-2 print:hidden">
+      {secondaryCta && (
+        <Button
+          href={secondaryCta.href}
+          variant={isHeroSurface ? 'hero' : 'ghost'}
+          size="sm"
+          external={secondaryCta.external}
+        >
+          {secondaryCta.label}
+        </Button>
+      )}
+      {resolvedCta && (
+        <Button
+          href={resolvedCta.href}
+          variant={isHeroSurface ? 'hero' : 'primary'}
+          size="sm"
+          icon={resolvedCta.icon}
+          external={resolvedCta.external}
+        >
+          {resolvedCta.label}
+        </Button>
+      )}
+    </div>
+  )}
+</div>

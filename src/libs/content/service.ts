@@ -520,6 +520,41 @@ export async function getHomeHref(locale: Locale): Promise<string> {
   return (await getPageUrl('home', locale)) ?? localizeHref('/', DEFAULT_LOCALE);
 }
 
+/**
+ * Resolves published ancestor pages along a nested page slug such as
+ * `"components/herosections"` -> `[{ label: "Components", href: "/components/" }]`.
+ */
+export async function getPageAncestors(
+  slug: string,
+  locale: Locale
+): Promise<BreadcrumbItem[]> {
+  const segments = slug.split('/').filter(Boolean);
+  if (segments.length <= 1) return [];
+
+  const pages = await getCollection('pages');
+  const bySlug = new Map<string, EntryLike<'pages'>>();
+
+  for (const page of pages) {
+    if (!isPublished(page)) continue;
+    if (parseContentEntryId(page.id).locale !== locale) continue;
+    if (page.data.slug) bySlug.set(page.data.slug, page);
+  }
+
+  const ancestors: BreadcrumbItem[] = [];
+  for (let i = 1; i < segments.length; i += 1) {
+    const prefix = segments.slice(0, i).join('/');
+    const match = bySlug.get(prefix);
+    if (match) {
+      ancestors.push({
+        label: match.data.title,
+        href: localizeHref(`/${match.data.slug}`, locale),
+      });
+    }
+  }
+
+  return ancestors;
+}
+
 export interface BreadcrumbLabels {
   home: string;
   /**
@@ -535,6 +570,11 @@ export interface BreadcrumbLabels {
    * `Home → Projects → Entry` without adding a case per collection.
    */
   section?: { label: string; href: string };
+  /**
+   * Optional ancestor page crumbs for nested multi-segment static pages
+   * (for example `Home → Components → Hero Sections`).
+   */
+  parents?: readonly BreadcrumbItem[];
   current?: string;
 }
 
@@ -573,8 +613,13 @@ export function getBreadcrumbs(
     if (pathname !== `/${section.base}/` && labels.current) {
       crumbs.push({ label: labels.current, href: url });
     }
-  } else if (labels.current) {
-    crumbs.push({ label: labels.current, href: url });
+  } else {
+    if (labels.parents?.length) {
+      crumbs.push(...labels.parents);
+    }
+    if (labels.current) {
+      crumbs.push({ label: labels.current, href: url });
+    }
   }
 
   return crumbs;

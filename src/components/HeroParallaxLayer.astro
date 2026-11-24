@@ -1,0 +1,332 @@
+---
+/**
+ * Scroll-driven GPU parallax background layer for Hero Section components.
+ *
+ * Uses ChronoTrig `[data-parallax-stage]` / `[data-parallax-media]` rules from
+ * `src/styles/chronotrig.css` so overscanning, compositor `will-change`, reduced-motion
+ * flattening, and `@media print` behave identically to `<ParallaxSection />`.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import type { Locale } from '@/i18n/locales';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+
+export type HeroParallaxSpeed = 'subtle' | 'medium' | 'deep';
+export type HeroParallaxOverlay = 'hero' | 'dark' | 'gradient' | 'subtle';
+
+interface Props {
+  locale?: Locale | string;
+  image: ImageMetadata;
+  alt?: string;
+  speed?: HeroParallaxSpeed;
+  overlay?: HeroParallaxOverlay;
+  priority?: boolean;
+}
+
+const {
+  locale,
+  image,
+  alt = '',
+  speed = 'medium',
+  overlay = 'hero',
+  priority = false,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const widths = [...new Set([480, 768, 1024, 1440, image.width])]
+  .filter((width) => width <= image.width)
+  .sort((a, b) => a - b);
+---
+
+<div
+  data-parallax-stage
+  data-hero-parallax
+  data-parallax-speed={speed}
+  data-locale={activeLocale}
+  aria-hidden="true"
+  class="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-[inherit] [transform:translateZ(0)] print:hidden"
+>
+  <div data-parallax-media>
+    <Image
+      src={image}
+      alt={alt}
+      widths={widths}
+      sizes="(min-width: 1280px) 1280px, 100vw"
+      format="webp"
+      quality={75}
+      loading={priority ? 'eager' : 'lazy'}
+      decoding="async"
+      class="h-full w-full object-cover"
+    />
+  </div>
+
+  {
+    overlay === 'dark' ? (
+      <>
+        <div class="absolute inset-0 bg-hero-base/55" />
+        <div class="absolute inset-0 bg-linear-to-t from-hero-base/80 via-hero-base/30 to-hero-base/35" />
+      </>
+    ) : overlay === 'subtle' ? (
+      <>
+        <div class="absolute inset-0 bg-hero-base/25" />
+        <div class="absolute inset-0 bg-linear-to-t from-hero-base/75 via-hero-base/25 to-hero-base/20" />
+      </>
+    ) : overlay === 'gradient' ? (
+      <>
+        <div class="absolute inset-0 bg-hero-base/35" />
+        <div class="absolute inset-0 bg-linear-to-t from-hero-base/85 from-5% via-hero-base/45 via-55% to-hero-base/25" />
+        <div class="absolute inset-0 bg-linear-to-r from-hero-base/85 from-10% via-hero-base/45 via-55% to-transparent rtl:bg-linear-to-l" />
+      </>
+    ) : (
+      <>
+        <div class="absolute inset-0 bg-hero-base/65" />
+        <div class="absolute inset-0 bg-linear-to-b from-hero-base/65 via-hero-base/45 to-hero-base/90" />
+      </>
+    )
+  }
+</div>
+
+<script>
+  const HERO_PARALLAX_SPEED_PX: Record<string, number> = {
+    subtle: 76,
+    medium: 135,
+    deep: 195,
+  };
+  const HERO_PARALLAX_LAMBDA = 24;
+
+  let cleanupHeroParallax: (() => void) | null = null;
+
+  interface HeroParallaxEntry {
+    stage: HTMLElement;
+    media: HTMLElement;
+    amplitude: number;
+    currentY: number;
+    targetY: number;
+    lastWrittenY: number;
+    initialized: boolean;
+    isVisible: boolean;
+  }
+
+  function heroParallaxNow(): number {
+    return typeof performance !== 'undefined' ? performance.now() : Date.now();
+  }
+
+  function isHeroParallaxReduced(): boolean {
+    const explicit = document.documentElement.dataset.motion;
+    if (explicit === 'reduced') return true;
+    const mobileDisabled =
+      typeof window.chronoTrig?.getMobileBehavior === 'function' &&
+      typeof window.chronoTrig?.isMobile === 'function' &&
+      window.chronoTrig.getMobileBehavior() === 'disable' &&
+      window.chronoTrig.isMobile();
+    if (mobileDisabled) return true;
+    if (explicit === 'full') return false;
+    if (document.body.classList.contains('chronotrig-mobile-disabled')) return true;
+    try {
+      return Boolean(window.chronoTrig?.isDisabled?.());
+    } catch {
+      return false;
+    }
+  }
+
+  function clampHeroParallax(min: number, max: number, value: number): number {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function destroyHeroParallax(): void {
+    cleanupHeroParallax?.();
+    cleanupHeroParallax = null;
+  }
+
+  function initHeroParallax(): void {
+    destroyHeroParallax();
+
+    const stageNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-hero-parallax]')).filter(
+      (stage) => stage.dataset.parallaxActive === undefined
+    );
+    if (stageNodes.length === 0) return;
+
+    const hasIO = typeof IntersectionObserver === 'function';
+
+    const entries = stageNodes
+      .map((stage): HeroParallaxEntry | null => {
+        const media = stage.querySelector<HTMLElement>('[data-parallax-media]');
+        if (!media) return null;
+        const speedKey = stage.dataset.parallaxSpeed ?? 'medium';
+        const amplitude = HERO_PARALLAX_SPEED_PX[speedKey] ?? HERO_PARALLAX_SPEED_PX.medium;
+        stage.dataset.parallaxActive = hasIO ? 'false' : 'true';
+        return {
+          stage,
+          media,
+          amplitude,
+          currentY: 0,
+          targetY: 0,
+          lastWrittenY: Number.NaN,
+          initialized: false,
+          isVisible: !hasIO,
+        };
+      })
+      .filter((item): item is HeroParallaxEntry => item !== null);
+
+    if (entries.length === 0) return;
+
+    const entryMap = new Map<HTMLElement, HeroParallaxEntry>(entries.map((e) => [e.stage, e]));
+
+    let rafId = 0;
+    let snapRafId = 0;
+    let lastStepTime = 0;
+    let hasPendingMotion = false;
+
+    const resetAll = () => {
+      hasPendingMotion = false;
+      for (const entry of entries) {
+        entry.currentY = 0;
+        entry.targetY = 0;
+        entry.stage.dataset.parallaxActive = 'false';
+        if (!entry.initialized || entry.lastWrittenY !== 0) {
+          entry.media.style.setProperty('--parallax-y', '0px');
+          entry.lastWrittenY = 0;
+          entry.initialized = true;
+        }
+      }
+    };
+
+    const step = (now: number, snap: boolean): boolean => {
+      if (isHeroParallaxReduced()) {
+        resetAll();
+        lastStepTime = Math.max(lastStepTime, now);
+        return true;
+      }
+
+      if (!snap && lastStepTime !== 0 && now - lastStepTime < 2) {
+        return !hasPendingMotion;
+      }
+
+      const dt = lastStepTime > 0 ? clampHeroParallax(0.001, 0.05, (now - lastStepTime) / 1000) : 1 / 60;
+      lastStepTime = Math.max(lastStepTime, now);
+      const alpha = snap ? 1 : 1 - Math.exp(-HERO_PARALLAX_LAMBDA * dt);
+
+      const vh = window.innerHeight || document.documentElement.clientHeight || 800;
+      let pending = false;
+
+      for (const entry of entries) {
+        if (!snap && !entry.isVisible) continue;
+        const rect = entry.stage.getBoundingClientRect();
+        if (rect.height <= 0) continue;
+
+        const stageCenter = rect.top + rect.height * 0.5;
+        const halfTravel = Math.max(1, (vh + rect.height) * 0.5);
+        const normalized = clampHeroParallax(-1, 1, (vh * 0.5 - stageCenter) / halfTravel);
+        const safeAmplitude = Math.min(entry.amplitude, Math.max(40, rect.height * 0.37));
+        const targetY = normalized * safeAmplitude;
+        entry.targetY = targetY;
+
+        const diff = targetY - entry.currentY;
+        const nextY = snap || Math.abs(diff) <= 0.15 ? targetY : entry.currentY + diff * alpha;
+        entry.currentY = nextY;
+
+        if (!entry.initialized || Math.abs(nextY - entry.lastWrittenY) >= 0.05) {
+          entry.media.style.setProperty('--parallax-y', `${nextY.toFixed(2)}px`);
+          entry.lastWrittenY = nextY;
+          entry.initialized = true;
+        }
+
+        if (Math.abs(targetY - nextY) > 0.15) {
+          pending = true;
+        }
+      }
+
+      hasPendingMotion = pending;
+      return !pending;
+    };
+
+    const tick = (frameTime?: number) => {
+      rafId = 0;
+      const now = typeof frameTime === 'number' ? frameTime : heroParallaxNow();
+      const settled = step(now, false);
+      if (!settled) rafId = requestAnimationFrame(tick);
+    };
+
+    const onScrollTick = () => {
+      if (!isHeroParallaxReduced() && !entries.some((e) => e.isVisible)) return;
+      const settled = step(heroParallaxNow(), false);
+      if (!settled && rafId === 0) rafId = requestAnimationFrame(tick);
+    };
+
+    const scheduleSnap = () => {
+      if (snapRafId !== 0) return;
+      snapRafId = requestAnimationFrame((frameTime) => {
+        snapRafId = 0;
+        const now = typeof frameTime === 'number' ? frameTime : heroParallaxNow();
+        step(now, true);
+      });
+    };
+
+    const onMotionChange = () => {
+      step(heroParallaxNow(), true);
+    };
+
+    const intersectionObserver = hasIO
+      ? new IntersectionObserver(
+          (ioEntries) => {
+            let becameVisible = false;
+            const reduced = isHeroParallaxReduced();
+            for (const ioEntry of ioEntries) {
+              const entry = entryMap.get(ioEntry.target as HTMLElement);
+              if (!entry) continue;
+              const wasVisible = entry.isVisible;
+              entry.isVisible = ioEntry.isIntersecting;
+              entry.stage.dataset.parallaxActive = ioEntry.isIntersecting && !reduced ? 'true' : 'false';
+              if (ioEntry.isIntersecting && !wasVisible) becameVisible = true;
+            }
+            if (becameVisible) step(heroParallaxNow(), true);
+          },
+          { root: null, rootMargin: '180px 0px 180px 0px', threshold: 0 }
+        )
+      : null;
+
+    if (intersectionObserver) {
+      for (const entry of entries) intersectionObserver.observe(entry.stage);
+    }
+
+    step(heroParallaxNow(), true);
+    scheduleSnap();
+
+    const unsubscribeChronoTrig = window.chronoTrig?.subscribe?.(onScrollTick);
+    window.addEventListener('lenis:scroll', onScrollTick);
+    window.addEventListener('scroll', onScrollTick, { passive: true });
+    window.addEventListener('resize', scheduleSnap, { passive: true });
+    window.addEventListener('load', scheduleSnap, { passive: true });
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => scheduleSnap()) : null;
+    if (resizeObserver) {
+      for (const entry of entries) resizeObserver.observe(entry.stage);
+    }
+
+    const observer = new MutationObserver(() => onMotionChange());
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-motion'] });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+    cleanupHeroParallax = () => {
+      if (rafId !== 0) cancelAnimationFrame(rafId);
+      if (snapRafId !== 0) cancelAnimationFrame(snapRafId);
+      unsubscribeChronoTrig?.();
+      window.removeEventListener('lenis:scroll', onScrollTick);
+      window.removeEventListener('scroll', onScrollTick);
+      window.removeEventListener('resize', scheduleSnap);
+      window.removeEventListener('load', scheduleSnap);
+      intersectionObserver?.disconnect();
+      resizeObserver?.disconnect();
+      observer.disconnect();
+    };
+  }
+
+  function scheduleHeroParallaxInit(): void {
+    queueMicrotask(initHeroParallax);
+  }
+
+  document.addEventListener('astro:before-swap', destroyHeroParallax);
+  document.addEventListener('astro:page-load', scheduleHeroParallaxInit);
+  scheduleHeroParallaxInit();
+</script>

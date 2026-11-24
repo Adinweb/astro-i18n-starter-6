@@ -20,6 +20,16 @@ const slugSchema = z.string().refine(
   'Use letters, digits, and single hyphens or zero-width joiners only (empty is allowed only for the home page).'
 );
 
+function isValidPageSlug(value: string): boolean {
+  if (value === '') return true;
+  return value.split('/').every((segment) => segment.length > 0 && isValidSlug(segment));
+}
+
+const pageSlugSchema = z.string().refine(
+  isValidPageSlug,
+  'Use letters, digits, and single hyphens or zero-width joiners per path segment (no leading, trailing, or empty "/" segments).'
+);
+
 /**
  * Taxonomy keys double as URL query values and message keys, so they stay
  * ASCII, lowercase, and hyphen-separated. Visible labels are localized in
@@ -69,6 +79,7 @@ export const collections = {
     }),
     schema: ({ image }) =>
       baseSchema({ image }).extend({
+        slug: pageSlugSchema,
         /**
          * Hero presentation mode for pages. Defaults to `'none'` so pages do not
          * force a pre-built hero banner unless explicitly requested.

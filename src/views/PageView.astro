@@ -8,7 +8,12 @@ import PageHeader from '@/components/PageHeader.astro';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { parseContentEntryId } from '@/libs/content/entries';
-import { buildBreadcrumbSchema, getBreadcrumbs, getHomeHref } from '@/libs/content/service';
+import {
+  buildBreadcrumbSchema,
+  getBreadcrumbs,
+  getHomeHref,
+  getPageAncestors,
+} from '@/libs/content/service';
 import { buildOgRouteKey, type SocialCardContext } from '@/libs/content/social';
 import HomePageTemplate from '@/views/pages/HomePageTemplate.astro';
 import { CLIENT_PAGE_TEMPLATES } from '@client/templates/index';
@@ -33,10 +38,16 @@ const CustomTemplate = entry.data.template
 
 const { Content } = CustomTemplate ? { Content: null } : await render(entry);
 
+const [homeHref, parentCrumbs] = await Promise.all([
+  getHomeHref(locale),
+  entry.data.slug.includes('/') ? getPageAncestors(entry.data.slug, locale) : Promise.resolve([]),
+]);
+
 const breadcrumbs = getBreadcrumbs(url, locale, {
   home: m.nav_home({}, { locale }),
-  homeHref: await getHomeHref(locale),
+  homeHref,
   blog: m.nav_blog({}, { locale }),
+  parents: parentCrumbs,
   current: entry.data.title,
 });
 

@@ -1,0 +1,862 @@
+---
+/**
+ * Interactive Prompt & Newsletter Hero Section adapted from PrebuiltUI AI/Search input
+ * and Subscription/Lead-capture hero templates.
+ *
+ * - `mode="prompt"` renders an elevated prompt composer textarea with either clickable
+ *   pill chips (`chipLayout="pills"`) or a 2-column hairline-divided suggestion grid
+ *   (`chipLayout="grid"`), plus optional embedded `<HeroPreviewNav>`.
+ * - `mode="newsletter"` renders an accessible pill/rounded email subscription bar with
+ *   client-side format validation, optional external endpoint submission, and live status.
+ */
+import type { ImageMetadata } from 'astro';
+import Button from '@/components/Button.astro';
+import type { HeroPartnerPill } from '@/components/HeroCenteredEditorial.astro';
+import HeroParallaxLayer, {
+  type HeroParallaxOverlay,
+  type HeroParallaxSpeed,
+} from '@/components/HeroParallaxLayer.astro';
+import HeroPreviewNav, {
+  type HeroPreviewNavLink,
+  type HeroPreviewNavVariant,
+} from '@/components/HeroPreviewNav.astro';
+import Icon from '@/components/Icon.astro';
+import type { HeroCtaAction, HeroSplitAnnouncement } from '@/components/LandingHeroSplit.astro';
+import UiBadge from '@/components/UiBadge.astro';
+import type { Locale } from '@/i18n/locales';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  mode?: 'prompt' | 'newsletter' | 'search' | 'code';
+  surface?: 'default' | 'hero' | 'surface' | 'subtle';
+  backdrop?: 'glow' | 'grid' | 'dots' | 'noise' | 'orbital' | 'wash' | 'none';
+  framedRails?: 'none' | 'dashed' | 'solid';
+  parallaxImage?: ImageMetadata | null;
+  parallaxAlt?: string;
+  parallaxSpeed?: HeroParallaxSpeed;
+  parallaxOverlay?: HeroParallaxOverlay;
+  showPreviewNav?: boolean;
+  previewNavVariant?: HeroPreviewNavVariant;
+  previewBrand?: string;
+  previewLinks?: readonly HeroPreviewNavLink[];
+  previewCta?: HeroCtaAction | null;
+  announcement?: HeroSplitAnnouncement | null;
+  badge?: string | null;
+  title?: string;
+  description?: string | null;
+  placeholder?: string;
+  stackTabs?: readonly string[];
+  chips?: readonly string[] | null;
+  chipLayout?: 'pills' | 'grid';
+  partnerLogos?: readonly HeroPartnerPill[] | null;
+  actionHref?: string;
+  actionLabel?: string;
+  submitLabel?: string;
+  trustNote?: string | null;
+  endpoint?: string;
+  headingTag?: 'h1' | 'h2';
+  compact?: boolean;
+}
+
+const {
+  id,
+  locale,
+  mode = 'prompt',
+  surface = 'default',
+  backdrop = 'glow',
+  framedRails = 'none',
+  parallaxImage = null,
+  parallaxAlt = '',
+  parallaxSpeed = 'medium',
+  parallaxOverlay = 'hero',
+  showPreviewNav = false,
+  previewNavVariant = 'minimal',
+  previewBrand,
+  previewLinks,
+  previewCta,
+  announcement = null,
+  badge,
+  title,
+  description,
+  placeholder,
+  stackTabs = ['Astro v7', 'TypeScript', 'Tailwind v4'],
+  chips,
+  chipLayout = 'pills',
+  partnerLogos = null,
+  actionHref,
+  actionLabel,
+  submitLabel,
+  trustNote,
+  endpoint = '',
+  headingTag = 'h1',
+  compact = false,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = title === undefined;
+
+const [contactHref, homeHref] =
+  actionHref === undefined
+    ? await Promise.all([getPageUrl('contact', activeLocale), getHomeHref(activeLocale)])
+    : [null, ''];
+
+const resolvedActionHref = actionHref ?? contactHref ?? homeHref;
+const resolvedActionLabel =
+  actionLabel ?? m.block_hero_prompt_feedback_cta({}, { locale: activeLocale });
+
+const resolvedBadge =
+  badge === null
+    ? undefined
+    : badge ?? (usingDefaults ? m.block_hero_prompt_badge({}, { locale: activeLocale }) : undefined);
+
+const resolvedTitle =
+  title ?? m.block_hero_prompt_title({}, { locale: activeLocale });
+
+const resolvedDescription =
+  description === null
+    ? undefined
+    : description ??
+      (usingDefaults ? m.block_hero_prompt_desc({}, { locale: activeLocale }) : undefined);
+
+const resolvedPlaceholder =
+  placeholder ??
+  (mode === 'newsletter'
+    ? m.block_hero_sub_email_placeholder({}, { locale: activeLocale })
+    : mode === 'search'
+      ? m.block_hero_search_placeholder({}, { locale: activeLocale })
+      : mode === 'code'
+        ? m.block_hero_code_placeholder({}, { locale: activeLocale })
+        : m.block_hero_prompt_placeholder({}, { locale: activeLocale }));
+
+const resolvedSubmitLabel =
+  submitLabel ??
+  (mode === 'newsletter'
+    ? m.block_hero_sub_submit({}, { locale: activeLocale })
+    : mode === 'search'
+      ? m.block_hero_search_submit({}, { locale: activeLocale })
+      : mode === 'code'
+        ? m.block_hero_code_submit({}, { locale: activeLocale })
+        : m.block_hero_prompt_send({}, { locale: activeLocale }));
+
+const resolvedChips: readonly string[] | undefined =
+  chips === null
+    ? undefined
+    : chips ??
+      (mode === 'prompt' || mode === 'search' || mode === 'code'
+        ? [
+            m.block_hero_prompt_chip_1({}, { locale: activeLocale }),
+            m.block_hero_prompt_chip_2({}, { locale: activeLocale }),
+            m.block_hero_prompt_chip_3({}, { locale: activeLocale }),
+            m.block_hero_prompt_chip_4({}, { locale: activeLocale }),
+          ]
+        : undefined);
+
+const resolvedTrustNote =
+  trustNote === null
+    ? undefined
+    : trustNote ?? (mode === 'newsletter' ? m.block_hero_sub_note({}, { locale: activeLocale }) : undefined);
+
+const hasParallax = Boolean(parallaxImage);
+const isHeroSurface = hasParallax || surface === 'hero';
+const effectiveNavSurface = hasParallax ? 'hero' : surface;
+const fieldId = `${id ?? `hero-${mode}-${crypto.randomUUID().slice(0, 6)}`}-input-${activeLocale}`;
+const emailLabel = m.block_hero_sub_email_label({}, { locale: activeLocale });
+const invalidEmailMsg = m.block_hero_sub_invalid({}, { locale: activeLocale });
+const subOkMsg = m.block_hero_sub_preview_ok({}, { locale: activeLocale });
+const promptOkMsg =
+  mode === 'search'
+    ? m.block_hero_search_feedback({}, { locale: activeLocale })
+    : m.block_hero_prompt_feedback({}, { locale: activeLocale });
+---
+
+<section
+  id={id}
+  class:list={[
+    'hero-prompt-band relative isolate overflow-hidden',
+    compact
+      ? showPreviewNav
+        ? 'rounded-3xl py-8 sm:py-12'
+        : 'rounded-3xl py-10 sm:py-14'
+      : showPreviewNav
+        ? 'pt-10 pb-16 sm:pt-14 sm:pb-24'
+        : 'pt-28 pb-16 sm:pt-36 sm:pb-24',
+    id && 'scroll-mt-24',
+    isHeroSurface
+      ? 'bg-hero-base text-hero-fg print:bg-bg print:text-fg'
+      : surface === 'surface'
+        ? 'border border-border bg-surface text-fg'
+        : surface === 'subtle'
+          ? 'border border-border bg-surface/60 text-fg'
+          : 'border-b border-border bg-bg text-fg',
+  ]}
+  data-hero-surface={isHeroSurface ? 'hero' : 'standard'}
+>
+  {
+    parallaxImage && (
+      <HeroParallaxLayer
+        locale={activeLocale}
+        image={parallaxImage}
+        alt={parallaxAlt || resolvedTitle}
+        speed={parallaxSpeed}
+        overlay={parallaxOverlay}
+        priority={!compact}
+      />
+    )
+  }
+
+  {
+    backdrop !== 'none' && (
+      <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden print:hidden">
+        {(backdrop === 'grid' || backdrop === 'dots' || backdrop === 'noise') && (
+          <div
+            class:list={[
+              'hero-prompt-pattern absolute inset-0',
+              backdrop === 'dots' ? 'is-dots' : backdrop === 'noise' ? 'is-noise' : 'is-grid',
+            ]}
+          />
+        )}
+        {backdrop === 'wash' && <div class="hero-prompt-wash absolute inset-0" />}
+        {backdrop === 'orbital' && (
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div
+              class:list={[
+                'size-[24rem] rounded-full border sm:size-[34rem]',
+                isHeroSurface ? 'border-hero-fg/12' : 'border-border/70',
+              ]}
+            />
+            <div
+              class:list={[
+                'absolute size-[16rem] rounded-full border sm:size-[23rem]',
+                isHeroSurface ? 'border-accent/25' : 'border-primary/20',
+              ]}
+            />
+          </div>
+        )}
+        <div
+          class:list={[
+            'hero-glow-primary absolute -top-36 end-[-6rem] size-[26rem] rounded-full',
+            !isHeroSurface && 'opacity-50',
+          ]}
+        />
+        <div
+          class:list={[
+            'hero-glow-accent absolute -bottom-40 start-[-8rem] size-[24rem] rounded-full',
+            !isHeroSurface && 'opacity-45',
+          ]}
+        />
+      </div>
+    )
+  }
+
+  <div class="layout-container">
+    <div
+      class:list={[
+        framedRails !== 'none' && 'mx-auto max-w-5xl border-s border-e px-5 py-6 sm:px-10 sm:py-8',
+        framedRails === 'dashed' && 'border-dashed',
+        framedRails !== 'none' && (isHeroSurface ? 'border-hero-fg/15 print:border-border' : 'border-border'),
+      ]}
+    >
+      {
+        showPreviewNav && (
+          <HeroPreviewNav
+            locale={activeLocale}
+            surface={effectiveNavSurface}
+            variant={previewNavVariant}
+            brand={previewBrand}
+            links={previewLinks}
+            cta={previewCta}
+            compact={compact}
+          />
+        )
+      }
+
+      <div
+        class="mx-auto max-w-3xl text-center"
+        data-trig-stagger
+        data-trig-stagger-mode="linear"
+        data-trig-stagger-delay="0.05"
+        data-trig-once="true"
+      >
+        {
+          announcement && (
+            <div class="mb-5 flex justify-center">
+              {announcement.href ? (
+                <a
+                  href={announcement.href}
+                  class:list={[
+                    'group inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border p-1 pe-3.5 text-xs font-medium transition-colors',
+                    isHeroSurface
+                      ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/90 hover:border-hero-fg/35 print:border-border print:bg-surface print:text-fg'
+                      : 'border-border bg-surface text-muted shadow-xs hover:border-primary/45 hover:text-fg',
+                  ]}
+                >
+                  {announcement.badge && (
+                    <span
+                      class:list={[
+                        'rounded-full px-2.5 py-0.5 text-[11px] font-bold',
+                        isHeroSurface
+                          ? 'bg-accent text-hero-base print:bg-primary print:text-primary-fg'
+                          : 'bg-primary text-primary-fg',
+                      ]}
+                    >
+                      {announcement.badge}
+                    </span>
+                  )}
+                  <span class="truncate">{announcement.label}</span>
+                  <Icon name="chevron-right" size={13} class="shrink-0 opacity-75 rtl:rotate-180" />
+                </a>
+              ) : (
+                <span
+                  class:list={[
+                    'inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium',
+                    isHeroSurface
+                      ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/90 print:border-border print:bg-surface print:text-fg'
+                      : 'border-border bg-surface text-muted shadow-xs',
+                  ]}
+                >
+                  {announcement.badge && (
+                    <span
+                      class:list={[
+                        'rounded-full px-2.5 py-0.5 text-[11px] font-bold',
+                        isHeroSurface ? 'bg-accent text-hero-base' : 'bg-primary text-primary-fg',
+                      ]}
+                    >
+                      {announcement.badge}
+                    </span>
+                  )}
+                  <span>{announcement.label}</span>
+                </span>
+              )}
+            </div>
+          )
+        }
+
+        {
+          resolvedBadge && (
+            <div class="mb-4 flex justify-center">
+              <UiBadge
+                label={resolvedBadge}
+                variant={isHeroSurface ? 'accent' : 'primary'}
+                icon={
+                  mode === 'newsletter'
+                    ? 'mail'
+                    : mode === 'search'
+                      ? 'search'
+                      : mode === 'code'
+                        ? 'code'
+                        : 'wand'
+                }
+                class={isHeroSurface ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg print:text-fg' : undefined}
+              />
+            </div>
+          )
+        }
+
+        {
+          headingTag === 'h2' ? (
+            <h2 class="text-3xl font-extrabold leading-[1.1] tracking-tight text-balance sm:text-4xl lg:text-5xl">
+              {resolvedTitle}
+            </h2>
+          ) : (
+            <h1 class="text-[clamp(2.25rem,4.4vw,3.8rem)] font-extrabold leading-[1.08] tracking-tight text-balance">
+              {resolvedTitle}
+            </h1>
+          )
+        }
+
+        {
+          resolvedDescription && (
+            <p
+              class:list={[
+                'mx-auto mt-4 max-w-xl text-base leading-relaxed text-pretty sm:text-lg',
+                isHeroSurface ? 'text-hero-fg/88 print:text-muted' : 'text-muted',
+              ]}
+            >
+              {resolvedDescription}
+            </p>
+          )
+        }
+
+        {
+          mode === 'prompt' || mode === 'code' ? (
+            <div data-hero-prompt-root class="mx-auto mt-8 max-w-2xl">
+              <form
+                data-hero-prompt-form
+                novalidate
+                class:list={[
+                  'overflow-hidden rounded-2xl border p-3.5 text-start shadow-floating transition-colors focus-within:border-primary',
+                  isHeroSurface
+                    ? 'border-hero-fg/20 bg-hero-fg/10 print:border-border print:bg-surface'
+                    : 'border-border bg-surface',
+                ]}
+              >
+                {mode === 'code' && stackTabs.length > 0 && (
+                  <div
+                    class:list={[
+                      'mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b pb-2.5',
+                      isHeroSurface ? 'border-hero-fg/15 print:border-border' : 'border-border',
+                    ]}
+                  >
+                    <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label={resolvedTitle}>
+                      {stackTabs.map((stack, idx) => (
+                        <button
+                          type="button"
+                          data-hero-stack-tab
+                          aria-pressed={idx === 0 ? 'true' : 'false'}
+                          class:list={[
+                            'cursor-pointer rounded-lg px-2.5 py-1 font-mono text-[11px] font-semibold transition-colors',
+                            idx === 0
+                              ? isHeroSurface
+                                ? 'bg-accent text-hero-base'
+                                : 'bg-primary text-primary-fg'
+                              : isHeroSurface
+                                ? 'bg-hero-fg/10 text-hero-fg/80 hover:bg-hero-fg/20'
+                                : 'bg-surface-hover text-muted hover:text-fg',
+                          ]}
+                        >
+                          {stack}
+                        </button>
+                      ))}
+                    </div>
+                    <span
+                      class:list={[
+                        'font-mono text-[11px]',
+                        isHeroSurface ? 'text-hero-fg/65 print:text-muted' : 'text-muted',
+                      ]}
+                    >
+                      {'</>'}
+                    </span>
+                  </div>
+                )}
+
+                <label for={fieldId} class="sr-only">
+                  {resolvedTitle}
+                </label>
+              <textarea
+                id={fieldId}
+                rows={3}
+                placeholder={resolvedPlaceholder}
+                class:list={[
+                  'w-full resize-none bg-transparent px-1.5 py-1 text-sm leading-relaxed focus:outline-none sm:text-base',
+                  isHeroSurface
+                    ? 'text-hero-fg placeholder:text-hero-fg/55 print:text-fg print:placeholder:text-muted'
+                    : 'text-fg placeholder:text-muted/75',
+                ]}
+              ></textarea>
+
+              <div
+                class:list={[
+                  'mt-2 flex items-center justify-between gap-3 border-t pt-3',
+                  isHeroSurface ? 'border-hero-fg/15 print:border-border' : 'border-border',
+                ]}
+              >
+                  <span
+                    class:list={[
+                      'inline-flex items-center gap-1.5 text-xs',
+                      isHeroSurface ? 'text-hero-fg/70 print:text-muted' : 'text-muted',
+                    ]}
+                  >
+                    <Icon
+                      name={mode === 'code' ? 'code' : 'sparkles'}
+                      size={14}
+                      class={isHeroSurface ? 'text-accent print:text-primary' : 'text-primary'}
+                    />
+                    <span>{resolvedBadge ?? resolvedTitle}</span>
+                  </span>
+
+                  <Button type="submit" variant="primary" size="md" icon="arrow-right">
+                    {resolvedSubmitLabel}
+                  </Button>
+                </div>
+              </form>
+
+            {resolvedChips && resolvedChips.length > 0 && (
+              chipLayout === 'grid' ? (
+                <div class="mx-auto mt-6 grid max-w-2xl gap-x-8 sm:grid-cols-2">
+                  {resolvedChips.map((chipText) => (
+                    <button
+                      type="button"
+                      data-hero-prompt-chip
+                      data-chip-value={chipText}
+                      aria-pressed="false"
+                      class:list={[
+                        'group flex cursor-pointer items-center justify-between gap-3 border-t py-3 text-start text-xs font-medium transition-colors sm:text-sm',
+                        isHeroSurface
+                          ? 'border-hero-fg/15 text-hero-fg/80 hover:text-hero-fg print:border-border print:text-muted print:hover:text-fg'
+                          : 'border-border text-muted hover:text-fg',
+                      ]}
+                    >
+                      <span class="truncate">{chipText}</span>
+                      <Icon
+                        name="chevron-right"
+                        size={14}
+                        class="shrink-0 opacity-60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:opacity-100 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+                      />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  {resolvedChips.map((chipText) => (
+                    <button
+                      type="button"
+                      data-hero-prompt-chip
+                      data-chip-value={chipText}
+                      aria-pressed="false"
+                      class:list={[
+                        'chip px-3 py-1.5 text-xs font-medium',
+                        isHeroSurface && 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/85 hover:border-accent/60 hover:text-hero-fg print:border-border print:bg-surface print:text-fg',
+                      ]}
+                    >
+                      {chipText}
+                    </button>
+                  ))}
+                </div>
+              )
+            )}
+
+            <div
+              data-hero-prompt-feedback
+              role="status"
+              aria-live="polite"
+              hidden
+              class:list={[
+                'mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 text-start text-sm',
+                isHeroSurface
+                  ? 'border-accent/40 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg'
+                  : 'border-primary/30 bg-primary/10 text-fg',
+              ]}
+            >
+              <p class="min-w-0 flex-1 text-xs leading-relaxed sm:text-sm">{promptOkMsg}</p>
+              <Button href={resolvedActionHref} variant="primary" size="sm" icon="arrow-right">
+                {resolvedActionLabel}
+              </Button>
+            </div>
+          </div>
+        ) : mode === 'search' ? (
+          <div data-hero-prompt-root class="mx-auto mt-8 max-w-2xl">
+            <form
+              data-hero-prompt-form
+              novalidate
+              class:list={[
+                'flex flex-col gap-2 rounded-2xl border p-2 shadow-floating transition-colors focus-within:border-primary sm:flex-row sm:items-center sm:rounded-full',
+                isHeroSurface
+                  ? 'border-hero-fg/20 bg-hero-fg/10 print:border-border print:bg-surface'
+                  : 'border-border bg-surface',
+              ]}
+            >
+              <label for={fieldId} class="sr-only">
+                {resolvedTitle}
+              </label>
+              <div class="flex min-w-0 flex-1 items-center gap-2.5 ps-3">
+                <Icon
+                  name="search"
+                  size={17}
+                  class:list={['shrink-0', isHeroSurface ? 'text-accent print:text-primary' : 'text-primary']}
+                />
+                <input
+                  id={fieldId}
+                  type="search"
+                  placeholder={resolvedPlaceholder}
+                  class:list={[
+                    'min-w-0 flex-1 bg-transparent py-2 pe-2 text-start text-sm focus:outline-none',
+                    isHeroSurface
+                      ? 'text-hero-fg placeholder:text-hero-fg/55 print:text-fg print:placeholder:text-muted'
+                      : 'text-fg placeholder:text-muted/75',
+                  ]}
+                />
+              </div>
+              <Button type="submit" variant="primary" size="lg" icon="search" class="shrink-0">
+                {resolvedSubmitLabel}
+              </Button>
+            </form>
+
+            {resolvedChips && resolvedChips.length > 0 && (
+              <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                {resolvedChips.map((chipText) => (
+                  <button
+                    type="button"
+                    data-hero-prompt-chip
+                    data-chip-value={chipText}
+                    aria-pressed="false"
+                    class:list={[
+                      'chip px-3 py-1.5 text-xs font-medium',
+                      isHeroSurface && 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/85 hover:border-accent/60 hover:text-hero-fg print:border-border print:bg-surface print:text-fg',
+                    ]}
+                  >
+                    {chipText}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div
+              data-hero-prompt-feedback
+              role="status"
+              aria-live="polite"
+              hidden
+              class:list={[
+                'mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 text-start text-sm',
+                isHeroSurface
+                  ? 'border-accent/40 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg'
+                  : 'border-primary/30 bg-primary/10 text-fg',
+              ]}
+            >
+              <p class="min-w-0 flex-1 text-xs leading-relaxed sm:text-sm">{promptOkMsg}</p>
+              <Button href={resolvedActionHref} variant="primary" size="sm" icon="arrow-right">
+                {resolvedActionLabel}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div data-hero-newsletter-root class="mx-auto mt-8 max-w-lg">
+            <form
+              data-hero-newsletter-form
+              data-endpoint={endpoint}
+              data-err-invalid={invalidEmailMsg}
+              data-msg-ok={subOkMsg}
+              novalidate
+              class:list={[
+                'flex flex-col gap-2 rounded-2xl border p-2 shadow-sm sm:flex-row sm:items-center sm:rounded-full',
+                isHeroSurface
+                  ? 'border-hero-fg/20 bg-hero-fg/10 print:border-border print:bg-surface'
+                  : 'border-border bg-surface',
+              ]}
+            >
+              <label for={fieldId} class="sr-only">
+                {emailLabel}
+              </label>
+              <div class="flex min-w-0 flex-1 items-center gap-2.5 ps-3">
+                <Icon
+                  name="mail"
+                  size={17}
+                  class:list={[
+                    'shrink-0',
+                    isHeroSurface ? 'text-hero-fg/70 print:text-muted' : 'text-muted',
+                  ]}
+                />
+                <input
+                  id={fieldId}
+                  name="email"
+                  type="email"
+                  dir="ltr"
+                  required
+                  autocomplete="email"
+                  placeholder={resolvedPlaceholder}
+                  class:list={[
+                    'min-w-0 flex-1 bg-transparent py-2 pe-2 text-start text-sm focus:outline-none rtl:text-end',
+                    isHeroSurface
+                      ? 'text-hero-fg placeholder:text-hero-fg/55 print:text-fg print:placeholder:text-muted'
+                      : 'text-fg placeholder:text-muted/75',
+                  ]}
+                />
+              </div>
+              <Button type="submit" variant="primary" size="lg" icon="arrow-right" class="shrink-0">
+                {resolvedSubmitLabel}
+              </Button>
+            </form>
+
+            <p
+              data-hero-newsletter-feedback
+              role="status"
+              aria-live="polite"
+              hidden
+              class="mt-3 rounded-xl border px-4 py-2.5 text-xs font-medium leading-relaxed"
+            ></p>
+
+            {resolvedTrustNote && (
+              <p
+                class:list={[
+                  'mt-3 text-xs leading-relaxed',
+                  isHeroSurface ? 'text-hero-fg/75 print:text-muted' : 'text-muted',
+                ]}
+              >
+                {resolvedTrustNote}
+              </p>
+            )}
+          </div>
+        )
+      }
+
+      {
+        partnerLogos && partnerLogos.length > 0 && (
+          <ul class="mx-auto mt-9 flex max-w-4xl flex-wrap items-center justify-center gap-x-7 gap-y-3">
+            {partnerLogos.map((partner) => (
+              <li
+                class:list={[
+                  'inline-flex items-center gap-2 text-xs font-bold tracking-wide sm:text-sm',
+                  isHeroSurface ? 'text-hero-fg/75 print:text-muted' : 'text-muted',
+                ]}
+              >
+                <Icon
+                  name={partner.icon ?? 'building'}
+                  size={15}
+                  class={isHeroSurface ? 'text-accent print:text-primary' : 'text-primary'}
+                />
+                <span>{partner.name}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+  </div>
+  </div>
+</section>
+
+<style>
+  .hero-prompt-pattern.is-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--color-border) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--color-border) 55%, transparent) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 20%, transparent 100%);
+  }
+
+  .hero-prompt-band[data-hero-surface='hero'] .hero-prompt-pattern.is-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px);
+  }
+
+  .hero-prompt-pattern.is-dots {
+    background-image: radial-gradient(
+      circle,
+      color-mix(in oklch, var(--color-muted) 35%, transparent) 1.25px,
+      transparent 1.25px
+    );
+    background-size: 22px 22px;
+    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 25%, transparent 100%);
+  }
+
+  .hero-prompt-pattern.is-noise {
+    background-image:
+      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-fg) 18%, transparent) 1px, transparent 1px),
+      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-primary) 20%, transparent) 1px, transparent 1px);
+    background-size: 10px 10px, 14px 14px;
+    opacity: 0.45;
+  }
+
+  .hero-prompt-band[data-hero-surface='hero'] .hero-prompt-pattern.is-noise {
+    background-image:
+      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-hero-fg) 22%, transparent) 1px, transparent 1px),
+      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-accent) 22%, transparent) 1px, transparent 1px);
+  }
+
+  .hero-prompt-wash {
+    background: linear-gradient(
+      140deg,
+      color-mix(in oklch, var(--color-primary) 11%, transparent),
+      color-mix(in oklch, var(--color-accent) 13%, transparent) 50%,
+      color-mix(in oklch, var(--color-secondary) 9%, transparent)
+    );
+  }
+</style>
+
+<script>
+  function initHeroInteractivePrompts() {
+    document.querySelectorAll<HTMLElement>('[data-hero-prompt-root]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const form = root.querySelector<HTMLFormElement>('[data-hero-prompt-form]');
+      const inputEl = root.querySelector<HTMLTextAreaElement | HTMLInputElement>('textarea, input[type="search"]');
+      const chips = root.querySelectorAll<HTMLButtonElement>('[data-hero-prompt-chip]');
+      const stackBtns = root.querySelectorAll<HTMLButtonElement>('[data-hero-stack-tab]');
+      const feedback = root.querySelector<HTMLElement>('[data-hero-prompt-feedback]');
+
+      stackBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          stackBtns.forEach((other) => {
+            other.setAttribute('aria-pressed', other === btn ? 'true' : 'false');
+            other.classList.toggle('bg-primary', other === btn);
+            other.classList.toggle('text-primary-fg', other === btn);
+            other.classList.toggle('bg-surface-hover', other !== btn);
+            other.classList.toggle('text-muted', other !== btn);
+          });
+        });
+      });
+
+      chips.forEach((chip) => {
+        chip.addEventListener('click', () => {
+          const val = chip.dataset.chipValue ?? chip.textContent?.trim() ?? '';
+          if (inputEl) {
+            inputEl.value = val;
+            inputEl.focus();
+          }
+          chips.forEach((btn) => {
+            btn.setAttribute('aria-pressed', btn === chip ? 'true' : 'false');
+          });
+        });
+      });
+
+      form?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (inputEl && !inputEl.value.trim()) {
+          const firstVal = chips[0]?.dataset.chipValue ?? chips[0]?.textContent?.trim() ?? '';
+          if (firstVal) inputEl.value = firstVal;
+        }
+        if (feedback) {
+          feedback.hidden = false;
+        }
+      });
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-hero-newsletter-root]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const form = root.querySelector<HTMLFormElement>('[data-hero-newsletter-form]');
+      const input = root.querySelector<HTMLInputElement>('input[name="email"]');
+      const feedback = root.querySelector<HTMLElement>('[data-hero-newsletter-feedback]');
+      if (!form || !input || !feedback) return;
+
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      input.addEventListener('input', () => {
+        input.removeAttribute('aria-invalid');
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const email = input.value.trim();
+        if (!emailPattern.test(email)) {
+          input.setAttribute('aria-invalid', 'true');
+          input.focus();
+          feedback.hidden = false;
+          feedback.className =
+            'mt-3 rounded-xl border border-error/35 bg-error/10 px-4 py-2.5 text-xs font-medium leading-relaxed text-fg';
+          feedback.textContent = form.dataset.errInvalid ?? '';
+          return;
+        }
+
+        const endpoint = form.dataset.endpoint ?? '';
+        if (endpoint) {
+          try {
+            await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email }),
+            });
+          } catch {
+            // Static showcase gracefully confirms input validation when offline/sandboxed.
+          }
+        }
+
+        form.reset();
+        input.removeAttribute('aria-invalid');
+        feedback.hidden = false;
+        feedback.className =
+          'mt-3 rounded-xl border border-success/35 bg-success/10 px-4 py-2.5 text-xs font-medium leading-relaxed text-fg';
+        feedback.textContent = form.dataset.msgOk ?? '';
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initHeroInteractivePrompts);
+  initHeroInteractivePrompts();
+</script>

@@ -1,0 +1,663 @@
+---
+/**
+ * Social-Proof & Trusted Brand Marquee Hero adapted from PrebuiltUI hero-section
+ * examples featuring an optional rounded preview navigation bar, user review avatar stack,
+ * OKLCH headline, CTAs, and an infinite RTL-aware Embla AutoScroll marquee strip.
+ */
+import type { ImageMetadata } from 'astro';
+import AvatarGroup, { type AvatarItem } from '@/components/AvatarGroup.astro';
+import Button from '@/components/Button.astro';
+import HeroParallaxLayer, {
+  type HeroParallaxOverlay,
+  type HeroParallaxSpeed,
+} from '@/components/HeroParallaxLayer.astro';
+import HeroPreviewNav, {
+  type HeroPreviewNavLink,
+  type HeroPreviewNavVariant,
+} from '@/components/HeroPreviewNav.astro';
+import Icon from '@/components/Icon.astro';
+import type { HeroCtaAction } from '@/components/LandingHeroSplit.astro';
+import UiBadge from '@/components/UiBadge.astro';
+import type { Locale } from '@/i18n/locales';
+import { getBlogIndexHref, getHomeHref, getPageUrl } from '@/libs/content/service';
+import { getContentType, getContentTypeIndexHref } from '@/libs/content/types';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface HeroMarqueePartner {
+  name: string;
+  tag?: string;
+  icon?: string;
+}
+
+export type { HeroPreviewNavLink };
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  surface?: 'default' | 'hero' | 'surface' | 'subtle';
+  backdrop?: 'glow' | 'grid' | 'dots' | 'orbital' | 'wash' | 'noise' | 'none';
+  framedRails?: 'none' | 'dashed' | 'solid';
+  parallaxImage?: ImageMetadata | null;
+  parallaxAlt?: string;
+  parallaxSpeed?: HeroParallaxSpeed;
+  parallaxOverlay?: HeroParallaxOverlay;
+  showPreviewNav?: boolean;
+  previewNavVariant?: HeroPreviewNavVariant;
+  previewBrand?: string;
+  previewNavLinks?: readonly HeroPreviewNavLink[];
+  badge?: string | null;
+  avatarItems?: readonly AvatarItem[];
+  avatarCount?: number;
+  reviewLabel?: string | null;
+  titleLead?: string;
+  titleAccent?: string | null;
+  description?: string | null;
+  primaryCta?: HeroCtaAction | null;
+  secondaryCta?: HeroCtaAction | null;
+  marqueeLabel?: string | null;
+  partners?: readonly HeroMarqueePartner[];
+  speed?: number;
+  headingTag?: 'h1' | 'h2';
+  compact?: boolean;
+}
+
+const {
+  id,
+  locale,
+  surface = 'default',
+  backdrop,
+  framedRails = 'none',
+  parallaxImage = null,
+  parallaxAlt = '',
+  parallaxSpeed = 'medium',
+  parallaxOverlay = 'hero',
+  showPreviewNav = true,
+  previewNavVariant = 'pill',
+  previewBrand,
+  previewNavLinks,
+  badge,
+  avatarItems,
+  avatarCount = 240,
+  reviewLabel,
+  titleLead,
+  titleAccent,
+  description,
+  primaryCta,
+  secondaryCta,
+  marqueeLabel,
+  partners,
+  speed = 0.85,
+  headingTag = 'h1',
+  compact = false,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = titleLead === undefined;
+
+const [featuresHref, componentsHref, homeHref] = await Promise.all([
+  getPageUrl('features', activeLocale),
+  getPageUrl('components', activeLocale),
+  getHomeHref(activeLocale),
+]);
+
+const blogHref = getBlogIndexHref(activeLocale);
+const projectsType = getContentType('projects');
+const projectsHref = projectsType.enabled
+  ? getContentTypeIndexHref('projects', activeLocale)
+  : homeHref;
+
+const resolvedPreviewLinks: readonly HeroPreviewNavLink[] = previewNavLinks ?? [
+  { label: m.nav_home({}, { locale: activeLocale }), href: homeHref },
+  { label: m.block_breadcrumbs_2({}, { locale: activeLocale }), href: componentsHref ?? homeHref },
+  { label: m.nav_projects({}, { locale: activeLocale }), href: projectsHref },
+  { label: m.nav_blog({}, { locale: activeLocale }), href: blogHref },
+];
+
+const resolvedBadge =
+  badge === null
+    ? undefined
+    : badge ?? (usingDefaults ? m.block_hero_marquee_badge({}, { locale: activeLocale }) : undefined);
+
+const resolvedReviewLabel =
+  reviewLabel === null
+    ? undefined
+    : reviewLabel ?? m.block_hero_marquee_reviews({}, { locale: activeLocale });
+
+const resolvedTitleLead =
+  titleLead ?? m.block_hero_marquee_title_lead({}, { locale: activeLocale });
+const resolvedTitleAccent =
+  titleAccent === null
+    ? undefined
+    : titleAccent ??
+      (usingDefaults ? m.block_hero_marquee_title_accent({}, { locale: activeLocale }) : undefined);
+const resolvedDescription =
+  description === null
+    ? undefined
+    : description ??
+      (usingDefaults ? m.block_hero_marquee_desc({}, { locale: activeLocale }) : undefined);
+
+const resolvedPrimaryCta =
+  primaryCta === null
+    ? undefined
+    : primaryCta ??
+      (usingDefaults
+        ? {
+            label: m.block_hero_primary_cta({}, { locale: activeLocale }),
+            href: featuresHref ?? homeHref,
+            icon: 'arrow-right',
+          }
+        : undefined);
+
+const resolvedSecondaryCta =
+  secondaryCta === null
+    ? undefined
+    : secondaryCta ??
+      (usingDefaults
+        ? {
+            label: m.common_get_started({}, { locale: activeLocale }),
+            href: componentsHref ?? homeHref,
+          }
+        : undefined);
+
+const resolvedMarqueeLabel =
+  marqueeLabel === null
+    ? undefined
+    : marqueeLabel ?? m.block_hero_marquee_strip_label({}, { locale: activeLocale });
+
+const basePartners: readonly HeroMarqueePartner[] = partners ?? [
+  { name: m.block_partners_1_name({}, { locale: activeLocale }), tag: m.block_partners_1_tag({}, { locale: activeLocale }), icon: 'globe' },
+  { name: m.block_partners_2_name({}, { locale: activeLocale }), tag: m.block_partners_2_tag({}, { locale: activeLocale }), icon: 'palette' },
+  { name: m.block_partners_3_name({}, { locale: activeLocale }), tag: m.block_partners_3_tag({}, { locale: activeLocale }), icon: 'bolt' },
+  { name: m.block_partners_4_name({}, { locale: activeLocale }), tag: m.block_partners_4_tag({}, { locale: activeLocale }), icon: 'building' },
+  { name: m.block_partners_5_name({}, { locale: activeLocale }), tag: m.block_partners_5_tag({}, { locale: activeLocale }), icon: 'compass' },
+];
+
+const marqueePartners =
+  basePartners.length > 0 && basePartners.length < 8
+    ? [...basePartners, ...basePartners]
+    : basePartners;
+
+const hasParallax = Boolean(parallaxImage);
+const isHeroSurface = hasParallax || surface === 'hero';
+const effectiveNavSurface = hasParallax ? 'hero' : surface;
+const resolvedBackdrop = backdrop ?? (isHeroSurface ? 'glow' : 'none');
+const previewNavAria = m.block_hero_marquee_nav_badge({}, { locale: activeLocale });
+const resolvedBrand = previewBrand ?? previewNavAria;
+const maskEdgeClass = isHeroSurface
+  ? 'from-hero-base print:from-bg'
+  : surface === 'surface'
+    ? 'from-surface'
+    : 'from-bg';
+---
+
+<section
+  id={id}
+  class:list={[
+    'hero-marquee-band relative isolate overflow-hidden',
+    compact ? 'rounded-3xl py-8 sm:py-12' : 'pt-10 pb-16 sm:pt-14 sm:pb-24',
+    id && 'scroll-mt-24',
+    isHeroSurface
+      ? 'bg-hero-base text-hero-fg print:bg-bg print:text-fg'
+      : surface === 'surface'
+        ? 'border border-border bg-surface text-fg'
+        : surface === 'subtle'
+          ? 'border border-border bg-surface/60 text-fg'
+          : 'border-b border-border bg-bg text-fg',
+  ]}
+  data-hero-surface={isHeroSurface ? 'hero' : 'standard'}
+>
+  {
+    parallaxImage && (
+      <HeroParallaxLayer
+        locale={activeLocale}
+        image={parallaxImage}
+        alt={parallaxAlt || resolvedTitleLead}
+        speed={parallaxSpeed}
+        overlay={parallaxOverlay}
+        priority={!compact}
+      />
+    )
+  }
+
+  {
+    resolvedBackdrop !== 'none' && (
+      <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden print:hidden">
+        {(resolvedBackdrop === 'grid' || resolvedBackdrop === 'dots' || resolvedBackdrop === 'noise') && (
+          <div
+            class:list={[
+              'hero-marquee-pattern absolute inset-0',
+              resolvedBackdrop === 'dots' ? 'is-dots' : resolvedBackdrop === 'noise' ? 'is-noise' : 'is-grid',
+            ]}
+          />
+        )}
+        {resolvedBackdrop === 'wash' && <div class="hero-marquee-wash absolute inset-0" />}
+        {resolvedBackdrop === 'orbital' && (
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div
+              class:list={[
+                'size-[26rem] rounded-full border sm:size-[38rem]',
+                isHeroSurface ? 'border-hero-fg/12' : 'border-border/70',
+              ]}
+            />
+            <div
+              class:list={[
+                'absolute size-[18rem] rounded-full border sm:size-[26rem]',
+                isHeroSurface ? 'border-accent/25' : 'border-primary/20',
+              ]}
+            />
+          </div>
+        )}
+        <div
+          class:list={[
+            'hero-glow-primary absolute -top-36 end-[-6rem] size-[28rem] rounded-full',
+            !isHeroSurface && 'opacity-50',
+          ]}
+        />
+        <div
+          class:list={[
+            'hero-glow-accent absolute -bottom-40 start-[-8rem] size-[24rem] rounded-full',
+            !isHeroSurface && 'opacity-45',
+          ]}
+        />
+      </div>
+    )
+  }
+
+  <div class="layout-container">
+    <div
+      class:list={[
+        framedRails !== 'none' && 'mx-auto max-w-5xl border-s border-e px-5 py-6 sm:px-10 sm:py-8',
+        framedRails === 'dashed' && 'border-dashed',
+        framedRails !== 'none' && (isHeroSurface ? 'border-hero-fg/15 print:border-border' : 'border-border'),
+      ]}
+    >
+      {
+        showPreviewNav && (
+          <HeroPreviewNav
+            locale={activeLocale}
+            surface={effectiveNavSurface}
+            variant={previewNavVariant}
+            brand={resolvedBrand}
+            links={resolvedPreviewLinks}
+            cta={resolvedPrimaryCta}
+            compact={compact}
+          />
+        )
+      }
+
+    <div
+      class="mx-auto max-w-3xl text-center"
+      data-trig-stagger
+      data-trig-stagger-mode="linear"
+      data-trig-stagger-delay="0.05"
+      data-trig-once="true"
+    >
+      <div class="mb-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        {
+          resolvedBadge && (
+            <UiBadge
+              label={resolvedBadge}
+              variant={isHeroSurface ? 'accent' : 'primary'}
+              icon="shield"
+              class={isHeroSurface ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg print:text-fg' : undefined}
+            />
+          )
+        }
+        {
+          resolvedReviewLabel && (
+            <div
+              class:list={[
+                'inline-flex items-center rounded-full border px-3.5 py-1.5',
+                isHeroSurface
+                  ? 'border-hero-fg/15 bg-hero-fg/5 text-hero-fg print:border-border print:bg-surface print:text-fg'
+                  : 'border-border bg-surface text-fg',
+              ]}
+            >
+              <AvatarGroup
+                locale={activeLocale}
+                items={avatarItems}
+                extraCount={avatarCount}
+                label={resolvedReviewLabel}
+                rating={5}
+                size="sm"
+              />
+            </div>
+          )
+        }
+      </div>
+
+      {
+        headingTag === 'h2' ? (
+          <h2 class="text-3xl font-extrabold leading-[1.1] tracking-tight text-balance sm:text-4xl lg:text-5xl">
+            {resolvedTitleLead}
+            {resolvedTitleAccent && (
+              <>
+                {' '}
+                <span
+                  class:list={[
+                    'bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-l',
+                    isHeroSurface
+                      ? 'bg-linear-to-r from-accent to-hero-fg'
+                      : 'bg-linear-to-r from-primary to-secondary',
+                  ]}
+                >
+                  {resolvedTitleAccent}
+                </span>
+              </>
+            )}
+          </h2>
+        ) : (
+          <h1 class="text-[clamp(2.25rem,4.4vw,3.9rem)] font-extrabold leading-[1.08] tracking-tight text-balance">
+            {resolvedTitleLead}
+            {resolvedTitleAccent && (
+              <>
+                {' '}
+                <span
+                  class:list={[
+                    'bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-l',
+                    isHeroSurface
+                      ? 'bg-linear-to-r from-accent to-hero-fg'
+                      : 'bg-linear-to-r from-primary to-secondary',
+                  ]}
+                >
+                  {resolvedTitleAccent}
+                </span>
+              </>
+            )}
+          </h1>
+        )
+      }
+
+      {
+        resolvedDescription && (
+          <p
+            class:list={[
+              'mx-auto mt-5 max-w-2xl text-base leading-relaxed text-pretty sm:text-lg',
+              isHeroSurface ? 'text-hero-fg/88 print:text-muted' : 'text-muted',
+            ]}
+          >
+            {resolvedDescription}
+          </p>
+        )
+      }
+
+      {
+        (resolvedPrimaryCta || resolvedSecondaryCta) && (
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-3 print:hidden">
+            {resolvedPrimaryCta && (
+              <Button
+                href={resolvedPrimaryCta.href}
+                variant="primary"
+                size="lg"
+                glow
+                icon={resolvedPrimaryCta.icon ?? 'arrow-right'}
+                external={resolvedPrimaryCta.external}
+              >
+                {resolvedPrimaryCta.label}
+              </Button>
+            )}
+            {resolvedSecondaryCta && (
+              <Button
+                href={resolvedSecondaryCta.href}
+                variant={isHeroSurface ? 'hero' : 'secondary'}
+                size="lg"
+                external={resolvedSecondaryCta.external}
+              >
+                {resolvedSecondaryCta.label}
+              </Button>
+            )}
+          </div>
+        )
+      }
+    </div>
+
+    {
+      marqueePartners.length > 0 && (
+        <div class="mt-12">
+          {resolvedMarqueeLabel && (
+            <p
+              class:list={[
+                'mb-4 text-center text-xs font-semibold uppercase tracking-[0.14em] rtl:tracking-normal',
+                isHeroSurface ? 'text-hero-fg/65 print:text-muted' : 'text-muted',
+              ]}
+            >
+              {resolvedMarqueeLabel}
+            </p>
+          )}
+
+          <div
+            data-hero-embla-marquee
+            data-speed={String(speed)}
+            role="region"
+            aria-roledescription="carousel"
+            aria-label={resolvedMarqueeLabel ?? resolvedTitleLead}
+            class:list={[
+              'relative select-none',
+              hasParallax && '[mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]',
+            ]}
+          >
+            {!hasParallax && (
+              <>
+                <div
+                  aria-hidden="true"
+                  class:list={[
+                    'pointer-events-none absolute inset-y-0 start-0 z-10 w-10 bg-linear-to-r to-transparent sm:w-16 rtl:bg-linear-l print:hidden',
+                    maskEdgeClass,
+                  ]}
+                ></div>
+                <div
+                  aria-hidden="true"
+                  class:list={[
+                    'pointer-events-none absolute inset-y-0 end-0 z-10 w-10 bg-linear-to-l to-transparent sm:w-16 rtl:bg-linear-r print:hidden',
+                    maskEdgeClass,
+                  ]}
+                ></div>
+              </>
+            )}
+
+            <div data-embla-viewport class="cursor-grab overflow-hidden active:cursor-grabbing">
+              <div class="flex touch-pan-y">
+                {marqueePartners.map((partner) => (
+                  <div class="min-w-0 shrink-0 basis-[64%] pe-3 sm:basis-[34%] lg:basis-[22%]">
+                    <div
+                      class:list={[
+                        'flex items-center gap-3 rounded-2xl border px-4 py-3 text-start',
+                        isHeroSurface
+                          ? 'border-hero-fg/15 bg-hero-fg/5 text-hero-fg print:border-border print:bg-surface print:text-fg'
+                          : 'border-border bg-surface text-fg shadow-xs',
+                      ]}
+                    >
+                      <span
+                        class:list={[
+                          'inline-flex size-9 shrink-0 items-center justify-center rounded-xl',
+                          isHeroSurface
+                            ? 'bg-hero-fg/10 text-accent print:bg-primary/10 print:text-primary'
+                            : 'bg-primary/10 text-primary',
+                        ]}
+                        aria-hidden="true"
+                      >
+                        <Icon name={partner.icon ?? 'building'} size={17} />
+                      </span>
+                      <div class="min-w-0">
+                        <p class="truncate text-xs font-bold sm:text-sm">{partner.name}</p>
+                        {partner.tag && (
+                          <p
+                            class:list={[
+                              'truncate text-[11px]',
+                              isHeroSurface ? 'text-hero-fg/65 print:text-muted' : 'text-muted',
+                            ]}
+                          >
+                            {partner.tag}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-marquee-pattern.is-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--color-border) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--color-border) 55%, transparent) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 20%, transparent 100%);
+  }
+
+  .hero-marquee-band[data-hero-surface='hero'] .hero-marquee-pattern.is-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px);
+  }
+
+  .hero-marquee-pattern.is-dots {
+    background-image: radial-gradient(
+      circle,
+      color-mix(in oklch, var(--color-muted) 35%, transparent) 1.25px,
+      transparent 1.25px
+    );
+    background-size: 22px 22px;
+    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 25%, transparent 100%);
+  }
+
+  .hero-marquee-pattern.is-noise {
+    background-image:
+      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-fg) 18%, transparent) 1px, transparent 1px),
+      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-primary) 20%, transparent) 1px, transparent 1px);
+    background-size: 10px 10px, 14px 14px;
+    opacity: 0.45;
+  }
+
+  .hero-marquee-wash {
+    background: linear-gradient(
+      140deg,
+      color-mix(in oklch, var(--color-primary) 11%, transparent),
+      color-mix(in oklch, var(--color-accent) 13%, transparent) 50%,
+      color-mix(in oklch, var(--color-secondary) 9%, transparent)
+    );
+  }
+</style>
+
+<script>
+  import EmblaCarousel, { type EmblaCarouselType } from 'embla-carousel';
+  import AutoScroll from 'embla-carousel-auto-scroll';
+
+  const heroMarqueeInstances: EmblaCarouselType[] = [];
+  const heroMarqueeCleanups: Array<() => void> = [];
+
+  function isMotionReduced(): boolean {
+    if (
+      document.documentElement.dataset.motion === 'reduced' ||
+      document.body.classList.contains('chronotrig-mobile-disabled')
+    ) {
+      return true;
+    }
+    try {
+      return Boolean(window.chronoTrig?.isDisabled?.());
+    } catch {
+      return false;
+    }
+  }
+
+  function initHeroMarquees() {
+    const roots = document.querySelectorAll<HTMLElement>('[data-hero-embla-marquee]');
+    const isRtl = document.documentElement.dir === 'rtl';
+    const reduced = isMotionReduced();
+
+    roots.forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const viewport = root.querySelector<HTMLElement>('[data-embla-viewport]');
+      if (!viewport) return;
+
+      const parsedSpeed = Number.parseFloat(root.dataset.speed ?? '0.85');
+      const speed = Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 0.85;
+
+      const hasIO = typeof IntersectionObserver === 'function';
+      const plugins = reduced
+        ? []
+        : [
+            AutoScroll({
+              speed,
+              startDelay: 350,
+              playOnInit: !hasIO,
+              stopOnInteraction: false,
+              stopOnMouseEnter: true,
+            }),
+          ];
+
+      const embla = EmblaCarousel(
+        viewport,
+        {
+          loop: true,
+          dragFree: true,
+          align: 'start',
+          direction: isRtl ? 'rtl' : 'ltr',
+        },
+        plugins
+      );
+      heroMarqueeInstances.push(embla);
+
+      const autoScroll = embla.plugins().autoScroll as
+        | { play?: () => void; stop?: () => void }
+        | undefined;
+
+      let io: IntersectionObserver | null = null;
+      if (!reduced && autoScroll && hasIO) {
+        io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting && !isMotionReduced()) {
+                autoScroll.play?.();
+              } else {
+                autoScroll.stop?.();
+              }
+            }
+          },
+          { root: null, rootMargin: '120px 0px', threshold: 0 }
+        );
+        io.observe(root);
+      }
+
+      const motionObserver = new MutationObserver(() => {
+        if (isMotionReduced()) {
+          autoScroll?.stop?.();
+        }
+      });
+      motionObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-motion'],
+      });
+
+      heroMarqueeCleanups.push(() => {
+        io?.disconnect();
+        motionObserver.disconnect();
+        delete root.dataset.bound;
+      });
+    });
+  }
+
+  function destroyHeroMarquees() {
+    while (heroMarqueeCleanups.length > 0) {
+      heroMarqueeCleanups.pop()?.();
+    }
+    while (heroMarqueeInstances.length > 0) {
+      heroMarqueeInstances.pop()?.destroy();
+    }
+  }
+
+  document.addEventListener('astro:before-swap', destroyHeroMarquees);
+  document.addEventListener('astro:page-load', initHeroMarquees);
+  initHeroMarquees();
+</script>

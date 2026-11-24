@@ -18,6 +18,7 @@ export const CLIENT_PAGE_ITEMS: readonly ClientPageNavItem[] = [
   { group: 'features', icon: 'sparkles', label: (locale: Locale) => m.nav_features({}, { locale }) },
   { group: 'pricing', icon: 'tag', label: (locale: Locale) => m.nav_pricing({}, { locale }) },
   { group: 'components', icon: 'layout-grid', label: (locale: Locale) => m.nav_components({}, { locale }) },
+  { group: 'components-herosections', icon: 'sparkles', label: (locale: Locale) => m.nav_herosections({}, { locale }) },
   { group: 'about', icon: 'info', label: (locale: Locale) => m.nav_about({}, { locale }) },
 ];
 

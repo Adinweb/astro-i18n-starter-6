@@ -260,6 +260,47 @@ describe('src/libs/content/service.ts', () => {
       expect(routes.length).toBeGreaterThan(0);
     });
 
+    it('supports multi-segment nested subpage slugs and preserves localized parent breadcrumbs', () => {
+      const routes = buildSiteRoutes(
+        [
+          pageEntry(`home/${DEFAULT_LOCALE}`, { slug: '' }),
+          pageEntry(`home/${testLocale}`, { slug: '' }),
+          pageEntry(`components/${DEFAULT_LOCALE}`, { slug: 'components', title: 'Components' }),
+          pageEntry(`components/${testLocale}`, {
+            slug: `components-${testLocale}`,
+            title: 'Components Localized',
+          }),
+          pageEntry(`components-herosections/${DEFAULT_LOCALE}`, {
+            slug: 'components/herosections',
+            title: 'Hero Sections',
+          }),
+          pageEntry(`components-herosections/${testLocale}`, {
+            slug: `components-${testLocale}/herosections`,
+            title: 'Hero Sections Localized',
+          }),
+        ],
+        []
+      );
+
+      const defaultSub = routes.find((route) => route.props.url === '/components/herosections/');
+      expect(defaultSub).toBeDefined();
+      expect(defaultSub!.props.alternates[testLocale]).toBe(
+        `/${testLocale}/components-${testLocale}/herosections/`
+      );
+
+      const crumbs = getBreadcrumbs('/components/herosections/', DEFAULT_LOCALE, {
+        home: 'Home',
+        blog: 'Blog',
+        parents: [{ label: 'Components', href: '/components/' }],
+        current: 'Hero Sections',
+      });
+      expect(crumbs).toEqual([
+        { label: 'Home', href: '/' },
+        { label: 'Components', href: '/components/' },
+        { label: 'Hero Sections', href: '/components/herosections/' },
+      ]);
+    });
+
     it('rejects a blog post using the reserved pagination slug "page"', () => {
       expect(() =>
         buildSiteRoutes(

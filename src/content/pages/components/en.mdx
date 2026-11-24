@@ -72,7 +72,7 @@ import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
   description="Every component adapts automatically to OKLCH brand themes, light/dark modes, and RTL/LTR layouts—ready to drop in with defaults or customize via props."
   primaryCta={{ label: "UI Primitives", href: "#sec-primitives", icon: "arrow-right" }}
   secondaryCta={{ label: "Section Blocks", href: "#sec-hero" }}
-  trustNote="48 reusable components · All content props optional · CSS logical geometry"
+  trustNote="53 reusable components · All content props optional · CSS logical geometry"
   image={heroVisual}
   imageAlt="Starter Component Library"
 />
@@ -82,12 +82,13 @@ import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
     <div class="flex flex-wrap items-center gap-2">
       <a href="#sec-primitives" class="chip px-3.5 py-1.5 text-xs font-semibold">UI Primitives</a>
       <a href="#sec-hero" class="chip px-3.5 py-1.5 text-xs font-semibold">Headers &amp; Heroes</a>
+      <a href="/components/herosections/" class="chip border-primary/40 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary">Hero Sections Subpage</a>
       <a href="#sec-features" class="chip px-3.5 py-1.5 text-xs font-semibold">Features &amp; Workflow</a>
       <a href="#sec-proof" class="chip px-3.5 py-1.5 text-xs font-semibold">Pricing, Media &amp; Proof</a>
       <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">Contact &amp; CTA</a>
       <a href="#sec-motion" class="chip px-3.5 py-1.5 text-xs font-semibold">Motion &amp; Scroll</a>
     </div>
-    <span class="text-xs font-medium text-muted">48 reusable building blocks</span>
+    <span class="text-xs font-medium text-muted">53 reusable building blocks</span>
   </div>
 </PageSection>
 
@@ -785,6 +786,26 @@ import SectionHeader from '@/components/SectionHeader.astro';
 </div>
 
 <div id="sec-hero" class="scroll-mt-24">
+  <PageSection surface="subtle" spacing="sm" borderTop>
+    <div class="flex flex-col gap-4 rounded-2xl border border-primary/25 bg-surface p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+      <div class="space-y-1.5">
+        <div class="flex flex-wrap items-center gap-2">
+          <UiBadge label="Dedicated Subpage" variant="primary" size="sm" icon="sparkles" />
+          <code dir="ltr" class="font-mono text-xs text-muted">/components/herosections/</code>
+        </div>
+        <h2 class="text-lg font-bold tracking-tight text-fg sm:text-xl">
+          PrebuiltUI Hero Sections Collection (All 42 Variations + Parallax BGs)
+        </h2>
+        <p class="max-w-2xl text-sm text-muted text-pretty">
+          Explore all 42 hero layouts including grid/dot/noise/net/orbital editorial heroes, scroll-driven ChronoTrig parallax photography backdrops, SaaS dashboards, split banners, search/code/AI prompts, CLI terminal switchers, and Embla marquees.
+        </p>
+      </div>
+      <Button href="/components/herosections/" variant="primary" size="md" icon="arrow-right" class="shrink-0">
+        Open Hero Sections
+      </Button>
+    </div>
+  </PageSection>
+
   <ComponentDoc
     id="doc-page-header"
     name="PageHeader"

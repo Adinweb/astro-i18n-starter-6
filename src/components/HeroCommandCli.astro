@@ -1,0 +1,599 @@
+---
+/**
+ * Developer CLI & Copy-Command Hero adapted from PrebuiltUI code/terminal hero blocks.
+ *
+ * Features optional overlapping `<AvatarGroup />` badge, OKLCH headline hierarchy,
+ * interactive package-manager switcher (`npm` / `pnpm` / `bun`) with LTR monospace
+ * terminal bar (`dir="ltr"` preserved in RTL), and CSS-toggled copy button with polite
+ * screen-reader feedback.
+ */
+import type { ImageMetadata } from 'astro';
+import AvatarGroup from '@/components/AvatarGroup.astro';
+import Button from '@/components/Button.astro';
+import type { HeroPartnerPill } from '@/components/HeroCenteredEditorial.astro';
+import HeroParallaxLayer, {
+  type HeroParallaxOverlay,
+  type HeroParallaxSpeed,
+} from '@/components/HeroParallaxLayer.astro';
+import HeroPreviewNav, {
+  type HeroPreviewNavLink,
+  type HeroPreviewNavVariant,
+} from '@/components/HeroPreviewNav.astro';
+import Icon from '@/components/Icon.astro';
+import type { HeroCtaAction } from '@/components/LandingHeroSplit.astro';
+import UiBadge from '@/components/UiBadge.astro';
+import type { Locale } from '@/i18n/locales';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface HeroCliCommand {
+  label: string;
+  command: string;
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  surface?: 'default' | 'hero' | 'surface' | 'subtle';
+  backdrop?: 'glow' | 'grid' | 'dots' | 'noise' | 'none';
+  parallaxImage?: ImageMetadata | null;
+  parallaxAlt?: string;
+  parallaxSpeed?: HeroParallaxSpeed;
+  parallaxOverlay?: HeroParallaxOverlay;
+  showPreviewNav?: boolean;
+  previewNavVariant?: HeroPreviewNavVariant;
+  previewBrand?: string;
+  previewLinks?: readonly HeroPreviewNavLink[];
+  previewCta?: HeroCtaAction | null;
+  eyebrow?: string | null;
+  showAvatarStack?: boolean;
+  titleLead?: string;
+  titleAccent?: string | null;
+  description?: string | null;
+  commands?: readonly HeroCliCommand[];
+  primaryCta?: HeroCtaAction | null;
+  secondaryCta?: HeroCtaAction | null;
+  metaItems?: readonly string[] | null;
+  partnerLogos?: readonly HeroPartnerPill[] | null;
+  headingTag?: 'h1' | 'h2';
+  compact?: boolean;
+}
+
+const {
+  id,
+  locale,
+  surface = 'default',
+  backdrop,
+  parallaxImage = null,
+  parallaxAlt = '',
+  parallaxSpeed = 'medium',
+  parallaxOverlay = 'hero',
+  showPreviewNav = false,
+  previewNavVariant = 'minimal',
+  previewBrand,
+  previewLinks,
+  previewCta,
+  eyebrow,
+  showAvatarStack = false,
+  titleLead,
+  titleAccent,
+  description,
+  commands,
+  primaryCta,
+  secondaryCta,
+  metaItems,
+  partnerLogos = null,
+  headingTag = 'h1',
+  compact = false,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = titleLead === undefined;
+
+const [featuresHref, componentsHref, homeHref] =
+  usingDefaults && (primaryCta === undefined || secondaryCta === undefined)
+    ? await Promise.all([
+        getPageUrl('features', activeLocale),
+        getPageUrl('components', activeLocale),
+        getHomeHref(activeLocale),
+      ])
+    : [null, null, ''];
+
+const resolvedEyebrow =
+  eyebrow === null
+    ? undefined
+    : eyebrow ?? (usingDefaults ? m.block_hero_cli_eyebrow({}, { locale: activeLocale }) : undefined);
+const resolvedTitleLead =
+  titleLead ?? m.block_hero_cli_title_lead({}, { locale: activeLocale });
+const resolvedTitleAccent =
+  titleAccent === null
+    ? undefined
+    : titleAccent ??
+      (usingDefaults ? m.block_hero_cli_title_accent({}, { locale: activeLocale }) : undefined);
+const resolvedDescription =
+  description === null
+    ? undefined
+    : description ??
+      (usingDefaults ? m.block_hero_cli_desc({}, { locale: activeLocale }) : undefined);
+
+const resolvedCommands: readonly HeroCliCommand[] = commands ?? [
+  { label: 'npm', command: 'npm create astro@latest -- --template astro-i18n' },
+  { label: 'pnpm', command: 'pnpm create astro --template astro-i18n' },
+  { label: 'bun', command: 'bun create astro --template astro-i18n' },
+];
+
+const resolvedPrimaryCta =
+  primaryCta === null
+    ? undefined
+    : primaryCta ??
+      (usingDefaults
+        ? {
+            label: m.block_hero_cli_cta({}, { locale: activeLocale }),
+            href: componentsHref ?? homeHref,
+            icon: 'arrow-right',
+          }
+        : undefined);
+
+const resolvedSecondaryCta =
+  secondaryCta === null
+    ? undefined
+    : secondaryCta ??
+      (usingDefaults
+        ? {
+            label: m.block_hero_primary_cta({}, { locale: activeLocale }),
+            href: featuresHref ?? homeHref,
+          }
+        : undefined);
+
+const resolvedMetaItems: readonly string[] | undefined =
+  metaItems === null
+    ? undefined
+    : metaItems ??
+      (usingDefaults
+        ? [
+            m.block_hero_cli_meta_1({}, { locale: activeLocale }),
+            m.block_hero_cli_meta_2({}, { locale: activeLocale }),
+            m.block_hero_cli_meta_3({}, { locale: activeLocale }),
+          ]
+        : undefined);
+
+const copyAriaLabel = m.block_hero_cli_copy_aria({}, { locale: activeLocale });
+const copiedText = m.common_copied({}, { locale: activeLocale });
+const hasParallax = Boolean(parallaxImage);
+const isHeroSurface = hasParallax || surface === 'hero';
+const effectiveNavSurface = hasParallax ? 'hero' : surface;
+const resolvedBackdrop = backdrop ?? (isHeroSurface ? 'glow' : 'none');
+const initialCommand = resolvedCommands[0]?.command ?? '';
+---
+
+<section
+  id={id}
+  class:list={[
+    'hero-cli-band relative isolate overflow-hidden',
+    compact
+      ? showPreviewNav
+        ? 'rounded-3xl py-8 sm:py-12'
+        : 'rounded-3xl py-10 sm:py-14'
+      : showPreviewNav
+        ? 'pt-10 pb-16 sm:pt-14 sm:pb-24'
+        : 'pt-28 pb-16 sm:pt-36 sm:pb-24',
+    id && 'scroll-mt-24',
+    isHeroSurface
+      ? 'bg-hero-base text-hero-fg print:bg-bg print:text-fg'
+      : surface === 'surface'
+        ? 'border border-border bg-surface text-fg'
+        : surface === 'subtle'
+          ? 'border border-border bg-surface/60 text-fg'
+          : 'border-b border-border bg-bg text-fg',
+  ]}
+  data-hero-surface={isHeroSurface ? 'hero' : 'standard'}
+>
+  {
+    parallaxImage && (
+      <HeroParallaxLayer
+        locale={activeLocale}
+        image={parallaxImage}
+        alt={parallaxAlt || resolvedTitleLead}
+        speed={parallaxSpeed}
+        overlay={parallaxOverlay}
+        priority={!compact}
+      />
+    )
+  }
+
+  {
+    resolvedBackdrop !== 'none' && (
+      <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden print:hidden">
+        {(resolvedBackdrop === 'grid' || resolvedBackdrop === 'dots' || resolvedBackdrop === 'noise') && (
+          <div
+            class:list={[
+              'hero-cli-pattern absolute inset-0',
+              resolvedBackdrop === 'dots' ? 'is-dots' : resolvedBackdrop === 'noise' ? 'is-noise' : 'is-grid',
+            ]}
+          />
+        )}
+        <div
+          class:list={[
+            'hero-glow-primary absolute -top-36 end-[-6rem] size-[28rem] rounded-full',
+            !isHeroSurface && 'opacity-50',
+          ]}
+        />
+        <div
+          class:list={[
+            'hero-glow-accent absolute -bottom-40 start-[-8rem] size-[24rem] rounded-full',
+            !isHeroSurface && 'opacity-45',
+          ]}
+        />
+      </div>
+    )
+  }
+
+  <div class="layout-container">
+    {
+      showPreviewNav && (
+        <HeroPreviewNav
+          locale={activeLocale}
+          surface={effectiveNavSurface}
+          variant={previewNavVariant}
+          brand={previewBrand}
+          links={previewLinks}
+          cta={previewCta}
+          compact={compact}
+        />
+      )
+    }
+    <div
+      class="mx-auto max-w-3xl text-center"
+      data-trig-stagger
+      data-trig-stagger-mode="linear"
+      data-trig-stagger-delay="0.05"
+      data-trig-once="true"
+    >
+      {
+        showAvatarStack && (
+          <div class="mb-5 flex justify-center">
+            <AvatarGroup locale={activeLocale} size="sm" />
+          </div>
+        )
+      }
+
+      {
+        resolvedEyebrow && (
+          <div class="mb-4 flex justify-center">
+            <UiBadge
+              label={resolvedEyebrow}
+              variant={isHeroSurface ? 'accent' : 'primary'}
+              icon="code"
+              class={isHeroSurface ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg print:text-fg' : undefined}
+            />
+          </div>
+        )
+      }
+
+      {
+        headingTag === 'h2' ? (
+          <h2 class="text-3xl font-extrabold leading-[1.1] tracking-tight text-balance sm:text-4xl lg:text-5xl">
+            {resolvedTitleLead}
+            {resolvedTitleAccent && (
+              <>
+                {' '}
+                <span
+                  class:list={[
+                    'bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-l',
+                    isHeroSurface
+                      ? 'bg-linear-to-r from-accent to-hero-fg'
+                      : 'bg-linear-to-r from-primary to-secondary',
+                  ]}
+                >
+                  {resolvedTitleAccent}
+                </span>
+              </>
+            )}
+          </h2>
+        ) : (
+          <h1 class="text-[clamp(2.25rem,4.4vw,3.9rem)] font-extrabold leading-[1.08] tracking-tight text-balance">
+            {resolvedTitleLead}
+            {resolvedTitleAccent && (
+              <>
+                {' '}
+                <span
+                  class:list={[
+                    'bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-l',
+                    isHeroSurface
+                      ? 'bg-linear-to-r from-accent to-hero-fg'
+                      : 'bg-linear-to-r from-primary to-secondary',
+                  ]}
+                >
+                  {resolvedTitleAccent}
+                </span>
+              </>
+            )}
+          </h1>
+        )
+      }
+
+      {
+        resolvedDescription && (
+          <p
+            class:list={[
+              'mx-auto mt-5 max-w-2xl text-base leading-relaxed text-pretty sm:text-lg',
+              isHeroSurface ? 'text-hero-fg/88 print:text-muted' : 'text-muted',
+            ]}
+          >
+            {resolvedDescription}
+          </p>
+        )
+      }
+
+      {
+        resolvedCommands.length > 0 && (
+          <div
+            data-cli-hero-widget
+            class:list={[
+              'mx-auto mt-8 max-w-xl overflow-hidden rounded-2xl border text-start shadow-sm',
+              isHeroSurface
+                ? 'border-hero-fg/20 bg-hero-fg/10 print:border-border print:bg-surface'
+                : 'border-border bg-surface',
+            ]}
+          >
+            {resolvedCommands.length > 1 && (
+              <div
+                role="tablist"
+                aria-label={resolvedEyebrow ?? copyAriaLabel}
+                dir="ltr"
+                class:list={[
+                  'flex items-center gap-1 border-b px-3 py-2',
+                  isHeroSurface ? 'border-hero-fg/15 print:border-border' : 'border-border',
+                ]}
+              >
+                {resolvedCommands.map((entry, idx) => (
+                  <button
+                    type="button"
+                    role="tab"
+                    data-cli-tab
+                    data-command={entry.command}
+                    aria-selected={idx === 0 ? 'true' : 'false'}
+                    class:list={[
+                      'rounded-lg px-2.5 py-1 font-mono text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                      idx === 0
+                        ? isHeroSurface
+                          ? 'bg-hero-fg/15 text-hero-fg print:bg-primary/10 print:text-primary'
+                          : 'bg-primary/10 text-primary'
+                        : isHeroSurface
+                          ? 'text-hero-fg/65 hover:text-hero-fg'
+                          : 'text-muted hover:text-fg',
+                    ]}
+                    data-surface={isHeroSurface ? 'hero' : 'standard'}
+                  >
+                    {entry.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div dir="ltr" class="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+              <div class="flex min-w-0 items-center gap-2.5 overflow-x-auto">
+                <span
+                  aria-hidden="true"
+                  class:list={[
+                    'font-mono text-xs font-bold select-none',
+                    isHeroSurface ? 'text-accent print:text-primary' : 'text-primary',
+                  ]}
+                >
+                  $
+                </span>
+                <code
+                  data-cli-command
+                  dir="ltr"
+                  class:list={[
+                    'whitespace-nowrap font-mono text-xs font-medium sm:text-sm',
+                    isHeroSurface ? 'text-hero-fg print:text-fg' : 'text-fg',
+                  ]}
+                >
+                  {initialCommand}
+                </code>
+              </div>
+
+              <button
+                type="button"
+                data-cli-copy
+                data-copied="false"
+                data-command={initialCommand}
+                data-copied-label={copiedText}
+                aria-label={copyAriaLabel}
+                title={copyAriaLabel}
+                class:list={[
+                  'code-copy-btn inline-flex size-8 shrink-0 items-center justify-center rounded-lg border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary print:hidden',
+                  isHeroSurface
+                    ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg hover:bg-hero-fg/20 print:border-border print:bg-surface print:text-fg'
+                    : 'border-border bg-bg text-muted hover:border-primary/40 hover:text-fg',
+                ]}
+              >
+                <Icon name="copy" size={15} class="code-copy-copy" />
+                <Icon name="check" size={15} class="code-copy-check text-success" />
+              </button>
+            </div>
+            <p class="sr-only" role="status" aria-live="polite" data-cli-status></p>
+          </div>
+        )
+      }
+
+      {
+        (resolvedPrimaryCta || resolvedSecondaryCta) && (
+          <div class="mt-7 flex flex-wrap items-center justify-center gap-3 print:hidden">
+            {resolvedPrimaryCta && (
+              <Button
+                href={resolvedPrimaryCta.href}
+                variant="primary"
+                size="lg"
+                icon={resolvedPrimaryCta.icon ?? 'arrow-right'}
+                external={resolvedPrimaryCta.external}
+              >
+                {resolvedPrimaryCta.label}
+              </Button>
+            )}
+            {resolvedSecondaryCta && (
+              <Button
+                href={resolvedSecondaryCta.href}
+                variant={isHeroSurface ? 'hero' : 'secondary'}
+                size="lg"
+                external={resolvedSecondaryCta.external}
+              >
+                {resolvedSecondaryCta.label}
+              </Button>
+            )}
+          </div>
+        )
+      }
+
+      {
+        resolvedMetaItems && resolvedMetaItems.length > 0 && (
+          <ul class="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium">
+            {resolvedMetaItems.map((meta) => (
+              <li
+                class:list={[
+                  'inline-flex items-center gap-1.5',
+                  isHeroSurface ? 'text-hero-fg/75 print:text-muted' : 'text-muted',
+                ]}
+              >
+                <Icon
+                  name="circle-check"
+                  size={14}
+                  class={isHeroSurface ? 'text-accent print:text-primary' : 'text-primary'}
+                />
+                <span>{meta}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+      {
+        partnerLogos && partnerLogos.length > 0 && (
+          <ul class="mt-8 flex flex-wrap items-center justify-center gap-x-7 gap-y-3">
+            {partnerLogos.map((partner) => (
+              <li
+                class:list={[
+                  'inline-flex items-center gap-2 text-xs font-bold tracking-wide sm:text-sm',
+                  isHeroSurface ? 'text-hero-fg/75 print:text-muted' : 'text-muted',
+                ]}
+              >
+                <Icon
+                  name={partner.icon ?? 'building'}
+                  size={15}
+                  class={isHeroSurface ? 'text-accent print:text-primary' : 'text-primary'}
+                />
+                <span>{partner.name}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-cli-pattern.is-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--color-border) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--color-border) 55%, transparent) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 20%, transparent 100%);
+  }
+
+  .hero-cli-band[data-hero-surface='hero'] .hero-cli-pattern.is-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px);
+  }
+
+  .hero-cli-pattern.is-dots {
+    background-image: radial-gradient(
+      circle,
+      color-mix(in oklch, var(--color-muted) 35%, transparent) 1.25px,
+      transparent 1.25px
+    );
+    background-size: 22px 22px;
+    mask-image: radial-gradient(ellipse 75% 70% at 50% 42%, black 25%, transparent 100%);
+  }
+
+  .hero-cli-pattern.is-noise {
+    background-image:
+      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-fg) 18%, transparent) 1px, transparent 1px),
+      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-primary) 20%, transparent) 1px, transparent 1px);
+    background-size: 10px 10px, 14px 14px;
+    opacity: 0.45;
+  }
+
+  .hero-cli-band[data-hero-surface='hero'] .hero-cli-pattern.is-noise {
+    background-image:
+      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-hero-fg) 22%, transparent) 1px, transparent 1px),
+      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-accent) 22%, transparent) 1px, transparent 1px);
+  }
+</style>
+
+<script>
+  function initHeroCliWidgets() {
+    const widgets = document.querySelectorAll<HTMLElement>('[data-cli-hero-widget]');
+
+    widgets.forEach((widget) => {
+      if (widget.dataset.bound === 'true') return;
+      widget.dataset.bound = 'true';
+
+      const tabs = widget.querySelectorAll<HTMLButtonElement>('[data-cli-tab]');
+      const codeEl = widget.querySelector<HTMLElement>('[data-cli-command]');
+      const copyBtn = widget.querySelector<HTMLButtonElement>('[data-cli-copy]');
+      const statusEl = widget.querySelector<HTMLElement>('[data-cli-status]');
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const cmd = tab.dataset.command ?? '';
+          if (codeEl) codeEl.textContent = cmd;
+          if (copyBtn) {
+            copyBtn.dataset.command = cmd;
+            copyBtn.dataset.copied = 'false';
+          }
+
+          tabs.forEach((btn) => {
+            const active = btn === tab;
+            const isHero = btn.dataset.surface === 'hero';
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+            btn.className = [
+              'rounded-lg px-2.5 py-1 font-mono text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+              active
+                ? isHero
+                  ? 'bg-hero-fg/15 text-hero-fg print:bg-primary/10 print:text-primary'
+                  : 'bg-primary/10 text-primary'
+                : isHero
+                  ? 'text-hero-fg/65 hover:text-hero-fg'
+                  : 'text-muted hover:text-fg',
+            ].join(' ');
+          });
+        });
+      });
+
+      let resetTimer: number | undefined;
+      copyBtn?.addEventListener('click', async () => {
+        const cmd = copyBtn.dataset.command ?? codeEl?.textContent ?? '';
+        try {
+          await navigator.clipboard.writeText(cmd);
+          copyBtn.dataset.copied = 'true';
+          if (statusEl) {
+            statusEl.textContent = copyBtn.dataset.copiedLabel ?? '';
+          }
+          window.clearTimeout(resetTimer);
+          resetTimer = window.setTimeout(() => {
+            copyBtn.dataset.copied = 'false';
+            if (statusEl) statusEl.textContent = '';
+          }, 1800);
+        } catch {
+          // Clipboard permission may be unavailable inside restricted iframes.
+        }
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initHeroCliWidgets);
+  initHeroCliWidgets();
+</script>

@@ -72,7 +72,7 @@ import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
   description="تمامی کامپوننت‌ها به‌صورت خودکار با پالت رنگی OKLCH برند، حالت روشن و تاریک و چیدمان راست‌چین/چپ‌چین هماهنگ می‌شوند و هم با مقادیر پیش‌فرض و هم با پراپ‌های دلخواه کار می‌کنند."
   primaryCta={{ label: "اجزای پایه UI", href: "#sec-primitives", icon: "arrow-right" }}
   secondaryCta={{ label: "سرصفحه و هیرو", href: "#sec-hero" }}
-  trustNote="۴۸ کامپوننت قابل استفاده مجدد · پراپ‌های اختیاری · هندسه منطقی CSS"
+  trustNote="۵۳ کامپوننت قابل استفاده مجدد · پراپ‌های اختیاری · هندسه منطقی CSS"
   image={heroVisual}
   imageAlt="کتابخانه کامپوننت‌های استارتر"
 />
@@ -82,12 +82,13 @@ import parallaxCampusPhoto from '@/assets/germancert/iso-14001.jpg';
     <div class="flex flex-wrap items-center gap-2">
       <a href="#sec-primitives" class="chip px-3.5 py-1.5 text-xs font-semibold">اجزای پایه UI</a>
       <a href="#sec-hero" class="chip px-3.5 py-1.5 text-xs font-semibold">سرصفحه و هیرو</a>
+      <a href="/fa/کامپوننت‌ها/herosections/" class="chip border-primary/40 bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary">زیرصفحه Hero Sections</a>
       <a href="#sec-features" class="chip px-3.5 py-1.5 text-xs font-semibold">امکانات و مراحل</a>
       <a href="#sec-proof" class="chip px-3.5 py-1.5 text-xs font-semibold">تعرفه، گالری و دیدگاه‌ها</a>
       <a href="#sec-conversion" class="chip px-3.5 py-1.5 text-xs font-semibold">تماس و فراخوان</a>
       <a href="#sec-motion" class="chip px-3.5 py-1.5 text-xs font-semibold">انیمیشن و اسکرول</a>
     </div>
-    <span class="text-xs font-medium text-muted">۴۸ کامپوننت آماده و قابل ترکیب</span>
+    <span class="text-xs font-medium text-muted">۵۳ کامپوننت آماده و قابل ترکیب</span>
   </div>
 </PageSection>
 
@@ -785,6 +786,26 @@ import SectionHeader from '@/components/SectionHeader.astro';
 </div>
 
 <div id="sec-hero" class="scroll-mt-24">
+  <PageSection surface="subtle" spacing="sm" borderTop>
+    <div class="flex flex-col gap-4 rounded-2xl border border-primary/25 bg-surface p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+      <div class="space-y-1.5">
+        <div class="flex flex-wrap items-center gap-2">
+          <UiBadge label="زیرصفحه اختصاصی" variant="primary" size="sm" icon="sparkles" />
+          <code dir="ltr" class="font-mono text-xs text-muted">/fa/کامپوننت‌ها/herosections/</code>
+        </div>
+        <h2 class="text-lg font-bold tracking-tight text-fg sm:text-xl">
+          مجموعه کامل بخش‌های هیرو (هر ۴۲ نمونه PrebuiltUI + پارالاکس)
+        </h2>
+        <p class="max-w-2xl text-sm text-muted text-pretty">
+          مشاهده تمامی ۴۲ الگوی بخش هیرو شامل پس‌زمینه‌های پارالاکس اسکرولی ChronoTrig، الگوهای شبکه‌ای/نویز/مداری، داشبوردهای SaaS، چیدمان‌های دوستونه، جستجو و تولید کد، ترمینال CLI و نوار متحرک برندها.
+        </p>
+      </div>
+      <Button href="/fa/کامپوننت‌ها/herosections/" variant="primary" size="md" icon="arrow-right" class="shrink-0">
+        مشاهده Hero Sections
+      </Button>
+    </div>
+  </PageSection>
+
   <ComponentDoc
     id="doc-page-header"
     name="PageHeader"

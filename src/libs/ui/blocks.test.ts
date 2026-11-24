@@ -6,8 +6,22 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../../..');
 
+const HERO_SECTIONS = [
+  'LandingHeroSplit',
+  'HeroCenteredEditorial',
+  'HeroDashboardShowcase',
+  'HeroCommandCli',
+  'HeroInteractivePrompt',
+  'HeroProofMarquee',
+] as const;
+
 const COMPOSABLE_SECTIONS = [
   'LandingHeroSplit',
+  'HeroCenteredEditorial',
+  'HeroDashboardShowcase',
+  'HeroCommandCli',
+  'HeroInteractivePrompt',
+  'HeroProofMarquee',
   'BentoCapabilities',
   'ProofStatsRow',
   'FaqAccordion',
@@ -37,6 +51,8 @@ const UI_PRIMITIVES = [
   'UiAlert',
   'AvatarGroup',
   'Breadcrumbs',
+  'HeroPreviewNav',
+  'HeroParallaxLayer',
   'UiPagination',
   'UiModal',
   'UiTooltip',
@@ -54,7 +70,7 @@ const FORBIDDEN_PHYSICAL_CLASS =
   /^(?:-?m[lr]-|p[lr]-|-?(?:left|right)-|text-(?:left|right)$|border-[lr](?:$|-)|rounded-(?:[tb])?[lr](?:$|-))/;
 
 describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
-  it('all 36 reusable blocks/primitives exist and use RTL logical properties without raw <svg> blobs or hex colors', () => {
+  it('all reusable blocks/primitives exist and use RTL logical properties without raw <svg> blobs or hex colors', () => {
     for (const component of ALL_REUSABLE_COMPONENTS) {
       const filePath = path.join(rootDir, `src/components/${component}.astro`);
       expect(fs.existsSync(filePath), `Missing component: ${component}`).toBe(true);
@@ -80,7 +96,7 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
     }
   });
 
-  it('all 23 section blocks declare data-trig viewport reveal attributes', () => {
+  it('all section blocks declare data-trig viewport reveal attributes', () => {
     for (const block of COMPOSABLE_SECTIONS) {
       const source = fs.readFileSync(
         path.join(rootDir, `src/components/${block}.astro`),
@@ -90,9 +106,9 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
     }
   });
 
-  it('all 22 non-hero section blocks wrap via PageSection and never emit competing <h1> tags', () => {
+  it('all non-hero section blocks wrap via PageSection and never emit competing <h1> tags', () => {
     for (const block of COMPOSABLE_SECTIONS) {
-      if (block === 'LandingHeroSplit') continue;
+      if ((HERO_SECTIONS as readonly string[]).includes(block)) continue;
       const source = fs.readFileSync(
         path.join(rootDir, `src/components/${block}.astro`),
         'utf-8'
@@ -112,11 +128,14 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
     }
   });
 
-  it('LandingHeroSplit emits the sole <h1> for custom canvas landing pages', () => {
-    const hero = fs.readFileSync(
-      path.join(rootDir, 'src/components/LandingHeroSplit.astro'),
-      'utf-8'
-    );
-    expect(hero).toMatch(/<h1[\s>]/);
+  it('hero sections support <h1> and configurable headingTag for nested showcase previews', () => {
+    for (const heroName of HERO_SECTIONS) {
+      const hero = fs.readFileSync(
+        path.join(rootDir, `src/components/${heroName}.astro`),
+        'utf-8'
+      );
+      expect(hero).toMatch(/<h1[\s>]/);
+      expect(hero).toContain("headingTag = 'h1'");
+    }
   });
 });

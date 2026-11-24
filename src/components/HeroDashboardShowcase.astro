@@ -1,0 +1,853 @@
+---
+/**
+ * SaaS Dashboard & Product Showcase Hero adapted from PrebuiltUI hero-section examples:
+ * - AI Agent Hero with Clean Showcase Visual (#02)
+ * - Modern SaaS Dark Gradient Hero with Glowing Bottom-Cropped Dashboard (#05)
+ * - Hero with Embedded Navbar, Gradient Accent & Dashboard (#10)
+ * - Modern Platform Hero with Dropdown Navbar & Full-Width Preview (#11)
+ * - Framed Rail Hero with Slide-Swap Primary CTA & Cropped Dashboard (#13)
+ *
+ * Renders an embedded `<HeroPreviewNav>`, announcement capsule or `<UiBadge>`,
+ * display headline, dual CTAs (with optional slide-up hover swap), and an elevated
+ * showcase frame (`window` or `clean`, optional `cropBottom` & halo glow).
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import AvatarGroup, { type AvatarItem } from '@/components/AvatarGroup.astro';
+import Button from '@/components/Button.astro';
+import type { HeroTopBanner } from '@/components/HeroCenteredEditorial.astro';
+import HeroParallaxLayer, {
+  type HeroParallaxOverlay,
+  type HeroParallaxSpeed,
+} from '@/components/HeroParallaxLayer.astro';
+import HeroPreviewNav, {
+  type HeroPreviewNavLink,
+  type HeroPreviewNavVariant,
+} from '@/components/HeroPreviewNav.astro';
+import Icon from '@/components/Icon.astro';
+import type { HeroCtaAction } from '@/components/LandingHeroSplit.astro';
+import UiBadge from '@/components/UiBadge.astro';
+import type { Locale } from '@/i18n/locales';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+export interface DashboardStatItem {
+  label: string;
+  value: string;
+  accent?: boolean;
+}
+
+export interface DashboardAnnouncement {
+  badge?: string;
+  label: string;
+  href?: string;
+  badgeVariant?: 'primary' | 'accent' | 'success' | 'neutral';
+}
+
+interface Props {
+  id?: string;
+  locale?: Locale | string;
+  surface?: 'default' | 'hero' | 'surface' | 'subtle';
+  backdrop?: 'glow' | 'grid' | 'dots' | 'wash' | 'noise' | 'net' | 'orbital' | 'none';
+  framedRails?: 'none' | 'dashed' | 'solid';
+  parallaxImage?: ImageMetadata | null;
+  parallaxAlt?: string;
+  parallaxSpeed?: HeroParallaxSpeed;
+  parallaxOverlay?: HeroParallaxOverlay;
+  topBanner?: HeroTopBanner | null;
+  showPreviewNav?: boolean;
+  previewNavVariant?: HeroPreviewNavVariant;
+  previewBrand?: string;
+  previewLinks?: readonly HeroPreviewNavLink[];
+  previewCta?: HeroCtaAction | null;
+  announcement?: DashboardAnnouncement | null;
+  badge?: string | null;
+  showAvatarGroup?: boolean;
+  avatarItems?: readonly AvatarItem[];
+  avatarCount?: number;
+  avatarLabel?: string;
+  avatarRating?: number | null;
+  titleLead?: string;
+  titleAccent?: string | null;
+  description?: string | null;
+  primaryCta?: HeroCtaAction | null;
+  secondaryCta?: HeroCtaAction | null;
+  primaryCtaHoverSwap?: boolean;
+  metricsStrip?: readonly DashboardStatItem[] | null;
+  frame?: 'window' | 'clean';
+  cropBottom?: boolean;
+  glowBehindShowcase?: boolean;
+  windowTitle?: string;
+  statusText?: string;
+  stats?: readonly DashboardStatItem[];
+  image?: ImageMetadata | null;
+  imageAlt?: string;
+  headingTag?: 'h1' | 'h2';
+  compact?: boolean;
+}
+
+const {
+  id,
+  locale,
+  surface = 'default',
+  backdrop,
+  framedRails = 'none',
+  parallaxImage = null,
+  parallaxAlt = '',
+  parallaxSpeed = 'medium',
+  parallaxOverlay = 'hero',
+  topBanner = null,
+  showPreviewNav = false,
+  previewNavVariant = 'minimal',
+  previewBrand,
+  previewLinks,
+  previewCta,
+  announcement = null,
+  badge,
+  showAvatarGroup = false,
+  avatarItems,
+  avatarCount,
+  avatarLabel,
+  avatarRating = 5,
+  titleLead,
+  titleAccent,
+  description,
+  primaryCta,
+  secondaryCta,
+  primaryCtaHoverSwap = false,
+  metricsStrip = null,
+  frame = 'window',
+  cropBottom = false,
+  glowBehindShowcase = false,
+  windowTitle,
+  statusText,
+  stats,
+  image,
+  imageAlt = '',
+  headingTag = 'h1',
+  compact = false,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const usingDefaults = titleLead === undefined;
+
+const [featuresHref, pricingHref, homeHref] =
+  usingDefaults && (primaryCta === undefined || secondaryCta === undefined)
+    ? await Promise.all([
+        getPageUrl('features', activeLocale),
+        getPageUrl('pricing', activeLocale),
+        getHomeHref(activeLocale),
+      ])
+    : [null, null, ''];
+
+const resolvedBadge =
+  badge === null
+    ? undefined
+    : badge ?? (!announcement && usingDefaults ? m.block_hero_dash_badge({}, { locale: activeLocale }) : undefined);
+const resolvedTitleLead =
+  titleLead ?? m.block_hero_dash_title_lead({}, { locale: activeLocale });
+const resolvedTitleAccent =
+  titleAccent === null
+    ? undefined
+    : titleAccent ??
+      (usingDefaults ? m.block_hero_dash_title_accent({}, { locale: activeLocale }) : undefined);
+const resolvedDescription =
+  description === null
+    ? undefined
+    : description ??
+      (usingDefaults ? m.block_hero_dash_desc({}, { locale: activeLocale }) : undefined);
+
+const resolvedPrimaryCta =
+  primaryCta === null
+    ? undefined
+    : primaryCta ??
+      (usingDefaults
+        ? {
+            label: m.block_hero_primary_cta({}, { locale: activeLocale }),
+            href: featuresHref ?? homeHref,
+            icon: 'arrow-right',
+          }
+        : undefined);
+
+const resolvedSecondaryCta =
+  secondaryCta === null
+    ? undefined
+    : secondaryCta ??
+      (usingDefaults
+        ? {
+            label: m.block_hero_secondary_cta({}, { locale: activeLocale }),
+            href: pricingHref ?? homeHref,
+          }
+        : undefined);
+
+const resolvedWindowTitle =
+  windowTitle ?? m.block_hero_dash_window_title({}, { locale: activeLocale });
+const resolvedStatusText =
+  statusText ?? m.block_hero_dash_status({}, { locale: activeLocale });
+
+const resolvedStats: readonly DashboardStatItem[] = stats ?? [
+  {
+    label: m.block_hero_dash_stat1_label({}, { locale: activeLocale }),
+    value: m.block_hero_dash_stat1_value({}, { locale: activeLocale }),
+    accent: true,
+  },
+  {
+    label: m.block_hero_dash_stat2_label({}, { locale: activeLocale }),
+    value: m.block_hero_dash_stat2_value({}, { locale: activeLocale }),
+  },
+  {
+    label: m.block_hero_dash_stat3_label({}, { locale: activeLocale }),
+    value: m.block_hero_dash_stat3_value({}, { locale: activeLocale }),
+  },
+];
+
+const barHeights = ['42%', '68%', '56%', '84%', '62%', '94%', '76%', '88%'] as const;
+const hasShowcaseSlot = Astro.slots.has('showcase');
+const hasParallax = Boolean(parallaxImage);
+const isHeroSurface = hasParallax || surface === 'hero';
+const effectiveNavSurface = hasParallax ? 'hero' : surface;
+const resolvedBackdrop = backdrop ?? (isHeroSurface ? 'glow' : 'none');
+const statusChipLabel = 'SSG OK';
+const rtlBadgeLabel = 'RTL / LTR';
+---
+
+<section
+  id={id}
+  class:list={[
+    'hero-dash-band relative isolate overflow-hidden',
+    compact
+      ? showPreviewNav
+        ? cropBottom
+          ? 'rounded-3xl pt-8 pb-0 sm:pt-10'
+          : 'rounded-3xl py-8 sm:py-12'
+        : cropBottom
+          ? 'rounded-3xl pt-10 pb-0 sm:pt-14'
+          : 'rounded-3xl py-10 sm:py-14'
+      : showPreviewNav
+        ? cropBottom
+          ? 'pt-10 pb-0 sm:pt-14'
+          : 'pt-10 pb-16 sm:pt-14 sm:pb-24'
+        : cropBottom
+          ? 'pt-28 pb-0 sm:pt-36'
+          : 'pt-28 pb-16 sm:pt-36 sm:pb-24',
+    topBanner && 'pt-0!',
+    id && 'scroll-mt-24',
+    isHeroSurface
+      ? 'bg-hero-base text-hero-fg print:bg-bg print:text-fg'
+      : surface === 'surface'
+        ? 'border border-border bg-surface text-fg'
+        : surface === 'subtle'
+          ? 'border border-border bg-surface/60 text-fg'
+          : 'border-b border-border bg-bg text-fg',
+  ]}
+  data-hero-surface={isHeroSurface ? 'hero' : 'standard'}
+>
+  {
+    parallaxImage && (
+      <HeroParallaxLayer
+        locale={activeLocale}
+        image={parallaxImage}
+        alt={parallaxAlt || resolvedTitleLead}
+        speed={parallaxSpeed}
+        overlay={parallaxOverlay}
+        priority={!compact}
+      />
+    )
+  }
+
+  {
+    resolvedBackdrop !== 'none' && (
+      <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden print:hidden">
+        {(resolvedBackdrop === 'grid' ||
+          resolvedBackdrop === 'dots' ||
+          resolvedBackdrop === 'noise' ||
+          resolvedBackdrop === 'net') && (
+          <div
+            class:list={[
+              'hero-dash-pattern absolute inset-0',
+              resolvedBackdrop === 'dots'
+                ? 'is-dots'
+                : resolvedBackdrop === 'noise'
+                  ? 'is-noise'
+                  : resolvedBackdrop === 'net'
+                    ? 'is-net'
+                    : 'is-grid',
+            ]}
+          />
+        )}
+        {resolvedBackdrop === 'wash' && <div class="hero-dash-wash absolute inset-0" />}
+        {resolvedBackdrop === 'orbital' && (
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div
+              class:list={[
+                'size-[26rem] rounded-full border sm:size-[38rem]',
+                isHeroSurface ? 'border-hero-fg/12' : 'border-border/70',
+              ]}
+            />
+            <div
+              class:list={[
+                'absolute size-[18rem] rounded-full border sm:size-[26rem]',
+                isHeroSurface ? 'border-accent/25' : 'border-primary/20',
+              ]}
+            />
+          </div>
+        )}
+        <div
+          class:list={[
+            'hero-glow-primary absolute -top-36 end-[-6rem] size-[28rem] rounded-full',
+            !isHeroSurface && 'opacity-50',
+          ]}
+        />
+        <div
+          class:list={[
+            'hero-glow-accent absolute -bottom-40 start-[-8rem] size-[24rem] rounded-full',
+            !isHeroSurface && 'opacity-45',
+          ]}
+        />
+      </div>
+    )
+  }
+
+  {
+    topBanner && (
+      <div
+        class:list={[
+          'mb-8 border-b px-4 py-2.5 text-center text-xs font-medium print:hidden',
+          isHeroSurface
+            ? 'border-hero-fg/15 bg-hero-fg/10 text-hero-fg'
+            : 'border-border bg-primary/10 text-fg',
+        ]}
+      >
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-2">
+          {topBanner.badge && (
+            <span
+              class:list={[
+                'rounded-full px-2.5 py-0.5 text-[11px] font-bold',
+                isHeroSurface ? 'bg-accent text-hero-base' : 'bg-primary text-primary-fg',
+              ]}
+            >
+              {topBanner.badge}
+            </span>
+          )}
+          <span>{topBanner.label}</span>
+          {topBanner.href && (
+            <a
+              href={topBanner.href}
+              class:list={[
+                'inline-flex items-center gap-1 font-bold underline underline-offset-4 transition-opacity hover:opacity-80',
+                isHeroSurface ? 'text-accent' : 'text-primary',
+              ]}
+            >
+              <span>{topBanner.ctaLabel ?? resolvedPrimaryCta?.label}</span>
+              <Icon name="arrow-right" size={12} class="rtl:rotate-180" />
+            </a>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  <div class="layout-container">
+    <div
+      class:list={[
+        framedRails !== 'none' && 'mx-auto max-w-5xl border-s border-e px-5 pt-6 sm:px-10 sm:pt-8',
+        framedRails !== 'none' && !cropBottom && 'pb-6 sm:pb-8',
+        framedRails === 'dashed' && 'border-dashed',
+        framedRails !== 'none' && (isHeroSurface ? 'border-hero-fg/15 print:border-border' : 'border-border'),
+      ]}
+    >
+      {
+        showPreviewNav && (
+          <HeroPreviewNav
+            locale={activeLocale}
+            surface={effectiveNavSurface}
+            variant={previewNavVariant}
+            brand={previewBrand}
+            links={previewLinks}
+            cta={previewCta}
+            compact={compact}
+          />
+        )
+      }
+
+      <div
+        class="mx-auto max-w-3xl text-center"
+        data-trig-stagger
+        data-trig-stagger-mode="linear"
+        data-trig-stagger-delay="0.05"
+        data-trig-once="true"
+      >
+        {
+          announcement && (
+            <div class="mb-5 flex justify-center">
+              {announcement.href ? (
+                <a
+                  href={announcement.href}
+                  class:list={[
+                    'group inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full border p-1 pe-3.5 text-xs font-medium transition-colors',
+                    isHeroSurface
+                      ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/90 hover:border-hero-fg/35 print:border-border print:bg-surface print:text-fg'
+                      : 'border-border bg-surface text-muted shadow-xs hover:border-primary/45 hover:text-fg',
+                  ]}
+                >
+                  {announcement.badge && (
+                    <span
+                      class:list={[
+                        'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide',
+                        announcement.badgeVariant === 'success'
+                          ? 'bg-success text-primary-fg'
+                          : isHeroSurface
+                            ? 'bg-accent text-hero-base print:bg-primary print:text-primary-fg'
+                            : 'bg-primary text-primary-fg',
+                      ]}
+                    >
+                      {announcement.badge}
+                    </span>
+                  )}
+                  <span class="truncate">{announcement.label}</span>
+                  <Icon
+                    name="chevron-right"
+                    size={13}
+                    class="shrink-0 opacity-75 transition-transform duration-200 group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+                  />
+                </a>
+              ) : (
+                <span
+                  class:list={[
+                    'inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full border px-3 py-1 text-xs font-medium',
+                    isHeroSurface
+                      ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg/90 print:border-border print:bg-surface print:text-fg'
+                      : 'border-border bg-surface text-muted shadow-xs',
+                  ]}
+                >
+                  {announcement.badge && (
+                    <span
+                      class:list={[
+                        'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide',
+                        announcement.badgeVariant === 'success'
+                          ? 'bg-success text-primary-fg'
+                          : isHeroSurface
+                            ? 'bg-accent text-hero-base print:bg-primary print:text-primary-fg'
+                            : 'bg-primary text-primary-fg',
+                      ]}
+                    >
+                      {announcement.badge}
+                    </span>
+                  )}
+                  <span>{announcement.label}</span>
+                </span>
+              )}
+            </div>
+          )
+        }
+
+        {
+          resolvedBadge && (
+            <div class="mb-4 flex justify-center">
+              <UiBadge
+                label={resolvedBadge}
+                variant={isHeroSurface ? 'accent' : 'primary'}
+                icon="layout-grid"
+                class={isHeroSurface ? 'border-hero-fg/20 bg-hero-fg/10 text-hero-fg print:text-fg' : undefined}
+              />
+            </div>
+          )
+        }
+
+        {
+          headingTag === 'h2' ? (
+            <h2 class="text-3xl font-extrabold leading-[1.1] tracking-tight text-balance sm:text-4xl lg:text-5xl">
+              {resolvedTitleLead}
+              {resolvedTitleAccent && (
+                <>
+                  {' '}
+                  <span
+                    class:list={[
+                      'bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-l',
+                      isHeroSurface
+                        ? 'bg-linear-to-r from-accent to-hero-fg'
+                        : 'bg-linear-to-r from-primary to-secondary',
+                    ]}
+                  >
+                    {resolvedTitleAccent}
+                  </span>
+                </>
+              )}
+            </h2>
+          ) : (
+            <h1 class="text-[clamp(2.25rem,4.4vw,3.9rem)] font-extrabold leading-[1.08] tracking-tight text-balance">
+              {resolvedTitleLead}
+              {resolvedTitleAccent && (
+                <>
+                  {' '}
+                  <span
+                    class:list={[
+                      'bg-clip-text text-transparent print:bg-none print:text-fg rtl:bg-linear-l',
+                      isHeroSurface
+                        ? 'bg-linear-to-r from-accent to-hero-fg'
+                        : 'bg-linear-to-r from-primary to-secondary',
+                    ]}
+                  >
+                    {resolvedTitleAccent}
+                  </span>
+                </>
+              )}
+            </h1>
+          )
+        }
+
+        {
+          resolvedDescription && (
+            <p
+              class:list={[
+                'mx-auto mt-5 max-w-2xl text-base leading-relaxed text-pretty sm:text-lg',
+                isHeroSurface ? 'text-hero-fg/88 print:text-muted' : 'text-muted',
+              ]}
+            >
+              {resolvedDescription}
+            </p>
+          )
+        }
+
+        {
+          (resolvedPrimaryCta || resolvedSecondaryCta) && (
+            <div class="mt-8 flex flex-wrap items-center justify-center gap-3 print:hidden">
+              {resolvedPrimaryCta && (
+                <Button
+                  href={resolvedPrimaryCta.href}
+                  variant={resolvedPrimaryCta.variant ?? 'primary'}
+                  size="lg"
+                  glow
+                  icon={resolvedPrimaryCta.icon ?? 'arrow-right'}
+                  external={resolvedPrimaryCta.external}
+                >
+                  {primaryCtaHoverSwap ? (
+                    <span class="relative inline-flex h-[1.25em] overflow-hidden leading-[1.25]">
+                      <span class="block transition-transform duration-300 group-hover:-translate-y-full">
+                        {resolvedPrimaryCta.label}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        class="absolute inset-x-0 top-full block transition-transform duration-300 group-hover:-translate-y-full"
+                      >
+                        {resolvedPrimaryCta.label}
+                      </span>
+                    </span>
+                  ) : (
+                    resolvedPrimaryCta.label
+                  )}
+                </Button>
+              )}
+              {resolvedSecondaryCta && (
+                <Button
+                  href={resolvedSecondaryCta.href}
+                  variant={resolvedSecondaryCta.variant ?? (isHeroSurface ? 'hero' : 'secondary')}
+                  size="lg"
+                  icon={resolvedSecondaryCta.icon}
+                  external={resolvedSecondaryCta.external}
+                >
+                  {resolvedSecondaryCta.label}
+                </Button>
+              )}
+            </div>
+          )
+        }
+
+        {
+          showAvatarGroup && (
+            <div class="mt-6 flex justify-center">
+              <div
+                class:list={[
+                  'inline-flex flex-wrap items-center rounded-full border px-4 py-1.5',
+                  isHeroSurface
+                    ? 'border-hero-fg/15 bg-hero-fg/10 text-hero-fg print:border-border print:bg-surface print:text-fg'
+                    : 'border-border bg-surface text-fg shadow-xs',
+                ]}
+              >
+                <AvatarGroup
+                  locale={activeLocale}
+                  items={avatarItems}
+                  extraCount={avatarCount}
+                  label={avatarLabel}
+                  rating={avatarRating}
+                  size="sm"
+                />
+              </div>
+            </div>
+          )
+        }
+
+        {
+          metricsStrip && metricsStrip.length > 0 && (
+            <dl class="mx-auto mt-7 grid max-w-2xl grid-cols-3 gap-3">
+              {metricsStrip.map((metric) => (
+                <div
+                  class:list={[
+                    'rounded-xl border px-3 py-2.5 text-center',
+                    isHeroSurface
+                      ? 'border-hero-fg/15 bg-hero-fg/5 print:border-border print:bg-surface'
+                      : 'border-border bg-surface/90 shadow-xs',
+                  ]}
+                >
+                  <dt
+                    class:list={[
+                      'text-[11px] font-medium',
+                      isHeroSurface ? 'text-hero-fg/70 print:text-muted' : 'text-muted',
+                    ]}
+                  >
+                    {metric.label}
+                  </dt>
+                  <dd
+                    class:list={[
+                      'mt-0.5 text-lg font-extrabold tabular-nums sm:text-xl',
+                      metric.accent ? (isHeroSurface ? 'text-accent' : 'text-primary') : '',
+                    ]}
+                  >
+                    {metric.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )
+        }
+      </div>
+
+      <div
+        class:list={[
+          'relative mx-auto max-w-5xl trig-delay-150',
+          compact ? 'mt-9 sm:mt-11' : 'mt-10 sm:mt-14',
+        ]}
+        data-trig
+        data-trig-once="true"
+      >
+        {
+          glowBehindShowcase && (
+            <div
+              aria-hidden="true"
+              class="hero-glow-accent pointer-events-none absolute -top-10 inset-x-10 -z-10 h-32 rounded-full opacity-70 print:hidden"
+            />
+          )
+        }
+
+        <div
+          class:list={[
+            'overflow-hidden border shadow-floating',
+            cropBottom ? 'rounded-t-2xl rounded-b-none border-b-0' : 'rounded-2xl',
+            isHeroSurface
+              ? 'border-hero-fg/20 bg-hero-base/85 text-hero-fg print:border-border print:bg-surface print:text-fg'
+              : 'border-border bg-surface text-fg',
+          ]}
+        >
+          {
+            frame === 'window' && (
+              <div
+                class:list={[
+                  'flex items-center justify-between gap-3 border-b px-4 py-3 sm:px-5',
+                  isHeroSurface
+                    ? 'border-hero-fg/15 bg-hero-fg/5 print:border-border print:bg-surface-hover/50'
+                    : 'border-border bg-surface-hover/40',
+                ]}
+              >
+                <div class="flex items-center gap-2" aria-hidden="true">
+                  <span class="size-2.5 rounded-full bg-error/70"></span>
+                  <span class="size-2.5 rounded-full bg-warning/70"></span>
+                  <span class="size-2.5 rounded-full bg-success/70"></span>
+                  <span
+                    class:list={[
+                      'ms-2 text-xs font-semibold',
+                      isHeroSurface ? 'text-hero-fg/80 print:text-muted' : 'text-muted',
+                    ]}
+                  >
+                    {resolvedWindowTitle}
+                  </span>
+                </div>
+                <UiBadge label={statusChipLabel} variant="success" size="sm" icon="circle-check" />
+              </div>
+            )
+          }
+
+          {
+            hasShowcaseSlot ? (
+              <div class="p-4 sm:p-6">
+                <slot name="showcase" />
+              </div>
+            ) : image ? (
+              <Image
+                src={image}
+                alt={imageAlt || resolvedTitleLead}
+                widths={[720, 1080, 1440]}
+                sizes="(min-width: 1024px) 62rem, 94vw"
+                class:list={[
+                  'w-full object-cover',
+                  cropBottom ? 'aspect-[16/8]' : 'aspect-[16/9]',
+                ]}
+                loading={compact ? 'lazy' : 'eager'}
+                fetchpriority={compact ? undefined : 'high'}
+              />
+            ) : (
+              <div class:list={['p-4 sm:p-6', cropBottom && 'pb-2 sm:pb-3']}>
+                <div class="grid gap-3 sm:grid-cols-3">
+                  {resolvedStats.map((stat) => (
+                    <div
+                      class:list={[
+                        'rounded-xl border p-4 text-start',
+                        isHeroSurface
+                          ? 'border-hero-fg/15 bg-hero-fg/5 print:border-border print:bg-bg'
+                          : 'border-border bg-bg',
+                      ]}
+                    >
+                      <p
+                        class:list={[
+                          'text-xs font-medium',
+                          isHeroSurface ? 'text-hero-fg/70 print:text-muted' : 'text-muted',
+                        ]}
+                      >
+                        {stat.label}
+                      </p>
+                      <p
+                        class:list={[
+                          'mt-1.5 text-2xl font-extrabold tabular-nums',
+                          stat.accent
+                            ? isHeroSurface
+                              ? 'text-accent print:text-primary'
+                              : 'text-primary'
+                            : '',
+                        ]}
+                      >
+                        {stat.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  class:list={[
+                    'mt-4 rounded-xl border p-4 sm:p-5',
+                    cropBottom && 'rounded-b-none border-b-0 pb-2 sm:pb-2',
+                    isHeroSurface
+                      ? 'border-hero-fg/15 bg-hero-fg/5 print:border-border print:bg-bg'
+                      : 'border-border bg-bg',
+                  ]}
+                >
+                  <div class="flex h-24 items-end gap-2 sm:h-32 sm:gap-3" aria-hidden="true">
+                    {barHeights.map((height, idx) => (
+                      <div
+                        class:list={[
+                          'flex-1 rounded-t-lg transition-opacity duration-200 hover:opacity-90',
+                          idx % 2 === 0
+                            ? 'bg-linear-to-t from-primary/60 to-primary'
+                            : isHeroSurface
+                              ? 'bg-linear-to-t from-accent/55 to-accent'
+                              : 'bg-linear-to-t from-secondary/55 to-secondary',
+                        ]}
+                        style={`height: ${height};`}
+                      />
+                    ))}
+                  </div>
+                  {!cropBottom && (
+                    <div
+                      class:list={[
+                        'mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-xs',
+                        isHeroSurface
+                          ? 'border-hero-fg/15 text-hero-fg/80 print:border-border print:text-muted'
+                          : 'border-border text-muted',
+                      ]}
+                    >
+                      <span class="inline-flex items-center gap-1.5 font-medium">
+                        <Icon name="circle-check" size={15} class="shrink-0 text-success" />
+                        <span>{resolvedStatusText}</span>
+                      </span>
+                      <span class="inline-flex items-center gap-1.5 tabular-nums">
+                        <Icon name="globe" size={14} class="shrink-0" />
+                        <span>{rtlBadgeLabel}</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-dash-pattern.is-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--color-border) 58%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--color-border) 58%, transparent) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(ellipse 78% 72% at 50% 42%, black 22%, transparent 100%);
+  }
+
+  .hero-dash-band[data-hero-surface='hero'] .hero-dash-pattern.is-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--color-hero-fg) 12%, transparent) 1px, transparent 1px);
+  }
+
+  .hero-dash-pattern.is-dots {
+    background-image: radial-gradient(
+      circle,
+      color-mix(in oklch, var(--color-muted) 35%, transparent) 1.25px,
+      transparent 1.25px
+    );
+    background-size: 22px 22px;
+    mask-image: radial-gradient(ellipse 76% 70% at 50% 44%, black 24%, transparent 100%);
+  }
+
+  .hero-dash-pattern.is-noise {
+    background-image:
+      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-fg) 18%, transparent) 1px, transparent 1px),
+      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-primary) 20%, transparent) 1px, transparent 1px);
+    background-size: 10px 10px, 14px 14px;
+    opacity: 0.45;
+  }
+
+  .hero-dash-band[data-hero-surface='hero'] .hero-dash-pattern.is-noise {
+    background-image:
+      radial-gradient(circle at 20% 25%, color-mix(in oklch, var(--color-hero-fg) 22%, transparent) 1px, transparent 1px),
+      radial-gradient(circle at 75% 65%, color-mix(in oklch, var(--color-accent) 22%, transparent) 1px, transparent 1px);
+  }
+
+  .hero-dash-pattern.is-net {
+    background-image:
+      repeating-linear-gradient(
+        60deg,
+        color-mix(in oklch, var(--color-border) 55%, transparent) 0 1px,
+        transparent 1px 28px
+      ),
+      repeating-linear-gradient(
+        -60deg,
+        color-mix(in oklch, var(--color-border) 55%, transparent) 0 1px,
+        transparent 1px 28px
+      );
+    mask-image: radial-gradient(ellipse 80% 72% at 50% 42%, black 22%, transparent 100%);
+  }
+
+  .hero-dash-band[data-hero-surface='hero'] .hero-dash-pattern.is-net {
+    background-image:
+      repeating-linear-gradient(
+        60deg,
+        color-mix(in oklch, var(--color-hero-fg) 14%, transparent) 0 1px,
+        transparent 1px 28px
+      ),
+      repeating-linear-gradient(
+        -60deg,
+        color-mix(in oklch, var(--color-hero-fg) 14%, transparent) 0 1px,
+        transparent 1px 28px
+      );
+  }
+
+  .hero-dash-wash {
+    background: linear-gradient(
+      140deg,
+      color-mix(in oklch, var(--color-primary) 11%, transparent),
+      color-mix(in oklch, var(--color-accent) 13%, transparent) 50%,
+      color-mix(in oklch, var(--color-secondary) 9%, transparent)
+    );
+  }
+</style>

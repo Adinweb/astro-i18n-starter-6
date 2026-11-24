@@ -476,12 +476,14 @@ for (const { collection, group, groupDir } of groups) {
       continue;
     }
 
-    if (!SLUG_PATTERN.test(String(slug))) {
-      fatal(`Invalid slug "${slug}" in ${relative} (use letters, digits, and single hyphens)`);
+    const rawSlug = String(slug);
+    const slugSegments = collection === 'pages' ? rawSlug.split('/') : [rawSlug];
+    if (slugSegments.some((segment) => !segment || !SLUG_PATTERN.test(segment))) {
+      fatal(`Invalid slug "${slug}" in ${relative} (use letters, digits, and single hyphens per segment)`);
       slugFatal = true;
     }
 
-    if (collection === 'pages' && RESERVED_ROUTE_BASES.has(String(slug))) {
+    if (collection === 'pages' && RESERVED_ROUTE_BASES.has(slugSegments[0])) {
       fatal(`Slug "${slug}" in ${relative} collides with a reserved route`);
       slugFatal = true;
     }

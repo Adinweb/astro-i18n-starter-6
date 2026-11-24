@@ -1,0 +1,1531 @@
+---
+title: "Hero Sections"
+slug: "components/herosections"
+description: "Complete showcase of all 42 PrebuiltUI Hero Section patterns adapted to Astro v7 SSG, OKLCH semantic themes, scroll-driven ChronoTrig parallax backgrounds, and bidirectional RTL/LTR layouts."
+image: "./herosections.jpg"
+hero: "none"
+container: "canvas"
+flushTop: true
+draft: false
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import Button from '@/components/Button.astro';
+import ComponentDoc from '@/components/ComponentDoc.astro';
+import CtaBanner from '@/components/CtaBanner.astro';
+import HeroCenteredEditorial from '@/components/HeroCenteredEditorial.astro';
+import HeroCommandCli from '@/components/HeroCommandCli.astro';
+import HeroDashboardShowcase from '@/components/HeroDashboardShowcase.astro';
+import HeroInteractivePrompt from '@/components/HeroInteractivePrompt.astro';
+import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
+import HomeHero from '@/components/HomeHero.astro';
+import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
+import PageSection from '@/components/PageSection.astro';
+import UiBadge from '@/components/UiBadge.astro';
+import heroVisual from './herosections.jpg';
+import hero0Visual from '@/assets/hero/hero-0.jpg';
+import auditVisual from '@/assets/germancert/hero-audit.jpg';
+import hqVisual from '@/assets/germancert/hq-tuntenhausen.jpg';
+import trustVisual from '@/assets/germancert/trustmark.jpg';
+
+<HeroCenteredEditorial
+  id="hero-sections-top"
+  locale="en"
+  surface="hero"
+  parallaxImage={heroVisual}
+  parallaxSpeed="subtle"
+  parallaxOverlay="hero"
+  backdrop="orbital"
+  announcement={{
+    badge: "PrebuiltUI 42/42",
+    label: "All 42 Hero Sections + ChronoTrig Parallax Backgrounds",
+    href: "/components/",
+    pulse: true
+  }}
+  titleLead="All 42 Hero Sections,"
+  titleAccent="Adapted for Astro v7"
+  description="Every hero section archetype from PrebuiltUI rebuilt with OKLCH semantic theme roles, CSS logical properties, accessible <Button>, <Icon>, and <HeroPreviewNav> primitives, ChronoTrig scroll-driven parallax backgrounds, and Paraglide i18n."
+  primaryCta={{ label: "Browse All 42 Heroes", href: "#hero-showcase-list", icon: "arrow-right" }}
+  secondaryCta={{ label: "All Components", href: "/components/" }}
+  trustNote="42 numbered hero templates · 9 GPU parallax backdrop demos · Zero hardcoded hex colors"
+  partnerPills={[
+    { icon: "palette", name: "OKLCH Theme Engine" },
+    { icon: "photo", name: "ChronoTrig Parallax BG" },
+    { icon: "globe", name: "Mirrored RTL / LTR" },
+    { icon: "bolt", name: "100% Static HTML" },
+    { icon: "shield", name: "Print & Dark Ready" }
+  ]}
+>
+  <Breadcrumbs
+    slot="prelude"
+    surface="hero"
+    separator="chevron"
+    size="xs"
+    locale="en"
+    items={[
+      { label: "Home", href: "/" },
+      { label: "Components", href: "/components/" },
+      { label: "Hero Sections" }
+    ]}
+  />
+</HeroCenteredEditorial>
+
+<PageSection id="hero-catalog-nav" surface="surface" spacing="sm" borderBottom>
+  <div class="flex flex-col gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="#doc-centered-hero" class="chip px-3 py-1.5 text-xs font-bold text-primary">Centered &amp; Parallax (12)</a>
+        <a href="#doc-dashboard-hero" class="chip px-3 py-1.5 text-xs font-bold text-primary">Dashboards &amp; Metrics (10)</a>
+        <a href="#doc-split-hero" class="chip px-3 py-1.5 text-xs font-bold text-primary">Asymmetric Splits (10)</a>
+        <a href="#doc-interactive-prompt" class="chip px-3 py-1.5 text-xs font-bold text-primary">AI Prompt, Search, Code, CLI &amp; Marquee (10)</a>
+      </div>
+      <Button href="/components/" variant="ghost" size="sm" icon="arrow-right">
+        Back to Components
+      </Button>
+    </div>
+    <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+      <a href="#hero-01" class="chip px-2.5 py-1 font-medium">01</a>
+      <a href="#hero-02" class="chip px-2.5 py-1 font-medium">02</a>
+      <a href="#hero-03" class="chip px-2.5 py-1 font-medium">03</a>
+      <a href="#hero-04" class="chip px-2.5 py-1 font-medium">04</a>
+      <a href="#hero-05" class="chip px-2.5 py-1 font-medium">05</a>
+      <a href="#hero-06" class="chip px-2.5 py-1 font-medium">06</a>
+      <a href="#hero-07" class="chip px-2.5 py-1 font-medium">07</a>
+      <a href="#hero-08" class="chip px-2.5 py-1 font-medium">08</a>
+      <a href="#hero-09" class="chip px-2.5 py-1 font-medium">09</a>
+      <a href="#hero-10" class="chip px-2.5 py-1 font-medium">10</a>
+      <a href="#hero-11" class="chip px-2.5 py-1 font-medium">11</a>
+      <a href="#hero-12" class="chip px-2.5 py-1 font-medium">12</a>
+      <a href="#hero-13" class="chip px-2.5 py-1 font-medium">13</a>
+      <a href="#hero-14" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">14 Parallax</a>
+      <a href="#hero-15" class="chip px-2.5 py-1 font-medium">15</a>
+      <a href="#hero-16" class="chip px-2.5 py-1 font-medium">16</a>
+      <a href="#hero-17" class="chip px-2.5 py-1 font-medium">17</a>
+      <a href="#hero-18" class="chip px-2.5 py-1 font-medium">18</a>
+      <a href="#hero-19" class="chip px-2.5 py-1 font-medium">19</a>
+      <a href="#hero-20" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">20 Parallax</a>
+      <a href="#hero-21" class="chip px-2.5 py-1 font-medium">21</a>
+      <a href="#hero-22" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">22 Parallax</a>
+      <a href="#hero-23" class="chip px-2.5 py-1 font-medium">23</a>
+      <a href="#hero-24" class="chip px-2.5 py-1 font-medium">24</a>
+      <a href="#hero-25" class="chip px-2.5 py-1 font-medium">25</a>
+      <a href="#hero-26" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">26 Parallax</a>
+      <a href="#hero-27" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">27 Parallax</a>
+      <a href="#hero-28" class="chip px-2.5 py-1 font-medium">28</a>
+      <a href="#hero-29" class="chip px-2.5 py-1 font-medium">29</a>
+      <a href="#hero-30" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">30 Parallax</a>
+      <a href="#hero-31" class="chip px-2.5 py-1 font-medium">31</a>
+      <a href="#hero-32" class="chip px-2.5 py-1 font-medium">32</a>
+      <a href="#hero-33" class="chip px-2.5 py-1 font-medium">33</a>
+      <a href="#hero-34" class="chip px-2.5 py-1 font-medium">34</a>
+      <a href="#hero-35" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">35 Parallax</a>
+      <a href="#hero-36" class="chip px-2.5 py-1 font-medium">36</a>
+      <a href="#hero-37" class="chip px-2.5 py-1 font-medium">37</a>
+      <a href="#hero-38" class="chip px-2.5 py-1 font-medium">38</a>
+      <a href="#hero-39" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">39 Parallax</a>
+      <a href="#hero-40" class="chip px-2.5 py-1 font-medium">40</a>
+      <a href="#hero-41" class="chip px-2.5 py-1 font-medium">41</a>
+      <a href="#hero-42" class="chip border-primary/40 bg-primary/10 px-2.5 py-1 font-semibold text-primary">42 Parallax</a>
+    </div>
+  </div>
+</PageSection>
+
+<div id="hero-showcase-list" class="scroll-mt-24">
+  <ComponentDoc
+    id="doc-centered-hero"
+    name="HeroCenteredEditorial"
+    category="Centered, Framed & Parallax"
+    title="HeroCenteredEditorial (12 Variations · #01, #07–#09, #14–#21)"
+    summary="Covers centered editorial, grid, dashed rails, floating pill navbars, arch-cropped photos, orbital AI rings, noise textures, net-grid backdrops, top promo banners, trusted brand strips, and scroll-driven ChronoTrig parallax photography."
+    propsList={[
+      { name: "parallaxImage / parallaxSpeed / parallaxOverlay", type: "ImageMetadata / 'subtle' | 'medium' | 'deep' / 'hero' | 'dark' | 'gradient' | 'subtle'", defaultVal: "null / 'medium' / 'hero'", description: "Renders an IntersectionObserver-gated GPU parallax backdrop via HeroParallaxLayer." },
+      { name: "backdrop", type: "'glow' | 'grid' | 'dots' | 'orbital' | 'wash' | 'noise' | 'net' | 'none'", defaultVal: "'glow'", description: "Selects CSS grid, dot matrix, orbital circles, multi-stop wash, subtle grain noise, or diagonal architectural net." },
+      { name: "topBanner", type: "HeroTopBanner | null", description: "Attaches a full-width launch announcement strip cleanly above the navigation bar (#20)." },
+      { name: "framedRails", type: "'none' | 'dashed' | 'solid'", defaultVal: "'none'", description: "Logical border-s / border-e architectural rails (#07)." },
+      { name: "partnerLogos / featureCards / bottomImage", type: "Array / ImageMetadata", description: "Monochrome brand logos row (#15, #19), 3-card feature row (#07), or rounded/arch bottom capture (#08, #18, #21)." }
+    ]}
+    usage={`import HeroCenteredEditorial from '@/components/HeroCenteredEditorial.astro';
+import heroPhoto from './herosections.jpg';
+
+<HeroCenteredEditorial
+  parallaxImage={heroPhoto}
+  parallaxSpeed="medium"
+  parallaxOverlay="dark"
+  showPreviewNav
+  previewNavVariant="pill"
+  topBanner={{ badge: "Launch", label: "Astro v7 Parallax Heroes", href: "/features/" }}
+/>`}
+  >
+    <div class="space-y-12">
+      <div id="hero-01" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="01 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">01 — Light Hero Section with Grid Effect</p>
+          </div>
+          <span class="text-xs text-muted">backdrop="grid" · surface="subtle"</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          surface="subtle"
+          backdrop="grid"
+          compact
+          headingTag="h2"
+          announcement={{
+            badge: "New",
+            label: "New announcement on your inbox · Read more",
+            href: "/features/",
+            pulse: true
+          }}
+          titleLead="Your fastest way to ship"
+          titleAccent="multilingual web apps"
+          description="Crisp hairline grid fading radially into semantic background surfaces with zero hardcoded hex values and automatic RTL alignment."
+          primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Learn more", href: "/pricing/" }}
+        />
+      </div>
+
+      <div id="hero-07" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="07 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">07 — Modern Hero Section With Feature Cards (Dashed Rails)</p>
+          </div>
+          <span class="text-xs text-muted">framedRails="dashed" · backdrop="dots"</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          surface="default"
+          backdrop="dots"
+          framedRails="dashed"
+          compact
+          headingTag="h2"
+          announcement={{
+            badge: "Release",
+            label: "Automate bilingual delivery with full static parity",
+            href: "/features/",
+            pulse: true
+          }}
+          titleLead="Automate workflows built for"
+          titleAccent="modern product teams"
+          description="Architectural dashed border rails frame the hero stage cleanly while three semantic feature cards anchor the lower grid."
+          primaryCta={{ label: "Start building", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Explore pricing", href: "/pricing/" }}
+          featureCards={[
+            { icon: "bolt", title: "Automate Tasks", description: "Pre-render routes, feeds, and search indexes in one static pipeline." },
+            { icon: "globe", title: "Grow Your Reach", description: "Native LTR and RTL locales ship side by side with alternate links." },
+            { icon: "users", title: "Team-Friendly Structure", description: "Strict client workspace separation keeps customizations upgrade-safe." }
+          ]}
+        />
+      </div>
+
+      <div id="hero-08" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="08 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">08 — Hero Section with Rounded Pill Navbar &amp; Arch Showcase</p>
+          </div>
+          <span class="text-xs text-muted">previewNavVariant="pill" · bottomImageStyle="arch"</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          surface="subtle"
+          backdrop="wash"
+          showPreviewNav
+          previewNavVariant="pill"
+          previewBrand="Northstar UI"
+          compact
+          headingTag="h2"
+          announcement={{
+            label: "Explore how we help grow digital brands",
+            href: "/projects/",
+            ctaLabel: "Read stories"
+          }}
+          titleLead="Solutions to scale your"
+          titleAccent="digital presence"
+          description="Floating capsule preview navbar paired with a clean arch-cropped Astro <Image /> anchored seamlessly flush to the section edge."
+          primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={null}
+          bottomImage={hqVisual}
+          bottomImageAlt="Architectural studio office facade cropped in arch-top hero frame"
+          bottomImageStyle="arch"
+        />
+      </div>
+
+      <div id="hero-09" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="09 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">09 — Hero Section with Embedded Nav, Tag &amp; Gradient Wash</p>
+          </div>
+          <span class="text-xs text-muted">previewNavVariant="bordered" · backdrop="wash"</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          surface="surface"
+          backdrop="wash"
+          showPreviewNav
+          previewNavVariant="bordered"
+          previewBrand="Vertex Studio"
+          compact
+          headingTag="h2"
+          announcement={{
+            badge: "Guide",
+            label: "Discover how static systems cut bounce rates",
+            href: "/features/",
+            ctaLabel: "Explore"
+          }}
+          titleLead="Turn your content into"
+          titleAccent="reliable conversion paths"
+          description="Soft OKLCH multi-stop gradient wash behind a crisp bordered top preview bar, inline action tag, primary CTA, and arrow ghost button."
+          primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Book a demo", href: "/contact/", variant: "ghost", icon: "arrow-right" }}
+        />
+      </div>
+
+      <div id="hero-14" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="14 / 42" variant="primary" size="sm" />
+            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
+            <p class="text-sm font-bold text-fg">14 — Hero with Pill Navbar &amp; Parallax Photo Backdrop</p>
+          </div>
+          <span class="text-xs text-muted">parallaxImage · parallaxSpeed="medium" · previewNavVariant="pill"</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          parallaxImage={heroVisual}
+          parallaxSpeed="medium"
+          parallaxOverlay="dark"
+          backdrop="none"
+          showPreviewNav
+          previewNavVariant="pill"
+          previewBrand="Horizon Cloud"
+          compact
+          headingTag="h2"
+          announcement={{
+            badge: "Live",
+            label: "Scroll-driven GPU parallax backdrop over frosted navbar",
+            href: "/features/",
+            pulse: true
+          }}
+          titleLead="High-contrast storytelling powered by"
+          titleAccent="smooth scroll parallax"
+          description="ChronoTrig synchronizes smooth vertical overscanning via Lenis and IntersectionObserver so photography moves effortlessly beneath crisp readable typography."
+          primaryCta={{ label: "Launch site", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "View pricing", href: "/pricing/" }}
+        />
+      </div>
+
+      <div id="hero-15" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="15 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">15 — Trusted Brand Gradient Hero with Monochrome Partner Logos</p>
+          </div>
+          <span class="text-xs text-muted">backdrop="wash" · partnerLogos</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          surface="subtle"
+          backdrop="wash"
+          compact
+          headingTag="h2"
+          eyebrow="Global Design Systems"
+          titleLead="Trusted by product teams shipping"
+          titleAccent="across five continents"
+          description="Combines an editorial gradient backdrop with dual balanced CTAs and an accessible monochrome partner logo strip anchored smoothly on scroll."
+          primaryCta={{ label: "Start free trial", href: "/pricing/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Explore projects", href: "/projects/" }}
+          partnerLogos={[
+            { icon: "globe", name: "NORDFJORD" },
+            { icon: "shield", name: "CERTCORE" },
+            { icon: "building", name: "KRONOS LABS" },
+            { icon: "layers", name: "VERDANT" },
+            { icon: "compass", name: "WAYPOINT" }
+          ]}
+        />
+      </div>
+
+      <div id="hero-16" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="16 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">16 — Dark Orbital Gradient AI Hero</p>
+          </div>
+          <span class="text-xs text-muted">surface="hero" · backdrop="orbital"</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          surface="hero"
+          backdrop="orbital"
+          compact
+          headingTag="h2"
+          announcement={{
+            badge: "AI Native",
+            label: "Introducing Orbital Design Tokens for Astro v7",
+            href: "/features/",
+            pulse: true
+          }}
+          titleLead="Orchestrate next-generation"
+          titleAccent="digital flagship sites"
+          description="Concentric orbital rings radiating around a deep OKLCH canvas create immediate visual depth with zero heavy SVG markup."
+          primaryCta={{ label: "Explore features", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Book architecture call", href: "/contact/" }}
+        />
+      </div>
+
+      <div id="hero-17" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="17 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">17 — Light Orbital Studio Hero with Dashed Top Navigation</p>
+          </div>
+          <span class="text-xs text-muted">previewNavVariant="dashed" · backdrop="orbital"</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          surface="default"
+          backdrop="orbital"
+          showPreviewNav
+          previewNavVariant="dashed"
+          previewBrand="Orbit UI"
+          compact
+          headingTag="h2"
+          eyebrow="Architecture"
+          titleLead="Precision typography inside"
+          titleAccent="geometric balance"
+          description="Pairs a dashed architectural preview navigation header with layered border rings and clear primary and ghost call-to-action buttons."
+          primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Read docs", href: "/components/", variant: "ghost" }}
+        />
+      </div>
+
+      <div id="hero-18" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="18 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">18 — Fine Noise Texture Editorial &amp; Rounded Capture</p>
+          </div>
+          <span class="text-xs text-muted">backdrop="noise" · bottomImageStyle="rounded"</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          surface="subtle"
+          backdrop="noise"
+          compact
+          headingTag="h2"
+          announcement={{
+            badge: "v7.2",
+            label: "Tactile CSS grain overlay with zero external raster textures",
+            href: "/components/"
+          }}
+          titleLead="Tactile editorial surfaces for"
+          titleAccent="product announcements"
+          description="Pure CSS micro-dot noise overlay adds subtle print depth behind centered display type and a sharp wide-aspect visual capture."
+          primaryCta={{ label: "Explore catalog", href: "/components/", icon: "arrow-right" }}
+          secondaryCta={{ label: "View case studies", href: "/projects/" }}
+          bottomImage={auditVisual}
+          bottomImageAlt="Wide workspace audit photography framed beneath noise backdrop"
+          bottomImageStyle="rounded"
+        />
+      </div>
+
+      <div id="hero-19" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="19 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">19 — Architectural Net Grid with Dual Actions &amp; Partner Strip</p>
+          </div>
+          <span class="text-xs text-muted">backdrop="net" · partnerLogos</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          surface="surface"
+          backdrop="net"
+          compact
+          headingTag="h2"
+          eyebrow="Enterprise Readiness"
+          titleLead="Diagonal blueprint geometry for"
+          titleAccent="technical platforms"
+          description="Isometric repeating CSS gradients give engineering sites a structured blueprint lattice matched symmetrically across LTR and RTL."
+          primaryCta={{ label: "Start building", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Contact engineering", href: "/contact/" }}
+          partnerLogos={[
+            { icon: "code", name: "ASTRO STATIC" },
+            { icon: "bolt", name: "CHRONOTRIG" },
+            { icon: "palette", name: "OKLCH TOKENS" },
+            { icon: "search", name: "PAGEFIND RTL" }
+          ]}
+        />
+      </div>
+
+      <div id="hero-20" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="20 / 42" variant="primary" size="sm" />
+            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
+            <p class="text-sm font-bold text-fg">20 — Top Launch Promo Banner with Deep Parallax Photography</p>
+          </div>
+          <span class="text-xs text-muted">topBanner · parallaxImage · parallaxSpeed="deep"</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          parallaxImage={hqVisual}
+          parallaxSpeed="deep"
+          parallaxOverlay="hero"
+          backdrop="none"
+          topBanner={{
+            badge: "Seasonal Offer",
+            label: "Launch your bilingual storefront with 42 pre-wired hero modules",
+            href: "/pricing/",
+            ctaLabel: "View plans"
+          }}
+          compact
+          headingTag="h2"
+          titleLead="Lead with urgency using"
+          titleAccent="full-bleed parallax depth"
+          description="Pins a high-contrast launch promo strip flush to the upper rim while the architectural backdrop responds deeply to vertical scroll."
+          primaryCta={{ label: "Claim starter kit", href: "/pricing/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Browse demos", href: "/projects/" }}
+        />
+      </div>
+
+      <div id="hero-21" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="21 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">21 — Dark Grid Editorial Hero with Avatar Pill &amp; Arch Preview</p>
+          </div>
+          <span class="text-xs text-muted">surface="hero" · showAvatarPill · bottomImageStyle="arch"</span>
+        </div>
+        <HeroCenteredEditorial
+          locale="en"
+          surface="hero"
+          backdrop="grid"
+          showAvatarPill
+          avatarCount={480}
+          avatarLabel="Trusted by 480+ studios globally"
+          compact
+          headingTag="h2"
+          titleLead="Crafted for creative teams who"
+          titleAccent="care about craft"
+          description="Combines an overlapping avatar community badge on a deep hero grid with an elevated arch photograph rising from the lower fold."
+          primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Talk to us", href: "/contact/" }}
+          bottomImage={hero0Visual}
+          bottomImageAlt="Studio interface framed in dark arch editorial preview"
+          bottomImageStyle="arch"
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-dashboard-hero"
+    surface="surface"
+    name="HeroDashboardShowcase"
+    category="Dashboard, Reviews & Media"
+    title="HeroDashboardShowcase (10 Variations · #02, #05, #10, #11, #13, #22–#26)"
+    summary="Covers SaaS product showcase heroes: browser window frames, clean image stages, bottom-cropped previews with ambient halos, solid container rails, slide-swap hover buttons, 5-star avatar review strips, KPI metrics bars, and parallax photography backdrops."
+    propsList={[
+      { name: "frame / cropBottom", type: "'window' | 'clean' / boolean", defaultVal: "'window' / false", description: "Toggles macOS chrome header or clean card, plus flush bottom cropping." },
+      { name: "parallaxImage / parallaxSpeed", type: "ImageMetadata / 'subtle' | 'medium' | 'deep'", description: "Scroll-driven full-bleed background photography behind dashboard frames (#22, #26)." },
+      { name: "showAvatarGroup / metricsStrip", type: "boolean / DashboardStatItem[]", description: "Displays 5-star verified customer avatar pill (#23) or 3-column performance metrics (#24, #25)." },
+      { name: "primaryCtaHoverSwap / topBanner", type: "boolean / HeroTopBanner", description: "Vertical slide-up hover transition on primary CTA (#13, #26) and top promo ribbon." }
+    ]}
+    usage={`import HeroDashboardShowcase from '@/components/HeroDashboardShowcase.astro';
+import bgPhoto from '@/assets/germancert/hero-audit.jpg';
+
+<HeroDashboardShowcase
+  parallaxImage={bgPhoto}
+  parallaxOverlay="dark"
+  glowBehindShowcase
+  cropBottom
+  metricsStrip={[
+    { label: "LCP", value: "0.7s", accent: true },
+    { label: "CLS", value: "0.00" },
+    { label: "Locales", value: "2 / 2" }
+  ]}
+/>`}
+  >
+    <div class="space-y-12">
+      <div id="hero-02" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="02 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">02 — Hero Section for AI Agent Website</p>
+          </div>
+          <span class="text-xs text-muted">surface="hero" · frame="clean"</span>
+        </div>
+        <HeroDashboardShowcase
+          locale="en"
+          surface="hero"
+          backdrop="glow"
+          frame="clean"
+          compact
+          headingTag="h2"
+          announcement={{
+            badge: "Live Demo",
+            label: "Book a live walkthrough with engineering today",
+            href: "/contact/"
+          }}
+          titleLead="Let's build intelligent"
+          titleAccent="workflows together"
+          description="Deep atmospheric hero surface pairing display headline and dual action buttons with a clean edge-to-edge showcase capture."
+          primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Contact sales", href: "/contact/" }}
+          image={heroVisual}
+          imageAlt="AI workflow showcase interface inside dark hero container"
+        />
+      </div>
+
+      <div id="hero-05" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="05 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">05 — Modern SaaS Hero Section With Dark Gradient</p>
+          </div>
+          <span class="text-xs text-muted">cropBottom · glowBehindShowcase · badgeVariant="success"</span>
+        </div>
+        <HeroDashboardShowcase
+          locale="en"
+          surface="hero"
+          backdrop="glow"
+          cropBottom
+          glowBehindShowcase
+          compact
+          headingTag="h2"
+          announcement={{
+            badge: "NEW",
+            badgeVariant: "success",
+            label: "Introducing Automated Audits & RTL Parity",
+            href: "/features/"
+          }}
+          titleLead="Effortless publishing for"
+          titleAccent="scalable static sites"
+          description="Glowing OKLCH radial halo rises directly behind a bottom-cropped dark analytics window frame."
+          primaryCta={{ label: "Start your free trial", href: "/pricing/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Book a demo", href: "/contact/" }}
+        />
+      </div>
+
+      <div id="hero-10" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="10 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">10 — Hero Section with Minimal Nav &amp; Gradient Dashboard</p>
+          </div>
+          <span class="text-xs text-muted">showPreviewNav · backdrop="wash" · glowBehindShowcase</span>
+        </div>
+        <HeroDashboardShowcase
+          locale="en"
+          surface="subtle"
+          backdrop="wash"
+          showPreviewNav
+          previewNavVariant="minimal"
+          previewBrand="Meridian"
+          glowBehindShowcase
+          compact
+          headingTag="h2"
+          announcement={{
+            badge: "NEW",
+            label: "Try 30 days risk-free multilingual starter workflow",
+            href: "/pricing/"
+          }}
+          titleLead="Reliable automation to boost"
+          titleAccent="your team's efficiency"
+          description="Embedded top navbar above a gradient-highlighted headline, outlined feature CTA, and luminous elevated workspace window."
+          primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Platform features", href: "/features/", icon: "sparkles" }}
+        />
+      </div>
+
+      <div id="hero-11" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="11 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">11 — Modern Platform Hero With Dropdown Navigation</p>
+          </div>
+          <span class="text-xs text-muted">previewNavVariant="dropdown" · frame="clean" · cropBottom</span>
+        </div>
+        <HeroDashboardShowcase
+          locale="en"
+          surface="default"
+          backdrop="none"
+          showPreviewNav
+          previewNavVariant="dropdown"
+          previewBrand="Platform OS"
+          frame="clean"
+          cropBottom
+          compact
+          headingTag="h2"
+          announcement={{
+            badge: "NEW",
+            badgeVariant: "success",
+            label: "Multi-region static builds with automatic alternates",
+            href: "/features/"
+          }}
+          titleLead="Unified platform built for"
+          titleAccent="global engineering teams"
+          description="Hover or focus the Pages dropdown inside the embedded top preview navbar, paired cleanly with a full-width bottom-cropped showcase."
+          primaryCta={{ label: "Explore platform", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "View pricing", href: "/pricing/" }}
+          image={auditVisual}
+          imageAlt="Engineering audit dashboard visual anchored at bottom of hero"
+        />
+      </div>
+
+      <div id="hero-13" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="13 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">13 — Modern Hero Section with Dashboard Preview &amp; Framed Rails</p>
+          </div>
+          <span class="text-xs text-muted">framedRails="solid" · primaryCtaHoverSwap · cropBottom</span>
+        </div>
+        <HeroDashboardShowcase
+          locale="en"
+          surface="default"
+          backdrop="grid"
+          framedRails="solid"
+          showPreviewNav
+          previewNavVariant="bordered"
+          previewBrand="Starter Kit"
+          primaryCtaHoverSwap
+          cropBottom
+          compact
+          headingTag="h2"
+          announcement={{
+            badge: "v7.0",
+            label: "Reusable front-end components for Astro",
+            href: "/components/"
+          }}
+          titleLead="Deliver client websites"
+          titleAccent="twice as fast"
+          description="Solid architectural frame rails, a crisp hover slide-up CTA button animation, and a bottom-cropped analytics preview."
+          primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Browse docs", href: "/components/" }}
+        />
+      </div>
+
+      <div id="hero-22" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="22 / 42" variant="primary" size="sm" />
+            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
+            <p class="text-sm font-bold text-fg">22 — Modern Interface Dashboard with Dark Parallax Backdrop</p>
+          </div>
+          <span class="text-xs text-muted">parallaxImage · parallaxOverlay="dark" · cropBottom</span>
+        </div>
+        <HeroDashboardShowcase
+          locale="en"
+          parallaxImage={auditVisual}
+          parallaxSpeed="medium"
+          parallaxOverlay="dark"
+          backdrop="none"
+          glowBehindShowcase
+          cropBottom
+          compact
+          headingTag="h2"
+          badge="Enterprise Observability"
+          titleLead="Real-time clarity over your"
+          titleAccent="entire release pipeline"
+          description="Floating analytics window anchored cleanly above a dark atmospheric parallax background with calibrated contrast scrims."
+          primaryCta={{ label: "Inspect metrics", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Request walkthrough", href: "/contact/" }}
+        />
+      </div>
+
+      <div id="hero-23" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="23 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">23 — Verified 5-Star Reviews &amp; Noise Texture Product Stage</p>
+          </div>
+          <span class="text-xs text-muted">showAvatarGroup · backdrop="noise" · frame="clean"</span>
+        </div>
+        <HeroDashboardShowcase
+          locale="en"
+          surface="subtle"
+          backdrop="noise"
+          frame="clean"
+          showAvatarGroup
+          avatarCount={1280}
+          avatarLabel="Rated 4.9 / 5 by 1,280+ digital agencies"
+          avatarRating={5}
+          compact
+          headingTag="h2"
+          badge={null}
+          titleLead="Ship storefronts that win"
+          titleAccent="every core web vital"
+          description="Pairs verified five-star client avatars right beneath the dual action buttons over a fine CSS noise canvas."
+          primaryCta={{ label: "Start building", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Case studies", href: "/projects/" }}
+          image={trustVisual}
+          imageAlt="Quality verification emblem inside clean showcase frame"
+        />
+      </div>
+
+      <div id="hero-24" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="24 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">24 — Website Performance Hero with KPI Strip &amp; Orbital Glow</p>
+          </div>
+          <span class="text-xs text-muted">backdrop="orbital" · metricsStrip · cropBottom</span>
+        </div>
+        <HeroDashboardShowcase
+          locale="en"
+          surface="hero"
+          backdrop="orbital"
+          cropBottom
+          glowBehindShowcase
+          metricsStrip={[
+            { label: "First Paint", value: "0.4s", accent: true },
+            { label: "Accessibility", value: "100 / 100" },
+            { label: "Build Size", value: "Zero JS" }
+          ]}
+          compact
+          headingTag="h2"
+          badge="Performance Audited"
+          titleLead="Engineered for speed across"
+          titleAccent="every global region"
+          description="Highlights crisp tabular performance metrics right above a cropped product console surrounded by orbital guide lines."
+          primaryCta={{ label: "Run benchmark", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Explore pricing", href: "/pricing/" }}
+        />
+      </div>
+
+      <div id="hero-25" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="25 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">25 — Lightning Interface Hero with Net-Grid &amp; Pill Nav</p>
+          </div>
+          <span class="text-xs text-muted">backdrop="net" · previewNavVariant="pill" · metricsStrip</span>
+        </div>
+        <HeroDashboardShowcase
+          locale="en"
+          surface="surface"
+          backdrop="net"
+          showPreviewNav
+          previewNavVariant="pill"
+          previewBrand="Velocity UI"
+          frame="window"
+          metricsStrip={[
+            { label: "Deploy Time", value: "12 sec", accent: true },
+            { label: "SSG Routes", value: "98%" },
+            { label: "RTL Parity", value: "100%" }
+          ]}
+          compact
+          headingTag="h2"
+          badge={null}
+          titleLead="Instant visual feedback at"
+          titleAccent="lightning speed"
+          description="Diagonal blueprint lines, rounded floating preview bar, KPI strip, and window-framed photography in one cohesive showcase."
+          primaryCta={{ label: "Open playground", href: "/components/", icon: "arrow-right" }}
+          secondaryCta={{ label: "View docs", href: "/features/" }}
+          image={hqVisual}
+          imageAlt="Studio engineering building showcased inside macOS window chrome"
+        />
+      </div>
+
+      <div id="hero-26" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="26 / 42" variant="primary" size="sm" />
+            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
+            <p class="text-sm font-bold text-fg">26 — Promo Banner SaaS Dashboard with Subtle Photo Parallax</p>
+          </div>
+          <span class="text-xs text-muted">topBanner · parallaxImage · primaryCtaHoverSwap</span>
+        </div>
+        <HeroDashboardShowcase
+          locale="en"
+          parallaxImage={hero0Visual}
+          parallaxSpeed="subtle"
+          parallaxOverlay="gradient"
+          backdrop="none"
+          topBanner={{
+            badge: "Release v7",
+            label: "Includes full Pagefind bilingual search & ChronoTrig v6.1 motion",
+            href: "/features/",
+            ctaLabel: "See changelog"
+          }}
+          primaryCtaHoverSwap
+          cropBottom
+          compact
+          headingTag="h2"
+          badge="All-in-One Workspace"
+          titleLead="Publish production apps with"
+          titleAccent="built-in editorial poise"
+          description="Directional gradient scrim merges subtly animated background photography into an elevated dark metrics window."
+          primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Contact sales", href: "/contact/" }}
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-split-hero"
+    name="LandingHeroSplit"
+    category="Asymmetric 12-Col Splits"
+    title="LandingHeroSplit (10 Variations · #03, #04, #06, #27–#33)"
+    summary="Covers every PrebuiltUI 12-column split pattern: avatar review stacks, founder community pills, edge-bleeding showcase frames, mirrored flipped columns, inline newsletter forms, floating telemetry/profile overlay cards, and smooth parallax backdrops."
+    propsList={[
+      { name: "parallaxImage / parallaxOverlay", type: "ImageMetadata / 'hero' | 'dark' | 'gradient' | 'subtle'", description: "Scroll-driven photography layer behind split layouts (#27, #30)." },
+      { name: "flipColumns / edgeBleedFrame", type: "boolean", defaultVal: "false", description: "Reverses copy & media order on desktop logically (#29, #32) or bleeds media cleanly to end container edge (#06, #31)." },
+      { name: "showInlineSubscribe", type: "boolean", defaultVal: "false", description: "Replaces buttons with a validated inline email subscription capsule (#30, #31)." },
+      { name: "mediaStatsOverlay", type: "HeroSplitMediaStat[] | null", description: "Pins glass-surface KPI or profile cards cleanly over the showcase image (#28, #32)." }
+    ]}
+    usage={`import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
+import showcaseImg from './herosections.jpg';
+
+<LandingHeroSplit
+  parallaxImage={showcaseImg}
+  parallaxOverlay="gradient"
+  showInlineSubscribe
+  flipColumns
+  image={showcaseImg}
+/>`}
+  >
+    <div class="space-y-12">
+      <div id="hero-03" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="03 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">03 — Hero Section with Grid, Gradient &amp; 5-Star Rating Group</p>
+          </div>
+          <span class="text-xs text-muted">backdrop="grid" · showAvatarGroup</span>
+        </div>
+        <LandingHeroSplit
+          locale="en"
+          surface="subtle"
+          backdrop="grid"
+          compact
+          headingTag="h2"
+          eyebrow={null}
+          trustNote={null}
+          title="Intelligent workflows engineered for"
+          titleAccent="rapid static launches"
+          description="Asymmetric split over a radially masked CSS grid with dual action buttons and an overlapping 5-star <AvatarGroup /> social proof stack."
+          primaryCta={{ label: "Start building", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "View pricing", href: "/pricing/" }}
+          showAvatarGroup
+          avatarCount={1000}
+          avatarLabel="Trusted by 1,000+ product engineers"
+          image={auditVisual}
+          imageAlt="Engineering workspace grid preview"
+        />
+      </div>
+
+      <div id="hero-04" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="04 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">04 — Hero Section Dark Theme with Community Pill</p>
+          </div>
+          <span class="text-xs text-muted">surface="hero" · showAvatarPill · secondaryCta.icon</span>
+        </div>
+        <LandingHeroSplit
+          locale="en"
+          surface="hero"
+          backdrop="glow"
+          compact
+          headingTag="h2"
+          eyebrow={null}
+          trustNote={null}
+          showAvatarPill
+          avatarCount={240}
+          avatarLabel="Join community of 240+ founders"
+          title="Build high-contrast digital products"
+          titleAccent="in any language"
+          description="Dark atmospheric hero pairing an overlapping founder community pill, bold display typography, demo action button, and crisp framed photography."
+          primaryCta={{ label: "Get started", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Watch overview", href: "/components/", icon: "eye" }}
+          image={hqVisual}
+          imageAlt="Architectural dark theme product showcase"
+        />
+      </div>
+
+      <div id="hero-06" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="06 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">06 — Modern SaaS Split Hero With Nav &amp; Edge-Bleed Preview</p>
+          </div>
+          <span class="text-xs text-muted">showPreviewNav · featuresRow · edgeBleedFrame</span>
+        </div>
+        <LandingHeroSplit
+          locale="en"
+          surface="surface"
+          backdrop="none"
+          showPreviewNav
+          previewNavVariant="minimal"
+          previewBrand="Studio SaaS"
+          compact
+          headingTag="h2"
+          eyebrow={null}
+          trustNote={null}
+          announcement={{
+            badge: "NEW",
+            label: "Try 30 days multilingual template kit",
+            href: "/pricing/"
+          }}
+          title="Design bilingual interfaces"
+          titleAccent="better and faster"
+          description="Embedded top navbar, NEW announcement badge, inline feature checklist, and a framed edge-bleeding media card anchored cleanly in LTR and RTL."
+          primaryCta={{ label: "Start free trial", href: "/pricing/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Book a demo", href: "/contact/" }}
+          featuresRow={[
+            { icon: "bolt", label: "Sub-second loads" },
+            { icon: "palette", label: "OKLCH presets" },
+            { icon: "globe", label: "Mirrored RTL" }
+          ]}
+          edgeBleedFrame
+          image={heroVisual}
+          imageAlt="Dark SaaS visual card offset to logical container end"
+        />
+      </div>
+
+      <div id="hero-27" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="27 / 42" variant="primary" size="sm" />
+            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
+            <p class="text-sm font-bold text-fg">27 — Editorial Gradient Split with Parallax Background</p>
+          </div>
+          <span class="text-xs text-muted">parallaxImage · parallaxOverlay="gradient" · showPreviewNav</span>
+        </div>
+        <LandingHeroSplit
+          locale="en"
+          parallaxImage={hqVisual}
+          parallaxSpeed="medium"
+          parallaxOverlay="gradient"
+          backdrop="none"
+          showPreviewNav
+          previewNavVariant="minimal"
+          previewBrand="Atelier"
+          compact
+          headingTag="h2"
+          eyebrow="Client Casebooks"
+          trustNote={null}
+          title="Bring flagship stories alive"
+          titleAccent="with depth on scroll"
+          description="Full-bleed architectural photography glides beneath a directional gradient scrim while clean copy and showcase capture stay pinned in crisp hierarchy."
+          primaryCta={{ label: "Read stories", href: "/projects/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Book consultation", href: "/contact/" }}
+          image={auditVisual}
+          imageAlt="Featured editorial visual alongside parallax background"
+        />
+      </div>
+
+      <div id="hero-28" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="28 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">28 — Mortgage &amp; Advisory Split with Floating Stats Overlay</p>
+          </div>
+          <span class="text-xs text-muted">backdrop="wash" · mediaStatsOverlay</span>
+        </div>
+        <LandingHeroSplit
+          locale="en"
+          surface="subtle"
+          backdrop="wash"
+          compact
+          headingTag="h2"
+          eyebrow="Financial & Advisory"
+          trustNote="Verified transparent pricing · Fixed deliverables"
+          title="Predictable architecture for"
+          titleAccent="growing service brands"
+          description="Pins two frosted KPI overlay badges cleanly across the bottom edge of the showcase image without breaking responsiveness on mobile viewports."
+          primaryCta={{ label: "Compare plans", href: "/pricing/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Talk to advisory", href: "/contact/" }}
+          mediaStatsOverlay={[
+            { icon: "award", value: "99.9%", label: "Client SLA Uptime" },
+            { icon: "clock", value: "< 14d", label: "Average Launch Cycle" }
+          ]}
+          image={trustVisual}
+          imageAlt="Advisory verification hallmark with glass overlay metrics"
+        />
+      </div>
+
+      <div id="hero-29" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="29 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">29 — Mirrored Split Hero with Flipped Columns &amp; Net Grid</p>
+          </div>
+          <span class="text-xs text-muted">flipColumns · backdrop="net" · showAvatarGroup</span>
+        </div>
+        <LandingHeroSplit
+          locale="en"
+          surface="default"
+          backdrop="net"
+          flipColumns
+          showAvatarGroup
+          avatarCount={650}
+          avatarLabel="650+ engineering teams onboarded"
+          compact
+          headingTag="h2"
+          eyebrow="Bidirectional Grid"
+          trustNote={null}
+          title="Switch media &amp; editorial columns"
+          titleAccent="with zero layout hacks"
+          description="Logical column reversal shifts the showcase visual to reading-start on desktop while preserving natural headline-first order on small screens."
+          primaryCta={{ label: "Explore capabilities", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Inspect code", href: "/components/" }}
+          image={auditVisual}
+          imageAlt="Flipped media column over diagonal blueprint grid"
+        />
+      </div>
+
+      <div id="hero-30" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="30 / 42" variant="primary" size="sm" />
+            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
+            <p class="text-sm font-bold text-fg">30 — Newsletter Capture &amp; Portrait Split with Deep Parallax</p>
+          </div>
+          <span class="text-xs text-muted">parallaxImage · showInlineSubscribe · parallaxSpeed="deep"</span>
+        </div>
+        <LandingHeroSplit
+          locale="en"
+          parallaxImage={hero0Visual}
+          parallaxSpeed="deep"
+          parallaxOverlay="dark"
+          backdrop="none"
+          showInlineSubscribe
+          compact
+          headingTag="h2"
+          eyebrow="Weekly Dispatch"
+          trustNote="Bi-weekly release notes · Unsubscribe in one click"
+          title="Subscribe for curated front-end"
+          titleAccent="blueprints & themes"
+          description="Replaces standard hero buttons with an accessible validated inline email capture capsule framed over a deep parallax photo backdrop."
+          image={hqVisual}
+          imageAlt="Portrait photography in deep parallax newsletter split"
+        />
+      </div>
+
+      <div id="hero-31" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="31 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">31 — Grid Gradient Split with Inline Lead Capture &amp; Edge Bleed</p>
+          </div>
+          <span class="text-xs text-muted">backdrop="grid" · showInlineSubscribe · edgeBleedFrame</span>
+        </div>
+        <LandingHeroSplit
+          locale="en"
+          surface="surface"
+          backdrop="grid"
+          showInlineSubscribe
+          edgeBleedFrame
+          compact
+          headingTag="h2"
+          eyebrow={null}
+          trustNote="Zero backend required · Static client validation"
+          title="Turn early interest into"
+          titleAccent="verified waitlist leads"
+          description="Combines subtle background grid geometry, inline waitlist form feedback, and an edge-bleeding dark showcase card."
+          image={heroVisual}
+          imageAlt="Edge-bleeding showcase beside inline subscription bar"
+        />
+      </div>
+
+      <div id="hero-32" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="32 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">32 — Dark Creator Profile Split with Flipped Glass Overlays</p>
+          </div>
+          <span class="text-xs text-muted">surface="hero" · flipColumns · mediaStatsOverlay</span>
+        </div>
+        <LandingHeroSplit
+          locale="en"
+          surface="hero"
+          backdrop="noise"
+          flipColumns
+          compact
+          headingTag="h2"
+          eyebrow="Creator Storefront"
+          trustNote={null}
+          title="Showcase talent, reach &amp;"
+          titleAccent="live engagement"
+          description="Designed for influencer, portfolio, and studio storefronts needing prominent creator stat overlays paired with bold dark typography."
+          primaryCta={{ label: "Collaborate", href: "/contact/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Portfolio", href: "/projects/" }}
+          mediaStatsOverlay={[
+            { icon: "users", value: "180K+", label: "Monthly Readers" },
+            { icon: "star-filled", value: "4.95", label: "Partner Rating" }
+          ]}
+          image={trustVisual}
+          imageAlt="Creator profile visual with glass engagement stat badges"
+        />
+      </div>
+
+      <div id="hero-33" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="33 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">33 — Enterprise Solutions Split with Dashed Nav &amp; Highlights</p>
+          </div>
+          <span class="text-xs text-muted">previewNavVariant="dashed" · backdrop="dots" · featuresRow</span>
+        </div>
+        <LandingHeroSplit
+          locale="en"
+          surface="subtle"
+          backdrop="dots"
+          showPreviewNav
+          previewNavVariant="dashed"
+          previewBrand="Enterprise Core"
+          compact
+          headingTag="h2"
+          eyebrow={null}
+          trustNote={null}
+          announcement={{
+            badge: "Enterprise",
+            label: "Audit-ready multi-brand deployment workflow",
+            href: "/features/"
+          }}
+          title="Unified web infrastructure for"
+          titleAccent="multi-market teams"
+          description="Pairs a crisp dashed preview navigation bar and dot-matrix background with a three-item compliance and speed summary row."
+          primaryCta={{ label: "Explore enterprise", href: "/features/", icon: "arrow-right" }}
+          secondaryCta={{ label: "Talk to sales", href: "/contact/" }}
+          featuresRow={[
+            { icon: "shield", label: "GDPR & TDDDG ready" },
+            { icon: "globe", label: "Hreflang auto-map" },
+            { icon: "bolt", label: "Static edge CDN" }
+          ]}
+          image={auditVisual}
+          imageAlt="Enterprise engineering console alongside feature highlights"
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+
+  <ComponentDoc
+    id="doc-interactive-prompt"
+    surface="surface"
+    name="Prompt, Search, Code, CLI & Marquee Heroes"
+    category="Interactive & Social Proof"
+    title="Interactive Prompt, Search, Code Input, CLI & Marquee (10 Variations · #12, #34–#42)"
+    summary="Covers every interactive input and marquee hero archetype: prompt textarea composers (#12, #34, #35), single-line search bars (#36, #37), interactive stack-switcher code input (#38), CLI terminal switcher with parallax backdrop (#39), newsletter waitlist (#40), and Embla AutoScroll proof marquees (#41, #42)."
+    propsList={[
+      { name: "HeroInteractivePrompt mode", type: "'prompt' | 'newsletter' | 'search' | 'code'", defaultVal: "'prompt'", description: "Renders multi-line AI prompt composer, email waitlist, directory search capsule, or stack-tabbed code prompt." },
+      { name: "HeroCommandCli", type: "Component", description: "Interactive npm / pnpm / bun terminal bar with dir='ltr' isolation, copy toast, and optional parallax background (#39)." },
+      { name: "HeroProofMarquee", type: "Component", description: "Embla AutoScroll horizontal marquee with IntersectionObserver gating and RTL-mirrored drag scrolling (#41, #42)." }
+    ]}
+    usage={`import HeroInteractivePrompt from '@/components/HeroInteractivePrompt.astro';
+import HeroCommandCli from '@/components/HeroCommandCli.astro';
+import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
+
+<HeroInteractivePrompt mode="code" surface="hero" />
+<HeroInteractivePrompt mode="search" surface="subtle" backdrop="noise" />
+<HeroCommandCli parallaxImage={bgPhoto} showPreviewNav />
+<HeroProofMarquee parallaxImage={bgPhoto} framedRails="dashed" />`}
+  >
+    <div class="space-y-12">
+      <div id="hero-12" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="12 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">12 — Hero Section with AI Prompt Input &amp; Divided Suggestions</p>
+          </div>
+          <span class="text-xs text-muted">mode="prompt" · backdrop="dots" · chipLayout="grid"</span>
+        </div>
+        <HeroInteractivePrompt
+          id="demo-hero-12-prompt"
+          locale="en"
+          mode="prompt"
+          surface="default"
+          backdrop="dots"
+          showPreviewNav
+          previewNavVariant="minimal"
+          previewBrand="Prompt Studio"
+          badge={null}
+          chipLayout="grid"
+          compact
+          headingTag="h2"
+        />
+      </div>
+
+      <div id="hero-34" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="34 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">34 — AI Workspace Prompt Composer with Dashed Rails</p>
+          </div>
+          <span class="text-xs text-muted">framedRails="dashed" · backdrop="wash" · chipLayout="pills"</span>
+        </div>
+        <HeroInteractivePrompt
+          id="demo-hero-34-workspace"
+          locale="en"
+          mode="prompt"
+          surface="subtle"
+          backdrop="wash"
+          framedRails="dashed"
+          announcement={{
+            badge: "Workspace",
+            label: "Click any starter prompt below to populate the composer",
+            href: "/components/"
+          }}
+          badge="AI Assistant Composer"
+          title="Prototype a multilingual workspace"
+          description="Architectural dashed border rails combined with an ambient OKLCH wash and rounded starter suggestion pills."
+          chipLayout="pills"
+          compact
+          headingTag="h2"
+        />
+      </div>
+
+      <div id="hero-35" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="35 / 42" variant="primary" size="sm" />
+            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
+            <p class="text-sm font-bold text-fg">35 — Dark AI Message Prompt with Atmospheric Parallax BG</p>
+          </div>
+          <span class="text-xs text-muted">parallaxImage · mode="prompt" · previewNavVariant="pill"</span>
+        </div>
+        <HeroInteractivePrompt
+          id="demo-hero-35-parallax-prompt"
+          locale="en"
+          mode="prompt"
+          parallaxImage={hero0Visual}
+          parallaxSpeed="medium"
+          parallaxOverlay="hero"
+          backdrop="none"
+          showPreviewNav
+          previewNavVariant="pill"
+          previewBrand="Nexus AI"
+          badge="Parallax AI Input"
+          title="Describe the site you want to ship"
+          description="Combines an embedded frosted capsule navbar and interactive AI message composer directly over scroll-driven background imagery."
+          chipLayout="pills"
+          compact
+          headingTag="h2"
+        />
+      </div>
+
+      <div id="hero-36" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="36 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">36 — Search Box Hero with Noise Backdrop &amp; Bordered Nav</p>
+          </div>
+          <span class="text-xs text-muted">mode="search" · backdrop="noise" · previewNavVariant="bordered"</span>
+        </div>
+        <HeroInteractivePrompt
+          id="demo-hero-36-search"
+          locale="en"
+          mode="search"
+          surface="subtle"
+          backdrop="noise"
+          showPreviewNav
+          previewNavVariant="bordered"
+          previewBrand="Directory"
+          badge="Instant Discovery"
+          title="Search reusable sections &amp; blocks"
+          description="Accessible single-line pill search composer with quick-fill category chips and subtle CSS grain background texture."
+          chips={["Pricing tables", "Hero sections", "RTL search", "Case study layout"]}
+          compact
+          headingTag="h2"
+        />
+      </div>
+
+      <div id="hero-37" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="37 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">37 — Orbital Directory Search Hero with Partner Logo Strip</p>
+          </div>
+          <span class="text-xs text-muted">mode="search" · backdrop="orbital" · partnerLogos</span>
+        </div>
+        <HeroInteractivePrompt
+          id="demo-hero-37-orbital-search"
+          locale="en"
+          mode="search"
+          surface="surface"
+          backdrop="orbital"
+          badge="Catalog Index"
+          title="Find production components in seconds"
+          description="Orbits semantic search around concentric guide rings with quick suggestion pills and ecosystem badges below."
+          chips={["Astro v7 themes", "Dark mode cards", "Contact forms", "Embla sliders"]}
+          partnerLogos={[
+            { icon: "palette", name: "TAILWIND v4" },
+            { icon: "sparkles", name: "CHRONOTRIG" },
+            { icon: "globe", name: "PARAGLIDE" },
+            { icon: "search", name: "PAGEFIND" }
+          ]}
+          compact
+          headingTag="h2"
+        />
+      </div>
+
+      <div id="hero-38" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="38 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">38 — Code Prompt Composer with Stack Selector Tabs</p>
+          </div>
+          <span class="text-xs text-muted">mode="code" · stackTabs · surface="hero"</span>
+        </div>
+        <HeroInteractivePrompt
+          id="demo-hero-38-code"
+          locale="en"
+          mode="code"
+          surface="hero"
+          backdrop="grid"
+          stackTabs={["Astro v7", "TypeScript", "Tailwind v4", "RTL / LTR"]}
+          badge="Code Builder"
+          title="Scaffold clean modular sections"
+          description="Interactive stack tabs toggle active context right inside the prompt card header before generating a specification."
+          chips={[
+            "Parallax hero with announcement banner",
+            "Comparison matrix for SaaS pricing",
+            "RTL-safe portfolio filter gallery",
+            "GDPR cookie gatekeeper modal"
+          ]}
+          compact
+          headingTag="h2"
+        />
+      </div>
+
+      <div id="hero-39" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="39 / 42" variant="primary" size="sm" />
+            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
+            <p class="text-sm font-bold text-fg">39 — Dark CLI Copy Command Hero with Photo Parallax BG</p>
+          </div>
+          <span class="text-xs text-muted">HeroCommandCli · parallaxImage · showPreviewNav</span>
+        </div>
+        <HeroCommandCli
+          locale="en"
+          parallaxImage={auditVisual}
+          parallaxSpeed="deep"
+          parallaxOverlay="dark"
+          backdrop="none"
+          showPreviewNav
+          previewNavVariant="minimal"
+          previewBrand="Starter CLI"
+          showAvatarStack
+          partnerLogos={[
+            { icon: "code", name: "ASTRO CHECK" },
+            { icon: "shield", name: "ZERO SECRETS" },
+            { icon: "bolt", name: "STATIC CDN" }
+          ]}
+          compact
+          headingTag="h2"
+        />
+      </div>
+
+      <div id="hero-40" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="40 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">40 — Rounded Newsletter &amp; Launch Waitlist Capsule</p>
+          </div>
+          <span class="text-xs text-muted">HeroInteractivePrompt mode="newsletter"</span>
+        </div>
+        <HeroInteractivePrompt
+          id="demo-hero-40-newsletter"
+          locale="en"
+          mode="newsletter"
+          surface="hero"
+          backdrop="glow"
+          compact
+          headingTag="h2"
+          badge="Launch Waitlist"
+          title="Get notified when new blocks ship"
+          description="Includes instant regex validation, aria-invalid error states, and semantic OKLCH success/error status feedback."
+        />
+      </div>
+
+      <div id="hero-41" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="41 / 42" variant="primary" size="sm" />
+            <p class="text-sm font-bold text-fg">41 — 5-Star Social Proof &amp; RTL-Aware Embla Partner Marquee</p>
+          </div>
+          <span class="text-xs text-muted">HeroProofMarquee · Embla AutoScroll · backdrop="dots"</span>
+        </div>
+        <HeroProofMarquee
+          locale="en"
+          surface="subtle"
+          backdrop="dots"
+          compact
+          headingTag="h2"
+          previewBrand="Starter Studio"
+        />
+      </div>
+
+      <div id="hero-42" class="scroll-mt-24 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="42 / 42" variant="primary" size="sm" />
+            <UiBadge label="Parallax BG" variant="success" size="sm" icon="photo" />
+            <p class="text-sm font-bold text-fg">42 — Automate Faster Partner Marquee with Parallax BG &amp; Dashed Rails</p>
+          </div>
+          <span class="text-xs text-muted">HeroProofMarquee · parallaxImage · framedRails="dashed"</span>
+        </div>
+        <HeroProofMarquee
+          locale="en"
+          parallaxImage={heroVisual}
+          parallaxSpeed="subtle"
+          parallaxOverlay="hero"
+          backdrop="none"
+          framedRails="dashed"
+          showPreviewNav
+          previewNavVariant="bordered"
+          previewBrand="Automate UI"
+          badge="Global Scale"
+          titleLead="Automate faster across"
+          titleAccent="every language & brand"
+          description="Pairs full-bleed scroll parallax and dashed vertical architectural rails with an IntersectionObserver-gated Embla AutoScroll partner strip."
+          compact
+          headingTag="h2"
+        />
+      </div>
+
+      <div id="doc-hero-variants" class="scroll-mt-24 space-y-3 pt-4 border-t border-border">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <UiBadge label="Core Reference" variant="success" size="sm" />
+            <p class="text-sm font-bold text-fg">HomeHero (Starter Core Homepage Hero)</p>
+          </div>
+          <Button href="/components/#sec-hero" variant="ghost" size="sm" icon="arrow-right">
+            Open in Components
+          </Button>
+        </div>
+        <HomeHero
+          locale="en"
+          compact
+          headingTag="h2"
+          description="Dark homepage hero combining OKLCH gradient headlines with a 3-column logical proof bar."
+          primaryHref="/components/"
+          secondaryHref="/features/"
+          highlights={[
+            { key: "tokens", icon: "palette", title: "OKLCH Theme Engine", description: "Switch brand palettes globally from client/config.json." },
+            { key: "i18n", icon: "globe", title: "Paraglide Dictionaries", description: "Compile-time message safety across English and Persian." },
+            { key: "ssg", icon: "bolt", title: "Pure Static Output", description: "Zero runtime servers with full Lighthouse readiness." }
+          ]}
+        />
+      </div>
+    </div>
+  </ComponentDoc>
+</div>
+
+<CtaBanner
+  id="hero-sections-cta"
+  locale="en"
+  surface="hero"
+  eyebrow="Ready to Compose"
+  title="Explore all reusable starter components"
+  description="Return to the main interactive catalog or get in touch to build a custom bilingual website."
+  primaryCta={{ label: "All Components", href: "/components/", icon: "arrow-right" }}
+  secondaryCta={{ label: "Start a Conversation", href: "/contact/" }}
+/>
