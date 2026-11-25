@@ -389,6 +389,10 @@ if (configuredRedirects.length > 0) {
     fs.existsSync(path.join(rootDir, 'deploy', 'nginx-redirects.conf')),
     'deploy/nginx-redirects.conf exists outside dist/ when redirects are configured'
   );
+  assert(
+    fs.existsSync(path.join(rootDir, 'deploy', '.htaccess-redirects')),
+    'deploy/.htaccess-redirects exists outside dist/ when redirects are configured'
+  );
 }
 
 if (blogFeed) {

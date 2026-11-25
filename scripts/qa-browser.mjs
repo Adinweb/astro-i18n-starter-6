@@ -267,6 +267,146 @@ try {
       }
     }
   }
+
+  // Interactive flows (Search modal, Mobile Drawer, QuickContact vs CookieConsent, ImageGallery lightbox)
+  {
+    // 1. Desktop Search modal open & close
+    const desktopCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const desktopPage = await desktopCtx.newPage();
+    await desktopPage.goto(`${origin}/`, { waitUntil: 'load' });
+    await desktopPage.waitForTimeout(150);
+
+    const searchBtn = desktopPage.locator('[data-open-search]').first();
+    if ((await searchBtn.count()) > 0 && (await searchBtn.isVisible())) {
+      await searchBtn.click();
+      await desktopPage.waitForTimeout(80);
+      const modalOpen = await desktopPage.evaluate(() =>
+        Boolean(document.querySelector('[data-search-modal][open]'))
+      );
+      record(modalOpen, 'Interactive: desktop Search modal opens on trigger click');
+      if (modalOpen) {
+        await desktopPage.locator('#search-close-btn').click();
+        await desktopPage.waitForTimeout(80);
+        const modalClosed = await desktopPage.evaluate(
+          () => !document.querySelector('[data-search-modal][open]')
+        );
+        record(modalClosed, 'Interactive: desktop Search modal closes cleanly');
+      }
+    }
+    await desktopCtx.close();
+
+    // 2. Mobile Drawer open/close + QuickContact vs CookieConsent behavior
+    const mobileCtx = await browser.newContext({ viewport: { width: 375, height: 812 } });
+    const mobilePage = await mobileCtx.newPage();
+    await mobilePage.goto(`${origin}/`, { waitUntil: 'load' });
+    await mobilePage.waitForTimeout(150);
+
+    const menuBtn = mobilePage.locator('[data-mobile-menu-btn]').first();
+    if ((await menuBtn.count()) > 0 && (await menuBtn.isVisible())) {
+      await menuBtn.click();
+      await mobilePage.waitForTimeout(120);
+      const drawerOpen = await mobilePage.evaluate(() =>
+        Boolean(document.querySelector('[data-mobile-menu].is-open'))
+      );
+      record(drawerOpen, 'Interactive: mobile drawer opens with .is-open');
+      if (drawerOpen) {
+        await mobilePage.locator('[data-close-menu]').first().click();
+        await mobilePage.waitForTimeout(120);
+        const drawerClosed = await mobilePage.evaluate(
+          () => !document.querySelector('[data-mobile-menu].is-open')
+        );
+        record(drawerClosed, 'Interactive: mobile drawer closes cleanly');
+      }
+    }
+
+    const hasQuickWidget = (await mobilePage.locator('[data-quick-contact-widget]').count()) > 0;
+    const hasCookieBanner = (await mobilePage.locator('[data-cookie-banner]').count()) > 0;
+    if (hasQuickWidget && hasCookieBanner) {
+      const hiddenWhileUndecided = await mobilePage.evaluate(() => {
+        const banner = document.querySelector('[data-cookie-banner]');
+        const quick = document.querySelector('[data-quick-contact-widget]');
+        return Boolean(banner && !banner.hasAttribute('hidden') && quick?.hasAttribute('hidden'));
+      });
+      record(
+        hiddenWhileUndecided,
+        'Interactive: QuickContactWidget stays hidden while undecided CookieConsent banner is visible'
+      );
+
+      const acceptBtn = mobilePage.locator('[data-cookie-accept-banner]').first();
+      if ((await acceptBtn.count()) > 0 && (await acceptBtn.isVisible())) {
+        await acceptBtn.click();
+        await mobilePage.waitForTimeout(120);
+        const quickVisibleAfterAccept = await mobilePage.evaluate(() => {
+          const quick = document.querySelector('[data-quick-contact-widget]');
+          return Boolean(quick && !quick.hasAttribute('hidden'));
+        });
+        record(
+          quickVisibleAfterAccept,
+          'Interactive: QuickContactWidget reveals once CookieConsent is decided'
+        );
+        if (quickVisibleAfterAccept) {
+          await mobilePage.locator('[data-quick-contact-toggle]').click();
+          await mobilePage.waitForTimeout(80);
+          const expanded = await mobilePage.getAttribute('[data-quick-contact-toggle]', 'aria-expanded');
+          record(expanded === 'true', 'Interactive: QuickContactWidget expands channels on click');
+          await mobilePage.locator('[data-quick-contact-toggle]').click();
+        }
+      }
+    }
+    await mobileCtx.close();
+
+    // 3. ImageGallerySection multi-slide lightbox (when /components/ is built)
+    if (resolveDistFile('/components/')) {
+      const galleryCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+      const galleryPage = await galleryCtx.newPage();
+      await galleryPage.goto(`${origin}/components/`, { waitUntil: 'load' });
+      await galleryPage.waitForTimeout(150);
+
+      const opener = galleryPage.locator('[data-gallery-open]').first();
+      if ((await opener.count()) > 0) {
+        await opener.scrollIntoViewIfNeeded();
+        await opener.click();
+        await galleryPage.waitForTimeout(100);
+        const galleryState = await galleryPage.evaluate(() => {
+          const dialog = document.querySelector('[data-gallery-dialog]');
+          const counter = dialog?.querySelector('[data-dialog-counter]')?.textContent?.trim() || '';
+          return {
+            open: Boolean(dialog?.hasAttribute('open')),
+            counter,
+          };
+        });
+        record(galleryState.open, 'Interactive: ImageGallerySection lightbox dialog opens');
+
+        const nextBtn = galleryPage.locator('[data-gallery-dialog] [data-gallery-next]').first();
+        if (galleryState.open && (await nextBtn.isVisible()) && !(await nextBtn.isDisabled())) {
+          const beforeCounter = galleryState.counter;
+          await nextBtn.click();
+          await galleryPage.waitForTimeout(80);
+          const afterCounter = await galleryPage.evaluate(
+            () =>
+              document
+                .querySelector('[data-gallery-dialog] [data-dialog-counter]')
+                ?.textContent?.trim() || ''
+          );
+          record(
+            Boolean(afterCounter && afterCounter !== beforeCounter),
+            'Interactive: ImageGallerySection lightbox cycles slides cleanly',
+            `${beforeCounter} -> ${afterCounter}`
+          );
+        }
+
+        if (galleryState.open) {
+          await galleryPage.locator('[data-gallery-dialog] [data-gallery-close]').first().click();
+          await galleryPage.waitForTimeout(80);
+          const dialogClosed = await galleryPage.evaluate(
+            () => !document.querySelector('[data-gallery-dialog][open]')
+          );
+          record(dialogClosed, 'Interactive: ImageGallerySection lightbox closes cleanly');
+        }
+      }
+      await galleryCtx.close();
+    }
+  }
 } finally {
   await browser?.close();
   server.close();

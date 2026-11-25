@@ -865,6 +865,7 @@ try {
     '--rtl-font=noto-arabic',
     '--og-mode=branded',
     '--blog=false',
+    '--logo=public/favicon.svg',
     '--skip-assets',
     '--yes',
   ]);
@@ -879,11 +880,36 @@ try {
       initedMerged.brand.fontPreset === 'jakarta' &&
       initedMerged.brand.rtlFontPreset === 'noto-arabic' &&
       initedMerged.brand.socialCardMode === 'branded' &&
+      initedMerged.brand.logo?.light === '/brand/logo.svg' &&
+      exists('public/brand/logo.svg') &&
       initedMerged.ui?.topBanner?.enabled === false &&
       initedMerged.content.types.blog.enabled === false &&
       initedClient.site?.name === 'Acme Digital' &&
       untouchedCore.site.name !== 'Acme Digital',
-    'site:init writes sparse client/config.json overrides while disabling demo banner and keeping app.config.json clean'
+    'site:init writes sparse client/config.json overrides + --logo asset while disabling demo banner and keeping app.config.json clean'
+  );
+
+  result = run(sandbox, 'node', [
+    'scripts/site-init.mjs',
+    '--blueprint=catalog',
+    '--skip-assets',
+    '--yes',
+  ]);
+  const catalogMerged = readMergedConfig(sandbox);
+  record(
+    result.code === 0 &&
+      catalogMerged.brand.preset === 'amber' &&
+      catalogMerged.business.type === 'Store',
+    'site:init --blueprint=catalog applies Store/amber blueprint defaults'
+  );
+
+  result = run(sandbox, 'node', ['scripts/site-reset.mjs', '--yes']);
+  record(
+    result.code === 0 &&
+      JSON.stringify(JSON.parse(read('client/config.json'))) === '{}' &&
+      JSON.stringify(JSON.parse(read('client/cms.json'))) === '{}' &&
+      !exists('public/brand/logo.svg'),
+    'site:reset --yes resets client/config.json, client/cms.json, and public/brand/'
   );
 
   if (altLoc !== baseLoc) {

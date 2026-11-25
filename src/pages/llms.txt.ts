@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_METADATA } from '@/i18n/locales';
-import { absoluteUrl, BLOG_CONFIG, siteConfig } from '@/libs/config/app';
+import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { getSiteRoutes } from '@/libs/content/service';
 
 /**
@@ -13,7 +13,9 @@ export const GET: APIRoute = async () => {
 
   const pageLines: string[] = [];
   const blogLines: string[] = [];
+  let blogIndexUrl: string | undefined;
   const collectionMap = new Map<string, string[]>();
+  const collectionIndexMap = new Map<string, string>();
 
   for (const route of defaultRoutes) {
     const props = route.props;
@@ -22,9 +24,13 @@ export const GET: APIRoute = async () => {
     if (props.routeType === 'page') {
       const { title, description } = props.entry.data;
       pageLines.push(`- [${title}](${href})${description ? `: ${description}` : ''}`);
+    } else if (props.routeType === 'blog-index' && props.page === 1) {
+      blogIndexUrl = href;
     } else if (props.routeType === 'blog-entry') {
       const { title, description } = props.entry.data;
       blogLines.push(`- [${title}](${href})${description ? `: ${description}` : ''}`);
+    } else if (props.routeType === 'collection-index' && props.page === 1) {
+      collectionIndexMap.set(props.contentType, href);
     } else if (props.routeType === 'collection-entry') {
       const key = props.contentType;
       const list = collectionMap.get(key) ?? [];
@@ -58,7 +64,7 @@ export const GET: APIRoute = async () => {
       '',
       '## Blog',
       '',
-      `- Index: ${absoluteUrl('/' + (BLOG_CONFIG ? 'blog/' : ''))}`.replace(/\/\/blog\/$/, '/blog/'),
+      ...(blogIndexUrl ? [`- Index: ${blogIndexUrl}`] : []),
       ...blogLines
     );
   }
@@ -66,7 +72,14 @@ export const GET: APIRoute = async () => {
   for (const [collectionKey, entries] of collectionMap.entries()) {
     if (entries.length === 0) continue;
     const heading = collectionKey.charAt(0).toUpperCase() + collectionKey.slice(1);
-    sections.push('', `## ${heading}`, '', ...entries);
+    const indexHref = collectionIndexMap.get(collectionKey);
+    sections.push(
+      '',
+      `## ${heading}`,
+      '',
+      ...(indexHref ? [`- Index: ${indexHref}`] : []),
+      ...entries
+    );
   }
 
   const body = `${sections.join('\n')}\n`;

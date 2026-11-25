@@ -22,6 +22,15 @@ const CMS_STRIP_EMPTY_STRING_KEYS = new Set([
   'heightPx',
   'type',
   'status',
+  'contactEmail',
+]);
+
+const CMS_LOCALE_MAP_KEYS = new Set([
+  'badgeByLocale',
+  'messageByLocale',
+  'ctaLabelByLocale',
+  'ctaHrefByLocale',
+  'labels',
 ]);
 
 function coerceFiniteNumber(value: unknown): number | undefined {
@@ -41,12 +50,16 @@ function coerceFiniteNumber(value: unknown): number | undefined {
 export function sanitizeCmsConfig(raw: unknown): Record<string, unknown> {
   if (!isPlainObject(raw)) return {};
 
-  const walk = (node: unknown, keyName?: string): unknown => {
+  const walk = (node: unknown, keyName?: string, parentKeyName?: string): unknown => {
     if (node === null || node === undefined) return undefined;
 
     if (typeof node === 'string') {
       const trimmed = node.trim();
-      if (keyName && CMS_STRIP_EMPTY_STRING_KEYS.has(keyName) && trimmed === '') {
+      if (
+        trimmed === '' &&
+        ((keyName && CMS_STRIP_EMPTY_STRING_KEYS.has(keyName)) ||
+          (parentKeyName && CMS_LOCALE_MAP_KEYS.has(parentKeyName)))
+      ) {
         return undefined;
       }
       return node;
@@ -54,7 +67,7 @@ export function sanitizeCmsConfig(raw: unknown): Record<string, unknown> {
 
     if (Array.isArray(node)) {
       const cleaned = node
-        .map((item) => walk(item))
+        .map((item) => walk(item, undefined, keyName))
         .filter((item) => item !== undefined);
 
       if (keyName === 'redirects') {
@@ -86,10 +99,13 @@ export function sanitizeCmsConfig(raw: unknown): Record<string, unknown> {
 
       const out: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(node)) {
-        const cleaned = walk(v, k);
+        const cleaned = walk(v, k, keyName);
         if (cleaned !== undefined) {
           out[k] = cleaned;
         }
+      }
+      if (keyName && CMS_LOCALE_MAP_KEYS.has(keyName) && Object.keys(out).length === 0) {
+        return undefined;
       }
       return out;
     }
@@ -231,14 +247,17 @@ export const UI_CONFIG_DEFAULTS = {
   motion: MOTION_CONFIG_DEFAULTS,
 };
 
-/** Default consent-gated analytics integrations. */
+/** Default analytics integrations (strictly consent-gated unless cookieless opt-out is explicit). */
 export const ANALYTICS_CONFIG_DEFAULTS = {
   ga4Id: '',
+  gtmId: '',
   plausibleDomain: '',
   plausibleSrc: 'https://plausible.io/js/script.js',
   umamiWebsiteId: '',
   umamiSrc: '',
   clarityId: '',
+  consentMode: false,
+  allowCookielessWithoutBanner: false,
 };
 
 /** Default URL redirects emitted to `dist/_redirects` and `deploy/nginx-redirects.conf`. */

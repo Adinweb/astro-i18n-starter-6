@@ -8,7 +8,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 
 ## ✨ Features
 
-* **Static-First Performance (Pure SSG, Zero Backend) & Serverless Form Adapters**: 100% static HTML & JSON generation with no server runtime required. Interactive forms (`ContactForm.astro` and `NewsletterBanner.astro`) post directly from the client via `src/libs/api/client.ts` with built-in support for `custom`, `web3forms`, `formspree`, `basin`, and `webhook` providers, Cloudflare Turnstile (`turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY`), and honeypot spam protection — alongside built-in TDDDG § 25 / GDPR cookie & script consent (`CookieConsent.astro`).
+* **Static-First Performance (Pure SSG, Zero Backend) & Serverless Form Adapters**: 100% static HTML & JSON generation with no server runtime required. Interactive forms (`ContactForm.astro` and `NewsletterBanner.astro`) post directly from the client via `src/libs/api/client.ts` with built-in support for `custom`, `web3forms`, `formspree`, `basin`, and `webhook` providers, Cloudflare Turnstile (`turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY`, with a ready-to-deploy Worker relay in `docs/deploy/cloudflare-worker-webhook.js`), and honeypot spam protection — alongside built-in TDDDG § 25 / GDPR cookie & script consent (`CookieConsent.astro`) and privacy-first analytics (`AnalyticsScripts.astro`: GA4, GTM, Plausible, Umami, Clarity, Consent Mode v2).
 * **Native RTL & LTR Support**: Ships out of the box with **English (`en`)** and **Persian / Farsi (`fa`)** active, plus pre-wired font/formatting rules and one-command CLI scaffolding (`npm run i18n:add-lang`) for **Arabic (`ar`)**, **German (`de`)**, **French (`fr`)**, and any other RTL/LTR language.
 * **CSS Logical Properties & Standard `1280px` Container**: Built with Tailwind CSS v4 using semantic tokens (`bg-surface`, `text-fg`, `border-border`), a unified `.layout-container` (`max-w-7xl` / `1280px`), and logical properties (`ms-*`, `me-*`, `ps-*`, `pe-*`, `start-*`, `end-*`).
 * **Clean Prefix-less Default Locale & Easy Single-Language Option**: The default language has clean root URLs (`/`, `/about/`, `/blog/first-post/`), while other languages receive prefixes (`/fa/`, `/fa/درباره-ما/`, `/ar/من-نحن/`). For single-language client projects, simply set `ui.showLanguageSwitcher: false` in `client/config.json` (plus `npm run i18n:set-default <locale>` if needed) without modifying core files—or optionally run `npm run i18n:solo <locale>` to prune alternate routes and archive inactive files.
@@ -16,13 +16,13 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Zero Route Collisions**: A single Lean Router Dispatcher (`src/pages/[...path].astro`) dynamically handles all localized pages, translated slugs, and index views.
 * **Compile-Time i18n via Paraglide**: Strongly typed translations with native ICU plurals and ordinals, compiled directly from `messages/core/` + `client/messages/` into tree-shakeable JS functions without runtime overhead.
 * **Symmetrical Content Collections & Filterable Indexes**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs, cross-language alternate linking, and interactive category/stack/keyword filtering in `CollectionIndexView.astro` (`projects`, etc.).
-* **Manageable Content Types & Pages CMS**: `pages`, `blog` and `projects` are declared in `app.config.json` → `content.types` (overridable in `client/config.json`, plus client collections via `client/content.ts`), with Git-based visual editing configured out of the box in `.pages.yml`. `npm run content:enable|disable <type>` adds or removes a type's routes, sitemap entries and navigation links without touching a single content file, and `content:new` scaffolds an entry in any type.
-* **64 Guarded Composable Blocks & UI Primitives + 4 Interactive Showcases**: **29 section blocks** (**7 hero sections**: `LandingHeroSplit`, `HeroCenteredEditorial`, `HeroDashboardShowcase`, `HeroCommandCli`, `HeroInteractivePrompt`, `HeroProofMarquee`, `HeroFloatingOrbSplit`, and **22 content/feature sections**: `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection`, `LatestPostsSection`, `TeamSection`, `FaqAccordion`, `ContactSplitSection` with phone/WhatsApp/Telegram quick actions and click-to-load lazy map embed, `NewsletterBanner`, `CtaBanner`, `CarouselSection`, `ProductShowcaseGrid` with `currencyPrefix`/`currencySuffix`, `AuthFormCard`, `ParallaxSection`), **35 UI primitives** in `src/components/ui/` (`UiBadge`, `UiAlert`, `AvatarGroup`, `Breadcrumbs`, `HeroPreviewNav`, `HeroParallaxLayer`, `HeroShowcaseCard`, `UiPagination`, `UiModal`, `UiTooltip`, `UiProgress`, `UiSwitch`, `UiCheckbox`, `UiInput`, `UiDropdown`, `SocialLinks`, `Accordion`, `AnnouncementPill`, `ChipGroup`, `CodeBlock`, `Divider`, `RatingStars`, `Skeleton`, `StatTile`, `TopBanner`, `BackdropLayer`, `Button`, `Card`, `HeroHeadline`, `Icon`, `IconBox`, `IconButton`, `Kbd`, `PartnerStrip`, `SectionHeader`), **4 interactive/motion showcase blocks** (`BentoGrid`, `LatestPostsCarousel`, `SwipeableTabs` with `variant="pills"|"underline"`, `TestimonialMarquee`), and industry onboarding blueprints (`--blueprint=corporate|agency|portfolio|medical`).
+* **Manageable Content Types, 3-Tier CMS Config & Pages CMS**: `pages`, `blog` and `projects` are declared in `app.config.json` → `content.types` (overridable in `client/config.json`, plus client collections via `client/content.ts`). `.pages.yml` ships ready for Git-based editing and writes non-technical client settings cleanly into `client/cms.json` (public contact email, business profile, social links, localized scheduled top banners, quick-contact widget toggle, and wildcard/exact redirects). `npm run content:enable|disable <type>` toggles a type's routes, sitemap entries and navigation links without touching content files.
+* **64 Guarded Composable Blocks & UI Primitives + 4 Interactive Showcases**: **29 section blocks** (**7 hero sections**: `LandingHeroSplit`, `HeroCenteredEditorial`, `HeroDashboardShowcase`, `HeroCommandCli`, `HeroInteractivePrompt`, `HeroProofMarquee`, `HeroFloatingOrbSplit`, and **22 content/feature sections**: `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection` with multi-slide `<dialog>` lightbox, `LatestPostsSection`, `TeamSection`, `FaqAccordion`, `ContactSplitSection` with phone/WhatsApp/Telegram quick actions and click-to-load lazy map embed, `NewsletterBanner`, `CtaBanner`, `CarouselSection`, `ProductShowcaseGrid` with `currencyPrefix`/`currencySuffix`, `AuthFormCard`, `ParallaxSection`), **35 UI primitives** in `src/components/ui/`, **4 interactive/motion showcase blocks** (`BentoGrid`, `LatestPostsCarousel`, `SwipeableTabs` with `variant="pills"|"underline"`, `TestimonialMarquee`), `QuickContactWidget.astro` (collapsible mobile/desktop quick-contact corner button with automatic overlap avoidance), and 6 industry onboarding blueprints (`--blueprint=corporate|agency|portfolio|medical|catalog|legal`).
 * **Configurable, Dead-Link-Free Navigation**: `CLIENT_PAGE_ITEMS` in `client/navigation.ts` feeds both the desktop header **and** the mobile drawer from a single builder, `ui.ctaPage` in config picks the header/drawer CTA target, and any entry whose page (or `#anchor`) no longer exists hides itself — `npm run link:check` fails the pipeline if an internal link or fragment resolves to nothing.
 * **Paginated Blog Index & Cross-Page Filtering**: Static paginated route set — one URL per page per locale (`/blog/`, `/blog/page/2/`, `/fa/blog/page/2/`) — with reciprocal `hreflang`, `rel="prev"` / `rel="next"`, and progressive cross-page taxonomy filtering powered by lightweight per-locale static catalogs (`/api/blog-posts/<locale>.json`).
 * **Persian-Aware Search Built-In**: Production static indexing with **Pagefind** (`scripts/index-pagefind.mjs`) enhanced with Perso-Arabic character normalization (`ي`/`ك` → `ی`/`ک`), punctuation token boundary isolation (`«...»`, `،`), client-side ZWNJ/space compound & numeral query expansion (`src/libs/search/persian.ts`), and per-locale JSON fallbacks (`/api/search-dev/<locale>.json`).
-* **SEO, Local Business Schema & Branded Social Cards**: Canonical URLs, hreflang plus `x-default`, RTL-shaped build-time deterministic branded PNG Open Graph cards (`/og/[...slug].png.ts` when `brand.socialCardMode === 'branded'`), Twitter cards, `Organization` / `LocalBusiness` / `Service` / `WebSite` / `WebPage` / `CollectionPage` / `BlogPosting` + `BreadcrumbList` / `FAQPage` JSON-LD (`src/libs/content/schema.ts`), a multilingual sitemap with `lastmod`, and per-locale Atom feeds (`/rss.xml` and `/rss/<locale>.xml`).
-* **Brand Logo, Theme Presets & DEV Theme Studio**: Support for Light/Dark image or SVG `brand.logo` overrides in header, drawer, and footer, 6 curated OKLCH-safe palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose`), optional hex overrides, bundled `@fontsource-variable/*` Latin/RTL font pairings + commercial Persian `@font-face` scaffolding in `client/styles.css`, and an interactive `import.meta.env.DEV`-only Theme Studio (`DevThemePreview.astro`, zero bytes in production).
+* **SEO, AI Discovery (`/llms.txt`), Redirects & Branded Social Cards**: Canonical URLs, hreflang plus `x-default`, `/llms.txt` crawler index, exact & trailing-wildcard (`/*` -> `:splat`) redirects compiling cleanly to `dist/_redirects`, `deploy/nginx-redirects.conf`, and `deploy/.htaccess-redirects`, RTL-shaped deterministic branded PNG Open Graph cards (`/og/[...slug].png.ts` when `brand.socialCardMode === 'branded'`), Twitter cards, `Organization` / `LocalBusiness` / `Service` / `WebSite` / `WebPage` / `CollectionPage` / `BlogPosting` + `BreadcrumbList` / `FAQPage` JSON-LD (`src/libs/content/schema.ts`), multilingual sitemap with `lastmod`, and per-locale Atom feeds (`/rss.xml`, `/rss/<locale>.xml`).
+* **Brand Logo, Theme Presets & DEV Theme Studio**: Support for Light/Dark image or SVG `brand.logo` overrides (`site:init --logo / --logo-dark`) in header, drawer, and footer, 6 curated OKLCH-safe palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose`), optional hex overrides, bundled `@fontsource-variable/*` Latin/RTL font pairings + commercial Persian `@font-face` scaffolding in `client/styles.css`, and an interactive `import.meta.env.DEV`-only Theme Studio (`DevThemePreview.astro`, zero bytes in production).
 * **Native Light & Dark Mode**: FOUC-free theme initialization with `prefers-color-scheme` detection, `localStorage` persistence, View Transition swap continuity, and OKLCH semantic tokens in `src/styles/global.css`.
 * **Locale-Native Dates & Numerals**: Centralized `Intl` formatting (`src/i18n/format.ts`) with Solar Hijri (Jalali) dates and Persian numerals (`۰-۹`) for `fa`, Eastern Arabic numerals (`٠-٩`) for `ar`, and standard localized formatting for LTR locales.
 * **Rich Editorial UX & Print Stylesheet**: Automatic sticky/collapsible Table of Contents (`h2`/`h3`), taxonomy-scored Related Articles, chronological Newer/Older article navigation, localized `updatedAt` timestamps, one-click Copy Code buttons on `<pre>` blocks, and a clean `@media print` stylesheet.
@@ -33,7 +33,7 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Frosted-Glass Design System**: The header, its icon controls, buttons (`Button.astro`), and chips are defined once in `src/styles/global.css` alongside an AA-contrast OKLCH semantic palette (`primary`, `secondary`, `accent`, `neutral`, `info`, `success`, `warning`, `error`), extensible in `client/styles.css`.
 * **Raster Brand Assets From Code**: `scripts/generate-assets.mjs` deterministically produces the app icons, the default Open Graph image, and all hero/cover artwork with no image-editing dependency.
 * **Inline Tabler Icons**: 69 core semantic icons rendered via `<Icon name="..." />` from `@tabler/icons-astro` (plus custom client icons via `client/icons.ts` + `client/ClientIcons.astro`), imported per icon so builds stay lean — no sprite request and no inline SVG duplication.
-* **Three-Tier Zero-Conflict Separation & Starter Kit**: Core (`src/`, `app.config.json`, `messages/core/`), Client Workspace (`client/`), and optional Demo Bundle (`starter-kit/`, toggled via `npm run starter:seed`), guarded by `npm run upstream:check`.
+* **Three-Tier Zero-Conflict Separation & Starter Kit**: Core (`src/`, `app.config.json`, `messages/core/`), Client Workspace (`client/`), and optional Demo Bundle (`starter-kit/`, toggled via `npm run starter:seed`), guarded by `npm run upstream:check` and Playwright Chromium QA (`npm run qa:browser`).
 
 ---
 
@@ -96,7 +96,8 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 ├── .pages.yml                 # Pages CMS Git-based visual editor configuration
 ├── app.config.json            # Upstream core defaults (site, brand, business, blog, cookies, API & server values)
 ├── client/                    # Client-owned workspace (overrides, locales, messages, nav, styles, icons, templates)
-│   ├── config.json            # Sparse overrides merged onto app.config.json
+│   ├── config.json            # Sparse technical overrides merged onto app.config.json
+│   ├── cms.json               # Sparse Pages CMS editorial overrides (banners, business, social, redirects) merged over config.json
 │   ├── locales.json           # Active locales, defaultLocale, and metadata (dir, fonts, htmlLang)
 │   ├── messages/              # Client translation keys & overrides (<locale>.json)
 │   ├── navigation.ts          # CLIENT_PAGE_ITEMS + custom primary/footer/legal links
@@ -105,13 +106,15 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   ├── LayoutHooks.astro      # Custom `top-banner`, `<head>`, and `<body>`-end slots inside BaseLayout
 │   ├── styles.css             # Client CSS overrides, custom classes & commercial Persian @font-face slots
 │   └── templates/index.ts     # Custom .astro page templates registered for PageView
-├── docs/
-│   └── deploy/nginx.conf      # Production Nginx caching, gzip & localized 404 reference config
+├── deploy/                    # Build-generated server redirect rules (nginx-redirects.conf, .htaccess-redirects)
+├── docs/deploy/
+│   ├── nginx.conf             # Production Nginx caching, gzip & localized 404 reference config
+│   └── cloudflare-worker-webhook.js # Turnstile verification + webhook relay template
 ├── messages/core/             # Upstream core UI dictionaries (en.json, fa.json)
 ├── starter-kit/               # Optional demo pages, blog posts, projects, assets & nav (`npm run starter:seed`)
-├── public/                    # Static assets (_headers, favicons, browser icons, chronotrig.min.js)
-├── scripts/                   # Developer automation CLI, health checks, Pagefind indexing & upstream check
-│   └── lib/                   # Shared config, blueprints, merge-messages, prompt, frontmatter, validation, content-type & artwork helpers
+├── public/                    # Static assets (_headers, brand/, favicons, browser icons, chronotrig.min.js)
+├── scripts/                   # Developer automation CLI, Playwright browser QA, health checks, Pagefind indexing & upstream check
+│   └── lib/                   # Shared config, blueprints, redirects, merge-messages, prompt, frontmatter, validation, content-type & artwork helpers
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph (no page image of its own)
 │   ├── components/            # Reusable UI components & section blocks
@@ -132,7 +135,9 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   │   ├── ContactForm.astro  # Pure-SSG contact form (custom/Web3Forms/Formspree/Basin/webhook + Turnstile)
 │   │   ├── DevThemePreview.astro # DEV-only interactive Theme & Font Studio (excluded from dist/)
 │   │   ├── Seo.astro          # Canonical links, reciprocal hreflang tags & OG card wiring
-│   │   ├── SiteTopBanner.astro # Config-driven site-wide top announcement bar (variant, locale overrides, dismiss state)
+│   │   ├── SiteTopBanner.astro # Config-driven site-wide top announcement bar (variant, schedule, dismiss state)
+│   │   ├── QuickContactWidget.astro # Collapsible quick-contact corner button with CookieConsent/modal overlap avoidance
+│   │   ├── AnalyticsScripts.astro # Consent-gated GA4, GTM, Plausible, Umami & Clarity loader (Consent Mode v2)
 │   │   ├── TopLoadingBar.astro # Page transition progress bar (reduced-motion aware)
 │   │   └── …                  # + 29 section blocks (7 hero + 22 structural) & 4 interactive/motion showcase blocks (`BentoGrid`, `LatestPostsCarousel`, `SwipeableTabs`, `TestimonialMarquee`)
 │   ├── content/               # Multilingual Content Collections
@@ -147,12 +152,12 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   │   ├── format.ts          # Locale-native Intl number & date/time formatters (Jalali for fa)
 │   │   └── paths.ts           # Pure path functions (localizeHref, localeHref, stripLocale, getPathname)
 │   ├── layouts/
-│   │   └── BaseLayout.astro   # Main layout: top banner region, adaptive sticky header, `--trig-*` / `--navbar-*` vars, brand.logo, JSON-LD, drawer, footer
+│   │   └── BaseLayout.astro   # Main layout: top banner region, adaptive sticky header, `--trig-*` / `--navbar-*` vars, brand.logo, JSON-LD, drawer, quick-contact, analytics, footer
 │   ├── libs/
 │   │   ├── api/client.ts      # Pure client-side HTTP adapter (custom, Web3Forms, Formspree, Basin, Webhook + Turnstile)
-│   │   ├── config/app.ts      # Validates app.config.json; typed site/brand/business/blog/api values
+│   │   ├── config/app.ts      # Validates merged app.config.json + client/config.json + client/cms.json
 │   │   ├── config/client.ts   # Browser-safe config mirror (`CLIENT_COOKIE_CONFIG`, `CLIENT_NAVBAR_CONFIG`, `CLIENT_MOTION_CONFIG`; zero Zod)
-│   │   ├── config/defaults.ts # Shared defaults for client.ts and Zod schemas (`*CONFIG_DEFAULTS`)
+│   │   ├── config/defaults.ts # Shared defaults for client.ts, CMS sanitization & Zod schemas (`*CONFIG_DEFAULTS`)
 │   │   ├── config/theme.ts    # OKLCH palette & font preset resolver (+ theme-presets.json)
 │   │   ├── config/navigation.ts # Multi-menu header/drawer/footer/legal navigation builder
 │   │   ├── content/entries.ts # Entry IDs, draft filtering, locale selection & sorting
@@ -163,6 +168,7 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   │   ├── content/feed.ts    # Per-locale Atom 1.0 feed builder
 │   │   ├── content/og-card.ts # Deterministic RTL/LTR SVG→PNG branded Open Graph card renderer
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
+│   │   ├── content/redirects.ts # Exact & wildcard redirect validation + Netlify/Nginx/Apache generators
 │   │   ├── content/schema.ts  # Organization, LocalBusiness, Service & social profile JSON-LD builders
 │   │   ├── content/social.ts  # Social card resolver (branded / artwork / default)
 │   │   ├── cookies/           # Consent state model & multi-domain cookie/script manager
@@ -174,6 +180,7 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
 │   │   ├── og/[...slug].png.ts # Build-time branded OG PNG route (socialCardMode: 'branded')
 │   │   ├── site.webmanifest.ts # Web app manifest generated from app.config.json
+│   │   ├── llms.txt.ts        # Markdown index (`/llms.txt`) of published default-locale content
 │   │   ├── rss.xml.ts         # Default-locale Atom feed
 │   │   ├── rss/[locale].xml.ts # Non-default locale Atom feeds (/rss/fa.xml, etc.)
 │   │   ├── sitemap.xml.ts     # Multi-lingual sitemap with x-default + lastmod
@@ -213,14 +220,17 @@ All application-level values that must stay in sync across the app and the CLI s
 * **`business`** — corporate identity for Local SEO & contact panels: `type` (`Organization` | `LocalBusiness` | `ProfessionalService` | `MedicalBusiness` | `Store`), `legalName`, `phone`, `whatsapp`, `telegram`, `address`, `city`, `country`, `workingHours`, `mapEmbedUrl`, and `geo` (`lat`, `lng`), emitted automatically as JSON-LD via `src/libs/content/schema.ts` and wired into `ContactSplitSection.astro`.
 * **`ui`** — header/drawer flags (`ctaPage`, `showSearch`, `showThemeToggle`, `showLanguageSwitcher`, `showTopLoadingBar`, `stickyHeader`, where `showLanguageSwitcher: false` creates a clean single-language site with zero structural changes), plus three structured sub-objects:
   * **`ui.navbar`** — header vertical offsets and scroll-to-sticky behavior: `initialTopOffset` (default `16` px), `stickyScrollThreshold` (default `0` px), `stickyTopOffset` (default `12` px), `autoBannerOffset` (default `true`, dynamically tracks `[data-site-top-banner-region]` via `ResizeObserver`), and `manualBannerOffset` (default `0` px).
-  * **`ui.topBanner`** — site-wide announcement bar(s) above `<header>` via `SiteTopBanner.astro` (`enabled`, `id`, `variant`: `'primary' | 'hero' | 'surface' | 'accent' | 'info' | 'warning'`, `icon`, `heightPx`, `badge`/`badgeByLocale`, `message`/`messageByLocale`, `ctaLabel`/`ctaLabelByLocale`, `ctaHref`/`ctaHrefByLocale`, `external`, `dismissible`, `excludePaths`, plus stacked `items[]`). Note: `app.config.json` ships `enabled: true` with two stacked banners — a persistent non-dismissible `40px` `site-notice` strip and a compact `32px` dismissible `site-announcement` strip — while the schema fallback in `defaults.ts` defaults to `false`. Custom client banners can also mount via `<LayoutHooks slot="top-banner" />` inside `client/LayoutHooks.astro`.
+  * **`ui.topBanner`** — site-wide announcement bar(s) above `<header>` via `SiteTopBanner.astro` (`enabled`, `id`, `variant`: `'primary' | 'hero' | 'surface' | 'accent' | 'info' | 'warning'`, `icon`, `heightPx`, `badge`/`badgeByLocale`, `message`/`messageByLocale`, `ctaLabel`/`ctaLabelByLocale`, `ctaHref`/`ctaHrefByLocale`, `external`, `dismissible`, `dismissMode`: `'session' | 'persistent'`, `dismissTtlDays`, `dismissVersion`, `startsAt`/`endsAt`, `excludePaths`, plus stacked `items[]`). Note: `app.config.json` ships `enabled: true` with two stacked banners — a persistent non-dismissible `40px` `site-notice` strip and a compact `32px` dismissible `site-announcement` strip — while the schema fallback in `defaults.ts` defaults to `false`. Custom client banners can also mount via `<LayoutHooks slot="top-banner" />` inside `client/LayoutHooks.astro`.
+  * **`ui.quickContact`** — collapsible floating corner quick-contact widget (`enabled`, `mobileOnly`, `channels`) pulling direct channels from `business`, automatically hidden whenever an undecided `CookieConsent` banner, open mobile drawer, or `<dialog open>` is visible.
   * **`ui.motion`** — global ChronoTrig reveal and Lenis settings injected as CSS custom properties (`--trig-reveal-delay`, `--trig-duration`, `--trig-distance`, `--trig-distance-sm`, `--trig-ease`) and consumed by browser scripts (`CLIENT_MOTION_CONFIG`): `revealDelayMs` (default `0` ms), `revealDurationMs` (default **`1600`** ms), `revealDistancePx` (`56`), `revealSmallDistancePx` (`18`), `revealEasing` (`cubic-bezier(0.16, 1, 0.3, 1)`), `staggerStepMs` (`80`), `rootMargin` (`0px 0px -8% 0px`), `mobileBehavior` (`lightweight`), `smoothScroll` (`true`), and `smoothScrollLerp` (`0.125`).
 * **`blog.postsPerPage`** — how many posts one index page holds.
+* **`analytics`** — privacy-first analytics identifiers (`ga4Id`, `gtmId`, `plausibleDomain`, `plausibleSrc`, `umamiWebsiteId`, `umamiSrc`, `clarityId`), Google Consent Mode v2 toggle (`consentMode`), and optional `allowCookielessWithoutBanner` for Plausible/Umami.
+* **`redirects`** — array of `{ from, to, status: 301 | 302 }` rules supporting both exact paths and single trailing prefix wildcards (`/old-blog/*` → `/blog/:splat`), validated at build time and emitted to `dist/_redirects`, `deploy/nginx-redirects.conf`, and `deploy/.htaccess-redirects`.
 * **`social`** — optional `github`, `twitter`, `linkedin`, `instagram`, and `telegram` URLs rendered in the footer Company column and `sameAs` links in Organization JSON-LD.
 * **`api`** — optional `provider` (`custom`, `web3forms`, `formspree`, `basin`, `webhook`), `accessKey` (`PUBLIC_WEB3FORMS_KEY`), `turnstileSiteKey` (`PUBLIC_TURNSTILE_SITE_KEY`), `baseUrl`, `timeoutMs`, `endpoints.contact`, `endpoints.newsletter`, and localized `topics` for connecting client-side forms (`src/libs/api/client.ts`) to external/headless backends (overridable via `PUBLIC_API_BASE_URL`, `PUBLIC_CONTACT_API_URL`, and `PUBLIC_NEWSLETTER_API_URL`). Without a configured endpoint neither form is rendered: visitors see a `mailto:` button when `site.contactEmail` is set (`*_unavailable_desc` otherwise), and dev setup hints appear in `import.meta.env.DEV` only.
 * **`server`** — dev host/port, also used as the local fallback site origin.
 
-[`src/libs/config/app.ts`](src/libs/config/app.ts) deep-merges `app.config.json` with sparse overrides from [`client/config.json`](client/config.json), validates the result with Zod, and exposes typed values (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `BUSINESS_CONFIG`, hero defaults, `absoluteUrl`). The asset generator, web manifest, and smoke tests read the same merged view. Browser scripts read the same config through [`src/libs/config/client.ts`](src/libs/config/client.ts), which shares its fallbacks with the schema via [`defaults.ts`](src/libs/config/defaults.ts) and never imports the validator — an import of `app.ts` from a client module would ship the whole Zod runtime (~93 kB) to every page. Framework-only settings remain in `astro.config.mjs`, and locale configuration lives in [`client/locales.json`](client/locales.json) (exposed via `src/i18n/locales.ts`).
+[`src/libs/config/app.ts`](src/libs/config/app.ts) deep-merges `app.config.json` with sparse technical overrides from [`client/config.json`](client/config.json) and sanitized Pages CMS overrides from `client/cms.json`, validates the result with Zod, and exposes typed values (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `ANALYTICS_CONFIG`, `BUSINESS_CONFIG`, `REDIRECTS_CONFIG`, hero defaults, `absoluteUrl`). The asset generator, web manifest, and smoke tests read the same merged view. Browser scripts read the same config through [`src/libs/config/client.ts`](src/libs/config/client.ts), which shares its fallbacks with the schema via [`defaults.ts`](src/libs/config/defaults.ts) and never imports the validator — an import of `app.ts` from a client module would ship the whole Zod runtime (~93 kB) to every page. Framework-only settings remain in `astro.config.mjs`, and locale configuration lives in [`client/locales.json`](client/locales.json) (exposed via `src/i18n/locales.ts`).
 
 The Paraglide workspace is materialized automatically into `.paraglide-work/` (gitignored) by `scripts/messages-compile.mjs`, merging `messages/core/<locale>.json` with `client/messages/<locale>.json` and resolving the local plugins from `node_modules` without network access.
 
@@ -232,7 +242,8 @@ All automation scripts run from the terminal using `npm run <command>` (or `pnpm
 
 | Command | Action | Example |
 | :--- | :--- | :--- |
-| `npm run site:init` | Interactive/headless branding, `--blueprint` (`corporate`/`agency`/`portfolio`/`medical`), palette, fonts & OG wizard | `npm run site:init -- --name="Acme" --blueprint=agency --yes` |
+| `npm run site:init` | Interactive/headless branding, `--blueprint` (`corporate`/`agency`/`portfolio`/`medical`/`catalog`/`legal`), `--logo`, palette, fonts & OG wizard | `npm run site:init -- --name="Acme" --blueprint=agency --logo=logo.svg --yes` |
+| `npm run site:reset` | Resets `client/config.json` & `client/cms.json` cleanly between projects (optional `--clean-starter`) | `npm run site:reset -- --yes` |
 | `npm run new:page` | Scaffolds a new page across all locales (`standard` or `landing` preset) | `npm run new:page offer -- --preset=landing --title="Product Launch"` |
 | `npm run new:post` | Scaffolds a new blog post across all locales | `npm run new:post ai-trends -- --title="AI Trends" --publish` |
 | `npm run remove:page` | Deletes a page and cleans `client/messages/` navigation keys | `npm run remove:page contact -- --force` |
@@ -248,13 +259,15 @@ All automation scripts run from the terminal using `npm run <command>` (or `pnpm
 | `npm run content:new` | Scaffolds an entry group in any content type | `npm run content:new projects atlas -- --title="Atlas" --publish` |
 | `npm run content:enable` / `content:disable` | Toggles a content type override in `client/config.json` without editing core | `npm run content:disable projects` |
 | `npm run content:status` | Prints the per-locale readiness matrix (published/draft/missing, words, TODOs) | `npm run content:status -- --write=docs/STATUS.md` |
-| `npm run doctor` | No-build health check (runtime, config, content types, dictionaries, content) with fix hints | `npm run doctor` |
-| `npm run link:check` | Crawls the built HTML and reports internal links and `#anchor` fragments that resolve to nothing | `npm run link:check` |
+| `npm run doctor` | No-build health check (runtime, 3-tier config, analytics/GDPR, redirects, content types, dictionaries) with fix hints | `npm run doctor` |
+| `npm run link:check` | Crawls built HTML and verifies internal links, `#anchor` fragments & exact redirect targets | `npm run link:check` |
 | `npm run audit:i18n` | Audits locale-config parity, placeholders, used keys, content and route collisions | `npm run audit:i18n` |
-| `npm run smoke` | Runs HTML, SEO, feed, manifest and H1 assertions on `dist/` | `npm run smoke` |
+| `npm run smoke` | Runs HTML, SEO, feed, `/llms.txt`, redirect, manifest and H1 assertions on `dist/` | `npm run smoke` |
+| `npm run qa:browser` | Runs headless Chromium Playwright layout & interactive UI QA on `dist/` | `npm run qa:browser` |
+| `npm run preflight` / `preflight:full` | Unified delivery gate (`preflight:full` appends `qa:browser`) | `npm run preflight:full` |
 | `npm run knip` | Finds dead files, exports and dependencies | `npm run knip` |
 | `npm run starter:seed` | Seeds (or `--clean`s) optional `starter-kit/` demo content & `--blueprint` overrides | `npm run starter:seed -- --blueprint=corporate` |
-| `npm run upstream:check` | Verifies two-tier config/messages/locales, core extension hooks & merge hygiene | `npm run upstream:check` |
+| `npm run upstream:check` | Verifies 3-tier config/CMS, messages, locales, core extension hooks & merge hygiene | `npm run upstream:check` |
 | `npm run assets:generate` | Regenerates PNG icons, the OG image, and all hero/cover artwork next to the content groups | `npm run assets:generate` |
 | `npm run verify:cli` | Runs every documented CLI workflow in a throwaway copy and prints a PASS/FAIL line per claim | `npm run verify:cli` |
 
@@ -465,13 +478,13 @@ npm run upstream:check
 # 2. TypeScript Strict Check
 npm run lint
 
-# 3. Vitest Unit Tests (27 files, 281 tests: paths, ICU, routes, blocks, theme, schema, OG, Navbar, ChronoTrig, TopLoadingBar, and CLI helpers)
+# 3. Vitest Unit Tests (29 files, 289 tests: paths, ICU, routes, redirects, cookies, blocks, theme, schema, OG, Navbar, ChronoTrig, TopLoadingBar, and CLI helpers)
 npm test
 
 # 4. i18n Parity, Placeholder, Content & Route Audit
 npm run audit:i18n
 
-# 5. Production Build & Pagefind Indexing (runs the audit first)
+# 5. Production Build & Pagefind Indexing (runs the audit first, emits redirects & /llms.txt)
 #    Locally it falls back to the dev origin in app.config.json with a warning;
 #    in CI (CI=true) it fails unless SITE_URL is set.
 SITE_URL=https://example.com npm run build
@@ -479,9 +492,13 @@ SITE_URL=https://example.com npm run build
 # 6. Post-Build HTML, SEO, Feed & Asset Smoke Test
 npm run smoke
 
-# 7. No-Build Health Check & Internal Link Crawl
+# 7. No-Build Health Check, Internal Link Crawl & Chromium Layout/UI QA
 npm run doctor
 npm run link:check
+npm run qa:browser
+
+# Or run steps 1, 3, 4, 5, 6, 7 in one shot:
+npm run preflight:full
 
 # 8. Dead Code / Dependency Check
 npm run knip
@@ -489,9 +506,10 @@ npm run knip
 # 9. End-to-end check of every documented CLI workflow in an isolated sandbox
 npm run verify:cli
 
-# Optional: Seed or clean the demo Starter Kit package
+# Optional: Seed/clean Starter Kit or reset client overrides cleanly
 npm run starter:seed
 npm run starter:seed -- --clean --yes
+npm run site:reset -- --yes
 
 # Regenerate icons, the Open Graph image, and all hero/cover artwork
 npm run assets:generate

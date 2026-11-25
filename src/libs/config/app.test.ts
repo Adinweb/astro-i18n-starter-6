@@ -377,6 +377,9 @@ describe('src/libs/config/app.ts', () => {
   describe('three-tier CMS isolation, banner schedule, quickContact, analytics & redirects', () => {
     it('sanitizes incomplete CMS fields and applies 3-tier precedence', () => {
       const cleaned = sanitizeCmsConfig({
+        site: {
+          contactEmail: '',
+        },
         business: {
           phone: '+98 21 1234',
           geo: { lat: '', lng: null },
@@ -386,6 +389,8 @@ describe('src/libs/config/app.ts', () => {
             enabled: false,
             startsAt: '',
             dismissMode: '',
+            badgeByLocale: { en: '', fa: 'جدید' },
+            messageByLocale: { en: '', fa: '' },
           },
         },
         redirects: [
@@ -393,14 +398,32 @@ describe('src/libs/config/app.ts', () => {
           { from: '/legacy', to: '/about/', status: 301 },
         ],
       });
+      expect(cleaned.site).toEqual({});
       expect((cleaned.business as Record<string, unknown>).geo).toBeUndefined();
+      const topBannerClean = (cleaned.ui as { topBanner: Record<string, unknown> }).topBanner;
+      expect(topBannerClean.badgeByLocale).toEqual({ fa: 'جدید' });
+      expect(topBannerClean.messageByLocale).toBeUndefined();
       expect((cleaned.redirects as unknown[]).length).toBe(1);
 
       const merged = mergeLayeredConfig<Record<string, unknown>>(
-        { business: { phone: '000', legalName: 'Core Co' }, brand: { preset: 'indigo' } },
+        {
+          site: { contactEmail: 'team@core.example' },
+          business: { phone: '000', legalName: 'Core Co' },
+          brand: { preset: 'indigo' },
+          ui: { topBanner: { badgeByLocale: { en: 'New', fa: 'تازه' } } },
+        },
         { business: { phone: '111' } },
-        { business: { phone: '222', geo: { lat: '35.7', lng: '51.4' } } }
+        {
+          site: { contactEmail: '' },
+          business: { phone: '222', geo: { lat: '35.7', lng: '51.4' } },
+          ui: { topBanner: { badgeByLocale: { en: '', fa: 'جدید' } } },
+        }
       );
+      expect((merged.site as Record<string, unknown>).contactEmail).toBe('team@core.example');
+      expect((merged.ui as { topBanner: { badgeByLocale: Record<string, string> } }).topBanner.badgeByLocale).toEqual({
+        en: 'New',
+        fa: 'جدید',
+      });
       expect((merged.business as Record<string, unknown>).phone).toBe('222');
       expect((merged.business as Record<string, unknown>).legalName).toBe('Core Co');
       expect((merged.business as { geo: { lat: number; lng: number } }).geo).toEqual({
@@ -447,28 +470,38 @@ describe('src/libs/config/app.ts', () => {
       });
     });
 
-    it('validates consent-gated analytics provider IDs and redirects schema', () => {
+    it('validates consent-gated analytics provider IDs, GTM, Consent Mode, and redirects schema', () => {
       expect(analyticsConfigSchema.parse({})).toEqual(defaultAnalyticsConfig);
       expect(ANALYTICS_CONFIG).toEqual(siteConfig.analytics);
       expect(REDIRECTS_CONFIG).toEqual(siteConfig.redirects);
 
       const validAnalytics = analyticsConfigSchema.parse({
         ga4Id: 'G-ABCD1234EF',
+        gtmId: 'GTM-AB12CD3',
         plausibleDomain: 'example.com',
         umamiWebsiteId: '550e8400-e29b-41d4-a716-446655440000',
         umamiSrc: 'https://analytics.example.com/script.js',
         clarityId: 'abc123defg',
+        consentMode: true,
+        allowCookielessWithoutBanner: true,
       });
       expect(validAnalytics.ga4Id).toBe('G-ABCD1234EF');
+      expect(validAnalytics.gtmId).toBe('GTM-AB12CD3');
+      expect(validAnalytics.consentMode).toBe(true);
+      expect(validAnalytics.allowCookielessWithoutBanner).toBe(true);
 
       expect(() => analyticsConfigSchema.parse({ ga4Id: 'UA-12345-1' })).toThrow();
+      expect(() => analyticsConfigSchema.parse({ gtmId: 'GTM-1' })).toThrow();
       expect(() =>
         analyticsConfigSchema.parse({ umamiWebsiteId: '550e8400-e29b-41d4-a716-446655440000' })
       ).toThrow();
 
       expect(
-        redirectsConfigSchema.parse([{ from: '/old', to: '/about/', status: 301 }])
-      ).toHaveLength(1);
+        redirectsConfigSchema.parse([
+          { from: '/old', to: '/about/', status: 301 },
+          { from: '/old-blog/*', to: '/blog/:splat', status: 301 },
+        ])
+      ).toHaveLength(2);
       expect(() =>
         redirectsConfigSchema.parse([{ from: '/same', to: '/same/', status: 301 }])
       ).toThrow();

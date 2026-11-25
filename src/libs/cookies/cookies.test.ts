@@ -744,6 +744,15 @@ describe('TDDDG § 25 & DSGVO Cookie Consent System', () => {
       expect(analyticsSrc).toContain('type="text/plain"');
       expect(analyticsSrc).toContain('data-cookie-category="analytics"');
       expect(analyticsSrc).toContain('transition:persist="analytics-gatekeeper"');
+      expect(analyticsSrc).toContain('data-cookie-id="consent-mode-sync"');
+      expect(analyticsSrc).toContain('data-cookie-id="gtm-sdk"');
+      expect(analyticsSrc.indexOf('consent-mode-sync')).toBeLessThan(
+        analyticsSrc.indexOf('ga4-gtag-init')
+      );
+      expect(analyticsSrc.indexOf('consent-mode-sync')).toBeLessThan(
+        analyticsSrc.indexOf('gtm-sdk')
+      );
+      expect(analyticsSrc).toContain('consentMode');
       expect(layoutSrc).toContain('<AnalyticsScripts');
     });
   });

@@ -59,6 +59,8 @@ Brand & Typography:
   --rtl-font=<${VALID_RTL_FONTS.join('|')}>
   --og-mode=<${VALID_OG_MODES.join('|')}>
   --default-theme=<${VALID_THEMES.join('|')}>
+  --logo=<path>                  Copy local light/primary logo (.svg/.png/.webp/.jpg) to public/brand/
+  --logo-dark=<path>             Copy local dark-mode logo variant to public/brand/
 
 Languages & Content Modules:
   --default-locale=<code>        Set default locale (e.g. en, fa)
@@ -120,6 +122,8 @@ for (const arg of args) {
     else if (key === 'rtl-font') opts.rtlFontPreset = val;
     else if (key === 'og-mode') opts.socialCardMode = val;
     else if (key === 'default-theme') opts.defaultTheme = val;
+    else if (key === 'logo') opts.logo = val;
+    else if (key === 'logo-dark') opts.logoDark = val;
     else if (key === 'default-locale') opts.defaultLocale = val;
     else if (key === 'blog') opts.blog = parseBool(val, '--blog');
     else if (key === 'projects') opts.projects = parseBool(val, '--projects');
@@ -299,6 +303,27 @@ if (opts.ctaPage !== undefined && !/^[a-z0-9-]+$/.test(opts.ctaPage)) {
   errors.push(`Invalid --cta-page "${opts.ctaPage}". Expected lowercase page key.`);
 }
 
+const VALID_LOGO_EXTS = new Set(['.svg', '.png', '.webp', '.jpg', '.jpeg']);
+const resolveLogoInput = (rawPath, flagName) => {
+  if (!rawPath) return null;
+  const resolved = path.resolve(rootDir, rawPath);
+  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
+    errors.push(`File not found for ${flagName}: "${rawPath}".`);
+    return null;
+  }
+  const ext = path.extname(resolved).toLowerCase();
+  if (!VALID_LOGO_EXTS.has(ext)) {
+    errors.push(
+      `Unsupported file format for ${flagName}: "${ext || 'none'}". Use .svg, .png, .webp, or .jpg.`
+    );
+    return null;
+  }
+  return { resolved, ext };
+};
+
+const lightLogoAsset = opts.logo ? resolveLogoInput(opts.logo, '--logo') : null;
+const darkLogoAsset = opts.logoDark ? resolveLogoInput(opts.logoDark, '--logo-dark') : null;
+
 if (errors.length > 0) {
   for (const msg of errors) console.error(`❌ ${msg}`);
   process.exit(1);
@@ -322,6 +347,45 @@ config.brand.fontPreset = fontPreset;
 config.brand.rtlFontPreset = rtlFontPreset;
 config.brand.socialCardMode = socialCardMode;
 config.brand.themeColor = resolvedPrimaryHex.toLowerCase();
+
+const brandDir = path.join(rootDir, 'public', 'brand');
+const removeBrandPrefix = (prefix) => {
+  if (!fs.existsSync(brandDir)) return;
+  for (const file of fs.readdirSync(brandDir)) {
+    if (file.startsWith(`${prefix}.`)) {
+      fs.rmSync(path.join(brandDir, file), { force: true });
+    }
+  }
+};
+
+if (opts.logo === '') {
+  delete config.brand.logo;
+  removeBrandPrefix('logo');
+  removeBrandPrefix('logo-dark');
+} else if (lightLogoAsset || darkLogoAsset) {
+  fs.mkdirSync(brandDir, { recursive: true });
+  const nextLogo = {
+    ...(config.brand.logo ?? {}),
+    alt: config.brand.logo?.alt || name,
+    showText: config.brand.logo?.showText ?? true,
+  };
+  if (lightLogoAsset) {
+    removeBrandPrefix('logo');
+    const destName = `logo${lightLogoAsset.ext}`;
+    fs.copyFileSync(lightLogoAsset.resolved, path.join(brandDir, destName));
+    nextLogo.light = `/brand/${destName}`;
+  }
+  if (darkLogoAsset) {
+    removeBrandPrefix('logo-dark');
+    const destName = `logo-dark${darkLogoAsset.ext}`;
+    fs.copyFileSync(darkLogoAsset.resolved, path.join(brandDir, destName));
+    nextLogo.dark = `/brand/${destName}`;
+  } else if (opts.logoDark === '') {
+    removeBrandPrefix('logo-dark');
+    delete nextLogo.dark;
+  }
+  config.brand.logo = nextLogo;
+}
 
 config.ui = {
   ...(config.ui ?? {}),

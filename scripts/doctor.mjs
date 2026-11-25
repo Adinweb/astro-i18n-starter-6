@@ -2,7 +2,7 @@
 /**
  * Pre-flight health check for a project built from this starter.
  *
- * Inspects two-tier configuration (`app.config.json` + `client/config.json`),
+ * Inspects three-tier configuration (`app.config.json` + `client/config.json` + `client/cms.json`),
  * `client/locales.json`, merged dictionaries, and content health.
  *
  * Usage:
@@ -48,6 +48,7 @@ const RESERVED_BASES = new Set([
   'robots',
   'icons',
   'site.webmanifest',
+  'llms.txt',
 ]);
 
 // ---------------------------------------------------------------- runtime ---
@@ -294,14 +295,36 @@ if (appConfig) {
   }
 
   const analytics = appConfig.analytics ?? {};
+  const cookiesEnabled = appConfig.cookies?.enabled !== false;
   if (analytics.ga4Id && !/^G-[A-Z0-9]{4,20}$/i.test(String(analytics.ga4Id).trim())) {
     add('error', `Invalid analytics.ga4Id "${analytics.ga4Id}".`, 'Use a valid GA4 Measurement ID like "G-XXXXXXXXXX".');
+  }
+  if (analytics.gtmId && !/^GTM-[A-Z0-9]{4,16}$/i.test(String(analytics.gtmId).trim())) {
+    add('error', `Invalid analytics.gtmId "${analytics.gtmId}".`, 'Use a valid Google Tag Manager ID like "GTM-XXXXXXX".');
   }
   if (analytics.clarityId && !/^[a-z0-9]{6,20}$/i.test(String(analytics.clarityId).trim())) {
     add('error', `Invalid analytics.clarityId "${analytics.clarityId}".`, 'Use a valid Microsoft Clarity project ID.');
   }
   if (analytics.umamiWebsiteId && !analytics.umamiSrc) {
     add('error', 'analytics.umamiWebsiteId is set without analytics.umamiSrc.', 'Provide the full Umami script URL in analytics.umamiSrc.');
+  }
+  if (!cookiesEnabled) {
+    const hasCookieDependent = Boolean(analytics.ga4Id || analytics.gtmId || analytics.clarityId);
+    const hasCookieless = Boolean(analytics.plausibleDomain || (analytics.umamiWebsiteId && analytics.umamiSrc));
+    if (hasCookieDependent) {
+      add(
+        'warn',
+        'Cookie-dependent analytics (GA4 / GTM / Clarity) are configured while cookies.enabled is false — consent-gated tags stay inactive.',
+        'Set cookies.enabled: true in client/config.json for TDDDG § 25 / GDPR compliance.'
+      );
+    }
+    if (hasCookieless && analytics.allowCookielessWithoutBanner !== true) {
+      add(
+        'warn',
+        'Plausible/Umami analytics are configured while cookies.enabled is false and analytics.allowCookielessWithoutBanner is false — tags will stay blocked.',
+        'Enable cookies.enabled or set analytics.allowCookielessWithoutBanner: true in client/config.json.'
+      );
+    }
   }
 
   const redirects = appConfig.redirects ?? [];

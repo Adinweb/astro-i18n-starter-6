@@ -41,6 +41,7 @@ const mode = isBuild ? 'production' : 'development';
 
 import { readMergedConfig } from './scripts/lib/config.mjs';
 import {
+  buildHtaccessRedirects,
   buildNetlifyRedirects,
   buildNginxRedirects,
   validateRedirects,
@@ -67,18 +68,21 @@ function agencyRedirectsIntegration() {
 
         const outDir = fileURLToPath(dir);
         const netlifyPath = path.join(outDir, '_redirects');
-        const nginxDir = path.join(rootDir, 'deploy');
-        const nginxPath = path.join(nginxDir, 'nginx-redirects.conf');
+        const deployDir = path.join(rootDir, 'deploy');
+        const nginxPath = path.join(deployDir, 'nginx-redirects.conf');
+        const htaccessPath = path.join(deployDir, '.htaccess-redirects');
 
         if (rules.length === 0) {
           fs.rmSync(netlifyPath, { force: true });
           fs.rmSync(nginxPath, { force: true });
+          fs.rmSync(htaccessPath, { force: true });
           return;
         }
 
         fs.writeFileSync(netlifyPath, buildNetlifyRedirects(rules), 'utf-8');
-        fs.mkdirSync(nginxDir, { recursive: true });
+        fs.mkdirSync(deployDir, { recursive: true });
         fs.writeFileSync(nginxPath, buildNginxRedirects(rules), 'utf-8');
+        fs.writeFileSync(htaccessPath, buildHtaccessRedirects(rules), 'utf-8');
       },
     },
   };

@@ -351,6 +351,16 @@ export const analyticsConfigSchema = z
       ])
       .optional()
       .default(ANALYTICS_CONFIG_DEFAULTS.ga4Id),
+    gtmId: z
+      .union([
+        z.literal(''),
+        z
+          .string()
+          .trim()
+          .regex(/^GTM-[A-Z0-9]{4,16}$/i, 'Use a valid Google Tag Manager ID such as "GTM-XXXXXXX".'),
+      ])
+      .optional()
+      .default(ANALYTICS_CONFIG_DEFAULTS.gtmId),
     plausibleDomain: z
       .union([
         z.literal(''),
@@ -378,6 +388,11 @@ export const analyticsConfigSchema = z
       ])
       .optional()
       .default(ANALYTICS_CONFIG_DEFAULTS.clarityId),
+    consentMode: z.boolean().optional().default(ANALYTICS_CONFIG_DEFAULTS.consentMode),
+    allowCookielessWithoutBanner: z
+      .boolean()
+      .optional()
+      .default(ANALYTICS_CONFIG_DEFAULTS.allowCookielessWithoutBanner),
   })
   .superRefine((val, ctx) => {
     if (val.umamiWebsiteId && !val.umamiSrc) {

@@ -16,18 +16,24 @@ npm run <command> -- [options]
 
 ## 2. Content Scaffolding & Updating
 
-### 2.0 Client Onboarding & Rebranding (`site:init`)
+### 2.0 Client Onboarding, Rebranding (`site:init`) & Clean Reset (`site:reset`)
 ```bash
 npm run site:init -- [--name="Acme Studio"] [--short-name="Acme"] [--desc="..."] [--author="..."] [--email="hello@acme.test"] \
-  [--blueprint=corporate|agency|portfolio|medical] \
+  [--blueprint=corporate|agency|portfolio|medical|catalog|legal] \
   [--preset=indigo|cobalt|emerald|amber|slate|rose] [--primary=#rrggbb] [--accent=#rrggbb] \
   [--font=system|jakarta|manrope|outfit|editorial] [--rtl-font=vazirmatn|noto-arabic|iransans|yekan-bakh|peyda] \
+  [--logo=path/to/logo.svg] [--logo-dark=path/to/logo-dark.svg] \
   [--og-mode=branded|artwork|default] [--default-theme=system|light|dark] \
   [--default-locale=<code>] [--single-lang|--multi-lang] [--blog=true|false] [--projects=true|false] \
   [--cta-page=<key>] [--github=...] [--twitter=...] [--linkedin=...] [--instagram=...] [--telegram=...] \
   [--skip-assets] [--yes]
 ```
-* Updates `client/config.json` (sparse diff against `app.config.json`), applies optional industry `--blueprint` presets (`corporate`, `agency`, `portfolio`, `medical` from `scripts/lib/blueprints.mjs` for palette, typography, `business.type`, `ui.ctaPage`, and modules), keeps `site_description` synchronized in `client/messages/<targetLocale>.json`, optionally switches default/solo locale mode in `client/locales.json`, and refreshes brand icons / `og-default.png` unless `--skip-assets` is passed. Runs interactively when stdin is a TTY or completely headlessly with `--yes`.
+* Updates `client/config.json` (sparse diff against `app.config.json`), applies optional industry `--blueprint` presets (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal` from `scripts/lib/blueprints.mjs`), validates & copies optional `--logo` / `--logo-dark` assets into `public/brand/logo*` (passing empty `--logo=` clears the uploaded logo), keeps `site_description` synchronized in `client/messages/<targetLocale>.json`, optionally switches default/solo locale mode in `client/locales.json`, and refreshes brand icons / `og-default.png` unless `--skip-assets` is passed. Runs interactively when stdin is a TTY or headlessly with `--yes`.
+* **Resetting a workspace between client projects (`site:reset`)**:
+  ```bash
+  npm run site:reset -- --yes [--clean-starter]
+  ```
+  Resets `client/config.json` and `client/cms.json` back to `{}` and cleans generated `deploy/` redirect snippets and `public/brand/` logos (`--clean-starter` also invokes `starter:seed --clean` to return `src/content/` to clean minimal base).
 
 ### 2.1 Static Pages (`new:page`)
 ```bash
@@ -187,9 +193,9 @@ npm run content:enable projects
 
 ### 6.3 Starter Demo Package (`starter:seed`) & Upstream Check (`upstream:check`)
 ```bash
-npm run starter:seed [-- --blueprint=corporate|agency|portfolio|medical] # Seed optional starter-kit/ pages, posts, projects & blueprint config
+npm run starter:seed [-- --blueprint=corporate|agency|portfolio|medical|catalog|legal] # Seed optional starter-kit/ pages, posts, projects & blueprint config
 npm run starter:seed -- --clean --yes # Remove seeded demo items and return to clean minimal base state
-npm run upstream:check               # Verify two-tier config, messages, locales, and core/client hooks
+npm run upstream:check               # Verify 3-tier config/CMS, messages, locales, and core/client hooks
 ```
 
 ### 6.4 Scaffold any type (`content:new`)
@@ -212,7 +218,7 @@ npm run content:new <type> <slug> -- [--title="<Title>"] [--desc="<Desc>"] \
 npm run doctor
 npm run doctor -- --json     # exit 1 only when a real error is found
 ```
-Checks Node against `engines`, the pinned package manager and lockfile, `app.config.json` parsing, content-type bases (empty, duplicate, reserved by the router or equal to a locale prefix), template branding still in place, `SITE_URL`, dictionary parity and `[TODO: …]` values, `src/paraglide` freshness (compared against `src/paraglide/messages/_index.js`, the file the compiler always rewrites), missing group/locale files, frontmatter image references that point at nothing, and the presence of `dist/`. Each finding prints the command that fixes it.
+Checks Node against `engines`, the pinned package manager and lockfile, `app.config.json` / `client/config.json` / `client/cms.json` parsing, `analytics` provider ID formats (`ga4Id`, `gtmId`, `clarityId`) and GDPR compliance warnings when analytics run with `cookies.enabled: false`, `redirects` validity (including wildcard `/*` and `:splat`), content-type bases (empty, duplicate, reserved by the router or equal to a locale prefix), template branding still in place, `SITE_URL`, dictionary parity and `[TODO: …]` values, `src/paraglide` freshness (compared against `src/paraglide/messages/_index.js`), missing group/locale files, frontmatter image references that point at nothing, and the presence of `dist/`. Each finding prints the command that fixes it.
 
 ### 7.2 `content:status` (readiness matrix)
 ```bash
@@ -227,4 +233,11 @@ One row per group with a column per locale: `✅` published, `✏️` draft, `�
 npm run link:check
 npm run link:check -- --dir=dist --json --limit=100
 ```
-Walks every built HTML file and verifies `href`, `src`, `poster` and each `srcset` candidate that points inside the site. A path resolves when it maps to a real file, to `<path>/index.html`, or to `<path>.html`; `/pagefind/` is skipped because it is loaded at runtime. A `#fragment` must also exist as an `id`/`name` on the target page (the browser's built-in `#top`/`#` anchors and fragments into non-HTML assets (an `#id` inside a PDF or an XML file) are not inspectable and are skipped), so renaming a section id breaks the build check instead of shipping a dead `#privacy` link. Exits 1 with `page → target#fragment` pairs, so a renamed slug, a stale CTA or a deleted section cannot ship as a 404.
+Walks every built HTML file and verifies `href`, `src`, `poster`, each `srcset` candidate, and configured non-wildcard redirect destination targets that point inside the site (wildcard `/*` / `:splat` rules are validated syntactically and skipped as concrete file targets). A path resolves when it maps to a real file, to `<path>/index.html`, or to `<path>.html`; `/pagefind/` is skipped because it is loaded at runtime. A `#fragment` must also exist as an `id`/`name` on the target page (the browser's built-in `#top`/`#` anchors and fragments into non-HTML assets are skipped), so renaming a section id breaks the build check instead of shipping a dead `#privacy` link. Exits 1 with `page → target#fragment` pairs.
+
+### 7.4 Browser Layout & Delivery Preflight (`qa:browser`, `preflight`, `preflight:full`)
+```bash
+npm run qa:browser      # Launches headless Chromium via Playwright against built dist/
+npm run preflight       # compile -> upstream -> audit -> doctor -> vitest -> build -> smoke -> link:check
+npm run preflight:full  # Runs full preflight + Chromium Playwright layout & interactive UI QA
+```

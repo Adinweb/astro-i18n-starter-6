@@ -23,6 +23,15 @@ const CMS_STRIP_EMPTY_STRING_KEYS = new Set([
   'heightPx',
   'type',
   'status',
+  'contactEmail',
+]);
+
+const CMS_LOCALE_MAP_KEYS = new Set([
+  'badgeByLocale',
+  'messageByLocale',
+  'ctaLabelByLocale',
+  'ctaHrefByLocale',
+  'labels',
 ]);
 
 function isPlainObject(value) {
@@ -45,19 +54,23 @@ function coerceFiniteNumber(value) {
 export function sanitizeCmsConfig(raw) {
   if (!isPlainObject(raw)) return {};
 
-  const walk = (node, keyName) => {
+  const walk = (node, keyName, parentKeyName) => {
     if (node === null || node === undefined) return undefined;
 
     if (typeof node === 'string') {
       const trimmed = node.trim();
-      if (keyName && CMS_STRIP_EMPTY_STRING_KEYS.has(keyName) && trimmed === '') {
+      if (
+        trimmed === '' &&
+        ((keyName && CMS_STRIP_EMPTY_STRING_KEYS.has(keyName)) ||
+          (parentKeyName && CMS_LOCALE_MAP_KEYS.has(parentKeyName)))
+      ) {
         return undefined;
       }
       return node;
     }
 
     if (Array.isArray(node)) {
-      const cleaned = node.map((item) => walk(item)).filter((item) => item !== undefined);
+      const cleaned = node.map((item) => walk(item, undefined, keyName)).filter((item) => item !== undefined);
 
       if (keyName === 'redirects') {
         return cleaned.filter(
@@ -87,10 +100,13 @@ export function sanitizeCmsConfig(raw) {
 
       const out = {};
       for (const [k, v] of Object.entries(node)) {
-        const cleaned = walk(v, k);
+        const cleaned = walk(v, k, keyName);
         if (cleaned !== undefined) {
           out[k] = cleaned;
         }
+      }
+      if (keyName && CMS_LOCALE_MAP_KEYS.has(keyName) && Object.keys(out).length === 0) {
+        return undefined;
       }
       return out;
     }

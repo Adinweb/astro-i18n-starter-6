@@ -49,6 +49,7 @@ const RESERVED_BASES = new Set([
   'robots',
   'icons',
   'site.webmanifest',
+  'llms.txt',
   ...LOCALES,
 ]);
 

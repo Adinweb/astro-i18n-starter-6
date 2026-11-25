@@ -20,12 +20,12 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
    - Slugs, feeds, alternates & home URL: `src/libs/content/service.ts` (`getHomeHref` is the one home URL for chrome, breadcrumbs and feeds — it falls back to the default locale when a locale's home page is not translated) and `src/libs/content/feed.ts`.
    - Content entry invariants (IDs, drafts, locale selection, sorting): `src/libs/content/entries.ts`.
    - Blog filters & reading time: `src/libs/content/blog.ts` (`toggleBlogCategory`, `toggleBlogTag`); taxonomy labels: `src/libs/content/taxonomy.ts`.
-   - Application config: `app.config.json` + sparse overrides in `client/config.json`, validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`, `BUSINESS_CONFIG`, brand logo/theme presets, dev server). `ui.ctaPage` names the page group the header/drawer CTA points at (hides itself if unpublished), `ui.showLanguageSwitcher: false` turns the starter into a single-language storefront cleanly without structural locale deletion, `ui.topBanner` configures site-wide announcement strips in `SiteTopBanner.astro` (`app.config.json` ships `enabled: true` with stacked `items[]`: non-dismissible `40px` `site-notice` + compact `32px` dismissible `site-announcement`; schema fallback is `false`), `ui.navbar` (`initialTopOffset`, `stickyScrollThreshold`, `stickyTopOffset`, `autoBannerOffset`, `manualBannerOffset`) configures sticky/banner navbar behavior in `src/scripts/navbar.ts`, and `ui.motion` configures reveal timing/travel/stagger/rootMargin/smooth-scroll defaults (`revealDelayMs: 0`, `revealDurationMs: 1600` out of the box). Brand logo (`brand.logo`), palette & font tokens (`brand.preset`, `primaryColor`, `accentColor`, `fontPreset`, `rtlFontPreset` including commercial Persian hooks in `client/styles.css`, `socialCardMode`) resolve via `src/libs/config/theme.ts` and `theme-presets.json` (plus `import.meta.env.DEV`-only `DevThemePreview.astro`). Modules that ship to the browser read `src/libs/config/client.ts` (`CLIENT_COOKIE_CONFIG`, `CLIENT_NAVBAR_CONFIG`, `CLIENT_MOTION_CONFIG`) and shared defaults in `defaults.ts` instead of `app.ts`: the validator runs at import time, so a client import of `app.ts` drags the whole Zod runtime onto every page. Components, views, pages and Node scripts keep using `app.ts`.
-   - Navigation & Top Banner: `client/navigation.ts` (`CLIENT_PAGE_ITEMS`, `getClientPrimaryExtras`, `getClientFooterColumns`, `getClientLegalNavigation`) consumed by `src/libs/config/navigation.ts` — one `buildPrimaryNavigation` shared by the header and the drawer, plus `getFooterNavigation` / `getLegalNavigation`. Anchor links only emit while their target page exists. `<SiteTopBanner />` + `<LayoutHooks slot="top-banner" />` sit in `[data-site-top-banner-region]`, while `src/scripts/navbar.ts` adapts `--navbar-initial-top`, `--top-banner-height`, `--navbar-height`, and `data-header-stuck` via `ResizeObserver` so the navbar never overlaps banners.
+   - Application config: `app.config.json` + sparse agency overrides in `client/config.json` + Pages CMS overrides in `client/cms.json` (cleaned via `sanitizeCmsConfig()` + layered via `mergeLayeredConfig()`), validated and typed by `src/libs/config/app.ts` (`siteConfig`, `POSTS_PER_PAGE`, `API_CONFIG`, `COOKIE_CONFIG`, `ANALYTICS_CONFIG`, `UI_CONFIG`, `BLOG_CONFIG`, `SOCIAL_CONFIG`, `BUSINESS_CONFIG`, `REDIRECTS_CONFIG`, brand logo/theme presets, dev server). `ui.ctaPage` names the page group the header/drawer CTA points at (hides itself if unpublished), `ui.showLanguageSwitcher: false` turns the starter into a single-language storefront cleanly without structural locale deletion, `ui.topBanner` configures site-wide announcement strips in `SiteTopBanner.astro` (`app.config.json` ships `enabled: true` with stacked `items[]`: non-dismissible `40px` `site-notice` + compact `32px` dismissible `site-announcement`; schema fallback is `false`, supporting `startsAt`/`endsAt` date windows and `dismissMode: 'session' | 'persistent'` + `dismissTtlDays`/`dismissVersion`), `ui.quickContact` configures the floating collapsible `QuickContactWidget.astro`, `ui.navbar` (`initialTopOffset`, `stickyScrollThreshold`, `stickyTopOffset`, `autoBannerOffset`, `manualBannerOffset`) configures sticky/banner navbar behavior in `src/scripts/navbar.ts`, and `ui.motion` configures reveal timing/travel/stagger/rootMargin/smooth-scroll defaults (`revealDelayMs: 0`, `revealDurationMs: 1600` out of the box). Brand logo (`brand.logo`, configurable via `site:init --logo / --logo-dark`), palette & font tokens (`brand.preset`, `primaryColor`, `accentColor`, `fontPreset`, `rtlFontPreset` including commercial Persian hooks in `client/styles.css`, `socialCardMode`) resolve via `src/libs/config/theme.ts` and `theme-presets.json` (plus `import.meta.env.DEV`-only `DevThemePreview.astro`). Modules that ship to the browser read `src/libs/config/client.ts` (`CLIENT_COOKIE_CONFIG`, `CLIENT_NAVBAR_CONFIG`, `CLIENT_MOTION_CONFIG`) and shared defaults in `defaults.ts` instead of `app.ts`: the validator runs at import time, so a client import of `app.ts` drags the whole Zod runtime onto every page. Components, views, pages and Node scripts keep using `app.ts`.
+   - Navigation, Top Banner & Quick Contact: `client/navigation.ts` (`CLIENT_PAGE_ITEMS`, `getClientPrimaryExtras`, `getClientFooterColumns`, `getClientLegalNavigation`) consumed by `src/libs/config/navigation.ts` — one `buildPrimaryNavigation` shared by the header and the drawer, plus `getFooterNavigation` / `getLegalNavigation`. Anchor links only emit while their target page exists. `<SiteTopBanner />` + `<LayoutHooks slot="top-banner" />` sit in `[data-site-top-banner-region]`, while `src/scripts/navbar.ts` adapts `--navbar-initial-top`, `--top-banner-height`, `--navbar-height`, and `data-header-stuck` via `ResizeObserver` so the navbar never overlaps banners. `QuickContactWidget.astro` automatically hides while the undecided `CookieConsent` banner, drawer, or a `<dialog open>` is visible.
    - Blog pagination & Collection filters: `blog.postsPerPage` in merged config (`POSTS_PER_PAGE`), math in `src/libs/content/pagination.ts` (`paginate`, `buildPageWindow`), URLs in `src/libs/content/service.ts` (`getBlogPageHref`). Generic collections (`projects`, etc.) share category, tech `stack`, and keyword search filtering (`normalizeForFallbackMatch`) in `CollectionIndexView.astro` (`refreshChronoTrig()`).
    - Search & Perso-Arabic indexing: `scripts/index-pagefind.mjs` (build-time Pagefind normalization), `src/libs/search/persian.ts` (ZWNJ/orthography/numeral query expansion & fallback folding), and `src/libs/search/client.ts`.
-   - External API & Consent (Pure SSG, Zero Backend): `src/libs/api/client.ts` (`ContactForm.astro` and `NewsletterBanner.astro` post directly to external/headless endpoints via `api.provider`: `'custom' | 'web3forms' | 'formspree' | 'basin' | 'webhook'`, optional Cloudflare Turnstile `turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY`, `accessKey` / `PUBLIC_WEB3FORMS_KEY`, or `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL` / `PUBLIC_NEWSLETTER_API_URL`) and `src/libs/cookies/` (`CookieConsent.astro`). A site without a configured endpoint renders **no form**: `*_fallback_desc` + a `mailto:` button come from `site.contactEmail`, `*_unavailable_desc` replaces them when that address is empty (never promise an email channel the site does not have), and the developer setup note is `import.meta.env.DEV`-only, so visitors never read environment-variable names. Never add SSR servers or backend folders.
-   - Structured data & Branded RTL OG cards: `src/libs/content/schema.ts` generates `Organization` / `LocalBusiness` / `Service` JSON-LD from `business` + `social`; `src/libs/content/og-card.ts` shapes RTL SVG→PNG cards with explicit `direction="rtl"` / `unicode-bidi="embed"`.
+   - External API, Analytics & Consent (Pure SSG, Zero Backend): `src/libs/api/client.ts` (`ContactForm.astro` and `NewsletterBanner.astro` post directly to external/headless endpoints via `api.provider`: `'custom' | 'web3forms' | 'formspree' | 'basin' | 'webhook'`, optional Cloudflare Turnstile `turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY` + `docs/deploy/cloudflare-worker-webhook.js`, `accessKey` / `PUBLIC_WEB3FORMS_KEY`, or `PUBLIC_API_BASE_URL` / `PUBLIC_CONTACT_API_URL` / `PUBLIC_NEWSLETTER_API_URL`), `src/libs/cookies/` (`CookieConsent.astro`), and `src/components/AnalyticsScripts.astro` (`ga4Id`, `gtmId`, `plausibleDomain`, `umamiWebsiteId`, `clarityId`, optional `consentMode` v2 & `allowCookielessWithoutBanner`). A site without a configured endpoint renders **no form**: `*_fallback_desc` + a `mailto:` button come from `site.contactEmail`, `*_unavailable_desc` replaces them when that address is empty, and the developer setup note is `import.meta.env.DEV`-only. Never add SSR servers or backend folders.
+   - Structured data, Redirects, `/llms.txt` & Branded RTL OG cards: `src/libs/content/schema.ts` generates `Organization` / `LocalBusiness` / `Service` JSON-LD from `business` + `social`; `src/libs/content/og-card.ts` shapes RTL SVG→PNG cards; `src/pages/llms.txt.ts` builds `/llms.txt`; `astro.config.mjs` + `scripts/lib/redirects.mjs` compile exact & wildcard (`/*` -> `:splat`) `redirects` to `dist/_redirects`, `deploy/nginx-redirects.conf`, and `deploy/.htaccess-redirects`.
    - UI copy: Two-tier Paraglide dictionaries (`messages/core/<locale>.json` + `client/messages/<locale>.json`) merged into `.paraglide-work/` and compiled to `@/paraglide/messages`. Call `m.<key>({}, { locale })` and never hardcode UI text.
    - Icons: Core 69 icons in `src/libs/ui/icons.ts` + `src/components/ui/Icon.astro`, extendable via `client/icons.ts` (`CLIENT_ICONS`, `CLIENT_DIRECTIONAL_ICONS`) and `client/ClientIcons.astro`. Names are semantic; templates never carry raw `<svg>`, and client code clones server-rendered icons instead of writing paths.
 2. **Lean Router Dispatcher Pattern**:
@@ -71,10 +71,11 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ```text
 /
 ├── .agents/skills/            # Agent skills (astro-i18n-starter/SKILL.md + references/)
-├── .pages.yml                 # Pages CMS schema for visual client content editing
-├── app.config.json            # Upstream core defaults (site, brand, business, content types, blog, cookies, API, server)
+├── .pages.yml                 # Pages CMS schema for client content + client/cms.json editing
+├── app.config.json            # Upstream core defaults (site, brand, business, analytics, content types, redirects, blog, cookies, API, server)
 ├── client/                    # Client-owned workspace (survives upstream merges cleanly):
-│   ├── config.json            # Sparse overrides merged onto app.config.json
+│   ├── config.json            # Agency/CLI sparse overrides merged onto app.config.json
+│   ├── cms.json               # Pages CMS non-technical settings layer (sanitized + merged atop client/config.json)
 │   ├── locales.json           # SSOT for active locales, defaultLocale, and metadata (dir, font, htmlLang)
 │   ├── messages/              # Client translation overrides & new keys (<locale>.json)
 │   ├── navigation.ts          # CLIENT_PAGE_ITEMS + custom primary extras, footer columns & legal links
@@ -83,15 +84,16 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   ├── LayoutHooks.astro      # Custom `top-banner`, `<head>`, and `<body>`-end slots inside BaseLayout
 │   ├── styles.css             # Client CSS tokens & @font-face commercial Persian font slots (@source "../../client")
 │   └── templates/index.ts     # Custom page templates merged into PageView.astro
-├── docs/deploy/nginx.conf     # Production Nginx SSL, security headers, caching & bilingual 404 config
+├── deploy/                    # Build-generated server redirect configs (`nginx-redirects.conf`, `.htaccess-redirects`; outside `dist/`)
+├── docs/deploy/               # Production Nginx config (`nginx.conf`) & webhook starter (`cloudflare-worker-webhook.js`)
 ├── messages/core/             # Upstream core UI dictionaries (en.json, fa.json)
-├── starter-kit/               # Optional demo pages, blog posts, projects & industry blueprints (`npm run starter:seed`)
+├── starter-kit/               # Optional demo pages, blog posts, projects & 6 industry blueprints (`npm run starter:seed`)
 ├── public/                    # Static assets (_headers, chronotrig.min.js, favicons, manifest, default OG)
-├── scripts/                   # Developer CLI automation, health checks, Pagefind indexing & upstream checks (lib/)
-│   └── lib/                   # Shared config, blueprints, merge-messages, prompt, frontmatter, content-stub, slug, validation, locale-mutations, content-type & artwork helpers
+├── scripts/                   # 30 Developer CLI, QA, health check, Pagefind indexing & upstream check scripts
+│   └── lib/                   # 14 shared modules (config, blueprints, merge-messages, prompt, frontmatter, content-stub, slug, validation, locale-mutations, content-types, redirects, artwork)
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph fallback
-│   ├── components/            # Core chrome (`HomeHero`, `SiteTopBanner`, `ThemeToggle`, `DevThemePreview`, `LanguageSwitcher`, `DrawerNavLink`, `PageHeader`, `PageHero`, `PageSection`, `HeroCopy`, `BlogPostHeroContent`, `PostCard`, `SearchModal`, `DrawerSearch`, `CookieConsent`, `ContactForm`, `Seo`, `TopLoadingBar`)
+│   ├── components/            # Core chrome (`HomeHero`, `SiteTopBanner`, `QuickContactWidget`, `AnalyticsScripts`, `ThemeToggle`, `DevThemePreview`, `LanguageSwitcher`, `DrawerNavLink`, `PageHeader`, `PageHero`, `PageSection`, `HeroCopy`, `BlogPostHeroContent`, `PostCard`, `SearchModal`, `DrawerSearch`, `CookieConsent`, `ContactForm`, `Seo`, `TopLoadingBar`)
 │   │                          # + 29 section blocks (7 hero + 22 structural) & 4 interactive/motion showcases (`BentoGrid`, `LatestPostsCarousel`, `SwipeableTabs`, `TestimonialMarquee`) + `ui/` (35 UI primitives incl. `Icon`, `IconButton`, `Button` — 64 blocks guarded by `blocks.test.ts`)
 │   ├── content/               # Symmetrical content collections:
 │   │   ├── pages/<group>/     # Static pages (<locale>.mdx per active locale + hero artwork)
@@ -101,10 +103,10 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── locales.ts         # SSOT for LOCALES, DEFAULT_LOCALE, metadata (dir, font, name)
 │   │   ├── format.ts          # Locale-native Intl number & date/time formatters (Solar Hijri for fa)
 │   │   └── paths.ts           # Pure URL utilities (localizeHref, localeHref, stripLocale, getPathname)
-│   ├── layouts/               # BaseLayout.astro (HTML head, prefetch, .js + data-motion + `--trig-*`/`--navbar-*`, top-banner + adaptive sticky navbar, brand.logo, DevThemePreview, header, drawer, footer)
+│   ├── layouts/               # BaseLayout.astro (HTML head, prefetch, .js + data-motion + `--trig-*`/`--navbar-*`, top-banner + adaptive sticky navbar, brand.logo, DevThemePreview, header, drawer, footer, QuickContactWidget, AnalyticsScripts)
 │   ├── libs/                  # Core services:
 │   │   ├── api/client.ts      # Pure client-side HTTP adapter for external APIs & serverless forms (custom, web3forms, formspree, basin, webhook + Turnstile)
-│   │   ├── config/app.ts      # Validates merged app.config.json + client/config.json; typed site/brand/business/blog/api values & hero defaults
+│   │   ├── config/app.ts      # Validates three-tier merged app.config.json <- client/config.json <- client/cms.json; typed site/brand/business/analytics/redirects/blog/api values
 │   │   ├── config/client.ts   # Browser-safe config reader (`CLIENT_COOKIE_CONFIG`, `CLIENT_NAVBAR_CONFIG`, `CLIENT_MOTION_CONFIG`; zero Zod) + defaults.ts
 │   │   ├── config/theme.ts    # OKLCH brand palette & font preset resolver (+ theme-presets.json)
 │   │   ├── config/navigation.ts # Multi-menu header/drawer/footer/legal navigation builder
@@ -117,6 +119,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── content/feed.ts    # Per-locale Atom 1.0 feed builder
 │   │   ├── content/og-card.ts # Build-time SVG→PNG branded Open Graph card renderer with RTL shaping
 │   │   ├── content/pagination.ts # Pure paginate() + buildPageWindow() helpers
+│   │   ├── content/redirects.ts # Exact + trailing-wildcard (`/*` -> `:splat`) Netlify, Nginx & Apache redirect generators
 │   │   ├── content/social.ts  # Social card resolver (branded / artwork / default)
 │   │   ├── cookies/           # TDDDG § 25 / GDPR consent model & multi-domain script gatekeeper
 │   │   ├── search/            # client.ts + persian.ts (Pagefind & dev fallback with Persian ZWNJ/orthography expansion)
@@ -127,6 +130,7 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 │   │   ├── 404.astro          # Path-prefix locale-aware 404 page
 │   │   ├── og/[...slug].png.ts # Build-time branded OG PNG route (`socialCardMode: 'branded'`)
 │   │   ├── site.webmanifest.ts # Web app manifest generated from app.config.json
+│   │   ├── llms.txt.ts        # Build-time Markdown discovery index (`/llms.txt`) for AI crawlers
 │   │   ├── rss.xml.ts         # Default-locale Atom feed
 │   │   ├── rss/[locale].xml.ts # Non-default locale Atom feeds (/rss/<locale>.xml)
 │   │   ├── sitemap.xml.ts     # Multi-lingual sitemap with x-default + lastmod
@@ -149,17 +153,19 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 | Command | Purpose | When to Run |
 | :--- | :--- | :--- |
 | `npm run messages:compile` | Merges `messages/core/*.json` + `client/messages/*.json` into `.paraglide-work/` and compiles `src/paraglide/` | After modifying dictionary keys or `client/locales.json` |
-| `npm run upstream:check` | Verifies two-tier config/message parity, `client/` extension files, core-to-client hooks, and `starter-kit/` decoupling | Before commits, upstream pulls, and CI |
+| `npm run upstream:check` | Verifies 3-tier config/CMS merge (`client/config.json` + `client/cms.json`), message parity, `client/` extension files & `starter-kit/` | Before commits, upstream pulls, and CI |
 | `npm run starter:seed` | Seeds optional `starter-kit/` demo pages, posts, projects & messages into `src/content/` & `client/` (`--clean` resets) | When onboarding or resetting demo content |
 | `npm run lint` | Messages compile + `astro check` + `tsc --noEmit` | After any code changes |
-| `npm test` | Vitest unit tests (paths, ICU, routes, CLI helpers, scroll reveal, interactive views) | After routing, UI, or logic changes |
+| `npm test` | Vitest unit tests (29 files, 289 tests: paths, ICU, routes, redirects, cookies, CLI helpers, motion, interactive views) | After routing, UI, or logic changes |
 | `npm run audit:i18n` | Locale-config parity, two-tier dictionary/placeholder parity, content parity, route collisions & RTL logical property guard | Before commits & builds |
-| `npm run verify:cli` | End-to-end check of every documented CLI workflow in an isolated sandbox | After changing anything under `scripts/` |
-| `npm run doctor` | No-build health check: runtime, merged config, content types, dictionaries, content, `SITE_URL` | After cloning a project or before a client hand-off |
+| `npm run verify:cli` | End-to-end check of every documented CLI workflow (incl. `--logo`, `catalog`, `site:reset`) in an isolated sandbox | After changing anything under `scripts/` |
+| `npm run doctor` | No-build health check: runtime, 3-tier config, analytics/GDPR compliance, redirects, content types, dictionaries, `SITE_URL` | After cloning a project or before a client hand-off |
 | `npm run content:list` / `content:status` | Content types and their entries / per-locale readiness matrix | When auditing what is published |
-| `npm run link:check` | Crawls `dist/` and reports internal links and `#fragment` anchors that resolve to nothing | After a rename or before delivery |
-| `npm run build` | `messages:compile` + audit + `astro build` + `node scripts/index-pagefind.mjs` | After major changes |
-| `npm run smoke` | HTML, SEO, feed, asset & H1 assertions on `dist/` | After every production build |
+| `npm run link:check` | Crawls `dist/` and reports internal links, exact redirect destinations, and `#fragment` anchors that resolve to nothing | After a rename or before delivery |
+| `npm run build` | `messages:compile` + audit + `astro build` + emits `_redirects`/`deploy/` + `node scripts/index-pagefind.mjs` | After major changes |
+| `npm run smoke` | HTML, SEO, feed, `/llms.txt`, redirect artifacts, asset & H1 assertions on `dist/` | After every production build |
+| `npm run qa:browser` | Headless Chromium Playwright QA across RTL/LTR routes, light/dark themes, viewports & interactive modals/drawers | After layout, CSS, or interactive changes |
+| `npm run preflight` / `preflight:full` | All-in-one delivery pipeline (`preflight:full` appends `qa:browser`) | Before final client delivery |
 | `npm run knip` | Dead files, exports, and dependencies | Before releases |
 | `npm run assets:generate` | Regenerate PNG icons, OG image and hero/cover artwork | After brand changes or adding content groups |
 
@@ -172,12 +178,18 @@ Start the server in background mode (`astro dev --background`) and manage via `a
 
 Execute these scripts instead of performing brittle manual file manipulations:
 
-### 4.1 Client Onboarding & Content Scaffolding
-* **Initialize client identity, industry blueprint, brand palette, fonts, OG mode & modules:**
+### 4.1 Client Onboarding, Workspace Reset & Content Scaffolding
+* **Initialize client identity, industry blueprint, brand logo, palette, fonts, OG mode & modules:**
   ```bash
-  npm run site:init -- --name="Acme Studio" --blueprint=agency --rtl-font=vazirmatn --og-mode=branded --yes
+  npm run site:init -- --name="Acme Studio" --blueprint=agency --rtl-font=vazirmatn --logo=logo.svg --og-mode=branded --yes
   ```
-  Run interactively or headlessly (`--yes`). Writes sparse overrides to `client/config.json` (optionally applying `--blueprint=corporate|agency|portfolio|medical` presets for palette, fonts, `business.type`, `ui.ctaPage`, and modules), syncs `site_description` in `client/messages/`, adjusts language mode, and refreshes brand assets.
+  Run interactively or headlessly (`--yes`). Writes sparse overrides to `client/config.json` (supporting `--blueprint=corporate|agency|portfolio|medical|catalog|legal`, `--logo` / `--logo-dark` import to `public/brand/`), syncs `site_description` in `client/messages/`, adjusts language mode, and refreshes brand assets.
+
+* **Reset workspace back to clean starter overrides between client builds:**
+  ```bash
+  npm run site:reset -- --yes [--clean-starter]
+  ```
+  Resets `client/config.json` and `client/cms.json` to `{}` and removes `deploy/` and `public/brand/` (never edit starter demo reset manually).
 
 * **Seed or clean optional demo Starter Kit content:**
   ```bash
@@ -237,9 +249,9 @@ npm run i18n:add-batch -- --file=translations.json [--category=<cat>]
 ## 5. Playbooks for Common Agent Tasks
 
 ### Client Production Build Order (Recommended)
-1. **Clean & Onboard**: Strip seeded demo content if starting fresh (`npm run starter:seed -- --clean --yes`), then run `npm run site:init -- --name="..." --blueprint=corporate|agency|portfolio|medical --rtl-font=vazirmatn --yes` and tune `brand.logo` / `business` / `api` in `client/config.json`.
+1. **Clean & Onboard**: Strip seeded demo content if starting fresh (`npm run starter:seed -- --clean --yes` or `npm run site:reset -- --yes --clean-starter`), then run `npm run site:init -- --name="..." --blueprint=corporate|agency|portfolio|medical|catalog|legal --rtl-font=vazirmatn --yes` and tune `brand.logo` / `business` / `analytics` / `api` in `client/config.json` (keeping Pages CMS editor settings in `client/cms.json`).
 2. **Compose Custom Pages in `client/`**: Author bespoke home/landing views in `client/templates/<Name>.astro` (registered in `client/templates/index.ts`) and/or `hero: "none"`, `container: "canvas"`, `flushTop: true` `.mdx` pages using the 64 guarded blocks (29 sections + 35 UI primitives in `src/components/ui/`) + 4 interactive showcases, semantic OKLCH tokens, logical RTL properties, `data-trig-once="true"`, `.hero-glow-*`, and `loading="lazy"` below the fold.
-3. **Wire Pages, Nav & Translations**: Create pages with `npm run new:page`, add menu links in `client/navigation.ts`, add UI copy in `client/messages/<locale>.json` (`npm run i18n:add-batch`), and run the full verification pipeline (`upstream:check`, `lint`, `test`, `audit:i18n`, `doctor`, `build`, `smoke`, `link:check`).
+3. **Wire Pages, Nav & Translations**: Create pages with `npm run new:page`, add menu links in `client/navigation.ts`, add UI copy in `client/messages/<locale>.json` (`npm run i18n:add-batch`), and run the full verification pipeline (`npm run preflight:full && npm run lint && npm run knip`).
 
 ### Playbook A: Adding a New Navigation Link
 1. Ensure `src/content/pages/<page-key>/` exists (`npm run new:page <page-key>` scaffolds it and registers `nav_<page-key>` in `client/messages/`).

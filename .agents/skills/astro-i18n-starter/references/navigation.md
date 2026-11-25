@@ -152,8 +152,8 @@ To add a new page or custom link:
 * Configured via `ui.topBanner` in `app.config.json` / `client/config.json`:
   - **Shipped default**: `app.config.json` ships `ui.topBanner.enabled: true` with two stacked `items[]`: a persistent non-dismissible `40px` `site-notice` bar (`variant: 'hero'`, `heightPx: 40`, `dismissible: false`) above a slimmer `32px` dismissible `site-announcement` bar (`variant: 'primary'`, `heightPx: 32`, `dismissible: true`), while the Zod/client schema fallback default (`TOP_BANNER_CONFIG_DEFAULTS.enabled`) is `false` when `ui.topBanner` is omitted. Set `"ui": { "topBanner": { "enabled": false } }` in `client/config.json` to hide them cleanly.
   - **Variants & Height**: `'primary' | 'hero' | 'surface' | 'accent' | 'info' | 'warning'`, plus optional `heightPx` (`24`–`160`, mapped via `--site-banner-height` on `.site-top-banner`).
-  - **Localization**: Single-banner mode supports `badge`, `message`, `ctaLabel`, `ctaHref` plus `*ByLocale` maps (`messageByLocale`, `badgeByLocale`, `ctaLabelByLocale`, `ctaHrefByLocale`); multi-banner mode uses `items[]` (each item has its own `id`, `enabled`, `variant`, `heightPx`, `excludePaths`, `dismissible`, `*ByLocale`, and `external`).
-  - **Dismiss persistence & View Transitions**: Dismissible banners store `top-banner-dismissed:<id>` in `sessionStorage`, are suppressed synchronously right below `[data-site-top-banner-region]` and on `astro:before-swap` before painting, and dispatch `app:top-banner-change` so the navbar recalculates immediately.
+  - **Localization & Scheduling**: Single-banner mode supports `badge`, `message`, `ctaLabel`, `ctaHref` plus `*ByLocale` maps (`messageByLocale`, `badgeByLocale`, `ctaLabelByLocale`, `ctaHrefByLocale`), optional date windows (`startsAt`, `endsAt`), and persistent dismissal (`dismissMode: 'session' | 'persistent'`, `dismissTtlDays`, `dismissVersion`); multi-banner mode uses `items[]`.
+  - **Dismiss persistence & View Transitions**: Dismissible banners store dismissal state in `sessionStorage` or `localStorage` (`top-banner-dismissed:<id>`), are suppressed synchronously right below `[data-site-top-banner-region]` and on `astro:before-swap` before painting, and dispatch `app:top-banner-change` so the navbar recalculates immediately.
 
 ### 6.2 Adaptive Sticky Navbar (`ui.navbar` & `src/scripts/navbar.ts`)
 * Configured via `ui.stickyHeader` (`true` by default) and `ui.navbar` in `app.config.json` / `client/config.json` (exposed to browser scripts via `CLIENT_NAVBAR_CONFIG` in `src/libs/config/client.ts`):
@@ -163,4 +163,8 @@ To add a new page or custom link:
   - `autoBannerOffset` (default `true`): `ResizeObserver` continuously measures `[data-site-top-banner-region]` (including dismiss/wrap/resize) so `effectiveThreshold = Math.max(stickyScrollThreshold, bannerClearScroll)` never overlaps the banner even if `stickyScrollThreshold < bannerHeight`.
   - `manualBannerOffset` (default `0`): manual clearance in `px` used only when `autoBannerOffset: false` (CSS uses `max(0px, var(--navbar-manual-banner-offset) - var(--actual-banner-height))` in `.main-header-clearance` to prevent double padding).
 * Synchronizes `--navbar-initial-top`, `--navbar-sticky-top`, `--navbar-manual-banner-offset`, `--actual-banner-height`, `--top-banner-height`, and `--navbar-height` on `document.documentElement`, feeding `.site-header`, `.main-header-clearance`, `scroll-padding-top`, and Lenis dynamic `#hash` anchor offsets (`getHeaderOffset()`).
+
+### 6.3 Floating Quick-Contact Widget (`src/components/QuickContactWidget.astro`)
+* Configured via `ui.quickContact` (`enabled`, `mobileOnly`, `channels: ['phone', 'whatsapp', 'telegram']`) and reads direct links from `BUSINESS_CONFIG`.
+* Renders a collapsible corner action button (`bottom-4 end-4`) hidden cleanly whenever an undecided `CookieConsent` banner, open mobile drawer (`.is-open`), or `<dialog open>` is present.
 

@@ -72,7 +72,7 @@ npm run link:check        # خزش dist/ و گزارش لینک‌ها و لنگ
 npm run upstream:check    # بررسی قرارداد لایهٔ هسته و client/
 ```
 
-`doctor` این‌ها را می‌سنجد: نسخهٔ Node در برابر `engines`، pin بودن package manager، اعتبار پیکربندی ادغام‌شده (`app.config.json` + `client/config.json`) و نوع‌های محتوا، جای‌نگهدارهای برند، `SITE_URL`، هم‌ارزی کلیدهای دیکشنری و `[TODO: …]`ها، تازگی `src/paraglide/`، فایل‌های غایب هر گروه، تصویر فرانتمتر ناموجود و نبود `dist/`.
+`doctor` این‌ها را می‌سنجد: نسخهٔ Node در برابر `engines`، pin بودن package manager، اعتبار پیکربندی سه‌لایهٔ ادغام‌شده (`app.config.json` + `client/config.json` + `client/cms.json`) و نوع‌های محتوا، جای‌نگهدارهای برند، `SITE_URL`، هم‌ارزی کلیدهای دیکشنری و `[TODO: …]`ها، تازگی `src/paraglide/`، فایل‌های غایب هر گروه، تصویر فرانتمتر ناموجود و نبود `dist/`.
 
 ## ۵. افزودن یک نوع محتوای تازه (بدون ویرایش هسته)
 
@@ -96,10 +96,10 @@ npm run upstream:check && npm run lint && npm test && npm run audit:i18n && npm 
 - **وبلاگ نمای اختصاصی دارد.** `BlogIndexView` و `BlogPostView` فیلتر فراصفحه‌ای (`/api/blog-posts/<locale>.json`)، تاکسونومی، فهرست مطالب، نوشته‌های مرتبط و فید را در خود دارند. نوع‌های دیگر از `CollectionIndexView` و `CollectionEntryView` استفاده می‌کنند که علاوه بر قرارداد مشترک ورودی، دارای **فیلتر تعاملی سمت کلاینت** (دسته‌بندی، فناوری‌های `stack` و جستجوی متنی همراه با شمارندهٔ بومی `formatNumber` و بازپخش انیمیشن ChronoTrig) و اسکیمای JSON-LD (`CreativeWork` + `BreadcrumbList`) هستند.
 - **schemaها ایستا هستند.** Astro مجموعه‌ها را در زمان build می‌خواهد، پس افزودن نوع تازه مستلزم ثبت آن در `client/content.ts` است (و برای ویرایش بصری در Git می‌توانید همان کالکشن را به `.pages.yml` هم اضافه کنید)؛ فعال/غیرفعال کردن اما فقط یک خط در `client/config.json` است.
 - **`pages` خاموش‌شدنی نیست** چون مالک صفحهٔ خانه و ریشهٔ سایت است.
-- **بلوپرینت‌های آماده هنگام شروع پروژه:** هنگام تزریق دمو با `npm run starter:seed -- --blueprint=<corporate|agency|portfolio|medical>` یا راه‌اندازی اولیه با `site:init --blueprint=...`، فعال/غیرفعال بودن `blog` و `projects` متناسب با نوع کسب‌وکار مشتری تنظیم می‌شود.
+- **بلوپرینت‌های آماده هنگام شروع پروژه:** هنگام تزریق دمو با `npm run starter:seed -- --blueprint=<corporate|agency|portfolio|medical|catalog|legal>` یا راه‌اندازی اولیه با `site:init --blueprint=...`، فعال/غیرفعال بودن `blog` و `projects` متناسب با نوع کسب‌وکار مشتری تنظیم می‌شود.
 
 ## ۷. تأیید
 
-`npm run verify:cli` (۹۵ ادعا) گردش‌کارهای CLI را در یک مخزن موقت می‌آزماید: فهرست نوع‌ها، خاموش/روشن کردن در `client/config.json`، رد شدن خاموش‌کردن `pages`، ساخت گروه در `projects` (انتشار فقط زبان مبدأ) و در نوع خاموش (تولید کاور)، رد شدن slug فرار، واگذاری `pages`/`blog` به فرمان‌های خودشان، خروجی JSON `doctor` و `content:status`، اینکه `link:check` لینک و لنگر (`#section`) شکسته را می‌گیرد ولی مسیرهای بدون اسلش پایانی، بدون پسوند و لنگرهای موجود را می‌پذیرد، و گردش‌کارهای `--preset=landing`، `site:init`، `starter:seed`، `upstream:check` و `i18n:solo`.
+`npm run verify:cli` (۹۷ ادعا) گردش‌کارهای CLI را در یک مخزن موقت می‌آزماید: فهرست نوع‌ها، خاموش/روشن کردن در `client/config.json`، رد شدن خاموش‌کردن `pages`، ساخت گروه در `projects` (انتشار فقط زبان مبدأ) و در نوع خاموش (تولید کاور)، رد شدن slug فرار، واگذاری `pages`/`blog` به فرمان‌های خودشان، خروجی JSON `doctor` و `content:status`، اینکه `link:check` لینک و لنگر (`#section`) شکسته را می‌گیرد ولی مسیرهای بدون اسلش پایانی، بدون پسوند و لنگرهای موجود را می‌پذیرد، و گردش‌کارهای `--preset=landing`، `site:init` (با `--logo` و `catalog`)، `site:reset`، `starter:seed`، `upstream:check` و `i18n:solo`.
 
 > نمای فهرست و نمای ورودی هر دو بردکرامب زبان‌مقصد را نشان می‌دهند («خانه → پروژه‌ها → داشبورد …»)، با همان `BreadcrumbList` که در JSON-LD اعلام می‌شود؛ فهرست خالی هم پیام `content_empty` و حالت بدون نتیجهٔ فیلتر پیام `collection_filter_empty` را نشان می‌دهد.

@@ -1,27 +1,47 @@
 ---
 /**
- * Consent-gated analytics loader (`GA4`, `Plausible`, `Umami`, `Microsoft Clarity`).
+ * Privacy-first & consent-gated analytics loader
+ * (`GA4`, `Google Tag Manager`, `Plausible`, `Umami`, `Microsoft Clarity`).
  *
- * Emits inert `<script type="text/plain" data-cookie-category="analytics">` tags
- * inside a `transition:persist` container so TDDDG § 25 / GDPR CookieConsent
- * controls activation & teardown without duplicating third-party SDKs across
- * Astro `<ClientRouter />` soft navigations.
+ * - GA4, GTM, and Microsoft Clarity ALWAYS emit inert `<script type="text/plain" data-cookie-category="analytics">`
+ *   tags inside a `transition:persist` container so TDDDG § 25 / GDPR CookieConsent controls
+ *   activation & teardown without duplicating third-party SDKs across `<ClientRouter />` navigations.
+ * - Optional Google Consent Mode v2 (`analytics.consentMode: true`) pushes `default` denied signals
+ *   locally (zero network traffic) and syncs `update` signals whenever consent changes.
+ * - Truly cookieless Plausible/Umami can optionally run without the consent banner when
+ *   `analytics.allowCookielessWithoutBanner: true` is explicitly configured.
  */
 import { ANALYTICS_CONFIG } from '@/libs/config/app';
 
 const ga4Id = (ANALYTICS_CONFIG.ga4Id || '').trim();
+const gtmId = (ANALYTICS_CONFIG.gtmId || '').trim();
 const plausibleDomain = (ANALYTICS_CONFIG.plausibleDomain || '').trim();
 const plausibleSrc = (ANALYTICS_CONFIG.plausibleSrc || 'https://plausible.io/js/script.js').trim();
 const umamiWebsiteId = (ANALYTICS_CONFIG.umamiWebsiteId || '').trim();
 const umamiSrc = (ANALYTICS_CONFIG.umamiSrc || '').trim();
 const clarityId = (ANALYTICS_CONFIG.clarityId || '').trim();
+const consentMode = Boolean(ANALYTICS_CONFIG.consentMode);
+const allowCookielessWithoutBanner = Boolean(ANALYTICS_CONFIG.allowCookielessWithoutBanner);
 
-const hasAnyProvider = Boolean(
-  ga4Id || plausibleDomain || (umamiWebsiteId && umamiSrc) || clarityId
-);
+const hasCookielessProvider = Boolean(plausibleDomain || (umamiWebsiteId && umamiSrc));
+const hasAnyProvider = Boolean(ga4Id || gtmId || hasCookielessProvider || clarityId);
+
+const consentModeDefaultSnippet =
+  consentMode && (ga4Id || gtmId)
+    ? `window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};window.gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',functionality_storage:'denied',wait_for_update:500});`
+    : '';
+
+const consentModeSyncSnippet =
+  consentMode && (ga4Id || gtmId)
+    ? `(function(){var d=document.documentElement.dataset;if(typeof window.gtag==='function'){window.gtag('consent','update',{analytics_storage:d.consentAnalytics==='true'?'granted':'denied',ad_storage:d.consentMarketing==='true'?'granted':'denied',ad_user_data:d.consentMarketing==='true'?'granted':'denied',ad_personalization:d.consentMarketing==='true'?'granted':'denied',functionality_storage:d.consentPreferences==='true'?'granted':'denied'});}})();`
+    : '';
 
 const ga4InitSnippet = ga4Id
   ? `window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};window.gtag('js',new Date());window.gtag('config',${JSON.stringify(ga4Id)});`
+  : '';
+
+const gtmInitSnippet = gtmId
+  ? `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;j.setAttribute('data-cookie-managed-category','analytics');if(f&&f.parentNode){f.parentNode.insertBefore(j,f);}else{d.head.appendChild(j);}})(window,document,'script','dataLayer',${JSON.stringify(gtmId)});`
   : '';
 
 const clarityInitSnippet = clarityId
@@ -34,9 +54,23 @@ const clarityInitSnippet = clarityId
     <div
       data-analytics-gatekeeper
       data-ga4-id={ga4Id || undefined}
+      data-gtm-id={gtmId || undefined}
+      data-consent-mode={consentMode ? 'true' : undefined}
+      data-cookieless-open={allowCookielessWithoutBanner && hasCookielessProvider ? 'true' : undefined}
       transition:persist="analytics-gatekeeper"
       hidden
     >
+      {consentModeDefaultSnippet && <script is:inline set:html={consentModeDefaultSnippet} />}
+      {consentModeSyncSnippet && (
+        <script
+          is:inline
+          type="text/plain"
+          data-cookie-category="analytics"
+          data-cookie-id="consent-mode-sync"
+          set:html={consentModeSyncSnippet}
+        />
+      )}
+
       {ga4Id && (
         <>
           <script
@@ -57,29 +91,58 @@ const clarityInitSnippet = clarityId
         </>
       )}
 
-      {plausibleDomain && (
+      {gtmId && (
         <script
           is:inline
           type="text/plain"
           data-cookie-category="analytics"
-          data-cookie-id="plausible-analytics-sdk"
-          data-cookie-defer="true"
-          data-cookie-src={plausibleSrc}
-          data-domain={plausibleDomain}
+          data-cookie-id="gtm-sdk"
+          set:html={gtmInitSnippet}
         />
       )}
 
-      {umamiWebsiteId && umamiSrc && (
-        <script
-          is:inline
-          type="text/plain"
-          data-cookie-category="analytics"
-          data-cookie-id="umami-analytics-sdk"
-          data-cookie-defer="true"
-          data-cookie-src={umamiSrc}
-          data-website-id={umamiWebsiteId}
-        />
-      )}
+      {plausibleDomain &&
+        (allowCookielessWithoutBanner ? (
+          <script
+            is:inline
+            defer
+            id="plausible-analytics-sdk"
+            src={plausibleSrc}
+            data-domain={plausibleDomain}
+          />
+        ) : (
+          <script
+            is:inline
+            type="text/plain"
+            data-cookie-category="analytics"
+            data-cookie-id="plausible-analytics-sdk"
+            data-cookie-defer="true"
+            data-cookie-src={plausibleSrc}
+            data-domain={plausibleDomain}
+          />
+        ))}
+
+      {umamiWebsiteId &&
+        umamiSrc &&
+        (allowCookielessWithoutBanner ? (
+          <script
+            is:inline
+            defer
+            id="umami-analytics-sdk"
+            src={umamiSrc}
+            data-website-id={umamiWebsiteId}
+          />
+        ) : (
+          <script
+            is:inline
+            type="text/plain"
+            data-cookie-category="analytics"
+            data-cookie-id="umami-analytics-sdk"
+            data-cookie-defer="true"
+            data-cookie-src={umamiSrc}
+            data-website-id={umamiWebsiteId}
+          />
+        ))}
 
       {clarityId && (
         <script
@@ -99,9 +162,42 @@ const clarityInitSnippet = clarityId
 
   let lastTrackedUrl = '';
 
+  type AnalyticsWindow = Window & {
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
+    plausible?: (eventName: string, opts?: Record<string, unknown>) => void;
+    umami?: { track?: () => void };
+  };
+
+  function syncGoogleConsentMode() {
+    const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
+    if (gatekeeper?.dataset.consentMode !== 'true') return;
+
+    const win = window as AnalyticsWindow;
+    if (typeof win.gtag !== 'function') return;
+
+    const rootData = document.documentElement.dataset;
+    const analytics = rootData.consentAnalytics === 'true' ? 'granted' : 'denied';
+    const marketing = rootData.consentMarketing === 'true' ? 'granted' : 'denied';
+    const preferences = rootData.consentPreferences === 'true' ? 'granted' : 'denied';
+
+    win.gtag('consent', 'update', {
+      analytics_storage: analytics,
+      ad_storage: marketing,
+      ad_user_data: marketing,
+      ad_personalization: marketing,
+      functionality_storage: preferences,
+    });
+  }
+
   function trackSoftNavigation() {
+    syncGoogleConsentMode();
+
+    const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
     const analyticsAllowed = document.documentElement.dataset.consentAnalytics === 'true';
-    if (!analyticsAllowed) {
+    const cookielessOpen = gatekeeper?.dataset.cookielessOpen === 'true';
+
+    if (!analyticsAllowed && !cookielessOpen) {
       lastTrackedUrl = '';
       return;
     }
@@ -115,26 +211,34 @@ const clarityInitSnippet = clarityId
     if (currentUrl === lastTrackedUrl) return;
     lastTrackedUrl = currentUrl;
 
-    const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
     const ga4Id = gatekeeper?.dataset.ga4Id;
-    const win = window as Window & {
-      gtag?: (...args: unknown[]) => void;
-      plausible?: (eventName: string, opts?: Record<string, unknown>) => void;
-      umami?: { track?: () => void };
-    };
+    const gtmId = gatekeeper?.dataset.gtmId;
+    const win = window as AnalyticsWindow;
 
-    if (ga4Id && typeof win.gtag === 'function') {
-      win.gtag('event', 'page_view', {
-        page_path: currentUrl,
-        page_location: window.location.href,
-        page_title: document.title,
-      });
+    if (analyticsAllowed) {
+      if (ga4Id && typeof win.gtag === 'function') {
+        win.gtag('event', 'page_view', {
+          page_path: currentUrl,
+          page_location: window.location.href,
+          page_title: document.title,
+        });
+      } else if (gtmId && Array.isArray(win.dataLayer)) {
+        win.dataLayer.push({
+          event: 'page_view',
+          page_path: currentUrl,
+          page_location: window.location.href,
+          page_title: document.title,
+        });
+      }
     }
-    if (typeof win.plausible === 'function') {
-      win.plausible('pageview');
-    }
-    if (win.umami && typeof win.umami.track === 'function') {
-      win.umami.track();
+
+    if (analyticsAllowed || cookielessOpen) {
+      if (typeof win.plausible === 'function') {
+        win.plausible('pageview');
+      }
+      if (win.umami && typeof win.umami.track === 'function') {
+        win.umami.track();
+      }
     }
   }
 
@@ -142,7 +246,10 @@ const clarityInitSnippet = clarityId
     document.documentElement.dataset.analyticsSpaBound = 'true';
     document.addEventListener('astro:page-load', trackSoftNavigation);
     document.addEventListener(CONSENT_CHANGE_EVENT, () => {
-      if (document.documentElement.dataset.consentAnalytics !== 'true') {
+      syncGoogleConsentMode();
+      const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
+      const cookielessOpen = gatekeeper?.dataset.cookielessOpen === 'true';
+      if (document.documentElement.dataset.consentAnalytics !== 'true' && !cookielessOpen) {
         lastTrackedUrl = '';
       } else if (!lastTrackedUrl) {
         lastTrackedUrl = window.location.pathname + window.location.search;

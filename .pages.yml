@@ -155,6 +155,13 @@ content:
     path: client/cms.json
     format: json
     fields:
+      - name: site
+        label: Public Site Contact
+        type: object
+        fields:
+          - name: contactEmail
+            label: Public Contact Email
+            type: string
       - name: business
         label: Business & Contact Details
         type: object
@@ -238,17 +245,57 @@ content:
                   values: ["primary", "hero", "surface", "accent", "info", "warning"]
                 default: "primary"
               - name: badge
-                label: Badge Label
+                label: Badge Label (Fallback)
                 type: string
+              - name: badgeByLocale
+                label: Badge Label by Locale
+                type: object
+                fields:
+                  - name: en
+                    label: English (en)
+                    type: string
+                  - name: fa
+                    label: Persian (fa)
+                    type: string
               - name: message
-                label: Announcement Text
+                label: Announcement Text (Fallback)
                 type: string
+              - name: messageByLocale
+                label: Announcement Text by Locale
+                type: object
+                fields:
+                  - name: en
+                    label: English (en)
+                    type: string
+                  - name: fa
+                    label: Persian (fa)
+                    type: string
               - name: ctaLabel
-                label: Button Label
+                label: Button Label (Fallback)
                 type: string
+              - name: ctaLabelByLocale
+                label: Button Label by Locale
+                type: object
+                fields:
+                  - name: en
+                    label: English (en)
+                    type: string
+                  - name: fa
+                    label: Persian (fa)
+                    type: string
               - name: ctaHref
-                label: Button Link
+                label: Button Link (Fallback)
                 type: string
+              - name: ctaHrefByLocale
+                label: Button Link by Locale
+                type: object
+                fields:
+                  - name: en
+                    label: English (en)
+                    type: string
+                  - name: fa
+                    label: Persian (fa)
+                    type: string
               - name: dismissible
                 label: Allow Dismiss
                 type: boolean
@@ -272,17 +319,29 @@ content:
               - name: endsAt
                 label: Ends At (ISO Date/Time)
                 type: string
+          - name: quickContact
+            label: Floating Quick-Contact Widget
+            type: object
+            fields:
+              - name: enabled
+                label: Enable Quick-Contact Widget
+                type: boolean
+                default: true
+              - name: mobileOnly
+                label: Show on Mobile Only
+                type: boolean
+                default: true
       - name: redirects
         label: URL Redirects
         type: object
         list: true
         fields:
           - name: from
-            label: Source Path (e.g. /old-page)
+            label: Source Path (e.g. /old-page or /old-blog/*)
             type: string
             required: true
           - name: to
-            label: Target Path or URL
+            label: Target Path or URL (e.g. /new-page/ or /blog/:splat)
             type: string
             required: true
           - name: status

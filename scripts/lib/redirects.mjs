@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * Pure URL redirect validation and static/Nginx generator helpers.
+ * Pure URL redirect validation and static/Nginx/Apache generator helpers.
  *
  * Shared between Astro's build-time `astro:build:done` integration (`astro.config.mjs`),
  * the Zod runtime config validator (`src/libs/config/app.ts`), `doctor.mjs`, and `link-check.mjs`.
@@ -11,14 +11,17 @@ const INVALID_CHARS_RE = /[\s{};\r\n]/;
 
 /**
  * Normalizes an internal path for duplicate/cycle comparison by collapsing redundant
- * trailing slashes (while keeping `/` as `/`).
+ * trailing slashes (while keeping `/` and trailing `/*` prefix wildcards canonical).
  *
  * @param {string} value
  * @returns {string}
  */
 export function normalizeRedirectKey(value) {
   const clean = value.split(/[?#]/)[0].trim();
-  if (clean === '/') return '/';
+  if (clean === '/' || clean === '/*') return clean;
+  if (clean.endsWith('/*')) {
+    return `${clean.slice(0, -2).replace(/\/+$/, '')}/*`;
+  }
   return clean.replace(/\/+$/, '') || '/';
 }
 
@@ -33,9 +36,28 @@ export function isInternalRedirectTarget(value) {
 }
 
 /**
+ * Checks whether a redirect source uses a valid trailing `/*` prefix wildcard.
+ *
+ * @param {string} from
+ * @returns {boolean}
+ */
+export function isWildcardRedirectSource(from) {
+  return from.endsWith('/*');
+}
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * Validates a list of `{ from, to, status }` redirect rules.
- * Rejects malformed paths, invalid status codes, duplicate `from` entries,
- * direct self-redirects, and redirect loops/cycles.
+ * Supports exact paths and trailing `/*` prefix wildcards (with optional `:splat` in `to`).
+ * Rejects malformed paths, mid-path globs, orphan `:splat`, invalid status codes,
+ * duplicate `from` entries, direct self-redirects, and redirect loops/cycles.
  *
  * @param {readonly { from?: unknown; to?: unknown; status?: unknown }[]} rules
  * @returns {string[]} human-readable validation error messages (empty when valid)
@@ -64,6 +86,14 @@ export function validateRedirects(rules) {
       continue;
     }
 
+    const firstStar = from.indexOf('*');
+    if (firstStar !== -1 && (!from.endsWith('/*') || firstStar !== from.length - 1)) {
+      errors.push(
+        `${label}.from ("${from}") only supports a single trailing "/*" prefix wildcard (for example "/old-blog/*").`
+      );
+      continue;
+    }
+
     const validTo =
       Boolean(to) &&
       !INVALID_CHARS_RE.test(to) &&
@@ -71,6 +101,11 @@ export function validateRedirects(rules) {
     if (!validTo) {
       errors.push(`${label}.to ("${String(rule.to ?? '')}") must be a root-relative path ("/...") or an HTTP(S) URL.`);
       continue;
+    }
+
+    const isWildcard = isWildcardRedirectSource(from);
+    if (to.includes(':splat') && !isWildcard) {
+      errors.push(`${label}.to ("${to}") uses ":splat" without a trailing "/*" wildcard in ${label}.from.`);
     }
 
     if (status !== 301 && status !== 302) {
@@ -86,7 +121,16 @@ export function validateRedirects(rules) {
 
     if (isInternalRedirectTarget(to)) {
       const toKey = normalizeRedirectKey(to);
-      if (fromKey === toKey) {
+      if (isWildcard) {
+        const prefixWithoutStar = from.slice(0, -1);
+        const splatSelf = `${prefixWithoutStar}:splat`;
+        if (
+          normalizeRedirectKey(to.split(/[?#]/)[0]) === normalizeRedirectKey(splatSelf) ||
+          fromKey === toKey
+        ) {
+          errors.push(`${label} redirects "${from}" to itself.`);
+        }
+      } else if (fromKey === toKey) {
         errors.push(`${label} redirects "${from}" to itself.`);
       } else {
         graph.set(fromKey, toKey);
@@ -94,7 +138,7 @@ export function validateRedirects(rules) {
     }
   }
 
-  // Detect multi-hop redirect cycles (A -> B -> ... -> A)
+  // Detect multi-hop redirect cycles (A -> B -> ... -> A) for exact rules
   const visited = new Set();
   for (const start of graph.keys()) {
     if (visited.has(start)) continue;
@@ -123,7 +167,11 @@ export function validateRedirects(rules) {
  */
 export function buildNetlifyRedirects(rules) {
   if (!Array.isArray(rules) || rules.length === 0) return '';
-  const lines = rules.map((rule) => {
+  const ordered = [
+    ...rules.filter((rule) => !isWildcardRedirectSource(rule.from.trim())),
+    ...rules.filter((rule) => isWildcardRedirectSource(rule.from.trim())),
+  ];
+  const lines = ordered.map((rule) => {
     const status = rule.status === 302 ? 302 : 301;
     return `${rule.from.trim()} ${rule.to.trim()} ${status}`;
   });
@@ -145,8 +193,65 @@ export function buildNginxRedirects(rules) {
     '',
   ];
   for (const rule of rules) {
+    const from = rule.from.trim();
+    const to = rule.to.trim();
     const status = rule.status === 302 ? 302 : 301;
-    lines.push(`location = ${rule.from.trim()} { return ${status} ${rule.to.trim()}; }`);
+    if (isWildcardRedirectSource(from)) {
+      const prefix = from.slice(0, -1);
+      if (to.includes(':splat')) {
+        const flag = status === 302 ? 'redirect' : 'permanent';
+        const target = to.replaceAll(':splat', '$1');
+        lines.push(`location ^~ ${prefix} { rewrite ^${escapeRegex(prefix)}(.*)$ ${target} ${flag}; }`);
+      } else {
+        lines.push(`location ^~ ${prefix} { return ${status} ${to}; }`);
+      }
+    } else {
+      lines.push(`location = ${from} { return ${status} ${to}; }`);
+    }
   }
+  return `${lines.join('\n')}\n`;
+}
+
+/**
+ * Formats an Apache / LiteSpeed `.htaccess` `mod_rewrite` snippet for configured redirects.
+ * Kept in `deploy/.htaccess-redirects` outside `dist/` so server configs are never published directly unless merged.
+ *
+ * @param {readonly { from: string; to: string; status?: number }[]} rules
+ * @returns {string}
+ */
+export function buildHtaccessRedirects(rules) {
+  if (!Array.isArray(rules) || rules.length === 0) return '';
+  const ordered = [
+    ...rules.filter((rule) => !isWildcardRedirectSource(rule.from.trim())),
+    ...rules.filter((rule) => isWildcardRedirectSource(rule.from.trim())),
+  ];
+  const lines = [
+    '# Auto-generated at build time from app.config.json + client/config.json + client/cms.json.',
+    '# Append inside your Apache / LiteSpeed `.htaccess` file at site root.',
+    '<IfModule mod_rewrite.c>',
+    'RewriteEngine On',
+  ];
+
+  for (const rule of ordered) {
+    const from = rule.from.trim();
+    const to = rule.to.trim();
+    const status = rule.status === 302 ? 302 : 301;
+
+    if (isWildcardRedirectSource(from)) {
+      const relPrefix = from.slice(0, -1).replace(/^\/+/, '');
+      const pattern = `^${escapeRegex(relPrefix)}(.*)$`;
+      const target = to.includes(':splat') ? to.replaceAll(':splat', '$1') : to;
+      lines.push(`RewriteRule ${pattern} ${target} [R=${status},L]`);
+    } else if (from === '/') {
+      lines.push(`RewriteRule ^$ ${to} [R=${status},L]`);
+    } else {
+      const relFrom = from.replace(/^\/+/, '').replace(/\/+$/, '');
+      const hasExt = /\.[a-z0-9]{1,8}$/i.test(relFrom);
+      const pattern = `^${escapeRegex(relFrom)}${hasExt ? '' : '/?'}$`;
+      lines.push(`RewriteRule ${pattern} ${to} [R=${status},L]`);
+    }
+  }
+
+  lines.push('</IfModule>');
   return `${lines.join('\n')}\n`;
 }

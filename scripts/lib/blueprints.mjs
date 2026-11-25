@@ -1,6 +1,6 @@
 /**
- * Industry blueprints (`corporate`, `agency`, `portfolio`, `medical`) shared by
- * `site-init.mjs` and `seed-starter.mjs` to bootstrap client projects rapidly.
+ * Industry blueprints (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal`)
+ * shared by `site-init.mjs` and `seed-starter.mjs` to bootstrap client projects rapidly.
  */
 
 export const BLUEPRINTS = {
@@ -44,6 +44,28 @@ export const BLUEPRINTS = {
     rtlFontPreset: 'vazirmatn',
     socialCardMode: 'branded',
     businessType: 'MedicalBusiness',
+    ctaPage: 'contact',
+    blog: true,
+    projects: false,
+  },
+  catalog: {
+    label: 'Product Catalog & Showcase',
+    preset: 'amber',
+    fontPreset: 'jakarta',
+    rtlFontPreset: 'vazirmatn',
+    socialCardMode: 'artwork',
+    businessType: 'Store',
+    ctaPage: 'contact',
+    blog: true,
+    projects: true,
+  },
+  legal: {
+    label: 'Legal, Consulting & Advisory',
+    preset: 'slate',
+    fontPreset: 'editorial',
+    rtlFontPreset: 'vazirmatn',
+    socialCardMode: 'branded',
+    businessType: 'ProfessionalService',
     ctaPage: 'contact',
     blog: true,
     projects: false,

@@ -32,6 +32,7 @@
     "i18n:set-default": "node scripts/set-default-language.mjs",
     "i18n:solo": "node scripts/set-language-mode.mjs",
     "site:init": "node scripts/site-init.mjs",
+    "site:reset": "node scripts/site-reset.mjs",
     "audit:i18n": "node scripts/audit-i18n.mjs",
     "verify:cli": "node scripts/verify-cli.mjs",
     "doctor": "node scripts/doctor.mjs",
@@ -43,7 +44,9 @@
     "content:disable": "node scripts/content-toggle.mjs disable",
     "starter:seed": "node scripts/seed-starter.mjs",
     "upstream:check": "node scripts/upstream-check.mjs",
-    "qa:browser": "node scripts/qa-browser.mjs"
+    "qa:browser": "node scripts/qa-browser.mjs",
+    "preflight": "node scripts/messages-compile.mjs && node scripts/upstream-check.mjs && node scripts/audit-i18n.mjs && node scripts/doctor.mjs && vitest run && npm run build && node scripts/smoke.mjs && node scripts/link-check.mjs",
+    "preflight:full": "npm run preflight && node scripts/qa-browser.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "~8.0.3",

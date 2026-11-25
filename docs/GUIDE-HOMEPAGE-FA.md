@@ -61,7 +61,7 @@ npm run dev                       # http://localhost:3000  (نه ۴۳۲۱)
 
 ### ۲.۲ هویت برند و تک‌زبانه‌کردن (قبل از طراحی صفحه)
 
-سریع‌ترین راه تنظیم هویت برند، بلوپرینت صنعتی (`corporate`, `agency`, `portfolio`, `medical`)، پالت، فونت و ایمیل تماس یک مشتری در `client/config.json`، اجرای دستور `site:init` است (به‌جای ویرایش دستی چندین فایل):
+سریع‌ترین راه تنظیم هویت برند، بلوپرینت صنعتی (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal`)، پالت، فونت و ایمیل تماس یک مشتری در `client/config.json`، اجرای دستور `site:init` است (به‌جای ویرایش دستی چندین فایل):
 
 ```bash
 npm run site:init -- \
@@ -682,14 +682,16 @@ import * as m from '@/paraglide/messages';
 ```bash
 npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
 npm run lint           # messages + astro check + tsc (خطای تایپ/شمای محتوا اینجا گیر می‌افتد)
-npm test               # ۲۶ فایل تست واحد (۲۶۹ تست)
+npm test               # ۲۹ فایل تست واحد (۲۸۹ تست)
 npm run audit:i18n     # هم‌ترازی زبان‌ها، کلیدها، مسیرها، RTL
 npm run doctor         # بررسی سلامت پروژه بدون بیلد
 npm run build          # Astro + Pagefind
 npm run smoke          # HTML/SEO/feed/H1 روی خروجی واقعی
 npm run link:check     # خزش dist/ برای یافتن لینک یا #anchor شکسته
+npm run qa:browser     # تست چیدمان مرورگر واقعی (Playwright؛ دسکتاپ + موبایل RTL/LTR)
+npm run preflight:full # اجرای یک‌جا و پشت‌سرهم کل زنجیرهٔ بالا
 npm run knip           # کد و وابستگی مرده
-npm run verify:cli     # ۹۵ ادعای CLI در محیط ایزوله
+npm run verify:cli     # ۹۷ ادعای CLI در محیط ایزوله
 ```
 
 سپس دستی در مرورگر:

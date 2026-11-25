@@ -2,7 +2,7 @@
 
 > استارتر چندزبانهٔ تولیدی و **۱۰۰٪ استاتیک (Pure SSG بدون نیاز به بک‌اند)** بر پایهٔ **Astro v7**
 > با پشتیبانی بومی **RTL/LTR**، ۶۴ بلوک آماده تحت پوشش `blocks.test.ts` (۲۹ بلوک سکشن شامل ۷ هیرو سکشن + ۲۲ سکشن محتوا و ۳۵ پریمیتیو رابط کاربری در `src/components/ui/`) به‌همراه ۴ بلوک تعاملی/حرکتی (`BentoGrid`، `LatestPostsCarousel`، `SwipeableTabs`، `TestimonialMarquee`)، دسته‌بندی و فیلتر وبلاگ و نمونه‌کارها،
-> جستجوی **Pagefind** بهینه‌شده برای زبان فارسی، آداپتور فرم‌های بدون سرور (Web3Forms، Formspree، Basin، Webhook + Turnstile)، بلوپرینت‌های صنعتی، استودیوی زندهٔ تم در DEV، معماری سه‌لایه (`Core` / `client/` / `starter-kit/`) و ۲۸ ابزار خط فرمان.
+> جستجوی **Pagefind** بهینه‌شده برای زبان فارسی، آداپتور فرم‌های بدون سرور (Web3Forms، Formspree، Basin، Webhook + Turnstile)، ویجت تماس سریع موبایل، آنالیتیکس و Google Consent Mode v2، پیکربندی سه‌لایه با `client/cms.json` و Pages CMS، ریدایرکت‌های Wildcard، ۶ بلوپرینت صنعتی، استودیوی زندهٔ تم در DEV، تست مرورگر واقعی Playwright و ۳۰ ابزار خط فرمان.
 
 نسخهٔ ۶٫۰ — مرجع فنی کامل و راهنمای عملیاتی.
 
@@ -67,16 +67,16 @@
 | **معماری Pure SSG و فرم بدون سرور** | خروجی ۱۰۰٪ استاتیک بدون سرور بک‌اند؛ فرم تماس (`ContactForm.astro`) و خبرنامه (`NewsletterBanner.astro`) از طریق `src/libs/api/client.ts` از ارائه‌دهندگان `custom`، `web3forms`، `formspree`، `basin` و `webhook` به‌همراه Cloudflare Turnstile و Honeypot پشتیبانی می‌کنند + مدیریت رضایت کوکی (`CookieConsent.astro`) |
 | **زبان‌ها و حالت تک‌زبانه** | انگلیسی (`en`) و فارسی (`fa`) به‌صورت پیش‌فرض فعال + آمادگی کامل فونت/فرمت و افزودن تک‌فرمانی زبان‌های دیگر (`ar`, `de`, `fr`, …) با `i18n:add-lang`؛ برای سایت تک‌زبانه، صرفاً `ui.showLanguageSwitcher: false` (+ در صورت نیاز `i18n:set-default`) کافی است (و `i18n:solo` به‌صورت اختیاری مسیرهای اضافی را حذف می‌کند) |
 | **مسیریابی** | دیسپچر تک‌فایلی `[...path].astro` — بدون هیچ فایل مسیر پویا در `src/pages/` |
-| **محتوا، فیلتر نمونه‌کارها و CMS** | کالکشن‌های `pages`، `blog` و `projects` با قرارداد `گروه/زبان.mdx`؛ ۲۹ بلوک سکشن (۷ هیرو سکشن + ۲۲ سکشن شرکتی/لندینگ) + ۳۵ پریمیتیو رابط در `src/components/ui/` (`Button`, `Icon`, `UiBadge`, `UiAlert`, `UiProgress`, `UiModal`, `UiDropdown`, …) + ۴ بلوک تعاملی/حرکتی (`BentoGrid`، `LatestPostsCarousel`، `SwipeableTabs`، `TestimonialMarquee`)، فیلتر دسته/پشتهٔ فنی/جستجو (`normalizeForFallbackMatch`) در `CollectionIndexView.astro` و پیکربندی آمادهٔ Pages CMS در `.pages.yml` |
+| **محتوا، فیلتر نمونه‌کارها و CMS** | کالکشن‌های `pages`، `blog` و `projects` با قرارداد `گروه/زبان.mdx`؛ ۲۹ بلوک سکشن (۷ هیرو سکشن + ۲۲ سکشن شرکتی/لندینگ) + ۳۵ پریمیتیو رابط در `src/components/ui/` + ۴ بلوک تعاملی/حرکتی، گالری تصویر با لایت‌باکس `<dialog>`، فیلتر دسته/پشتهٔ فنی/جستجو (`normalizeForFallbackMatch`) در `CollectionIndexView.astro` و پیکربندی Pages CMS در `.pages.yml` متصل به لایهٔ امن `client/cms.json` |
 | **RTL و فونت‌های تجاری فارسی** | خواص منطقی CSS (`ms-`, `pe-`, `start-`), ۵ پیش‌تنظیم فونت RTL (`vazirmatn`, `noto-arabic`, `iransans`, `yekan-bakh`, `peyda` با ساختار `@font-face` در `client/styles.css`)، جداسازی `pre/code` به LTR، چرخاندن آیکون پیجر |
 | **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی در کل مجموعهٔ مقالات (`/api/blog-posts/<locale>.json`)، صفحه‌بندی استاتیک، فهرست مطالب خودکار (TOC)، مقالات مرتبط و ناوبری مقالهٔ قبلی/بعدی، دکمهٔ کپی کد، زمان مطالعه و تاریخ به‌روزرسانی، استایل چاپ (`@media print`) |
-| **برندینگ، لوگو، بلوپرینت و DEV Studio** | راه‌اندازی سریع با `site:init --blueprint=corporate\|agency\|portfolio\|medical`، پشتیبانی از لوگوی تصویر/SVG روشن و تیره (`brand.logo`)، ۶ پالت OKLCH آماده و فونت‌های variable نصب‌شده + **استودیوی زندهٔ تم در DEV (`DevThemePreview.astro` با خروجی صفر بایت در بیلد نهایی)** |
+| **برندینگ، لوگو، بلوپرینت و DEV Studio** | راه‌اندازی سریع با `site:init --blueprint=corporate\|agency\|portfolio\|medical\|catalog\|legal` و `--logo`، پشتیبانی از لوگوی تصویر/SVG روشن و تیره (`brand.logo`)، ۶ پالت OKLCH آماده و فونت‌های variable نصب‌شده + **استودیوی زندهٔ تم در DEV (`DevThemePreview.astro` با خروجی صفر بایت در بیلد نهایی)** |
 | **فرمت بومی** | تقویم هجری شمسی برای فارسی (`fa-IR-u-ca-persian`) و ارقام بومی فارسی/عربی (`۰-۹` / `٠-٩`) از طریق `src/i18n/format.ts` |
 | **جستجوی فارسی بهینه‌شده** | ایندکس Pagefind با نرمال‌سازی حروف و علائم فارسی (`scripts/index-pagefind.mjs`) + بازسازی نیم‌فاصله، همزه و ارقام در سمت کاربر (`src/libs/search/persian.ts`) + فهرست `/api/search-dev/<locale>.json` به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K |
-| **SEO شرکتی و کارت OG فارسی** | canonical، hreflang چندزبانه + `x-default`، کارت PNG برنددار زمان بیلد (`/og/[...slug].png.ts` در حالت `branded`) با شکل‌دهی صحیح حروف RTL در SVG، Twitter Card، اسکیماهای `Organization` / `LocalBusiness` / `Service` / `WebSite` / `WebPage` / `CollectionPage` / `BlogPosting` / `BreadcrumbList` / `FAQPage` (`schema.ts`)، sitemap با `lastmod` کامل، فیدهای Atom مجزا |
+| **SEO شرکتی، `/llms.txt` و ریدایرکت** | canonical، hreflang + `x-default`، کارت PNG برنددار زمان بیلد (`/og/[...slug].png.ts`) با شکل‌دهی صحیح حروف RTL، `/llms.txt` برای خزنده‌های هوش مصنوعی، اسکیماهای JSON-LD، ریدایرکت‌های دقیق و Wildcard (`/*` → `:splat` در `dist/_redirects` و `deploy/`) |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک بازگشت به نسخهٔ زبان پیش‌فرض |
-| **ابزار CLI** | ۲۸ اسکریپت (+ ۱۳ ماژول کمکی) برای راه‌اندازی برند و بلوپرینت (`site:init`)، ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا، تزریق/پاک‌سازی دمو (`starter:seed`)، کنترل معماری (`upstream:check`)، تعویض زبان پیش‌فرض، بررسی سلامت پروژه، خزش لینک‌ها، تولید تصاویر و ایندکس Pagefind |
-| **کیفیت و استقرار** | TypeScript strict، `astro check`، ۲۶ فایل تست واحد Vitest (۲۶۹ تست)، ۹۵ تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، Knip، Prefetch هوشمند و هدرهای آمادهٔ کش/امنیت در `public/_headers` و `docs/deploy/nginx.conf` |
+| **ابزار CLI** | ۳۰ اسکریپت (+ ۱۴ ماژول کمکی) برای راه‌اندازی و بازنشانی سایت (`site:init`, `site:reset`)، ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا، تزریق/پاک‌سازی دمو (`starter:seed`)، کنترل معماری (`upstream:check`)، بررسی سلامت، خزش لینک و ریدایرکت (`link:check`)، QA مرورگر (`qa:browser`) و `preflight` |
+| **کیفیت و استقرار** | TypeScript strict، `astro check`، ۲۹ فایل تست واحد Vitest (۲۸۹ تست)، تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، تست رگرسیون مرورگر Playwright، Knip و الگوهای `public/_headers`, `docs/deploy/nginx.conf`, `cloudflare-worker-webhook.js` |
 | **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset` و `loading="lazy"` زیر خط دید، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
 | **حرکت و اسکرول** | اسکرول نرم با **Lenis** (`setExternalScroll` + `sync`) + موتور **ChronoTrig v6.2.0** (`data-trig` + `data-trig-once="true"`) بدون خواندن چیدمان در فریم اسکرول، پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`)، پلکانی‌سازی گروهی (`data-trig-stagger`) و بهینه‌سازی خودکار GPU با `IntersectionObserver` |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، پشتیبانی یکپارچه از `prefers-reduced-motion` سیستم و کلید `data-motion` روی `<html>` |
@@ -160,7 +160,7 @@ npx astro dev stop           # توقف سرور
 | `npm run messages:compile` | ادغام `messages/core/*.json` + `client/messages/*.json` در `.paraglide-work/` و کامپایل به `src/paraglide/` |
 | `npm run check` | کامپایل پیام‌ها + `astro check` |
 | `npm run lint` | کامپایل پیام‌ها + `astro check` + `tsc --noEmit` |
-| `npm test` | کامپایل پیام‌ها + `vitest run` (۲۶ فایل، ۲۶۹ تست) |
+| `npm test` | کامپایل پیام‌ها + `vitest run` (۲۹ فایل، ۲۸۹ تست) |
 | `npm run build` | کامپایل پیام‌ها + ممیزی i18n + `astro build` + `node scripts/index-pagefind.mjs` |
 | `npm run preview` | `astro preview` روی خروجی `dist/` |
 | `npm run smoke` | تست دود روی `dist/` |
@@ -171,7 +171,8 @@ npx astro dev stop           # توقف سرور
 | `npm run new:post` | ساخت/ویرایش مقالهٔ وبلاگ |
 | `npm run remove:page` | حذف صفحه (یا فقط یک زبانش) |
 | `npm run remove:post` | حذف مقاله |
-| `npm run site:init` | راه‌اندازی سریع برند، پالت، فونت، ایمیل تماس و شبکه‌های اجتماعی مشتری در `client/config.json` |
+| `npm run site:init` | راه‌اندازی سریع برند، لوگوی `--logo`/`--logo-dark`، بلوپرینت، پالت و ایمیل در `client/config.json` |
+| `npm run site:reset` | بازنشانی کامل لایهٔ مشتری (`config.json`, `cms.json`, دارایی‌های برند + `--clean-starter` اختیاری با `--yes`) |
 | `npm run starter:seed` | تزریق یا پاک‌سازی (`--clean`) محتوای دمو از `starter-kit/` |
 | `npm run upstream:check` | بررسی قرارداد معماری سه‌لایه (`Core` / `client/` / `starter-kit/`) |
 | `npm run i18n:add-lang` | افزودن زبان جدید (یا بازگردانی زبان بایگانی‌شده) در `client/locales.json` |
@@ -183,13 +184,16 @@ npx astro dev stop           # توقف سرور
 | `npm run i18n:extract` | استخراج متن سخت‌کد از قالب |
 | `npm run block:adapt` | تبدیل بلوک Tailwind به خواص منطقی |
 | `npm run audit:i18n` | ممیزی چندزبانه (۶ مرحله) |
-| `npm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI (۹۵ ادعا) |
+| `npm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI |
 | `npm run content:list` | فهرست انواع محتوا، مسیر و تعداد ورودی‌ها (`--json`) |
 | `npm run content:new` | ساخت گروه در هر نوع محتوا |
 | `npm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا در `client/config.json` (مسیرها، sitemap و ناوبری) |
 | `npm run content:status` | ماتریس آمادگی هر گروه × هر زبان (`--write=docs/STATUS.md`) |
-| `npm run doctor` | بررسی سلامت پروژه بدون build، با دستور رفع هر مورد |
-| `npm run link:check` | خزش `dist/` و گزارش لینک‌های داخلی شکسته (از جمله لنگرهای `#anchor`) |
+| `npm run doctor` | بررسی سلامت پروژه بدون build (از جمله کنترل آنالیتیکس/GDPR)، با دستور رفع هر مورد |
+| `npm run link:check` | خزش `dist/`، اعتبارسنجی `redirects` و گزارش لینک‌های داخلی شکسته (از جمله `#anchor`) |
+| `npm run qa:browser` | تست چیدمان و رگرسیون تعاملی در مرورگر واقعی (Playwright LTR/RTL دسکتاپ و موبایل روی `dist/`) |
+| `npm run preflight` | چک کامل پیش از انتشار (`messages:compile` → `upstream:check` → `audit:i18n` → `doctor` → `test` → `build` → `smoke` → `link:check`) |
+| `npm run preflight:full` | اجرای `preflight` + تست مرورگر واقعی `qa:browser` |
 
 ### ساخت برای انتشار
 
@@ -207,10 +211,11 @@ SITE_URL=https://example.com npm run build
 
 ```text
 /
-├── .pages.yml               # پیکربندی آمادهٔ Pages CMS برای ویرایش محتوای صفحات، بلاگ و پروژه‌ها
-├── app.config.json          # پیش‌فرض‌های هسته: سایت، برند، کسب‌وکار (business)، وبلاگ، کوکی، API خارجی و سرور
+├── .pages.yml               # پیکربندی آمادهٔ Pages CMS برای ویرایش محتوا و تنظیمات ساده‌شده در client/cms.json
+├── app.config.json          # پیش‌فرض‌های هسته: سایت، برند، کسب‌وکار، آنالیتیکس، ریدایرکت، وبلاگ، کوکی، API و سرور
 ├── client/                  # لایهٔ اختصاصی پروژهٔ مشتری (از به‌روزرسانی‌های هسته در امان می‌ماند):
-│   ├── config.json          # بازنویسی‌های محدود روی app.config.json
+│   ├── config.json          # بازنویسی‌های محدود آژانس/CLI روی app.config.json
+│   ├── cms.json             # لایهٔ تنظیمات غیرفنی Pages CMS (پاک‌سازی‌شده و ادغام‌شده روی client/config.json)
 │   ├── locales.json         # SSOT زبان‌های فعال، defaultLocale و metadata (dir, font, htmlLang)
 │   ├── messages/            # بازنویسی‌ها و کلیدهای ترجمهٔ اختصاصی مشتری (<locale>.json)
 │   ├── navigation.ts        # CLIENT_PAGE_ITEMS، ستون‌های فوتر و لینک‌های حقوقی سفارشی
@@ -219,26 +224,27 @@ SITE_URL=https://example.com npm run build
 │   ├── templates/index.ts   # ثبت قالب‌های صفحهٔ سفارشی CLIENT_PAGE_TEMPLATES
 │   ├── LayoutHooks.astro    # قلاب‌های `top-banner`، `<head>` و انتهای `<body>` در BaseLayout
 │   └── styles.css           # توکن‌ها، بازنویسی‌های CSS مشتری و جایگاه آمادهٔ @font-face فونت‌های تجاری فارسی
-├── messages/core/           # فرهنگ‌های هسته (۶۳۴ کلید پایه در en.json و fa.json)
-├── starter-kit/             # بستهٔ اختیاری دمو (صفحات، مقالات، پروژه‌ها و دارایی‌ها — با starter:seed)
+├── deploy/                  # ریدایرکت‌های تولیدشدهٔ Nginx/Apache در زمان بیلد (nginx-redirects.conf, .htaccess-redirects؛ بیرون از dist/)
+├── messages/core/           # فرهنگ‌های هسته (۶۴۴ کلید پایه در en.json و fa.json)
+├── starter-kit/             # بستهٔ اختیاری دمو (صفحات، مقالات، پروژه‌ها، دارایی‌ها و ۶ بلوپرینت — با starter:seed)
 ├── .paraglide-work/         # ⚠️ تولیدی/موقت (gitignore): حاصل ادغام core + client پیش از کامپایل
-├── astro.config.mjs         # Astro: site، trailingSlash، prefetch، MDX، Tailwind، aliasهای @/* و @client/*
+├── astro.config.mjs         # Astro + هوک تولید خودکار _redirects، nginx-redirects.conf و .htaccess-redirects
 ├── knip.json                # پیکربندی تشخیص کد مرده
 ├── tsconfig.json            # TypeScript strict + alias `@/*` → `src/*` و `@client/*` → `client/*`
 ├── vitest.config.ts         # Vitest: alias `@`/`@client` و mock ماژول `astro:content`
 ├── .npmrc                   # تنظیمات npm/pnpm
 ├── .env.example             # متغیرهای محیطی (SITE_URL, PUBLIC_API_BASE_URL, PUBLIC_CONTACT_API_URL, PUBLIC_NEWSLETTER_API_URL, PUBLIC_WEB3FORMS_KEY, PUBLIC_TURNSTILE_SITE_KEY)
 ├── public/                  # _headers، chronotrig.min.js، favicon، آیکون‌ها، کارت OG پیش‌فرض
-├── scripts/                 # ۲۸ اسکریپت CLI، بررسی سلامت، Pagefind و upstream:check
-│   └── lib/                 # ۱۳ ماژول مشترک: config, blueprints, merge-messages, locales, locale-mutations,
-│                            # frontmatter, image-reference, content-stub, slug, validate, content-types, prompt
-├── .github/workflows/ci.yml # CI: upstream:check → lint → test → audit → doctor → build → smoke → link:check → knip → verify:cli
+├── scripts/                 # ۳۰ اسکریپت CLI، بررسی سلامت، تست مرورگر qa:browser، Pagefind و upstream:check
+│   └── lib/                 # ۱۴ ماژول مشترک: config, blueprints, merge-messages, locales, locale-mutations,
+│                            # frontmatter, image-reference, content-stub, slug, validate, content-types, redirects, prompt
+├── .github/workflows/ci.yml # CI: upstream:check → lint → test → audit:i18n → doctor → build → smoke → link:check → knip → verify:cli
 ├── .agents/skills/         # مهارت عملیاتی برای عامل‌های AI
 │   └── astro-i18n-starter/  # SKILL.md + references/
-├── docs/                    # GUIDE-FA.md، GUIDE-HOMEPAGE-FA.md، CONTENT-TYPES-FA.md، PRD.md، PLAYBOOKS.md، deploy/nginx.conf
+├── docs/                    # GUIDE-FA.md، GUIDE-HOMEPAGE-FA.md، CONTENT-TYPES-FA.md، PLAYBOOKS.md، deploy/ (nginx.conf, cloudflare-worker-webhook.js)
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
-    ├── components/          # کامپوننت‌های هسته (از جمله `SiteTopBanner.astro`، `DevThemePreview.astro` فقط در DEV و `TopLoadingBar.astro`)، ۳۵ پریمیتیو رابط در ui/
+    ├── components/          # کامپوننت‌های هسته (`SiteTopBanner`, `QuickContactWidget`, `AnalyticsScripts`, `DevThemePreview` فقط در DEV، `TopLoadingBar`)، ۳۵ پریمیتیو ui/
     │                        # و ۲۹ بلوک سکشن (۷ هیرو + ۲۲ سکشن محتوا) به‌همراه ۴ بلوک تعاملی/حرکتی (BentoGrid, LatestPostsCarousel, SwipeableTabs, TestimonialMarquee)
     ├── content/
     │   ├── pages/<گروه>/    # صفحات ایستا: <locale>.mdx + <گروه>.png
@@ -249,21 +255,22 @@ SITE_URL=https://example.com npm run build
     │   ├── locales.ts       # خواندن و صدور نوع‌امن LOCALES, DEFAULT_LOCALE, LOCALE_METADATA از client/locales.json
     │   ├── format.ts        # فرمت بومی تاریخ (هجری شمسی برای fa) و اعداد (Intl)
     │   └── paths.ts         # localizeHref, localeHref, stripLocale, getPathname
-    ├── layouts/BaseLayout.astro # نوار بنر بالایی، هدر چسبان تطبیق‌پذیر، تزریق `--trig-*`/`--navbar-*`، لوگوی `brand.logo`، اسکیمای JSON-LD، کشوی موبایل و فوتر
+    ├── layouts/BaseLayout.astro # نوار بنر بالایی، هدر چسبان، تزریق `--trig-*`/`--navbar-*`، لوگوی `brand.logo`، JSON-LD، کشوی موبایل، QuickContactWidget و AnalyticsScripts
     ├── libs/
     │   ├── api/client.ts    # آداپتور Pure-SSG سمت کلاینت (custom, Web3Forms, Formspree, Basin, Webhook + Turnstile)
     │   ├── config/
-    │   │   ├── app.ts       # ادغام و اعتبارسنجی app.config.json + client/config.json (site, brand, business, ui, api, …)
+    │   │   ├── app.ts       # ادغام سه‌لایه و اعتبارسنجی app.config.json <- client/config.json <- client/cms.json
     │   │   ├── client.ts    # خوانندهٔ پیکربندی در باندل مرورگر (`CLIENT_COOKIE_CONFIG`, `CLIENT_NAVBAR_CONFIG`, `CLIENT_MOTION_CONFIG`؛ بدون Zod) + defaults.ts
     │   │   ├── theme.ts     # پالت‌های OKLCH، پیش‌تنظیم فونت (از جمله ۵ پیش‌تنظیم فارسی) و کارت OG
     │   │   └── navigation.ts # ساخت ناوبری چندمنویی از client/navigation.ts
-    │   ├── content/         # entries, service, types, feed, pagination, blog, blog-catalog, taxonomy, faq, social, og-card, schema
+    │   ├── content/         # entries, service, types, feed, pagination, blog, blog-catalog, taxonomy, faq, social, og-card, schema, redirects
     │   ├── cookies/         # مدل رضایت کوکی و مدیریت اسکریپت‌ها (model.ts, manager.ts)
     │   ├── search/          # client.ts + persian.ts (جستجوی Pagefind و فالبک با نرمال‌سازی فارسی)
     │   └── ui/              # button.ts (کلاس دکمه‌ها) + icons.ts (۶۹ آیکون هسته + client/icons.ts) + locale.ts + initials.ts
     ├── pages/               # فقط فایل‌های فیزیکی استاتیک
     │   ├── [...path].astro  # دیسپچر مسیریاب
     │   ├── 404.astro        # صفحهٔ ۴۰۴ locale-aware
+    │   ├── llms.txt.ts      # راهنمای ساختاریافتهٔ AI برای خزنده‌ها (`/llms.txt`)
     │   ├── og/[...slug].png.ts # تولید کارت PNG برنددار در زمان بیلد (حالت socialCardMode: branded)
     │   ├── site.webmanifest.ts
     │   ├── rss.xml.ts       # فید Atom زبان پیش‌فرض
@@ -516,22 +523,26 @@ SITE_URL=https://example.com npm run build
 | `brand.darkThemeColor` | hex شش‌رقمی اختیاری برای تم تیره |
 | `brand.icons` | آرایهٔ غیرخالی از `{ file, size, purpose }` |
 | `business` | پروفایل کسب‌وکار (`type`: `Organization` \| `LocalBusiness` \| `ProfessionalService` \| `MedicalBusiness` \| `Store`, `legalName`, `phone`, `whatsapp`, `telegram`, `address`, `city`, `country`, `workingHours`, `mapEmbedUrl`, `geo?: { lat, lng }`) برای JSON-LD و دکمه‌های تماس سریع + نقشهٔ تنبل |
-| `ui` | پرچم‌های بولین (`showSearch`, `showThemeToggle`, `showLanguageSwitcher`, `showTopLoadingBar`, `stickyHeader`) + `ui.ctaPage` (برای سایت‌های **تک‌زبانه** `ui.showLanguageSwitcher: false` سوئیچر زبان را پنهان می‌کند) به‌همراه ۳ بخش زیرساختی: **`ui.navbar`** (`initialTopOffset`, `stickyScrollThreshold`, `stickyTopOffset`, `autoBannerOffset`, `manualBannerOffset`)، **`ui.topBanner`** (`enabled` — در `app.config.json` روی `true` با دو بنر هم‌زمان `site-notice` ۴۰px غیرقابل‌بستن و `site-announcement` ۳۲px قابل‌بستن است، ولی در `defaults.ts` پیش‌فرض طرح‌واره `false` است — به‌همراه `id`, `variant`, `icon`, `heightPx`, `badge`/`badgeByLocale`, `message`/`messageByLocale`, `ctaLabel`/`ctaLabelByLocale`, `ctaHref`/`ctaHrefByLocale`, `external`, `dismissible`, `excludePaths`, `items[]`) و **`ui.motion`** (`revealDelayMs`: `0`، `revealDurationMs`: `1600`، `revealDistancePx`: `56`، `revealSmallDistancePx`: `18`، `revealEasing`، `staggerStepMs`: `80`، `rootMargin`، `mobileBehavior`، `smoothScroll`، `smoothScrollLerp`) |
+| `ui` | پرچم‌های بولین (`showSearch`, `showThemeToggle`, `showLanguageSwitcher`, `showTopLoadingBar`, `stickyHeader`) + `ui.ctaPage` (برای سایت‌های **تک‌زبانه** `ui.showLanguageSwitcher: false` سوئیچر زبان را پنهان می‌کند) به‌همراه ۴ بخش زیرساختی: **`ui.navbar`** (`initialTopOffset`, `stickyScrollThreshold`, `stickyTopOffset`, `autoBannerOffset`, `manualBannerOffset`)، **`ui.topBanner`** (`enabled`, `id`, `variant`, `icon`, `heightPx`, `badge`/`badgeByLocale`, `message`/`messageByLocale`, `ctaLabel`/`ctaLabelByLocale`, `ctaHref`/`ctaHrefByLocale`, `external`, `dismissible`, `excludePaths`, **`startAt`/`endAt` زمان‌بندی**، `items[]`)، **`ui.quickContact`** (ویجت تماس سریع شناور جمع‌شونده روی موبایل که هنگام کشوی باز، مودال یا بنر کوکی بی‌پاسخ خودکار پنهان می‌شود) و **`ui.motion`** (`revealDelayMs`: `0`، `revealDurationMs`: `1600`، `revealDistancePx`: `56`، `revealSmallDistancePx`: `18`، `revealEasing`، `staggerStepMs`: `80`، `rootMargin`، `mobileBehavior`، `smoothScroll`، `smoothScrollLerp`) |
+| `analytics` | تنظیمات یکپارچهٔ آنالیتیکس (`ga4Id`, `gtmId`, `plausibleDomain`, `umamiWebsiteId`, `umamiScriptUrl`, `consentMode`, `allowCookielessWithoutBanner`)؛ با رندر خودکار `AnalyticsScripts.astro` همراه با **Google Consent Mode v2** پیش از بارگذاری GTM/GA4 |
+| `redirects` | قوانین تغییر مسیر ۳xx (`{ from, to, status }`) با پشتیبانی از مسیرهای دقیق و Wildcard انتهایی (`/*` → `:splat`) که هنگام بیلد به `dist/_redirects`، `deploy/nginx-redirects.conf` و `deploy/.htaccess-redirects` کامپایل و توسط `link:check` اعتبارسنجی می‌شوند |
 | `blog.postsPerPage` | عدد صحیح مثبت |
 | `blog` | پرچم‌های بولین نمایش (`showReadingTime`, `showTableOfContents`, `showRelatedPosts`) |
 | `cookies` | تنظیمات رضایت کوکی (`enabled`, `consentVersion`, `storageKey`, `expirationDays`) |
 | `social` | آدرس‌های اختیاری شبکه‌های اجتماعی: `github`, `twitter`, `linkedin`, `instagram`, `telegram` (در فوتر و `sameAs` اسکیما) |
-| `api` | تنظیمات فرم بدون سرور (`provider`: `custom` \| `web3forms` \| `formspree` \| `basin` \| `webhook`, `accessKey` / `PUBLIC_WEB3FORMS_KEY`, `turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY`, `baseUrl`, `timeoutMs`, `endpoints.contact`, `endpoints.newsletter`, `topics`) — قابل بازنویسی با `PUBLIC_API_BASE_URL`، `PUBLIC_CONTACT_API_URL` و `PUBLIC_NEWSLETTER_API_URL` |
+| `api` | تنظیمات فرم بدون سرور (`provider`: `custom` \| `web3forms` \| `formspree` \| `basin` \| `webhook`, `accessKey` / `PUBLIC_WEB3FORMS_KEY`, `turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY`, `baseUrl`, `timeoutMs`, `endpoints.contact`, `endpoints.newsletter`, `topics`) — همراه با الگوی آمادهٔ `docs/deploy/cloudflare-worker-webhook.js` و بازنویسی با متغیرهای `PUBLIC_*` |
 | `server.port` | عدد صحیح بین ۱ و ۶۵۵۳۵ |
 | `server.host` | رشتهٔ غیرخالی (`0.0.0.0`) |
 
+> **معماری سه‌لایهٔ پیکربندی (`app.config.json` ← `client/config.json` ← `client/cms.json`):** ویرایشگرهای غیرفنی از طریق `.pages.yml` تنها به لایهٔ سادهٔ `client/cms.json` دسترسی دارند (مقادیر خالی `""` و نگاشت‌های محلیِ خالی در `sanitizeCmsConfig()` حذف می‌شوند تا هرگز تنظیمات دقیق آژانس در `client/config.json` بازنویسی نشود).
+
 ### پیکربندی Paraglide (`.paraglide-work/project.inlang/settings.json`)
 
-هنگام اجرای `npm run messages:compile` (توسط `scripts/messages-compile.mjs`)، لیست زبان‌ها و زبان پایه از `client/locales.json` خوانده می‌شود، دیکشنری‌های `messages/core/<locale>.json` و `client/messages/<locale>.json` ترکیب شده و فایل تنظیمات موقت `.paraglide-work/project.inlang/settings.json` به‌طور خودکار تولید می‌شود تا کامپایلر Paraglide با یک منبع حقیقت اجرا شود. افزونه‌های درون‌یابی از `node_modules` خوانده می‌شوند و بیلد به شبکه نیاز ندارد.
+هنگام اجرای `npm run messages:compile` (توسط `scripts/messages-compile.mjs`)، لیست زبان‌ها و زبان پایه از `client/locales.json` خوانده می‌شود، دیکشنری‌های `messages/core/<locale>.json` و `client/messages/*.json` ترکیب شده و فایل تنظیمات موقت `.paraglide-work/project.inlang/settings.json` به‌طور خودکار تولید می‌شود تا کامپایلر Paraglide با یک منبع حقیقت اجرا شود. افزونه‌های درون‌یابی از `node_modules` خوانده می‌شوند و بیلد به شبکه نیاز ندارد.
 
-### تغییر رنگ، بلوپرینت صنعتی و استودیوی زندهٔ تم (`site:init` + `DevThemePreview`)
+### تغییر رنگ، لوگو، بلوپرینت و استودیوی زندهٔ تم (`site:init`, `site:reset` + `DevThemePreview`)
 
-به جای تغییر دستی چندین فایل، با یک دستور تمام هویت برند، بلوپرینت صنعتی (`corporate`, `agency`, `portfolio`, `medical`)، پالت، فونت و ایمیل تماس مشتری را در `client/config.json` تنظیم کنید:
+به جای تغییر دستی چندین فایل، با یک دستور تمام هویت برند، بلوپرینت صنعتی (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal`)، لوگوی روشن/تیره، پالت، فونت و ایمیل تماس مشتری را در `client/config.json` تنظیم کنید:
 
 ```bash
 npm run site:init -- \
@@ -539,11 +550,12 @@ npm run site:init -- \
   --blueprint=agency \
   --rtl-font=vazirmatn \
   --email=hello@acme.example \
+  --logo=./logo.svg --logo-dark=./logo-dark.svg \
   --og-mode=branded \
   --yes
 ```
 
-`theme.ts` پالت انتخابی یا `brand.primaryColor`/`accentColor` را در `<head>` به متغیرهای `--theme-*` تبدیل می‌کند (و در `:root[data-theme='dark']` نسخهٔ تاریک سازگار با AA می‌سازد). همچنین در محیط توسعه (`npm run dev`), پنل شناور **استودیوی تم (`DevThemePreview.astro` فقط تحت `import.meta.env.DEV`)** اجازه می‌دهد پالت‌ها، رنگ‌های hex دلخواه و فونت‌های لاتین/RTL را زنده آزمایش و خروجی JSON آمادهٔ `client/config.json` را کپی کنید. برای سفارشی‌سازی عمیق‌تر توکن‌ها و افزودن فونت‌های تجاری فارسی، متغیرها و `@font-face`های خود را در `client/styles.css` بنویسید.
+`theme.ts` پالت انتخابی یا `brand.primaryColor`/`accentColor` را در `<head>` به متغیرهای `--theme-*` تبدیل می‌کند (و در `:root[data-theme='dark']` نسخهٔ تاریک سازگار با AA می‌سازد). برای بازگرداندن پروژه به وضعیت اولیهٔ تمیز در شروع پروژهٔ جدید از `npm run site:reset -- --yes` (و در صورت نیاز `--clean-starter`) استفاده کنید. همچنین در محیط توسعه (`npm run dev`), پنل شناور **استودیوی تم (`DevThemePreview.astro` فقط تحت `import.meta.env.DEV`)** اجازه می‌دهد پالت‌ها، رنگ‌های hex دلخواه و فونت‌های لاتین/RTL را زنده آزمایش و خروجی JSON آمادهٔ `client/config.json` را کپی کنید. برای سفارشی‌سازی عمیق‌تر توکن‌ها و افزودن فونت‌های تجاری فارسی، متغیرها و `@font-face`های خود را در `client/styles.css` بنویسید.
 
 ### `tsconfig.json` و `vitest.config.ts`
 
@@ -1096,8 +1108,11 @@ npm run content:enable projects
 npm run content:new projects atlas -- --title="Atlas" --publish
 npm run doctor                       # سلامت بدون build، با دستور رفع
 npm run content:status -- --write=docs/STATUS.md
-npm run link:check                   # خزش dist/ و گزارش لینک/لنگر شکسته
+npm run link:check                   # خزش dist/، تست redirects و گزارش لینک/لنگر شکسته
+npm run qa:browser                   # رندر و تست واقعی چیدمان/RTL/تعامل‌ها در Playwright
+npm run preflight:full               # اجرای زنجیرهٔ preflight + qa:browser پیش از تحویل به کارفرما
 npm run starter:seed -- --blueprint=corporate # (اختیاری) تزریق دمو + اعمال بلوپرینت صنعتی
+npm run site:reset -- --yes          # بازگرداندن client/config.json و client/cms.json به وضعیت تمیز پایه
 npm run upstream:check               # کنترل قرارداد لایه‌های Core و client/
 ```
 
@@ -1113,7 +1128,8 @@ npm run upstream:check               # کنترل قرارداد لایه‌ها
 npm run audit:i18n    # ۶ بخش: پیکربندی زبان، فرهنگ‌ها، محتوا، مسیرها، متن هاردکد، نگهبان RTL
 npm run smoke         # تست دود روی خروجی بیلدشده
 npm run knip          # فایل/اکسپورت/وابستگی مرده
-npm run verify:cli    # ۹۵ ادعا دربارهٔ گردش‌کارهای CLI
+npm run verify:cli    # تست سرتاسری همهٔ گردش‌کارهای CLI (از جمله --logo, site:reset, catalog/legal)
+npm run qa:browser    # رگرسیون مرورگر واقعی روی خروجی dist/ (دسکتاپ و موبایل، LTR و RTL)
 ```
 
 `verify:cli` پروژه را در یک پوشهٔ موقت کپی می‌کند، همهٔ فرمان‌های CLI را دقیقاً
@@ -1129,8 +1145,9 @@ npm run verify:cli    # ۹۵ ادعا دربارهٔ گردش‌کارهای CLI
 
 | فایل | نقش |
 | --- | --- |
-| `config.mjs` | ادغام `app.config.json` + `client/config.json` و نوشتن تغییرات sparse در `client/config.json` |
-| `blueprints.mjs` | تعاریف بلوپرینت‌های صنعتی (`corporate`, `agency`, `portfolio`, `medical`) برای `site:init` و `starter:seed` |
+| `config.mjs` | ادغام سه‌لایه (`app.config.json` ← `client/config.json` ← `client/cms.json`) + `sanitizeCmsConfig()` و نوشتن تغییرات sparse |
+| `blueprints.mjs` | تعاریف ۶ بلوپرینت صنعتی (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal`) برای `site:init` و `starter:seed` |
+| `redirects.mjs` | همگام‌سازی/تولید قوانین ریدایرکت دقیق و Wildcard هنگام بیلد (`dist/_redirects`، `deploy/nginx-redirects.conf`، `deploy/.htaccess-redirects`) |
 | `merge-messages.mjs` / `compile-messages.mjs` | ادغام فرهنگ‌های `messages/core/` + `client/messages/` در `.paraglide-work/` و کامپایل Paraglide |
 | `locales.mjs` / `locale-mutations.mjs` | خواندن/تغییر `client/locales.json` و بازتوزیع آن — ممیزی i18n و تست دود از همین منبع می‌خوانند |
 | `frontmatter.mjs` | `parseFrontmatter` / `stringifyFrontmatter` (بدون وابستگی) |
@@ -1657,7 +1674,8 @@ export interface NavigationSlots {
 ```
 
 #### ۱. ناوبری هدر دسکتاپ، نوار بنر بالایی (`ui.topBanner`) و رفتار چسبندگی تطبیق‌پذیر (`ui.navbar`)
-- **نوار بنر اطلاع‌رسانی (`SiteTopBanner.astro` + `ui.topBanner`)**: بنرهای سراسری با پیکربندی `ui.topBanner` (پشتیبانی از ۶ ظاهر `primary`/`hero`/`surface`/`accent`/`info`/`warning`، ارتفاع کمینهٔ قابل‌تنظیم `heightPx` بین `24` تا `160` پیکسل، متن و دکمهٔ اختصاصی به ازای هر زبان `*ByLocale`، `excludePaths` برای حذف در مسیرهای خاص، کنترل `dismissible` با ذخیرهٔ وضعیت بستن در `sessionStorage` بدون پرش بصری در View Transitions، و آرایهٔ `items[]` برای چند بنر روی‌هم — در حالت پیش‌فرض شامل یک بنر ثابت `site-notice` با ارتفاع `40px` و غیرقابل‌بستن و یک بنر فشرده‌تر `site-announcement` با ارتفاع `32px` و قابل‌بستن) یا اسلات `<LayoutHooks slot="top-banner" />` رندر می‌شوند.
+- **نوار بنر اطلاع‌رسانی (`SiteTopBanner.astro` + `ui.topBanner`)**: بنرهای سراسری با پیکربندی `ui.topBanner` (پشتیبانی از ۶ ظاهر `primary`/`hero`/`surface`/`accent`/`info`/`warning`، ارتفاع کمینهٔ قابل‌تنظیم `heightPx` بین `24` تا `160` پیکسل، متن و دکمهٔ اختصاصی به ازای هر زبان `*ByLocale`، `excludePaths` برای حذف در مسیرهای خاص، پنجرهٔ زمان‌بندی `startAt`/`endAt` ISO، کنترل `dismissible` با ذخیرهٔ وضعیت بستن در `sessionStorage` بدون پرش بصری در View Transitions، و آرایهٔ `items[]` برای چند بنر روی‌هم — در حالت پیش‌فرض شامل یک بنر ثابت `site-notice` با ارتفاع `40px` و غیرقابل‌بستن و یک بنر فشرده‌تر `site-announcement` با ارتفاع `32px` و قابل‌بستن) یا اسلات `<LayoutHooks slot="top-banner" />` رندر می‌شوند.
+- **ویجت تماس سریع موبایل (`QuickContactWidget.astro` + `ui.quickContact`)**: دکمهٔ شناور جمع‌شونده در گوشهٔ پایین صفحه (`bottom-4 end-4`) با لینک‌های مستقیم تماس، واتساپ، تلگرام یا فرم تماس؛ هنگام فعال‌بودن بنر کوکیِ بی‌پاسخ، بازبودن کشوی موبایل یا بازشدن `<dialog open>` به‌صورت خودکار پنهان می‌شود تا هرگز با لایه‌های تعاملی تداخل نکند.
 - **کنترلر تطبیق‌پذیر هدر (`src/scripts/navbar.ts` + `ui.navbar`)**: `ResizeObserver` ارتفاع واقعی `[data-site-top-banner-region]` را اندازه گرفته و در `--actual-banner-height` می‌نویسد. در حالت عادی فاصلهٔ بالای هدر برابر `initialTopOffset` (پیش‌فرض `16px`) به‌علاوهٔ ارتفاع بنر است، پس از عبور اسکرول از `max(stickyScrollThreshold, effectiveBannerHeight + initialTopOffset - stickyTopOffset)` به کلاس `is-stuck` و فاصلهٔ `stickyTopOffset` (`12px`) تغییر وضعیت می‌دهد، و اگر `autoBannerOffset: false` باشد از `manualBannerOffset` استفاده می‌کند.
 - ناوبری دسکتاپ از تابع `getHeaderNavigation(locale, currentUrl)` تأمین می‌شود؛ این تابع همان `buildPrimaryNavigation` مشترک با کشوی موبایل را برمی‌گرداند، پس یک صفحه هرگز یک بار در هدر و یک بار جداگانه در کشو تعریف نمی‌شود.
 - **منوهای آبشاری چندسطحی (Dropdowns)**: از فیلد `children` در `NavItem` پشتیبانی می‌کند. روی دسکتاپ با هاور و فوکوس کیبورد (`group-hover` و `group-focus-within`) باز می‌شود. زیرمنوهای تو در تو نیز با آیکون `chevron-right` (با چرخش خودکار `rtl:rotate-180` در زبان‌های راست‌به‌چپ) به سمت جهت خواندن هدایت می‌شوند.
@@ -1896,7 +1914,8 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 
 ### فرم تماس و خبرنامه (آداپتورهای بدون سرور و Turnstile)
 این استارتر **۱۰۰٪ استاتیک (SSG)** است و هیچ سرور بک‌اند داخلی ندارد. برای فرم تماس (`src/components/ContactForm.astro`) و بنر اشتراک خبرنامه (`src/components/NewsletterBanner.astro`)، داده‌ها مستقیماً از مرورگر از طریق آداپتور نوع‌امن `src/libs/api/client.ts` (`submitContactInquiry` / `submitNewsletterSubscription` و کمکی‌های `resolveFormEndpoint` / `resolveApiEndpoint` / `validateContactPayload` / `validateNewsletterPayload`) با محافظت تایم‌اوت (`AbortController`)، فیلتر ضداسپم Honeypot و پشتیبانی اختیاری از **Cloudflare Turnstile** (`turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY`) ارسال می‌شوند:
-- **ارائه‌دهندگان آماده (`api.provider`)**: `custom`، `web3forms` (با `accessKey` / `PUBLIC_WEB3FORMS_KEY` به‌طور خودکار به `https://api.web3forms.com/submit` وصل می‌شود)، `formspree`، `basin` و `webhook` (مانند n8n / Make).
+- **ارائه‌دهندگان آماده (`api.provider`)**: `custom`، `web3forms` (با `accessKey` / `PUBLIC_WEB3FORMS_KEY` به‌طور خودکار به `https://api.web3forms.com/submit` وصل می‌شود)، `formspree`، `basin` و `webhook` (مانند n8n / Make؛ الگوی آماده در `docs/deploy/cloudflare-worker-webhook.js`).
+- **آنالیتیکس و Google Consent Mode v2 (`AnalyticsScripts.astro`)**: با پر کردن `analytics.ga4Id` یا `analytics.gtmId` (یا Plausible/Umami بدون کوکی با `allowCookielessWithoutBanner`)، اسکریپت‌ها به‌طور امن در `BaseLayout.astro` رندر می‌شوند و همراه با مدیریت رضایت `CookieConsent.astro` وضعیت `analytics_storage`/`ad_storage` را به‌روز می‌کنند (`npm run doctor` نبودن بنر کوکی هنگام فعال‌بودن GA4/GTM را گزارش می‌دهد).
 - نشانی API را در متغیرهای محیطی `PUBLIC_CONTACT_API_URL`، `PUBLIC_NEWSLETTER_API_URL` (یا `PUBLIC_API_BASE_URL`) و یا در بخش `api` فایل `client/config.json` (`provider`, `accessKey`, `turnstileSiteKey`, `endpoints.contact`, `endpoints.newsletter`, `topics`) تنظیم کنید.
 - **بخش تماس کامل (`ContactSplitSection.astro`)**: با پر کردن `business` در `client/config.json`، دکمه‌های اقدام سریع (تلفن، واتساپ، تلگرام) و باکس نقشهٔ تنبل (Click-to-Load با پشتیبانی از `mapEmbedUrl` یا مختصات `geo`) در کنار فرم تماس فعال می‌شوند.
 - **بدون نشانی API، فرم اصلاً رندر نمی‌شود.** بازدیدکننده به‌جای فرم یک پنل کوتاه می‌بیند:
@@ -1948,10 +1967,12 @@ const card = await getSocialCard(entry.data.image);
 | `/rss.xml` | Atom | مقالات منتشرشدهٔ زبان پیش‌فرض با `category` |
 | `/rss/<locale>.xml` | Atom | مقالات منتشرشدهٔ همان زبان (غیرپیش‌فرض) |
 | `/robots.txt` | متن | `User-agent: *` / `Allow: /` / `Disallow: /api/` / `Sitemap: <مطلق>` |
+| `/llms.txt` | متن | نقشهٔ ساختاریافتهٔ خلاصهٔ سایت، زبان‌ها، صفحات و مقالات برای مدل‌ها و خزنده‌های هوش مصنوعی |
 | `/og/[...slug].png` | PNG | کارت‌های OG برنددار هر مسیر در حالت `brand.socialCardMode === 'branded'` |
 | `/site.webmanifest` | JSON | از `app.config.json` + زبان پیش‌فرض ساخته می‌شود: نام، `short_name`، `lang`/`dir`، رنگ‌ها، آیکون‌ها، `display: standalone` |
 | `/api/search-dev/<locale>.json` و `/api/search-dev.json` | JSON | فهرست استاتیک fallback جستجو به تفکیک هر زبان و کل سایت |
 | `/api/blog-posts/<locale>.json` و `/api/blog-posts.json` | JSON | کاتالوگ استاتیک مقالات منتشرشده به تفکیک زبان برای فیلتر فراصفحه‌ای |
+| `dist/_redirects` و `deploy/` | پیکربندی | خروجی خودکار قوانین `redirects` (دقیق و `/*` → `:splat`) برای Netlify/Cloudflare (`dist/_redirects`)، Nginx (`deploy/nginx-redirects.conf`) و Apache (`deploy/.htaccess-redirects`) |
 
 ### صفحهٔ ۴۰۴
 
@@ -1995,13 +2016,14 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 ```bash
 npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
 npm run lint           # کامپایل پیام‌ها + astro check + tsc --noEmit
-npm test               # ۲۷ فایل تست واحد Vitest (۲۸۱ تست)
+npm test               # ۲۹ فایل تست واحد Vitest (۲۸۹ تست)
 npm run audit:i18n
 SITE_URL=https://example.com npm run build
 npm run smoke          # تست دود روی dist/
-npm run link:check     # خزش dist/ و گزارش لینک‌های شکسته
+npm run link:check     # خزش dist/، اعتبارسنجی redirects و گزارش لینک‌های شکسته
+npm run qa:browser     # تست مرورگر واقعی Playwright (LTR/RTL دسکتاپ و موبایل، کشو، جستجو، کوکی و گالری)
 npm run knip
-npm run verify:cli     # ۹۵ ادعا دربارهٔ گردش‌کارهای CLI
+npm run verify:cli     # تست سرتاسری گردش‌کارهای CLI
 ```
 
 ### چه چیزی تست می‌شود
@@ -2018,15 +2040,16 @@ npm run verify:cli     # ۹۵ ادعا دربارهٔ گردش‌کارهای CL
 | `src/libs/content/taxonomy.test.ts` | برچسب دسته/برچسب و fallback |
 | `src/libs/content/content-types.test.ts` | رجیستری انواع محتوا و مسیرهای جنریک مجموعه‌ها |
 | `src/libs/content/og-card.test.ts` | رندر SVG کارت OG برنددار (از جمله `direction="rtl"` فارسی/عربی)، شکستن خطوط و فرار از XSS |
+| `src/libs/content/redirects.test.ts` | ریدایرکت‌های دقیق و Wildcard (`/*` → `:splat`) برای `_redirects`، Nginx و `.htaccess`، تشخیص حلقه و تداخل |
 | `src/libs/content/schema.test.ts` | سازنده‌های JSON-LD شرکتی (`Organization`، `LocalBusiness`، `Service` و `sameAs`) |
 | `src/libs/content/scripts.test.ts` | توابع فرانت‌متر، CLI helperها، پارسر زبان |
-| `src/libs/config/app.test.ts` | اعتبارسنجی ادغام `app.config.json` + `client/config.json` و تنظیمات برند/لوگو/کسب‌وکار/وبلاگ/API/کوکی |
+| `src/libs/config/app.test.ts` | اعتبارسنجی ادغام سه‌لایه (`app.config.json` ← `client/config.json` ← `client/cms.json`) و `sanitizeCmsConfig()`، آنالیتیکس و بنر زمان‌بندی‌شده |
 | `src/libs/config/theme.test.ts` | پالت‌های OKLCH، رنگ‌های hex سفارشی، ۵ پیش‌تنظیم فونت RTL و کنتراست AA |
 | `src/libs/config/navigation.test.ts` | اسلات‌های ناوبری چندمنویی هدر، کشوی موبایل و فوتر |
 | `src/libs/config/client.test.ts` | هم‌خوانی `CLIENT_COOKIE_CONFIG`، `CLIENT_NAVBAR_CONFIG` و `CLIENT_MOTION_CONFIG` با پیکربندی اعتبارسنجی‌شده و نبود import زمان اجرا از `app.ts` (به‌این‌ترتیب Zod به باندل مرورگر نمی‌رسد) |
 | `src/libs/config/astro-config.test.ts` | alias `astro/components` در `astro.config.mjs` (رفع `Unknown file extension ".astro"`) |
 | `src/libs/api/client.test.ts` | آداپتور Pure-SSG (`custom`, `web3forms`, `formspree`, `basin`, `webhook`)، Turnstile، تایم‌اوت و Honeypot |
-| `src/libs/cookies/cookies.test.ts` | مدل رضایت کوکی، انقضا و مدیریت اسکریپت‌ها |
+| `src/libs/cookies/cookies.test.ts` | مدل رضایت کوکی، Consent Mode v2 و مدیریت اسکریپت‌ها |
 | `src/libs/search/client.test.ts` | جستجوی کلاینت، نرمال‌سازی حروف/نیم‌فاصله/ارقام فارسی و ایندکسر Pagefind |
 | `src/scripts/navbar.test.ts` | محاسبهٔ ارتفاع مؤثر بنر (`autoBannerOffset` / `manualBannerOffset`)، آستانهٔ چسبندگی هدر، همگام‌سازی `ResizeObserver` و سرکوب بنر بسته‌شده |
 | `src/scripts/lenis.test.ts` | اسکرول نرم با تنظیم `ui.motion`، آفست پویای لینک‌های `#hash` از هدر زنده (`getHeaderOffset`) و ایزوله‌سازی پنل‌ها |
@@ -2036,7 +2059,7 @@ npm run verify:cli     # ۹۵ ادعا دربارهٔ گردش‌کارهای CL
 | `src/libs/ui/icons.test.ts` | یکتایی و kebab-case بودن `SITE_ICONS` (۶۹ آیکون هسته)، `resolveIconName`، آیکون‌های جهت‌دار RTL و پوشش آیکون‌های ناوبری |
 | `src/libs/ui/blocks.test.ts` | ۶۴ بلوک آماده (۲۹ بلوک سکشن شامل ۷ هیرو + ۳۵ پریمیتیو رابط در `src/components/ui/`)؛ خواص منطقی، نبود `<svg>` خام، کلیدهای Paraglide و توکن‌های معنایی |
 
-> **۲۷ فایل تست واحد (۲۸۱ تست).** ماژول `astro:content` در Vitest با
+> **۲۹ فایل تست واحد (۲۸۹ تست).** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -2051,7 +2074,7 @@ npm run verify:cli     # ۹۵ ادعا دربارهٔ گردش‌کارهای CL
 | ۵. اسکنر متن هاردکد | هشدار دربارهٔ رشته‌های ترجمه‌نشده در قالب‌ها (هشدار، نه خطا) |
 | ۶. نگهبان RTL | نبود کلاس جهت‌دار فیزیکی (`ml-`, `pr-`, `text-left`, `left/right`) و بردارهای فیزیکی انیمیشن |
 
-خروجی واقعی روی وضعیت فعلی مخزن: ۲ زبان (`en`, `fa`)، ۶۳۴ کلید پایه در فرهنگ‌های هسته (۶۵۵ کلید پس از ادغام با `client/messages/`) با placeholder یکسان، بدون برخورد مسیر و صفر تخلف RTL.
+خروجی واقعی روی وضعیت فعلی مخزن: ۲ زبان (`en`, `fa`)، ۶۴۴ کلید پایه در فرهنگ‌های هسته (۶۶۵ کلید پس از ادغام با `client/messages/`) با placeholder یکسان، بدون برخورد مسیر و صفر تخلف RTL.
 
 ### تست دود — ۷ بخش روی `dist/`
 
@@ -2139,12 +2162,14 @@ dist/
 ├── blog/index.html     # ایندکس وبلاگ
 ├── 404.html            # صفحهٔ خطای locale-aware
 ├── _headers            # قوانین آمادهٔ امنیت و کش برای Cloudflare Pages / Netlify
+├── _redirects          # قوانین تغییر مسیر تولیدشده هنگام بیلد (دقیق و /* → :splat)
+├── llms.txt            # خلاصهٔ ساختاریافتهٔ صفحات و مقالات برای مدل‌های AI
 ├── sitemap.xml  rss.xml  robots.txt  site.webmanifest
 ├── pagefind/           # ایندکس جستجو
 └── _astro/             # JS/CSS/فونت/تصویرهای بهینه‌شده
 ```
 
-> میزبان باید `/about/` را از `/about/index.html` سرو کند (`public/_headers` قوانین کش و امنیت Cloudflare Pages/Netlify را به‌صورت آماده کپی می‌کند). برای **Nginx** فایل مرجع `docs/deploy/nginx.conf` همراه با `gzip`، کش بلندمدت `/_astro/*` و مدیریت `/404.html` آماده است.
+> میزبان باید `/about/` را از `/about/index.html` سرو کند (`public/_headers` قوانین کش و امنیت Cloudflare Pages/Netlify و `dist/_redirects` ریدایرکت‌ها را آماده می‌کند). برای **Nginx** فایل مرجع `docs/deploy/nginx.conf` (همراه با راهنمای `include` برای فایل بیرون از وب‌روت `deploy/nginx-redirects.conf`) و برای آپاچی `deploy/.htaccess-redirects` آماده است؛ همچنین الگوی `docs/deploy/cloudflare-worker-webhook.js` برای دریافت امن فرم‌ها در اختیار شماست.
 
 ### ۵. نکات
 
@@ -2237,7 +2262,7 @@ dist/
 | `npm run messages:compile` | ادغام `messages/core/` + `client/messages/` و کامپایل به `src/paraglide/` |
 | `npm run check` | `astro check` |
 | `npm run lint` | کامپایل پیام‌ها + astro check + tsc |
-| `npm test` | تست‌های Vitest (۲۷ فایل، ۲۸۱ تست) |
+| `npm test` | تست‌های Vitest (۲۹ فایل، ۲۸۹ تست) |
 | `npm run build` | بیلد تولیدی + Pagefind |
 | `npm run preview` | پیش‌نمایش خروجی |
 | `npm run smoke` | تست دود روی `dist/` |
@@ -2248,7 +2273,8 @@ dist/
 | `npm run new:post` | ساخت/ویرایش مقاله |
 | `npm run remove:page` | حذف صفحه |
 | `npm run remove:post` | حذف مقاله |
-| `npm run site:init` | راه‌اندازی سریع برند، `--blueprint` صنعتی، پالت، فونت و ایمیل تماس در `client/config.json` |
+| `npm run site:init` | راه‌اندازی سریع برند، لوگوی `--logo`، `--blueprint` صنعتی، پالت و ایمیل در `client/config.json` |
+| `npm run site:reset` | بازنشانی لایهٔ مشتری (`--yes` و `--clean-starter`) |
 | `npm run starter:seed` | تزریق یا پاک‌سازی (`--clean`) محتوای دمو + `--blueprint` از `starter-kit/` |
 | `npm run upstream:check` | بررسی قرارداد لایهٔ هسته و `client/` |
 | `npm run i18n:add-lang` | افزودن زبان به `client/locales.json` |
@@ -2260,13 +2286,16 @@ dist/
 | `npm run i18n:extract` | استخراج متن سخت‌کد |
 | `npm run block:adapt` | تبدیل به خواص منطقی |
 | `npm run audit:i18n` | ممیزی چندزبانه |
-| `npm run verify:cli` | تست سرتاسری گردش‌کارهای CLI (۹۵ ادعا) |
+| `npm run verify:cli` | تست سرتاسری گردش‌کارهای CLI |
 | `npm run content:list` | فهرست انواع محتوا و وضعیت آن‌ها |
 | `npm run content:new` | ساخت گروه در هر نوع محتوا |
 | `npm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا |
 | `npm run content:status` | ماتریس آمادگی گروه × زبان |
 | `npm run doctor` | بررسی سلامت پروژه بدون build |
-| `npm run link:check` | خزش `dist/` و گزارش لینک شکسته |
+| `npm run link:check` | خزش `dist/`، تست ریدایرکت و گزارش لینک شکسته |
+| `npm run qa:browser` | تست مرورگر واقعی Playwright (RTL/LTR دسکتاپ و موبایل) |
+| `npm run preflight` | اجرای چک‌های کلیدی تا `build` + `smoke` + `link:check` |
+| `npm run preflight:full` | اجرای `preflight` + تست مرورگر واقعی `qa:browser` |
 | `npx astro dev --background` | اجرای سرور توسعه در پس‌زمینه |
 | `npx astro dev status` | وضعیت سرور توسعه |
 | `npx astro dev logs --follow` | دنبال کردن لاگ سرور |
@@ -2276,7 +2305,7 @@ dist/
 
 ## پیوست B — کلیدهای ترجمه
 
-۶۳۴ کلید ترجمهٔ هسته در `messages/core/en.json` (و `fa.json`) به‌علاوهٔ کلیدهای اختصاصی مشتری در `client/messages/<locale>.json` (جمع ۶۵۵ کلید ادغام‌شده؛ کلیدهای دمو مثل `nav_about` / دسته‌های نمونهٔ وبلاگ با `npm run starter:seed` افزوده می‌شوند). منبع دقیق خود فایل‌ها و `npm run audit:i18n` است:
+۶۴۴ کلید ترجمهٔ هسته در `messages/core/en.json` (و `fa.json`) به‌علاوهٔ کلیدهای اختصاصی مشتری در `client/messages/<locale>.json` (جمع ۶۶۵ کلید ادغام‌شده؛ کلیدهای دمو مثل `nav_about` / دسته‌های نمونهٔ وبلاگ با `npm run starter:seed` افزوده می‌شوند). منبع دقیق خود فایل‌ها و `npm run audit:i18n` است:
 
 ### `block_*` (۴۲۵ کلید) و `doc_*` (۱۲ کلید)
 

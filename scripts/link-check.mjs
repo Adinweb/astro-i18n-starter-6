@@ -194,8 +194,10 @@ if (siteDir === path.resolve(rootDir, 'dist')) {
   const merged = readMergedConfig(rootDir);
   const redirects = Array.isArray(merged.redirects) ? merged.redirects : [];
   for (const rule of redirects) {
+    const from = typeof rule?.from === 'string' ? rule.from.trim() : '';
     const dest = typeof rule?.to === 'string' ? rule.to.trim() : '';
     if (!dest || !isInternalRedirectTarget(dest)) continue;
+    if (from.includes('*') || dest.includes(':splat') || dest.includes('*')) continue;
     const { pathPart, fragment } = splitFragment(dest);
     const target = stripUrl(pathPart) || '/';
     checked += 1;
