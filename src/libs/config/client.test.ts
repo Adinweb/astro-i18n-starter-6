@@ -7,6 +7,7 @@ import {
   CLIENT_COOKIE_CONFIG,
   CLIENT_MOTION_CONFIG,
   CLIENT_NAVBAR_CONFIG,
+  CLIENT_QUICK_CONTACT_CONFIG,
 } from './client';
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
@@ -25,6 +26,7 @@ describe('src/libs/config/client.ts', () => {
     expect(CLIENT_COOKIE_CONFIG).toEqual(COOKIE_CONFIG);
     expect(CLIENT_NAVBAR_CONFIG).toEqual(UI_CONFIG.navbar);
     expect(CLIENT_MOTION_CONFIG).toEqual(UI_CONFIG.motion);
+    expect(CLIENT_QUICK_CONTACT_CONFIG).toEqual(UI_CONFIG.quickContact);
   });
 
   it('reads its own defaults without the validator', () => {

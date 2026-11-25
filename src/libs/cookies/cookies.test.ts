@@ -188,6 +188,16 @@ function setupMockBrowser(
       }
       return [];
     },
+    getElementById: (id: string) => {
+      if (!id) return null;
+      for (const s of blockedScripts) {
+        if (s.parentNode) {
+          const found = s.parentNode.inserted.find((el) => el.id === id);
+          if (found) return found;
+        }
+      }
+      return null;
+    },
     addEventListener: (type: string, cb: (event: CustomEvent<ConsentChangeDetail>) => void) => {
       if (!docListeners.has(type)) docListeners.set(type, new Set());
       docListeners.get(type)?.add(cb);
@@ -427,6 +437,9 @@ describe('TDDDG § 25 & DSGVO Cookie Consent System', () => {
 
       expect(shouldPurgeCookie('_analytics_session', unconsented, 'cookie_consent')).toBe(true);
       expect(shouldPurgeCookie('_ga_1234', unconsented, 'cookie_consent')).toBe(true);
+      expect(shouldPurgeCookie('_clck', unconsented, 'cookie_consent')).toBe(true);
+      expect(shouldPurgeCookie('_clsk', unconsented, 'cookie_consent')).toBe(true);
+      expect(shouldPurgeCookie('MUID', unconsented, 'cookie_consent')).toBe(true);
       expect(shouldPurgeCookie('_marketing_pixel', unconsented, 'cookie_consent')).toBe(true);
       expect(shouldPurgeCookie('ui_preferences', unconsented, 'cookie_consent')).toBe(false);
       expect(shouldPurgeCookie('cookie_consent', OPTIONAL_COOKIE_CATEGORIES, 'cookie_consent')).toBe(
@@ -722,6 +735,16 @@ describe('TDDDG § 25 & DSGVO Cookie Consent System', () => {
       expect(globalCss).toContain('--theme-shadow-floating');
       expect(globalCss).toContain('[data-cookie-banner]');
       expect(globalCss).toContain('[data-cookie-modal]');
+
+      // Consent-gated analytics loader stays inert in DOM under transition:persist and integrates into BaseLayout
+      const analyticsSrc = fs.readFileSync(
+        path.join(rootDir, 'src/components/AnalyticsScripts.astro'),
+        'utf-8'
+      );
+      expect(analyticsSrc).toContain('type="text/plain"');
+      expect(analyticsSrc).toContain('data-cookie-category="analytics"');
+      expect(analyticsSrc).toContain('transition:persist="analytics-gatekeeper"');
+      expect(layoutSrc).toContain('<AnalyticsScripts');
     });
   });
 });

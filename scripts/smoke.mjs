@@ -373,6 +373,24 @@ if (sitemap) {
   }
 }
 
+assert(fs.existsSync(path.join(distDir, 'llms.txt')), 'dist/llms.txt exists');
+const llmsTxt = readHtml('llms.txt');
+if (llmsTxt) {
+  assert(
+    llmsTxt.includes(`# ${appConfig.site.name}`) && llmsTxt.includes('Sitemap:'),
+    'dist/llms.txt includes the site heading and sitemap reference'
+  );
+}
+
+const configuredRedirects = Array.isArray(appConfig.redirects) ? appConfig.redirects : [];
+if (configuredRedirects.length > 0) {
+  assert(fs.existsSync(path.join(distDir, '_redirects')), 'dist/_redirects exists when redirects are configured');
+  assert(
+    fs.existsSync(path.join(rootDir, 'deploy', 'nginx-redirects.conf')),
+    'deploy/nginx-redirects.conf exists outside dist/ when redirects are configured'
+  );
+}
+
 if (blogFeed) {
   assert(fs.existsSync(path.join(distDir, 'rss.xml')), 'dist/rss.xml exists');
   const rss = readHtml('rss.xml');

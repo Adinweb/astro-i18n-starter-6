@@ -15,7 +15,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { readMergedConfig, writeClientConfig } from './lib/config.mjs';
+import { readCoreAndClientConfig, writeClientConfig } from './lib/config.mjs';
 import { applyBlueprintToConfig, VALID_BLUEPRINTS } from './lib/blueprints.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
 import { readLocaleConfig } from './lib/locales.mjs';
@@ -69,6 +69,7 @@ Languages & Content Modules:
   --blog=true|false              Enable or disable the blog collection
   --projects=true|false          Enable or disable the projects collection
   --cta-page=<page-key>          Header/drawer primary CTA target page
+  --keep-demo-banner             Keep core demo announcement banners enabled
 
 Social & Execution:
   --github=<url>  --twitter=<url>  --linkedin=<url>  --instagram=<url>  --telegram=<url>
@@ -90,6 +91,7 @@ const opts = {
   skipAssets: args.includes('--skip-assets'),
   allowDraft: args.includes('--allow-draft'),
   keepContent: !(args.includes('--delete-content') || args.includes('--with-content')),
+  keepDemoBanner: args.includes('--keep-demo-banner'),
 };
 
 for (const arg of args) {
@@ -130,7 +132,7 @@ for (const arg of args) {
   }
 }
 
-const config = readMergedConfig(rootDir);
+const config = readCoreAndClientConfig(rootDir);
 if (opts.blueprint !== undefined) {
   if (!VALID_BLUEPRINTS.includes(opts.blueprint)) {
     console.error(
@@ -321,9 +323,18 @@ config.brand.rtlFontPreset = rtlFontPreset;
 config.brand.socialCardMode = socialCardMode;
 config.brand.themeColor = resolvedPrimaryHex.toLowerCase();
 
-if (opts.ctaPage !== undefined) {
-  config.ui = { ...(config.ui ?? {}), ctaPage: opts.ctaPage };
-}
+config.ui = {
+  ...(config.ui ?? {}),
+  ...(opts.ctaPage !== undefined ? { ctaPage: opts.ctaPage } : {}),
+  ...(!opts.keepDemoBanner
+    ? {
+        topBanner: {
+          ...(config.ui?.topBanner ?? {}),
+          enabled: false,
+        },
+      }
+    : {}),
+};
 if (opts.blog !== undefined && config.content?.types?.blog) {
   config.content.types.blog.enabled = opts.blog;
 }

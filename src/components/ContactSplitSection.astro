@@ -11,6 +11,12 @@ import IconBox from '@/components/ui/IconBox.astro';
 import SectionHeader from '@/components/ui/SectionHeader.astro';
 import type { Locale } from '@/i18n/locales';
 import { BUSINESS_CONFIG, siteConfig } from '@/libs/config/app';
+import {
+  buildNativeMapLinks,
+  toTelHref,
+  toTelegramHref,
+  toWhatsappHref,
+} from '@/libs/ui/contact';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
@@ -97,22 +103,7 @@ const geoEmbedUrl = BUSINESS_CONFIG.geo
   ? `https://www.openstreetmap.org/export/embed.html?bbox=${BUSINESS_CONFIG.geo.lng - 0.01},${BUSINESS_CONFIG.geo.lat - 0.01},${BUSINESS_CONFIG.geo.lng + 0.01},${BUSINESS_CONFIG.geo.lat + 0.01}&layer=mapnik&marker=${BUSINESS_CONFIG.geo.lat},${BUSINESS_CONFIG.geo.lng}`
   : '';
 const resolvedMapUrl = (mapEmbedUrl ?? BUSINESS_CONFIG.mapEmbedUrl ?? geoEmbedUrl).trim();
-
-function toTelHref(value: string): string {
-  const cleaned = value.replace(/[^+\d]/g, '');
-  return `tel:${cleaned || value}`;
-}
-
-function toWhatsappHref(value: string): string {
-  if (/^https?:\/\//i.test(value)) return value;
-  const digits = value.replace(/[^\d]/g, '');
-  return digits ? `https://wa.me/${digits}` : value;
-}
-
-function toTelegramHref(value: string): string {
-  if (/^https?:\/\//i.test(value)) return value;
-  return `https://t.me/${value.replace(/^@/, '')}`;
-}
+const nativeMapLinks = BUSINESS_CONFIG.geo ? buildNativeMapLinks(BUSINESS_CONFIG.geo) : null;
 
 const defaultChannels: ContactChannel[] = [
   ...(resolvedPhone
@@ -266,48 +257,105 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
       }
 
       {
-        showMap && resolvedMapUrl && (
+        showMap && (resolvedMapUrl || nativeMapLinks) && (
           <div
-            data-map-embed-root
-            data-map-src={resolvedMapUrl}
-            data-map-title={m.block_contact_map_title({}, { locale: activeLocale })}
             class:list={[
               'mt-6 overflow-hidden rounded-2xl border border-border',
               cardSurface,
             ]}
           >
-            <div
-              data-map-placeholder
-              class="flex flex-col items-center justify-center gap-3 px-6 py-8 text-center"
-            >
-              <IconBox
-                icon="map"
-                size="lg"
-                radius="xl"
-                tone="primary"
-                iconSize={20}
-                class="size-11"
-              />
-              <div class="space-y-1">
-                <p class="text-sm font-bold text-fg">
-                  {m.block_contact_map_title({}, { locale: activeLocale })}
-                </p>
-                <p class="max-w-xs text-xs leading-relaxed text-muted">
-                  {m.block_contact_map_desc({}, { locale: activeLocale })}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                icon="map-pin"
-                iconPosition="start"
-                data-load-map
+            {resolvedMapUrl && (
+              <div
+                data-map-embed-root
+                data-map-src={resolvedMapUrl}
+                data-map-title={m.block_contact_map_title({}, { locale: activeLocale })}
               >
-                {m.block_contact_map_load({}, { locale: activeLocale })}
-              </Button>
-            </div>
-            <div data-map-frame-slot class="hidden aspect-video w-full" />
+                <div
+                  data-map-placeholder
+                  class="flex flex-col items-center justify-center gap-3 px-6 py-8 text-center"
+                >
+                  <IconBox
+                    icon="map"
+                    size="lg"
+                    radius="xl"
+                    tone="primary"
+                    iconSize={20}
+                    class="size-11"
+                  />
+                  <div class="space-y-1">
+                    <p class="text-sm font-bold text-fg">
+                      {m.block_contact_map_title({}, { locale: activeLocale })}
+                    </p>
+                    <p class="max-w-xs text-xs leading-relaxed text-muted">
+                      {m.block_contact_map_desc({}, { locale: activeLocale })}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    icon="map-pin"
+                    iconPosition="start"
+                    data-load-map
+                  >
+                    {m.block_contact_map_load({}, { locale: activeLocale })}
+                  </Button>
+                </div>
+                <div data-map-frame-slot class="hidden aspect-video w-full" />
+              </div>
+            )}
+
+            {nativeMapLinks && (
+              <div
+                data-native-map-links
+                class:list={[
+                  'flex flex-wrap items-center justify-between gap-2.5 px-4 py-3',
+                  resolvedMapUrl && 'border-t border-border',
+                ]}
+              >
+                <span class="text-xs font-semibold text-muted">
+                  {m.block_contact_directions_label({}, { locale: activeLocale })}
+                </span>
+                <div class="flex flex-wrap items-center gap-2">
+                  <Button
+                    href={nativeMapLinks.google}
+                    variant="secondary"
+                    size="sm"
+                    icon="external-link"
+                    iconPosition="end"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="whitespace-nowrap shrink-0"
+                  >
+                    {m.block_contact_map_google({}, { locale: activeLocale })}
+                  </Button>
+                  <Button
+                    href={nativeMapLinks.neshan}
+                    variant="secondary"
+                    size="sm"
+                    icon="external-link"
+                    iconPosition="end"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="whitespace-nowrap shrink-0"
+                  >
+                    {m.block_contact_map_neshan({}, { locale: activeLocale })}
+                  </Button>
+                  <Button
+                    href={nativeMapLinks.balad}
+                    variant="secondary"
+                    size="sm"
+                    icon="external-link"
+                    iconPosition="end"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="whitespace-nowrap shrink-0"
+                  >
+                    {m.block_contact_map_balad({}, { locale: activeLocale })}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )
       }

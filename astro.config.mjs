@@ -40,12 +40,49 @@ if (isBuild) {
 const mode = isBuild ? 'production' : 'development';
 
 import { readMergedConfig } from './scripts/lib/config.mjs';
-// Application-level values live in one merged config (`app.config.json` + `client/config.json`).
+import {
+  buildNetlifyRedirects,
+  buildNginxRedirects,
+  validateRedirects,
+} from './scripts/lib/redirects.mjs';
+// Application-level values live in one merged config (`app.config.json` -> `client/config.json` -> `client/cms.json`).
 // It is read here rather than imported via TS so the dev server, the fallback site
 // origin, and the app all share the same port.
-const appConfig = readMergedConfig(path.dirname(fileURLToPath(import.meta.url)));
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const appConfig = readMergedConfig(rootDir);
 const { host: serverHost, port: serverPort } = appConfig.server;
 const fallbackSite = `http://localhost:${serverPort}`;
+
+function agencyRedirectsIntegration() {
+  return {
+    name: 'astro-agency-redirects',
+    hooks: {
+      /** @param {{ dir: URL }} ctx */
+      'astro:build:done': ({ dir }) => {
+        const rules = Array.isArray(appConfig.redirects) ? appConfig.redirects : [];
+        const validationErrors = validateRedirects(rules);
+        if (validationErrors.length > 0) {
+          throw new Error(`Invalid redirects configuration:\n- ${validationErrors.join('\n- ')}`);
+        }
+
+        const outDir = fileURLToPath(dir);
+        const netlifyPath = path.join(outDir, '_redirects');
+        const nginxDir = path.join(rootDir, 'deploy');
+        const nginxPath = path.join(nginxDir, 'nginx-redirects.conf');
+
+        if (rules.length === 0) {
+          fs.rmSync(netlifyPath, { force: true });
+          fs.rmSync(nginxPath, { force: true });
+          return;
+        }
+
+        fs.writeFileSync(netlifyPath, buildNetlifyRedirects(rules), 'utf-8');
+        fs.mkdirSync(nginxDir, { recursive: true });
+        fs.writeFileSync(nginxPath, buildNginxRedirects(rules), 'utf-8');
+      },
+    },
+  };
+}
 
 /**
  * Reads a variable from one `.env` file.
@@ -173,7 +210,7 @@ export default defineConfig({
     prefetchAll: false,
     defaultStrategy: 'hover',
   },
-  integrations: [mdx()],
+  integrations: [mdx(), agencyRedirectsIntegration()],
   vite: {
     plugins: [tailwindcss(), codeInspectorPlugin({ bundler: 'vite' })],
     resolve: {

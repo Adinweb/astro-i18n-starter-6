@@ -15,7 +15,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { readMergedConfig } from './lib/config.mjs';
 import { rootDir } from './lib/content-types.mjs';
+import { isInternalRedirectTarget } from './lib/redirects.mjs';
 
 const args = process.argv.slice(2);
 const dirArg = args.find((arg) => arg.startsWith('--dir='));
@@ -184,6 +186,24 @@ for (const file of htmlFiles) {
       if (!resolveTargetFile(target)) {
         broken.push({ page: pageUrl, link: url, target });
       }
+    }
+  }
+}
+
+if (siteDir === path.resolve(rootDir, 'dist')) {
+  const merged = readMergedConfig(rootDir);
+  const redirects = Array.isArray(merged.redirects) ? merged.redirects : [];
+  for (const rule of redirects) {
+    const dest = typeof rule?.to === 'string' ? rule.to.trim() : '';
+    if (!dest || !isInternalRedirectTarget(dest)) continue;
+    const { pathPart, fragment } = splitFragment(dest);
+    const target = stripUrl(pathPart) || '/';
+    checked += 1;
+    const targetFile = resolveTargetFile(target);
+    if (!targetFile) {
+      broken.push({ page: `redirect:${rule.from}`, link: dest, target });
+    } else if (fragment && !fragmentExists(targetFile, fragment)) {
+      broken.push({ page: `redirect:${rule.from}`, link: dest, target: `${target}#${fragment}` });
     }
   }
 }

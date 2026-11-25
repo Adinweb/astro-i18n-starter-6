@@ -401,7 +401,7 @@ export function getUnconsentedOptionalCategories(
 
 const KNOWN_CATEGORY_PREFIXES: Record<OptionalCookieCategory, readonly string[]> = {
   preferences: ['ui_preferences', '_pref_'],
-  analytics: ['_analytics_', '_ga', '_gid', '_gat', '_pk_'],
+  analytics: ['_analytics_', '_ga', '_gid', '_gat', '_pk_', '_clck', '_clsk', 'CLID', 'ANONCHK', 'MR', 'MUID', 'SM'],
   marketing: ['_marketing_', '_fbp', '_gcl_'],
 };
 

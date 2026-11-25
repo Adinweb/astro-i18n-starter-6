@@ -2,11 +2,10 @@
 /**
  * Site-wide top announcement banner strip rendered above the floating header.
  *
- * Configured via `ui.topBanner` in `app.config.json` / `client/config.json`,
+ * Configured via `ui.topBanner` in `app.config.json` / `client/config.json` / `client/cms.json`,
  * plus optional `<LayoutHooks slot="top-banner" />` custom client injections.
- * Placed in normal document flow inside `[data-site-top-banner-region]` so its
- * height pushes content down cleanly while `src/scripts/navbar.ts` adapts the
- * navbar offset automatically.
+ * Supports scheduled active windows (`startsAt`..`endsAt`) and session or persistent
+ * versioned/TTL dismissal evaluated cleanly without FOUC.
  */
 import Icon from '@/components/ui/Icon.astro';
 import IconButton from '@/components/ui/IconButton.astro';
@@ -25,6 +24,19 @@ const { locale, url = Astro.url.pathname } = Astro.props;
 const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
 const bannerConfig = siteConfig.ui.topBanner;
 
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+function parseScheduleBound(value: string | undefined, bound: 'start' | 'end'): number | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const target = DATE_ONLY_RE.test(trimmed)
+    ? bound === 'start'
+      ? `${trimmed}T00:00:00.000Z`
+      : `${trimmed}T23:59:59.999Z`
+    : trimmed;
+  const ms = Date.parse(target);
+  return Number.isFinite(ms) ? ms : null;
+}
+
 function pickLocalized(map: Record<string, string> | undefined, fallback: string | undefined): string {
   const localized = map?.[activeLocale]?.trim();
   if (localized) return localized;
@@ -36,10 +48,18 @@ function isExcluded(item: Pick<TopBannerItemConfig, 'excludePaths'>): boolean {
   return item.excludePaths.some((prefix) => prefix && url.startsWith(prefix));
 }
 
+const buildNowMs = Date.now();
+function isExpiredAtBuild(item: Pick<TopBannerItemConfig, 'endsAt'>): boolean {
+  const endMs = parseScheduleBound(item.endsAt, 'end');
+  return endMs !== null && buildNowMs >= endMs;
+}
+
 const rawItems: TopBannerItemConfig[] = bannerConfig.enabled
   ? bannerConfig.items && bannerConfig.items.length > 0
-    ? bannerConfig.items.filter((item) => item.enabled !== false && !isExcluded(item))
-    : !isExcluded(bannerConfig)
+    ? bannerConfig.items.filter(
+        (item) => item.enabled !== false && !isExcluded(item) && !isExpiredAtBuild(item)
+      )
+    : !isExcluded(bannerConfig) && !isExpiredAtBuild(bannerConfig)
       ? [
           {
             id: bannerConfig.id,
@@ -56,6 +76,11 @@ const rawItems: TopBannerItemConfig[] = bannerConfig.enabled
             ctaHrefByLocale: bannerConfig.ctaHrefByLocale,
             external: bannerConfig.external,
             dismissible: bannerConfig.dismissible,
+            dismissMode: bannerConfig.dismissMode,
+            dismissTtlDays: bannerConfig.dismissTtlDays,
+            dismissVersion: bannerConfig.dismissVersion,
+            startsAt: bannerConfig.startsAt,
+            endsAt: bannerConfig.endsAt,
             heightPx: bannerConfig.heightPx,
             excludePaths: bannerConfig.excludePaths,
           },
@@ -93,6 +118,8 @@ const resolvedBanners = rawItems.map((item) => {
     ? m.site_top_banner_notice_cta({}, { locale: activeLocale })
     : m.site_top_banner_default_cta({}, { locale: activeLocale });
   const fallbackHref = isNotice ? noticeFallbackHref : defaultFallbackHref;
+  const startMs = parseScheduleBound(item.startsAt, 'start');
+  const startsInFutureAtBuild = startMs !== null && buildNowMs < startMs;
 
   return {
     id: item.id || 'site-announcement',
@@ -104,6 +131,12 @@ const resolvedBanners = rawItems.map((item) => {
     ctaHref: usingDefaults ? ctaHref || fallbackHref : ctaHref,
     external: item.external,
     dismissible: item.dismissible,
+    dismissMode: item.dismissMode ?? 'session',
+    dismissTtlDays: item.dismissTtlDays,
+    dismissVersion: item.dismissVersion ?? 1,
+    startsAt: item.startsAt?.trim() || '',
+    endsAt: item.endsAt?.trim() || '',
+    startsInFutureAtBuild,
     heightPx: item.heightPx,
     isCompact: typeof item.heightPx === 'number' ? item.heightPx <= 36 : true,
   };
@@ -146,6 +179,14 @@ const regionLabel = m.site_top_banner_region_label({}, { locale: activeLocale })
       data-site-top-banner
       data-top-banner-id={banner.id}
       data-dismissible={banner.dismissible ? 'true' : undefined}
+      data-dismiss-mode={banner.dismissible ? banner.dismissMode : undefined}
+      data-dismiss-ttl-days={
+        banner.dismissible && banner.dismissTtlDays ? String(banner.dismissTtlDays) : undefined
+      }
+      data-dismiss-version={banner.dismissible ? String(banner.dismissVersion) : undefined}
+      data-starts-at={banner.startsAt || undefined}
+      data-ends-at={banner.endsAt || undefined}
+      hidden={banner.startsInFutureAtBuild}
       role="region"
       aria-label={banner.badge || regionLabel}
       style={banner.heightPx ? `--site-banner-height: ${banner.heightPx}px;` : undefined}
@@ -216,23 +257,70 @@ const regionLabel = m.site_top_banner_region_label({}, { locale: activeLocale })
 }
 
 <script>
-  function syncDismissedSiteTopBanners(root: Document = document) {
-    root
-      .querySelectorAll<HTMLElement>('[data-site-top-banner][data-dismissible="true"]')
-      .forEach((banner) => {
-        const id = banner.dataset.topBannerId || 'site-announcement';
-        try {
-          if (window.sessionStorage.getItem(`top-banner-dismissed:${id}`) === 'true') {
-            banner.hidden = true;
-          }
-        } catch {
-          // sessionStorage may be blocked in strict environments.
+  const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+  function parseScheduleBound(value: string | undefined, bound: 'start' | 'end'): number | null {
+    const trimmed = value?.trim();
+    if (!trimmed) return null;
+    const normalized = DATE_ONLY_RE.test(trimmed)
+      ? bound === 'start'
+        ? `${trimmed}T00:00:00.000Z`
+        : `${trimmed}T23:59:59.999Z`
+      : trimmed;
+    const ms = Date.parse(normalized);
+    return Number.isFinite(ms) ? ms : null;
+  }
+
+  function isBannerDismissed(banner: HTMLElement, nowMs: number): boolean {
+    if (banner.dataset.dismissible !== 'true') return false;
+    const id = banner.dataset.topBannerId || 'site-announcement';
+    const mode = banner.dataset.dismissMode === 'persistent' ? 'persistent' : 'session';
+    const version = Number(banner.dataset.dismissVersion || '1') || 1;
+    const ttlDays = Number(banner.dataset.dismissTtlDays || '0') || 0;
+    const key = `top-banner-dismissed:${id}`;
+
+    try {
+      const store = mode === 'persistent' ? window.localStorage : window.sessionStorage;
+      const raw = store.getItem(key);
+      if (!raw) return false;
+      if (raw === 'true' && mode === 'session' && version === 1) return true;
+      const parsed = JSON.parse(raw) as { version?: number; dismissedAt?: number };
+      if (parsed.version !== version) {
+        store.removeItem(key);
+        return false;
+      }
+      if (mode === 'persistent' && ttlDays > 0) {
+        const elapsed = nowMs - Number(parsed.dismissedAt || 0);
+        if (!Number.isFinite(elapsed) || elapsed >= ttlDays * 86_400_000) {
+          store.removeItem(key);
+          return false;
         }
-      });
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function syncSiteTopBannersState(root: Document = document) {
+    const nowMs = Date.now();
+    root.querySelectorAll<HTMLElement>('[data-site-top-banner]').forEach((banner) => {
+      const startMs = parseScheduleBound(banner.dataset.startsAt, 'start');
+      const endMs = parseScheduleBound(banner.dataset.endsAt, 'end');
+      if (startMs !== null && nowMs < startMs) {
+        banner.hidden = true;
+        return;
+      }
+      if (endMs !== null && nowMs >= endMs) {
+        banner.hidden = true;
+        return;
+      }
+      banner.hidden = isBannerDismissed(banner, nowMs);
+    });
   }
 
   function initSiteTopBanners() {
-    syncDismissedSiteTopBanners(document);
+    syncSiteTopBannersState(document);
 
     document.querySelectorAll<HTMLElement>('[data-site-top-banner]').forEach((banner) => {
       const closeBtn = banner.querySelector<HTMLButtonElement>('[data-top-banner-dismiss]');
@@ -241,9 +329,15 @@ const regionLabel = m.site_top_banner_region_label({}, { locale: activeLocale })
 
       closeBtn.addEventListener('click', () => {
         const id = banner.dataset.topBannerId || 'site-announcement';
+        const mode = banner.dataset.dismissMode === 'persistent' ? 'persistent' : 'session';
+        const version = Number(banner.dataset.dismissVersion || '1') || 1;
         banner.hidden = true;
         try {
-          window.sessionStorage.setItem(`top-banner-dismissed:${id}`, 'true');
+          const store = mode === 'persistent' ? window.localStorage : window.sessionStorage;
+          store.setItem(
+            `top-banner-dismissed:${id}`,
+            JSON.stringify({ version, dismissedAt: Date.now() })
+          );
         } catch {
           // ignore storage errors
         }
@@ -259,7 +353,7 @@ const regionLabel = m.site_top_banner_region_label({}, { locale: activeLocale })
     document.addEventListener('astro:before-swap', (event) => {
       const swapEvent = event as Event & { newDocument?: Document };
       if (swapEvent.newDocument) {
-        syncDismissedSiteTopBanners(swapEvent.newDocument);
+        syncSiteTopBannersState(swapEvent.newDocument);
       }
     });
     document.addEventListener('astro:page-load', initSiteTopBanners);

@@ -11,7 +11,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { readCoreConfig, readClientConfig, readMergedConfig } from './lib/config.mjs';
+import { readCoreConfig, readClientConfig, readCmsConfig, readMergedConfig } from './lib/config.mjs';
 import { getKnownTypes, rootDir } from './lib/content-types.mjs';
 import { readLocaleConfig } from './lib/locales.mjs';
 import {
@@ -29,20 +29,24 @@ const fail = (msg) => errors.push(msg);
 const warn = (msg) => warnings.push(msg);
 const pass = (msg) => ok.push(msg);
 
-// 1. Two-tier config merge integrity
+// 1. Three-tier config merge integrity
 let clientConfig;
+let cmsConfig;
 let mergedConfig;
 try {
   readCoreConfig(rootDir);
   clientConfig = readClientConfig(rootDir);
+  cmsConfig = readCmsConfig(rootDir);
   mergedConfig = readMergedConfig(rootDir);
   if (!mergedConfig?.site?.name || !mergedConfig?.brand?.themeColor || !mergedConfig?.content?.types) {
-    fail('Merged config (app.config.json + client/config.json) is missing required sections (site, brand, content.types).');
+    fail('Merged config (app.config.json + client/config.json + client/cms.json) is missing required sections (site, brand, content.types).');
   } else {
-    pass(`Two-tier config merges cleanly (site: "${mergedConfig.site.name}", client overrides: ${Object.keys(clientConfig).length} top-level key(s)).`);
+    pass(
+      `Three-tier config merges cleanly (site: "${mergedConfig.site.name}", client overrides: ${Object.keys(clientConfig).length}, cms overrides: ${Object.keys(cmsConfig).length}).`
+    );
   }
 } catch (error) {
-  fail(`Failed reading/merging app.config.json and client/config.json: ${error.message}`);
+  fail(`Failed reading/merging app.config.json, client/config.json, and client/cms.json: ${error.message}`);
 }
 
 // 2. Client locale config parity
@@ -133,6 +137,7 @@ if (localeConfig?.locales?.length) {
 // 4. Core <-> Client extension hooks must remain intact
 const requiredClientFiles = [
   'client/config.json',
+  'client/cms.json',
   'client/locales.json',
   'client/styles.css',
   'client/icons.ts',
@@ -184,6 +189,11 @@ const hookAssertions = [
     file: 'src/libs/config/app.ts',
     pattern: /(?:@client|(?:\.\.\/)+client)\/config\.json/,
     label: 'client/config.json override merge in src/libs/config/app.ts',
+  },
+  {
+    file: 'src/libs/config/app.ts',
+    pattern: /(?:@client|(?:\.\.\/)+client)\/cms\.json/,
+    label: 'client/cms.json CMS merge in src/libs/config/app.ts',
   },
 ];
 

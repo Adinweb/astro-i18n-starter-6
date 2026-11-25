@@ -879,10 +879,11 @@ try {
       initedMerged.brand.fontPreset === 'jakarta' &&
       initedMerged.brand.rtlFontPreset === 'noto-arabic' &&
       initedMerged.brand.socialCardMode === 'branded' &&
+      initedMerged.ui?.topBanner?.enabled === false &&
       initedMerged.content.types.blog.enabled === false &&
       initedClient.site?.name === 'Acme Digital' &&
       untouchedCore.site.name !== 'Acme Digital',
-    'site:init writes sparse client/config.json overrides while keeping app.config.json clean'
+    'site:init writes sparse client/config.json overrides while disabling demo banner and keeping app.config.json clean'
   );
 
   if (altLoc !== baseLoc) {

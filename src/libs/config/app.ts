@@ -2,13 +2,18 @@ import heroPhoto from '@/assets/hero/hero-0.jpg';
 import { z } from 'astro/zod';
 import rawConfig from '../../../app.config.json';
 import clientConfig from '../../../client/config.json';
+import cmsConfig from '../../../client/cms.json';
+import { validateRedirects } from '../content/redirects';
 import {
+  ANALYTICS_CONFIG_DEFAULTS,
   COOKIE_CONFIG_DEFAULTS,
   MOTION_CONFIG_DEFAULTS,
   NAVBAR_CONFIG_DEFAULTS,
+  QUICK_CONTACT_CONFIG_DEFAULTS,
+  REDIRECTS_CONFIG_DEFAULTS,
   TOP_BANNER_CONFIG_DEFAULTS,
   UI_CONFIG_DEFAULTS,
-  deepMergeConfig,
+  mergeLayeredConfig,
 } from './defaults';
 import {
   BRAND_PRESET_KEYS,
@@ -18,12 +23,12 @@ import {
 } from './theme';
 
 /**
- * Typed access to the application's merged configuration (`app.config.json` +
- * `client/config.json`).
+ * Typed access to the application's three-tier merged configuration
+ * (`app.config.json` -> `client/config.json` -> `client/cms.json`).
  *
- * Upstream defaults live in `app.config.json`; client-specific overrides live
- * cleanly in `client/config.json`. This module validates the merged result once
- * and exposes the typed config the app consumes.
+ * Upstream defaults live in `app.config.json`; developer overrides live in
+ * `client/config.json`; non-technical client/CMS overrides live in `client/cms.json`.
+ * This module validates the merged result once and exposes the typed config the app consumes.
  *
  * Framework-only settings stay in `astro.config.mjs`; locale configuration stays
  * in `client/locales.json` (exposed via `src/i18n/locales.ts`).
@@ -32,6 +37,39 @@ import {
 const hexColor = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, 'Use a six-digit hex colour, for example "#4338ca".');
+
+const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const ISO_DATETIME_RE =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?$/i;
+
+function isValidScheduleString(value: string): boolean {
+  const dateOnlyMatch = DATE_ONLY_RE.exec(value);
+  if (dateOnlyMatch) {
+    const year = Number(dateOnlyMatch[1]);
+    const month = Number(dateOnlyMatch[2]);
+    const day = Number(dateOnlyMatch[3]);
+    const dt = new Date(Date.UTC(year, month - 1, day));
+    return (
+      dt.getUTCFullYear() === year &&
+      dt.getUTCMonth() === month - 1 &&
+      dt.getUTCDate() === day
+    );
+  }
+  if (!ISO_DATETIME_RE.test(value)) return false;
+  return Number.isFinite(Date.parse(value));
+}
+
+function parseScheduleMs(value: string, bound: 'start' | 'end'): number {
+  if (DATE_ONLY_RE.test(value)) {
+    return Date.parse(bound === 'start' ? `${value}T00:00:00.000Z` : `${value}T23:59:59.999Z`);
+  }
+  return Date.parse(value);
+}
+
+const scheduleDateSchema = z
+  .string()
+  .trim()
+  .refine(isValidScheduleString, 'Use a valid ISO date ("YYYY-MM-DD") or ISO datetime ("YYYY-MM-DDTHH:mm:ssZ").');
 
 const brandIconSchema = z.object({
   file: z.string().min(1),
@@ -83,47 +121,91 @@ const topBannerVariantSchema = z.enum([
 ]);
 export type TopBannerVariant = z.infer<typeof topBannerVariantSchema>;
 
+const topBannerDismissModeSchema = z.enum(['session', 'persistent']);
+
 const localizedStringMapSchema = z.record(z.string(), z.string());
 
-const topBannerItemSchema = z.object({
-  id: z.string().min(1).default('site-announcement'),
-  enabled: z.boolean().default(true),
-  variant: topBannerVariantSchema.default('primary'),
-  icon: z.string().optional().default('sparkles'),
-  badge: z.string().optional().default(''),
-  badgeByLocale: localizedStringMapSchema.optional().default({}),
-  message: z.string().optional().default(''),
-  messageByLocale: localizedStringMapSchema.optional().default({}),
-  ctaLabel: z.string().optional().default(''),
-  ctaLabelByLocale: localizedStringMapSchema.optional().default({}),
-  ctaHref: z.string().optional().default(''),
-  ctaHrefByLocale: localizedStringMapSchema.optional().default({}),
-  external: z.boolean().default(false),
-  dismissible: z.boolean().default(true),
-  heightPx: z.number().int().min(24).max(160).optional(),
-  excludePaths: z.array(z.string()).optional().default([]),
-});
+const topBannerScheduleRefinement = (
+  val: { startsAt?: string; endsAt?: string },
+  ctx: z.RefinementCtx
+) => {
+  if (val.startsAt && val.endsAt) {
+    const startMs = parseScheduleMs(val.startsAt, 'start');
+    const endMs = parseScheduleMs(val.endsAt, 'end');
+    if (Number.isFinite(startMs) && Number.isFinite(endMs) && endMs < startMs) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['endsAt'],
+        message: 'Banner "endsAt" must not be earlier than "startsAt".',
+      });
+    }
+  }
+};
+
+const topBannerItemSchema = z
+  .object({
+    id: z.string().min(1).default('site-announcement'),
+    enabled: z.boolean().default(true),
+    variant: topBannerVariantSchema.default('primary'),
+    icon: z.string().optional().default('sparkles'),
+    badge: z.string().optional().default(''),
+    badgeByLocale: localizedStringMapSchema.optional().default({}),
+    message: z.string().optional().default(''),
+    messageByLocale: localizedStringMapSchema.optional().default({}),
+    ctaLabel: z.string().optional().default(''),
+    ctaLabelByLocale: localizedStringMapSchema.optional().default({}),
+    ctaHref: z.string().optional().default(''),
+    ctaHrefByLocale: localizedStringMapSchema.optional().default({}),
+    external: z.boolean().default(false),
+    dismissible: z.boolean().default(true),
+    dismissMode: topBannerDismissModeSchema.default('session'),
+    dismissTtlDays: z.number().int().min(1).max(365).optional(),
+    dismissVersion: z.number().int().min(1).default(1),
+    startsAt: scheduleDateSchema.optional(),
+    endsAt: scheduleDateSchema.optional(),
+    heightPx: z.number().int().min(24).max(160).optional(),
+    excludePaths: z.array(z.string()).optional().default([]),
+  })
+  .superRefine(topBannerScheduleRefinement);
 export type TopBannerItemConfig = z.infer<typeof topBannerItemSchema>;
 
-export const topBannerConfigSchema = z.object({
-  enabled: z.boolean().default(TOP_BANNER_CONFIG_DEFAULTS.enabled),
-  id: z.string().min(1).default(TOP_BANNER_CONFIG_DEFAULTS.id),
-  variant: topBannerVariantSchema.default(TOP_BANNER_CONFIG_DEFAULTS.variant),
-  icon: z.string().optional().default(TOP_BANNER_CONFIG_DEFAULTS.icon),
-  badge: z.string().optional().default(''),
-  badgeByLocale: localizedStringMapSchema.optional().default({}),
-  message: z.string().optional().default(''),
-  messageByLocale: localizedStringMapSchema.optional().default({}),
-  ctaLabel: z.string().optional().default(''),
-  ctaLabelByLocale: localizedStringMapSchema.optional().default({}),
-  ctaHref: z.string().optional().default(''),
-  ctaHrefByLocale: localizedStringMapSchema.optional().default({}),
-  external: z.boolean().default(false),
-  dismissible: z.boolean().default(true),
-  heightPx: z.number().int().min(24).max(160).optional(),
-  excludePaths: z.array(z.string()).optional().default([]),
-  items: z.array(topBannerItemSchema).optional().default([]),
+export const topBannerConfigSchema = z
+  .object({
+    enabled: z.boolean().default(TOP_BANNER_CONFIG_DEFAULTS.enabled),
+    id: z.string().min(1).default(TOP_BANNER_CONFIG_DEFAULTS.id),
+    variant: topBannerVariantSchema.default(TOP_BANNER_CONFIG_DEFAULTS.variant),
+    icon: z.string().optional().default(TOP_BANNER_CONFIG_DEFAULTS.icon),
+    badge: z.string().optional().default(''),
+    badgeByLocale: localizedStringMapSchema.optional().default({}),
+    message: z.string().optional().default(''),
+    messageByLocale: localizedStringMapSchema.optional().default({}),
+    ctaLabel: z.string().optional().default(''),
+    ctaLabelByLocale: localizedStringMapSchema.optional().default({}),
+    ctaHref: z.string().optional().default(''),
+    ctaHrefByLocale: localizedStringMapSchema.optional().default({}),
+    external: z.boolean().default(false),
+    dismissible: z.boolean().default(true),
+    dismissMode: topBannerDismissModeSchema.default(TOP_BANNER_CONFIG_DEFAULTS.dismissMode),
+    dismissTtlDays: z.number().int().min(1).max(365).optional(),
+    dismissVersion: z.number().int().min(1).default(TOP_BANNER_CONFIG_DEFAULTS.dismissVersion),
+    startsAt: scheduleDateSchema.optional(),
+    endsAt: scheduleDateSchema.optional(),
+    heightPx: z.number().int().min(24).max(160).optional(),
+    excludePaths: z.array(z.string()).optional().default([]),
+    items: z.array(topBannerItemSchema).optional().default([]),
+  })
+  .superRefine(topBannerScheduleRefinement);
+
+const quickContactChannelSchema = z.enum(['phone', 'whatsapp', 'telegram']);
+
+export const quickContactConfigSchema = z.object({
+  enabled: z.boolean().default(QUICK_CONTACT_CONFIG_DEFAULTS.enabled),
+  mobileOnly: z.boolean().default(QUICK_CONTACT_CONFIG_DEFAULTS.mobileOnly),
+  channels: z
+    .array(quickContactChannelSchema)
+    .default(QUICK_CONTACT_CONFIG_DEFAULTS.channels),
 });
+export type QuickContactConfig = z.infer<typeof quickContactConfigSchema>;
 
 export const motionConfigSchema = z.object({
   /** Global pre-reveal delay (ms) before ChronoTrig reveal animations begin. */
@@ -178,6 +260,7 @@ export const uiConfigSchema = z.object({
   stickyHeader: z.boolean().default(true),
   navbar: navbarConfigSchema.default(NAVBAR_CONFIG_DEFAULTS),
   topBanner: topBannerConfigSchema.default(TOP_BANNER_CONFIG_DEFAULTS),
+  quickContact: quickContactConfigSchema.default(QUICK_CONTACT_CONFIG_DEFAULTS),
   motion: motionConfigSchema.default(MOTION_CONFIG_DEFAULTS),
 });
 export type UiConfig = z.infer<typeof uiConfigSchema>;
@@ -256,6 +339,73 @@ export const businessConfigSchema = z.object({
 });
 export type BusinessConfig = z.infer<typeof businessConfigSchema>;
 
+export const analyticsConfigSchema = z
+  .object({
+    ga4Id: z
+      .union([
+        z.literal(''),
+        z
+          .string()
+          .trim()
+          .regex(/^G-[A-Z0-9]{4,20}$/i, 'Use a valid GA4 Measurement ID such as "G-XXXXXXXXXX".'),
+      ])
+      .optional()
+      .default(ANALYTICS_CONFIG_DEFAULTS.ga4Id),
+    plausibleDomain: z
+      .union([
+        z.literal(''),
+        z
+          .string()
+          .trim()
+          .min(1)
+          .regex(/^[^\s/]+$/, 'Use a hostname such as "example.com".'),
+      ])
+      .optional()
+      .default(ANALYTICS_CONFIG_DEFAULTS.plausibleDomain),
+    plausibleSrc: z.url().optional().default(ANALYTICS_CONFIG_DEFAULTS.plausibleSrc),
+    umamiWebsiteId: z
+      .union([z.literal(''), z.uuid('Use a valid Umami website UUID.')])
+      .optional()
+      .default(ANALYTICS_CONFIG_DEFAULTS.umamiWebsiteId),
+    umamiSrc: z.union([z.literal(''), z.url()]).optional().default(ANALYTICS_CONFIG_DEFAULTS.umamiSrc),
+    clarityId: z
+      .union([
+        z.literal(''),
+        z
+          .string()
+          .trim()
+          .regex(/^[a-z0-9]{6,20}$/i, 'Use a valid Microsoft Clarity project ID.'),
+      ])
+      .optional()
+      .default(ANALYTICS_CONFIG_DEFAULTS.clarityId),
+  })
+  .superRefine((val, ctx) => {
+    if (val.umamiWebsiteId && !val.umamiSrc) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['umamiSrc'],
+        message: 'Provide "analytics.umamiSrc" when "analytics.umamiWebsiteId" is configured.',
+      });
+    }
+  });
+export type AnalyticsConfig = z.infer<typeof analyticsConfigSchema>;
+
+const redirectRuleSchema = z.object({
+  from: z.string().min(1),
+  to: z.string().min(1),
+  status: z.union([z.literal(301), z.literal(302)]).default(301),
+});
+
+export const redirectsConfigSchema = z.array(redirectRuleSchema).superRefine((rules, ctx) => {
+  const errors = validateRedirects(rules);
+  for (const msg of errors) {
+    ctx.addIssue({
+      code: 'custom',
+      message: msg,
+    });
+  }
+});
+
 const formProviderSchema = z.enum(['custom', 'web3forms', 'formspree', 'basin', 'webhook']);
 
 export const apiEndpointsSchema = z.object({
@@ -302,6 +452,8 @@ export const defaultBusinessConfig: BusinessConfig = {
   workingHours: '',
   mapEmbedUrl: '',
 };
+
+export const defaultAnalyticsConfig: AnalyticsConfig = ANALYTICS_CONFIG_DEFAULTS;
 
 export const defaultApiConfig: ApiConfig = {
   provider: 'custom',
@@ -357,6 +509,8 @@ export const appConfigSchema = z.object({
   cookies: cookieConfigSchema.default(COOKIE_CONFIG_DEFAULTS),
   social: socialConfigSchema.default(defaultSocialConfig),
   business: businessConfigSchema.default(defaultBusinessConfig),
+  analytics: analyticsConfigSchema.default(defaultAnalyticsConfig),
+  redirects: redirectsConfigSchema.default(REDIRECTS_CONFIG_DEFAULTS),
   api: apiConfigSchema.default(defaultApiConfig),
   server: z.object({
     host: z.string().min(1),
@@ -364,9 +518,10 @@ export const appConfigSchema = z.object({
   }),
 });
 
-const mergedRawConfig = deepMergeConfig(
+const mergedRawConfig = mergeLayeredConfig(
   rawConfig as Record<string, unknown>,
-  clientConfig as Record<string, unknown>
+  clientConfig as Record<string, unknown>,
+  cmsConfig as Record<string, unknown>
 );
 
 export const appConfig = appConfigSchema.parse(mergedRawConfig);
@@ -399,6 +554,8 @@ const siteConfigSchema = z.object({
   cookies: cookieConfigSchema,
   social: socialConfigSchema,
   business: businessConfigSchema,
+  analytics: analyticsConfigSchema,
+  redirects: redirectsConfigSchema,
   api: apiConfigSchema,
 });
 
@@ -444,6 +601,8 @@ export const siteConfig = siteConfigSchema.parse({
   cookies: appConfig.cookies,
   social: appConfig.social,
   business: appConfig.business,
+  analytics: appConfig.analytics,
+  redirects: appConfig.redirects,
   api: {
     provider: appConfig.api.provider,
     baseUrl: envApiBaseUrl || appConfig.api.baseUrl,
@@ -485,6 +644,12 @@ export const SOCIAL_CONFIG = siteConfig.social;
 
 /** Direct export for corporate/business metadata & contact details. */
 export const BUSINESS_CONFIG = siteConfig.business;
+
+/** Direct export for consent-gated analytics providers. */
+export const ANALYTICS_CONFIG = siteConfig.analytics;
+
+/** Direct export for config-driven URL redirects. */
+export const REDIRECTS_CONFIG = siteConfig.redirects;
 
 /** Direct export for external headless/microservice API endpoints. */
 export const API_CONFIG = siteConfig.api;

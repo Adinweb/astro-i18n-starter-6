@@ -7,17 +7,21 @@ import {
   themeModeSchema,
   navbarConfigSchema,
   topBannerConfigSchema,
+  quickContactConfigSchema,
   motionConfigSchema,
   uiConfigSchema,
   blogConfigSchema,
   cookieConfigSchema,
   socialConfigSchema,
   businessConfigSchema,
+  analyticsConfigSchema,
+  redirectsConfigSchema,
   apiEndpointsSchema,
   apiConfigSchema,
   defaultUiConfig,
   defaultSocialConfig,
   defaultBusinessConfig,
+  defaultAnalyticsConfig,
   defaultApiConfig,
   POSTS_PER_PAGE,
   UI_CONFIG,
@@ -25,11 +29,14 @@ import {
   COOKIE_CONFIG,
   SOCIAL_CONFIG,
   BUSINESS_CONFIG,
+  ANALYTICS_CONFIG,
+  REDIRECTS_CONFIG,
   API_CONFIG,
   type ApiConfig,
   type BlogConfig,
   type ThemeMode,
 } from './app';
+import { mergeLayeredConfig, sanitizeCmsConfig } from './defaults';
 
 describe('src/libs/config/app.ts', () => {
   describe('themeModeSchema', () => {
@@ -363,6 +370,107 @@ describe('src/libs/config/app.ts', () => {
           ...appConfig,
           brand: { ...appConfig.brand, socialCardMode: 'screenshot' },
         })
+      ).toThrow();
+    });
+  });
+
+  describe('three-tier CMS isolation, banner schedule, quickContact, analytics & redirects', () => {
+    it('sanitizes incomplete CMS fields and applies 3-tier precedence', () => {
+      const cleaned = sanitizeCmsConfig({
+        business: {
+          phone: '+98 21 1234',
+          geo: { lat: '', lng: null },
+        },
+        ui: {
+          topBanner: {
+            enabled: false,
+            startsAt: '',
+            dismissMode: '',
+          },
+        },
+        redirects: [
+          { from: '/old/', to: '' },
+          { from: '/legacy', to: '/about/', status: 301 },
+        ],
+      });
+      expect((cleaned.business as Record<string, unknown>).geo).toBeUndefined();
+      expect((cleaned.redirects as unknown[]).length).toBe(1);
+
+      const merged = mergeLayeredConfig<Record<string, unknown>>(
+        { business: { phone: '000', legalName: 'Core Co' }, brand: { preset: 'indigo' } },
+        { business: { phone: '111' } },
+        { business: { phone: '222', geo: { lat: '35.7', lng: '51.4' } } }
+      );
+      expect((merged.business as Record<string, unknown>).phone).toBe('222');
+      expect((merged.business as Record<string, unknown>).legalName).toBe('Core Co');
+      expect((merged.business as { geo: { lat: number; lng: number } }).geo).toEqual({
+        lat: 35.7,
+        lng: 51.4,
+      });
+    });
+
+    it('validates banner scheduling dates, persistent dismiss TTL/version, and quickContact', () => {
+      const scheduled = topBannerConfigSchema.parse({
+        enabled: true,
+        startsAt: '2026-01-01',
+        endsAt: '2026-12-31',
+        dismissMode: 'persistent',
+        dismissTtlDays: 14,
+        dismissVersion: 2,
+      });
+      expect(scheduled.dismissMode).toBe('persistent');
+      expect(scheduled.dismissTtlDays).toBe(14);
+      expect(scheduled.dismissVersion).toBe(2);
+
+      expect(() =>
+        topBannerConfigSchema.parse({
+          startsAt: '2026-05-10',
+          endsAt: '2026-05-01',
+        })
+      ).toThrow();
+      expect(() =>
+        topBannerConfigSchema.parse({
+          startsAt: 'not-a-date',
+        })
+      ).toThrow();
+      expect(() =>
+        topBannerConfigSchema.parse({
+          dismissTtlDays: 400,
+        })
+      ).toThrow();
+
+      const qc = quickContactConfigSchema.parse({});
+      expect(qc).toEqual({
+        enabled: true,
+        mobileOnly: true,
+        channels: ['phone', 'whatsapp', 'telegram'],
+      });
+    });
+
+    it('validates consent-gated analytics provider IDs and redirects schema', () => {
+      expect(analyticsConfigSchema.parse({})).toEqual(defaultAnalyticsConfig);
+      expect(ANALYTICS_CONFIG).toEqual(siteConfig.analytics);
+      expect(REDIRECTS_CONFIG).toEqual(siteConfig.redirects);
+
+      const validAnalytics = analyticsConfigSchema.parse({
+        ga4Id: 'G-ABCD1234EF',
+        plausibleDomain: 'example.com',
+        umamiWebsiteId: '550e8400-e29b-41d4-a716-446655440000',
+        umamiSrc: 'https://analytics.example.com/script.js',
+        clarityId: 'abc123defg',
+      });
+      expect(validAnalytics.ga4Id).toBe('G-ABCD1234EF');
+
+      expect(() => analyticsConfigSchema.parse({ ga4Id: 'UA-12345-1' })).toThrow();
+      expect(() =>
+        analyticsConfigSchema.parse({ umamiWebsiteId: '550e8400-e29b-41d4-a716-446655440000' })
+      ).toThrow();
+
+      expect(
+        redirectsConfigSchema.parse([{ from: '/old', to: '/about/', status: 301 }])
+      ).toHaveLength(1);
+      expect(() =>
+        redirectsConfigSchema.parse([{ from: '/same', to: '/same/', status: 301 }])
       ).toThrow();
     });
   });

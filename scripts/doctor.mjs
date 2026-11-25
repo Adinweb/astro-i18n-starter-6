@@ -19,9 +19,11 @@ import {
 } from './lib/content-types.mjs';
 import {
   clientConfigPathFor,
+  cmsConfigPathFor,
   coreConfigPathFor,
-  deepMergeConfig,
+  mergeLayeredConfig,
 } from './lib/config.mjs';
+import { validateRedirects } from './lib/redirects.mjs';
 import { localeConfigPathFor, readLocaleConfig } from './lib/locales.mjs';
 import {
   readCoreMessages,
@@ -78,6 +80,7 @@ if (!hasLockfile) {
 // ----------------------------------------------------------------- config ---
 let coreConfig = null;
 let clientConfig = {};
+let cmsConfig = {};
 let appConfig = null;
 
 try {
@@ -100,8 +103,19 @@ if (fs.existsSync(clientCfgPath)) {
   add('warn', 'client/config.json is missing.', 'Create `{}` in client/config.json or run `npm run site:init`.');
 }
 
+const cmsCfgPath = cmsConfigPathFor(rootDir);
+if (fs.existsSync(cmsCfgPath)) {
+  try {
+    const raw = fs.readFileSync(cmsCfgPath, 'utf-8').trim();
+    cmsConfig = raw ? JSON.parse(raw) : {};
+    add('ok', 'client/cms.json parses.');
+  } catch (error) {
+    add('error', `client/cms.json is not valid JSON: ${error.message}`, 'Fix the JSON syntax.');
+  }
+}
+
 if (coreConfig) {
-  appConfig = deepMergeConfig(coreConfig, clientConfig);
+  appConfig = mergeLayeredConfig(coreConfig, clientConfig, cmsConfig);
 }
 
 let locales = [];
@@ -277,6 +291,26 @@ if (appConfig) {
         `Keep site.description in client/config.json aligned with site_description in client/messages/${defaultLocale}.json.`
       );
     }
+  }
+
+  const analytics = appConfig.analytics ?? {};
+  if (analytics.ga4Id && !/^G-[A-Z0-9]{4,20}$/i.test(String(analytics.ga4Id).trim())) {
+    add('error', `Invalid analytics.ga4Id "${analytics.ga4Id}".`, 'Use a valid GA4 Measurement ID like "G-XXXXXXXXXX".');
+  }
+  if (analytics.clarityId && !/^[a-z0-9]{6,20}$/i.test(String(analytics.clarityId).trim())) {
+    add('error', `Invalid analytics.clarityId "${analytics.clarityId}".`, 'Use a valid Microsoft Clarity project ID.');
+  }
+  if (analytics.umamiWebsiteId && !analytics.umamiSrc) {
+    add('error', 'analytics.umamiWebsiteId is set without analytics.umamiSrc.', 'Provide the full Umami script URL in analytics.umamiSrc.');
+  }
+
+  const redirects = appConfig.redirects ?? [];
+  const redirectErrors = validateRedirects(redirects);
+  for (const errMsg of redirectErrors) {
+    add('error', errMsg, 'Fix the redirect rule in client/config.json or client/cms.json.');
+  }
+  if (redirects.length > 0 && redirectErrors.length === 0) {
+    add('ok', `${redirects.length} redirect rule(s) validated.`);
   }
 }
 

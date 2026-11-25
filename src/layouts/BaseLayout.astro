@@ -17,6 +17,8 @@ import LanguageSwitcher from '@/components/LanguageSwitcher.astro';
 import ThemeToggle from '@/components/ThemeToggle.astro';
 import SearchModal from '@/components/SearchModal.astro';
 import CookieConsent from '@/components/CookieConsent.astro';
+import AnalyticsScripts from '@/components/AnalyticsScripts.astro';
+import QuickContactWidget from '@/components/QuickContactWidget.astro';
 import IconButton from '@/components/ui/IconButton.astro';
 import Button from '@/components/ui/Button.astro';
 import Icon from '@/components/ui/Icon.astro';
@@ -318,16 +320,70 @@ const structuredData = schema ?? [
       <LayoutHooks slot="top-banner" locale={locale} url={url} />
     </div>
     <script is:inline>
-      try {
-        document
-          .querySelectorAll('[data-site-top-banner][data-dismissible="true"]')
-          .forEach(function (el) {
-            var id = el.getAttribute('data-top-banner-id') || 'site-announcement';
-            if (window.sessionStorage.getItem('top-banner-dismissed:' + id) === 'true') {
+      (function () {
+        var DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+        function parseBound(value, bound) {
+          if (!value) return null;
+          var trimmed = String(value).trim();
+          if (!trimmed) return null;
+          var target = DATE_ONLY_RE.test(trimmed)
+            ? bound === 'start'
+              ? trimmed + 'T00:00:00.000Z'
+              : trimmed + 'T23:59:59.999Z'
+            : trimmed;
+          var ms = Date.parse(target);
+          return isFinite(ms) ? ms : null;
+        }
+        try {
+          var nowMs = Date.now();
+          document.querySelectorAll('[data-site-top-banner]').forEach(function (el) {
+            var startMs = parseBound(el.getAttribute('data-starts-at'), 'start');
+            var endMs = parseBound(el.getAttribute('data-ends-at'), 'end');
+            if ((startMs !== null && nowMs < startMs) || (endMs !== null && nowMs >= endMs)) {
               el.hidden = true;
+              return;
+            }
+            if (el.getAttribute('data-dismissible') !== 'true') {
+              el.hidden = false;
+              return;
+            }
+            var id = el.getAttribute('data-top-banner-id') || 'site-announcement';
+            var mode = el.getAttribute('data-dismiss-mode') === 'persistent' ? 'persistent' : 'session';
+            var version = Number(el.getAttribute('data-dismiss-version') || '1') || 1;
+            var ttlDays = Number(el.getAttribute('data-dismiss-ttl-days') || '0') || 0;
+            var key = 'top-banner-dismissed:' + id;
+            var store = mode === 'persistent' ? window.localStorage : window.sessionStorage;
+            var raw = store.getItem(key);
+            if (!raw) {
+              el.hidden = false;
+              return;
+            }
+            if (raw === 'true' && mode === 'session' && version === 1) {
+              el.hidden = true;
+              return;
+            }
+            try {
+              var parsed = JSON.parse(raw);
+              if (parsed.version !== version) {
+                store.removeItem(key);
+                el.hidden = false;
+                return;
+              }
+              if (mode === 'persistent' && ttlDays > 0) {
+                var elapsed = nowMs - Number(parsed.dismissedAt || 0);
+                if (!isFinite(elapsed) || elapsed >= ttlDays * 86400000) {
+                  store.removeItem(key);
+                  el.hidden = false;
+                  return;
+                }
+              }
+              el.hidden = true;
+            } catch (_) {
+              el.hidden = false;
             }
           });
-      } catch (_) {}
+        } catch (_) {}
+      })();
     </script>
 
     <div
@@ -991,11 +1047,13 @@ const structuredData = schema ?? [
     </footer>
 
     {effectiveShowSearch && <SearchModal locale={locale} />}
+    <QuickContactWidget locale={locale} />
     {
       effectiveShowCookies && (
         <CookieConsent locale={locale} privacyHref={privacyHref} termsHref={termsHref} />
       )
     }
+    <AnalyticsScripts />
     {import.meta.env.DEV && <DevThemePreview locale={locale} />}
 
     <!--

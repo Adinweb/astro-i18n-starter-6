@@ -1,0 +1,245 @@
+---
+/**
+ * Collapsible floating quick-contact widget pinned at `bottom-4 end-4`.
+ *
+ * Uses direct channel URLs (`tel:`, `wa.me`, `t.me`) from `business` config,
+ * respects `ui.quickContact` (`enabled`, `mobileOnly`, `channels`), stays
+ * hidden when no channels are configured, and automatically hides whenever
+ * the undecided cookie consent banner, mobile drawer, or a modal `<dialog>`
+ * is active to prevent overlapping controls.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import type { Locale } from '@/i18n/locales';
+import { BUSINESS_CONFIG, UI_CONFIG } from '@/libs/config/app';
+import { toTelHref, toTelegramHref, toWhatsappHref } from '@/libs/ui/contact';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  locale?: Locale | string;
+}
+
+const { locale } = Astro.props;
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const quickConfig = UI_CONFIG.quickContact;
+
+const phone = (BUSINESS_CONFIG.phone || '').trim();
+const whatsapp = (BUSINESS_CONFIG.whatsapp || '').trim();
+const telegram = (BUSINESS_CONFIG.telegram || '').trim();
+
+const channelDefs: Record<
+  'phone' | 'whatsapp' | 'telegram',
+  { href: string; label: string; icon: string; external: boolean } | null
+> = {
+  phone: phone
+    ? {
+        href: toTelHref(phone),
+        label: m.block_contact_phone_label({}, { locale: activeLocale }),
+        icon: 'phone',
+        external: false,
+      }
+    : null,
+  whatsapp: whatsapp
+    ? {
+        href: toWhatsappHref(whatsapp),
+        label: m.block_contact_whatsapp_label({}, { locale: activeLocale }),
+        icon: 'brand-whatsapp',
+        external: true,
+      }
+    : null,
+  telegram: telegram
+    ? {
+        href: toTelegramHref(telegram),
+        label: m.block_contact_telegram_label({}, { locale: activeLocale }),
+        icon: 'brand-telegram',
+        external: true,
+      }
+    : null,
+};
+
+const activeChannels = quickConfig.enabled
+  ? quickConfig.channels
+      .map((key) => channelDefs[key])
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+  : [];
+
+const openLabel = m.quick_contact_open({}, { locale: activeLocale });
+const closeLabel = m.quick_contact_close({}, { locale: activeLocale });
+const navAriaLabel = m.quick_contact_nav_aria({}, { locale: activeLocale });
+const panelId = 'quick-contact-panel';
+---
+
+{
+  activeChannels.length > 0 && (
+    <div
+      data-quick-contact-widget
+      data-open-label={openLabel}
+      data-close-label={closeLabel}
+      data-pagefind-ignore="true"
+      class:list={[
+        'fixed bottom-4 end-4 z-[35] flex flex-col items-end gap-2.5 print:hidden',
+        quickConfig.mobileOnly && 'md:hidden',
+      ]}
+    >
+      <nav
+        id={panelId}
+        data-quick-contact-panel
+        aria-label={navAriaLabel}
+        hidden
+        class="flex w-56 flex-col gap-1.5 rounded-2xl border border-border bg-surface/95 p-2 shadow-floating backdrop-blur-md"
+      >
+        {activeChannels.map((channel) => (
+          <a
+            href={channel.href}
+            target={channel.external ? '_blank' : undefined}
+            rel={channel.external ? 'noopener noreferrer' : undefined}
+            class="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-fg transition-colors hover:bg-primary/10 hover:text-primary"
+          >
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
+              <Icon name={channel.icon} size={17} class="shrink-0" />
+            </span>
+            <span class="min-w-0 truncate">{channel.label}</span>
+            {channel.external && (
+              <Icon name="external-link" size={14} class="ms-auto shrink-0 text-muted" />
+            )}
+          </a>
+        ))}
+      </nav>
+
+      <button
+        type="button"
+        data-quick-contact-toggle
+        aria-expanded="false"
+        aria-controls={panelId}
+        aria-label={openLabel}
+        title={openLabel}
+        class="inline-flex min-h-11 min-w-11 size-12 cursor-pointer items-center justify-center rounded-full border border-primary/25 bg-primary text-primary-fg shadow-floating transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        <span data-quick-contact-icon-open class="inline-flex items-center justify-center">
+          <Icon name="headset" size={22} class="shrink-0" />
+        </span>
+        <span data-quick-contact-icon-close class="hidden items-center justify-center">
+          <Icon name="close" size={20} class="shrink-0" />
+        </span>
+      </button>
+    </div>
+  )
+}
+
+<script>
+  import { CONSENT_CHANGE_EVENT } from '@/libs/cookies/manager';
+
+  function bindQuickContactWidget() {
+    const widget = document.querySelector<HTMLElement>('[data-quick-contact-widget]');
+    if (!widget) return;
+
+    const toggleBtn = widget.querySelector<HTMLButtonElement>('[data-quick-contact-toggle]');
+    const panel = widget.querySelector<HTMLElement>('[data-quick-contact-panel]');
+    const iconOpen = widget.querySelector<HTMLElement>('[data-quick-contact-icon-open]');
+    const iconClose = widget.querySelector<HTMLElement>('[data-quick-contact-icon-close]');
+    if (!toggleBtn || !panel) return;
+
+    const openLabel = widget.dataset.openLabel || 'Quick contact';
+    const closeLabel = widget.dataset.closeLabel || 'Close';
+
+    const setExpanded = (expanded: boolean) => {
+      panel.hidden = !expanded;
+      toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      toggleBtn.setAttribute('aria-label', expanded ? closeLabel : openLabel);
+      toggleBtn.title = expanded ? closeLabel : openLabel;
+      if (iconOpen) {
+        iconOpen.classList.toggle('hidden', expanded);
+        iconOpen.classList.toggle('inline-flex', !expanded);
+      }
+      if (iconClose) {
+        iconClose.classList.toggle('hidden', !expanded);
+        iconClose.classList.toggle('inline-flex', expanded);
+      }
+    };
+
+    const syncOverlapVisibility = () => {
+      const cookieBanner = document.querySelector<HTMLElement>('[data-cookie-banner]');
+      const cookieBannerVisible =
+        Boolean(cookieBanner && !cookieBanner.hidden) &&
+        document.documentElement.dataset.consentState === 'undecided';
+      const mobileDrawerOpen = Boolean(
+        document.querySelector<HTMLElement>('[data-mobile-menu].is-open')
+      );
+      const modalDialogOpen = Boolean(document.querySelector('dialog[open]'));
+      const shouldHide = cookieBannerVisible || mobileDrawerOpen || modalDialogOpen;
+
+      if (shouldHide) {
+        setExpanded(false);
+      }
+      widget.hidden = shouldHide;
+    };
+
+    if (widget.dataset.bound !== 'true') {
+      widget.dataset.bound = 'true';
+
+      toggleBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+        setExpanded(!isExpanded);
+      });
+
+      const controller = new AbortController();
+      document.addEventListener(
+        'astro:before-swap',
+        () => controller.abort(),
+        { once: true }
+      );
+
+      document.addEventListener(
+        'click',
+        (event) => {
+          const target = event.target as Node | null;
+          if (!target || !widget.contains(target)) {
+            setExpanded(false);
+          }
+        },
+        { signal: controller.signal }
+      );
+
+      document.addEventListener(
+        'keydown',
+        (event) => {
+          if (event.key === 'Escape' && toggleBtn.getAttribute('aria-expanded') === 'true') {
+            setExpanded(false);
+            toggleBtn.focus();
+          }
+        },
+        { signal: controller.signal }
+      );
+
+      document.addEventListener(CONSENT_CHANGE_EVENT, syncOverlapVisibility, {
+        signal: controller.signal,
+      });
+
+      const observer = new MutationObserver(syncOverlapVisibility);
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-consent-state'],
+      });
+      const drawer = document.querySelector<HTMLElement>('[data-mobile-menu]');
+      if (drawer) {
+        observer.observe(drawer, { attributes: true, attributeFilter: ['class'] });
+      }
+      const cookieBanner = document.querySelector<HTMLElement>('[data-cookie-banner]');
+      if (cookieBanner) {
+        observer.observe(cookieBanner, { attributes: true, attributeFilter: ['hidden'] });
+      }
+      observer.observe(document.body, {
+        attributes: true,
+        subtree: true,
+        attributeFilter: ['open'],
+      });
+      controller.signal.addEventListener('abort', () => observer.disconnect());
+    }
+
+    syncOverlapVisibility();
+  }
+
+  document.addEventListener('astro:page-load', bindQuickContactWidget);
+  bindQuickContactWidget();
+</script>

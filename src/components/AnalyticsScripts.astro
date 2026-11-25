@@ -1,0 +1,154 @@
+---
+/**
+ * Consent-gated analytics loader (`GA4`, `Plausible`, `Umami`, `Microsoft Clarity`).
+ *
+ * Emits inert `<script type="text/plain" data-cookie-category="analytics">` tags
+ * inside a `transition:persist` container so TDDDG § 25 / GDPR CookieConsent
+ * controls activation & teardown without duplicating third-party SDKs across
+ * Astro `<ClientRouter />` soft navigations.
+ */
+import { ANALYTICS_CONFIG } from '@/libs/config/app';
+
+const ga4Id = (ANALYTICS_CONFIG.ga4Id || '').trim();
+const plausibleDomain = (ANALYTICS_CONFIG.plausibleDomain || '').trim();
+const plausibleSrc = (ANALYTICS_CONFIG.plausibleSrc || 'https://plausible.io/js/script.js').trim();
+const umamiWebsiteId = (ANALYTICS_CONFIG.umamiWebsiteId || '').trim();
+const umamiSrc = (ANALYTICS_CONFIG.umamiSrc || '').trim();
+const clarityId = (ANALYTICS_CONFIG.clarityId || '').trim();
+
+const hasAnyProvider = Boolean(
+  ga4Id || plausibleDomain || (umamiWebsiteId && umamiSrc) || clarityId
+);
+
+const ga4InitSnippet = ga4Id
+  ? `window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};window.gtag('js',new Date());window.gtag('config',${JSON.stringify(ga4Id)});`
+  : '';
+
+const clarityInitSnippet = clarityId
+  ? `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments);};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;t.setAttribute("data-cookie-managed-category","analytics");y=l.getElementsByTagName(r)[0];if(y&&y.parentNode){y.parentNode.insertBefore(t,y);}else{l.head.appendChild(t);}})(window,document,"clarity","script",${JSON.stringify(clarityId)});`
+  : '';
+---
+
+{
+  hasAnyProvider && (
+    <div
+      data-analytics-gatekeeper
+      data-ga4-id={ga4Id || undefined}
+      transition:persist="analytics-gatekeeper"
+      hidden
+    >
+      {ga4Id && (
+        <>
+          <script
+            is:inline
+            type="text/plain"
+            data-cookie-category="analytics"
+            data-cookie-id="ga4-gtag-sdk"
+            data-cookie-async="true"
+            data-cookie-src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga4Id)}`}
+          />
+          <script
+            is:inline
+            type="text/plain"
+            data-cookie-category="analytics"
+            data-cookie-id="ga4-gtag-init"
+            set:html={ga4InitSnippet}
+          />
+        </>
+      )}
+
+      {plausibleDomain && (
+        <script
+          is:inline
+          type="text/plain"
+          data-cookie-category="analytics"
+          data-cookie-id="plausible-analytics-sdk"
+          data-cookie-defer="true"
+          data-cookie-src={plausibleSrc}
+          data-domain={plausibleDomain}
+        />
+      )}
+
+      {umamiWebsiteId && umamiSrc && (
+        <script
+          is:inline
+          type="text/plain"
+          data-cookie-category="analytics"
+          data-cookie-id="umami-analytics-sdk"
+          data-cookie-defer="true"
+          data-cookie-src={umamiSrc}
+          data-website-id={umamiWebsiteId}
+        />
+      )}
+
+      {clarityId && (
+        <script
+          is:inline
+          type="text/plain"
+          data-cookie-category="analytics"
+          data-cookie-id="ms-clarity-sdk"
+          set:html={clarityInitSnippet}
+        />
+      )}
+    </div>
+  )
+}
+
+<script>
+  import { CONSENT_CHANGE_EVENT } from '@/libs/cookies/manager';
+
+  let lastTrackedUrl = '';
+
+  function trackSoftNavigation() {
+    const analyticsAllowed = document.documentElement.dataset.consentAnalytics === 'true';
+    if (!analyticsAllowed) {
+      lastTrackedUrl = '';
+      return;
+    }
+
+    const currentUrl = window.location.pathname + window.location.search;
+    if (!lastTrackedUrl) {
+      // First load is already tracked when provider scripts bootstrap cleanly.
+      lastTrackedUrl = currentUrl;
+      return;
+    }
+    if (currentUrl === lastTrackedUrl) return;
+    lastTrackedUrl = currentUrl;
+
+    const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
+    const ga4Id = gatekeeper?.dataset.ga4Id;
+    const win = window as Window & {
+      gtag?: (...args: unknown[]) => void;
+      plausible?: (eventName: string, opts?: Record<string, unknown>) => void;
+      umami?: { track?: () => void };
+    };
+
+    if (ga4Id && typeof win.gtag === 'function') {
+      win.gtag('event', 'page_view', {
+        page_path: currentUrl,
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+    }
+    if (typeof win.plausible === 'function') {
+      win.plausible('pageview');
+    }
+    if (win.umami && typeof win.umami.track === 'function') {
+      win.umami.track();
+    }
+  }
+
+  if (document.documentElement.dataset.analyticsSpaBound !== 'true') {
+    document.documentElement.dataset.analyticsSpaBound = 'true';
+    document.addEventListener('astro:page-load', trackSoftNavigation);
+    document.addEventListener(CONSENT_CHANGE_EVENT, () => {
+      if (document.documentElement.dataset.consentAnalytics !== 'true') {
+        lastTrackedUrl = '';
+      } else if (!lastTrackedUrl) {
+        lastTrackedUrl = window.location.pathname + window.location.search;
+      }
+    });
+  }
+
+  trackSoftNavigation();
+</script>

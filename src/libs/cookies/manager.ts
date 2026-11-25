@@ -211,6 +211,12 @@ export function applyScriptGatekeeper(
 
     if (placeholder.dataset.cookieActivated === 'true') return;
 
+    const existingId = placeholder.dataset.cookieId;
+    if (existingId && typeof document.getElementById === 'function' && document.getElementById(existingId)) {
+      placeholder.dataset.cookieActivated = 'true';
+      return;
+    }
+
     const liveScript = document.createElement('script');
     liveScript.type = placeholder.dataset.cookieType || 'text/javascript';
 
@@ -218,8 +224,8 @@ export function applyScriptGatekeeper(
     if (src) {
       liveScript.src = src;
     }
-    if (placeholder.dataset.cookieId) {
-      liveScript.id = placeholder.dataset.cookieId;
+    if (existingId) {
+      liveScript.id = existingId;
     }
     if (placeholder.hasAttribute('async') || placeholder.dataset.cookieAsync === 'true') {
       liveScript.async = true;
