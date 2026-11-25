@@ -89,8 +89,8 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 ├── messages/core/             # Upstream core UI dictionaries (en.json, fa.json)
 ├── starter-kit/               # Optional demo pages, blog posts, projects & 6 industry blueprints (`npm run starter:seed`)
 ├── public/                    # Static assets (_headers, chronotrig.min.js, favicons, manifest, default OG)
-├── scripts/                   # 30 Developer CLI, QA, health check, Pagefind indexing & upstream check scripts
-│   └── lib/                   # 14 shared modules (config, blueprints, merge-messages, prompt, frontmatter, content-stub, slug, validation, locale-mutations, content-types, redirects, artwork)
+├── scripts/                   # 31 Developer CLI, QA, health check, Pagefind indexing & upstream check scripts
+│   └── lib/                   # 15 shared modules (config, blueprints, qa-metrics, merge-messages, prompt, frontmatter, content-stub, slug, validation, locale-mutations, content-types, redirects, artwork)
 ├── src/
 │   ├── assets/hero/hero-0.jpg # Shared hero photograph fallback
 │   ├── components/            # Core chrome (`HomeHero`, `SiteTopBanner`, `QuickContactWidget`, `AnalyticsScripts`, `ThemeToggle`, `DevThemePreview`, `LanguageSwitcher`, `DrawerNavLink`, `PageHeader`, `PageHero`, `PageSection`, `HeroCopy`, `BlogPostHeroContent`, `PostCard`, `SearchModal`, `DrawerSearch`, `CookieConsent`, `ContactForm`, `Seo`, `TopLoadingBar`)
@@ -156,18 +156,18 @@ When working in this repository, you **MUST** follow these non-negotiable rules:
 | `npm run upstream:check` | Verifies 3-tier config/CMS merge (`client/config.json` + `client/cms.json`), message parity, `client/` extension files & `starter-kit/` | Before commits, upstream pulls, and CI |
 | `npm run starter:seed` | Seeds optional `starter-kit/` demo pages, posts, projects & messages into `src/content/` & `client/` (`--clean` resets) | When onboarding or resetting demo content |
 | `npm run lint` | Messages compile + `astro check` + `tsc --noEmit` | After any code changes |
-| `npm test` | Vitest unit tests (29 files, 289 tests: paths, ICU, routes, redirects, cookies, CLI helpers, motion, interactive views) | After routing, UI, or logic changes |
+| `npm test` | Vitest unit tests (29 files, 297 tests: paths, ICU, routes, redirects, cookies, CLI/QA helpers, motion, OG/schemas, interactive views) | After routing, UI, or logic changes |
 | `npm run audit:i18n` | Locale-config parity, two-tier dictionary/placeholder parity, content parity, route collisions & RTL logical property guard | Before commits & builds |
-| `npm run verify:cli` | End-to-end check of every documented CLI workflow (incl. `--logo`, `catalog`, `site:reset`) in an isolated sandbox | After changing anything under `scripts/` |
-| `npm run doctor` | No-build health check: runtime, 3-tier config, analytics/GDPR compliance, redirects, content types, dictionaries, `SITE_URL` | After cloning a project or before a client hand-off |
+| `npm run verify:cli` | End-to-end check of every documented CLI workflow (incl. `--logo`, `catalog`, `site:reset`, `client:bootstrap`, `doctor --handoff`) in an isolated sandbox | After changing anything under `scripts/` |
+| `npm run doctor` / `doctor:handoff` | No-build health check (`--handoff` / `doctor:handoff` escalates warnings to blocking errors before client handoff) | After cloning a project or before a client hand-off |
 | `npm run content:list` / `content:status` | Content types and their entries / per-locale readiness matrix | When auditing what is published |
 | `npm run link:check` | Crawls `dist/` and reports internal links, exact redirect destinations, and `#fragment` anchors that resolve to nothing | After a rename or before delivery |
 | `npm run build` | `messages:compile` + audit + `astro build` + emits `_redirects`/`deploy/` + `node scripts/index-pagefind.mjs` | After major changes |
 | `npm run smoke` | HTML, SEO, feed, `/llms.txt`, redirect artifacts, asset & H1 assertions on `dist/` | After every production build |
-| `npm run qa:browser` | Headless Chromium Playwright QA across RTL/LTR routes, light/dark themes, viewports & interactive modals/drawers | After layout, CSS, or interactive changes |
+| `npm run qa:browser` | Headless Chromium Playwright QA across RTL/LTR routes, light/dark themes, CLS (`<= 0.05`), `/_astro/*.js` budget, `@axe-core/playwright` WCAG & interactive UI | After layout, CSS, or interactive changes |
 | `npm run preflight` / `preflight:full` | All-in-one delivery pipeline (`preflight:full` appends `qa:browser`) | Before final client delivery |
 | `npm run knip` | Dead files, exports, and dependencies | Before releases |
-| `npm run assets:generate` | Regenerate PNG icons, OG image and hero/cover artwork | After brand changes or adding content groups |
+| `npm run assets:generate` | Regenerate favicons/PWA/OG (`--from-logo` / `brand.logo` via `sharp`) and hero/cover artwork | After brand changes or adding content groups |
 
 ### Dev Server Management
 Start the server in background mode (`astro dev --background`) and manage via `astro dev status`, `astro dev logs`, and `astro dev stop`. After `npm install` (or `node_modules` changes), **restart the dev server** so Vite refreshes its module graph.
@@ -179,11 +179,12 @@ Start the server in background mode (`astro dev --background`) and manage via `a
 Execute these scripts instead of performing brittle manual file manipulations:
 
 ### 4.1 Client Onboarding, Workspace Reset & Content Scaffolding
-* **Initialize client identity, industry blueprint, brand logo, palette, fonts, OG mode & modules:**
+* **One-step project bootstrap (`client:bootstrap`) or interactive/headless setup (`site:init`):**
   ```bash
+  npm run client:bootstrap -- --reset --blueprint=agency --name="Acme Studio" --logo=logo.svg --site-url=https://acme.com --yes
   npm run site:init -- --name="Acme Studio" --blueprint=agency --rtl-font=vazirmatn --logo=logo.svg --og-mode=branded --yes
   ```
-  Run interactively or headlessly (`--yes`). Writes sparse overrides to `client/config.json` (supporting `--blueprint=corporate|agency|portfolio|medical|catalog|legal`, `--logo` / `--logo-dark` import to `public/brand/`), syncs `site_description` in `client/messages/`, adjusts language mode, and refreshes brand assets.
+  `client:bootstrap` chains optional `site:reset`/`starter:seed`, `site:init`, `.env` updates, `--from-logo` favicon/PWA/OG asset generation (`assets:generate`), and `doctor` / `doctor --handoff`. `site:init` writes sparse overrides to `client/config.json` (supporting `--blueprint`, `--logo` / `--logo-dark`), syncs `site_description` in `client/messages/`, adjusts language mode, and refreshes brand assets.
 
 * **Reset workspace back to clean starter overrides between client builds:**
   ```bash
@@ -249,9 +250,9 @@ npm run i18n:add-batch -- --file=translations.json [--category=<cat>]
 ## 5. Playbooks for Common Agent Tasks
 
 ### Client Production Build Order (Recommended)
-1. **Clean & Onboard**: Strip seeded demo content if starting fresh (`npm run starter:seed -- --clean --yes` or `npm run site:reset -- --yes --clean-starter`), then run `npm run site:init -- --name="..." --blueprint=corporate|agency|portfolio|medical|catalog|legal --rtl-font=vazirmatn --yes` and tune `brand.logo` / `business` / `analytics` / `api` in `client/config.json` (keeping Pages CMS editor settings in `client/cms.json`).
+1. **Clean & Onboard**: Run `npm run client:bootstrap` (or chain `starter:seed -- --clean --yes` / `site:reset -- --yes --clean-starter`, `site:init -- --name="..." --blueprint=... --rtl-font=vazirmatn --logo=... --yes`, `.env`, and `assets:generate --from-logo`). Tune `brand.logo` / `business` / `site.authors` / `analytics` / `api.redirects` in `client/config.json` (keeping Pages CMS editor settings in `client/cms.json`).
 2. **Compose Custom Pages in `client/`**: Author bespoke home/landing views in `client/templates/<Name>.astro` (registered in `client/templates/index.ts`) and/or `hero: "none"`, `container: "canvas"`, `flushTop: true` `.mdx` pages using the 64 guarded blocks (29 sections + 35 UI primitives in `src/components/ui/`) + 4 interactive showcases, semantic OKLCH tokens, logical RTL properties, `data-trig-once="true"`, `.hero-glow-*`, and `loading="lazy"` below the fold.
-3. **Wire Pages, Nav & Translations**: Create pages with `npm run new:page`, add menu links in `client/navigation.ts`, add UI copy in `client/messages/<locale>.json` (`npm run i18n:add-batch`), and run the full verification pipeline (`npm run preflight:full && npm run lint && npm run knip`).
+3. **Wire Pages, Nav & Translations**: Create pages with `npm run new:page`, add menu links in `client/navigation.ts`, add UI copy in `client/messages/<locale>.json` (`npm run i18n:add-batch`), and run the full verification pipeline (`npm run doctor:handoff && npm run preflight:full && npm run lint && npm run knip`).
 
 ### Playbook A: Adding a New Navigation Link
 1. Ensure `src/content/pages/<page-key>/` exists (`npm run new:page <page-key>` scaffolds it and registers `nav_<page-key>` in `client/messages/`).

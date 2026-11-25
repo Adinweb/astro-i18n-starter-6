@@ -6,7 +6,7 @@
  * `client/locales.json`, merged dictionaries, and content health.
  *
  * Usage:
- *   npm run doctor -- [--json]
+ *   npm run doctor -- [--json] [--handoff]
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -34,6 +34,8 @@ import { parseFrontmatter } from './lib/frontmatter.mjs';
 import { findPlaceholderSlugs } from './lib/slug.mjs';
 
 const wantsJson = process.argv.includes('--json');
+const isHandoff = process.argv.includes('--handoff') || process.argv.includes('--strict');
+const strictLevel = isHandoff ? 'error' : 'warn';
 const findings = [];
 const add = (level, title, fix) => findings.push({ level, title, fix });
 
@@ -71,9 +73,15 @@ if (requiredNode) {
 
 const hasLockfile =
   fs.existsSync(path.join(rootDir, 'package-lock.json')) ||
-  fs.existsSync(path.join(rootDir, 'pnpm-lock.yaml'));
+  fs.existsSync(path.join(rootDir, 'pnpm-lock.yaml')) ||
+  fs.existsSync(path.join(rootDir, 'bun.lock')) ||
+  fs.existsSync(path.join(rootDir, 'bun.lockb'));
 if (!hasLockfile) {
-  add('warn', 'No lockfile (package-lock.json or pnpm-lock.yaml) found.', 'Run `npm install` and commit the lockfile.');
+  add(
+    strictLevel,
+    'No lockfile (pnpm-lock.yaml, package-lock.json, or bun.lock) found.',
+    'Run `pnpm install` (or `npm install`) and commit the lockfile.'
+  );
 } else {
   add('ok', 'Dependency lockfile is present.');
 }
@@ -181,12 +189,38 @@ if (appConfig) {
     appConfig.site?.name === 'Astro i18n Starter';
   if (templateBrand) {
     add(
-      'warn',
+      strictLevel,
       `Site name is still the template default ("${appConfig.site?.name}").`,
       'Run `npm run site:init` or set site overrides in client/config.json.'
     );
   } else {
     add('ok', `Site identity is customised (${appConfig.site.name}).`);
+  }
+
+  if (
+    isHandoff &&
+    (!appConfig.site?.author?.trim() || appConfig.site.author.trim() === 'Astro Starter Team')
+  ) {
+    add(
+      'error',
+      `Default site author is still "${appConfig.site?.author || '(empty)'}" in handoff mode.`,
+      'Set site.author in client/config.json or pass `--author` to `site:init` / `client:bootstrap`.'
+    );
+  }
+
+  const logoObj = appConfig.brand?.logo;
+  const publicRoot = path.resolve(rootDir, 'public');
+  for (const variant of ['light', 'dark']) {
+    const rawLogo = typeof logoObj?.[variant] === 'string' ? logoObj[variant].trim() : '';
+    if (!rawLogo || /^https?:\/\//i.test(rawLogo)) continue;
+    const logoFile = path.resolve(publicRoot, rawLogo.replace(/^\/+/, ''));
+    if (!logoFile.startsWith(publicRoot + path.sep) || !fs.existsSync(logoFile)) {
+      add(
+        strictLevel,
+        `brand.logo.${variant} ("${rawLogo}") does not exist in public/.`,
+        'Pass a valid asset path via `npm run site:init -- --logo=<path>` or remove the broken path.'
+      );
+    }
   }
 
   const presetsFile = path.join(rootDir, 'src', 'libs', 'config', 'theme-presets.json');
@@ -242,14 +276,16 @@ if (appConfig) {
   );
   if (hasPlaceholderSocial) {
     add(
-      'warn',
+      strictLevel,
       'Social links still point at placeholders.',
-      'Set your links under social in client/config.json.'
+      'Set your client links (or clear unused keys) under `social` in client/config.json.'
     );
   }
 
   const hasEndpoint = Boolean(
     appConfig.api?.baseUrl ||
+      /^https?:\/\//i.test(appConfig.api?.endpoints?.contact ?? '') ||
+      (appConfig.api?.provider === 'web3forms' && (appConfig.api?.accessKey || process.env.PUBLIC_WEB3FORMS_KEY)) ||
       process.env.PUBLIC_API_BASE_URL ||
       process.env.PUBLIC_CONTACT_API_URL
   );
@@ -257,7 +293,7 @@ if (appConfig) {
 
   if (!hasEndpoint && !contactEmail) {
     add(
-      'warn',
+      strictLevel,
       'The contact form has no destination (api.baseUrl and site.contactEmail are both empty).',
       'Set site.contactEmail in client/config.json for mailto fallback and/or api.baseUrl for an external endpoint.'
     );
@@ -313,14 +349,14 @@ if (appConfig) {
     const hasCookieless = Boolean(analytics.plausibleDomain || (analytics.umamiWebsiteId && analytics.umamiSrc));
     if (hasCookieDependent) {
       add(
-        'warn',
+        strictLevel,
         'Cookie-dependent analytics (GA4 / GTM / Clarity) are configured while cookies.enabled is false — consent-gated tags stay inactive.',
         'Set cookies.enabled: true in client/config.json for TDDDG § 25 / GDPR compliance.'
       );
     }
     if (hasCookieless && analytics.allowCookielessWithoutBanner !== true) {
       add(
-        'warn',
+        strictLevel,
         'Plausible/Umami analytics are configured while cookies.enabled is false and analytics.allowCookielessWithoutBanner is false — tags will stay blocked.',
         'Enable cookies.enabled or set analytics.allowCookielessWithoutBanner: true in client/config.json.'
       );
@@ -337,14 +373,24 @@ if (appConfig) {
   }
 }
 
-if (!process.env.SITE_URL) {
+const rawSiteUrl = (process.env.SITE_URL ?? '').trim();
+if (!rawSiteUrl) {
   add(
-    'warn',
+    strictLevel,
     'SITE_URL is not set in this shell.',
-    'Set it before a production build so canonical URLs, hreflang, the feed and the sitemap use the real origin.'
+    'Set it in .env or CI before a production build so canonical URLs, hreflang, the feed and the sitemap use the real origin.'
+  );
+} else if (
+  isHandoff &&
+  /(?:^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)|example\.(?:com|org|net))/i.test(rawSiteUrl)
+) {
+  add(
+    'error',
+    `SITE_URL ("${rawSiteUrl}") points to localhost or a placeholder domain in handoff mode.`,
+    'Set SITE_URL to the client production domain (e.g. "https://client-domain.com").'
   );
 } else {
-  add('ok', `SITE_URL is set (${process.env.SITE_URL}).`);
+  add('ok', `SITE_URL is set (${rawSiteUrl}).`);
 }
 
 // ------------------------------------------------------------- dictionaries ---
@@ -395,7 +441,7 @@ if (baseDictionary) {
 
   if (todos.length > 0) {
     add(
-      'warn',
+      strictLevel,
       `Untranslated message keys: ${todos.map((entry) => `${entry.locale} ${entry.count}`).join(', ')}.`,
       'Translate them in client/messages/<locale>.json. A [TODO: …] value ships as visible copy.'
     );
@@ -411,7 +457,7 @@ const compiledMessages = fs.existsSync(compiledBarrel)
   : path.join(rootDir, 'src', 'paraglide', 'messages.js');
 
 if (!fs.existsSync(compiledMessages)) {
-  add('warn', 'src/paraglide/ is not compiled.', 'Run `npm run messages:compile`.');
+  add(strictLevel, 'src/paraglide/ is not compiled.', 'Run `npm run messages:compile`.');
 } else {
   const compiledAt = fs.statSync(compiledMessages).mtimeMs;
   const watchFiles = [
@@ -427,7 +473,7 @@ if (!fs.existsSync(compiledMessages)) {
   );
   if (newestSource > compiledAt + 1000) {
     add(
-      'warn',
+      strictLevel,
       'Message dictionaries or client/locales.json changed after src/paraglide/ was compiled.',
       'Run `npm run messages:compile`.'
     );
@@ -476,7 +522,7 @@ for (const type of types.filter((candidate) => knownTypes.includes(candidate.key
 
   if (missingFiles > 0) {
     add(
-      'warn',
+      strictLevel,
       `${type.key}: ${missingFiles} group/locale file(s) missing.`,
       'Run `npm run content:status` for the matrix.'
     );
@@ -490,7 +536,7 @@ for (const type of types.filter((candidate) => knownTypes.includes(candidate.key
   }
   if (todoEntries > 0) {
     add(
-      'warn',
+      strictLevel,
       `${type.key}: ${todoEntries} entr(ies) still carry a [TODO: …] title.`,
       'Translate the title before publishing that locale.'
     );
@@ -503,7 +549,7 @@ for (const type of types.filter((candidate) => knownTypes.includes(candidate.key
   );
   if (placeholderSlugs.length > 0) {
     add(
-      'warn',
+      strictLevel,
       `${type.key}: ${placeholderSlugs.length} placeholder slug(s): ${placeholderSlugs.slice(0, 3).join(', ')}${placeholderSlugs.length > 3 ? ', …' : ''}.`,
       'Set a native slug per language before publishing.'
     );
@@ -518,7 +564,7 @@ if (fs.existsSync(path.join(rootDir, 'starter-kit'))) {
 }
 
 if (!fs.existsSync(path.join(rootDir, 'dist'))) {
-  add('warn', 'No dist/ build yet.', 'Run `npm run build` before `npm run smoke`.');
+  add(strictLevel, 'No dist/ build yet.', 'Run `npm run build` before `npm run smoke`.');
 }
 
 // ------------------------------------------------------------------- output ---
@@ -528,7 +574,7 @@ const warnings = findings.filter((finding) => finding.level === 'warn');
 if (wantsJson) {
   console.log(
     JSON.stringify(
-      { ok: errors.length === 0, errors: errors.length, warnings: warnings.length, findings },
+      { ok: errors.length === 0, handoff: isHandoff, errors: errors.length, warnings: warnings.length, findings },
       null,
       2
     )
@@ -537,7 +583,7 @@ if (wantsJson) {
 }
 
 const icon = { ok: '✅', warn: '⚠️ ', error: '❌' };
-console.log('🩺 Project doctor\n');
+console.log(isHandoff ? '🩺 Project doctor (strict --handoff gate)\n' : '🩺 Project doctor\n');
 for (const finding of findings) {
   console.log(`${icon[finding.level]} ${finding.title}`);
   if (finding.fix && finding.level !== 'ok') console.log(`   → ${finding.fix}`);
@@ -545,6 +591,10 @@ for (const finding of findings) {
 
 console.log(
   `\n${errors.length} error(s), ${warnings.length} warning(s).` +
-    (errors.length === 0 ? ' No blocking problems found.' : ' Fix the errors above, then re-run.')
+    (errors.length === 0
+      ? isHandoff
+        ? ' All handoff readiness checks passed.'
+        : ' No blocking problems found.'
+      : ' Fix the errors above, then re-run.')
 );
 process.exit(errors.length === 0 ? 0 : 1);

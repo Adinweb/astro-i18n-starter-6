@@ -32,6 +32,15 @@ import {
   compileMessages,
   findParaglideBin,
 } from '../../../scripts/lib/compile-messages.mjs';
+import {
+  DEFAULT_CLS_BUDGET,
+  DEFAULT_JS_BUDGET_KB,
+  evaluateClsMetric,
+  evaluateJsBudget,
+  isTrackedAppScriptUrl,
+  summarizeAxeViolations,
+} from '../../../scripts/lib/qa-metrics.mjs';
+import { upsertEnvContent } from '../../../scripts/client-bootstrap.mjs';
 
 describe('scripts/i18n-add-batch.mjs normalizeBatchData', () => {
   const activeLocales = ['en', 'de', 'fr', 'fa', 'ar'];
@@ -691,3 +700,45 @@ draft: false
     expect(faParsed.body).toContain('متن مقاله فارسی.');
   });
 });
+
+describe('scripts/lib/qa-metrics.mjs & scripts/client-bootstrap.mjs', () => {
+  it('evaluates CLS, JS bundle budget, script URL filtering, and Axe critical/serious violations', () => {
+    expect(DEFAULT_CLS_BUDGET).toBe(0.05);
+    expect(DEFAULT_JS_BUDGET_KB).toBe(180);
+
+    expect(isTrackedAppScriptUrl('http://127.0.0.1:4321/_astro/hoisted.js', 'http://127.0.0.1:4321')).toBe(true);
+    expect(isTrackedAppScriptUrl('http://127.0.0.1:4321/pagefind/pagefind.js', 'http://127.0.0.1:4321')).toBe(false);
+    expect(isTrackedAppScriptUrl('https://cdn.example.com/analytics.js', 'http://127.0.0.1:4321')).toBe(false);
+
+    expect(evaluateClsMetric(0.012)).toEqual({ ok: true, value: 0.012, budget: 0.05 });
+    expect(evaluateClsMetric(0.091)).toEqual({ ok: false, value: 0.091, budget: 0.05 });
+
+    expect(evaluateJsBudget(92 * 1024)).toEqual({ ok: true, totalKb: 92, budgetKb: 180 });
+    expect(evaluateJsBudget(250 * 1024)).toEqual({ ok: false, totalKb: 250, budgetKb: 180 });
+
+    const cleanSummary = summarizeAxeViolations([{ id: 'region', impact: 'moderate', help: 'Landmarks', nodes: [{}] }]);
+    expect(cleanSummary.ok).toBe(true);
+    expect(cleanSummary.totalCount).toBe(1);
+    expect(cleanSummary.blockingCount).toBe(0);
+
+    const blockingSummary = summarizeAxeViolations([
+      { id: 'color-contrast', impact: 'serious', help: 'Insufficient contrast', nodes: [{}, {}] },
+    ]);
+    expect(blockingSummary.ok).toBe(false);
+    expect(blockingSummary.blockingCount).toBe(1);
+    expect(blockingSummary.summaryLines[0]).toContain('[serious] color-contrast');
+  });
+
+  it('updates and appends .env keys cleanly while sanitizing newlines', () => {
+    const initial = `# Comment\nSITE_URL=https://old.example\nCUSTOM_KEY=keep\n`;
+    const next = upsertEnvContent(initial, {
+      SITE_URL: 'https://client.example\ninjected',
+      PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAAA',
+    });
+    expect(next).toContain('# Comment');
+    expect(next).toContain('CUSTOM_KEY=keep');
+    expect(next).toContain('SITE_URL=https://client.example injected');
+    expect(next).toContain('PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAA');
+  });
+});
+

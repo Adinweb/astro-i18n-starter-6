@@ -75,8 +75,8 @@
 | **جستجوی فارسی بهینه‌شده** | ایندکس Pagefind با نرمال‌سازی حروف و علائم فارسی (`scripts/index-pagefind.mjs`) + بازسازی نیم‌فاصله، همزه و ارقام در سمت کاربر (`src/libs/search/persian.ts`) + فهرست `/api/search-dev/<locale>.json` به‌عنوان fallback، میان‌بر ⌘K/Ctrl+K |
 | **SEO شرکتی، `/llms.txt` و ریدایرکت** | canonical، hreflang + `x-default`، کارت PNG برنددار زمان بیلد (`/og/[...slug].png.ts`) با شکل‌دهی صحیح حروف RTL، `/llms.txt` برای خزنده‌های هوش مصنوعی، اسکیماهای JSON-LD، ریدایرکت‌های دقیق و Wildcard (`/*` → `:splat` در `dist/_redirects` و `deploy/`) |
 | **۴۰۴** | صفحهٔ locale-aware با تشخیص زبان از پیشوند URL و لینک بازگشت به نسخهٔ زبان پیش‌فرض |
-| **ابزار CLI** | ۳۰ اسکریپت (+ ۱۴ ماژول کمکی) برای راه‌اندازی و بازنشانی سایت (`site:init`, `site:reset`)، ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا، تزریق/پاک‌سازی دمو (`starter:seed`)، کنترل معماری (`upstream:check`)، بررسی سلامت، خزش لینک و ریدایرکت (`link:check`)، QA مرورگر (`qa:browser`) و `preflight` |
-| **کیفیت و استقرار** | TypeScript strict، `astro check`، ۲۹ فایل تست واحد Vitest (۲۸۹ تست)، تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، تست رگرسیون مرورگر Playwright، Knip و الگوهای `public/_headers`, `docs/deploy/nginx.conf`, `cloudflare-worker-webhook.js` |
+| **ابزار CLI** | ۳۱ اسکریپت (+ ۱۵ ماژول کمکی) برای راه‌اندازی یک‌مرحله‌ای و بازنشانی سایت (`client:bootstrap`, `site:init`, `site:reset`)، ساخت/حذف صفحه و مقاله، مدیریت انواع محتوا، تزریق/پاک‌سازی دمو (`starter:seed`)، کنترل معماری (`upstream:check`)، بررسی سلامت (`doctor` / `doctor:handoff`)، خزش لینک و ریدایرکت (`link:check`)، QA مرورگر (`qa:browser`) و `preflight` |
+| **کیفیت و استقرار** | TypeScript strict، `astro check`، ۲۹ فایل تست واحد Vitest (۲۹۷ تست)، تست سرتاسری CLI، ممیزی i18n شش‌مرحله‌ای، تست دود روی `dist/`، تست رگرسیون مرورگر Playwright (CLS، بودجهٔ JS، `@axe-core`)، Knip و الگوهای `public/_headers`, `docs/deploy/nginx.conf`, `cloudflare-worker-webhook.js` |
 | **کارایی** | خروجی کاملاً استاتیک، تصاویر WebP با `srcset` و `loading="lazy"` زیر خط دید، فونت‌های variable خودمیزبان، `transition:persist`، `compressHTML` |
 | **حرکت و اسکرول** | اسکرول نرم با **Lenis** (`setExternalScroll` + `sync`) + موتور **ChronoTrig v6.2.0** (`data-trig` + `data-trig-once="true"`) بدون خواندن چیدمان در فریم اسکرول، پشتیبانی خودکار RTL (`data-trig-direction="start"`/`"end"`)، پلکانی‌سازی گروهی (`data-trig-stagger`) و بهینه‌سازی خودکار GPU با `IntersectionObserver` |
 | **دسترس‌پذیری** | لینک پرش به محتوا، `aria-current`، `aria-live`، نشانگر فوکوس، `<dialog>` بومی، پشتیبانی یکپارچه از `prefers-reduced-motion` سیستم و کلید `data-motion` روی `<html>` |
@@ -160,17 +160,18 @@ npx astro dev stop           # توقف سرور
 | `npm run messages:compile` | ادغام `messages/core/*.json` + `client/messages/*.json` در `.paraglide-work/` و کامپایل به `src/paraglide/` |
 | `npm run check` | کامپایل پیام‌ها + `astro check` |
 | `npm run lint` | کامپایل پیام‌ها + `astro check` + `tsc --noEmit` |
-| `npm test` | کامپایل پیام‌ها + `vitest run` (۲۹ فایل، ۲۸۹ تست) |
+| `npm test` | کامپایل پیام‌ها + `vitest run` (۲۹ فایل، ۲۹۷ تست) |
 | `npm run build` | کامپایل پیام‌ها + ممیزی i18n + `astro build` + `node scripts/index-pagefind.mjs` |
 | `npm run preview` | `astro preview` روی خروجی `dist/` |
 | `npm run smoke` | تست دود روی `dist/` |
 | `npm run knip` | فایل/اکسپورت/وابستگی مرده |
-| `npm run assets:generate` | بازتولید آیکون‌ها، کارت OG و artwork هیرو/کاور |
+| `npm run assets:generate` | تولید پکیج آیکون‌ها/PWA/فاوآیکون (`--from-logo` / `brand.logo`)، کارت OG و artwork هیرو/کاور |
 | `npm run clean` | حذف `dist/`، `.astro/`، `.paraglide-work/` و `src/paraglide/` |
 | `npm run new:page` | ساخت/ویرایش صفحهٔ ایستا |
 | `npm run new:post` | ساخت/ویرایش مقالهٔ وبلاگ |
 | `npm run remove:page` | حذف صفحه (یا فقط یک زبانش) |
 | `npm run remove:post` | حذف مقاله |
+| `npm run client:bootstrap` | راه‌اندازی تک‌مرحله‌ای (`site:reset`، `starter:seed`، `site:init`، `.env`، تولید آیکون‌های لوگو و `doctor`) |
 | `npm run site:init` | راه‌اندازی سریع برند، لوگوی `--logo`/`--logo-dark`، بلوپرینت، پالت و ایمیل در `client/config.json` |
 | `npm run site:reset` | بازنشانی کامل لایهٔ مشتری (`config.json`, `cms.json`, دارایی‌های برند + `--clean-starter` اختیاری با `--yes`) |
 | `npm run starter:seed` | تزریق یا پاک‌سازی (`--clean`) محتوای دمو از `starter-kit/` |
@@ -190,8 +191,9 @@ npx astro dev stop           # توقف سرور
 | `npm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا در `client/config.json` (مسیرها، sitemap و ناوبری) |
 | `npm run content:status` | ماتریس آمادگی هر گروه × هر زبان (`--write=docs/STATUS.md`) |
 | `npm run doctor` | بررسی سلامت پروژه بدون build (از جمله کنترل آنالیتیکس/GDPR)، با دستور رفع هر مورد |
+| `npm run doctor:handoff` | گیت سخت‌گیرانهٔ پیش از تحویل به مشتری (`doctor --handoff`) — در صورت وجود دمو/نقص بیلد متوقف می‌شود |
 | `npm run link:check` | خزش `dist/`، اعتبارسنجی `redirects` و گزارش لینک‌های داخلی شکسته (از جمله `#anchor`) |
-| `npm run qa:browser` | تست چیدمان و رگرسیون تعاملی در مرورگر واقعی (Playwright LTR/RTL دسکتاپ و موبایل روی `dist/`) |
+| `npm run qa:browser` | تست چیدمان، بودجهٔ CLS/JS و دسترس‌پذیری Axe WCAG در مرورگر واقعی (Playwright LTR/RTL روی `dist/`) |
 | `npm run preflight` | چک کامل پیش از انتشار (`messages:compile` → `upstream:check` → `audit:i18n` → `doctor` → `test` → `build` → `smoke` → `link:check`) |
 | `npm run preflight:full` | اجرای `preflight` + تست مرورگر واقعی `qa:browser` |
 
@@ -510,6 +512,7 @@ SITE_URL=https://example.com npm run build
 | --- | --- |
 | `site.name` / `shortName` / `description` | رشتهٔ غیرخالی |
 | `site.author` | رشتهٔ اختیاری (پیش‌فرض: `'Astro Starter Team'`) |
+| `site.authors` | نگاشت اختیاری پروفایل نویسندگان (`Record<string, { name, url?, jobTitle?, description?, image?, sameAs? }>`) برای تبدیل خودکار نویسندهٔ مقاله به اسکیمای غنی `Person` (E-E-A-T) |
 | `site.contactEmail` | ایمیل معتبر یا رشتهٔ خالی (پیش‌فرض: `''`) — مقصد دکمهٔ `mailto:` وقتی API فرم تماس/خبرنامه تنظیم نشده است |
 | `site.socialImage.path` | باید با `/` شروع شود |
 | `site.socialImage.width` / `height` | عدد صحیح مثبت |
@@ -530,7 +533,7 @@ SITE_URL=https://example.com npm run build
 | `blog` | پرچم‌های بولین نمایش (`showReadingTime`, `showTableOfContents`, `showRelatedPosts`) |
 | `cookies` | تنظیمات رضایت کوکی (`enabled`, `consentVersion`, `storageKey`, `expirationDays`) |
 | `social` | آدرس‌های اختیاری شبکه‌های اجتماعی: `github`, `twitter`, `linkedin`, `instagram`, `telegram` (در فوتر و `sameAs` اسکیما) |
-| `api` | تنظیمات فرم بدون سرور (`provider`: `custom` \| `web3forms` \| `formspree` \| `basin` \| `webhook`, `accessKey` / `PUBLIC_WEB3FORMS_KEY`, `turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY`, `baseUrl`, `timeoutMs`, `endpoints.contact`, `endpoints.newsletter`, `topics`) — همراه با الگوی آمادهٔ `docs/deploy/cloudflare-worker-webhook.js` و بازنویسی با متغیرهای `PUBLIC_*` |
+| `api` | تنظیمات فرم بدون سرور (`provider`: `custom` \| `web3forms` \| `formspree` \| `basin` \| `webhook`, `accessKey` / `PUBLIC_WEB3FORMS_KEY`, `turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY`, `baseUrl`, `timeoutMs`, `endpoints.contact`, `endpoints.newsletter`, `redirects.contact` / `redirects.newsletter`, `topics`) — همراه با الگوی آمادهٔ `docs/deploy/cloudflare-worker-webhook.js` و بازنویسی با متغیرهای `PUBLIC_*` |
 | `server.port` | عدد صحیح بین ۱ و ۶۵۵۳۵ |
 | `server.host` | رشتهٔ غیرخالی (`0.0.0.0`) |
 
@@ -540,9 +543,18 @@ SITE_URL=https://example.com npm run build
 
 هنگام اجرای `npm run messages:compile` (توسط `scripts/messages-compile.mjs`)، لیست زبان‌ها و زبان پایه از `client/locales.json` خوانده می‌شود، دیکشنری‌های `messages/core/<locale>.json` و `client/messages/*.json` ترکیب شده و فایل تنظیمات موقت `.paraglide-work/project.inlang/settings.json` به‌طور خودکار تولید می‌شود تا کامپایلر Paraglide با یک منبع حقیقت اجرا شود. افزونه‌های درون‌یابی از `node_modules` خوانده می‌شوند و بیلد به شبکه نیاز ندارد.
 
-### تغییر رنگ، لوگو، بلوپرینت و استودیوی زندهٔ تم (`site:init`, `site:reset` + `DevThemePreview`)
+### راه‌اندازی یک‌مرحله‌ای، تغییر رنگ، لوگو، بلوپرینت و استودیوی زندهٔ تم (`client:bootstrap`, `site:init`, `site:reset`, `DevThemePreview`)
 
-به جای تغییر دستی چندین فایل، با یک دستور تمام هویت برند، بلوپرینت صنعتی (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal`)، لوگوی روشن/تیره، پالت، فونت و ایمیل تماس مشتری را در `client/config.json` تنظیم کنید:
+به جای تغییر دستی چندین فایل، با ویزارد `npm run client:bootstrap` (یا مستقیم با `npm run site:init`) تمام هویت برند، بلوپرینت صنعتی (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal`)، لوگوی روشن/تیره + پکیج کامل فاوآیکون/PWA (`assets:generate --from-logo`)، پالت، فونت، متغیرهای `.env` و ایمیل تماس مشتری را یک‌جا تنظیم کنید:
+
+```bash
+npm run client:bootstrap -- \
+  --reset --blueprint=agency --name="Acme Studio" \
+  --rtl-font=vazirmatn --email=hello@acme.example \
+  --logo=./logo.svg --site-url=https://acme.example --yes
+```
+
+یا صرفاً تنظیمات برند را با `site:init` بنویسید:
 
 ```bash
 npm run site:init -- \
@@ -1064,20 +1076,22 @@ npm run block:adapt -- --file=src/views/BlogIndexView.astro --dry-run
 | `rounded-l- → rounded-s-` · `rounded-r- → rounded-e-` | `bg-blue-600 / bg-indigo-600 → bg-primary` |
 | `border-l → border-s` · `border-r → border-e` | `text-blue-600 → text-primary` |
 
-### ۷.۸ تولید تصاویر
+### ۷.۸ تولید تصاویر و بستهٔ آیکون‌های لوگو
 
 ```bash
 npm run assets:generate
+npm run assets:generate -- --from-logo=./logo.svg --brand-only --force
 ```
 
-خروجی‌های دقیق (اندازه‌ها از پیکربندی ادغام‌شدهٔ `app.config.json` + `client/config.json` خوانده می‌شوند):
+وقتی `--from-logo` داده شود یا `brand.logo.light` به فایلی داخل `public/` اشاره کند، اسکریپت با `sharp` کل پکیج فاوآیکون و آیکون‌های PWA را مستقیم از لوگوی مشتری می‌سازد (`favicon.ico` چندسایزهٔ ۱۶+۳۲، `favicon.svg` در صورت SVG بدون اسکریپت، `apple-touch-icon.png`، `icon-192.png`، `icon-512.png` و `og-default.png` با نشان لوگو)؛ در غیر این صورت بدون وابستگی گرافیکی خروجی پیش‌فرض تولید می‌شود:
 
 | مسیر | اندازه | توضیح |
 | --- | --- | --- |
 | `public/apple-touch-icon.png` | ۱۸۰×۱۸۰ | آیکون iOS |
 | `public/icon-192.png` | ۱۹۲×۱۹۲ | آیکون PWA |
 | `public/icon-512.png` | ۵۱۲×۵۱۲ | آیکون PWA |
-| `public/og-default.png` | ۱۲۰۰×۶۳۰ | کارت OG پیش‌فرض سایت |
+| `public/favicon.ico` و `public/favicon.svg` | ۱۶/۳۲ + وکتور | فاوآیکون (در حالت `--from-logo` یا لوگوی برند خودکار ساخته می‌شود) |
+| `public/og-default.png` | ۱۲۰۰×۶۳۰ | کارت OG پیش‌فرض سایت (با لوگو در حالت `--from-logo`) |
 | `src/content/<type>/<group>/<group>.png` | ۱۲۰۰×۶۷۵ | کاور/هیروی هر گروه از هر نوع محتوای تعریف‌شده (`pages`, `blog`, `projects`, …) |
 
 پالت نرمال‌شده به روشنایی است، بنابراین هر رنگ با یک روشنایی ادراک‌شده دیده می‌شود.
@@ -1087,10 +1101,7 @@ npm run assets:generate
 تکرارپذیر است: اجرای دوبارهٔ `assets:generate` بدون تغییر محتوا هیچ فایلی را
 عوض نمی‌کند.
 
-دو چیز **تولید نمی‌شود**:
-
-- عکس مشترک هیرو (`src/assets/hero/hero-0.jpg`) — یک عکس واقعی است، نه artwork کدنویسی‌شده؛
-- `public/favicon.svg` و `public/favicon.ico` — دستی ساخته و در مخزن نگه‌داری می‌شوند.
+عکس مشترک هیرو (`src/assets/hero/hero-0.jpg`) تولید نمی‌شود چون یک عکس واقعی است.
 
 آرتورک برای **همهٔ مجموعه‌های تعریف‌شده** ساخته می‌شود، حتی اگر نوع محتوا خاموش
 باشد: ورودی ساخته‌شده به `./<group>.png` ارجاع می‌دهد و روشن‌کردن دوبارهٔ نوع
@@ -1385,12 +1396,12 @@ pre, code, .math {
 | `LanguageSwitcher.astro` | `currentLocale`, `alternates` | تعویض زبان با بارگذاری کامل |
 | `SearchModal.astro` | `locale` | مودال جستجوی دسکتاپ (Pagefind در پروداکشن / fallback استاتیک) |
 | `DrawerSearch.astro` | `locale` | جستجوی درون کشوی موبایل هماهنگ با تب‌بندی کشو |
-| `ContactForm.astro` | `locale` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` (با پشتیبانی از `api.topics`)؛ بدون نشانی، فرم رندر نمی‌شود و پنل `mailto:` (از `site.contactEmail`) جای آن را می‌گیرد |
+| `ContactForm.astro` | `id?`, `locale`, `embedded?`, `redirectTo?` | فرم تماس Pure-SSG متصل به API خارجی از طریق `src/libs/api/client.ts` (پشتیبانی از `api.topics`، `api.redirects.contact` و رویداد/ردیابی تبدیل `dispatchFormConversion`)؛ بدون نشانی، فرم رندر نمی‌شود و پنل `mailto:` جای آن را می‌گیرد |
 | `SectionHeader.astro` (`ui/`) | `eyebrow?`, `heading?`, `subheading?`, `align?`, `class?` | سرستون مشترک و DRY برای بلوک‌های سکشن (`src/components/ui/SectionHeader.astro`) |
 | `UiBadge.astro` (`ui/`) | `label?`, `locale?`, `variant?`, `size?`, `icon?`, `href?`, `external?`, `class?` | نشان معنایی وضعیتی/برچسبی در ۸ نقش رنگی |
 | `UiAlert.astro` (`ui/`) | `id?`, `locale?`, `variant?`, `title?`, `description?`, `icon?`, `action?`, `dismissible?`, `class?` | هشدار/اعلان با حاشیهٔ کامل منطقی و دکمهٔ بستن |
 | `AvatarGroup.astro` (`ui/`) | `locale?`, `items?`, `extraCount?`, `label?`, `rating?`, `size?`, `class?` | پشتهٔ آواتار هم‌پوشان با امتیاز ستاره‌ای و شمارش بومی |
-| `NewsletterBanner.astro` | `id?`, `locale?`, `eyebrow?`, `title?`, `subtitle?`, `baseUrl?`, `endpoint?`, `timeoutMs?`, `source?`, `contained?`, `surface?`, `spacing?` | بنر اشتراک خبرنامه Pure-SSG متصل به `api.endpoints.newsletter` / `PUBLIC_NEWSLETTER_API_URL` یا نمایش پنل `mailto:` |
+| `NewsletterBanner.astro` | `id?`, `locale?`, `eyebrow?`, `title?`, `subtitle?`, `baseUrl?`, `endpoint?`, `timeoutMs?`, `source?`, `redirectTo?`, `contained?`, `surface?`, `spacing?` | بنر اشتراک خبرنامه Pure-SSG متصل به `api.endpoints.newsletter` / `PUBLIC_NEWSLETTER_API_URL` با ریدایرکت پس از ارسال و رویداد تبدیل یا نمایش پنل `mailto:` |
 | `LandingHeroSplit.astro` (+ ۶ هیرو سکشن دیگر) | `id?`, `locale?`, `eyebrow?`, `title?`, `description?`, `headingTag?`, `primaryCta?`, `secondaryCta?`, `trustNote?`, `image?`, `imageAlt?`, `surface?` (`default`/`hero`/`subtle`) + اسلات `media` | ۷ هیرو سکشن آماده (`LandingHeroSplit`, `HeroCenteredEditorial`, `HeroDashboardShowcase`, `HeroCommandCli`, `HeroInteractivePrompt`, `HeroProofMarquee`, `HeroFloatingOrbSplit`) با قابلیت `headingTag` |
 | `PromoBanner.astro` | `id?`, `locale?`, `badge?`, `message?`, `icon?`, `cta?`, `variant?`, `dismissible?`, `contained?`, `spacing?` | نوار اطلاع‌رسانی یا معرفی نسخهٔ تازه با حافظهٔ بستن در نشست |
 | `PartnerLogos.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `columns?`, `contained?`, `surface?`, `spacing?` | نوار اعتماد و لوگوی مشتریان/همکاران (۴، ۵ یا ۶ ستونی) |
@@ -1407,7 +1418,8 @@ pre, code, .math {
 | `LatestPostsSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `limit?`, `category?`, `items?`, `viewAllHref?`, `contained?`, `surface?`, `spacing?` | نمایش خودکار آخرین مقاله‌های منتشرشدهٔ وبلاگ زبان جاری (با بازاستفاده از `PostCard`) |
 | `TeamSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `members?`, `contained?`, `surface?`, `spacing?` | شبکهٔ اعضای تیم با تصویر/مونوگرام و لینک‌های شبکه‌های اجتماعی |
 | `FaqAccordion.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `openFirst?`, `emitSchema?`, `contained?`, `surface?`, `spacing?` | پرسش‌های متداول با پشتیبانی از `FAQPage` JSON-LD |
-| `ContactSplitSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `channels?`, `highlights?`, `phone?`, `whatsapp?`, `telegram?`, `mapEmbedUrl?`, `showQuickActions?`, `showMap?`, `contained?`, `surface?`, `spacing?` | ترکیب اطلاعات تماس (`business`)، دکمه‌های تماس سریع (تلفن/واتساپ/تلگرام)، نقشهٔ تنبل (Click-to-Load) و فرم Pure-SSG (`ContactForm embedded`) |
+| `ProductShowcaseGrid.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `items?`, `columns?`, `enableFilter?`, `priceCurrency?`, `emitSchema?`, `contained?`, `surface?`, `spacing?` | ویترین محصولات سازگار با RTL با فیلتر دسته‌بندی، علاقه‌مندی، شمارش بومی و تولید خودکار `ItemList` + `Product`/`Offer` JSON-LD (تبدیل `IRT`/تومان به `IRR × 10`) |
+| `ContactSplitSection.astro` | `id?`, `locale?`, `eyebrow?`, `heading?`, `subheading?`, `channels?`, `phone?`, `whatsapp?`, `telegram?`, `mapEmbedUrl?`, `showQuickActions?`, `showMap?`, `contained?`, `surface?`, `spacing?` | ترکیب اطلاعات تماس (`business`)، دکمه‌های تماس سریع (تلفن/واتساپ/تلگرام)، نقشهٔ تنبل (Click-to-Load) و فرم Pure-SSG (`ContactForm embedded`) |
 | `CtaBanner.astro` | `id?`, `locale?`, `eyebrow?`, `title?`, `description?`, `primaryCta?`, `secondaryCta?`, `contained?`, `surface?` (`hero`/`surface`), `spacing?` | بنر فراخوان پایانی (CTA) پیش از فوتر |
 | `CookieConsent.astro` | `locale` | بنر و مودال مدیریت رضایت کوکی و اسکریپت‌ها (TDDDG § 25 / GDPR) |
 | `DevThemePreview.astro` | — | استودیوی تعاملی پیش‌نمایش پالت، رنگ hex و فونت (فقط در `import.meta.env.DEV`؛ خروجی پروداکشن = صفر بایت) |
@@ -1916,7 +1928,7 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 این استارتر **۱۰۰٪ استاتیک (SSG)** است و هیچ سرور بک‌اند داخلی ندارد. برای فرم تماس (`src/components/ContactForm.astro`) و بنر اشتراک خبرنامه (`src/components/NewsletterBanner.astro`)، داده‌ها مستقیماً از مرورگر از طریق آداپتور نوع‌امن `src/libs/api/client.ts` (`submitContactInquiry` / `submitNewsletterSubscription` و کمکی‌های `resolveFormEndpoint` / `resolveApiEndpoint` / `validateContactPayload` / `validateNewsletterPayload`) با محافظت تایم‌اوت (`AbortController`)، فیلتر ضداسپم Honeypot و پشتیبانی اختیاری از **Cloudflare Turnstile** (`turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY`) ارسال می‌شوند:
 - **ارائه‌دهندگان آماده (`api.provider`)**: `custom`، `web3forms` (با `accessKey` / `PUBLIC_WEB3FORMS_KEY` به‌طور خودکار به `https://api.web3forms.com/submit` وصل می‌شود)، `formspree`، `basin` و `webhook` (مانند n8n / Make؛ الگوی آماده در `docs/deploy/cloudflare-worker-webhook.js`).
 - **آنالیتیکس و Google Consent Mode v2 (`AnalyticsScripts.astro`)**: با پر کردن `analytics.ga4Id` یا `analytics.gtmId` (یا Plausible/Umami بدون کوکی با `allowCookielessWithoutBanner`)، اسکریپت‌ها به‌طور امن در `BaseLayout.astro` رندر می‌شوند و همراه با مدیریت رضایت `CookieConsent.astro` وضعیت `analytics_storage`/`ad_storage` را به‌روز می‌کنند (`npm run doctor` نبودن بنر کوکی هنگام فعال‌بودن GA4/GTM را گزارش می‌دهد).
-- نشانی API را در متغیرهای محیطی `PUBLIC_CONTACT_API_URL`، `PUBLIC_NEWSLETTER_API_URL` (یا `PUBLIC_API_BASE_URL`) و یا در بخش `api` فایل `client/config.json` (`provider`, `accessKey`, `turnstileSiteKey`, `endpoints.contact`, `endpoints.newsletter`, `topics`) تنظیم کنید.
+- نشانی API و ریدایرکت پس از ارسال را در متغیرهای محیطی `PUBLIC_CONTACT_API_URL`، `PUBLIC_NEWSLETTER_API_URL` (یا `PUBLIC_API_BASE_URL`) و یا در بخش `api` فایل `client/config.json` (`provider`, `accessKey`, `turnstileSiteKey`, `endpoints.contact`, `endpoints.newsletter`, `redirects.{contact,newsletter}`, `topics`) یا پراپ `redirectTo` روی فرم تنظیم کنید. ارسال موفق غیرهانی‌پات رویداد DOM (`astro-starter:contact-success` / `astro-starter:newsletter-success`) و رویداد تبدیل آنالیتیکس (`gtag`، `dataLayer`، `plausible`، `umami` در صورت رضایت یا حالت بدون کوکی) را نیز شلیک می‌کند.
 - **بخش تماس کامل (`ContactSplitSection.astro`)**: با پر کردن `business` در `client/config.json`، دکمه‌های اقدام سریع (تلفن، واتساپ، تلگرام) و باکس نقشهٔ تنبل (Click-to-Load با پشتیبانی از `mapEmbedUrl` یا مختصات `geo`) در کنار فرم تماس فعال می‌شوند.
 - **بدون نشانی API، فرم اصلاً رندر نمی‌شود.** بازدیدکننده به‌جای فرم یک پنل کوتاه می‌بیند:
   - اگر `site.contactEmail` تنظیم شده باشد: پیام `contact_fallback_desc` («ایمیل بزنید…») + دکمهٔ `mailto:` (`contact_fallback_cta`).
@@ -1924,7 +1936,7 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 
   دلیل: کنترل بفرست‌نشدنی بدتر از یک نشانی روشن است، و متن‌هایی مثل نام متغیر محیطی هرگز نباید به بازدیدکننده نشان داده شوند.
 - متن راهنمای توسعه‌دهنده فقط در حالت `import.meta.env.DEV` رندر می‌شود؛ در بیلد پروداکشن از HTML حذف می‌شود.
-- `npm run doctor` اگر هیچ مقصدی (نه `api.baseUrl`/متغیرهای `PUBLIC_*` و نه `site.contactEmail`) تنظیم نشده باشد هشدار می‌دهد، چون در آن حالت سایت هیچ درخواستی دریافت نمی‌کند.
+- `npm run doctor` اگر هیچ مقصدی (نه `api.baseUrl`/متغیرهای `PUBLIC_*` و نه `site.contactEmail`) تنظیم نشده باشد هشدار می‌دهد، چون در آن حالت سایت هیچ درخواستی دریافت نمی‌کند (و `npm run doctor:handoff` آن را خطای مسدودکننده می‌شمارد).
 
 ---
 
@@ -1932,7 +1944,7 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 
 ### `Seo.astro` و اسکیمای شرکتی (`src/libs/content/schema.ts`)
 
-- `BaseLayout.astro` به‌طور خودکار اسکیمای `Organization` یا `LocalBusiness` (`ProfessionalService`, `MedicalBusiness`, `Store`) را به کمک `buildOrganizationSchema` از `business` + `social` (`sameAs`) تزریق می‌کند و `buildServiceSchema` نیز برای صفحات خدمات آماده است.
+- `BaseLayout.astro` به‌طور خودکار اسکیمای `Organization` یا `LocalBusiness` (`ProfessionalService`, `MedicalBusiness`, `Store`) را به کمک `buildOrganizationSchema` از `business` + `social` (`sameAs`) تزریق می‌کند؛ همچنین `resolveAuthorSchema` (`site.authors` → `Person` E-E-A-T در `BlogPostView.astro`)، `buildProductListSchema` (در `ProductShowcaseGrid.astro` با تبدیل خودکار واحد `IRT` تومان به `IRR` × ۱۰ مطابق ISO-4217) و `buildServiceSchema` نیز آماده هستند.
 - `<title>`، `description`، `canonical`
 - `rel="prev"` / `rel="next"` برای صفحات صفحه‌بندی‌شده
 - `rel="alternate" type="application/rss+xml"` برای فید همان زبان (با عنوان زبان)
@@ -1947,16 +1959,16 @@ getReadingTime(body);   // ≈ ۲۰۰ کلمه بر دقیقه، حداقل ۱
 `og:locale` با `Intl.Locale(htmlLang).maximize()` خودکار ساخته می‌شود
 (`en` → `en_US`، `fa` → `fa_IR`).
 
-### تصویر اجتماعی (OG Card) و کیفیت حروف RTL
+### تصویر اجتماعی (OG Card) و کیفیت قطعی حروف RTL
 
 ```ts
 // src/libs/content/social.ts و src/libs/content/og-card.ts
 // اگر brand.socialCardMode === 'branded' (پیش‌فرض app.config.json)، route استاتیک `/og/[...slug].png.ts`
-// کارت ۱۲۰۰×۶۳۰ PNG برنددار هر صفحه/مقاله را در زمان بیلد تولید می‌کند (در SVG فارسی/عربی
-// از direction="rtl" و unicode-bidi="embed" و مبدأ راست برای اتصال دقیق حروف در sharp استفاده می‌شود)؛
-// در حالت 'artwork' تصویر گروه با getSocialCard() برش می‌خورد و در 'default' از `/og-default.png` استفاده می‌شود.
+// کارت ۱۲۰۰×۶۳۰ PNG برنددار هر صفحه/مقاله را در زمان بیلد تولید می‌کند:
+// رندر با `@resvg/resvg-js` و فونت‌های واکشی‌شده از `@fontsource-variable/vazirmatn` و
+// `@fontsource-variable/plus-jakarta-sans` (با `wawoff2`) بدون هیچ وابستگی به فونت سیستم‌عامل
+// به‌همراه درج خودکار لوگوی برند (`brand.logo`) و تراز راست (`text-anchor="end"` + `direction="rtl"`) انجام می‌شود.
 const card = await getSocialCard(entry.data.image);
-// → { url: 'https://…/og-….jpg', width: 1200, height: 630 }
 ```
 
 ### endpointها
@@ -2016,12 +2028,13 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 ```bash
 npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
 npm run lint           # کامپایل پیام‌ها + astro check + tsc --noEmit
-npm test               # ۲۹ فایل تست واحد Vitest (۲۸۹ تست)
+npm test               # ۲۹ فایل تست واحد Vitest (۲۹۷ تست)
 npm run audit:i18n
+npm run doctor:handoff # گیت سخت‌گیرانهٔ پیش از تحویل به مشتری
 SITE_URL=https://example.com npm run build
 npm run smoke          # تست دود روی dist/
 npm run link:check     # خزش dist/، اعتبارسنجی redirects و گزارش لینک‌های شکسته
-npm run qa:browser     # تست مرورگر واقعی Playwright (LTR/RTL دسکتاپ و موبایل، کشو، جستجو، کوکی و گالری)
+npm run qa:browser     # تست مرورگر واقعی Playwright (CLS/JS، @axe-core/playwright WCAG، کشو، جستجو، گالری)
 npm run knip
 npm run verify:cli     # تست سرتاسری گردش‌کارهای CLI
 ```
@@ -2059,7 +2072,7 @@ npm run verify:cli     # تست سرتاسری گردش‌کارهای CLI
 | `src/libs/ui/icons.test.ts` | یکتایی و kebab-case بودن `SITE_ICONS` (۶۹ آیکون هسته)، `resolveIconName`، آیکون‌های جهت‌دار RTL و پوشش آیکون‌های ناوبری |
 | `src/libs/ui/blocks.test.ts` | ۶۴ بلوک آماده (۲۹ بلوک سکشن شامل ۷ هیرو + ۳۵ پریمیتیو رابط در `src/components/ui/`)؛ خواص منطقی، نبود `<svg>` خام، کلیدهای Paraglide و توکن‌های معنایی |
 
-> **۲۹ فایل تست واحد (۲۸۹ تست).** ماژول `astro:content` در Vitest با
+> **۲۹ فایل تست واحد (۲۹۷ تست).** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -2262,17 +2275,18 @@ dist/
 | `npm run messages:compile` | ادغام `messages/core/` + `client/messages/` و کامپایل به `src/paraglide/` |
 | `npm run check` | `astro check` |
 | `npm run lint` | کامپایل پیام‌ها + astro check + tsc |
-| `npm test` | تست‌های Vitest (۲۹ فایل، ۲۸۹ تست) |
+| `npm test` | تست‌های Vitest (۲۹ فایل، ۲۹۷ تست) |
 | `npm run build` | بیلد تولیدی + Pagefind |
 | `npm run preview` | پیش‌نمایش خروجی |
 | `npm run smoke` | تست دود روی `dist/` |
 | `npm run knip` | کد مرده |
 | `npm run clean` | حذف `dist/`، `.astro/`، `.paraglide-work/`، `src/paraglide/` |
-| `npm run assets:generate` | بازتولید آیکون‌ها، OG و artworkها |
+| `npm run assets:generate` | بازتولید آیکون‌ها، OG و artworkها (با `--from-logo` از روی لوگوی مشتری) |
 | `npm run new:page` | ساخت/ویرایش صفحه |
 | `npm run new:post` | ساخت/ویرایش مقاله |
 | `npm run remove:page` | حذف صفحه |
 | `npm run remove:post` | حذف مقاله |
+| `npm run client:bootstrap` | راه‌اندازی یک‌مرحله‌ای مشتری (`site:reset`/`starter:seed` + `site:init` + `.env` + آیکون‌های لوگو + `doctor`) |
 | `npm run site:init` | راه‌اندازی سریع برند، لوگوی `--logo`، `--blueprint` صنعتی، پالت و ایمیل در `client/config.json` |
 | `npm run site:reset` | بازنشانی لایهٔ مشتری (`--yes` و `--clean-starter`) |
 | `npm run starter:seed` | تزریق یا پاک‌سازی (`--clean`) محتوای دمو + `--blueprint` از `starter-kit/` |
@@ -2292,8 +2306,9 @@ dist/
 | `npm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا |
 | `npm run content:status` | ماتریس آمادگی گروه × زبان |
 | `npm run doctor` | بررسی سلامت پروژه بدون build |
+| `npm run doctor:handoff` | دروازهٔ سخت‌گیرانهٔ پیش از تحویل (`doctor --handoff`): با هشدار دمو یا نبود `SITE_URL` متوقف می‌شود |
 | `npm run link:check` | خزش `dist/`، تست ریدایرکت و گزارش لینک شکسته |
-| `npm run qa:browser` | تست مرورگر واقعی Playwright (RTL/LTR دسکتاپ و موبایل) |
+| `npm run qa:browser` | تست مرورگر واقعی Playwright (CLS، بودجهٔ JS، `@axe-core` WCAG، RTL/LTR دسکتاپ و موبایل) |
 | `npm run preflight` | اجرای چک‌های کلیدی تا `build` + `smoke` + `link:check` |
 | `npm run preflight:full` | اجرای `preflight` + تست مرورگر واقعی `qa:browser` |
 | `npx astro dev --background` | اجرای سرور توسعه در پس‌زمینه |
@@ -2396,7 +2411,7 @@ dist/
 
 ### `src/libs/config/app.ts`
 
-`siteConfig` · `POSTS_PER_PAGE` · `HERO_TITLE_ID` · `DEFAULT_HERO_IMAGE` · `absoluteUrl` · `UI_CONFIG` · `BLOG_CONFIG` · `COOKIE_CONFIG` · `API_CONFIG` · `SOCIAL_CONFIG` · `BUSINESS_CONFIG`
+`siteConfig` · `POSTS_PER_PAGE` · `HERO_TITLE_ID` · `DEFAULT_HERO_IMAGE` · `absoluteUrl` · `UI_CONFIG` · `BLOG_CONFIG` · `COOKIE_CONFIG` · `API_CONFIG` · `ANALYTICS_CONFIG` · `SOCIAL_CONFIG` · `BUSINESS_CONFIG` · `REDIRECTS_CONFIG`
 
 > ⚠️ این ماژول در زمان import پیکربندی ادغام‌شده (`app.config.json` + `client/config.json`) را با Zod اعتبارسنجی می‌کند، پس فقط در کامپوننت‌ها، viewها، صفحه‌ها و اسکریپت‌های Node استفاده می‌شود. ماژولی که به مرورگر می‌رود باید از `src/libs/config/client.ts` بخواند (`CLIENT_COOKIE_CONFIG`، `CLIENT_NAVBAR_CONFIG`، `CLIENT_MOTION_CONFIG`) که بدون Zod می‌خواند و پیش‌فرض‌هایش را از `defaults.ts` می‌گیرد — یک تعریف مشترک با طرح‌واره، بدون تکرار مقدار.
 
@@ -2412,7 +2427,7 @@ dist/
 
 | فایل | خروجی‌ها |
 | --- | --- |
-| `api/client.ts` | `FormProvider` · `resolveFormEndpoint` · `resolveApiEndpoint` · `getInvalidContactFields` · `validateContactPayload` · `submitContactInquiry` · `validateNewsletterPayload` · `submitNewsletterSubscription` |
+| `api/client.ts` | `FormProvider` · `resolveFormEndpoint` · `resolveApiEndpoint` · `getInvalidContactFields` · `validateContactPayload` · `submitContactInquiry` · `validateNewsletterPayload` · `submitNewsletterSubscription` · `resolvePostSubmitRedirect` · `dispatchFormConversion` |
 | `search/client.ts` | `executeSearch` · `getPagefindInstance` · `plainText` |
 | `search/persian.ts` | `normalizePersianQuery` · `applyPersianZwnjCompounds` · `buildSearchQueryVariants` · `normalizeForFallbackMatch` · `matchesFallbackSearch` |
 
@@ -2439,7 +2454,7 @@ dist/
 | `blog.ts` | `parseBlogFilters` · `parseBlogFilterPage` · `buildBlogFilterQuery` · `matchesBlogFilters` · `filterBlogPosts` · `hasActiveFilters` · `areBlogFiltersEqual` · `toggleBlogCategory` · `toggleBlogTag` · `getReadingTime` · `collectTaxonomyKeys` · `humanizeKey` · `NO_FILTERS` |
 | `taxonomy.ts` | `getCategoryLabel` · `getTagLabel` |
 | `faq.ts` | `buildFaqSchema` |
-| `schema.ts` | `buildOrganizationSchema` · `buildServiceSchema` · `collectSocialProfiles` |
+| `schema.ts` | `buildOrganizationSchema` · `buildServiceSchema` · `buildPersonSchema` · `resolveAuthorSchema` · `buildProductSchema` · `buildProductListSchema` · `normalizeIsoCurrency` · `collectSocialProfiles` |
 | `og-card.ts` | `buildOgRouteKey` · `getBrandedOgHref` · `renderBrandedOgSvg` · `renderBrandedOgPng` |
 | `social.ts` | `getSocialCard` · `SocialImage` |
 

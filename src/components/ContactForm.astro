@@ -3,7 +3,8 @@ import Button from '@/components/ui/Button.astro';
 import IconBox from '@/components/ui/IconBox.astro';
 import UiInput from '@/components/ui/UiInput.astro';
 import { DEFAULT_LOCALE, type Locale } from '@/i18n/locales';
-import { resolveFormEndpoint } from '@/libs/api/client';
+import { localizeHref } from '@/i18n/paths';
+import { resolveFormEndpoint, resolvePostSubmitRedirect } from '@/libs/api/client';
 import { API_CONFIG, siteConfig } from '@/libs/config/app';
 import * as m from '@/paraglide/messages';
 
@@ -12,9 +13,11 @@ interface Props {
   locale: Locale;
   /** Omit outer section wrapper and left-hand intro column when composed inside `ContactSplitSection`. */
   embedded?: boolean;
+  /** Optional safe redirect URL (path or https:// URL) navigated after successful submission. */
+  redirectTo?: string;
 }
 
-const { id, locale, embedded = false } = Astro.props;
+const { id, locale, embedded = false, redirectTo } = Astro.props;
 
 const resolvedEndpoint = resolveFormEndpoint(
   API_CONFIG.provider,
@@ -24,6 +27,12 @@ const resolvedEndpoint = resolveFormEndpoint(
 );
 const isConfigured = resolvedEndpoint !== null;
 const turnstileSiteKey = API_CONFIG.turnstileSiteKey.trim();
+const safeRawRedirect = resolvePostSubmitRedirect(redirectTo ?? API_CONFIG.redirects?.contact);
+const resolvedRedirectTo = safeRawRedirect
+  ? safeRawRedirect.startsWith('/')
+    ? localizeHref(safeRawRedirect, locale)
+    : safeRawRedirect
+  : '';
 
 // Two audiences read this component. A visitor gets a form or a mailto button,
 // never an environment variable name; the developer note below is rendered in
@@ -144,6 +153,7 @@ const topicOptions = API_CONFIG.topics?.length
         data-access-key={API_CONFIG.accessKey}
         data-turnstile-site-key={turnstileSiteKey}
         data-timeout-ms={String(API_CONFIG.timeoutMs)}
+        data-redirect-to={resolvedRedirectTo || undefined}
         data-label-submit={copy.submit}
         data-label-submitting={copy.submitting}
         data-msg-success-title={copy.successTitle}
@@ -281,7 +291,9 @@ const topicOptions = API_CONFIG.topics?.length
 
 <script>
   import {
+    dispatchFormConversion,
     getInvalidContactFields,
+    resolvePostSubmitRedirect,
     submitContactInquiry,
     type ContactInquiryPayload,
     type ContactSubmissionErrorCode,
@@ -487,6 +499,17 @@ const topicOptions = API_CONFIG.topics?.length
             form.dataset.msgSuccessTitle ?? '',
             form.dataset.msgSuccessDesc ?? ''
           );
+          if (!honeypot.trim()) {
+            const redirectTarget = resolvePostSubmitRedirect(form.dataset.redirectTo);
+            dispatchFormConversion('contact', {
+              locale: payload.locale,
+              provider,
+              ...(redirectTarget ? { redirectTo: redirectTarget } : {}),
+            });
+            if (redirectTarget) {
+              window.location.assign(redirectTarget);
+            }
+          }
           return;
         }
 

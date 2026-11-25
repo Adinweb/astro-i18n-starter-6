@@ -787,6 +787,17 @@ try {
       : `exit ${result.code}: ${doctorReport.findings.find((finding) => finding.level === 'error')?.title ?? result.stderr.trim().split('\n')[0]}`
   );
 
+  result = run(sandbox, 'node', ['scripts/doctor.mjs', '--handoff', '--json'], { allowFailure: true });
+  const handoffReport = JSON.parse(result.stdout);
+  record(
+    result.code === 1 &&
+      handoffReport.ok === false &&
+      handoffReport.handoff === true &&
+      handoffReport.errors > 0,
+    'doctor --handoff escalates readiness warnings into blocking errors',
+    `exit ${result.code}, ${handoffReport.errors} error(s)`
+  );
+
   result = run(sandbox, 'node', ['scripts/content-status.mjs', '--json']);
   const status = JSON.parse(result.stdout);
   record(
@@ -911,6 +922,29 @@ try {
       !exists('public/brand/logo.svg'),
     'site:reset --yes resets client/config.json, client/cms.json, and public/brand/'
   );
+
+  result = run(sandbox, 'node', [
+    'scripts/client-bootstrap.mjs',
+    '--yes',
+    '--skip-assets',
+    '--skip-doctor',
+    '--blueprint=agency',
+    '--name=Nova Studio',
+    '--email=team@novastudio.test',
+    '--site-url=https://novastudio.test',
+  ]);
+  const bootstrappedMerged = readMergedConfig(sandbox);
+  record(
+    result.code === 0 &&
+      bootstrappedMerged.site.name === 'Nova Studio' &&
+      bootstrappedMerged.site.contactEmail === 'team@novastudio.test' &&
+      bootstrappedMerged.business?.type === 'ProfessionalService' &&
+      exists('.env') &&
+      read('.env').includes('SITE_URL=https://novastudio.test'),
+    'client:bootstrap configures client/config.json and .env in one headless command'
+  );
+  run(sandbox, 'node', ['scripts/site-reset.mjs', '--yes']);
+  fs.rmSync(path.join(sandbox, '.env'), { force: true });
 
   if (altLoc !== baseLoc) {
     result = run(sandbox, 'node', ['scripts/set-language-mode.mjs', altLoc, '--force']);

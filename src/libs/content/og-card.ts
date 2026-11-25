@@ -1,4 +1,8 @@
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 import sharp from 'sharp';
+import { Resvg, type ResvgRenderOptions } from '@resvg/resvg-js';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
 import { siteConfig } from '@/libs/config/app';
 import {
@@ -23,6 +27,8 @@ export interface OgCardRenderOptions {
   height?: number;
   siteName?: string;
   brand?: BrandThemeInput;
+  /** Optional `data:image/...` badge embedded in the top opposite corner (`null` disables auto-logo lookup). */
+  logoDataUri?: string | null;
 }
 
 const CONTROL_CHARS_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
@@ -126,9 +132,89 @@ function rgbToHex(rgb: readonly [number, number, number]): string {
   return `#${rgb.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('')}`;
 }
 
+const require = createRequire(import.meta.url);
+let cachedFontBuffersPromise: Promise<Buffer[]> | null = null;
+const cachedLogoDataUriMap = new Map<string, string | null>();
+
+function resolveBundledFontFiles(): string[] {
+  const roots = [process.cwd()];
+  const candidates = [
+    'node_modules/@fontsource-variable/vazirmatn/files/vazirmatn-arabic-wght-normal.woff2',
+    'node_modules/@fontsource-variable/vazirmatn/files/vazirmatn-latin-wght-normal.woff2',
+    'node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2',
+  ];
+
+  const resolved: string[] = [];
+  for (const rel of candidates) {
+    for (const base of roots) {
+      const candidate = path.join(base, rel);
+      if (fs.existsSync(candidate)) {
+        resolved.push(candidate);
+        break;
+      }
+    }
+  }
+  return resolved;
+}
+
+export function loadDeterministicOgFonts(): Promise<Buffer[]> {
+  if (cachedFontBuffersPromise) return cachedFontBuffersPromise;
+
+  cachedFontBuffersPromise = (async () => {
+    const fontFiles = resolveBundledFontFiles();
+    if (fontFiles.length === 0) return [];
+    const decompress = require('wawoff2/decompress') as (
+      input: Buffer | Uint8Array
+    ) => Promise<Uint8Array>;
+
+    const buffers: Buffer[] = [];
+    for (const fontFile of fontFiles) {
+      const woff2 = fs.readFileSync(fontFile);
+      const ttf = await decompress(woff2);
+      buffers.push(Buffer.from(ttf));
+    }
+    return buffers;
+  })();
+
+  return cachedFontBuffersPromise;
+}
+
+async function resolveBrandLogoDataUri(logoPath?: string): Promise<string | null> {
+  const clean = logoPath?.trim();
+  if (!clean) return null;
+
+  if (cachedLogoDataUriMap.has(clean)) {
+    return cachedLogoDataUriMap.get(clean) ?? null;
+  }
+
+  const publicRoot = path.resolve(process.cwd(), 'public');
+  const candidate = path.resolve(publicRoot, clean.replace(/^\/+/, ''));
+  if (!candidate.startsWith(publicRoot + path.sep) || !fs.existsSync(candidate)) {
+    cachedLogoDataUriMap.set(clean, null);
+    return null;
+  }
+
+  try {
+    const pngBadge = await sharp(candidate)
+      .resize(72, 72, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png({ compressionLevel: 9 })
+      .toBuffer();
+    const uri = `data:image/png;base64,${pngBadge.toString('base64')}`;
+    cachedLogoDataUriMap.set(clean, uri);
+    return uri;
+  } catch {
+    cachedLogoDataUriMap.set(clean, null);
+    return null;
+  }
+}
+
 /**
  * Renders a deterministic 1200x630 SVG card matching the brand theme, palette,
- * and writing direction of the target route.
+ * logo badge, and writing direction of the target route.
+ *
+ * Uses `text-anchor="end"` for RTL lines because SVG renderers (including `resvg`)
+ * align RTL text's visual start edge on `x` when anchored to `end` under
+ * `direction="rtl"`.
  */
 export function renderBrandedOgSvg(
   context: SocialCardContext,
@@ -158,15 +244,15 @@ export function renderBrandedOgSvg(
 
   const marginX = 88;
   const textX = isRtl ? width - marginX : marginX;
-  const textAnchor = 'start';
+  const textAnchor = isRtl ? 'end' : 'start';
   const accentX = isRtl ? width - marginX - 6 : marginX;
   const kickerTextX = isRtl ? textX - 20 : textX + 20;
   const glowPrimaryCx = isRtl ? Math.round(width * 0.18) : Math.round(width * 0.82);
   const glowAccentCx = isRtl ? Math.round(width * 0.76) : Math.round(width * 0.24);
 
   const fontFamily = isRtl
-    ? "'Noto Naskh Arabic', 'Noto Sans Arabic', 'Vazirmatn', 'Noto Kufi Arabic', 'Tahoma', sans-serif"
-    : "'Noto Sans', 'Liberation Sans', 'DejaVu Sans', sans-serif";
+    ? "'Vazirmatn', 'Noto Naskh Arabic', 'Noto Sans Arabic', 'Tahoma', sans-serif"
+    : "'Plus Jakarta Sans', 'Vazirmatn', 'Noto Sans', 'Liberation Sans', sans-serif";
 
   const rtlTextAttrs = isRtl ? ` direction="rtl" unicode-bidi="embed" xml:lang="${escapeXml(meta.htmlLang)}"` : '';
 
@@ -208,7 +294,16 @@ export function renderBrandedOgSvg(
           .join('')}</text>`
       : '';
 
-  const siteFooterX = isRtl ? width - marginX : marginX;
+  const logoDataUri = typeof options.logoDataUri === 'string' && options.logoDataUri.trim() ? options.logoDataUri.trim() : '';
+  const logoBadgeBoxSize = 60;
+  const logoBadgeX = isRtl ? marginX : width - marginX - logoBadgeBoxSize;
+  const logoBadgeY = 86;
+  const logoMarkup = logoDataUri
+    ? `<rect x="${logoBadgeX}" y="${logoBadgeY}" width="${logoBadgeBoxSize}" height="${logoBadgeBoxSize}" rx="14" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1" />
+  <image href="${escapeXml(logoDataUri)}" x="${logoBadgeX + 10}" y="${logoBadgeY + 10}" width="${logoBadgeBoxSize - 20}" height="${logoBadgeBoxSize - 20}" preserveAspectRatio="xMidYMid meet" />`
+    : '';
+
+  const siteFooterX = textX;
   const localeBadgeText = `${meta.name} · ${context.locale.toUpperCase()}`;
   const localeX = isRtl ? marginX : width - marginX;
   const localeAnchor = isRtl ? 'start' : 'end';
@@ -238,6 +333,7 @@ export function renderBrandedOgSvg(
   <circle cx="${glowPrimaryCx}" cy="170" r="360" fill="url(#${glowAId})" />
   <circle cx="${glowAccentCx}" cy="520" r="280" fill="url(#${glowBId})" />
 
+  ${logoMarkup}
   <rect x="${accentX}" y="96" width="6" height="40" rx="3" fill="${resolvedTheme.accentHex}" />
   ${kickerTspan}
 
@@ -246,7 +342,7 @@ export function renderBrandedOgSvg(
 
   <line x1="${marginX}" y1="528" x2="${width - marginX}" y2="528" stroke="#ffffff" stroke-opacity="0.16" stroke-width="1" />
   <text x="${siteFooterX}" y="572" text-anchor="${textAnchor}"${rtlTextAttrs} font-family="${fontFamily}" font-size="24" font-weight="600" fill="#e2e8f0">${escapeXml(siteName)}</text>
-  <text x="${localeX}" y="572" text-anchor="${localeAnchor}" font-family="'Noto Sans', 'Liberation Sans', sans-serif" font-size="18" font-weight="500" fill="#94a3b8">${escapeXml(localeBadgeText)}</text>
+  <text x="${localeX}" y="572" text-anchor="${localeAnchor}" font-family="'Plus Jakarta Sans', 'Vazirmatn', 'Noto Sans', sans-serif" font-size="18" font-weight="500" fill="#94a3b8">${escapeXml(localeBadgeText)}</text>
 </svg>`;
 }
 
@@ -254,8 +350,27 @@ export async function renderBrandedOgPng(
   context: SocialCardContext,
   options: OgCardRenderOptions = {}
 ): Promise<Buffer> {
-  const svg = renderBrandedOgSvg(context, options);
-  return await sharp(Buffer.from(svg, 'utf-8'))
-    .png({ compressionLevel: 9 })
-    .toBuffer();
+  const logoDataUri =
+    options.logoDataUri === null
+      ? undefined
+      : (options.logoDataUri ??
+          (await resolveBrandLogoDataUri(siteConfig.logo?.dark || siteConfig.logo?.light)) ??
+          undefined);
+
+  const svg = renderBrandedOgSvg(context, { ...options, logoDataUri });
+  const fontBuffers = await loadDeterministicOgFonts();
+  const isRtl = getLocaleMeta(context.locale).dir === 'rtl';
+
+  const fontOptions: NonNullable<ResvgRenderOptions['font']> & { fontBuffers?: Buffer[] } = {
+    fontBuffers,
+    loadSystemFonts: fontBuffers.length === 0,
+    defaultFontFamily: isRtl ? 'Vazirmatn' : 'Plus Jakarta Sans',
+    sansSerifFamily: isRtl ? 'Vazirmatn' : 'Plus Jakarta Sans',
+  };
+
+  const resvg = new Resvg(svg, { font: fontOptions });
+
+  const pngData = resvg.render().asPng();
+  return Buffer.from(pngData);
 }
+

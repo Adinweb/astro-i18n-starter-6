@@ -682,16 +682,16 @@ import * as m from '@/paraglide/messages';
 ```bash
 npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
 npm run lint           # messages + astro check + tsc (خطای تایپ/شمای محتوا اینجا گیر می‌افتد)
-npm test               # ۲۹ فایل تست واحد (۲۸۹ تست)
+npm test               # ۲۹ فایل تست واحد (۲۹۷ تست)
 npm run audit:i18n     # هم‌ترازی زبان‌ها، کلیدها، مسیرها، RTL
-npm run doctor         # بررسی سلامت پروژه بدون بیلد
+npm run doctor:handoff # بررسی سلامت + دروازهٔ سخت‌گیرانهٔ پیش از تحویل مشتری
 npm run build          # Astro + Pagefind
 npm run smoke          # HTML/SEO/feed/H1 روی خروجی واقعی
 npm run link:check     # خزش dist/ برای یافتن لینک یا #anchor شکسته
-npm run qa:browser     # تست چیدمان مرورگر واقعی (Playwright؛ دسکتاپ + موبایل RTL/LTR)
+npm run qa:browser     # تست مرورگر واقعی Playwright (CLS، بودجهٔ JS، @axe-core WCAG، RTL/LTR)
 npm run preflight:full # اجرای یک‌جا و پشت‌سرهم کل زنجیرهٔ بالا
 npm run knip           # کد و وابستگی مرده
-npm run verify:cli     # ۹۷ ادعای CLI در محیط ایزوله
+npm run verify:cli     # تست سرتاسری گردش‌کارهای CLI در محیط ایزوله
 ```
 
 سپس دستی در مرورگر:

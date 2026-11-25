@@ -17,7 +17,9 @@ import {
   analyticsConfigSchema,
   redirectsConfigSchema,
   apiEndpointsSchema,
+  apiRedirectsSchema,
   apiConfigSchema,
+  authorProfileSchema,
   defaultUiConfig,
   defaultSocialConfig,
   defaultBusinessConfig,
@@ -267,6 +269,31 @@ describe('src/libs/config/app.ts', () => {
       expect(parsed.topics).toHaveLength(1);
       expect(parsed.topics?.[0]?.labels?.fa).toBe('فروش و تعرفه‌ها');
       expect(() => apiConfigSchema.parse({ topics: [{ value: '', label: 'Empty' }] })).toThrow();
+    });
+
+    it('validates optional post-submit form redirects', () => {
+      expect(apiRedirectsSchema.parse({})).toEqual({ contact: '', newsletter: '' });
+      const parsed = apiConfigSchema.parse({
+        redirects: { contact: '/thank-you/', newsletter: '/subscribed/' },
+      });
+      expect(parsed.redirects).toEqual({
+        contact: '/thank-you/',
+        newsletter: '/subscribed/',
+      });
+    });
+  });
+
+  describe('authorProfileSchema', () => {
+    it('validates structured E-E-A-T author profiles with optional social URLs', () => {
+      const profile = authorProfileSchema.parse({
+        name: 'Ali Rezaei',
+        url: '/fa/درباره-ما/',
+        jobTitle: 'Lead Engineer',
+        sameAs: ['https://github.com/alirezaei'],
+      });
+      expect(profile.name).toBe('Ali Rezaei');
+      expect(profile.sameAs).toEqual(['https://github.com/alirezaei']);
+      expect(() => authorProfileSchema.parse({ name: '' })).toThrow();
     });
   });
 

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+  dispatchFormConversion,
   getInvalidContactFields,
   resolveApiEndpoint,
+  resolvePostSubmitRedirect,
   submitContactInquiry,
   submitNewsletterSubscription,
   validateContactPayload,
@@ -256,6 +258,28 @@ describe('src/libs/api/client.ts', () => {
       expect(JSON.parse(fetchSpy.mock.calls[0]![1].body).cfTurnstileToken).toBe(
         'cf-token-123'
       );
+    });
+  });
+
+  describe('post-submit redirect & conversion dispatcher', () => {
+    it('allows root-relative paths and explicit http(s) URLs while rejecting unsafe targets', () => {
+      expect(resolvePostSubmitRedirect('/thank-you/')).toBe('/thank-you/');
+      expect(resolvePostSubmitRedirect('https://cal.example.com/booked')).toBe(
+        'https://cal.example.com/booked'
+      );
+      expect(resolvePostSubmitRedirect('')).toBeNull();
+      expect(resolvePostSubmitRedirect('//evil.example/phish')).toBeNull();
+      expect(resolvePostSubmitRedirect('/\\evil.example')).toBeNull();
+      expect(resolvePostSubmitRedirect('javascript:alert(1)')).toBeNull();
+      expect(resolvePostSubmitRedirect('data:text/html,hi')).toBeNull();
+      expect(resolvePostSubmitRedirect('https://user:pass@evil.example/phish')).toBeNull();
+      expect(resolvePostSubmitRedirect('/ok\r\nSet-Cookie: a=b')).toBeNull();
+    });
+
+    it('is safe to invoke dispatchFormConversion when window/document globals are absent', () => {
+      expect(() =>
+        dispatchFormConversion('contact', { locale: 'en', provider: 'custom' })
+      ).not.toThrow();
     });
   });
 });

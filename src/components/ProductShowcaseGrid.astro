@@ -15,7 +15,11 @@ import SectionHeader from '@/components/ui/SectionHeader.astro';
 import UiBadge from '@/components/ui/UiBadge.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
-import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import { DEFAULT_HERO_IMAGE, absoluteUrl, siteConfig } from '@/libs/config/app';
+import {
+  buildProductListSchema,
+  type ProductAvailability,
+} from '@/libs/content/schema';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
@@ -30,6 +34,10 @@ export interface ProductItem {
   currency?: string;
   currencyPrefix?: string;
   currencySuffix?: string;
+  priceCurrency?: string;
+  availability?: ProductAvailability;
+  sku?: string;
+  brand?: string;
   rating?: number;
   reviewCount?: number;
   image?: ImageMetadata;
@@ -47,6 +55,8 @@ interface Props {
   items?: readonly ProductItem[];
   columns?: 2 | 3 | 4;
   enableFilter?: boolean;
+  priceCurrency?: string;
+  emitSchema?: boolean;
   contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'sm' | 'md' | 'lg';
@@ -61,6 +71,8 @@ const {
   items,
   columns = 3,
   enableFilter = true,
+  priceCurrency,
+  emitSchema = true,
   contained = false,
   surface = 'default',
   spacing = 'md',
@@ -145,6 +157,35 @@ const gridColsClass =
     : columns === 4
       ? 'sm:grid-cols-2 xl:grid-cols-4'
       : 'md:grid-cols-2 lg:grid-cols-3';
+
+const productListSchema = emitSchema
+  ? buildProductListSchema(
+      resolvedItems.map((item) => ({
+        name: item.title,
+        description: item.description,
+        price: item.price,
+        priceCurrency: item.priceCurrency ?? priceCurrency,
+        currency: item.currency ?? item.currencySuffix ?? item.currencyPrefix ?? defaultCurrency,
+        availability: item.availability,
+        sku: item.sku,
+        brand: item.brand ?? siteConfig.name,
+        url:
+          item.href &&
+          (/^https?:\/\//i.test(item.href.trim()) ||
+            (item.href.trim().startsWith('/') &&
+              !item.href.trim().startsWith('//') &&
+              !item.href.trim().startsWith('/\\')))
+            ? item.href.trim().startsWith('http')
+              ? item.href.trim()
+              : absoluteUrl(item.href.trim())
+            : undefined,
+        image: item.image?.src ? absoluteUrl(item.image.src) : undefined,
+        rating: item.rating,
+        reviewCount: item.reviewCount,
+      })),
+      absoluteUrl(Astro.url.pathname)
+    )
+  : null;
 ---
 
 <PageSection
@@ -316,6 +357,13 @@ const gridColsClass =
       }
     </div>
   </div>
+  {productListSchema && (
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(productListSchema).replace(/</g, '\\u003c')}
+    />
+  )}
 </PageSection>
 
 <script>

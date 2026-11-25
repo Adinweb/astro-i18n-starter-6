@@ -7,20 +7,35 @@
  * Existing files are kept so real client artwork is never overwritten by a
  * placeholder; pass `--force` to regenerate every asset in place.
  */
-import fs from 'node:fs';
-import path from 'node:path';
-import zlib from 'node:zlib';
-import { readAppConfig, rootDir } from './lib/content-types.mjs';
-
 /**
  * Existing files are kept unless `--force` is passed.
  *
  * The generator draws placeholder artwork, so overwriting by default would
  * silently replace a real client photograph or logo with a generated one every
  * time a page or post is scaffolded. `--force` still regenerates everything.
+ *
+ * When `--from-logo[=<path>]` is passed (or `brand.logo.light` resolves to a
+ * file in `public/`), `sharp` derives `apple-touch-icon.png`, PWA icons
+ * (`icon-192.png`, `icon-512.png`), `favicon.ico` (16×16 + 32×32 PNG-in-ICO),
+ * `favicon.svg` (if SVG source), and `og-default.png` cleanly from that logo.
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import zlib from 'node:zlib';
+import { readAppConfig, rootDir } from './lib/content-types.mjs';
+
+let cachedSharp = null;
+async function getSharp() {
+  if (!cachedSharp) {
+    const mod = await import('sharp');
+    cachedSharp = mod.default ?? mod;
+  }
+  return cachedSharp;
+}
+
 const force = process.argv.includes('--force') || process.argv.includes('-f');
 const brandOnly = process.argv.includes('--brand-only');
+const fromLogoArg = process.argv.find((arg) => arg === '--from-logo' || arg.startsWith('--from-logo='));
 const skippedAssets = [];
 
 const publicDir = path.join(rootDir, 'public');
@@ -395,6 +410,145 @@ function artPixel(width, height, hue) {
   };
 }
 
+function buildMultiSizeIco(pngBuffers) {
+  const count = pngBuffers.length;
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(count, 4);
+
+  const dirEntries = [];
+  let offset = 6 + count * 16;
+
+  for (const { size, buffer } of pngBuffers) {
+    const entry = Buffer.alloc(16);
+    entry[0] = size >= 256 ? 0 : size;
+    entry[1] = size >= 256 ? 0 : size;
+    entry[2] = 0;
+    entry[3] = 0;
+    entry.writeUInt16LE(1, 4);
+    entry.writeUInt16LE(32, 6);
+    entry.writeUInt32LE(buffer.length, 8);
+    entry.writeUInt32LE(offset, 12);
+    dirEntries.push(entry);
+    offset += buffer.length;
+  }
+
+  return Buffer.concat([header, ...dirEntries, ...pngBuffers.map((item) => item.buffer)]);
+}
+
+function resolveLogoSourcePath() {
+  if (fromLogoArg && fromLogoArg.includes('=')) {
+    const raw = fromLogoArg.slice('--from-logo='.length).trim();
+    if (!raw) return null;
+    const candidate = path.resolve(rootDir, raw);
+    if (!fs.existsSync(candidate) || !fs.statSync(candidate).isFile()) {
+      console.error(`❌ Logo file not found for --from-logo: "${raw}"`);
+      process.exit(1);
+    }
+    return candidate;
+  }
+
+  const configuredLight = appConfig.brand?.logo?.light?.trim();
+  if (configuredLight) {
+    const candidate = path.resolve(publicDir, configuredLight.replace(/^\/+/, ''));
+    if (
+      candidate.startsWith(publicDir + path.sep) &&
+      fs.existsSync(candidate) &&
+      fs.statSync(candidate).isFile()
+    ) {
+      return candidate;
+    }
+  }
+
+  if (fromLogoArg) {
+    console.error('❌ --from-logo requested, but neither a path nor an existing brand.logo.light file was found.');
+    process.exit(1);
+  }
+  return null;
+}
+
+async function renderLogoIconPng(logoPath, size, { opaqueBackground = false } = {}) {
+  const sharp = await getSharp();
+  const padding = Math.max(4, Math.round(size * 0.14));
+  const innerSize = Math.max(8, size - padding * 2);
+  const bgHex = appConfig.brand?.backgroundColor || '#f8fafc';
+  const bgRgb = parseHexRgb(bgHex) ?? [248, 250, 252];
+  const transparent = { r: 0, g: 0, b: 0, alpha: 0 };
+
+  const fgLogo = await sharp(logoPath)
+    .resize(innerSize, innerSize, { fit: 'contain', background: transparent })
+    .png()
+    .toBuffer();
+
+  return await sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: opaqueBackground ? { r: bgRgb[0], g: bgRgb[1], b: bgRgb[2], alpha: 1 } : transparent,
+    },
+  })
+    .composite([{ input: fgLogo, left: padding, top: padding }])
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
+
+async function renderLogoOgPng(logoPath, width, height) {
+  const sharp = await getSharp();
+  const baseCanvas = encodePng(width, height, (x, y) => {
+    const nx = x / width;
+    const ny = y / height;
+    const t = Math.min(1, nx * 0.65 + ny * 0.35);
+    const r = Math.min(255, mix(primaryBrandRgb[0], companionBrandRgb[0], t) + Math.max(0, 1 - Math.hypot(nx - 0.25, ny - 0.2) * 1.7) * 24);
+    const g = Math.min(255, mix(primaryBrandRgb[1], companionBrandRgb[1], t) + Math.max(0, 1 - Math.hypot(nx - 0.25, ny - 0.2) * 1.7) * 16);
+    const b = Math.min(255, mix(primaryBrandRgb[2], companionBrandRgb[2], t) + Math.max(0, 1 - Math.hypot(nx - 0.25, ny - 0.2) * 1.7) * 20);
+    return [Math.round(r), Math.round(g), Math.round(b), 255];
+  });
+
+  const badgeWidth = Math.round(Math.min(width, height) * 0.42);
+  const badgeHeight = badgeWidth;
+  const innerSize = Math.round(badgeWidth * 0.68);
+  const logoOverlay = await sharp(logoPath)
+    .resize(innerSize, innerSize, {
+      fit: 'contain',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png()
+    .toBuffer();
+
+  const cardLeft = Math.round((width - badgeWidth) / 2);
+  const cardTop = Math.round((height - badgeHeight) / 2);
+  const badgeBackdrop = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${badgeWidth}" height="${badgeHeight}"><rect width="${badgeWidth}" height="${badgeHeight}" rx="36" fill="#0f172a" fill-opacity="0.28" stroke="#ffffff" stroke-opacity="0.22" stroke-width="2" /></svg>`
+  );
+
+  return await sharp(baseCanvas)
+    .composite([
+      { input: badgeBackdrop, left: cardLeft, top: cardTop },
+      {
+        input: logoOverlay,
+        left: cardLeft + Math.round((badgeWidth - innerSize) / 2),
+        top: cardTop + Math.round((badgeHeight - innerSize) / 2),
+      },
+    ])
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
+
+function writeBufferIfAllowed(filename, buffer) {
+  const filePath = path.join(publicDir, filename);
+  if (!force && fs.existsSync(filePath)) {
+    skippedAssets.push(path.relative(rootDir, filePath));
+    return false;
+  }
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, buffer);
+  const kb = (buffer.length / 1024).toFixed(1);
+  console.log(`✅ public/${filename} (${kb} KB)`);
+  return true;
+}
+
 /** Writes the generated artwork of a content group next to its entries. */
 function writeArtwork(collection, group, width, height, hue) {
   const targetDir = path.join(contentDir, collection, group);
@@ -423,16 +577,51 @@ function writeAsset(filename, width, height, options) {
 
 fs.mkdirSync(publicDir, { recursive: true });
 
+const logoSourcePath = resolveLogoSourcePath();
 const { appleTouchIcon, icons } = appConfig.brand;
-writeAsset(appleTouchIcon.file, appleTouchIcon.size, appleTouchIcon.size, { icon: true });
-for (const icon of icons) {
-  writeAsset(icon.file, icon.size, icon.size, { icon: true });
-}
-
 const { socialImage } = appConfig.site;
-writeAsset(socialImage.path.replace(/^\/+/, ''), socialImage.width, socialImage.height, {
-  icon: false,
-});
+
+if (logoSourcePath) {
+  console.log(`🎨 Generating brand icon suite from logo: ${path.relative(rootDir, logoSourcePath)}`);
+  const applePng = await renderLogoIconPng(logoSourcePath, appleTouchIcon.size, {
+    opaqueBackground: true,
+  });
+  writeBufferIfAllowed(appleTouchIcon.file, applePng);
+
+  for (const icon of icons) {
+    const iconPng = await renderLogoIconPng(logoSourcePath, icon.size, { opaqueBackground: false });
+    writeBufferIfAllowed(icon.file, iconPng);
+  }
+
+  const ico16 = await renderLogoIconPng(logoSourcePath, 16, { opaqueBackground: false });
+  const ico32 = await renderLogoIconPng(logoSourcePath, 32, { opaqueBackground: false });
+  writeBufferIfAllowed('favicon.ico', buildMultiSizeIco([
+    { size: 16, buffer: ico16 },
+    { size: 32, buffer: ico32 },
+  ]));
+
+  if (path.extname(logoSourcePath).toLowerCase() === '.svg') {
+    const rawSvg = fs.readFileSync(logoSourcePath, 'utf-8');
+    if (!/<script[\s>]|<foreignObject[\s>]|\son[a-z]+\s*=|javascript:/i.test(rawSvg)) {
+      writeBufferIfAllowed('favicon.svg', Buffer.from(rawSvg, 'utf-8'));
+    }
+  }
+
+  const defaultOgBuffer = await renderLogoOgPng(
+    logoSourcePath,
+    socialImage.width,
+    socialImage.height
+  );
+  writeBufferIfAllowed(socialImage.path.replace(/^\/+/, ''), defaultOgBuffer);
+} else {
+  writeAsset(appleTouchIcon.file, appleTouchIcon.size, appleTouchIcon.size, { icon: true });
+  for (const icon of icons) {
+    writeAsset(icon.file, icon.size, icon.size, { icon: true });
+  }
+  writeAsset(socialImage.path.replace(/^\/+/, ''), socialImage.width, socialImage.height, {
+    icon: false,
+  });
+}
 
 // The shared hero background is a photograph (`src/assets/hero/hero-0.jpg`),
 // not generated artwork, so it is not produced here.

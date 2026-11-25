@@ -428,6 +428,11 @@ export const apiEndpointsSchema = z.object({
   newsletter: z.string().optional(),
 });
 
+export const apiRedirectsSchema = z.object({
+  contact: z.string().optional().default(''),
+  newsletter: z.string().optional().default(''),
+});
+
 const contactTopicSchema = z.object({
   value: z.string().min(1),
   label: z.string().optional(),
@@ -441,6 +446,7 @@ export const apiConfigSchema = z.object({
   turnstileSiteKey: z.string().optional().default(''),
   timeoutMs: z.number().int().min(1000).max(60000).default(10000),
   endpoints: apiEndpointsSchema.default({ contact: '/contact' }),
+  redirects: apiRedirectsSchema.optional().default({ contact: '', newsletter: '' }),
   topics: z.array(contactTopicSchema).optional(),
 });
 export type ApiConfig = z.infer<typeof apiConfigSchema>;
@@ -479,7 +485,21 @@ export const defaultApiConfig: ApiConfig = {
   endpoints: {
     contact: '/contact',
   },
+  redirects: {
+    contact: '',
+    newsletter: '',
+  },
 };
+
+export const authorProfileSchema = z.object({
+  name: z.string().min(1),
+  url: z.string().optional().default(''),
+  jobTitle: z.string().optional().default(''),
+  description: z.string().optional().default(''),
+  image: z.string().optional().default(''),
+  sameAs: z.array(z.string()).optional().default([]),
+});
+export type AuthorProfile = z.infer<typeof authorProfileSchema>;
 
 export const appConfigSchema = z.object({
   site: z.object({
@@ -487,6 +507,7 @@ export const appConfigSchema = z.object({
     shortName: z.string().min(1),
     description: z.string().min(1),
     author: z.string().optional().default('Astro Starter Team'),
+    authors: z.record(z.string(), authorProfileSchema).optional().default({}),
     /**
      * Public contact address. It is the destination of the contact form's
      * mailto fallback when `api.baseUrl` (or `PUBLIC_CONTACT_API_URL`) is not
@@ -547,6 +568,7 @@ const siteConfigSchema = z.object({
   shortName: z.string().min(1),
   description: z.string().min(1),
   author: z.string(),
+  authors: z.record(z.string(), authorProfileSchema),
   contactEmail: z.string(),
   defaultTheme: themeModeSchema,
   preset: z.enum(BRAND_PRESET_KEYS).optional(),
@@ -591,6 +613,7 @@ export const siteConfig = siteConfigSchema.parse({
   shortName: appConfig.site.shortName,
   description: appConfig.site.description,
   author: appConfig.site.author,
+  authors: appConfig.site.authors,
   contactEmail: appConfig.site.contactEmail,
   defaultTheme: appConfig.brand.defaultTheme,
   preset: appConfig.brand.preset,
@@ -630,6 +653,7 @@ export const siteConfig = siteConfigSchema.parse({
         ? { newsletter: envNewsletterEndpoint || appConfig.api.endpoints.newsletter }
         : {}),
     },
+    redirects: appConfig.api.redirects,
     ...(appConfig.api.topics ? { topics: appConfig.api.topics } : {}),
   },
 });

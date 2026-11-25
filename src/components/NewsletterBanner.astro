@@ -10,7 +10,8 @@ import PageSection from '@/components/PageSection.astro';
 import Button from '@/components/ui/Button.astro';
 import IconBox from '@/components/ui/IconBox.astro';
 import { type Locale } from '@/i18n/locales';
-import { resolveFormEndpoint } from '@/libs/api/client';
+import { localizeHref } from '@/i18n/paths';
+import { resolveFormEndpoint, resolvePostSubmitRedirect } from '@/libs/api/client';
 import { API_CONFIG, siteConfig } from '@/libs/config/app';
 import { resolveComponentLocale } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
@@ -25,6 +26,8 @@ interface Props {
   endpoint?: string;
   timeoutMs?: number;
   source?: string;
+  /** Optional safe redirect URL (path or https:// URL) navigated after successful subscription. */
+  redirectTo?: string;
   contained?: boolean;
   surface?: 'default' | 'surface' | 'subtle';
   spacing?: 'sm' | 'md' | 'lg';
@@ -40,6 +43,7 @@ const {
   endpoint,
   timeoutMs,
   source = 'newsletter-banner',
+  redirectTo,
   contained = false,
   surface = 'surface',
   spacing = 'md',
@@ -51,13 +55,17 @@ const effectiveBaseUrl = baseUrl ?? API_CONFIG.baseUrl;
 const effectiveEndpoint = endpoint ?? API_CONFIG.endpoints.newsletter ?? '';
 const effectiveAccessKey = API_CONFIG.accessKey;
 const resolvedEndpoint =
-  effectiveProvider === 'web3forms'
+  effectiveProvider === 'web3forms' || Boolean(effectiveEndpoint)
     ? resolveFormEndpoint(effectiveProvider, effectiveEndpoint, effectiveBaseUrl, effectiveAccessKey)
-    : effectiveEndpoint
-      ? resolveFormEndpoint(effectiveProvider, effectiveEndpoint, effectiveBaseUrl, effectiveAccessKey)
-      : null;
+    : null;
 const isConfigured = resolvedEndpoint !== null;
 const effectiveTimeout = timeoutMs ?? API_CONFIG.timeoutMs;
+const safeRawRedirect = resolvePostSubmitRedirect(redirectTo ?? API_CONFIG.redirects?.newsletter);
+const resolvedRedirectTo = safeRawRedirect
+  ? safeRawRedirect.startsWith('/')
+    ? localizeHref(safeRawRedirect, activeLocale)
+    : safeRawRedirect
+  : '';
 
 const emailHref = siteConfig.contactEmail ? `mailto:${siteConfig.contactEmail}` : null;
 const isDev = import.meta.env.DEV;
@@ -158,6 +166,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
               data-access-key={effectiveAccessKey}
               data-timeout-ms={String(effectiveTimeout)}
               data-source={source}
+              data-redirect-to={resolvedRedirectTo || undefined}
               data-label-submit={copy.submit}
               data-label-submitting={copy.submitting}
               data-msg-success-title={copy.successTitle}
@@ -233,6 +242,8 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
 
 <script>
   import {
+    dispatchFormConversion,
+    resolvePostSubmitRedirect,
     submitNewsletterSubscription,
     type ContactSubmissionErrorCode,
     type FormProvider,
@@ -318,6 +329,18 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
             form.dataset.msgSuccessTitle ?? '',
             form.dataset.msgSuccessDesc ?? ''
           );
+          if (!honeypot.trim()) {
+            const redirectTarget = resolvePostSubmitRedirect(form.dataset.redirectTo);
+            dispatchFormConversion('newsletter', {
+              locale: payload.locale,
+              provider,
+              ...(payload.source ? { source: payload.source } : {}),
+              ...(redirectTarget ? { redirectTo: redirectTarget } : {}),
+            });
+            if (redirectTarget) {
+              window.location.assign(redirectTarget);
+            }
+          }
           return;
         }
 

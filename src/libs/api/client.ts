@@ -374,3 +374,107 @@ export async function submitNewsletterSubscription(
     globalThis.clearTimeout(timer);
   }
 }
+
+export type FormConversionKind = 'contact' | 'newsletter';
+
+export interface FormConversionDetail {
+  locale: string;
+  provider?: FormProvider;
+  source?: string;
+  redirectTo?: string;
+}
+
+type ConversionAnalyticsWindow = Window & {
+  dataLayer?: unknown[];
+  gtag?: (...args: unknown[]) => void;
+  plausible?: (eventName: string, opts?: Record<string, unknown>) => void;
+  umami?: { track?: (eventName: string, data?: Record<string, unknown>) => void };
+};
+
+/**
+ * Validates an optional post-submission redirect URL so forms only navigate to
+ * safe root-relative paths (`/thank-you/`) or explicit `http(s)://` origins.
+ * Rejects protocol-relative URLs (`//evil.example`) and `javascript:` / `data:`.
+ */
+export function resolvePostSubmitRedirect(rawTarget: string | undefined): string | null {
+  const trimmed = rawTarget?.trim();
+  if (!trimmed || /[\u0000-\u001F\u007F]/.test(trimmed)) return null;
+  if (trimmed.startsWith('/')) {
+    if (trimmed.startsWith('//') || trimmed.startsWith('/\\')) return null;
+    return trimmed;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    if (
+      (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+      Boolean(parsed.hostname) &&
+      !parsed.username &&
+      !parsed.password
+    ) {
+      return parsed.href;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Fires a DOM `CustomEvent` (`astro-starter:contact-success` /
+ * `astro-starter:newsletter-success`) on genuine non-honeypot submissions,
+ * and forwards conversion events to GA4 / GTM / Plausible / Umami only when
+ * active consent (`data-consent-analytics="true"`) or explicit cookieless mode
+ * permits tracking.
+ */
+export function dispatchFormConversion(
+  kind: FormConversionKind,
+  detail: FormConversionDetail
+): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  window.dispatchEvent(
+    new CustomEvent(`astro-starter:${kind}-success`, {
+      detail,
+    })
+  );
+
+  const rootData = document.documentElement.dataset;
+  const analyticsAllowed = rootData.consentAnalytics === 'true';
+  const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
+  const cookielessOpen = gatekeeper?.dataset.cookielessOpen === 'true';
+  const win = window as ConversionAnalyticsWindow;
+
+  const gaEventName = kind === 'contact' ? 'generate_lead' : 'sign_up';
+  const cookielessEventName = kind === 'contact' ? 'ContactInquiry' : 'NewsletterSignup';
+  const eventPayload = {
+    locale: detail.locale,
+    form_provider: detail.provider ?? 'custom',
+    ...(detail.source ? { form_source: detail.source } : {}),
+  };
+
+  if (analyticsAllowed) {
+    if (typeof win.gtag === 'function') {
+      win.gtag('event', gaEventName, eventPayload);
+    } else if (Array.isArray(win.dataLayer)) {
+      win.dataLayer.push({ event: gaEventName, ...eventPayload });
+    }
+  }
+
+  if (analyticsAllowed || cookielessOpen) {
+    if (typeof win.plausible === 'function') {
+      win.plausible(cookielessEventName, {
+        props: {
+          locale: detail.locale,
+          ...(detail.source ? { source: detail.source } : {}),
+        },
+      });
+    }
+    if (win.umami && typeof win.umami.track === 'function') {
+      win.umami.track(cookielessEventName, {
+        locale: detail.locale,
+        ...(detail.source ? { source: detail.source } : {}),
+      });
+    }
+  }
+}
+

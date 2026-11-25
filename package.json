@@ -36,6 +36,7 @@
     "audit:i18n": "node scripts/audit-i18n.mjs",
     "verify:cli": "node scripts/verify-cli.mjs",
     "doctor": "node scripts/doctor.mjs",
+    "doctor:handoff": "node scripts/doctor.mjs --handoff",
     "link:check": "node scripts/link-check.mjs",
     "content:list": "node scripts/content-list.mjs",
     "content:status": "node scripts/content-status.mjs",
@@ -43,6 +44,7 @@
     "content:enable": "node scripts/content-toggle.mjs enable",
     "content:disable": "node scripts/content-toggle.mjs disable",
     "starter:seed": "node scripts/seed-starter.mjs",
+    "client:bootstrap": "node scripts/client-bootstrap.mjs",
     "upstream:check": "node scripts/upstream-check.mjs",
     "qa:browser": "node scripts/qa-browser.mjs",
     "preflight": "node scripts/messages-compile.mjs && node scripts/upstream-check.mjs && node scripts/audit-i18n.mjs && node scripts/doctor.mjs && vitest run && npm run build && node scripts/smoke.mjs && node scripts/link-check.mjs",
@@ -70,14 +72,17 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@axe-core/playwright": "^4.14.1",
     "@inlang/plugin-m-function-matcher": "2.2.6",
     "@inlang/plugin-message-format": "4.4.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^22.12.0",
     "code-inspector-plugin": "^2.0.9",
     "knip": "^6.40.0",
     "playwright": "^1.65.1",
     "sharp": "^0.35.5",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "wawoff2": "^2.0.1"
   }
 }

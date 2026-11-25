@@ -3,9 +3,18 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import AxeBuilder from '@axe-core/playwright';
 import { chromium } from 'playwright';
 import { readLocaleConfig } from './lib/locales.mjs';
 import { readMergedConfig } from './lib/config.mjs';
+import {
+  DEFAULT_CLS_BUDGET,
+  DEFAULT_JS_BUDGET_KB,
+  evaluateClsMetric,
+  evaluateJsBudget,
+  isTrackedAppScriptUrl,
+  summarizeAxeViolations,
+} from './lib/qa-metrics.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -40,7 +49,7 @@ const MIME_TYPES = {
 function resolveDistFile(urlPath) {
   const cleanPath = decodeURIComponent(urlPath.split('?')[0] || '/');
   const candidate = path.resolve(distDir, `.${cleanPath}`);
-  if (!candidate.startsWith(distDir)) return null;
+  if (candidate !== distDir && !candidate.startsWith(distDir + path.sep)) return null;
 
   if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
     return candidate;
@@ -159,6 +168,19 @@ try {
           try {
             window.localStorage.setItem('theme', selectedTheme);
           } catch {}
+          window.__qaCls = 0;
+          if (typeof PerformanceObserver === 'function') {
+            try {
+              const observer = new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) {
+                  if (!entry.hadRecentInput && typeof entry.value === 'number') {
+                    window.__qaCls += entry.value;
+                  }
+                }
+              });
+              observer.observe({ type: 'layout-shift', buffered: true });
+            } catch {}
+          }
         }, theme);
 
         const page = await context.newPage();
@@ -245,7 +267,7 @@ try {
         );
 
         await page.evaluate(() => window.scrollTo(0, 260));
-        await page.waitForTimeout(120);
+        await page.waitForTimeout(180);
 
         if (mergedConfig.ui?.stickyHeader !== false) {
           const stuckHeader = await page.evaluate(() => {
@@ -262,6 +284,70 @@ try {
             );
           }
         }
+
+        const perfAndDom = await page.evaluate(() => {
+          const scriptResources = performance
+            .getEntriesByType('resource')
+            .filter((entry) => entry.initiatorType === 'script' || entry.name.endsWith('.js'))
+            .map((entry) => ({
+              name: entry.name,
+              bytes: entry.transferSize || entry.decodedBodySize || 0,
+            }));
+
+          const imgsWithoutAlt = Array.from(document.querySelectorAll('img')).filter((img) => {
+            const hidden = img.getAttribute('aria-hidden') === 'true' || img.closest('[aria-hidden="true"]');
+            if (hidden) return false;
+            return !img.hasAttribute('alt');
+          }).length;
+
+          const h1Count = document.querySelectorAll('h1').length;
+          return {
+            cls: typeof window.__qaCls === 'number' ? window.__qaCls : 0,
+            scriptResources,
+            imgsWithoutAlt,
+            h1Count,
+          };
+        });
+
+        const clsBudget = Number(process.env.QA_CLS_BUDGET) || DEFAULT_CLS_BUDGET;
+        const clsEval = evaluateClsMetric(perfAndDom.cls, clsBudget);
+        record(
+          clsEval.ok,
+          `${label}: CLS <= ${clsEval.budget}`,
+          `cls=${clsEval.value}`
+        );
+
+        const jsBudgetKb = Number(process.env.QA_JS_BUDGET_KB) || DEFAULT_JS_BUDGET_KB;
+        const appScriptBytes = perfAndDom.scriptResources
+          .filter((entry) => isTrackedAppScriptUrl(entry.name, origin))
+          .reduce((sum, entry) => sum + entry.bytes, 0);
+        const jsEval = evaluateJsBudget(appScriptBytes, jsBudgetKb);
+        record(
+          jsEval.ok,
+          `${label}: JS payload <= ${jsEval.budgetKb} KB`,
+          `${jsEval.totalKb} KB`
+        );
+
+        record(
+          perfAndDom.imgsWithoutAlt === 0,
+          `${label}: all visible <img> tags declare alt`,
+          `missing=${perfAndDom.imgsWithoutAlt}`
+        );
+        record(
+          perfAndDom.h1Count === 1,
+          `${label}: single top-level <h1> landmark`,
+          `count=${perfAndDom.h1Count}`
+        );
+
+        const axeResult = await new AxeBuilder({ page })
+          .withTags(['wcag2a', 'wcag2aa'])
+          .analyze();
+        const axeSummary = summarizeAxeViolations(axeResult.violations);
+        record(
+          axeSummary.ok,
+          `${label}: zero critical/serious WCAG a11y violations`,
+          axeSummary.summaryLines.join(' | ')
+        );
 
         await context.close();
       }

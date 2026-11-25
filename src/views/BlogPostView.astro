@@ -20,6 +20,7 @@ import {
 } from '@/libs/content/blog';
 import { getSortedLocaleEntries, parseContentEntryId } from '@/libs/content/entries';
 import { buildOgRouteKey, getSocialCard, type SocialCardContext } from '@/libs/content/social';
+import { resolveAuthorSchema } from '@/libs/content/schema';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
@@ -80,10 +81,7 @@ const schema = [
     articleSection: categories.map((category) => getCategoryLabel(category, locale)),
     keywords: tags.map((tag) => getTagLabel(tag, locale)),
     mainEntityOfPage: canonicalUrl,
-    author: {
-      '@type': author ? 'Person' : 'Organization',
-      name: author ?? siteConfig.name,
-    },
+    author: resolveAuthorSchema(author, siteConfig.name, siteConfig.authors, absoluteUrl),
     publisher: {
       '@type': 'Organization',
       name: siteConfig.name,

@@ -63,8 +63,15 @@ jobs:
       - name: Internal link crawl
         run: pnpm run link:check
 
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: Browser layout, CLS, JS budget & accessibility QA
+        run: pnpm run qa:browser
+
       - name: Dead code check
         run: pnpm run knip
 
       - name: CLI workflow check
         run: pnpm run verify:cli
+

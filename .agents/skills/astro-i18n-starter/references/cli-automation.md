@@ -35,6 +35,13 @@ npm run site:init -- [--name="Acme Studio"] [--short-name="Acme"] [--desc="..."]
   ```
   Resets `client/config.json` and `client/cms.json` back to `{}` and cleans generated `deploy/` redirect snippets and `public/brand/` logos (`--clean-starter` also invokes `starter:seed --clean` to return `src/content/` to clean minimal base).
 
+* **One-Step Client Project Bootstrap (`client:bootstrap`)**:
+  ```bash
+  npm run client:bootstrap -- [--reset] [--seed=all|clean|pages] [--name="Acme Studio"] [--blueprint=corporate|agency|...] \
+    [--logo=logo.svg] [--from-logo=logo.svg] [--site-url=https://acme.com] [--contact-url=...] [--turnstile-key=...] [--handoff] [--yes]
+  ```
+  Orchestrates workspace reset/seeding, `site:init`, `.env` updates (`SITE_URL`, `PUBLIC_API_BASE_URL`, `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL`, `PUBLIC_TURNSTILE_SITE_KEY`, `PUBLIC_WEB3FORMS_KEY`), logo-derived favicon/PWA icon generation, and `doctor` / `doctor --handoff` in one command.
+
 ### 2.1 Static Pages (`new:page`)
 ```bash
 npm run new:page <page-key> -- [--title="<Title>"] [--desc="<Desc>"] [--title:<locale>="..."] [--desc:<locale>="..."] [--slug:<locale>="<native-slug>"] [--from=<locale>] [--preset=standard|landing] [--hero=none|minimal|default] [--container=canvas|contained|prose] [--image=<path>|none] [--data='{...}'|--file=copy.json] [--publish]
@@ -155,11 +162,12 @@ npm run block:adapt -- --file=<path-to-component>
 npm run i18n:extract -- --target=<file-or-dir> --key=<namespace> --auto-add --replace
 ```
 
-### 5.4 Regenerating Brand Artwork & Icons (`assets:generate`)
+### 5.4 Regenerating Brand Artwork & Logo-Derived Icon Suite (`assets:generate`)
 ```bash
 npm run assets:generate
+npm run assets:generate -- --from-logo=path/to/logo.svg --brand-only --force
 ```
-* Generates `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `og-default.png`, and all per-group hero/cover PNG artwork using Node.js without requiring headless browsers.
+* When `--from-logo[=<path>]` is provided or `brand.logo.light` resolves to a file in `public/`, uses `sharp` to derive `apple-touch-icon.png` (180×180), PWA `icon-192.png`/`icon-512.png`, multi-size `favicon.ico` (16×16 + 32×32 PNG-in-ICO), `favicon.svg` (when SVG source without `<script>`), and logo-badged `og-default.png`, alongside all per-group hero/cover artwork (`src/content/<type>/<group>/<group>.png`). Without a logo, falls back deterministically to pure PNG generation.
 
 ### 5.5 Post-Build Pagefind Indexing (`scripts/index-pagefind.mjs`)
 ```bash
@@ -213,12 +221,13 @@ npm run content:new <type> <slug> -- [--title="<Title>"] [--desc="<Desc>"] \
 
 ## 7. Health, Readiness & Link Checks
 
-### 7.1 `doctor` (no build)
+### 7.1 `doctor` & Strict Pre-Handoff Gate (`doctor:handoff`)
 ```bash
 npm run doctor
+npm run doctor:handoff       # same as `npm run doctor -- --handoff` (or `--strict`): exits 1 on warnings
 npm run doctor -- --json     # exit 1 only when a real error is found
 ```
-Checks Node against `engines`, the pinned package manager and lockfile, `app.config.json` / `client/config.json` / `client/cms.json` parsing, `analytics` provider ID formats (`ga4Id`, `gtmId`, `clarityId`) and GDPR compliance warnings when analytics run with `cookies.enabled: false`, `redirects` validity (including wildcard `/*` and `:splat`), content-type bases (empty, duplicate, reserved by the router or equal to a locale prefix), template branding still in place, `SITE_URL`, dictionary parity and `[TODO: …]` values, `src/paraglide` freshness (compared against `src/paraglide/messages/_index.js`), missing group/locale files, frontmatter image references that point at nothing, and the presence of `dist/`. Each finding prints the command that fixes it.
+Checks Node against `engines`, the pinned package manager and lockfile (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`/`bun.lockb`), `app.config.json` / `client/config.json` / `client/cms.json` parsing, `analytics` provider ID formats (`ga4Id`, `gtmId`, `clarityId`) and GDPR compliance warnings when analytics run with `cookies.enabled: false`, `redirects` validity (including wildcard `/*` and `:splat`), content-type bases (empty, duplicate, reserved by the router or equal to a locale prefix), template branding/author defaults still in place, valid non-placeholder `SITE_URL`, dictionary parity and `[TODO: …]` values, `src/paraglide` freshness (compared against `src/paraglide/messages/_index.js`), missing group/locale files, broken `brand.logo` or frontmatter image references, and the presence of `dist/`. In `--handoff` / `--strict` mode every readiness warning escalates into a blocking `error`. Each finding prints the command that fixes it.
 
 ### 7.2 `content:status` (readiness matrix)
 ```bash
@@ -237,7 +246,7 @@ Walks every built HTML file and verifies `href`, `src`, `poster`, each `srcset` 
 
 ### 7.4 Browser Layout & Delivery Preflight (`qa:browser`, `preflight`, `preflight:full`)
 ```bash
-npm run qa:browser      # Launches headless Chromium via Playwright against built dist/
+npm run qa:browser      # Playwright Chromium layout, CLS/JS budgets & @axe-core/playwright WCAG audit on dist/
 npm run preflight       # compile -> upstream -> audit -> doctor -> vitest -> build -> smoke -> link:check
-npm run preflight:full  # Runs full preflight + Chromium Playwright layout & interactive UI QA
+npm run preflight:full  # Runs full preflight + Chromium Playwright layout, performance & Axe accessibility QA
 ```
