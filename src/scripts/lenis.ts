@@ -1,4 +1,5 @@
 import Lenis from 'lenis';
+import { CLIENT_MOTION_CONFIG } from '@/libs/config/client';
 
 declare global {
   interface Window {
@@ -11,7 +12,15 @@ let lifecycleBound = false;
 
 function getHeaderOffset(): number {
   if (typeof document === 'undefined') return 0;
-  return document.querySelector('header.fixed') ? -96 : 0;
+  const header = document.querySelector<HTMLElement>('header[data-site-header]');
+  if (!header) {
+    return document.querySelector('header.fixed') ? -96 : 0;
+  }
+  if (header.dataset.stickyEnabled !== 'true') return 0;
+  const stickyTop = Number.parseFloat(header.dataset.stickyTop ?? '12');
+  const safeTop = Number.isFinite(stickyTop) && stickyTop >= 0 ? stickyTop : 12;
+  const height = header.getBoundingClientRect().height || 64;
+  return -1 * Math.round(height + safeTop + 16);
 }
 
 function prefersReducedMotion(): boolean {
@@ -115,19 +124,25 @@ export function initLenis(): void {
     return;
   }
 
-  // Abort Lenis only if explicitly configured for reduced motion via data-motion="reduced"
-  if (typeof document !== 'undefined' && document.documentElement.dataset.motion === 'reduced') {
+  // Abort Lenis if disabled in config or configured for reduced motion via data-motion="reduced"
+  if (
+    !CLIENT_MOTION_CONFIG.smoothScroll ||
+    (typeof document !== 'undefined' && document.documentElement.dataset.motion === 'reduced')
+  ) {
     return;
   }
 
   const anchorOffset = getHeaderOffset();
+  const configuredLerp = Number.isFinite(CLIENT_MOTION_CONFIG.smoothScrollLerp)
+    ? CLIENT_MOTION_CONFIG.smoothScrollLerp
+    : 0.125;
 
   // Note: In Lenis v1.3+, passing `duration` + `easing` shadows `lerp` inside
   // `Animate.advance()`. Omitting `duration` here lets `lerp: 0.125` drive
   // responsive wheel inertia, while programmatic `scrollTo` uses `duration`.
   lenis = new Lenis({
     autoRaf: true,
-    lerp: 0.125,
+    lerp: configuredLerp,
     wheelMultiplier: 1,
     touchMultiplier: 1.25,
     orientation: 'vertical',

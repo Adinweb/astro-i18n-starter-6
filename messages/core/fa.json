@@ -652,5 +652,13 @@
   "projects_visit": "مشاهده وب‌سایت",
   "projects_year": "سال",
   "site_description": "یک قالب استارتر حرفه‌ای و چندزبانه (RTL و LTR) مبتنی بر تولید صفحات استاتیک (SSG) با Astro v7، Tailwind CSS v4 و Paraglide JS.",
+  "site_top_banner_default_badge": "اطلاعیه",
+  "site_top_banner_default_cta": "بیشتر بدانید",
+  "site_top_banner_default_message": "نوار اطلاع‌رسانی سراسری با قابلیت تنظیم کامل در فایل پیکربندی و هماهنگی خودکار با منوی سایت.",
+  "site_top_banner_dismiss": "بستن اطلاعیه",
+  "site_top_banner_notice_badge": "اطلاع‌رسانی",
+  "site_top_banner_notice_cta": "مشاهده کامپوننت‌ها",
+  "site_top_banner_notice_message": "نوار بالایی ثابت (ارتفاع ۴۰ پیکسل، غیرقابل بستن) با هماهنگی خودکار فاصله منوی چسبان.",
+  "site_top_banner_region_label": "اطلاعیه بالای سایت",
   "testimonials_rating_aria": "امتیاز {rating} از ۵ ستاره"
 }

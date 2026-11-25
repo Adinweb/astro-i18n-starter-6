@@ -141,3 +141,26 @@ To add a new page or custom link:
 3. For extra dropdowns/anchors, footer-only columns, or legal links, edit `getClientPrimaryExtras`, `getClientFooterColumns`, and `getClientLegalNavigation` in `client/navigation.ts`.
 4. Use compiled Paraglide message functions for labels (`m.nav_<key>({}, { locale })`).
 5. Run `npm test` and `npm run lint` to verify active state and TypeScript types.
+
+---
+
+## 6. Site-Wide Top Banner (`ui.topBanner`) & Adaptive Sticky Navbar (`ui.navbar`)
+
+### 6.1 Site-Wide Top Banner (`src/components/SiteTopBanner.astro`)
+* Rendered inside `[data-site-top-banner-region]` at the top of `<body>` in `BaseLayout.astro` (above the navbar, in normal document flow so page content is pushed down cleanly with zero CLS, hidden automatically on print).
+* Custom client strips may also be injected immediately below it via `<LayoutHooks slot="top-banner" locale={locale} url={url} />` (`client/LayoutHooks.astro`).
+* Configured via `ui.topBanner` in `app.config.json` / `client/config.json`:
+  - **Shipped default**: `app.config.json` ships `ui.topBanner.enabled: true` with two stacked `items[]`: a persistent non-dismissible `40px` `site-notice` bar (`variant: 'hero'`, `heightPx: 40`, `dismissible: false`) above a slimmer `32px` dismissible `site-announcement` bar (`variant: 'primary'`, `heightPx: 32`, `dismissible: true`), while the Zod/client schema fallback default (`TOP_BANNER_CONFIG_DEFAULTS.enabled`) is `false` when `ui.topBanner` is omitted. Set `"ui": { "topBanner": { "enabled": false } }` in `client/config.json` to hide them cleanly.
+  - **Variants & Height**: `'primary' | 'hero' | 'surface' | 'accent' | 'info' | 'warning'`, plus optional `heightPx` (`24`–`160`, mapped via `--site-banner-height` on `.site-top-banner`).
+  - **Localization**: Single-banner mode supports `badge`, `message`, `ctaLabel`, `ctaHref` plus `*ByLocale` maps (`messageByLocale`, `badgeByLocale`, `ctaLabelByLocale`, `ctaHrefByLocale`); multi-banner mode uses `items[]` (each item has its own `id`, `enabled`, `variant`, `heightPx`, `excludePaths`, `dismissible`, `*ByLocale`, and `external`).
+  - **Dismiss persistence & View Transitions**: Dismissible banners store `top-banner-dismissed:<id>` in `sessionStorage`, are suppressed synchronously right below `[data-site-top-banner-region]` and on `astro:before-swap` before painting, and dispatch `app:top-banner-change` so the navbar recalculates immediately.
+
+### 6.2 Adaptive Sticky Navbar (`ui.navbar` & `src/scripts/navbar.ts`)
+* Configured via `ui.stickyHeader` (`true` by default) and `ui.navbar` in `app.config.json` / `client/config.json` (exposed to browser scripts via `CLIENT_NAVBAR_CONFIG` in `src/libs/config/client.ts`):
+  - `initialTopOffset` (default `16`): gap in `px` below the banner region (or viewport top if no banner) before sticky transition.
+  - `stickyScrollThreshold` (default `0`): scroll distance in `px` before transitioning `.site-header` from `position: absolute` to `position: fixed`.
+  - `stickyTopOffset` (default `12`): gap in `px` from the viewport top while stuck.
+  - `autoBannerOffset` (default `true`): `ResizeObserver` continuously measures `[data-site-top-banner-region]` (including dismiss/wrap/resize) so `effectiveThreshold = Math.max(stickyScrollThreshold, bannerClearScroll)` never overlaps the banner even if `stickyScrollThreshold < bannerHeight`.
+  - `manualBannerOffset` (default `0`): manual clearance in `px` used only when `autoBannerOffset: false` (CSS uses `max(0px, var(--navbar-manual-banner-offset) - var(--actual-banner-height))` in `.main-header-clearance` to prevent double padding).
+* Synchronizes `--navbar-initial-top`, `--navbar-sticky-top`, `--navbar-manual-banner-offset`, `--actual-banner-height`, `--top-banner-height`, and `--navbar-height` on `document.documentElement`, feeding `.site-header`, `.main-header-clearance`, `scroll-padding-top`, and Lenis dynamic `#hash` anchor offsets (`getHeaderOffset()`).
+

@@ -2,7 +2,14 @@ import heroPhoto from '@/assets/hero/hero-0.jpg';
 import { z } from 'astro/zod';
 import rawConfig from '../../../app.config.json';
 import clientConfig from '../../../client/config.json';
-import { COOKIE_CONFIG_DEFAULTS, deepMergeConfig } from './defaults';
+import {
+  COOKIE_CONFIG_DEFAULTS,
+  MOTION_CONFIG_DEFAULTS,
+  NAVBAR_CONFIG_DEFAULTS,
+  TOP_BANNER_CONFIG_DEFAULTS,
+  UI_CONFIG_DEFAULTS,
+  deepMergeConfig,
+} from './defaults';
 import {
   BRAND_PRESET_KEYS,
   FONT_PRESET_KEYS,
@@ -44,6 +51,119 @@ export const brandLogoSchema = z.object({
 export const themeModeSchema = z.enum(['system', 'light', 'dark']);
 export type ThemeMode = z.infer<typeof themeModeSchema>;
 
+export const navbarConfigSchema = z.object({
+  /** Initial distance (px) from the top of the page (or below the top banner region when autoBannerOffset is true). */
+  initialTopOffset: z.number().min(0).max(400).default(NAVBAR_CONFIG_DEFAULTS.initialTopOffset),
+  /** Scroll distance (px) after which the navbar switches to sticky (fixed) positioning. */
+  stickyScrollThreshold: z
+    .number()
+    .min(0)
+    .max(2000)
+    .default(NAVBAR_CONFIG_DEFAULTS.stickyScrollThreshold),
+  /** Distance (px) from the top of the viewport when the navbar is in sticky state. */
+  stickyTopOffset: z.number().min(0).max(400).default(NAVBAR_CONFIG_DEFAULTS.stickyTopOffset),
+  /** Automatically measure top banner(s) height via ResizeObserver so the navbar never overlaps them. */
+  autoBannerOffset: z.boolean().default(NAVBAR_CONFIG_DEFAULTS.autoBannerOffset),
+  /** Manual top banner height offset (px) applied when autoBannerOffset is false. */
+  manualBannerOffset: z
+    .number()
+    .min(0)
+    .max(600)
+    .default(NAVBAR_CONFIG_DEFAULTS.manualBannerOffset),
+});
+export type NavbarConfig = z.infer<typeof navbarConfigSchema>;
+
+const topBannerVariantSchema = z.enum([
+  'primary',
+  'hero',
+  'surface',
+  'accent',
+  'info',
+  'warning',
+]);
+export type TopBannerVariant = z.infer<typeof topBannerVariantSchema>;
+
+const localizedStringMapSchema = z.record(z.string(), z.string());
+
+const topBannerItemSchema = z.object({
+  id: z.string().min(1).default('site-announcement'),
+  enabled: z.boolean().default(true),
+  variant: topBannerVariantSchema.default('primary'),
+  icon: z.string().optional().default('sparkles'),
+  badge: z.string().optional().default(''),
+  badgeByLocale: localizedStringMapSchema.optional().default({}),
+  message: z.string().optional().default(''),
+  messageByLocale: localizedStringMapSchema.optional().default({}),
+  ctaLabel: z.string().optional().default(''),
+  ctaLabelByLocale: localizedStringMapSchema.optional().default({}),
+  ctaHref: z.string().optional().default(''),
+  ctaHrefByLocale: localizedStringMapSchema.optional().default({}),
+  external: z.boolean().default(false),
+  dismissible: z.boolean().default(true),
+  heightPx: z.number().int().min(24).max(160).optional(),
+  excludePaths: z.array(z.string()).optional().default([]),
+});
+export type TopBannerItemConfig = z.infer<typeof topBannerItemSchema>;
+
+export const topBannerConfigSchema = z.object({
+  enabled: z.boolean().default(TOP_BANNER_CONFIG_DEFAULTS.enabled),
+  id: z.string().min(1).default(TOP_BANNER_CONFIG_DEFAULTS.id),
+  variant: topBannerVariantSchema.default(TOP_BANNER_CONFIG_DEFAULTS.variant),
+  icon: z.string().optional().default(TOP_BANNER_CONFIG_DEFAULTS.icon),
+  badge: z.string().optional().default(''),
+  badgeByLocale: localizedStringMapSchema.optional().default({}),
+  message: z.string().optional().default(''),
+  messageByLocale: localizedStringMapSchema.optional().default({}),
+  ctaLabel: z.string().optional().default(''),
+  ctaLabelByLocale: localizedStringMapSchema.optional().default({}),
+  ctaHref: z.string().optional().default(''),
+  ctaHrefByLocale: localizedStringMapSchema.optional().default({}),
+  external: z.boolean().default(false),
+  dismissible: z.boolean().default(true),
+  heightPx: z.number().int().min(24).max(160).optional(),
+  excludePaths: z.array(z.string()).optional().default([]),
+  items: z.array(topBannerItemSchema).optional().default([]),
+});
+
+export const motionConfigSchema = z.object({
+  /** Global pre-reveal delay (ms) before ChronoTrig reveal animations begin. */
+  revealDelayMs: z.number().min(0).max(5000).default(MOTION_CONFIG_DEFAULTS.revealDelayMs),
+  /** Duration (ms) of standard ChronoTrig reveal entrance animations. */
+  revealDurationMs: z.number().min(100).max(5000).default(MOTION_CONFIG_DEFAULTS.revealDurationMs),
+  /** Slide travel distance (px) for standard vertical and directional reveals. */
+  revealDistancePx: z.number().min(0).max(240).default(MOTION_CONFIG_DEFAULTS.revealDistancePx),
+  /** Subtle slide travel distance (px) for `.fadeInUpSm` and `.blurIn` reveals. */
+  revealSmallDistancePx: z
+    .number()
+    .min(0)
+    .max(120)
+    .default(MOTION_CONFIG_DEFAULTS.revealSmallDistancePx),
+  /** CSS easing curve used by ChronoTrig entrance animations (`--trig-ease`). */
+  revealEasing: z
+    .string()
+    .trim()
+    .min(1)
+    .regex(/^[^;\n{}]+$/, 'Use a valid CSS timing function without semicolons or braces.')
+    .default(MOTION_CONFIG_DEFAULTS.revealEasing),
+  /** Default delay step (ms) between `[data-trig-stagger]` children when not overridden per container. */
+  staggerStepMs: z.number().min(0).max(1000).default(MOTION_CONFIG_DEFAULTS.staggerStepMs),
+  /** Default IntersectionObserver rootMargin applied to ChronoTrig triggers. */
+  rootMargin: z.string().trim().min(1).default(MOTION_CONFIG_DEFAULTS.rootMargin),
+  /** ChronoTrig behavior on mobile/tablet viewports. */
+  mobileBehavior: z
+    .enum(['lightweight', 'disable', 'full'])
+    .default(MOTION_CONFIG_DEFAULTS.mobileBehavior),
+  /** Enables Lenis smooth scrolling (when false, native scroll is preserved). */
+  smoothScroll: z.boolean().default(MOTION_CONFIG_DEFAULTS.smoothScroll),
+  /** Lenis wheel interpolation factor (`0.02`–`1`). */
+  smoothScrollLerp: z
+    .number()
+    .min(0.02)
+    .max(1)
+    .default(MOTION_CONFIG_DEFAULTS.smoothScrollLerp),
+});
+export type MotionConfig = z.infer<typeof motionConfigSchema>;
+
 export const uiConfigSchema = z.object({
   /**
    * Content group the header and drawer CTA (the "Get Started" button) links
@@ -56,6 +176,9 @@ export const uiConfigSchema = z.object({
   showLanguageSwitcher: z.boolean().default(true),
   showTopLoadingBar: z.boolean().default(true),
   stickyHeader: z.boolean().default(true),
+  navbar: navbarConfigSchema.default(NAVBAR_CONFIG_DEFAULTS),
+  topBanner: topBannerConfigSchema.default(TOP_BANNER_CONFIG_DEFAULTS),
+  motion: motionConfigSchema.default(MOTION_CONFIG_DEFAULTS),
 });
 export type UiConfig = z.infer<typeof uiConfigSchema>;
 
@@ -157,14 +280,7 @@ export const apiConfigSchema = z.object({
 });
 export type ApiConfig = z.infer<typeof apiConfigSchema>;
 
-export const defaultUiConfig: UiConfig = {
-  ctaPage: 'pricing',
-  showSearch: true,
-  showThemeToggle: true,
-  showLanguageSwitcher: true,
-  showTopLoadingBar: true,
-  stickyHeader: true,
-};
+export const defaultUiConfig: UiConfig = UI_CONFIG_DEFAULTS;
 
 export const defaultSocialConfig: SocialConfig = {
   github: '',

@@ -106,7 +106,13 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     };
 
     const staggerContainer = {
-      getAttribute: vi.fn((attr: string) => (attr === 'data-trig-once' ? 'true' : 'wave')),
+      hasAttribute: vi.fn().mockReturnValue(false),
+      getAttribute: vi.fn((attr: string) => {
+        if (attr === 'data-trig-once') return 'true';
+        if (attr === 'data-trig-stagger-mode') return 'wave';
+        return null;
+      }),
+      setAttribute: vi.fn(),
       querySelectorAll: vi.fn().mockReturnValue([staggerChild]),
     };
 
@@ -129,9 +135,55 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(staggerContainer.querySelectorAll).toHaveBeenCalledWith('[data-trig-stagger-item], :scope > *');
     expect(staggerChild.setAttribute).toHaveBeenCalledWith('data-trig', '');
     expect(staggerChild.setAttribute).toHaveBeenCalledWith('data-trig-once', 'true');
+    expect(staggerChild.setAttribute).not.toHaveBeenCalledWith(
+      'data-trig-root-margin',
+      expect.anything()
+    );
     // Must not overwrite engine-computed wave/center/reverse delays
     expect(setPropertySpy).not.toHaveBeenCalled();
     expect(refreshSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('propagates parent data-trig-root-margin to stagger children without overwriting child overrides', () => {
+    const childWithoutOverride = {
+      hasAttribute: vi.fn((attr: string) => attr === 'data-trig'),
+      setAttribute: vi.fn(),
+    };
+    const childWithOverride = {
+      hasAttribute: vi.fn((attr: string) => attr === 'data-trig' || attr === 'data-trig-root-margin'),
+      setAttribute: vi.fn(),
+    };
+
+    const staggerContainer = {
+      hasAttribute: vi.fn((attr: string) => attr === 'data-trig-root-margin'),
+      getAttribute: vi.fn((attr: string) => {
+        if (attr === 'data-trig-once') return 'true';
+        if (attr === 'data-trig-root-margin') return '0px';
+        return null;
+      }),
+      setAttribute: vi.fn(),
+      querySelectorAll: vi.fn().mockReturnValue([childWithoutOverride, childWithOverride]),
+    };
+
+    (globalThis as Record<string, unknown>).document = {
+      querySelectorAll: vi.fn((selector: string) => {
+        if (selector === '[data-trig-stagger]') return [staggerContainer];
+        return [];
+      }),
+      addEventListener: vi.fn(),
+      readyState: 'complete',
+    };
+    (globalThis as Record<string, unknown>).window = {
+      chronoTrig: { refresh: vi.fn() },
+    };
+
+    setupChronoTrig();
+
+    expect(childWithoutOverride.setAttribute).toHaveBeenCalledWith('data-trig-root-margin', '0px');
+    expect(childWithOverride.setAttribute).not.toHaveBeenCalledWith(
+      'data-trig-root-margin',
+      expect.anything()
+    );
   });
 
   it('natively locks settled data-trig-once reveals across refresh(), excludes [hidden] stagger children, and supports explicit grid replay', () => {
@@ -372,16 +424,17 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     const pageHero = fs.readFileSync(path.join(rootDir, 'src/components/PageHero.astro'), 'utf-8');
     const minJs = fs.readFileSync(path.join(rootDir, 'public/chronotrig.min.js'), 'utf-8');
 
-    // Bottom entrance state: 56px reveal travel, 1.2s duration, and dynamic engine will-change management
-    expect(css).toContain('translate3d(0, 56px, 0)');
+    // Bottom entrance state: 56px reveal travel (parameterized via --trig-distance), 1.6s duration, and dynamic engine will-change management
+    expect(css).toContain('translate3d(0, var(--trig-distance, 56px), 0)');
     expect(css).toContain('opacity: 0');
-    expect(css).toContain('--trig-duration: 1.2s');
+    expect(css).toContain('--trig-duration: 1.6s');
     expect(css).toContain('--trig-ease: cubic-bezier(0.16, 1, 0.3, 1)');
     expect(css).not.toContain('will-change: transform, opacity;');
 
-    // Zero artificial pre-reveal pause; immediate visual response when intersecting
+    // Global config reveal delay composes cleanly with per-element .trig-delay-* offsets
     expect(css).toContain('--trig-reveal-delay: 0ms');
-    expect(css).toContain('animation-delay: var(--trig-reveal-delay, 0ms)');
+    expect(css).toContain('--trig-reveal-offset: 0ms');
+    expect(css).toContain('animation-delay: calc(var(--trig-reveal-delay, 0ms) + var(--trig-reveal-offset, 0ms))');
 
     // Revealed & settled states release transforms and transition-delay so card hover remains snappy
     expect(css).toContain('.js [data-trig].trig');
@@ -451,6 +504,9 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(layout).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
     expect(layout).toContain("window.localStorage.getItem('motion')");
     expect(layout).toContain('doc.documentElement.dataset.motion = motion');
+    expect(layout).toContain('--trig-reveal-delay: ${motionConfig.revealDelayMs}ms');
+    expect(layout).toContain('--trig-duration: ${motionConfig.revealDurationMs}ms');
+    expect(layout).toContain('--trig-distance: ${motionConfig.revealDistancePx}px');
   });
 
   it('replays grid reveals on filter changes cleanly while delegating hidden-card stagger math to ChronoTrig', () => {
@@ -505,7 +561,8 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
 
   it('syncs Lenis scroll callback synchronously with ChronoTrig v6.1.0 sync() and dispatches lenis:scroll', () => {
     const lenisSrc = fs.readFileSync(path.join(rootDir, 'src/scripts/lenis.ts'), 'utf-8');
-    expect(lenisSrc).toContain('lerp: 0.125');
+    expect(lenisSrc).toContain('CLIENT_MOTION_CONFIG');
+    expect(lenisSrc).toContain('0.125');
     expect(lenisSrc).toContain('window.chronoTrig.sync(instance.scroll)');
     expect(lenisSrc).toContain('window.chronoTrig.trigScroll?.(true)');
     expect(lenisSrc).toContain("new Event('lenis:scroll')");
@@ -530,6 +587,7 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(progress).toContain('data-progress-target');
     expect(progress).toContain('data-progress-active');
     expect(progress).toContain('IntersectionObserver');
+    expect(progress).toContain('CLIENT_MOTION_CONFIG.rootMargin');
     expect(progress).toContain('--ui-progress-target');
     // Must not poll computed styles up ancestor chains or bind synchronous scroll listeners
     expect(progress).not.toContain('getComputedStyle');

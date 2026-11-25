@@ -166,6 +166,7 @@
 
 html {
   scroll-behavior: auto; /* Prevent conflict with Lenis */
+  scroll-padding-top: calc(var(--navbar-sticky-top, 12px) + var(--navbar-height, 64px) + 16px);
 }
 
 body {
@@ -251,6 +252,30 @@ summary::-webkit-details-marker {
   /* The frosted bar that carries the navigation. */
   .glass-surface {
     @apply rounded-2xl border border-glass-border bg-glass shadow-glass backdrop-blur-md;
+  }
+
+  /* Site-wide announcement strip with configurable heightPx via --site-banner-height. */
+  .site-top-banner {
+    min-height: var(--site-banner-height, auto);
+  }
+
+  /* Main content top clearance beneath the floating header on non-hero pages. */
+  .main-header-clearance {
+    padding-block-start: calc(
+      var(--navbar-initial-top, 16px) +
+        max(0px, calc(var(--navbar-manual-banner-offset, 0px) - var(--actual-banner-height, 0px))) +
+        5rem
+    );
+  }
+
+  @media (min-width: 640px) {
+    .main-header-clearance {
+      padding-block-start: calc(
+        var(--navbar-initial-top, 16px) +
+          max(0px, calc(var(--navbar-manual-banner-offset, 0px) - var(--actual-banner-height, 0px))) +
+          5.75rem
+      );
+    }
   }
 
   /* Pure radial-gradient glows for hero/CTA bands (avoids expensive full-layer blur-3xl). */
@@ -436,6 +461,42 @@ html:not([data-motion="reduced"]) [data-cookie-banner]:not([hidden]) {
   animation: cookie-card-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes site-header-stick-enter {
+  from {
+    opacity: 0.7;
+    transform: translate3d(0, -100%, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.site-header {
+  position: absolute;
+  inset-inline: 0;
+  top: var(--navbar-initial-top, 16px);
+}
+
+.site-header[data-auto-banner-offset='false'] {
+  top: calc(var(--navbar-manual-banner-offset, 0px) + var(--navbar-initial-top, 16px));
+}
+
+.site-header[data-header-stuck='true'] {
+  position: fixed;
+  inset-inline: 0;
+  top: var(--navbar-sticky-top, 12px);
+}
+
+.site-header[data-header-stuck='true'] .glass-surface {
+  box-shadow: var(--theme-shadow-floating);
+}
+
+html:not([data-motion='reduced'])
+  .site-header[data-header-stuck='true'][data-header-animate='true'] {
+  animation: site-header-stick-enter 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media print {
   :root,
   :root[data-theme='dark'] {
@@ -467,6 +528,7 @@ html:not([data-motion="reduced"]) [data-cookie-banner]:not([hidden]) {
   }
 
   header,
+  [data-site-top-banner-region],
   footer nav,
   #top-loading-bar,
   #nprogress,

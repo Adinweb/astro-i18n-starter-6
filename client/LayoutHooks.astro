@@ -2,6 +2,7 @@
 /**
  * Client-owned layout injection hooks rendered at well-defined slots in `BaseLayout.astro`:
  * - `head`: inside `<head>` after SEO metadata
+ * - `top-banner`: inside `[data-site-top-banner-region]` at the very top of `<body>`
  * - `brand-badge`: inside header brand link beside site name
  * - `header-actions`: inside header action bar before mobile menu button
  * - `footer-top`: at top of `<footer>` container before grid columns
@@ -11,6 +12,7 @@ import type { Locale } from '@/i18n/locales';
 
 export type LayoutHookSlot =
   | 'head'
+  | 'top-banner'
   | 'brand-badge'
   | 'header-actions'
   | 'footer-top'

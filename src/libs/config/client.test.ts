@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { COOKIE_CONFIG } from './app';
-import { CLIENT_COOKIE_CONFIG } from './client';
+import { COOKIE_CONFIG, UI_CONFIG } from './app';
+import {
+  CLIENT_COOKIE_CONFIG,
+  CLIENT_MOTION_CONFIG,
+  CLIENT_NAVBAR_CONFIG,
+} from './client';
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -19,6 +23,8 @@ describe('src/libs/config/client.ts', () => {
   // consent key or version can never differ between the build and the runtime.
   it('matches the Zod-validated configuration field for field', () => {
     expect(CLIENT_COOKIE_CONFIG).toEqual(COOKIE_CONFIG);
+    expect(CLIENT_NAVBAR_CONFIG).toEqual(UI_CONFIG.navbar);
+    expect(CLIENT_MOTION_CONFIG).toEqual(UI_CONFIG.motion);
   });
 
   it('reads its own defaults without the validator', () => {

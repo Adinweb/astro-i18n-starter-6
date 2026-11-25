@@ -8,6 +8,8 @@
  * and `data-trig-once="true"`.
  */
 
+import { CLIENT_MOTION_CONFIG } from '@/libs/config/client';
+
 type ChronoTrigEase = 'linear' | 'ease' | 'easeIn' | 'easeOut' | 'easeInOut';
 
 type ChronoTrigMobileBehavior = 'disable' | 'lightweight' | 'full';
@@ -143,15 +145,57 @@ export function setupChronoTrig(): void {
     });
   }
 
+  // Sync configured mobile behavior when ChronoTrig exposes setMobileBehavior
+  try {
+    if (
+      typeof window.chronoTrig.setMobileBehavior === 'function' &&
+      typeof window.chronoTrig.getMobileBehavior === 'function' &&
+      window.chronoTrig.getMobileBehavior() !== CLIENT_MOTION_CONFIG.mobileBehavior
+    ) {
+      window.chronoTrig.setMobileBehavior(CLIENT_MOTION_CONFIG.mobileBehavior);
+    }
+  } catch (_) {}
+
+  // Apply configured rootMargin fallback when customized from the engine default
+  if (CLIENT_MOTION_CONFIG.rootMargin && CLIENT_MOTION_CONFIG.rootMargin !== '0px 0px -8% 0px') {
+    try {
+      const triggers = document.querySelectorAll<HTMLElement>('[data-trig], [data-trig-stagger]');
+      if (triggers && typeof triggers.forEach === 'function') {
+        triggers.forEach((el) => {
+          if (typeof el.hasAttribute === 'function' && !el.hasAttribute('data-trig-root-margin')) {
+            el.setAttribute('data-trig-root-margin', CLIENT_MOTION_CONFIG.rootMargin);
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
   // Ensure stagger children participate in IntersectionObserver reveals while
   // delegating `--stagger-index`, `--stagger-delay` (`linear` | `wave` | `center` | `reverse`),
   // `--stagger-total`, hidden-child exclusion, and mobile clamping to ChronoTrig v6.2.0.
   try {
     const staggers = document.querySelectorAll<HTMLElement>('[data-trig-stagger]');
     if (staggers && typeof staggers.forEach === 'function') {
+      const defaultStepSec =
+        CLIENT_MOTION_CONFIG.staggerStepMs <= 0
+          ? '0.0001'
+          : (CLIENT_MOTION_CONFIG.staggerStepMs / 1000).toFixed(3);
       staggers.forEach((container) => {
         if (typeof container.getAttribute !== 'function' || typeof container.querySelectorAll !== 'function') return;
+        if (
+          CLIENT_MOTION_CONFIG.staggerStepMs !== 80 &&
+          typeof container.hasAttribute === 'function' &&
+          !container.hasAttribute('data-trig-stagger-delay')
+        ) {
+          container.setAttribute('data-trig-stagger-delay', defaultStepSec);
+        }
         const inheritOnce = container.getAttribute('data-trig-once') === 'true';
+        const containerRootMargin = container.getAttribute('data-trig-root-margin');
+        const fallbackRootMargin =
+          CLIENT_MOTION_CONFIG.rootMargin && CLIENT_MOTION_CONFIG.rootMargin !== '0px 0px -8% 0px'
+            ? CLIENT_MOTION_CONFIG.rootMargin
+            : '';
+        const inheritedRootMargin = containerRootMargin || fallbackRootMargin;
         const children = container.querySelectorAll<HTMLElement>('[data-trig-stagger-item], :scope > *');
         if (children && typeof children.forEach === 'function') {
           children.forEach((child) => {
@@ -161,6 +205,9 @@ export function setupChronoTrig(): void {
               }
               if (inheritOnce && !child.hasAttribute('data-trig-once')) {
                 child.setAttribute('data-trig-once', 'true');
+              }
+              if (inheritedRootMargin && !child.hasAttribute('data-trig-root-margin')) {
+                child.setAttribute('data-trig-root-margin', inheritedRootMargin);
               }
             }
           });

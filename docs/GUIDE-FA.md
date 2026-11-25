@@ -217,9 +217,9 @@ SITE_URL=https://example.com npm run build
 │   ├── content.ts           # کالکشن‌های اختصاصی clientCollections و متادیتای CLIENT_CONTENT_TYPES
 │   ├── icons.ts / ClientIcons.astro # آیکون‌های اضافهٔ مشتری بدون تغییر هسته
 │   ├── templates/index.ts   # ثبت قالب‌های صفحهٔ سفارشی CLIENT_PAGE_TEMPLATES
-│   ├── LayoutHooks.astro    # قلاب‌های <head> و انتهای <body> در BaseLayout
+│   ├── LayoutHooks.astro    # قلاب‌های `top-banner`، `<head>` و انتهای `<body>` در BaseLayout
 │   └── styles.css           # توکن‌ها، بازنویسی‌های CSS مشتری و جایگاه آمادهٔ @font-face فونت‌های تجاری فارسی
-├── messages/core/           # فرهنگ‌های هسته (۵۱۰ کلید پایه در en.json و fa.json)
+├── messages/core/           # فرهنگ‌های هسته (۶۳۴ کلید پایه در en.json و fa.json)
 ├── starter-kit/             # بستهٔ اختیاری دمو (صفحات، مقالات، پروژه‌ها و دارایی‌ها — با starter:seed)
 ├── .paraglide-work/         # ⚠️ تولیدی/موقت (gitignore): حاصل ادغام core + client پیش از کامپایل
 ├── astro.config.mjs         # Astro: site، trailingSlash، prefetch، MDX، Tailwind، aliasهای @/* و @client/*
@@ -238,7 +238,7 @@ SITE_URL=https://example.com npm run build
 ├── docs/                    # GUIDE-FA.md، GUIDE-HOMEPAGE-FA.md، CONTENT-TYPES-FA.md، PRD.md، PLAYBOOKS.md، deploy/nginx.conf
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
-    ├── components/          # کامپوننت‌های هسته (از جمله DevThemePreview.astro فقط در DEV و TopLoadingBar.astro)، ۳۵ پریمیتیو رابط در ui/
+    ├── components/          # کامپوننت‌های هسته (از جمله `SiteTopBanner.astro`، `DevThemePreview.astro` فقط در DEV و `TopLoadingBar.astro`)، ۳۵ پریمیتیو رابط در ui/
     │                        # و ۲۹ بلوک سکشن (۷ هیرو + ۲۲ سکشن محتوا) به‌همراه ۴ بلوک تعاملی/حرکتی (BentoGrid, LatestPostsCarousel, SwipeableTabs, TestimonialMarquee)
     ├── content/
     │   ├── pages/<گروه>/    # صفحات ایستا: <locale>.mdx + <گروه>.png
@@ -249,12 +249,12 @@ SITE_URL=https://example.com npm run build
     │   ├── locales.ts       # خواندن و صدور نوع‌امن LOCALES, DEFAULT_LOCALE, LOCALE_METADATA از client/locales.json
     │   ├── format.ts        # فرمت بومی تاریخ (هجری شمسی برای fa) و اعداد (Intl)
     │   └── paths.ts         # localizeHref, localeHref, stripLocale, getPathname
-    ├── layouts/BaseLayout.astro # لوگوی Light/Dark (`brand.logo`)، اسکیمای Organization/LocalBusiness، پنل DEV Theme Studio
+    ├── layouts/BaseLayout.astro # نوار بنر بالایی، هدر چسبان تطبیق‌پذیر، تزریق `--trig-*`/`--navbar-*`، لوگوی `brand.logo`، اسکیمای JSON-LD، کشوی موبایل و فوتر
     ├── libs/
     │   ├── api/client.ts    # آداپتور Pure-SSG سمت کلاینت (custom, Web3Forms, Formspree, Basin, Webhook + Turnstile)
     │   ├── config/
-    │   │   ├── app.ts       # ادغام و اعتبارسنجی app.config.json + client/config.json (site, brand, business, api, …)
-    │   │   ├── client.ts    # خوانندهٔ پیکربندی در باندل مرورگر (بدون Zod) + defaults.ts
+    │   │   ├── app.ts       # ادغام و اعتبارسنجی app.config.json + client/config.json (site, brand, business, ui, api, …)
+    │   │   ├── client.ts    # خوانندهٔ پیکربندی در باندل مرورگر (`CLIENT_COOKIE_CONFIG`, `CLIENT_NAVBAR_CONFIG`, `CLIENT_MOTION_CONFIG`؛ بدون Zod) + defaults.ts
     │   │   ├── theme.ts     # پالت‌های OKLCH، پیش‌تنظیم فونت (از جمله ۵ پیش‌تنظیم فارسی) و کارت OG
     │   │   └── navigation.ts # ساخت ناوبری چندمنویی از client/navigation.ts
     │   ├── content/         # entries, service, types, feed, pagination, blog, blog-catalog, taxonomy, faq, social, og-card, schema
@@ -275,7 +275,7 @@ SITE_URL=https://example.com npm run build
     │   ├── api/search-dev.json.ts # فهرست fallback جستجو (کل زبان‌ها)
     │   └── api/search-dev/[locale].json.ts # فهرست fallback جستجو به ازای هر زبان
     ├── paraglide/           # ⚠️ تولیدشده — هرگز دستی ویرایش نشود
-    ├── scripts/             # lenis.ts (اسکرول نرم)، chronotrig.ts (هماهنگ‌کنندهٔ انیمیشن)
+    ├── scripts/             # navbar.ts (بنر و چسبندگی هدر)، lenis.ts (اسکرول نرم)، chronotrig.ts (هماهنگ‌کنندهٔ انیمیشن)
     ├── styles/              # global.css (.layout-container + پالت معنایی)، prose.css، chronotrig.css
     ├── test/                # mock ماژول astro:content برای Vitest
     └── views/               # PageView, BlogIndexView, BlogPostView, CollectionIndexView (با فیلتر تعاملی),
@@ -373,7 +373,82 @@ SITE_URL=https://example.com npm run build
     "showThemeToggle": true,
     "showLanguageSwitcher": true,
     "showTopLoadingBar": true,
-    "stickyHeader": true
+    "stickyHeader": true,
+    "navbar": {
+      "initialTopOffset": 16,
+      "stickyScrollThreshold": 0,
+      "stickyTopOffset": 12,
+      "autoBannerOffset": true,
+      "manualBannerOffset": 0
+    },
+    "topBanner": {
+      "enabled": true,
+      "id": "site-announcement",
+      "variant": "primary",
+      "icon": "sparkles",
+      "heightPx": 32,
+      "badge": "",
+      "badgeByLocale": {},
+      "message": "",
+      "messageByLocale": {},
+      "ctaLabel": "",
+      "ctaLabelByLocale": {},
+      "ctaHref": "",
+      "ctaHrefByLocale": {},
+      "external": false,
+      "dismissible": true,
+      "excludePaths": [],
+      "items": [
+        {
+          "id": "site-notice",
+          "enabled": true,
+          "variant": "hero",
+          "icon": "shield",
+          "heightPx": 40,
+          "badge": "",
+          "badgeByLocale": {},
+          "message": "",
+          "messageByLocale": {},
+          "ctaLabel": "",
+          "ctaLabelByLocale": {},
+          "ctaHref": "",
+          "ctaHrefByLocale": {},
+          "external": false,
+          "dismissible": false,
+          "excludePaths": []
+        },
+        {
+          "id": "site-announcement",
+          "enabled": true,
+          "variant": "primary",
+          "icon": "sparkles",
+          "heightPx": 32,
+          "badge": "",
+          "badgeByLocale": {},
+          "message": "",
+          "messageByLocale": {},
+          "ctaLabel": "",
+          "ctaLabelByLocale": {},
+          "ctaHref": "",
+          "ctaHrefByLocale": {},
+          "external": false,
+          "dismissible": true,
+          "excludePaths": []
+        }
+      ]
+    },
+    "motion": {
+      "revealDelayMs": 0,
+      "revealDurationMs": 1600,
+      "revealDistancePx": 56,
+      "revealSmallDistancePx": 18,
+      "revealEasing": "cubic-bezier(0.16, 1, 0.3, 1)",
+      "staggerStepMs": 80,
+      "rootMargin": "0px 0px -8% 0px",
+      "mobileBehavior": "lightweight",
+      "smoothScroll": true,
+      "smoothScrollLerp": 0.125
+    }
   },
   "blog": {
     "postsPerPage": 9,
@@ -441,7 +516,7 @@ SITE_URL=https://example.com npm run build
 | `brand.darkThemeColor` | hex شش‌رقمی اختیاری برای تم تیره |
 | `brand.icons` | آرایهٔ غیرخالی از `{ file, size, purpose }` |
 | `business` | پروفایل کسب‌وکار (`type`: `Organization` \| `LocalBusiness` \| `ProfessionalService` \| `MedicalBusiness` \| `Store`, `legalName`, `phone`, `whatsapp`, `telegram`, `address`, `city`, `country`, `workingHours`, `mapEmbedUrl`, `geo?: { lat, lng }`) برای JSON-LD و دکمه‌های تماس سریع + نقشهٔ تنبل |
-| `ui` | پرچم‌های بولین (`showSearch`, `showThemeToggle`, `showLanguageSwitcher`, `showTopLoadingBar`, `stickyHeader`) + `ui.ctaPage`؛ برای سایت‌های **تک‌زبانه**، تنظیم `ui.showLanguageSwitcher: false` بدون تغییر فایل‌های پروژه سوئیچر زبان را پنهان می‌کند |
+| `ui` | پرچم‌های بولین (`showSearch`, `showThemeToggle`, `showLanguageSwitcher`, `showTopLoadingBar`, `stickyHeader`) + `ui.ctaPage` (برای سایت‌های **تک‌زبانه** `ui.showLanguageSwitcher: false` سوئیچر زبان را پنهان می‌کند) به‌همراه ۳ بخش زیرساختی: **`ui.navbar`** (`initialTopOffset`, `stickyScrollThreshold`, `stickyTopOffset`, `autoBannerOffset`, `manualBannerOffset`)، **`ui.topBanner`** (`enabled` — در `app.config.json` روی `true` با دو بنر هم‌زمان `site-notice` ۴۰px غیرقابل‌بستن و `site-announcement` ۳۲px قابل‌بستن است، ولی در `defaults.ts` پیش‌فرض طرح‌واره `false` است — به‌همراه `id`, `variant`, `icon`, `heightPx`, `badge`/`badgeByLocale`, `message`/`messageByLocale`, `ctaLabel`/`ctaLabelByLocale`, `ctaHref`/`ctaHrefByLocale`, `external`, `dismissible`, `excludePaths`, `items[]`) و **`ui.motion`** (`revealDelayMs`: `0`، `revealDurationMs`: `1600`، `revealDistancePx`: `56`، `revealSmallDistancePx`: `18`، `revealEasing`، `staggerStepMs`: `80`، `rootMargin`، `mobileBehavior`، `smoothScroll`، `smoothScrollLerp`) |
 | `blog.postsPerPage` | عدد صحیح مثبت |
 | `blog` | پرچم‌های بولین نمایش (`showReadingTime`, `showTableOfContents`, `showRelatedPosts`) |
 | `cookies` | تنظیمات رضایت کوکی (`enabled`, `consentVersion`, `storageKey`, `expirationDays`) |
@@ -1341,21 +1416,25 @@ pre, code, .math {
          ▼
 مرحله ۳ (`.trig` توسط موتور) : هنگامی که المان وارد دید می‌شود، کلاس `.trig` اضافه می‌شود
          ▼
-مرحله ۴ (`.js [data-trig].trig`) : انیمیشن `trig-reveal-up` با مدت `1.2s` (`--trig-duration`) و منحنی
+مرحله ۴ (`.js [data-trig].trig`) : انیمیشن `trig-reveal-up` با مدت `1.6s` (`--trig-duration`) و منحنی
                             `cubic-bezier(0.16, 1, 0.3, 1)` به opacity: 1 و transform: none می‌رسد
 ```
 
-**کنترل سراسری زمان‌بندی در `chronotrig.css`:** سه متغیر اصلی زمان و شتاب همهٔ ورودها را کنترل می‌کنند:
+**کنترل سراسری زمان‌بندی از `ui.motion` و `chronotrig.css`:** مقادیر `ui.motion` در `app.config.json` / `client/config.json` توسط `BaseLayout.astro` روی `<html>` به‌عنوان متغیرهای CSS تزریق می‌شوند (و کد مرورگر آن‌ها را از `CLIENT_MOTION_CONFIG` می‌خواند):
 
 ```css
+/* مقادیر پیش‌فرض تزریق‌شده از ui.motion روی <html> (فالبک در chronotrig.css) */
 :root {
-  --trig-duration: 1.2s;
+  --trig-duration: 1600ms;
   --trig-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --trig-reveal-delay: 0ms;
+  --trig-reveal-delay: 0ms;        /* ui.motion.revealDelayMs — پیش‌فرض ۰ میلی‌ثانیه */
+  --trig-reveal-offset: 0ms;       /* تأخیر افزایشی از کلاس‌های .trig-delay-* */
+  --trig-distance: 56px;           /* ui.motion.revealDistancePx */
+  --trig-distance-sm: 18px;        /* ui.motion.revealSmallDistancePx */
 }
 ```
 
-این زمان‌بندی روی `[data-trig]` (مسافت استاندارد `56px`؛ و `18px` در `.fadeInUpSm` / `.blurIn`) و کارت‌های پلکانی (به همراه `--stagger-delay`) اعمال می‌شود.
+کل تأخیر ورود برابر است با `calc(var(--trig-reveal-delay, 0ms) + var(--trig-reveal-offset, 0ms))`؛ بنابراین با `revealDelayMs: 0` پیش‌فرض، المان‌ها بلافاصله با ورود به دید و با طول انیمیشن نرم `1600ms` (`1.6s`) ظاهر می‌شوند و اگر در `client/config.json` مقدار `revealDelayMs` (مثلاً `250`) را اضافه کنید، کلاس‌های `.trig-delay-*` به‌صورت افزایشی روی آن جمع می‌شوند (برای مثال با `250ms` و `.trig-delay-200` تأخیر کل `450ms` می‌شود) و کارت‌های پلکانی از `--stagger-delay` (`ui.motion.staggerStepMs`, پیش‌فرض `80ms`) و جابه‌جایی `44px` بهره می‌برند.
 
 #### ۲. المان‌های تکی، `data-trig-once` و پریست‌های آماده (ChronoTrig v6.2.0)
 
@@ -1370,8 +1449,8 @@ pre, code, .math {
 ```
 
 * بدون `data-trig-once="true"` انیمیشن هنگام ورود/خروج دوباره پخش می‌شود؛ با `data-trig-once="true"` یک‌بار اجرا شده، `will-change` آزاد می‌شود و از `IntersectionObserver` خارج می‌گردد (در صفحات بلند و مثل صفحهٔ `/components/` استفاده از `data-trig-once="true"` حیاتی است).
-* در فایل‌های محتوای `.mdx` عنوان‌های `.prose h2/h3/h4` به‌طور خودکار توسط `setupChronoTrig()` در `src/scripts/chronotrig.ts` با `data-trig` و `data-trig-once="true"` علامت‌گذاری می‌شوند.
-* **پریست‌ها و اصلاحگرهای آماده در `src/styles/chronotrig.css`**: کلاس‌های `.fadeInUpSm`، `.blurIn` (در موبایل به‌صورت خودکار به `.fadeInUpSm` بدون بلور تبدیل می‌شود)، `.clipUp`، `.clipStart`، `.fadeIn`، `.fadeInDown`، `.zoomIn`، `.zoomOut`، `.trig-directional` و اصلاحگرهای `.trig-delay-100..1000`، `.trig-duration-300..2000`، `.trig-ease-*` و `.trig-reactive-*` همگی زیر `.js [data-trig]` ایزوله هستند تا بدون JS یا در چاپ صفحه‌پرش (CLS) صفر باشد. هرگز صفت غیرمعتبر `data-trig-delay` ننویسید.
+* در فایل‌های محتوای `.mdx` عنوان‌های `.prose h2/h3/h4` به‌طور خودکار توسط `setupChronoTrig()` در `src/scripts/chronotrig.ts` با `data-trig` و `data-trig-once="true"` علامت‌گذاری می‌شوند و جهت `data-trig-stagger` از `CLIENT_MOTION_CONFIG.staggerStepMs` و `CLIENT_MOTION_CONFIG.rootMargin` (با انتشار خودکار `data-trig-root-margin` والد به فرزندان پلکانی بدون بازنویسی فرزندان دارای مقدار اختصاصی) بهره می‌برد.
+* **پریست‌ها و اصلاحگرهای آماده در `src/styles/chronotrig.css`**: کلاس‌های `.fadeInUpSm`، `.blurIn` (در موبایل به‌صورت خودکار به `.fadeInUpSm` بدون بلور تبدیل می‌شود)، `.clipUp`، `.clipStart`، `.fadeIn`، `.fadeInDown`، `.zoomIn`، `.zoomOut`، `.trig-directional` و اصلاحگرهای `.trig-delay-100..1000`، `.trig-delay-150`، `.trig-duration-300..2000`، `.trig-ease-*` و `.trig-reactive-*` همگی زیر `.js [data-trig]` ایزوله هستند تا بدون JS یا در چاپ صفحه‌پرش (CLS) صفر باشد. هرگز صفت غیرمعتبر `data-trig-delay` ننویسید.
 
 #### ۳. جهت‌های منطقی آگاه از RTL (`start` و `end`)
 
@@ -1463,14 +1542,14 @@ refreshChronoTrig();
 
 #### ۷. هماهنگی با Lenis، تنظیم حرکت و قواعد کارایی GPU
 
-* **Lenis (`src/scripts/lenis.ts`)**: با `lerp: 0.125` و `syncTouch: false` راه‌اندازی می‌شود، با فراخوانی `window.chronoTrig?.setExternalScroll?.(true)` شنوندهٔ تکراری اسکرول ChronoTrig را غیرفعال کرده و مستقیماً در رویداد اسکرول با `window.chronoTrig.sync(instance.scroll)` همگام می‌شود، لینک‌های `#hash` هم‌صفحه را با آفست هدر ثابت (`-96px`) مدیریت می‌کند و در `astro:page-load` بازسازی می‌شود.
+* **Lenis (`src/scripts/lenis.ts`)**: با تنظیمات `CLIENT_MOTION_CONFIG.smoothScroll` و `smoothScrollLerp` (پیش‌فرض `0.125`) و `syncTouch: false` راه‌اندازی می‌شود، با فراخوانی `window.chronoTrig?.setExternalScroll?.(true)` شنوندهٔ تکراری اسکرول ChronoTrig را غیرفعال کرده و مستقیماً در رویداد اسکرول با `window.chronoTrig.sync(instance.scroll)` همگام می‌شود، لینک‌های `#hash` هم‌صفحه را با **آفست پویای هدر (`getHeaderOffset()`)** محاسبه‌شده از `<header data-site-header>` (`stickyTop + height + 16` در حالت چسبان یا `0` در حالت غیرچسبان) مدیریت می‌کند و در `astro:page-load` بازسازی می‌شود.
 * **پنل‌های اسکرول داخلی**: روی هر مودال/کشو/پنل با `overflow-y-auto` صفت `data-lenis-prevent` بگذارید.
 * **تنظیم حرکت**: تابع `resolveMotion()` در `<head>` (در `BaseLayout.astro`) مقدار `localStorage.motion` یا در صورت نبود آن تنظیم سیستمی `(prefers-reduced-motion: reduce)` را می‌خواند و `data-motion="reduced" | "full"` را روی `<html>` می‌نشاند. ChronoTrig v6.2.0 (`respectReducedMotion` + `body.chronotrig-mobile-disabled`)، `chronotrig.css`، Lenis و `[data-cookie-banner]` و `@media print` به‌صورت یکپارچه به آن احترام می‌گذارند.
 * **قواعد کارایی سخت‌افزاری (Zero-Lag)**:
   1. روی عناصر ثابت از `data-trig-once="true"` استفاده کنید تا پس از ورود از ناظر خارج شوند.
   2. از لایه‌های سنگین `blur-2xl` / `blur-3xl` پرهیز کنید (به‌جای آن از `.hero-glow-primary` / `.hero-glow-accent` در `global.css` استفاده کنید) و `backdrop-blur` را تو در تو نچینید.
   3. تصاویر زیر خط دید (و همچنین `<PageHero compact />`) را با `loading="lazy"` بارگذاری کنید (`priority` فقط برای تصویر هیروی بالای صفحه).
-  4. اسکرول پارالاکس (`ParallaxSection`)، شمارنده/نوار پیشرفت (`UiProgress`) و حرکت مداوم اسلایدر (`TestimonialMarquee`) همگی با `IntersectionObserver` در خارج از دید متوقف می‌شوند تا GPU/CPU بیکار نماند.
+  4. اسکرول پارالاکس (`ParallaxSection`)، شمارنده/نوار پیشرفت (`UiProgress` با استفاده از `CLIENT_MOTION_CONFIG.rootMargin`) و حرکت مداوم اسلایدر (`TestimonialMarquee`) همگی با `IntersectionObserver` در خارج از دید متوقف می‌شوند تا GPU/CPU بیکار نماند.
   5. متغیرهای سراسری `:root` (`--scroll-progress` و `--scroll-y`) در ChronoTrig به‌صورت پیش‌فرض خاموش (`rootScrollVars: false`) هستند تا در صفحات حجیم باعث بازمحاسبهٔ استایل کل DOM هنگام اسکرول نشوند (در صورت نیاز می‌توانید با صفت `data-trig-root-vars` روی `<html>` فعال کنید). در صفحات کاتالوگ طولانی مثل جدول‌ها و بلاک‌های کد در `ComponentDoc.astro` نیز از `[content-visibility:auto]` برای صرفه‌جویی در چیدمان و رسم خارج از دید استفاده شده است.
 
 ### استایل متن محتوا — `src/styles/prose.css`
@@ -1536,11 +1615,12 @@ import IconCustom from '@tabler/icons-astro/dist/esm/icons/star.mjs';
 
 | بخش | توضیح فنی |
 | --- | --- |
-| `<head>` | charset، viewport، `theme-color`، `manifest`، `apple-touch-icon`، `favicon`، `<ClientRouter />` و متادیتای SEO |
+| `<head>` | charset، viewport، `theme-color`، `manifest`، `apple-touch-icon`، `favicon`، `<ClientRouter />`، متادیتای SEO، اسکریپت‌های پیش‌رندر برای تم/حرکت/سرکوب بنر بسته‌شده (`astro:before-swap`) و متغیرهای CSS بنر/ناوبری و `--trig-*` |
 | لینک پرش | `href="#main-content"` با کلاس `sr-only focus:not-sr-only` — اولین عنصر قابل فوکوس صفحه برای دسترس‌پذیری |
-| هدر شیشه‌ای | `fixed inset-x-0 top-0` + `.glass-surface`؛ برند، ناوبری دسکتاپ چندسطحی، جستجو، تغییر تم، تعویض زبان، دکمهٔ CTA |
+| ناحیهٔ نوار بنر بالایی | `<div data-site-top-banner-region>` بالای هدر در جریان صفحه؛ شامل `<LayoutHooks slot="top-banner" />` و `SiteTopBanner.astro` (`ui.topBanner`) با اندازهٔ خودکار توسط `ResizeObserver` |
+| هدر شیشه‌ای تطبیق‌پذیر | `<header data-site-header class="site-header z-40">` (بر پایهٔ `ui.navbar` و `src/scripts/navbar.ts`) + `.glass-surface`؛ در بالای صفحه آزاد از زیر بنر قرار می‌گیرد و پس از آستانهٔ اسکرول چسبان (`is-stuck`) می‌شود؛ برند، ناوبری دسکتاپ چندسطحی، جستجو، تغییر تم، تعویض زبان، دکمهٔ CTA |
 | کشوی موبایل | کشوی اسلایدی واکنشی با تب‌بندی دوگانه (تب ناوبری + تب جستجوی یکپارچه)، بخش اختصاصی زبان‌ها و تغییر تم |
-| `<main id="main-content">` | محتوای صفحه؛ اسلات `hero` تمام‌عرض بیرون از ستون محتوا رندر می‌شود |
+| `<main id="main-content">` | محتوای صفحه با `.main-header-clearance` برای پیشگیری از همپوشانی؛ اسلات `hero` تمام‌عرض بیرون از ستون محتوا رندر می‌شود |
 | فوتر چندستونه | شبکهٔ معنایی ۴ ستونه (برند، محصول، منابع، شرکت) + نوار پایین با سال بومی خودکار و لینک‌های حقوقی |
 | نوار پیشرفت | `TopLoadingBar` با `transition:persist` و هماهنگ با انتقال‌های View Transitions |
 
@@ -1576,8 +1656,10 @@ export interface NavigationSlots {
 }
 ```
 
-#### ۱. ناوبری هدر دسکتاپ (`headerNav`)
-- از تابع `getHeaderNavigation(locale, currentUrl)` تأمین می‌شود؛ این تابع همان `buildPrimaryNavigation` مشترک با کشوی موبایل را برمی‌گرداند، پس یک صفحه هرگز یک بار در هدر و یک بار جداگانه در کشو تعریف نمی‌شود.
+#### ۱. ناوبری هدر دسکتاپ، نوار بنر بالایی (`ui.topBanner`) و رفتار چسبندگی تطبیق‌پذیر (`ui.navbar`)
+- **نوار بنر اطلاع‌رسانی (`SiteTopBanner.astro` + `ui.topBanner`)**: بنرهای سراسری با پیکربندی `ui.topBanner` (پشتیبانی از ۶ ظاهر `primary`/`hero`/`surface`/`accent`/`info`/`warning`، ارتفاع کمینهٔ قابل‌تنظیم `heightPx` بین `24` تا `160` پیکسل، متن و دکمهٔ اختصاصی به ازای هر زبان `*ByLocale`، `excludePaths` برای حذف در مسیرهای خاص، کنترل `dismissible` با ذخیرهٔ وضعیت بستن در `sessionStorage` بدون پرش بصری در View Transitions، و آرایهٔ `items[]` برای چند بنر روی‌هم — در حالت پیش‌فرض شامل یک بنر ثابت `site-notice` با ارتفاع `40px` و غیرقابل‌بستن و یک بنر فشرده‌تر `site-announcement` با ارتفاع `32px` و قابل‌بستن) یا اسلات `<LayoutHooks slot="top-banner" />` رندر می‌شوند.
+- **کنترلر تطبیق‌پذیر هدر (`src/scripts/navbar.ts` + `ui.navbar`)**: `ResizeObserver` ارتفاع واقعی `[data-site-top-banner-region]` را اندازه گرفته و در `--actual-banner-height` می‌نویسد. در حالت عادی فاصلهٔ بالای هدر برابر `initialTopOffset` (پیش‌فرض `16px`) به‌علاوهٔ ارتفاع بنر است، پس از عبور اسکرول از `max(stickyScrollThreshold, effectiveBannerHeight + initialTopOffset - stickyTopOffset)` به کلاس `is-stuck` و فاصلهٔ `stickyTopOffset` (`12px`) تغییر وضعیت می‌دهد، و اگر `autoBannerOffset: false` باشد از `manualBannerOffset` استفاده می‌کند.
+- ناوبری دسکتاپ از تابع `getHeaderNavigation(locale, currentUrl)` تأمین می‌شود؛ این تابع همان `buildPrimaryNavigation` مشترک با کشوی موبایل را برمی‌گرداند، پس یک صفحه هرگز یک بار در هدر و یک بار جداگانه در کشو تعریف نمی‌شود.
 - **منوهای آبشاری چندسطحی (Dropdowns)**: از فیلد `children` در `NavItem` پشتیبانی می‌کند. روی دسکتاپ با هاور و فوکوس کیبورد (`group-hover` و `group-focus-within`) باز می‌شود. زیرمنوهای تو در تو نیز با آیکون `chevron-right` (با چرخش خودکار `rtl:rotate-180` در زبان‌های راست‌به‌چپ) به سمت جهت خواندن هدایت می‌شوند.
 - **تشخیص خودکار صفحهٔ فعال**: تابع `isActive(href, currentUrl)` مسیر جاری را با لینک‌ها مقایسه کرده و کلاس `text-primary font-medium` و نشانگر `aria-current="page"` را اعمال می‌کند.
 - **دکمهٔ CTA پیکربندی‌پذیر**: دکمهٔ شروع سریع (`common_get_started`) به گروه صفحهٔ تعیین‌شده در `ui.ctaPage` (`app.config.json` / `client/config.json`) می‌رود — پیش‌فرض `pricing`. اگر آن صفحه برای این زبان منتشر نشده باشد، دکمه به‌جای لینک مرده پنهان می‌شود.
@@ -1913,7 +1995,7 @@ canonical و `hreflang` آن روی زبان پیش‌فرض (`/`) می‌مان
 ```bash
 npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
 npm run lint           # کامپایل پیام‌ها + astro check + tsc --noEmit
-npm test               # ۲۶ فایل تست واحد Vitest (۲۶۹ تست)
+npm test               # ۲۷ فایل تست واحد Vitest (۲۸۱ تست)
 npm run audit:i18n
 SITE_URL=https://example.com npm run build
 npm run smoke          # تست دود روی dist/
@@ -1941,19 +2023,20 @@ npm run verify:cli     # ۹۵ ادعا دربارهٔ گردش‌کارهای CL
 | `src/libs/config/app.test.ts` | اعتبارسنجی ادغام `app.config.json` + `client/config.json` و تنظیمات برند/لوگو/کسب‌وکار/وبلاگ/API/کوکی |
 | `src/libs/config/theme.test.ts` | پالت‌های OKLCH، رنگ‌های hex سفارشی، ۵ پیش‌تنظیم فونت RTL و کنتراست AA |
 | `src/libs/config/navigation.test.ts` | اسلات‌های ناوبری چندمنویی هدر، کشوی موبایل و فوتر |
-| `src/libs/config/client.test.ts` | هم‌خوانی `CLIENT_COOKIE_CONFIG` با پیکربندی اعتبارسنجی‌شده و نبود import زمان اجرا از `app.ts` (به‌این‌ترتیب Zod به باندل مرورگر نمی‌رسد) |
+| `src/libs/config/client.test.ts` | هم‌خوانی `CLIENT_COOKIE_CONFIG`، `CLIENT_NAVBAR_CONFIG` و `CLIENT_MOTION_CONFIG` با پیکربندی اعتبارسنجی‌شده و نبود import زمان اجرا از `app.ts` (به‌این‌ترتیب Zod به باندل مرورگر نمی‌رسد) |
 | `src/libs/config/astro-config.test.ts` | alias `astro/components` در `astro.config.mjs` (رفع `Unknown file extension ".astro"`) |
 | `src/libs/api/client.test.ts` | آداپتور Pure-SSG (`custom`, `web3forms`, `formspree`, `basin`, `webhook`)، Turnstile، تایم‌اوت و Honeypot |
 | `src/libs/cookies/cookies.test.ts` | مدل رضایت کوکی، انقضا و مدیریت اسکریپت‌ها |
 | `src/libs/search/client.test.ts` | جستجوی کلاینت، نرمال‌سازی حروف/نیم‌فاصله/ارقام فارسی و ایندکسر Pagefind |
-| `src/scripts/lenis.test.ts` | اسکرول نرم، آفست لینک‌های `#hash` و ایزوله‌سازی پنل‌ها |
-| `src/scripts/chronotrig.test.ts` | قرارداد `.js [data-trig]`، جهت‌های منطقی RTL، پلکانی‌سازی، مکث `--trig-reveal-delay`، `prefers-reduced-motion` و سازگاری Lenis |
+| `src/scripts/navbar.test.ts` | محاسبهٔ ارتفاع مؤثر بنر (`autoBannerOffset` / `manualBannerOffset`)، آستانهٔ چسبندگی هدر، همگام‌سازی `ResizeObserver` و سرکوب بنر بسته‌شده |
+| `src/scripts/lenis.test.ts` | اسکرول نرم با تنظیم `ui.motion`، آفست پویای لینک‌های `#hash` از هدر زنده (`getHeaderOffset`) و ایزوله‌سازی پنل‌ها |
+| `src/scripts/chronotrig.test.ts` | قرارداد `.js [data-trig]`، جهت‌های منطقی RTL، پلکانی‌سازی، انتشار `data-trig-root-margin`، تأخیر `revealDelayMs` / `--trig-reveal-offset`، `prefers-reduced-motion` و سازگاری Lenis |
 | `src/libs/ui/button.test.ts` | نگاشت `variant`/`size` به کلاس‌های `global.css`، حرکت هاور/فشرده‌سازی و اولویت `className` فراخوان |
 | `src/components/TopLoadingBar.test.ts` | پیشرفت یکنواخت، محو شدن و ریست سریع نوار بارگذاری بالای صفحه (`#nprogress`)، جداسازی View Transitions و حالت `data-motion="reduced"` |
 | `src/libs/ui/icons.test.ts` | یکتایی و kebab-case بودن `SITE_ICONS` (۶۹ آیکون هسته)، `resolveIconName`، آیکون‌های جهت‌دار RTL و پوشش آیکون‌های ناوبری |
 | `src/libs/ui/blocks.test.ts` | ۶۴ بلوک آماده (۲۹ بلوک سکشن شامل ۷ هیرو + ۳۵ پریمیتیو رابط در `src/components/ui/`)؛ خواص منطقی، نبود `<svg>` خام، کلیدهای Paraglide و توکن‌های معنایی |
 
-> **۲۶ فایل تست واحد (۲۶۹ تست).** ماژول `astro:content` در Vitest با
+> **۲۷ فایل تست واحد (۲۸۱ تست).** ماژول `astro:content` در Vitest با
 > `src/test/astro-content-mock.ts` جایگزین می‌شود، پس تست‌های واحد بدون بیلد
 > Astro و بدون دست‌زدن به فایل‌های محتوا اجرا می‌شوند.
 
@@ -1968,7 +2051,7 @@ npm run verify:cli     # ۹۵ ادعا دربارهٔ گردش‌کارهای CL
 | ۵. اسکنر متن هاردکد | هشدار دربارهٔ رشته‌های ترجمه‌نشده در قالب‌ها (هشدار، نه خطا) |
 | ۶. نگهبان RTL | نبود کلاس جهت‌دار فیزیکی (`ml-`, `pr-`, `text-left`, `left/right`) و بردارهای فیزیکی انیمیشن |
 
-خروجی واقعی روی وضعیت پایهٔ تمیز این مخزن: ۲ زبان (`en`, `fa`)، ۵۱۰ کلید پایه در فرهنگ‌های هسته (۵۳۱ کلید پس از ادغام با `client/messages/`) با placeholder یکسان، بدون برخورد مسیر و صفر تخلف RTL.
+خروجی واقعی روی وضعیت فعلی مخزن: ۲ زبان (`en`, `fa`)، ۶۳۴ کلید پایه در فرهنگ‌های هسته (۶۵۵ کلید پس از ادغام با `client/messages/`) با placeholder یکسان، بدون برخورد مسیر و صفر تخلف RTL.
 
 ### تست دود — ۷ بخش روی `dist/`
 
@@ -2154,7 +2237,7 @@ dist/
 | `npm run messages:compile` | ادغام `messages/core/` + `client/messages/` و کامپایل به `src/paraglide/` |
 | `npm run check` | `astro check` |
 | `npm run lint` | کامپایل پیام‌ها + astro check + tsc |
-| `npm test` | تست‌های Vitest (۲۶ فایل، ۲۶۹ تست) |
+| `npm test` | تست‌های Vitest (۲۷ فایل، ۲۸۱ تست) |
 | `npm run build` | بیلد تولیدی + Pagefind |
 | `npm run preview` | پیش‌نمایش خروجی |
 | `npm run smoke` | تست دود روی `dist/` |
@@ -2193,9 +2276,9 @@ dist/
 
 ## پیوست B — کلیدهای ترجمه
 
-۵۱۰ کلید ترجمهٔ هسته در `messages/core/en.json` (و `fa.json`) به‌علاوهٔ کلیدهای اختصاصی مشتری در `client/messages/<locale>.json` (جمع ۵۳۱ کلید ادغام‌شده؛ کلیدهای دمو مثل `nav_about` / دسته‌های نمونهٔ وبلاگ با `npm run starter:seed` افزوده می‌شوند). منبع دقیق خود فایل‌ها و `npm run audit:i18n` است:
+۶۳۴ کلید ترجمهٔ هسته در `messages/core/en.json` (و `fa.json`) به‌علاوهٔ کلیدهای اختصاصی مشتری در `client/messages/<locale>.json` (جمع ۶۵۵ کلید ادغام‌شده؛ کلیدهای دمو مثل `nav_about` / دسته‌های نمونهٔ وبلاگ با `npm run starter:seed` افزوده می‌شوند). منبع دقیق خود فایل‌ها و `npm run audit:i18n` است:
 
-### `block_*` (۳۱۳ کلید) و `doc_*` (۸ کلید)
+### `block_*` (۴۲۵ کلید) و `doc_*` (۱۲ کلید)
 
 - `block_*`: متن‌های بومی‌پیش‌فرض ۶۴ بلوک آماده (۲۹ بلوک سکشن شامل ۷ هیرو و ۲۲ سکشن محتوا + ۳۵ پریمیتیو رابط در `src/components/ui/`) به‌همراه ۴ بلوک تعاملی/حرکتی (`LandingHeroSplit`، `PricingSection`، `ProductShowcaseGrid`، `TestimonialGrid`، `FaqAccordion`، `ContactSplitSection`، `SwipeableTabs`، `ParallaxSection` و…).
 - `doc_*`: برچسب‌های مستندسازی درون‌خطی برای `ComponentDoc.astro`.
@@ -2233,11 +2316,12 @@ dist/
 - `collection_*`: فیلترهای دسته، فناوری (`stack`)، جستجو، شمارندهٔ بومی (`collection_showing_count`) و پیام حالت خالی فیلتر در `CollectionIndexView.astro`.
 - `projects_*`: `projects_back` · `projects_client` · `projects_index_description` · `projects_stack` · `projects_visit` · `projects_year` (در کنار `content_empty`).
 
-### `home_*` (۱۴ کلید)، `drawer_*` (۲ کلید) و `footer_*` (۶ کلید)
+### `home_*` (۱۴ کلید)، `drawer_*` (۲ کلید)، `footer_*` (۶ کلید) و `site_top_banner_*` (۸ کلید)
 
 - `home_*`: متن‌های رابط صفحهٔ خانه (`home_badge`، `home_hero_*`، `home_highlight_{1..3}_{title,desc}`، `home_cta_*`).
 - `drawer_*`: `drawer_tab_nav` · `drawer_tab_search`
 - `footer_*`: `footer_col_pages` · `footer_col_resources` · `footer_col_company` · `footer_col_legal` · `footer_legal_privacy` · `footer_legal_terms`
+- `site_top_banner_*`: برچسب‌های پیش‌فرض نوار بنر بالایی سایت (`SiteTopBanner.astro`: `site_top_banner_region_label`, `site_top_banner_default_badge`, `site_top_banner_default_message`, `site_top_banner_default_cta`, `site_top_banner_notice_badge`, `site_top_banner_notice_message`, `site_top_banner_notice_cta`, `site_top_banner_dismiss`).
 
 ### `nav_*` (۳ کلید پایه + کلیدهای صفحات مشتری در `client/messages/`)
 
@@ -2285,11 +2369,11 @@ dist/
 
 `siteConfig` · `POSTS_PER_PAGE` · `HERO_TITLE_ID` · `DEFAULT_HERO_IMAGE` · `absoluteUrl` · `UI_CONFIG` · `BLOG_CONFIG` · `COOKIE_CONFIG` · `API_CONFIG` · `SOCIAL_CONFIG` · `BUSINESS_CONFIG`
 
-> ⚠️ این ماژول در زمان import پیکربندی ادغام‌شده (`app.config.json` + `client/config.json`) را با Zod اعتبارسنجی می‌کند، پس فقط در کامپوننت‌ها، viewها، صفحه‌ها و اسکریپت‌های Node استفاده می‌شود. ماژولی که به مرورگر می‌رود باید از `src/libs/config/client.ts` بخواند (`CLIENT_COOKIE_CONFIG`) که بدون Zod می‌خواند و پیش‌فرض‌هایش را از `defaults.ts` می‌گیرد — یک تعریف مشترک با طرح‌واره، بدون تکرار مقدار.
+> ⚠️ این ماژول در زمان import پیکربندی ادغام‌شده (`app.config.json` + `client/config.json`) را با Zod اعتبارسنجی می‌کند، پس فقط در کامپوننت‌ها، viewها، صفحه‌ها و اسکریپت‌های Node استفاده می‌شود. ماژولی که به مرورگر می‌رود باید از `src/libs/config/client.ts` بخواند (`CLIENT_COOKIE_CONFIG`، `CLIENT_NAVBAR_CONFIG`، `CLIENT_MOTION_CONFIG`) که بدون Zod می‌خواند و پیش‌فرض‌هایش را از `defaults.ts` می‌گیرد — یک تعریف مشترک با طرح‌واره، بدون تکرار مقدار.
 
 ### `src/libs/config/client.ts` و `defaults.ts`
 
-`CLIENT_COOKIE_CONFIG` (پیکربندی امن برای مرورگر) · `COOKIE_CONFIG_DEFAULTS` (پیش‌فرض‌های مشترک طرح‌واره و کلاینت)
+`CLIENT_COOKIE_CONFIG` · `CLIENT_NAVBAR_CONFIG` · `CLIENT_MOTION_CONFIG` (پیکربندی امن برای مرورگر بدون Zod) · `COOKIE_CONFIG_DEFAULTS` · `NAVBAR_CONFIG_DEFAULTS` · `TOP_BANNER_CONFIG_DEFAULTS` · `MOTION_CONFIG_DEFAULTS` · `UI_CONFIG_DEFAULTS` · `deepMergeConfig` (پیش‌فرض‌های مشترک طرح‌واره و کلاینت)
 
 ### `src/libs/config/theme.ts`
 
@@ -2330,12 +2414,13 @@ dist/
 | `og-card.ts` | `buildOgRouteKey` · `getBrandedOgHref` · `renderBrandedOgSvg` · `renderBrandedOgPng` |
 | `social.ts` | `getSocialCard` · `SocialImage` |
 
-### `src/scripts/*` (اسکرول نرم و انیمیشن‌های اسکرول)
+### `src/scripts/*` (نوار ناوبری تطبیق‌پذیر، اسکرول نرم و انیمیشن‌های اسکرول)
 
 | فایل | خروجی‌ها | کاربرد |
 | --- | --- | --- |
-| `lenis.ts` | `initLenis()` · `destroyLenis()` · `getLenis()` | راه‌اندازی (`setExternalScroll(true)` + `sync`)، پاک‌سازی در View Transitions و دسترسی به نمونهٔ فعال `Lenis` |
-| `chronotrig.ts` | `setupChronoTrig()` · `refreshChronoTrig()` | تایپ‌های ChronoTrig v6.2.0، علامت‌گذاری عنوان‌های `.prose` و `[data-trig-once]`، هماهنگی `astro:page-load` و `refresh()` پس از تزریق یا فیلتر پویا |
+| `navbar.ts` | `computeNavbarState()` · `setupNavbar()` · `destroyNavbar()` | محاسبهٔ ارتفاع مؤثر بنر بالایی (`ResizeObserver`)، آستانهٔ چسبندگی هدر و همگام‌سازی متغیرهای CSS (`--actual-banner-height`، `--header-height`) |
+| `lenis.ts` | `initLenis()` · `destroyLenis()` · `getLenis()` · `getHeaderOffset()` | راه‌اندازی بر پایهٔ `CLIENT_MOTION_CONFIG` (`setExternalScroll(true)` + `sync`)، محاسبهٔ پویای آفست هدر برای `#hash`، پاک‌سازی در View Transitions و دسترسی به نمونهٔ فعال `Lenis` |
+| `chronotrig.ts` | `setupChronoTrig()` · `refreshChronoTrig()` | تایپ‌های ChronoTrig v6.2.0، علامت‌گذاری عنوان‌های `.prose` و `[data-trig-once]`، انتشار `data-trig-root-margin`، هماهنگی `astro:page-load` و `refresh()` پس از تزریق یا فیلتر پویا |
 
 ### `scripts/lib/locales.mjs`
 

@@ -5,6 +5,9 @@ import {
   appConfigSchema,
   brandLogoSchema,
   themeModeSchema,
+  navbarConfigSchema,
+  topBannerConfigSchema,
+  motionConfigSchema,
   uiConfigSchema,
   blogConfigSchema,
   cookieConfigSchema,
@@ -65,6 +68,116 @@ describe('src/libs/config/app.ts', () => {
       expect(uiConfigSchema.parse({}).ctaPage).toBe('pricing');
       expect(uiConfigSchema.parse({ ctaPage: 'contact' }).ctaPage).toBe('contact');
       expect(() => uiConfigSchema.parse({ ctaPage: '' })).toThrow();
+    });
+
+    it('validates navbar offset, scroll threshold, and banner offset defaults and overrides', () => {
+      const defaults = navbarConfigSchema.parse({});
+      expect(defaults).toEqual({
+        initialTopOffset: 16,
+        stickyScrollThreshold: 0,
+        stickyTopOffset: 12,
+        autoBannerOffset: true,
+        manualBannerOffset: 0,
+      });
+
+      const custom = navbarConfigSchema.parse({
+        initialTopOffset: 28,
+        stickyScrollThreshold: 140,
+        stickyTopOffset: 8,
+        autoBannerOffset: false,
+        manualBannerOffset: 48,
+      });
+      expect(custom.initialTopOffset).toBe(28);
+      expect(custom.stickyScrollThreshold).toBe(140);
+      expect(custom.stickyTopOffset).toBe(8);
+      expect(custom.autoBannerOffset).toBe(false);
+      expect(custom.manualBannerOffset).toBe(48);
+
+      expect(() => navbarConfigSchema.parse({ initialTopOffset: -4 })).toThrow();
+      expect(() => navbarConfigSchema.parse({ stickyScrollThreshold: -1 })).toThrow();
+    });
+
+    it('validates site topBanner defaults, localized copy, heightPx bounds, and stacked items', () => {
+      const defaults = topBannerConfigSchema.parse({});
+      expect(defaults.enabled).toBe(false);
+      expect(defaults.variant).toBe('primary');
+      expect(defaults.dismissible).toBe(true);
+      expect(defaults.items).toEqual([]);
+
+      const multi = topBannerConfigSchema.parse({
+        enabled: true,
+        items: [
+          {
+            id: 'promo-spring',
+            variant: 'accent',
+            heightPx: 40,
+            messageByLocale: { en: 'Spring update', fa: 'نسخه بهاره منتشر شد' },
+            ctaHrefByLocale: { en: '/pricing/', fa: '/fa/تعرفه‌ها/' },
+            dismissible: false,
+          },
+        ],
+      });
+      expect(multi.enabled).toBe(true);
+      expect(multi.items).toHaveLength(1);
+      expect(multi.items[0]?.heightPx).toBe(40);
+      expect(multi.items[0]?.messageByLocale.fa).toBe('نسخه بهاره منتشر شد');
+      expect(multi.items[0]?.dismissible).toBe(false);
+
+      expect(() =>
+        topBannerConfigSchema.parse({ items: [{ id: 'too-short', heightPx: 10 }] })
+      ).toThrow();
+      expect(appConfig.ui.topBanner.items).toHaveLength(2);
+      expect(appConfig.ui.topBanner.items[0]).toMatchObject({
+        id: 'site-notice',
+        heightPx: 40,
+        dismissible: false,
+      });
+      expect(appConfig.ui.topBanner.items[1]).toMatchObject({
+        id: 'site-announcement',
+        heightPx: 32,
+        dismissible: true,
+      });
+    });
+
+    it('validates motion config defaults (0ms reveal delay, 1600ms reveal duration) and bounds', () => {
+      const defaults = motionConfigSchema.parse({});
+      expect(defaults).toEqual({
+        revealDelayMs: 0,
+        revealDurationMs: 1600,
+        revealDistancePx: 56,
+        revealSmallDistancePx: 18,
+        revealEasing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        staggerStepMs: 80,
+        rootMargin: '0px 0px -8% 0px',
+        mobileBehavior: 'lightweight',
+        smoothScroll: true,
+        smoothScrollLerp: 0.125,
+      });
+
+      expect(appConfig.ui.topBanner.enabled).toBe(true);
+      expect(appConfig.ui.motion.revealDelayMs).toBe(0);
+      expect(appConfig.ui.motion.revealDurationMs).toBe(1600);
+
+      const custom = motionConfigSchema.parse({
+        revealDelayMs: 250,
+        revealDurationMs: 900,
+        revealDistancePx: 32,
+        revealSmallDistancePx: 12,
+        revealEasing: 'ease-out',
+        staggerStepMs: 60,
+        rootMargin: '0px 0px -10% 0px',
+        mobileBehavior: 'full',
+        smoothScroll: false,
+        smoothScrollLerp: 0.2,
+      });
+      expect(custom.revealDelayMs).toBe(250);
+      expect(custom.mobileBehavior).toBe('full');
+      expect(custom.smoothScroll).toBe(false);
+
+      expect(() => motionConfigSchema.parse({ revealDelayMs: -1 })).toThrow();
+      expect(() => motionConfigSchema.parse({ revealDurationMs: 50 })).toThrow();
+      expect(() => motionConfigSchema.parse({ revealEasing: 'ease; color: red' })).toThrow();
+      expect(() => motionConfigSchema.parse({ smoothScrollLerp: 1.5 })).toThrow();
     });
   });
 

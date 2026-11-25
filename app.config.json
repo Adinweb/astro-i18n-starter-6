@@ -43,7 +43,82 @@
     "showThemeToggle": true,
     "showLanguageSwitcher": true,
     "showTopLoadingBar": true,
-    "stickyHeader": true
+    "stickyHeader": true,
+    "navbar": {
+      "initialTopOffset": 16,
+      "stickyScrollThreshold": 0,
+      "stickyTopOffset": 12,
+      "autoBannerOffset": true,
+      "manualBannerOffset": 0
+    },
+    "topBanner": {
+      "enabled": true,
+      "id": "site-announcement",
+      "variant": "primary",
+      "icon": "sparkles",
+      "heightPx": 32,
+      "badge": "",
+      "badgeByLocale": {},
+      "message": "",
+      "messageByLocale": {},
+      "ctaLabel": "",
+      "ctaLabelByLocale": {},
+      "ctaHref": "",
+      "ctaHrefByLocale": {},
+      "external": false,
+      "dismissible": true,
+      "excludePaths": [],
+      "items": [
+        {
+          "id": "site-notice",
+          "enabled": true,
+          "variant": "hero",
+          "icon": "shield",
+          "heightPx": 40,
+          "badge": "",
+          "badgeByLocale": {},
+          "message": "",
+          "messageByLocale": {},
+          "ctaLabel": "",
+          "ctaLabelByLocale": {},
+          "ctaHref": "",
+          "ctaHrefByLocale": {},
+          "external": false,
+          "dismissible": false,
+          "excludePaths": []
+        },
+        {
+          "id": "site-announcement",
+          "enabled": true,
+          "variant": "primary",
+          "icon": "sparkles",
+          "heightPx": 32,
+          "badge": "",
+          "badgeByLocale": {},
+          "message": "",
+          "messageByLocale": {},
+          "ctaLabel": "",
+          "ctaLabelByLocale": {},
+          "ctaHref": "",
+          "ctaHrefByLocale": {},
+          "external": false,
+          "dismissible": true,
+          "excludePaths": []
+        }
+      ]
+    },
+    "motion": {
+      "revealDelayMs": 0,
+      "revealDurationMs": 1600,
+      "revealDistancePx": 56,
+      "revealSmallDistancePx": 18,
+      "revealEasing": "cubic-bezier(0.16, 1, 0.3, 1)",
+      "staggerStepMs": 80,
+      "rootMargin": "0px 0px -8% 0px",
+      "mobileBehavior": "lightweight",
+      "smoothScroll": true,
+      "smoothScrollLerp": 0.125
+    }
   },
   "blog": {
     "postsPerPage": 9,

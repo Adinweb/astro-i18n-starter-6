@@ -1,0 +1,269 @@
+---
+/**
+ * Site-wide top announcement banner strip rendered above the floating header.
+ *
+ * Configured via `ui.topBanner` in `app.config.json` / `client/config.json`,
+ * plus optional `<LayoutHooks slot="top-banner" />` custom client injections.
+ * Placed in normal document flow inside `[data-site-top-banner-region]` so its
+ * height pushes content down cleanly while `src/scripts/navbar.ts` adapts the
+ * navbar offset automatically.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import IconButton from '@/components/ui/IconButton.astro';
+import type { Locale } from '@/i18n/locales';
+import { siteConfig, type TopBannerItemConfig, type TopBannerVariant } from '@/libs/config/app';
+import { getHomeHref, getPageUrl } from '@/libs/content/service';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+interface Props {
+  locale?: Locale | string;
+  url?: string;
+}
+
+const { locale, url = Astro.url.pathname } = Astro.props;
+const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
+const bannerConfig = siteConfig.ui.topBanner;
+
+function pickLocalized(map: Record<string, string> | undefined, fallback: string | undefined): string {
+  const localized = map?.[activeLocale]?.trim();
+  if (localized) return localized;
+  return fallback?.trim() ?? '';
+}
+
+function isExcluded(item: Pick<TopBannerItemConfig, 'excludePaths'>): boolean {
+  if (!item.excludePaths || item.excludePaths.length === 0) return false;
+  return item.excludePaths.some((prefix) => prefix && url.startsWith(prefix));
+}
+
+const rawItems: TopBannerItemConfig[] = bannerConfig.enabled
+  ? bannerConfig.items && bannerConfig.items.length > 0
+    ? bannerConfig.items.filter((item) => item.enabled !== false && !isExcluded(item))
+    : !isExcluded(bannerConfig)
+      ? [
+          {
+            id: bannerConfig.id,
+            enabled: true,
+            variant: bannerConfig.variant,
+            icon: bannerConfig.icon,
+            badge: bannerConfig.badge,
+            badgeByLocale: bannerConfig.badgeByLocale,
+            message: bannerConfig.message,
+            messageByLocale: bannerConfig.messageByLocale,
+            ctaLabel: bannerConfig.ctaLabel,
+            ctaLabelByLocale: bannerConfig.ctaLabelByLocale,
+            ctaHref: bannerConfig.ctaHref,
+            ctaHrefByLocale: bannerConfig.ctaHrefByLocale,
+            external: bannerConfig.external,
+            dismissible: bannerConfig.dismissible,
+            heightPx: bannerConfig.heightPx,
+            excludePaths: bannerConfig.excludePaths,
+          },
+        ]
+      : []
+  : [];
+
+const needsDefaultHref = rawItems.some((item) => {
+  const customMessage = pickLocalized(item.messageByLocale, item.message);
+  const customHref = pickLocalized(item.ctaHrefByLocale, item.ctaHref);
+  return !customMessage && !customHref;
+});
+
+const defaultFallbackHref = needsDefaultHref
+  ? ((await getPageUrl('features', activeLocale)) ?? (await getHomeHref(activeLocale)))
+  : '';
+const noticeFallbackHref = needsDefaultHref
+  ? ((await getPageUrl('components', activeLocale)) ?? (await getHomeHref(activeLocale)))
+  : '';
+
+const resolvedBanners = rawItems.map((item) => {
+  const customMessage = pickLocalized(item.messageByLocale, item.message);
+  const usingDefaults = !customMessage;
+  const badge = pickLocalized(item.badgeByLocale, item.badge);
+  const ctaLabel = pickLocalized(item.ctaLabelByLocale, item.ctaLabel);
+  const ctaHref = pickLocalized(item.ctaHrefByLocale, item.ctaHref);
+  const isNotice = item.id === 'site-notice';
+  const defaultBadge = isNotice
+    ? m.site_top_banner_notice_badge({}, { locale: activeLocale })
+    : m.site_top_banner_default_badge({}, { locale: activeLocale });
+  const defaultMessage = isNotice
+    ? m.site_top_banner_notice_message({}, { locale: activeLocale })
+    : m.site_top_banner_default_message({}, { locale: activeLocale });
+  const defaultCta = isNotice
+    ? m.site_top_banner_notice_cta({}, { locale: activeLocale })
+    : m.site_top_banner_default_cta({}, { locale: activeLocale });
+  const fallbackHref = isNotice ? noticeFallbackHref : defaultFallbackHref;
+
+  return {
+    id: item.id || 'site-announcement',
+    variant: item.variant,
+    icon: item.icon?.trim() || '',
+    badge: usingDefaults ? badge || defaultBadge : badge,
+    message: usingDefaults ? defaultMessage : customMessage,
+    ctaLabel: usingDefaults ? ctaLabel || defaultCta : ctaLabel || (ctaHref ? defaultCta : ''),
+    ctaHref: usingDefaults ? ctaHref || fallbackHref : ctaHref,
+    external: item.external,
+    dismissible: item.dismissible,
+    heightPx: item.heightPx,
+    isCompact: typeof item.heightPx === 'number' ? item.heightPx <= 36 : true,
+  };
+});
+
+const VARIANT_CLASSES: Record<TopBannerVariant, string> = {
+  primary: 'border-primary/25 bg-primary text-primary-fg',
+  hero: 'border-hero-fg/15 bg-hero-base text-hero-fg',
+  surface: 'border-border bg-surface text-fg',
+  accent: 'border-accent/30 bg-accent text-accent-fg',
+  info: 'border-info/25 bg-info text-info-fg',
+  warning: 'border-warning/35 bg-warning text-warning-fg',
+};
+
+const BADGE_CLASSES: Record<TopBannerVariant, string> = {
+  primary: 'bg-primary-fg/20 text-primary-fg',
+  hero: 'bg-accent text-accent-fg',
+  surface: 'border border-primary/25 bg-primary/10 text-primary',
+  accent: 'bg-accent-fg/15 text-accent-fg',
+  info: 'bg-info-fg/20 text-info-fg',
+  warning: 'bg-warning-fg/15 text-warning-fg',
+};
+
+const CTA_CLASSES: Record<TopBannerVariant, string> = {
+  primary: 'bg-primary-fg/15 text-primary-fg hover:bg-primary-fg/25',
+  hero: 'bg-hero-fg/12 text-hero-fg hover:bg-hero-fg/22',
+  surface: 'bg-primary/10 text-primary hover:bg-primary/18',
+  accent: 'bg-accent-fg/12 text-accent-fg hover:bg-accent-fg/20',
+  info: 'bg-info-fg/15 text-info-fg hover:bg-info-fg/25',
+  warning: 'bg-warning-fg/12 text-warning-fg hover:bg-warning-fg/20',
+};
+
+const dismissLabel = m.site_top_banner_dismiss({}, { locale: activeLocale });
+const regionLabel = m.site_top_banner_region_label({}, { locale: activeLocale });
+---
+
+{
+  resolvedBanners.map((banner) => (
+    <div
+      data-site-top-banner
+      data-top-banner-id={banner.id}
+      data-dismissible={banner.dismissible ? 'true' : undefined}
+      role="region"
+      aria-label={banner.badge || regionLabel}
+      style={banner.heightPx ? `--site-banner-height: ${banner.heightPx}px;` : undefined}
+      class:list={[
+        'site-top-banner flex items-center border-b px-3 font-medium sm:px-4 print:hidden',
+        banner.isCompact ? 'py-0.5 text-[11px] leading-tight sm:text-xs' : 'py-1.5 text-xs leading-snug',
+        VARIANT_CLASSES[banner.variant],
+      ]}
+    >
+      <div class="layout-container flex items-center justify-between gap-2 sm:gap-3">
+        <div class="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-1.5 text-center sm:gap-2">
+          {banner.icon && (
+            <Icon name={banner.icon} size={banner.isCompact ? 14 : 15} class="shrink-0 opacity-90" />
+          )}
+
+          {banner.badge && (
+            <span
+              class:list={[
+                'inline-flex shrink-0 items-center rounded-full font-bold uppercase tracking-wider rtl:tracking-normal',
+                banner.isCompact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[11px]',
+                BADGE_CLASSES[banner.variant],
+              ]}
+            >
+              {banner.badge}
+            </span>
+          )}
+
+          <p class="text-pretty">{banner.message}</p>
+
+          {banner.ctaHref && banner.ctaLabel && (
+            <a
+              href={banner.ctaHref}
+              target={banner.external ? '_blank' : undefined}
+              rel={banner.external ? 'noopener noreferrer' : undefined}
+              class:list={[
+                'inline-flex shrink-0 items-center gap-1 rounded-full font-bold transition-colors',
+                banner.isCompact ? 'px-2 py-0.5 text-[10px] sm:text-[11px]' : 'px-2.5 py-0.5 text-[11px]',
+                CTA_CLASSES[banner.variant],
+              ]}
+            >
+              <span>{banner.ctaLabel}</span>
+              <Icon
+                name={banner.external ? 'external-link' : 'arrow-right'}
+                size={12}
+                class={banner.external ? 'shrink-0' : 'shrink-0 rtl:rotate-180'}
+              />
+            </a>
+          )}
+        </div>
+
+        {banner.dismissible && (
+          <IconButton
+            icon="close"
+            size={banner.isCompact ? 13 : 15}
+            variant="ghost"
+            label={dismissLabel}
+            data-top-banner-dismiss
+            class={
+              banner.isCompact
+                ? 'size-6 shrink-0 text-current/80 hover:bg-current/15 hover:text-current'
+                : 'size-7 shrink-0 text-current/80 hover:bg-current/15 hover:text-current'
+            }
+          />
+        )}
+      </div>
+    </div>
+  ))
+}
+
+<script>
+  function syncDismissedSiteTopBanners(root: Document = document) {
+    root
+      .querySelectorAll<HTMLElement>('[data-site-top-banner][data-dismissible="true"]')
+      .forEach((banner) => {
+        const id = banner.dataset.topBannerId || 'site-announcement';
+        try {
+          if (window.sessionStorage.getItem(`top-banner-dismissed:${id}`) === 'true') {
+            banner.hidden = true;
+          }
+        } catch {
+          // sessionStorage may be blocked in strict environments.
+        }
+      });
+  }
+
+  function initSiteTopBanners() {
+    syncDismissedSiteTopBanners(document);
+
+    document.querySelectorAll<HTMLElement>('[data-site-top-banner]').forEach((banner) => {
+      const closeBtn = banner.querySelector<HTMLButtonElement>('[data-top-banner-dismiss]');
+      if (!closeBtn || closeBtn.dataset.bound === 'true') return;
+      closeBtn.dataset.bound = 'true';
+
+      closeBtn.addEventListener('click', () => {
+        const id = banner.dataset.topBannerId || 'site-announcement';
+        banner.hidden = true;
+        try {
+          window.sessionStorage.setItem(`top-banner-dismissed:${id}`, 'true');
+        } catch {
+          // ignore storage errors
+        }
+        document.dispatchEvent(new CustomEvent('app:top-banner-change'));
+      });
+    });
+
+    document.dispatchEvent(new CustomEvent('app:top-banner-change'));
+  }
+
+  if (document.documentElement.dataset.siteTopBannerBound !== 'true') {
+    document.documentElement.dataset.siteTopBannerBound = 'true';
+    document.addEventListener('astro:before-swap', (event) => {
+      const swapEvent = event as Event & { newDocument?: Document };
+      if (swapEvent.newDocument) {
+        syncDismissedSiteTopBanners(swapEvent.newDocument);
+      }
+    });
+    document.addEventListener('astro:page-load', initSiteTopBanners);
+  }
+
+  initSiteTopBanners();
+</script>

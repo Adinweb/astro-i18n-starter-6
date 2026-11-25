@@ -655,5 +655,13 @@
   "projects_visit": "Visit live site",
   "projects_year": "Year",
   "site_description": "A production-grade, multilingual RTL & LTR static site generator starter built with Astro v7, Tailwind CSS v4, and Paraglide JS.",
+  "site_top_banner_default_badge": "Announcement",
+  "site_top_banner_default_cta": "Learn more",
+  "site_top_banner_default_message": "Configurable site-wide announcement bar that automatically clears the floating navbar.",
+  "site_top_banner_dismiss": "Dismiss announcement",
+  "site_top_banner_notice_badge": "Notice",
+  "site_top_banner_notice_cta": "View Components",
+  "site_top_banner_notice_message": "Persistent 40px top banner (non-dismissible) with automatic sticky navbar offset sync.",
+  "site_top_banner_region_label": "Site announcement",
   "testimonials_rating_aria": "Rated {rating} out of 5 stars"
 }

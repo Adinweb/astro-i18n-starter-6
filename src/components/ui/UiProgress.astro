@@ -229,6 +229,7 @@ const RING_SIZES = {
 
 <script>
   import { formatNumber } from '@/i18n/format';
+  import { CLIENT_MOTION_CONFIG } from '@/libs/config/client';
 
   const cleanups: Array<() => void> = [];
 
@@ -256,8 +257,9 @@ const RING_SIZES = {
   }
 
   function computeStartDelayMs(root: HTMLElement): number {
+    const baseDelayMs = Math.max(0, CLIENT_MOTION_CONFIG.revealDelayMs || 0);
     const staggerParent = root.closest<HTMLElement>('[data-trig-stagger]');
-    if (!staggerParent) return 140;
+    if (!staggerParent) return baseDelayMs + 140;
     const siblings = Array.from(
       staggerParent.querySelectorAll<HTMLElement>(
         '[data-ui-progress-bar], [data-ui-progress-ring], [data-ui-progress-steps]'
@@ -271,7 +273,7 @@ const RING_SIZES = {
       Number.isFinite(rawStep) && rawStep >= 0
         ? Math.max(60, Math.min(Math.round(rawStep * 1000), 140))
         : 80;
-    return 140 + Math.round(getStaggerFactor(idx, total, mode) * stepMs);
+    return baseDelayMs + 140 + Math.round(getStaggerFactor(idx, total, mode) * stepMs);
   }
 
   interface ProgressController {
@@ -453,7 +455,7 @@ const RING_SIZES = {
       },
       {
         root: null,
-        rootMargin: '0px 0px -8% 0px',
+        rootMargin: CLIENT_MOTION_CONFIG.rootMargin || '0px 0px -8% 0px',
         threshold: 0.15,
       }
     );
