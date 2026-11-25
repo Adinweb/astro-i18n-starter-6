@@ -12,7 +12,7 @@ This reference documents how to animate elements across Astro views, reusable co
 | `app.config.json` / `client/config.json` (`ui.motion`) | Central SSOT for reveal timing, distance, easing, stagger step, default `rootMargin`, `mobileBehavior`, and Lenis smooth-scroll settings (`revealDelayMs: 0`, `revealDurationMs: 1600`, `revealDistancePx: 56`, `revealSmallDistancePx: 18`, `revealEasing`, `staggerStepMs: 80`, `rootMargin`, `mobileBehavior`, `smoothScroll`, `smoothScrollLerp`). Validated at build time in `src/libs/config/app.ts` and exposed zero-Zod to browser scripts via `CLIENT_MOTION_CONFIG` in `src/libs/config/client.ts` (`defaults.ts`). |
 | `src/layouts/BaseLayout.astro` | Emits `--trig-reveal-delay`, `--trig-duration`, `--trig-ease`, `--trig-distance`, and `--trig-distance-sm` from `ui.motion` onto `<html style>`, loads `<script is:inline src="/chronotrig.min.js"></script>`, executes `resolveMotion()` in `<head>` (checks `localStorage.motion`, falls back to OS `prefers-reduced-motion: reduce`, sets `html[data-motion]`), and imports `src/scripts/navbar`, `src/scripts/lenis`, and `src/scripts/chronotrig`. |
 | `src/styles/chronotrig.css` | Scopes all entrance states strictly under `.js [data-trig]`, provides calibrated presets (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, etc.) and additive utility modifiers (`.trig-delay-*` via `--trig-reveal-offset`, `.trig-duration-*`, `.trig-ease-*`, `.trig-reactive-*`), handles logical RTL directions and settled stagger items (`.trig-stagger-settled`), and flattens reveals/pins/timelines for `html[data-motion="reduced"]`, `body.chronotrig-mobile-disabled`, and `@media print`. |
-| `src/scripts/chronotrig.ts` | Full v6.2.0 TypeScript declarations (`setExternalScroll`, `isExternalScroll`, `sync`, `refresh`, `version`) and client lifecycle coordinator. Auto-tags `.prose` headings (`data-trig` + `data-trig-once="true"`), syncs `CLIENT_MOTION_CONFIG.mobileBehavior` / `rootMargin` / `staggerStepMs`, propagates `data-trig`, `data-trig-once`, and inherited `data-trig-root-margin` to stagger children without clobbering `wave`/`center`/`reverse` delays, calls `window.chronoTrig.refresh()` on initial load and `astro:page-load`, and exports `refreshChronoTrig()`. |
+| `src/scripts/chronotrig.ts` | Full v6.2.0 TypeScript declarations (`setExternalScroll`, `isExternalScroll`, `sync`, `refresh`, `resetStagger`, `version`) and client lifecycle coordinator. Auto-tags `.prose` headings (`data-trig` + `data-trig-once="true"`), syncs `CLIENT_MOTION_CONFIG.mobileBehavior` / `rootMargin` / `staggerStepMs`, propagates `data-trig`, `data-trig-once`, and inherited `data-trig-root-margin` to stagger children without clobbering `wave`/`center`/`reverse` delays, calls `window.chronoTrig.refresh()` on initial load and `astro:page-load`, and exports `refreshChronoTrig()` plus `replayStaggerGrid()` for synchronized filter-change stagger replays. |
 | `src/scripts/lenis.ts` | Reads `CLIENT_MOTION_CONFIG.smoothScroll` & `smoothScrollLerp` (`0.125`), manages the singleton `Lenis` instance, calls `window.chronoTrig.setExternalScroll?.(true)` on init (`false` on destroy) to eliminate duplicate passive scroll listeners, syncs Lenis ticks via `window.chronoTrig.sync(instance.scroll)`, intercepts same-page `#hash` links in the capture phase using dynamic `getHeaderOffset()` (from `header[data-site-header]` / `ui.navbar`), isolates nested scroll containers, and honors `data-motion="reduced"`. |
 | `src/styles/global.css` | Sets `html { scroll-behavior: auto; }` (preventing Lenis conflict), dynamic `scroll-padding-top` matching sticky navbar height, `.site-header` / `.main-header-clearance` variables, and `body { overflow-x: clip; }` (crucial so `position: sticky` inside `[data-trig-pin]` is never broken). |
 
@@ -127,22 +127,15 @@ grid.append(...newCards);
 refreshChronoTrig();
 ```
 
-When a client-side filter toggles `card.hidden` (or replaces filtered cards) and `visibilityChanged` is true, clear the grid's reveal classes, `data-trig-settled`, and `willChange`, force a reflow, and call `refreshChronoTrig()` (`replayGridReveals()` in `src/views/BlogIndexView.astro` and `applyFilters()` in `src/views/CollectionIndexView.astro`). ChronoTrig v6.2.0 natively excludes `[hidden]` children when computing `--stagger-index`, `--stagger-delay`, and `--stagger-total`, while keeping settled `data-trig-once="true"` elements (such as page headers and sibling staggers) locked across `refresh()`:
+When a client-side filter toggles `card.hidden` (or replaces filtered cards) and `visibilityChanged` is true, call `replayStaggerGrid(grid)` from `@/scripts/chronotrig` (used in `BlogIndexView.astro`, `CollectionIndexView.astro`, `ImageGallerySection.astro`, and `ProductShowcaseGrid.astro`). `replayStaggerGrid()` calls `window.chronoTrig.resetStagger(grid)` to detach in-flight listeners, clears reveal classes, `data-trig-settled`, inline stagger variables, and `willChange`, forces a synchronous layout flush, and waits across two animation frames (`requestAnimationFrame`) before invoking `refreshChronoTrig()` so pre-existing visible cards and newly shown cards restart together in one synchronized cascade (with stale `animationcancel` events safely drained). ChronoTrig v6.2.0 natively excludes `[hidden]` children when computing `--stagger-index`, `--stagger-delay`, and `--stagger-total`, while keeping settled `data-trig-once="true"` elements (such as page headers and sibling staggers) locked across `refresh()`:
 
 ```typescript
+import { replayStaggerGrid } from '@/scripts/chronotrig';
+
 // User-triggered filter/tab change when visible cards changed — never on the initial render.
-if (typeof window.chronoTrig !== 'undefined') {
-  grid.classList.remove('trig-stagger-active');
-  grid.removeAttribute('data-trig-settled');
-  for (const child of Array.from(grid.children)) {
-    const el = child as HTMLElement;
-    el.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active', 'trig-stagger-settled');
-    el.removeAttribute('data-trig-settled');
-    el.style.willChange = 'auto';
-  }
-  void grid.offsetHeight;
+if (grid && visibilityChanged) {
+  replayStaggerGrid(grid);
 }
-refreshChronoTrig();
 ```
 
 Two additional rules prevent laggy or cut-off filter animations:

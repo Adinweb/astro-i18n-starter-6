@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
-import { setupChronoTrig, refreshChronoTrig } from './chronotrig';
+import { setupChronoTrig, refreshChronoTrig, replayStaggerGrid } from './chronotrig';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
@@ -331,7 +331,11 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
       const boot = new Function('window', 'document', 'IntersectionObserver', 'requestAnimationFrame', 'cancelAnimationFrame', minJs);
       boot(fakeWin, fakeDoc, MockIntersectionObserver, globalThis.requestAnimationFrame, globalThis.cancelAnimationFrame);
 
-      const engine = fakeWin.chronoTrig as { refresh: () => void; destroy: () => void };
+      const engine = fakeWin.chronoTrig as {
+        refresh: () => void;
+        resetStagger: (el: unknown) => void;
+        destroy: () => void;
+      };
       expect(observed.has(header)).toBe(true);
       expect(observed.has(grid)).toBe(true);
 
@@ -383,32 +387,161 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
       expect(headerTitle.getAttribute('data-trig-settled')).toBe('true');
       expect(dualChild.classList.contains('trig-stagger-settled')).toBe(true);
 
-      // Explicit grid replay clears settled flags on grid + children and re-observes grid.
+      // Explicit mid-animation grid replay via resetStagger() cancels stale animationcancel
+      // listeners and restarts ALL visible cards (pre-existing + newly unhidden) in one stagger cascade.
       ioCallbacks.at(-1)?.([{ target: grid, isIntersecting: true }]);
-      card1.dispatchEvent({ type: 'animationend', target: card1 });
-      card3.dispatchEvent({ type: 'animationend', target: card3 });
-      expect(grid.getAttribute('data-trig-settled')).toBe('true');
+      expect(card1.classList.contains('trig-stagger-active')).toBe(true);
+      expect(card3.classList.contains('trig-stagger-active')).toBe(true);
 
-      grid.classList.remove('trig-stagger-active');
-      grid.removeAttribute('data-trig-settled');
-      [card1, card2Hidden, card3].forEach((c) => {
-        c.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active', 'trig-stagger-settled');
-        c.removeAttribute('data-trig-settled');
-      });
+      // Simulate filter change mid-animation (before 1.6s animationend): card2 becomes visible.
       card2Hidden.hidden = false;
+      engine.resetStagger(grid);
+
+      // Even if queued animationcancel fires after reset on pre-existing cards, they must NOT settle.
+      card1.dispatchEvent({ type: 'animationcancel', target: card1 });
+      card3.dispatchEvent({ type: 'animationcancel', target: card3 });
+      expect(card1.classList.contains('trig-stagger-settled')).toBe(false);
+      expect(card1.getAttribute('data-trig-settled')).toBeNull();
+      expect(card3.classList.contains('trig-stagger-settled')).toBe(false);
+      expect(card3.getAttribute('data-trig-settled')).toBeNull();
 
       engine.refresh();
       expect(observed.has(header)).toBe(false);
       expect(observed.has(dualGrid)).toBe(false);
       expect(observed.has(grid)).toBe(true);
+      expect(card1._props.get('--stagger-index')).toBe('0');
+      expect(card1._props.get('--stagger-delay')).toBe('0.000s');
       expect(card2Hidden._props.get('--stagger-index')).toBe('1');
+      expect(card2Hidden._props.get('--stagger-delay')).toBe('0.100s');
+      expect(card3._props.get('--stagger-index')).toBe('2');
+      expect(card3._props.get('--stagger-delay')).toBe('0.200s');
       expect(card3._props.get('--stagger-total')).toBe('3');
+
+      ioCallbacks.at(-1)?.([{ target: grid, isIntersecting: true }]);
+      expect(card1.classList.contains('trig-stagger-active')).toBe(true);
+      expect(card2Hidden.classList.contains('trig-stagger-active')).toBe(true);
+      expect(card3.classList.contains('trig-stagger-active')).toBe(true);
+      expect(card1.classList.contains('trig-stagger-settled')).toBe(false);
+      expect(card3.classList.contains('trig-stagger-settled')).toBe(false);
 
       engine.destroy();
     } finally {
       (globalThis as Record<string, unknown>).window = prevWin;
       (globalThis as Record<string, unknown>).document = prevDoc;
       (globalThis as Record<string, unknown>).IntersectionObserver = prevIO;
+      (globalThis as Record<string, unknown>).requestAnimationFrame = prevRAF;
+      (globalThis as Record<string, unknown>).cancelAnimationFrame = prevCAF;
+    }
+  });
+
+  it('replayStaggerGrid isolates resets across double-RAF and coalesces rapid filter updates', () => {
+    const refreshSpy = vi.fn();
+    const resetStaggerSpy = vi.fn();
+    const rafQueue = new Map<number, () => void>();
+    let rafSeq = 0;
+
+    const prevRAF = globalThis.requestAnimationFrame;
+    const prevCAF = globalThis.cancelAnimationFrame;
+    (globalThis as Record<string, unknown>).requestAnimationFrame = (cb: () => void) => {
+      const id = ++rafSeq;
+      rafQueue.set(id, cb);
+      return id;
+    };
+    (globalThis as Record<string, unknown>).cancelAnimationFrame = (id: number) => {
+      rafQueue.delete(id);
+    };
+
+    try {
+      const createCard = () => {
+        const classes = new Set(['trig', 'trig-stagger-active', 'trig-stagger-settled']);
+        const attrs = new Map([['data-trig-settled', 'true']]);
+        const props = new Map([
+          ['--stagger-index', '0'],
+          ['--stagger-delay', '0.000s'],
+          ['--stagger-total', '2'],
+        ]);
+        return {
+          classList: {
+            remove: (...c: string[]) => c.forEach((x) => classes.delete(x)),
+            contains: (c: string) => classes.has(c),
+          },
+          removeAttribute: (k: string) => attrs.delete(k),
+          getAttribute: (k: string) => attrs.get(k) ?? null,
+          style: {
+            willChange: 'transform, opacity',
+            removeProperty: (k: string) => props.delete(k),
+          },
+          _props: props,
+        };
+      };
+
+      const cardA = createCard();
+      const cardB = createCard();
+      const gridClasses = new Set(['trig-stagger-active', 'trig-stagger-settled']);
+      const gridAttrs = new Map([['data-trig-settled', 'true']]);
+      const mockGrid = {
+        isConnected: true,
+        offsetHeight: 240,
+        classList: {
+          remove: (...c: string[]) => c.forEach((x) => gridClasses.delete(x)),
+          contains: (c: string) => gridClasses.has(c),
+        },
+        removeAttribute: (k: string) => gridAttrs.delete(k),
+        getAttribute: (k: string) => gridAttrs.get(k) ?? null,
+        style: { removeProperty: vi.fn() },
+        querySelectorAll: () => [cardA, cardB],
+      };
+
+      const docElement = {
+        dataset: { motion: 'full' },
+        classList: { remove: vi.fn() },
+      };
+      (globalThis as Record<string, unknown>).document = {
+        documentElement: docElement,
+        querySelectorAll: vi.fn().mockReturnValue([]),
+        addEventListener: vi.fn(),
+        readyState: 'complete',
+      };
+      (globalThis as Record<string, unknown>).window = {
+        chronoTrig: {
+          resetStagger: resetStaggerSpy,
+          refresh: refreshSpy,
+          isDisabled: () => false,
+        },
+      };
+
+      // Two rapid filter updates before frames flush: first RAF is cancelled, refresh fires once.
+      replayStaggerGrid(mockGrid as unknown as HTMLElement);
+      expect(resetStaggerSpy).toHaveBeenCalledTimes(1);
+      expect(cardA.classList.contains('trig-stagger-settled')).toBe(false);
+      expect(cardA.getAttribute('data-trig-settled')).toBeNull();
+      expect(cardA.style.willChange).toBe('auto');
+      expect(cardA._props.has('--stagger-delay')).toBe(false);
+      expect(refreshSpy).not.toHaveBeenCalled();
+      expect(rafQueue.size).toBe(1);
+
+      replayStaggerGrid(mockGrid as unknown as HTMLElement);
+      expect(rafQueue.size).toBe(1);
+
+      // RAF 1 schedules RAF 2; refresh must still wait until RAF 2.
+      const [[id1, cb1]] = [...rafQueue.entries()];
+      rafQueue.delete(id1);
+      cb1();
+      expect(refreshSpy).not.toHaveBeenCalled();
+      expect(rafQueue.size).toBe(1);
+
+      // RAF 2 triggers refresh once.
+      const [[id2, cb2]] = [...rafQueue.entries()];
+      rafQueue.delete(id2);
+      cb2();
+      expect(refreshSpy).toHaveBeenCalledTimes(1);
+
+      // Reduced motion triggers synchronously without queuing RAFs.
+      docElement.dataset.motion = 'reduced';
+      replayStaggerGrid(mockGrid as unknown as HTMLElement);
+      expect(rafQueue.size).toBe(0);
+      expect(refreshSpy).toHaveBeenCalledTimes(2);
+    } finally {
       (globalThis as Record<string, unknown>).requestAnimationFrame = prevRAF;
       (globalThis as Record<string, unknown>).cancelAnimationFrame = prevCAF;
     }
@@ -510,6 +643,8 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
   });
 
   it('replays grid reveals on filter changes cleanly while delegating hidden-card stagger math to ChronoTrig', () => {
+    const chronotrigTs = fs.readFileSync(path.join(rootDir, 'src/scripts/chronotrig.ts'), 'utf-8');
+    const minJs = fs.readFileSync(path.join(rootDir, 'public/chronotrig.min.js'), 'utf-8');
     const view = fs.readFileSync(path.join(rootDir, 'src/views/BlogIndexView.astro'), 'utf-8');
     const collectionView = fs.readFileSync(
       path.join(rootDir, 'src/views/CollectionIndexView.astro'),
@@ -520,12 +655,15 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     const postCard = fs.readFileSync(path.join(rootDir, 'src/components/PostCard.astro'), 'utf-8');
     const globalCss = fs.readFileSync(path.join(rootDir, 'src/styles/global.css'), 'utf-8');
 
-    expect(view).toContain('const replayGridReveals = () =>');
-    expect(view).toContain("typeof window.chronoTrig === 'undefined'");
-    expect(view).toContain('trig-stagger-settled');
-    expect(view).toContain("grid.removeAttribute('data-trig-settled')");
-    expect(view).toContain("el.removeAttribute('data-trig-settled')");
-    expect(view).toContain('if (replay || visibilityChanged)');
+    expect(minJs).toContain('resetStagger(');
+    expect(chronotrigTs).toContain('export function replayStaggerGrid(');
+    expect(chronotrigTs).toContain('window.chronoTrig.resetStagger');
+    expect(chronotrigTs).toContain("removeAttribute('data-trig-settled')");
+    expect(chronotrigTs).toContain('requestAnimationFrame');
+
+    expect(view).toContain('replayStaggerGrid');
+    expect(view).toContain('replayStaggerGrid(grid)');
+    expect(view).toContain('if (replay && grid)');
     expect(view).toContain('render({ updateUrl: false, replay: false })');
 
     // Hover transitions live on the inner card surface so card hovers stay isolated from [data-trig].
@@ -535,21 +673,17 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(view).toContain("article.className = 'flex h-full'");
     expect(postCard).toContain('UiBadge');
 
-    // Collection index shares chip filter sizing/active state, UiBadge stack pills, and grid settle reset.
+    // Collection index shares chip filter sizing/active state, UiBadge stack pills, and shared grid replay.
     expect(globalCss).toContain(".chip[aria-pressed='true']");
     expect(view).not.toContain('text-muted/70');
     expect(collectionView).toContain('UiBadge');
     expect(collectionView).toContain('class="chip cursor-pointer px-3 py-1.5 text-xs"');
     expect(collectionView).toContain('const activeStacks = new Set<string>()');
     expect(collectionView).toContain('activeStacks.delete(val)');
-    expect(collectionView).toContain("grid.removeAttribute('data-trig-settled')");
-    expect(collectionView).toContain("el.style.willChange = 'auto'");
-    expect(collectionView).toContain("el.removeAttribute('data-trig-settled')");
     expect(collectionView).toContain('if (grid && visibilityChanged)');
-    expect(gallery).toContain("grid.removeAttribute('data-trig-settled')");
-    expect(gallery).toContain("card.removeAttribute('data-trig-settled')");
-    expect(showcase).toContain("grid.removeAttribute('data-trig-settled')");
-    expect(showcase).toContain("card.removeAttribute('data-trig-settled')");
+    expect(collectionView).toContain('replayStaggerGrid(grid)');
+    expect(gallery).toContain('replayStaggerGrid(grid)');
+    expect(showcase).toContain('replayStaggerGrid(grid)');
   });
 
   it('wires BaseLayout.astro with /chronotrig.min.js inline script and module coordinator', () => {

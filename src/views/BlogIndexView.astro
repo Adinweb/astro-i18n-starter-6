@@ -306,7 +306,7 @@ const ogContext: SocialCardContext = {
 <script>
   import { formatNumber } from '@/i18n/format';
   import { getLenis } from '@/scripts/lenis';
-  import { refreshChronoTrig } from '@/scripts/chronotrig';
+  import { refreshChronoTrig, replayStaggerGrid } from '@/scripts/chronotrig';
   import { buildPageWindow, PAGE_GAP, paginate } from '@/libs/content/pagination';
   import { buttonClasses } from '@/libs/ui/button';
   import {
@@ -549,35 +549,6 @@ const ogContext: SocialCardContext = {
       grid?.querySelectorAll('[data-dynamic-post-card]').forEach((el) => el.remove());
     };
 
-    /**
-     * Restarts the ChronoTrig entrance for every card in the grid.
-     *
-     * Filtering only toggles `hidden` on existing cards, so without this they would
-     * keep their `.trig` class and pop in instantly while only freshly appended
-     * cards animated. Clearing the reveal classes re-arms the stagger cascade.
-     */
-    const replayGridReveals = () => {
-      // Never strip the reveal classes without an engine to re-trigger them,
-      // otherwise the cards would stay stuck at the hidden entrance state.
-      if (!grid || typeof window.chronoTrig === 'undefined') return;
-      grid.classList.remove('trig-stagger-active');
-      grid.removeAttribute('data-trig-settled');
-      for (const child of Array.from(grid.children)) {
-        const el = child as HTMLElement;
-        el.classList.remove(
-          'trig',
-          'trig-up',
-          'trig-down',
-          'trig-stagger-active',
-          'trig-stagger-settled'
-        );
-        el.removeAttribute('data-trig-settled');
-        el.style.willChange = 'auto';
-      }
-      // Flush the hidden entrance state before ChronoTrig re-observes the grid.
-      void grid.offsetHeight;
-    };
-
     const restoreServerPager = () => {
       if (!pagerWrap) return;
       if (usingDynamicPager) {
@@ -704,8 +675,7 @@ const ogContext: SocialCardContext = {
             ...slice.items.map((post) => createDynamicPostCard(post, showReadingTime))
           );
           renderFilteredPager(slice.page, slice.totalPages);
-          if (replay) replayGridReveals();
-          refreshChronoTrig();
+          replayStaggerGrid(grid);
 
           if (status) {
             status.textContent = allTemplate
@@ -745,8 +715,9 @@ const ogContext: SocialCardContext = {
         card.element.hidden = nextHidden;
         if (matches) visible += 1;
       }
-      if (replay || visibilityChanged) {
-        if (replay) replayGridReveals();
+      if (replay && grid) {
+        replayStaggerGrid(grid);
+      } else if (visibilityChanged) {
         refreshChronoTrig();
       }
 

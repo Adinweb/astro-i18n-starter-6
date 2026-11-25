@@ -74,6 +74,7 @@ interface ChronoTrigInstance {
   scan: () => void;
   sync: (scrollY?: number) => void;
   refresh: () => void;
+  resetStagger?: (grid: HTMLElement) => void;
   setExternalScroll?: (external: boolean) => void;
   isExternalScroll?: () => boolean;
   setRoot: (root: HTMLElement | null) => void;
@@ -113,6 +114,91 @@ declare global {
 }
 
 let lifecycleBound = false;
+const pendingGridReplays = new WeakMap<HTMLElement, number>();
+const STAGGER_REVEAL_CLASSES = [
+  'trig',
+  'trig-up',
+  'trig-down',
+  'trig-ready',
+  'trig-stagger-active',
+  'trig-stagger-settled',
+] as const;
+
+function resetStaggerDom(grid: HTMLElement): void {
+  grid.classList.remove(...STAGGER_REVEAL_CLASSES);
+  grid.removeAttribute('data-trig-settled');
+  grid.style.removeProperty('--trig-stagger-progress');
+  grid.style.removeProperty('--trig-stagger-t');
+
+  const children = grid.querySelectorAll<HTMLElement>('[data-trig-stagger-item], :scope > *');
+  children.forEach((child) => {
+    child.classList.remove(...STAGGER_REVEAL_CLASSES);
+    child.removeAttribute('data-trig-settled');
+    child.style.willChange = 'auto';
+    child.style.removeProperty('--stagger-index');
+    child.style.removeProperty('--stagger-delay');
+    child.style.removeProperty('--stagger-total');
+    child.style.removeProperty('--child-progress');
+    child.style.removeProperty('--child-percent');
+  });
+}
+
+/**
+ * Restarts the ChronoTrig stagger cascade across ALL currently visible items
+ * inside `grid` (e.g. after filter or search updates), cancelling any in-flight
+ * animations or queued replay frames so pre-existing items animate alongside
+ * newly revealed ones.
+ */
+export function replayStaggerGrid(grid: HTMLElement | null): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined' || !grid) return;
+
+  // Never strip reveal classes without an active engine to re-trigger them,
+  // otherwise cards would remain stuck in the hidden entrance state.
+  if (!window.chronoTrig) {
+    document.documentElement?.classList?.remove('js');
+    return;
+  }
+
+  const pendingRaf = pendingGridReplays.get(grid);
+  if (pendingRaf !== undefined && typeof cancelAnimationFrame === 'function') {
+    cancelAnimationFrame(pendingRaf);
+    pendingGridReplays.delete(grid);
+  }
+
+  const reducedOrDisabled =
+    document.documentElement?.dataset?.motion === 'reduced' ||
+    Boolean(window.chronoTrig.isDisabled?.());
+
+  if (typeof window.chronoTrig.resetStagger === 'function') {
+    window.chronoTrig.resetStagger(grid);
+  }
+  resetStaggerDom(grid);
+
+  if (reducedOrDisabled || typeof requestAnimationFrame !== 'function') {
+    refreshChronoTrig();
+    return;
+  }
+
+  // Flush the reset entrance state (`opacity: 0; animation: none`) synchronously,
+  // then yield across two animation frames so the browser commits at least one
+  // clean frame and drains any queued `animationcancel` events before ChronoTrig
+  // re-observes and restarts every visible card together in a single stagger pass.
+  void grid.offsetHeight;
+
+  const raf1 = requestAnimationFrame(() => {
+    if (!grid.isConnected) {
+      pendingGridReplays.delete(grid);
+      return;
+    }
+    const raf2 = requestAnimationFrame(() => {
+      pendingGridReplays.delete(grid);
+      if (!grid.isConnected) return;
+      refreshChronoTrig();
+    });
+    pendingGridReplays.set(grid, raf2);
+  });
+  pendingGridReplays.set(grid, raf1);
+}
 
 /**
  * Automatically attributes prose titles, subtitles, and section headers for zero-cost

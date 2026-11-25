@@ -370,7 +370,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
 <script>
   import { formatNumber } from '@/i18n/format';
   import { normalizeForFallbackMatch } from '@/libs/search/persian';
-  import { refreshChronoTrig } from '@/scripts/chronotrig';
+  import { replayStaggerGrid } from '@/scripts/chronotrig';
 
   function bindCollectionFilters() {
     document.querySelectorAll<HTMLElement>('[data-collection-root]').forEach((root) => {
@@ -451,24 +451,7 @@ const countTemplate = m.collection_showing_count({ visible: '__V__', total: '__T
         if (clearBtn) clearBtn.hidden = !hasFilter;
         if (emptyEl) emptyEl.hidden = visibleCount > 0;
         if (grid && visibilityChanged) {
-          if (typeof window.chronoTrig !== 'undefined') {
-            grid.classList.remove('trig-stagger-active');
-            grid.removeAttribute('data-trig-settled');
-            for (const child of Array.from(grid.children)) {
-              const el = child as HTMLElement;
-              el.classList.remove(
-                'trig',
-                'trig-up',
-                'trig-down',
-                'trig-stagger-active',
-                'trig-stagger-settled'
-              );
-              el.removeAttribute('data-trig-settled');
-              el.style.willChange = 'auto';
-            }
-            void grid.offsetHeight;
-          }
-          refreshChronoTrig();
+          replayStaggerGrid(grid);
         }
       };
 

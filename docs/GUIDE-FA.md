@@ -1524,35 +1524,24 @@ pre, code, .math {
 | افزودن کارت‌های **جدید** به گرید (مثلاً «نمایش بیشتر») | کافی است پس از `grid.append(...)` تابع `refreshChronoTrig()` را از `@/scripts/chronotrig` صدا بزنید. |
 | **تغییر فیلتر یا تب** که فقط `card.hidden` را عوض می‌کند | باید ابتدا کلاس‌های ورود کارت‌های موجود پاک شود، سپس `refreshChronoTrig()` صدا زده شود؛ وگرنه کارت‌های قبلی بدون انیمیشن ظاهر می‌شوند. |
 
-الگوی بازپخش فیلتر (همان `replayGridReveals()` در `src/views/BlogIndexView.astro`):
+الگوی بازپخش یکپارچهٔ فیلتر با `replayStaggerGrid(grid)` از `@/scripts/chronotrig` (استفاده‌شده در `BlogIndexView.astro`، `CollectionIndexView.astro`، `ImageGallerySection.astro` و `ProductShowcaseGrid.astro`):
 
 ```typescript
-import { refreshChronoTrig } from '@/scripts/chronotrig';
-
-const replayGridReveals = (grid: HTMLElement) => {
-  // اگر موتور بارگذاری نشده باشد، کارت‌ها نباید در حالت پنهان گیر کنند
-  if (typeof window.chronoTrig === 'undefined') return;
-  grid.classList.remove('trig-stagger-active');
-  grid.removeAttribute('data-trig-settled');
-  for (const child of Array.from(grid.children)) {
-    const el = child as HTMLElement;
-    el.classList.remove('trig', 'trig-up', 'trig-down', 'trig-stagger-active', 'trig-stagger-settled');
-    el.removeAttribute('data-trig-settled');
-    el.style.willChange = 'auto';
-  }
-  void grid.offsetHeight; // تثبیت حالت پنهان پیش از مشاهدهٔ مجدد
-};
+import { replayStaggerGrid } from '@/scripts/chronotrig';
 
 // فقط در تغییر واقعی فیلتر/تب و تغییر کارت‌های مرئی، نه در رندر اولیه:
-replayGridReveals(grid);
-refreshChronoTrig();
+if (grid && visibilityChanged) {
+  replayStaggerGrid(grid);
+}
 ```
+
+تابع `replayStaggerGrid(grid)` ابتدا `window.chronoTrig.resetStagger(grid)` را برای قطع لیسنرهای `animationcancel`/`animationend` قدیمی صدا می‌زند، کلاس‌ها، `data-trig-settled` و متغیرهای پلکانی را از روی گرید و همهٔ کارت‌ها پاک می‌کند، با دو فریم `requestAnimationFrame` فریمِ ریست را تثبیت می‌کند و سپس `refreshChronoTrig()` را اجرا می‌کند تا کارت‌های قبلی و کارت‌های تازه‌نمایان همگی با هم استگر شوند.
 
 **چهار قاعدهٔ مهم:**
 
 1. این بازپخش را در **رندر اولیه** یا وقتی کارت‌های مرئی تغییر نکرده‌اند فراخوانی نکنید؛ در غیر این صورت انیمیشن ورود صفحه بدون دلیل از نو شروع می‌شود.
-2. هنگام تعویض تب در کامپوننت‌های تب‌بندی که پنل‌هایشان در DOM مانت باقی می‌مانند (`SwipeableTabs.astro` و `FeatureTabsSection.astro`) هرگز `refreshChronoTrig()` را صدا نزنید تا کل صفحه بیهوده اسکن مجدد نشود.
-3. پیش از `refreshChronoTrig()` در فیلترهای گرید، صفت `data-trig-settled` را هم از روی خود کانتینر گرید و هم کارت‌های آن بردارید (در ChronoTrig v6.2.0، سایر بخش‌های `data-trig-once="true"` مثل عنوان صفحه و استگرهای خواهر به‌صورت خودکار قفل می‌مانند و در `scan()` دوباره پخش نمی‌شوند).
+2. هنگام تعویض تب در کامپوننت‌های تب‌بندی که پنل‌هایشان در DOM مانت باقی می‌مانند (`SwipeableTabs.astro` و `FeatureTabsSection.astro`) هرگز `refreshChronoTrig()` یا `replayStaggerGrid()` را صدا نزنید تا کل صفحه بیهوده اسکن مجدد نشود.
+3. پیش از `refreshChronoTrig()` در فیلترهای گرید، تابع `replayStaggerGrid(grid)` هم `resetStagger(grid)` را اجرا می‌کند و هم صفت `data-trig-settled` را از روی گرید و کارت‌ها برمی‌دارد (در ChronoTrig v6.2.0، سایر بخش‌های `data-trig-once="true"` مثل عنوان صفحه و استگرهای خواهر به‌صورت خودکار قفل می‌مانند و در `scan()` دوباره پخش نمی‌شوند).
 4. **جداسازی `transition` از ریشهٔ `[data-trig]` و ریشهٔ گریدهای فیلتر:** کلاس‌های `transition` کارت را روی لایهٔ داخلی (`<div>` یا `<a>`) بگذارید و روی گریدهای زیر هدر بلند از `data-trig-root-margin="0px"` استفاده کنید؛ ChronoTrig خودش کارت‌های `[hidden]` را از محاسبهٔ `--stagger-index` و `--stagger-total` کنار می‌گذارد.
 
 #### ۶. استفاده در فایل‌های محتوای `.mdx`
@@ -1835,7 +1824,7 @@ collectTaxonomyKeys(posts, 'categories');
   تاریخچهٔ ClientRouter نشکند)؛
 - با `popstate` فیلترها دوباره از URL خوانده و بازسازی می‌شوند؛
 - دکمهٔ «پاک کردن فیلتر» فقط وقتی فیلتر فعالی هست دیده می‌شود؛
-- در هر تغییر واقعی وضعیت فیلتر (`!areBlogFiltersEqual(prev, next)` شامل انتخاب دسته/برچسب، پاک کردن فیلتر و `popstate`)، تابع `replayGridReveals()` کلاس‌های ورود کارت‌ها را پاک می‌کند و سپس `refreshChronoTrig()` همهٔ کارت‌های مرئی را با گام پلکانی دوباره با انیمیشن وارد تصویر می‌کند.
+- در هر تغییر واقعی وضعیت فیلتر (`!areBlogFiltersEqual(prev, next)` شامل انتخاب دسته/برچسب، پاک کردن فیلتر و `popstate`)، تابع `replayStaggerGrid(grid)` (از `@/scripts/chronotrig`) کلاس‌ها و لیسنرهای قبلی گرید را پاک کرده و همهٔ کارت‌های مرئی را با گام پلکانی دوباره با انیمیشن وارد تصویر می‌کند.
 
 وقتی وبلاگ بیش از یک صفحه دارد و فیلتری فعال است، کارت‌های همان صفحه کافی
 نیستند: `BlogIndexView` کاتالوگ استاتیک همان زبان (`/api/blog-posts/<locale>.json`) را یک بار
@@ -2215,7 +2204,7 @@ dist/
 | `Missing <locale>.mdx` در خروجی ممیزی | گروه محتوا در همهٔ زبان‌ها ترجمه نشده | هشدار است و بیلد را نمی‌شکند؛ با `npm run new:page <key> -- --update` یا `--slug:<locale>=…` تکمیلش کنید |
 | اسکرول چرخ ماوس داخل مودال یا پنل کار نمی‌کند | Lenis رویداد چرخ ماوس را برای کل صفحه می‌گیرد | صفت `data-lenis-prevent` را به ظرف دارای `overflow-y-auto` اضافه کنید |
 | آیتم‌های داخل `[data-trig-stagger]` هم‌زمان باز می‌شوند | کارت‌ها فرزند مستقیم یا دارای `[data-trig-stagger-item]` نیستند | کارت‌ها را فرزند مستقیم (`:scope > *`) قرار دهید یا صفت `data-trig-stagger-item` به آن‌ها بدهید |
-| کارت‌ها پس از فیلتر شدن یا تعویض تب بدون انیمیشن ظاهر می‌شوند | کارت‌ها کلاس `.trig` را از قبل دارند | پیش از `refreshChronoTrig()` تابع `replayGridReveals()` را صدا بزنید |
+| کارت‌ها پس از فیلتر شدن یا تعویض تب بدون انیمیشن ظاهر می‌شوند | کارت‌ها کلاس `.trig` یا لیسنر `animationcancel` قبلی را دارند | `replayStaggerGrid(grid)` را از `@/scripts/chronotrig` صدا بزنید |
 | انیمیشن افقی در فارسی از جهت برعکس می‌آید | استفاده از `left` یا `right` | از جهت‌های منطقی `data-trig-direction="start"` و `"end"` استفاده کنید |
 
 ---
@@ -2261,7 +2250,7 @@ dist/
 | `<button>` دستی با `<Icon>` | `IconButton` |
 | `hidden` / `display: none` یا `opacity-0` مستقیم برای انیمیشن اسکرول | صفت `data-trig` (محصور در `.js` روی GPU) |
 | کارتِ غیرفرزند مستقیم بدون `data-trig-stagger-item` داخل `[data-trig-stagger]` | کارت‌ها را فرزند مستقیم ظرف (`:scope > *`) قرار دهید یا `data-trig-stagger-item` بگذارید |
-| حذف دستی کلاس‌ها در فیلترها/تب‌ها | فراخوانی `replayGridReveals()` و سپس `refreshChronoTrig()` |
+| حذف دستی کلاس‌ها در فیلترها/تب‌ها | فراخوانی `replayStaggerGrid(grid)` از `@/scripts/chronotrig` |
 | `data-trig-direction="left"` / `"right"` در ستون‌های متقارن | `"start"` / `"end"` برای قرینه‌شدن خودکار در RTL |
 | پنل اسکرول‌پذیر بدون `data-lenis-prevent` | افزودن `data-lenis-prevent` روی ظرف‌های `overflow-y-auto` |
 

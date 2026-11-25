@@ -367,7 +367,7 @@ const productListSchema = emitSchema
 </PageSection>
 
 <script>
-  import { refreshChronoTrig } from '@/scripts/chronotrig';
+  import { replayStaggerGrid } from '@/scripts/chronotrig';
 
   function initProductShowcases() {
     const sections = document.querySelectorAll<HTMLElement>('[data-product-showcase]');
@@ -395,28 +395,17 @@ const productListSchema = emitSchema
             b.classList.toggle('shadow-xs', active);
           });
 
+          let visibilityChanged = false;
           cards.forEach((card) => {
             const cat = card.dataset.category ?? '';
-            card.hidden = selected !== '__all__' && cat !== selected;
+            const nextHidden = selected !== '__all__' && cat !== selected;
+            if (card.hidden !== nextHidden) visibilityChanged = true;
+            card.hidden = nextHidden;
           });
 
-          if (grid && typeof window.chronoTrig !== 'undefined') {
-            grid.classList.remove('trig-stagger-active');
-            grid.removeAttribute('data-trig-settled');
-            cards.forEach((card) => {
-              card.classList.remove(
-                'trig',
-                'trig-up',
-                'trig-down',
-                'trig-stagger-active',
-                'trig-stagger-settled'
-              );
-              card.removeAttribute('data-trig-settled');
-              card.style.willChange = 'auto';
-            });
-            void grid.offsetHeight;
+          if (grid && visibilityChanged) {
+            replayStaggerGrid(grid);
           }
-          refreshChronoTrig();
         });
       });
 
