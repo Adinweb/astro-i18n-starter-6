@@ -37,6 +37,7 @@
     "site:init": "node scripts/site-init.mjs",
     "site:apply": "node scripts/site-apply.mjs",
     "site:reset": "node scripts/site-reset.mjs",
+    "studio": "node scripts/studio.mjs",
     "audit:i18n": "node scripts/audit-i18n.mjs",
     "verify:cli": "node scripts/verify-cli.mjs",
     "doctor": "node scripts/doctor.mjs",

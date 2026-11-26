@@ -50,6 +50,7 @@
 | `npm run site:apply -- --spec=<f>` | One-shot apply JSON site spec (`--dry-run`, `--skip-assets`, `--json`) |
 | `npm run blocks:catalog` | Regenerate `docs/BLOCKS-API.md` (`--check`, `--json`, `--quiet`) |
 | `npm run i18n:sync-keys` | Populate missing dictionary keys in `client/messages/*.json` (`--dry-run`, `--json`) |
+| `npm run studio` | Launch local visual Studio GUI (or visit `/__studio/` during `npm run dev`) |
 | `npm run client:bootstrap` / `site:init` | Interactive/headless setup (`--blueprint=corporate\|agency\|portfolio\|medical\|catalog\|legal`, `--logo`) |
 | `npm run site:reset` / `starter:seed` | Reset `client/config.json` & `cms.json` / seed or `--clean` demo content |
 | `npm run new:page` / `new:post` | Scaffold/update pages (`--preset=landing`) or blog posts across locales |

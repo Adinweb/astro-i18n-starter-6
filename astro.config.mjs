@@ -236,6 +236,21 @@ const disableHmr = ['1', 'true', 'yes'].includes(
   String(process.env.DISABLE_HMR ?? '').toLowerCase()
 );
 
+function studioDevPlugin() {
+  return {
+    name: 'astro-dev-studio',
+    /** @param {import('vite').ViteDevServer} server */
+    async configureServer(server) {
+      if (isBuild) return;
+      const { createStudioHandler } = await import('./scripts/lib/studio-api.mjs');
+      const handler = createStudioHandler({ rootDir });
+      server.middlewares.use('/__studio', (req, res, next) => {
+        Promise.resolve(handler(req, res)).catch(next);
+      });
+    },
+  };
+}
+
 // https://astro.build/config
 export default defineConfig({
   site,
@@ -257,7 +272,12 @@ export default defineConfig({
   },
   integrations: [mdx(), agencyRedirectsIntegration()],
   vite: {
-    plugins: [brandFontsPlugin(), tailwindcss(), codeInspectorPlugin({ bundler: 'vite' })],
+    plugins: [
+      brandFontsPlugin(),
+      tailwindcss(),
+      codeInspectorPlugin({ bundler: 'vite' }),
+      ...(!isBuild ? [studioDevPlugin()] : []),
+    ],
     resolve: {
       alias: {
         'astro/components': astroComponentsDir,

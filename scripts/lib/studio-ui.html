@@ -1,0 +1,1523 @@
+<!doctype html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Astro Starter Studio — Setup & CLI Control Panel</title>
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --surface: #121826;
+      --surface-2: #192234;
+      --border: #27344d;
+      --text: #eef2f8;
+      --muted: #93a4bf;
+      --primary: #4f7cff;
+      --primary-fg: #ffffff;
+      --accent: #10b981;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --radius: 12px;
+      --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Vazirmatn', Tahoma, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    html[data-theme="light"] {
+      --bg: #f4f6fb;
+      --surface: #ffffff;
+      --surface-2: #eef2f8;
+      --border: #d5deec;
+      --text: #0f172a;
+      --muted: #52637d;
+      --primary: #3b5bdb;
+      --primary-fg: #ffffff;
+      --accent: #059669;
+      --warn: #d97706;
+      --danger: #dc2626;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    a { color: var(--primary); text-decoration: none; }
+    button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+    code, pre, .mono { font-family: var(--mono); direction: ltr; unicode-bidi: isolate; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand-title { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+      background: var(--surface-2); border: 1px solid var(--border); color: var(--muted);
+    }
+    .badge.ok { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+    .badge.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+    .badge.err { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+    .topbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .shell { max-width: 1320px; margin: 0 auto; padding: 18px 20px 110px; }
+    .tabs {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--muted); cursor: pointer; font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .tab-btn:hover { border-color: var(--primary); color: var(--text); }
+    .tab-btn.active { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+    .grid { display: grid; gap: 14px; }
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px;
+    }
+    .card h2, .card h3 { margin: 0 0 8px; font-size: 15px; }
+    .card-sub { color: var(--muted); font-size: 12.5px; margin: 0 0 12px; }
+    .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+    .field label { font-size: 12px; font-weight: 600; color: var(--muted); }
+    input[type="text"], input[type="email"], input[type="url"], input[type="number"], select, textarea {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 10px; outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+    textarea { min-height: 92px; resize: vertical; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .between { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px 13px; border-radius: 9px; border: 1px solid var(--border);
+      background: var(--surface-2); color: var(--text); cursor: pointer; font-weight: 600; font-size: 13px;
+    }
+    .btn:hover:not(:disabled) { border-color: var(--primary); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+    .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-danger { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+    .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 7px; }
+    .bp-card {
+      text-align: start; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg); cursor: pointer; display: flex; flex-direction: column; gap: 5px;
+    }
+    .bp-card:hover { border-color: var(--primary); }
+    .bp-card.selected { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 13%, var(--bg)); }
+    .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.25); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: start; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    th { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+    .sec-item {
+      border: 1px solid var(--border); background: var(--bg); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+    }
+    .console-dock {
+      position: fixed; bottom: 0; inset-inline: 0; z-index: 45;
+      background: var(--surface); border-top: 1px solid var(--border);
+      box-shadow: 0 -8px 28px rgba(0,0,0,0.32);
+    }
+    .console-bar {
+      max-width: 1320px; margin: 0 auto; padding: 8px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer;
+    }
+    .console-body {
+      max-width: 1320px; margin: 0 auto; padding: 0 20px 14px;
+      max-height: 250px; overflow: auto;
+    }
+    .console-pre {
+      margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--bg);
+      border: 1px solid var(--border); font-size: 12px; white-space: pre-wrap; word-break: break-word;
+    }
+    .check-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+      border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: 12.5px; cursor: pointer;
+    }
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,0.62);
+      display: flex; align-items: center; justify-content: center; padding: 18px;
+    }
+    .modal-card {
+      width: min(860px, 100%); max-height: 88vh; overflow: auto;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+    }
+    .hidden { display: none !important; }
+    .toast {
+      position: fixed; top: 68px; inset-inline-end: 20px; z-index: 70;
+      padding: 10px 14px; border-radius: 10px; background: var(--surface-2);
+      border: 1px solid var(--primary); box-shadow: 0 10px 25px rgba(0,0,0,0.3); font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-title">
+      <span id="ui-brand-name">Astro Starter Studio</span>
+      <span id="ui-site-badge" class="badge">...</span>
+      <span id="ui-locales-badge" class="badge">...</span>
+      <span id="ui-missing-badge" class="badge hidden"></span>
+    </div>
+    <div class="topbar-actions">
+      <a id="ui-preview-link" class="btn btn-sm hidden" target="_blank" rel="noopener">Preview ↗</a>
+      <button id="btn-refresh" type="button" class="btn btn-sm">↻ Refresh</button>
+      <button id="btn-lang" type="button" class="btn btn-sm">EN / فا</button>
+      <button id="btn-theme" type="button" class="btn btn-sm">☀ / ☾</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <nav id="tabs-nav" class="tabs"></nav>
+    <section id="tab-content"></section>
+  </main>
+
+  <div id="modal-root" class="modal-backdrop hidden">
+    <div class="modal-card" id="modal-card"></div>
+  </div>
+  <div id="toast-root" class="toast hidden"></div>
+
+  <footer class="console-dock">
+    <div class="console-bar" id="console-toggle">
+      <div class="row">
+        <strong id="console-label">Console Output</strong>
+        <span id="console-status" class="badge">Ready</span>
+      </div>
+      <div class="row">
+        <button id="console-clear" type="button" class="btn btn-sm">Clear</button>
+        <span id="console-chevron">▲</span>
+      </div>
+    </div>
+    <div id="console-body" class="console-body hidden">
+      <pre id="console-pre" class="console-pre">No command executed yet.</pre>
+    </div>
+  </footer>
+
+  <script>
+    const BOOT = __STUDIO_BOOT_JSON__;
+
+    const COPY = {
+      fa: {
+        brand: 'استودیو راه‌اندازی Astro Starter',
+        preview: 'پیش‌نمایش سایت ↗',
+        refresh: '↻ تازه‌سازی',
+        tabs: {
+          wizard: '۱. راه‌انداز سایت جدید',
+          config: '۲. تنظیمات و ناوبری',
+          content: '۳. صفحات و محتوا',
+          i18n: '۴. زبان‌ها و دیکشنری',
+          tools: '۵. ابزارهای CLI و تست',
+        },
+        consoleTitle: 'خروجی دستورات و لاگ',
+        ready: 'آماده',
+        running: 'در حال اجرا...',
+        clear: 'پاک کردن',
+        dryRun: 'پیش‌نمایش تغییرات (Dry-Run)',
+        applySpec: 'اعمال و ساخت سایت (site:apply)',
+        saveConfig: 'ذخیره در client/config.json',
+        missingKeys: 'کلید ترجمه جاافتاده',
+      },
+      en: {
+        brand: 'Astro Starter Studio',
+        preview: 'Preview Site ↗',
+        refresh: '↻ Refresh',
+        tabs: {
+          wizard: '1. New Site Wizard',
+          config: '2. Config & Navigation',
+          content: '3. Pages & Content',
+          i18n: '4. Languages & i18n',
+          tools: '5. CLI Tools & Checks',
+        },
+        consoleTitle: 'Command Output',
+        ready: 'Ready',
+        running: 'Running...',
+        clear: 'Clear',
+        dryRun: 'Preview Changes (Dry-Run)',
+        applySpec: 'Apply Site Setup (site:apply)',
+        saveConfig: 'Save client/config.json',
+        missingKeys: 'missing i18n keys',
+      },
+    };
+
+    const STARTER_PAGES = [
+      { group: 'about', enTitle: 'About Us', faTitle: 'درباره ما', enSlug: 'about', faSlug: 'درباره-ما', icon: 'info' },
+      { group: 'features', enTitle: 'Features', faTitle: 'امکانات', enSlug: 'features', faSlug: 'امکانات', icon: 'sparkles' },
+      { group: 'pricing', enTitle: 'Pricing', faTitle: 'تعرفه‌ها', enSlug: 'pricing', faSlug: 'تعرفه‌ها', icon: 'tag' },
+      { group: 'contact', enTitle: 'Contact Us', faTitle: 'تماس با ما', enSlug: 'contact', faSlug: 'تماس-با-ما', icon: 'mail' },
+      { group: 'privacy', enTitle: 'Privacy Policy', faTitle: 'حریم خصوصی', enSlug: 'privacy', faSlug: 'حریم-خصوصی', icon: 'shield' },
+      { group: 'terms', enTitle: 'Terms of Service', faTitle: 'قوانین استفاده', enSlug: 'terms', faSlug: 'قوانین', icon: 'file' },
+    ];
+
+    const DEFAULT_BLOCK_PROPS = {
+      LandingHeroSplit: {
+        eyebrow: 'New Launch',
+        titleLead: 'Build Modern Multilingual Sites',
+        titleAccent: 'Fast',
+        description: 'RTL-native Astro v7 starter configured via Studio.',
+        primaryCta: { label: 'Get Started', href: '/contact/', icon: 'arrow-right' },
+      },
+      HeroCenteredEditorial: {
+        eyebrow: 'Studio Edition',
+        titleLead: 'Clean Editorial',
+        titleAccent: 'Presence',
+        description: 'Fast static delivery across RTL and LTR languages.',
+        primaryCta: { label: 'Explore', href: '/about/' },
+      },
+      ProofStatsRow: { surface: 'surface', spacing: 'md' },
+      BentoCapabilities: {
+        title: 'Core Capabilities',
+        description: 'Everything configured cleanly through declarative sections.',
+        surface: 'default',
+        spacing: 'lg',
+      },
+      FeatureCardGrid: {
+        title: 'Key Features',
+        columns: 3,
+        items: [
+          { title: 'Fast Static SSG', description: 'Zero runtime bloat.', icon: 'bolt' },
+          { title: 'RTL & LTR Native', description: 'Logical Tailwind v4 CSS.', icon: 'globe' },
+          { title: 'SEO & Search Ready', description: 'JSON-LD + Pagefind built in.', icon: 'search' },
+        ],
+      },
+      FaqAccordion: {
+        title: 'Frequently Asked Questions',
+        items: [
+          { question: 'How is content managed?', answer: 'Directly via localized MDX files and Pages CMS.' },
+        ],
+      },
+      LatestPostsSection: { limit: 3, surface: 'default', spacing: 'lg' },
+      CtaBanner: {
+        title: 'Ready to launch your site?',
+        description: 'Contact our team today to get started.',
+        primaryCta: { label: 'Contact Us', href: '/contact/', icon: 'arrow-right' },
+        surface: 'hero',
+        spacing: 'md',
+      },
+    };
+
+    let uiLang = localStorage.getItem('studio_lang') || 'fa';
+    let activeTab = localStorage.getItem('studio_tab') || 'wizard';
+    let state = null;
+    let wizardDraft = null;
+    let configDraft = null;
+    let busy = false;
+    let pendingConfirmKey = '';
+
+    function esc(v) {
+      return String(v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function t() {
+      return COPY[uiLang] || COPY.fa;
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast-root');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => el.classList.add('hidden'), 3200);
+    }
+
+    function logConsole(label, text, ok = true, durationMs = null) {
+      const status = document.getElementById('console-status');
+      const lbl = document.getElementById('console-label');
+      const pre = document.getElementById('console-pre');
+      const body = document.getElementById('console-body');
+      const chev = document.getElementById('console-chevron');
+
+      lbl.textContent = label + (durationMs !== null ? ' (' + durationMs + ' ms)' : '');
+      status.textContent = ok ? 'OK' : 'ERROR';
+      status.className = 'badge ' + (ok ? 'ok' : 'err');
+      pre.textContent = text || (ok ? 'Completed successfully.' : 'Command failed.');
+      body.classList.remove('hidden');
+      chev.textContent = '▼';
+    }
+
+    async function api(url, method = 'GET', body = null) {
+      const opts = { method, headers: {} };
+      if (body !== null) {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
+      const res = await fetch(url, opts);
+      const json = await res.json().catch(() => ({ ok: false, error: 'Invalid server response' }));
+      if (!res.ok || json.ok === false) {
+        const err = new Error(json.error || 'Request failed');
+        err.output = json.output || json.error;
+        throw err;
+      }
+      return json;
+    }
+
+    function initDraftsFromState() {
+      const cfg = state.config;
+      const defaultLoc = state.locales.defaultLocale || 'en';
+
+      if (!wizardDraft) {
+        wizardDraft = {
+          blueprint: 'corporate',
+          site: {
+            name: cfg.site?.name || '',
+            shortName: cfg.site?.shortName || '',
+            description: cfg.site?.description || '',
+            url: cfg.site?.url || '',
+            contactEmail: cfg.site?.contactEmail || '',
+          },
+          brand: {
+            preset: cfg.brand?.preset || 'indigo',
+            primaryColor: cfg.brand?.primaryColor || '',
+            accentColor: cfg.brand?.accentColor || '',
+            fontPreset: cfg.brand?.fontPreset || 'system',
+            rtlFontPreset: cfg.brand?.rtlFontPreset || 'vazirmatn',
+            socialCardMode: cfg.brand?.socialCardMode || 'branded',
+            defaultTheme: cfg.brand?.defaultTheme || 'system',
+            logo: {
+              light: cfg.brand?.logo?.light || '',
+              dark: cfg.brand?.logo?.dark || '',
+              alt: cfg.brand?.logo?.alt || cfg.site?.name || '',
+              showText: cfg.brand?.logo?.showText !== false,
+            },
+          },
+          locale: {
+            defaultLocale: defaultLoc,
+            solo: false,
+          },
+          homeSections: Array.isArray(cfg.ui?.homeSections)
+            ? JSON.parse(JSON.stringify(cfg.ui.homeSections))
+            : [],
+          selectedPages: {
+            about: true,
+            features: false,
+            pricing: false,
+            contact: true,
+            privacy: false,
+            terms: false,
+          },
+          pageDrafts: Object.fromEntries(
+            STARTER_PAGES.map((p) => [
+              p.group,
+              {
+                enTitle: p.enTitle,
+                faTitle: p.faTitle,
+                enSlug: p.enSlug,
+                faSlug: p.faSlug,
+                nav: true,
+                publish: true,
+              },
+            ])
+          ),
+          skipAssets: true,
+          disableTopBanner: true,
+        };
+      }
+
+      configDraft = JSON.parse(JSON.stringify(cfg));
+    }
+
+    function buildSiteSpecFromWizard() {
+      const w = wizardDraft;
+      const activeLocales = state.locales.locales;
+      const pages = {};
+
+      for (const p of STARTER_PAGES) {
+        if (!w.selectedPages[p.group]) continue;
+        const d = w.pageDrafts[p.group];
+        const locales = {};
+        for (const loc of activeLocales) {
+          if (loc === 'fa') {
+            locales.fa = {
+              title: d.faTitle || p.faTitle,
+              slug: d.faSlug || p.faSlug,
+              draft: !d.publish,
+            };
+          } else {
+            locales[loc] = {
+              title: d.enTitle || p.enTitle,
+              slug: loc === w.locale.defaultLocale ? (d.enSlug || p.enSlug) : (d.enSlug || p.group) + '-' + loc,
+              draft: !d.publish,
+            };
+          }
+        }
+        pages[p.group] = {
+          hero: 'default',
+          container: 'contained',
+          publish: d.publish,
+          nav: d.nav ? { icon: p.icon } : undefined,
+          locales,
+        };
+      }
+
+      const brandOut = {
+        preset: w.brand.preset,
+        fontPreset: w.brand.fontPreset,
+        rtlFontPreset: w.brand.rtlFontPreset,
+        socialCardMode: w.brand.socialCardMode,
+        defaultTheme: w.brand.defaultTheme,
+        logo: {
+          alt: w.brand.logo.alt || w.site.name || 'Logo',
+          showText: Boolean(w.brand.logo.showText),
+          ...(w.brand.logo.light ? { light: w.brand.logo.light } : {}),
+          ...(w.brand.logo.dark ? { dark: w.brand.logo.dark } : {}),
+        },
+      };
+      if (w.brand.primaryColor && /^#[0-9a-fA-F]{6}$/.test(w.brand.primaryColor)) {
+        brandOut.primaryColor = w.brand.primaryColor;
+      }
+      if (w.brand.accentColor && /^#[0-9a-fA-F]{6}$/.test(w.brand.accentColor)) {
+        brandOut.accentColor = w.brand.accentColor;
+      }
+
+      const uiOut = {};
+      if (w.disableTopBanner) {
+        uiOut.topBanner = { enabled: false };
+      }
+      if (Array.isArray(w.homeSections) && w.homeSections.length > 0) {
+        uiOut.homeSections = w.homeSections;
+      }
+
+      return {
+        blueprint: w.blueprint || undefined,
+        site: {
+          name: w.site.name || 'My Site',
+          shortName: w.site.shortName || w.site.name || 'My Site',
+          description: w.site.description || 'Built with Astro Starter',
+          ...(w.site.url ? { url: w.site.url } : {}),
+          ...(w.site.contactEmail ? { contactEmail: w.site.contactEmail } : {}),
+        },
+        brand: brandOut,
+        ...(Object.keys(uiOut).length ? { ui: uiOut } : {}),
+        locale: {
+          defaultLocale: w.locale.defaultLocale,
+          solo: Boolean(w.locale.solo),
+          allowDraft: true,
+        },
+        ...(Object.keys(pages).length ? { pages } : {}),
+      };
+    }
+
+    async function loadState(resetConfigDraft = true) {
+      const data = await api('api/state');
+      state = data;
+      if (resetConfigDraft) configDraft = null;
+      initDraftsFromState();
+      renderChrome();
+      renderActiveTab();
+    }
+
+    async function runCli(action, payload = {}, label = action) {
+      if (busy) return;
+      busy = true;
+      const status = document.getElementById('console-status');
+      status.textContent = t().running;
+      status.className = 'badge warn';
+      try {
+        const res = await api('api/run-cli', 'POST', { action, payload });
+        logConsole(label, res.output || 'Done.', true, res.durationMs);
+        showToast(label + ' ✓');
+        await loadState(true);
+      } catch (err) {
+        logConsole(label, err.output || err.message, false);
+        showToast(label + ' ✕');
+      } finally {
+        busy = false;
+      }
+    }
+
+    function renderChrome() {
+      const isFa = uiLang === 'fa';
+      document.documentElement.lang = isFa ? 'fa' : 'en';
+      document.documentElement.dir = isFa ? 'rtl' : 'ltr';
+      document.getElementById('ui-brand-name').textContent = t().brand;
+      document.getElementById('btn-refresh').textContent = t().refresh;
+      document.getElementById('console-label').textContent = t().consoleTitle;
+      document.getElementById('console-clear').textContent = t().clear;
+
+      const prevEl = document.getElementById('ui-preview-link');
+      if (BOOT.sitePreviewHref) {
+        prevEl.href = BOOT.sitePreviewHref;
+        prevEl.textContent = t().preview;
+        prevEl.classList.remove('hidden');
+      }
+
+      if (state) {
+        document.getElementById('ui-site-badge').textContent =
+          (state.config.site?.name || 'Site') + ' · ' + (state.config.brand?.preset || '');
+        document.getElementById('ui-locales-badge').textContent =
+          state.locales.locales.join(', ') + ' (' + state.locales.defaultLocale + ')';
+
+        const missEl = document.getElementById('ui-missing-badge');
+        if (state.messages.missingTotal > 0) {
+          missEl.textContent = state.messages.missingTotal + ' ' + t().missingKeys;
+          missEl.className = 'badge warn';
+          missEl.classList.remove('hidden');
+        } else {
+          missEl.classList.add('hidden');
+        }
+      }
+
+      const nav = document.getElementById('tabs-nav');
+      nav.innerHTML = Object.entries(t().tabs)
+        .map(
+          ([id, label]) =>
+            '<button type="button" class="tab-btn ' +
+            (activeTab === id ? 'active' : '') +
+            '" data-tab="' +
+            id +
+            '">' +
+            esc(label) +
+            '</button>'
+        )
+        .join('');
+    }
+
+    function renderSectionArrayEditor(containerId, sectionsArr, onUpdateName) {
+      const blockOptions = state.sectionBlocks
+        .map((b) => '<option value="' + esc(b.name) + '">' + esc(b.name) + ' (' + esc(b.category) + ')</option>')
+        .join('');
+
+      const listHtml =
+        sectionsArr.length === 0
+          ? '<p class="card-sub">' +
+            (uiLang === 'fa'
+              ? 'هیچ سکشن سفارشی انتخاب نشده است (چیدمان پیش‌فرض صفحه استفاده می‌شود).'
+              : 'No declarative sections added yet (default template renders).') +
+            '</p>'
+          : sectionsArr
+              .map((sec, idx) => {
+                const meta = state.sectionBlocks.find((b) => b.name === sec.block);
+                const propHints = (meta?.props || [])
+                  .slice(0, 7)
+                  .map((p) => p.name + (p.optional ? '?' : ''))
+                  .join(', ');
+                return (
+                  '<div class="sec-item" data-sec-idx="' +
+                  idx +
+                  '">' +
+                  '<div class="between" style="margin-bottom:6px">' +
+                  '<div class="row"><strong>#' +
+                  (idx + 1) +
+                  ' ' +
+                  esc(sec.block) +
+                  '</strong><span class="badge">' +
+                  esc(meta?.category || 'section') +
+                  '</span></div>' +
+                  '<div class="row">' +
+                  '<button type="button" class="btn btn-sm" data-sec-act="up" data-idx="' + idx + '" data-target="' + onUpdateName + '">↑</button>' +
+                  '<button type="button" class="btn btn-sm" data-sec-act="down" data-idx="' + idx + '" data-target="' + onUpdateName + '">↓</button>' +
+                  '<button type="button" class="btn btn-sm btn-danger" data-sec-act="del" data-idx="' + idx + '" data-target="' + onUpdateName + '">✕</button>' +
+                  '</div></div>' +
+                  (propHints ? '<div class="card-sub mono" style="margin-bottom:6px">Props: ' + esc(propHints) + '</div>' : '') +
+                  '<textarea class="mono" data-sec-props="' + onUpdateName + '" data-idx="' + idx + '">' +
+                  esc(JSON.stringify(sec.props || {}, null, 2)) +
+                  '</textarea></div>'
+                );
+              })
+              .join('');
+
+      return (
+        '<div id="' + containerId + '">' +
+        listHtml +
+        '<div class="row" style="margin-top:8px">' +
+        '<select id="' + containerId + '-add-select" style="max-width:290px">' +
+        blockOptions +
+        '</select>' +
+        '<button type="button" class="btn btn-sm btn-primary" data-sec-add="' + onUpdateName + '" data-select="' + containerId + '-add-select">' +
+        (uiLang === 'fa' ? '+ افزودن بلوک' : '+ Add Block') +
+        '</button></div></div>'
+      );
+    }
+
+    function renderWizardTab() {
+      const w = wizardDraft;
+      const isFa = uiLang === 'fa';
+      const palettes = state.themePresets.palettes || {};
+      const latinFonts = Object.keys(state.themePresets.latinFonts || {});
+      const rtlFonts = Object.keys(state.themePresets.rtlFonts || {});
+
+      const bpCards = Object.entries(state.blueprints)
+        .map(([key, bp]) => {
+          const pal = palettes[bp.preset] || {};
+          const colKeys = Object.keys(bp.contentTypes || {});
+          const selected = w.blueprint === key;
+          return (
+            '<button type="button" class="bp-card ' + (selected ? 'selected' : '') + '" data-bp="' + esc(key) + '">' +
+            '<div class="between"><strong>' + esc(bp.label || key) + '</strong>' +
+            '<span class="swatch" style="background:' + esc(pal.primary || '#6366f1') + '"></span></div>' +
+            '<div class="card-sub" style="margin:0">' +
+            esc(bp.preset) + ' · ' + esc(bp.fontPreset) + ' · ' + esc(bp.businessType) +
+            '</div>' +
+            '<div class="row" style="margin-top:4px">' +
+            colKeys.map((ck) => '<span class="badge ok">+' + esc(ck) + '</span>').join('') +
+            '</div></button>'
+          );
+        })
+        .join('');
+
+      const presetButtons = Object.entries(palettes)
+        .map(([k, p]) => {
+          const active = w.brand.preset === k;
+          return (
+            '<button type="button" class="btn btn-sm ' + (active ? 'btn-primary' : '') + '" data-w-preset="' + esc(k) + '">' +
+            '<span class="swatch" style="background:' + esc(p.primary) + '"></span>' +
+            esc(k) +
+            '</button>'
+          );
+        })
+        .join('');
+
+      const pagesList = STARTER_PAGES.map((p) => {
+        const checked = Boolean(w.selectedPages[p.group]);
+        const d = w.pageDrafts[p.group];
+        return (
+          '<div class="sec-item">' +
+          '<div class="between">' +
+          '<label class="row" style="cursor:pointer;font-weight:700">' +
+          '<input type="checkbox" data-wp-toggle="' + esc(p.group) + '" ' + (checked ? 'checked' : '') + ' />' +
+          '<span>' + esc(p.group) + '</span></label>' +
+          (checked
+            ? '<div class="row">' +
+              '<label class="row" style="font-size:12px"><input type="checkbox" data-wp-nav="' + esc(p.group) + '" ' + (d.nav ? 'checked' : '') + ' /> Nav</label>' +
+              '<label class="row" style="font-size:12px"><input type="checkbox" data-wp-pub="' + esc(p.group) + '" ' + (d.publish ? 'checked' : '') + ' /> Publish</label>' +
+              '</div>'
+            : '') +
+          '</div>' +
+          (checked
+            ? '<div class="grid grid-2" style="margin-top:8px">' +
+              '<input type="text" placeholder="EN Title" data-wp-field="' + esc(p.group) + ':enTitle" value="' + esc(d.enTitle) + '" />' +
+              '<input type="text" placeholder="عنوان فارسی" data-wp-field="' + esc(p.group) + ':faTitle" value="' + esc(d.faTitle) + '" />' +
+              '</div>'
+            : '') +
+          '</div>'
+        );
+      }).join('');
+
+      const specPreview = JSON.stringify(buildSiteSpecFromWizard(), null, 2);
+
+      return (
+        '<div class="grid" style="gap:16px">' +
+        '<div class="card">' +
+        '<h2>' + (isFa ? '۱. انتخاب بلوپرینت صنعت (Blueprint)' : '1. Choose Industry Blueprint') + '</h2>' +
+        '<p class="card-sub">' + (isFa ? 'انتخاب بلوپرینت به‌طور خودکار رنگ، فونت، نوع اسکیما و کالکشن اختصاصی حوزه (مثل خدمات، محصولات یا گالری) را تنظیم و sync می‌کند.' : 'Selecting a blueprint sets recommended palette, typography, schema type, and domain content collections.') + '</p>' +
+        '<div class="grid grid-3">' + bpCards + '</div>' +
+        '</div>' +
+
+        '<div class="grid grid-2">' +
+        '<div class="card">' +
+        '<h2>' + (isFa ? '۲. هویت سایت و تماس' : '2. Site Metadata') + '</h2>' +
+        '<div class="field"><label>site.name</label><input type="text" data-w-site="name" value="' + esc(w.site.name) + '" /></div>' +
+        '<div class="field"><label>site.shortName</label><input type="text" data-w-site="shortName" value="' + esc(w.site.shortName) + '" /></div>' +
+        '<div class="field"><label>site.description</label><input type="text" data-w-site="description" value="' + esc(w.site.description) + '" /></div>' +
+        '<div class="grid grid-2">' +
+        '<div class="field"><label>site.contactEmail</label><input type="email" data-w-site="contactEmail" value="' + esc(w.site.contactEmail) + '" /></div>' +
+        '<div class="field"><label>site.url</label><input type="url" data-w-site="url" placeholder="https://example.com" value="' + esc(w.site.url) + '" /></div>' +
+        '</div>' +
+        '<div class="row" style="margin-top:8px">' +
+        '<label class="check-pill"><input type="checkbox" id="w-disable-banner" ' + (w.disableTopBanner ? 'checked' : '') + ' />' + (isFa ? 'غیرفعال کردن بنر دموی بالا' : 'Disable Demo Top Banner') + '</label>' +
+        '<label class="check-pill"><input type="checkbox" id="w-skip-assets" ' + (w.skipAssets ? 'checked' : '') + ' />' + (isFa ? 'بدون تولید مجدد آیکون‌های دمو (--skip-assets)' : 'Skip Auto Cover/Asset Generation') + '</label>' +
+        '</div>' +
+        '</div>' +
+
+        '<div class="card">' +
+        '<h2>' + (isFa ? '۳. برندینگ، فونت، لوگو و زبان' : '3. Brand, Typography, Logo & Locale') + '</h2>' +
+        '<div class="field"><label>Brand Palette Preset</label><div class="row">' + presetButtons + '</div></div>' +
+        '<div class="grid grid-2">' +
+        '<div class="field"><label>primaryColor (hex)</label><input type="text" data-w-brand="primaryColor" placeholder="#1e40af" value="' + esc(w.brand.primaryColor) + '" /></div>' +
+        '<div class="field"><label>accentColor (hex)</label><input type="text" data-w-brand="accentColor" placeholder="#0ea5e9" value="' + esc(w.brand.accentColor) + '" /></div>' +
+        '<div class="field"><label>fontPreset (Latin)</label><select data-w-brand="fontPreset">' +
+        latinFonts.map((f) => '<option value="' + esc(f) + '" ' + (w.brand.fontPreset === f ? 'selected' : '') + '>' + esc(f) + '</option>').join('') +
+        '</select></div>' +
+        '<div class="field"><label>rtlFontPreset (FA/AR)</label><select data-w-brand="rtlFontPreset">' +
+        rtlFonts.map((f) => '<option value="' + esc(f) + '" ' + (w.brand.rtlFontPreset === f ? 'selected' : '') + '>' + esc(f) + '</option>').join('') +
+        '</select></div>' +
+        '<div class="field"><label>defaultTheme</label><select data-w-brand="defaultTheme">' +
+        ['system', 'light', 'dark'].map((v) => '<option value="' + v + '" ' + (w.brand.defaultTheme === v ? 'selected' : '') + '>' + v + '</option>').join('') +
+        '</select></div>' +
+        '<div class="field"><label>socialCardMode (OG)</label><select data-w-brand="socialCardMode">' +
+        ['branded', 'artwork', 'default'].map((v) => '<option value="' + v + '" ' + (w.brand.socialCardMode === v ? 'selected' : '') + '>' + v + '</option>').join('') +
+        '</select></div>' +
+        '<div class="field"><label>defaultLocale</label><select id="w-default-locale">' +
+        state.locales.locales.map((l) => '<option value="' + esc(l) + '" ' + (w.locale.defaultLocale === l ? 'selected' : '') + '>' + esc(l) + '</option>').join('') +
+        '</select></div>' +
+        '<div class="field"><label>' + (isFa ? 'حالت تک‌زبانه (Solo)' : 'Single-Language Mode') + '</label>' +
+        '<label class="check-pill"><input type="checkbox" id="w-locale-solo" ' + (w.locale.solo ? 'checked' : '') + ' />' + (isFa ? 'فقط زبان پیش‌فرض فعال بماند (i18n:solo)' : 'Solo mode (archive other locales)') + '</label>' +
+        '</div></div>' +
+        '<div class="grid grid-2">' +
+        '<div class="field"><label>' + (isFa ? 'آپلود لوگوی روشن' : 'Upload Light Logo') + '</label><input type="file" accept=".svg,.png,.webp,.jpg,.jpeg" data-upload-logo="light" /></div>' +
+        '<div class="field"><label>' + (isFa ? 'آپلود لوگوی تیره (اختیاری)' : 'Upload Dark Logo') + '</label><input type="file" accept=".svg,.png,.webp,.jpg,.jpeg" data-upload-logo="dark" /></div>' +
+        '</div>' +
+        '</div></div>' +
+
+        '<div class="grid grid-2">' +
+        '<div class="card">' +
+        '<h2>' + (isFa ? '۴. سکشن‌های صفحه اصلی (ui.homeSections)' : '4. Homepage Declarative Sections') + '</h2>' +
+        '<p class="card-sub">' + (isFa ? 'اختیاری: از ۲۹ بلوک آماده چیدمان صفحه اول را بسازید. اگر خالی بماند چیدمان استاندارد تمپلیت رندر می‌شود.' : 'Optional: compose homepage visually from all 29 section blocks.') + '</p>' +
+        renderSectionArrayEditor('w-home-sec', w.homeSections, 'wizardHome') +
+        '</div>' +
+        '<div class="card">' +
+        '<h2>' + (isFa ? '۵. صفحات اولیه سایت' : '5. Starter Pages to Scaffold') + '</h2>' +
+        pagesList +
+        '</div></div>' +
+
+        '<div class="card">' +
+        '<div class="between" style="margin-bottom:10px">' +
+        '<div><h2 style="margin:0">' + (isFa ? 'اجرا و تولید سایت (`site:apply`)' : 'Preview & Provision Site (`site:apply`)') + '</h2></div>' +
+        '<div class="row">' +
+        '<button type="button" id="btn-w-copy-spec" class="btn btn-sm">' + (isFa ? 'کپی JSON Spec' : 'Copy JSON Spec') + '</button>' +
+        '<button type="button" id="btn-w-dryrun" class="btn">' + t().dryRun + '</button>' +
+        '<button type="button" id="btn-w-apply" class="btn btn-primary">' + t().applySpec + '</button>' +
+        '</div></div>' +
+        '<details><summary style="cursor:pointer;color:var(--muted);font-size:12.5px">' + (isFa ? 'مشاهده / ویرایش JSON Spec تولیدشده' : 'Inspect Generated Spec JSON') + '</summary>' +
+        '<pre id="w-spec-pre" class="console-pre" style="margin-top:8px">' + esc(specPreview) + '</pre>' +
+        '</details></div></div>'
+      );
+    }
+
+    function renderConfigTab() {
+      const c = configDraft;
+      const isFa = uiLang === 'fa';
+      const ui = c.ui || {};
+      const bus = c.business || {};
+      const soc = c.social || {};
+      const apiCfg = c.api || {};
+      const ana = c.analytics || {};
+      const cook = c.cookies || {};
+      const navPages = ui.navigation?.pages || [];
+      const footerCols = ui.navigation?.footerColumns || [];
+
+      return (
+        '<div class="grid" style="gap:16px">' +
+        '<div class="between card">' +
+        '<div><h2 style="margin:0">' + (isFa ? 'ویرایشگر تنظیمات کلاینت (`client/config.json`)' : 'Client Configuration (`client/config.json`)') + '</h2>' +
+        '<p class="card-sub" style="margin:4px 0 0">' + (isFa ? 'فقط تفاوت‌ها نسبت به `app.config.json` ذخیره می‌شوند (Sparse Overrides).' : 'Only sparse overrides differing from `app.config.json` are written.') + '</p></div>' +
+        '<div class="row">' +
+        '<button type="button" class="btn btn-danger btn-sm" id="btn-cfg-reset">' + (isFa ? 'بازنشانی تنظیمات (site:reset)' : 'Reset Client Overrides') + '</button>' +
+        '<button type="button" class="btn btn-primary" id="btn-cfg-save">' + t().saveConfig + '</button>' +
+        '</div></div>' +
+
+        '<div class="grid grid-2">' +
+        '<div class="card">' +
+        '<h3>Site & UI Chrome</h3>' +
+        '<div class="field"><label>site.name</label><input type="text" data-cfg="site.name" value="' + esc(c.site?.name) + '" /></div>' +
+        '<div class="field"><label>site.shortName</label><input type="text" data-cfg="site.shortName" value="' + esc(c.site?.shortName) + '" /></div>' +
+        '<div class="field"><label>site.description</label><input type="text" data-cfg="site.description" value="' + esc(c.site?.description) + '" /></div>' +
+        '<div class="grid grid-2">' +
+        '<div class="field"><label>site.contactEmail</label><input type="text" data-cfg="site.contactEmail" value="' + esc(c.site?.contactEmail) + '" /></div>' +
+        '<div class="field"><label>ui.ctaPage</label><input type="text" data-cfg="ui.ctaPage" value="' + esc(ui.ctaPage || 'pricing') + '" /></div>' +
+        '</div>' +
+        '<div class="row" style="margin-top:6px">' +
+        ['showSearch', 'showThemeToggle', 'showLanguageSwitcher', 'showTopLoadingBar', 'stickyHeader']
+          .map((flag) => '<label class="check-pill"><input type="checkbox" data-cfg-bool="ui.' + flag + '" ' + (ui[flag] !== false ? 'checked' : '') + ' />' + flag + '</label>')
+          .join('') +
+        '</div>' +
+        '<div class="grid grid-2" style="margin-top:10px">' +
+        '<label class="check-pill"><input type="checkbox" data-cfg-bool="ui.topBanner.enabled" ' + (ui.topBanner?.enabled ? 'checked' : '') + ' />topBanner.enabled</label>' +
+        '<label class="check-pill"><input type="checkbox" data-cfg-bool="ui.quickContact.enabled" ' + (ui.quickContact?.enabled ? 'checked' : '') + ' />quickContact.enabled</label>' +
+        '</div>' +
+        '</div>' +
+
+        '<div class="card">' +
+        '<h3>Business (JSON-LD) & Social</h3>' +
+        '<div class="grid grid-2">' +
+        '<div class="field"><label>business.type</label><input type="text" data-cfg="business.type" value="' + esc(bus.type || 'Organization') + '" /></div>' +
+        '<div class="field"><label>business.phone</label><input type="text" data-cfg="business.phone" value="' + esc(bus.phone || '') + '" /></div>' +
+        '<div class="field"><label>address.streetAddress</label><input type="text" data-cfg="business.address.streetAddress" value="' + esc(bus.address?.streetAddress || '') + '" /></div>' +
+        '<div class="field"><label>address.addressLocality</label><input type="text" data-cfg="business.address.addressLocality" value="' + esc(bus.address?.addressLocality || '') + '" /></div>' +
+        '</div>' +
+        '<div class="grid grid-2">' +
+        ['github', 'twitter', 'linkedin', 'instagram', 'telegram']
+          .map((s) => '<div class="field"><label>social.' + s + '</label><input type="url" data-cfg="social.' + s + '" value="' + esc(soc[s] || '') + '" /></div>')
+          .join('') +
+        '</div></div></div>' +
+
+        '<div class="grid grid-2">' +
+        '<div class="card">' +
+        '<h3>Analytics, Cookies & Forms API</h3>' +
+        '<div class="grid grid-2">' +
+        '<div class="field"><label>api.formProvider</label><select data-cfg="api.formProvider">' +
+        ['custom', 'web3forms', 'formspree', 'basin', 'webhook'].map((p) => '<option value="' + p + '" ' + (apiCfg.formProvider === p ? 'selected' : '') + '>' + p + '</option>').join('') +
+        '</select></div>' +
+        '<div class="field"><label>api.formEndpoint</label><input type="text" data-cfg="api.formEndpoint" value="' + esc(apiCfg.formEndpoint || '') + '" /></div>' +
+        '<div class="field"><label>api.newsletterEndpoint</label><input type="text" data-cfg="api.newsletterEndpoint" value="' + esc(apiCfg.newsletterEndpoint || '') + '" /></div>' +
+        '<div class="field"><label>analytics.googleAnalyticsId</label><input type="text" data-cfg="analytics.googleAnalyticsId" value="' + esc(ana.googleAnalyticsId || '') + '" /></div>' +
+        '<div class="field"><label>analytics.plausibleDomain</label><input type="text" data-cfg="analytics.plausibleDomain" value="' + esc(ana.plausibleDomain || '') + '" /></div>' +
+        '<div class="field"><label>cookies.ttlDays</label><input type="number" data-cfg-num="cookies.ttlDays" value="' + esc(cook.ttlDays ?? 180) + '" /></div>' +
+        '</div>' +
+        '<label class="check-pill"><input type="checkbox" data-cfg-bool="cookies.enabled" ' + (cook.enabled !== false ? 'checked' : '') + ' />cookies.enabled</label>' +
+        '</div>' +
+
+        '<div class="card">' +
+        '<h3>Navigation Config (`ui.navigation`) & Redirects</h3>' +
+        '<div class="field"><label>ui.navigation.pages (JSON)</label><textarea class="mono" id="cfg-nav-pages">' + esc(JSON.stringify(navPages, null, 2)) + '</textarea></div>' +
+        '<div class="field"><label>ui.navigation.footerColumns (JSON)</label><textarea class="mono" id="cfg-nav-footer">' + esc(JSON.stringify(footerCols, null, 2)) + '</textarea></div>' +
+        '<div class="field"><label>redirects (JSON array of {from,to,status})</label><textarea class="mono" id="cfg-redirects">' + esc(JSON.stringify(c.redirects || [], null, 2)) + '</textarea></div>' +
+        '</div></div>' +
+
+        '<div class="card"><details><summary style="cursor:pointer;font-weight:700">' + (isFa ? 'فایل `client/config.json` فعلی (Sparse)' : 'Current `client/config.json` (Sparse Overrides)') + '</summary>' +
+        '<pre class="console-pre" style="margin-top:8px">' + esc(JSON.stringify(state.clientOverrides, null, 2)) + '</pre></details></div>' +
+        '</div>'
+      );
+    }
+
+    function renderContentTab() {
+      const isFa = uiLang === 'fa';
+      const locs = state.locales.locales;
+
+      const typeRows = state.contentTypes
+        .map((ct) => {
+          const isPages = ct.key === 'pages';
+          return (
+            '<tr>' +
+            '<td><strong>' + esc(ct.key) + '</strong> <span class="badge">' + esc(ct.source || 'core') + '</span></td>' +
+            '<td class="mono">/' + esc(ct.base) + '/</td>' +
+            '<td><span class="badge ' + (ct.enabled ? 'ok' : 'warn') + '">' + (ct.enabled ? 'enabled' : 'disabled') + '</span></td>' +
+            '<td>' +
+            (isPages
+              ? '<span class="card-sub">Core</span>'
+              : '<button type="button" class="btn btn-sm" data-toggle-ct="' + esc(ct.key) + ':' + (ct.enabled ? 'disable' : 'enable') + '">' + (ct.enabled ? 'Disable' : 'Enable') + '</button>') +
+            '</td></tr>'
+          );
+        })
+        .join('');
+
+      const pageRows = state.pages
+        .map((pg) => {
+          const cells = locs
+            .map((l) => {
+              const info = pg.locales[l];
+              if (!info) return '<td><span class="badge">missing</span></td>';
+              const secCount = info.sections?.length || 0;
+              return (
+                '<td>' +
+                '<div><strong>' + esc(info.title || '(untitled)') + '</strong></div>' +
+                '<div class="mono" style="font-size:11px;color:var(--muted)">/' + esc(info.slug) + ' · ' + esc(info.hero) + '/' + esc(info.container) + '</div>' +
+                '<div class="row" style="margin-top:4px">' +
+                '<span class="badge ' + (info.draft ? 'warn' : 'ok') + '">' + (info.draft ? 'draft' : 'published') + '</span>' +
+                (secCount ? '<span class="badge">' + secCount + ' sections</span>' : '') +
+                '<button type="button" class="btn btn-sm" data-edit-sections="' + esc(pg.group) + ':' + esc(l) + '">' + (isFa ? 'سکشن‌ها' : 'Sections') + '</button>' +
+                '</div></td>'
+              );
+            })
+            .join('');
+          const delBtn =
+            pg.group === 'home'
+              ? ''
+              : '<button type="button" class="btn btn-sm btn-danger" data-del-page="' + esc(pg.group) + '">' + (isFa ? 'حذف' : 'Delete') + '</button>';
+          return '<tr><td><strong>' + esc(pg.group) + '</strong></td>' + cells + '<td>' + delBtn + '</td></tr>';
+        })
+        .join('');
+
+      const nonPageTypes = state.contentTypes.filter((ct) => ct.key !== 'pages');
+
+      return (
+        '<div class="grid" style="gap:16px">' +
+        '<div class="grid grid-2">' +
+        '<div class="card">' +
+        '<h3>' + (isFa ? 'ساخت صفحه جدید (`new:page`)' : 'Create Page (`new:page`)') + '</h3>' +
+        '<div class="grid grid-2">' +
+        '<div class="field"><label>group key (e.g. team)</label><input type="text" id="np-group" placeholder="team" /></div>' +
+        '<div class="field"><label>title</label><input type="text" id="np-title" placeholder="Our Team" /></div>' +
+        '<div class="field"><label>slug (optional)</label><input type="text" id="np-slug" placeholder="team" /></div>' +
+        '<div class="field"><label>preset</label><select id="np-preset"><option value="">standard</option><option value="landing">landing (canvas)</option></select></div>' +
+        '</div>' +
+        '<div class="between"><label class="row"><input type="checkbox" id="np-publish" checked /> Publish source locale</label>' +
+        '<button type="button" class="btn btn-primary btn-sm" id="btn-new-page">Run new:page</button></div>' +
+        '</div>' +
+
+        '<div class="card">' +
+        '<h3>' + (isFa ? 'ساخت آیتم کالکشن (`content:new` / `new:post`)' : 'Create Entry (`content:new` / `new:post`)') + '</h3>' +
+        '<div class="grid grid-2">' +
+        '<div class="field"><label>collection</label><select id="nc-type">' +
+        nonPageTypes.map((ct) => '<option value="' + esc(ct.key) + '">' + esc(ct.key) + '</option>').join('') +
+        '</select></div>' +
+        '<div class="field"><label>group slug (e.g. launch-v2)</label><input type="text" id="nc-group" placeholder="new-item" /></div>' +
+        '<div class="field"><label>title</label><input type="text" id="nc-title" placeholder="Item Title" /></div>' +
+        '<div class="field"><label>locale</label><select id="nc-locale">' +
+        locs.map((l) => '<option value="' + esc(l) + '" ' + (l === state.locales.defaultLocale ? 'selected' : '') + '>' + esc(l) + '</option>').join('') +
+        '</select></div></div>' +
+        '<div class="between"><label class="row"><input type="checkbox" id="nc-publish" checked /> Publish</label>' +
+        '<button type="button" class="btn btn-primary btn-sm" id="btn-new-entry">Create Entry</button></div>' +
+        '</div></div>' +
+
+        '<div class="card">' +
+        '<div class="between"><h3>Content Types (`content.types`)</h3>' +
+        '<button type="button" class="btn btn-sm" data-cli="content:sync">Run content:sync</button></div>' +
+        '<table><thead><tr><th>Type</th><th>Base</th><th>State</th><th>Action</th></tr></thead><tbody>' +
+        typeRows +
+        '</tbody></table></div>' +
+
+        '<div class="card">' +
+        '<h3>' + (isFa ? 'صفحات فعلی و ویرایشگر سکشن‌ها (`src/content/pages/`)' : 'Pages & Section Composer (`src/content/pages/`)') + '</h3>' +
+        '<div style="overflow-x:auto"><table><thead><tr><th>Group</th>' +
+        locs.map((l) => '<th>' + esc(l) + '</th>').join('') +
+        '<th>Actions</th></tr></thead><tbody>' +
+        pageRows +
+        '</tbody></table></div></div>' +
+        '</div>'
+      );
+    }
+
+    function renderI18nTab() {
+      const isFa = uiLang === 'fa';
+      const locs = state.locales.locales;
+      const meta = state.locales.metadata || {};
+
+      const locRows = locs
+        .map((l) => {
+          const isDef = l === state.locales.defaultLocale;
+          const m = meta[l] || {};
+          return (
+            '<tr>' +
+            '<td><strong>' + esc(l) + '</strong> ' + (isDef ? '<span class="badge ok">default</span>' : '') + '</td>' +
+            '<td>' + esc(m.name || '') + ' (' + esc(m.dir || '') + ')</td>' +
+            '<td class="mono">' + esc(m.fontFamily || '') + '</td>' +
+            '<td class="row">' +
+            (!isDef ? '<button type="button" class="btn btn-sm" data-set-def="' + esc(l) + '">Set Default</button>' : '') +
+            '<button type="button" class="btn btn-sm" data-solo-loc="' + esc(l) + '">Solo (' + esc(l) + ')</button>' +
+            (locs.length > 1 && !isDef ? '<button type="button" class="btn btn-sm btn-danger" data-rem-loc="' + esc(l) + '">Remove</button>' : '') +
+            '</td></tr>'
+          );
+        })
+        .join('');
+
+      const missingList = Object.entries(state.messages.missingByLocale || {})
+        .filter(([, arr]) => arr.length > 0)
+        .map(([loc, arr]) => '<div><strong>' + esc(loc) + '</strong> (' + arr.length + '): <span class="mono">' + esc(arr.slice(0, 8).join(', ')) + (arr.length > 8 ? '…' : '') + '</span></div>')
+        .join('');
+
+      return (
+        '<div class="grid" style="gap:16px">' +
+        '<div class="card">' +
+        '<h3>' + (isFa ? 'زبان‌های فعال (`client/locales.json`)' : 'Active Locales (`client/locales.json`)') + '</h3>' +
+        '<table><thead><tr><th>Code</th><th>Name / Dir</th><th>Font</th><th>Actions</th></tr></thead><tbody>' +
+        locRows +
+        '</tbody></table>' +
+        (state.locales.archived.length ? '<p class="card-sub" style="margin-top:8px">Archived in .locale-archive: ' + esc(state.locales.archived.join(', ')) + '</p>' : '') +
+        '</div>' +
+
+        '<div class="grid grid-2">' +
+        '<div class="card">' +
+        '<h3>' + (isFa ? 'افزودن زبان جدید (`i18n:add-lang`)' : 'Add Language (`i18n:add-lang`)') + '</h3>' +
+        '<div class="grid grid-2">' +
+        '<div class="field"><label>code (e.g. ar, de, fr)</label><input type="text" id="al-code" placeholder="ar" /></div>' +
+        '<div class="field"><label>dir</label><select id="al-dir"><option value="ltr">ltr</option><option value="rtl">rtl</option></select></div>' +
+        '<div class="field"><label>name</label><input type="text" id="al-name" placeholder="العربية" /></div>' +
+        '<div class="field"><label>fontFamily</label><input type="text" id="al-font" placeholder="Noto Sans Arabic" /></div>' +
+        '</div>' +
+        '<button type="button" class="btn btn-primary btn-sm" id="btn-add-lang">Run i18n:add-lang</button>' +
+        '</div>' +
+
+        '<div class="card">' +
+        '<h3>' + (isFa ? 'همگام‌سازی خودکار و افزودن کلید (`i18n:sync-keys` / `i18n:add`)' : 'Dictionary Sync & Quick Key') + '</h3>' +
+        '<div style="margin-bottom:10px">' +
+        (state.messages.missingTotal > 0
+          ? '<div class="badge warn" style="margin-bottom:6px">' + state.messages.missingTotal + ' missing keys detected</div>' + missingList
+          : '<div class="badge ok">All dictionaries are in 100% parity!</div>') +
+        '</div>' +
+        '<div class="row" style="margin-bottom:12px">' +
+        '<button type="button" class="btn btn-sm" id="btn-sync-dry">Dry-Run sync-keys</button>' +
+        '<button type="button" class="btn btn-primary btn-sm" id="btn-sync-run">Sync Missing Keys + Compile</button>' +
+        '</div>' +
+        '<hr style="border:0;border-top:1px solid var(--border);margin:12px 0" />' +
+        '<div class="field"><label>New Key (snake_case)</label><input type="text" id="ia-key" placeholder="hero_cta_note" /></div>' +
+        '<div class="grid grid-2">' +
+        locs.map((l) => '<div class="field"><label>' + esc(l) + '</label><input type="text" data-ia-loc="' + esc(l) + '" placeholder="Translation for ' + esc(l) + '" /></div>').join('') +
+        '</div>' +
+        '<button type="button" class="btn btn-sm" id="btn-add-key">Run i18n:add</button>' +
+        '</div></div></div>'
+      );
+    }
+
+    function renderToolsTab() {
+      const isFa = uiLang === 'fa';
+      const groups = [
+        {
+          title: isFa ? 'بررسی سریع و کیفیت کد' : 'Checks, Lint & Health',
+          items: [
+            { action: 'check:quick', label: 'check:quick', desc: 'Paraglide + tsc + Vitest' },
+            { action: 'lint', label: 'lint', desc: 'messages:compile + astro check + tsc' },
+            { action: 'audit:i18n', label: 'audit:i18n', desc: 'Full i18n, RTL & slug audit' },
+            { action: 'upstream:check', label: 'upstream:check', desc: '3-tier ownership integrity' },
+            { action: 'doctor', label: 'doctor', desc: 'Readiness & setup report' },
+            { action: 'knip', label: 'knip', desc: 'Unused files & exports check' },
+          ],
+        },
+        {
+          title: isFa ? 'ساخت، ممیزی خروجی و ابزارها' : 'Build, Assets & Scaffolding Tools',
+          items: [
+            { action: 'build', label: 'npm run build', desc: 'Production SSG + Pagefind' },
+            { action: 'smoke', label: 'smoke', desc: 'Validate dist/ HTML output' },
+            { action: 'link:check', label: 'link:check', desc: 'Crawl internal links & anchors' },
+            { action: 'blocks:catalog', label: 'blocks:catalog', desc: 'Regenerate docs/BLOCKS-API.md' },
+            { action: 'messages:compile', label: 'messages:compile', desc: 'Recompile Paraglide JS' },
+            { action: 'content:sync', label: 'content:sync', desc: 'Sync .pages.yml & collections' },
+            { action: 'assets:generate', payload: { brandOnly: true, force: true }, label: 'assets:generate --brand-only', desc: 'Rebuild favicons & brand OG' },
+            { action: 'starter:seed', payload: {}, label: 'starter:seed', desc: 'Install rich starter demo content' },
+            { action: 'starter:seed', payload: { clean: true }, label: 'starter:seed --clean', desc: 'Strip demo content cleanly' },
+            { action: 'site:reset', payload: { cleanStarter: false }, danger: true, label: 'site:reset', desc: 'Reset client/config.json to {}' },
+          ],
+        },
+      ];
+
+      return groups
+        .map(
+          (g) =>
+            '<div class="card" style="margin-bottom:14px"><h3>' +
+            esc(g.title) +
+            '</h3><div class="grid grid-3">' +
+            g.items
+              .map(
+                (it, idx) =>
+                  '<div class="sec-item"><div class="between"><strong>' +
+                  esc(it.label) +
+                  '</strong><button type="button" class="btn btn-sm ' +
+                  (it.danger ? 'btn-danger' : 'btn-primary') +
+                  '" data-tool-action="' +
+                  esc(it.action) +
+                  '" data-tool-payload="' +
+                  esc(JSON.stringify(it.payload || {})) +
+                  '" data-confirm="' +
+                  (it.danger ? '1' : '0') +
+                  '">Run</button></div><div class="card-sub" style="margin:6px 0 0">' +
+                  esc(it.desc) +
+                  '</div></div>'
+              )
+              .join('') +
+            '</div></div>'
+        )
+        .join('');
+    }
+
+    function renderActiveTab() {
+      const el = document.getElementById('tab-content');
+      if (!state) return;
+      if (activeTab === 'wizard') el.innerHTML = renderWizardTab();
+      else if (activeTab === 'config') el.innerHTML = renderConfigTab();
+      else if (activeTab === 'content') el.innerHTML = renderContentTab();
+      else if (activeTab === 'i18n') el.innerHTML = renderI18nTab();
+      else if (activeTab === 'tools') el.innerHTML = renderToolsTab();
+    }
+
+    function openPageSectionsModal(group, locale) {
+      const pg = state.pages.find((p) => p.group === group);
+      const info = pg?.locales?.[locale];
+      if (!info) return;
+
+      let localSections = JSON.parse(JSON.stringify(info.sections || []));
+      let heroVal = info.hero === true ? 'default' : info.hero === false ? 'none' : info.hero || 'none';
+      let containerVal = info.container || 'canvas';
+      let flushTopVal = Boolean(info.flushTop);
+
+      const modal = document.getElementById('modal-root');
+      const card = document.getElementById('modal-card');
+      modal._sectionsState = {
+        get: () => localSections,
+        set: (arr) => {
+          localSections = arr;
+          draw();
+        },
+      };
+
+      const draw = () => {
+        card.innerHTML =
+          '<div class="between" style="margin-bottom:12px">' +
+          '<h2 style="margin:0">' + esc(group) + ' (' + esc(locale) + ') — Section Composer</h2>' +
+          '<button type="button" class="btn btn-sm" id="modal-close">✕</button></div>' +
+          '<div class="grid grid-3" style="margin-bottom:12px">' +
+          '<div class="field"><label>hero</label><select id="m-hero">' +
+          ['none', 'minimal', 'default'].map((h) => '<option value="' + h + '" ' + (heroVal === h ? 'selected' : '') + '>' + h + '</option>').join('') +
+          '</select></div>' +
+          '<div class="field"><label>container</label><select id="m-container">' +
+          ['canvas', 'contained', 'prose'].map((c) => '<option value="' + c + '" ' + (containerVal === c ? 'selected' : '') + '>' + c + '</option>').join('') +
+          '</select></div>' +
+          '<div class="field"><label>flushTop</label><label class="check-pill"><input type="checkbox" id="m-flushtop" ' + (flushTopVal ? 'checked' : '') + ' />flushTop</label></div>' +
+          '</div>' +
+          renderSectionArrayEditor('modal-sec-ed', localSections, 'pageModal') +
+          '<div class="row" style="justify-content:flex-end;margin-top:14px">' +
+          '<button type="button" class="btn btn-primary" id="modal-save-sections">Save Page Frontmatter</button>' +
+          '</div>';
+      };
+
+      draw();
+      modal.classList.remove('hidden');
+
+      card.onclick = async (e) => {
+        const target = e.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (target.id === 'modal-close') {
+          modal.classList.add('hidden');
+          return;
+        }
+        if (target.id === 'modal-save-sections') {
+          heroVal = document.getElementById('m-hero').value;
+          containerVal = document.getElementById('m-container').value;
+          flushTopVal = document.getElementById('m-flushtop').checked;
+          try {
+            // Sync textarea JSON props before saving
+            card.querySelectorAll('[data-sec-props="pageModal"]').forEach((ta) => {
+              const idx = Number(ta.dataset.idx);
+              localSections[idx].props = JSON.parse(ta.value || '{}');
+            });
+            const res = await api('api/page-sections', 'POST', {
+              group,
+              locale,
+              hero: heroVal,
+              container: containerVal,
+              flushTop: flushTopVal,
+              sections: localSections,
+            });
+            modal.classList.add('hidden');
+            logConsole('page:sections', 'Saved ' + res.file, true);
+            showToast('Saved ' + res.file + ' ✓');
+            await loadState(true);
+          } catch (err) {
+            logConsole('page:sections', err.message, false);
+            showToast(err.message);
+          }
+        }
+      };
+    }
+
+    function syncWizardPreview() {
+      const pre = document.getElementById('w-spec-pre');
+      if (pre) pre.textContent = JSON.stringify(buildSiteSpecFromWizard(), null, 2);
+    }
+
+    document.addEventListener('click', async (e) => {
+      const target = e.target instanceof HTMLElement ? e.target.closest('button, [data-tab]') : null;
+      if (!target) return;
+
+      if (target.id === 'btn-lang') {
+        uiLang = uiLang === 'fa' ? 'en' : 'fa';
+        localStorage.setItem('studio_lang', uiLang);
+        renderChrome();
+        renderActiveTab();
+        return;
+      }
+      if (target.id === 'btn-theme') {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        return;
+      }
+      if (target.id === 'btn-refresh') {
+        await loadState(true);
+        showToast('Refreshed');
+        return;
+      }
+      if (target.id === 'console-clear') {
+        e.stopPropagation();
+        document.getElementById('console-pre').textContent = 'Cleared.';
+        return;
+      }
+      if (target.dataset.tab) {
+        activeTab = target.dataset.tab;
+        localStorage.setItem('studio_tab', activeTab);
+        renderChrome();
+        renderActiveTab();
+        return;
+      }
+      if (target.dataset.bp) {
+        const key = target.dataset.bp;
+        const bp = state.blueprints[key];
+        wizardDraft.blueprint = key;
+        if (bp) {
+          wizardDraft.brand.preset = bp.preset;
+          wizardDraft.brand.fontPreset = bp.fontPreset;
+          wizardDraft.brand.rtlFontPreset = bp.rtlFontPreset;
+          wizardDraft.brand.socialCardMode = bp.socialCardMode;
+          wizardDraft.brand.primaryColor = '';
+          wizardDraft.brand.accentColor = '';
+        }
+        renderActiveTab();
+        return;
+      }
+      if (target.dataset.wPreset) {
+        wizardDraft.brand.preset = target.dataset.wPreset;
+        wizardDraft.brand.primaryColor = '';
+        renderActiveTab();
+        return;
+      }
+      if (target.dataset.secAdd) {
+        const mode = target.dataset.secAdd;
+        const sel = document.getElementById(target.dataset.select);
+        const block = sel?.value;
+        if (!block) return;
+        const newItem = { block, props: JSON.parse(JSON.stringify(DEFAULT_BLOCK_PROPS[block] || {})) };
+        if (mode === 'wizardHome') {
+          wizardDraft.homeSections.push(newItem);
+          renderActiveTab();
+        } else {
+          const modalState = document.getElementById('modal-root')._sectionsState;
+          const arr = modalState.get();
+          arr.push(newItem);
+          modalState.set(arr);
+        }
+        return;
+      }
+      if (target.dataset.secAct) {
+        const act = target.dataset.secAct;
+        const idx = Number(target.dataset.idx);
+        const mode = target.dataset.target;
+        const arr = mode === 'wizardHome' ? wizardDraft.homeSections : document.getElementById('modal-root')._sectionsState.get();
+        if (act === 'del') arr.splice(idx, 1);
+        else if (act === 'up' && idx > 0) [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+        else if (act === 'down' && idx < arr.length - 1) [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+        if (mode === 'wizardHome') renderActiveTab();
+        else document.getElementById('modal-root')._sectionsState.set(arr);
+        return;
+      }
+      if (target.id === 'btn-w-copy-spec') {
+        const text = JSON.stringify(buildSiteSpecFromWizard(), null, 2);
+        await navigator.clipboard?.writeText(text).catch(() => {});
+        showToast('Spec JSON copied ✓');
+        return;
+      }
+      if (target.id === 'btn-w-dryrun' || target.id === 'btn-w-apply') {
+        const dryRun = target.id === 'btn-w-dryrun';
+        try {
+          const spec = buildSiteSpecFromWizard();
+          const res = await api('api/site-apply', 'POST', {
+            spec,
+            dryRun,
+            skipAssets: wizardDraft.skipAssets,
+          });
+          logConsole(dryRun ? 'site:apply --dry-run' : 'site:apply', JSON.stringify(res, null, 2), true);
+          showToast(dryRun ? 'Dry-run OK ✓' : 'Site provisioned ✓');
+          if (!dryRun) await loadState(true);
+        } catch (err) {
+          logConsole('site:apply', err.output || err.message, false);
+          showToast('Validation error');
+        }
+        return;
+      }
+      if (target.id === 'btn-cfg-save') {
+        try {
+          const navPages = JSON.parse(document.getElementById('cfg-nav-pages').value || '[]');
+          const navFooter = JSON.parse(document.getElementById('cfg-nav-footer').value || '[]');
+          const redirects = JSON.parse(document.getElementById('cfg-redirects').value || '[]');
+          configDraft.ui = configDraft.ui || {};
+          configDraft.ui.navigation = { pages: navPages, footerColumns: navFooter };
+          configDraft.redirects = redirects;
+          const res = await api('api/config-save', 'POST', { patch: configDraft });
+          logConsole('config:save', JSON.stringify(res.clientOverrides, null, 2), true);
+          showToast('Saved client/config.json ✓');
+          await loadState(false);
+        } catch (err) {
+          logConsole('config:save', err.message, false);
+          showToast(err.message);
+        }
+        return;
+      }
+      if (target.id === 'btn-cfg-reset') {
+        if (pendingConfirmKey !== 'site:reset') {
+          pendingConfirmKey = 'site:reset';
+          target.textContent = uiLang === 'fa' ? 'تأیید بازنشانی؟ دوباره کلیک کنید' : 'Confirm reset? Click again';
+          setTimeout(() => { pendingConfirmKey = ''; renderActiveTab(); }, 3000);
+          return;
+        }
+        pendingConfirmKey = '';
+        await runCli('site:reset', { cleanStarter: false }, 'site:reset');
+        return;
+      }
+      if (target.dataset.toggleCt) {
+        const [type, mode] = target.dataset.toggleCt.split(':');
+        await runCli(mode === 'enable' ? 'content:enable' : 'content:disable', { type }, 'content:' + mode + ' ' + type);
+        return;
+      }
+      if (target.dataset.editSections) {
+        const [group, locale] = target.dataset.editSections.split(':');
+        openPageSectionsModal(group, locale);
+        return;
+      }
+      if (target.dataset.delPage) {
+        const g = target.dataset.delPage;
+        const ckey = 'del-page:' + g;
+        if (pendingConfirmKey !== ckey) {
+          pendingConfirmKey = ckey;
+          target.textContent = '?';
+          setTimeout(() => { pendingConfirmKey = ''; renderActiveTab(); }, 3000);
+          return;
+        }
+        pendingConfirmKey = '';
+        await runCli('remove:page', { group: g }, 'remove:page ' + g);
+        return;
+      }
+      if (target.id === 'btn-new-page') {
+        await runCli('new:page', {
+          group: document.getElementById('np-group').value.trim(),
+          title: document.getElementById('np-title').value.trim(),
+          slug: document.getElementById('np-slug').value.trim(),
+          preset: document.getElementById('np-preset').value,
+          publish: document.getElementById('np-publish').checked,
+        }, 'new:page');
+        return;
+      }
+      if (target.id === 'btn-new-entry') {
+        const type = document.getElementById('nc-type').value;
+        const payload = {
+          type,
+          group: document.getElementById('nc-group').value.trim(),
+          title: document.getElementById('nc-title').value.trim(),
+          locale: document.getElementById('nc-locale').value,
+          publish: document.getElementById('nc-publish').checked,
+        };
+        await runCli(type === 'blog' ? 'new:post' : 'content:new', payload, type + ':new');
+        return;
+      }
+      if (target.dataset.setDef) {
+        await runCli('i18n:set-default', { code: target.dataset.setDef, allowDraft: true }, 'i18n:set-default');
+        return;
+      }
+      if (target.dataset.soloLoc) {
+        await runCli('i18n:solo', { code: target.dataset.soloLoc, allowDraft: true }, 'i18n:solo');
+        return;
+      }
+      if (target.dataset.remLoc) {
+        await runCli('i18n:remove-lang', { code: target.dataset.remLoc }, 'i18n:remove-lang');
+        return;
+      }
+      if (target.id === 'btn-add-lang') {
+        await runCli('i18n:add-lang', {
+          code: document.getElementById('al-code').value.trim(),
+          dir: document.getElementById('al-dir').value,
+          name: document.getElementById('al-name').value.trim(),
+          fontFamily: document.getElementById('al-font').value.trim(),
+        }, 'i18n:add-lang');
+        return;
+      }
+      if (target.id === 'btn-sync-dry' || target.id === 'btn-sync-run') {
+        await runCli('i18n:sync-keys', { dryRun: target.id === 'btn-sync-dry' }, 'i18n:sync-keys');
+        return;
+      }
+      if (target.id === 'btn-add-key') {
+        const translations = {};
+        document.querySelectorAll('[data-ia-loc]').forEach((el) => {
+          translations[el.dataset.iaLoc] = el.value;
+        });
+        await runCli('i18n:add', { key: document.getElementById('ia-key').value.trim(), translations }, 'i18n:add');
+        return;
+      }
+      if (target.dataset.cli) {
+        await runCli(target.dataset.cli, {}, target.dataset.cli);
+        return;
+      }
+      if (target.dataset.toolAction) {
+        const action = target.dataset.toolAction;
+        if (target.dataset.confirm === '1' && pendingConfirmKey !== action) {
+          pendingConfirmKey = action;
+          target.textContent = 'Confirm?';
+          setTimeout(() => { pendingConfirmKey = ''; renderActiveTab(); }, 3000);
+          return;
+        }
+        pendingConfirmKey = '';
+        const payload = JSON.parse(target.dataset.toolPayload || '{}');
+        await runCli(action, payload, action);
+        return;
+      }
+    });
+
+    document.getElementById('console-toggle').addEventListener('click', () => {
+      const body = document.getElementById('console-body');
+      const chev = document.getElementById('console-chevron');
+      const hidden = body.classList.toggle('hidden');
+      chev.textContent = hidden ? '▲' : '▼';
+    });
+
+    document.addEventListener('input', (e) => {
+      const el = e.target;
+      if (!(el instanceof HTMLElement)) return;
+
+      if (el.dataset.wSite) {
+        wizardDraft.site[el.dataset.wSite] = el.value;
+        syncWizardPreview();
+      } else if (el.dataset.wBrand) {
+        wizardDraft.brand[el.dataset.wBrand] = el.value;
+        syncWizardPreview();
+      } else if (el.id === 'w-default-locale') {
+        wizardDraft.locale.defaultLocale = el.value;
+        syncWizardPreview();
+      } else if (el.dataset.wpField) {
+        const [group, field] = el.dataset.wpField.split(':');
+        wizardDraft.pageDrafts[group][field] = el.value;
+        syncWizardPreview();
+      } else if (el.dataset.secProps === 'wizardHome') {
+        try {
+          wizardDraft.homeSections[Number(el.dataset.idx)].props = JSON.parse(el.value || '{}');
+          el.style.borderColor = '';
+          syncWizardPreview();
+        } catch {
+          el.style.borderColor = 'var(--danger)';
+        }
+      } else if (el.dataset.cfg) {
+        const parts = el.dataset.cfg.split('.');
+        let cur = configDraft;
+        for (let i = 0; i < parts.length - 1; i++) {
+          cur[parts[i]] = cur[parts[i]] || {};
+          cur = cur[parts[i]];
+        }
+        cur[parts[parts.length - 1]] = el.value;
+      } else if (el.dataset.cfgNum) {
+        const parts = el.dataset.cfgNum.split('.');
+        let cur = configDraft;
+        for (let i = 0; i < parts.length - 1; i++) {
+          cur[parts[i]] = cur[parts[i]] || {};
+          cur = cur[parts[i]];
+        }
+        cur[parts[parts.length - 1]] = Number(el.value);
+      }
+    });
+
+    document.addEventListener('change', async (e) => {
+      const el = e.target;
+      if (!(el instanceof HTMLInputElement)) return;
+
+      if (el.id === 'w-disable-banner') { wizardDraft.disableTopBanner = el.checked; syncWizardPreview(); }
+      else if (el.id === 'w-skip-assets') { wizardDraft.skipAssets = el.checked; }
+      else if (el.id === 'w-locale-solo') { wizardDraft.locale.solo = el.checked; syncWizardPreview(); }
+      else if (el.dataset.wpToggle) { wizardDraft.selectedPages[el.dataset.wpToggle] = el.checked; renderActiveTab(); }
+      else if (el.dataset.wpNav) { wizardDraft.pageDrafts[el.dataset.wpNav].nav = el.checked; syncWizardPreview(); }
+      else if (el.dataset.wpPub) { wizardDraft.pageDrafts[el.dataset.wpPub].publish = el.checked; syncWizardPreview(); }
+      else if (el.dataset.cfgBool) {
+        const parts = el.dataset.cfgBool.split('.');
+        let cur = configDraft;
+        for (let i = 0; i < parts.length - 1; i++) {
+          cur[parts[i]] = cur[parts[i]] || {};
+          cur = cur[parts[i]];
+        }
+        cur[parts[parts.length - 1]] = el.checked;
+      } else if (el.dataset.uploadLogo && el.files?.[0]) {
+        const variant = el.dataset.uploadLogo;
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const res = await api('api/upload-logo', 'POST', { variant, dataUrl: reader.result });
+            wizardDraft.brand.logo[variant] = res.publicPath;
+            syncWizardPreview();
+            showToast('Uploaded ' + res.publicPath + ' ✓');
+          } catch (err) {
+            showToast(err.message);
+          }
+        };
+        reader.readAsDataURL(el.files[0]);
+      }
+    });
+
+    loadState(true).catch((err) => logConsole('init', err.message, false));
+  </script>
+</body>
+</html>

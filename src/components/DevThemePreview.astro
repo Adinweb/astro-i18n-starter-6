@@ -201,6 +201,14 @@ const initialRtlFont = siteConfig.rtlFontPreset ?? 'vazirmatn';
         <Icon name="copy" size={14} />
         <span data-dev-copy-label>{m.dev_theme_copy_config({}, { locale })}</span>
       </button>
+
+      <a
+        href="/__studio/"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-bg/70 px-3 py-2 font-semibold text-fg transition-colors hover:border-primary/50 hover:text-primary"
+      >
+        <Icon name="adjustments-horizontal" size={14} />
+        <span>{m.dev_theme_open_studio({}, { locale })}</span>
+      </a>
     </div>
   </div>
 </aside>
