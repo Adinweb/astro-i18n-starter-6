@@ -45,11 +45,11 @@ Traditional scroll libraries mutate inline styles synchronously or measure `getB
 
 | File | Size | Purpose |
 | :--- | :--- | :--- |
-| `chronotrig.min.js` | **31.8 KB min (9.7 KB gzip)** | Standalone zero-dependency browser bundle (sets `window.chronoTrig`, `window.trig`, `window.ChronoTrig`). |
-| `chronotrig.js` | **67.4 KB (13.7 KB gzip)** | Unminified, readable standalone IIFE build for local debugging & source inspection. |
-| `chronotrig.esm.js` | **31.9 KB min (9.8 KB gzip)** | Modern ES Module for Vite, Next.js, Rollup, or Webpack. |
+| `chronotrig.min.js` | **32.3 KB min (10.5 KB gzip)** | Standalone zero-dependency browser bundle (sets `window.chronoTrig`, `window.trig`, `window.ChronoTrig`). |
+| `chronotrig.js` | **72.1 KB (15.0 KB gzip)** | Unminified, readable standalone IIFE build for local debugging & source inspection. |
+| `chronotrig.esm.js` | **32.4 KB min (10.5 KB gzip)** | Modern ES Module for Vite, Next.js, Rollup, or Webpack. |
 | `trig-animations.css` | **16.4 KB** | Calibrated `0.55s` preset suite, RTL-native `.clipStart`, Tailwind `<md`/`<lg` mobile fallbacks, hover-safe `.trig-stagger-item`, and print/reduced-motion rules. |
-| `chronotrig.d.ts` | **3.3 KB** | Full TypeScript definitions including `FrameMetrics`, shared math helpers, and v6.2 options. |
+| `chronotrig.d.ts` | **3.4 KB** | Full TypeScript definitions including `FrameMetrics`, shared math helpers, and v6.2 options. |
 
 ### Option A: Vanilla HTML `<script>` Drop-In
 ```html
@@ -214,6 +214,16 @@ When `dir="rtl"` is active on `<html>`, an ancestor container, or the pinned sec
 </div>
 ```
 
+### Filterable / Searchable Stagger Grids (`replayStagger` & `resetStagger`)
+When filtering or searching cards in-place (toggling `hidden` or adding/removing items), call `chronoTrig.replayStagger(grid)` after updating item visibility. ChronoTrig automatically:
+1. Calls `resetStagger(grid)` to detach stale `animationend`/`transitionend`/`animationcancel`/`transitioncancel` listeners, unobserves the grid & cards, and strips active/settled classes without firing premature settle events.
+2. Temporarily disables CSS transitions on visible children on Frame 0 so transition-based `.trig-stagger-item` cards snap to their initial hidden frame immediately, restores transitions on Frame 1, and triggers `refresh()` on Frame 2 (cancelling pending frames automatically on rapid filter clicks).
+
+```javascript
+// After toggling card.hidden = !matchesFilter:
+window.chronoTrig.replayStagger(document.getElementById('projects-grid'));
+```
+
 ---
 
 ## 8. Multi-Step Keyframe Timelines (`data-trig-timeline`)
@@ -297,6 +307,8 @@ Relying solely on CSS `@media` leaves `IntersectionObserver` and scroll math run
 * `engine.sync(scrollY?)` — Runs an immediate frame-locked update synchronously (ideal for Lenis).
 * `engine.setExternalScroll(enabled)` / `engine.isExternalScroll()` — Toggles external scroller mode (`Lenis`) vs. native scroll listener at runtime.
 * `engine.refresh()` — Re-measures viewport dimensions, horizontal tracks, scans DOM, and syncs immediately.
+* `engine.resetStagger(container)` — Strips observers, end/cancel handlers, active/settled classes, and stagger CSS vars from a stagger container and its children so it can re-trigger cleanly.
+* `engine.replayStagger(container)` — Coordinates `resetStagger(container)` + 2-frame transition-snap replay and `refresh()`, cancelling any pending queued replay if filters change rapidly.
 * `engine.setRoot(root)` — Switches custom scroll container dynamically.
 * `engine.getFrameMetrics()` — Returns `{ lastUpdateMs, layoutReads, styleWrites, revealCount, activeScrubbers, activePins, activeScrubStaggers, activeTimelines }`.
 * `engine.subscribe(cb)` — Subscribe `{ scrollY, direction, progress, isMobile }` updates; returns `unsubscribe()`.
