@@ -909,6 +909,11 @@ function validateConfigObject(cfg, rootDir) {
     if (a.umamiSrc && String(a.umamiSrc).trim() !== '') {
       collectHttpUrlError(a.umamiSrc, 'analytics.umamiSrc', errors);
     }
+    for (const flag of ['consentMode', 'requireConsent', 'allowCookielessWithoutBanner']) {
+      if (a[flag] !== undefined && typeof a[flag] !== 'boolean') {
+        errors.push(`analytics.${flag} must be a boolean.`);
+      }
+    }
   }
 
   if (cfg.cookies !== undefined && isPlainObject(cfg.cookies)) {

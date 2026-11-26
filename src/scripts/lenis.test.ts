@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { initLenis, destroyLenis, getLenis } from './lenis';
+import { initLenis, destroyLenis, getLenis, scrollToElement } from './lenis';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
@@ -41,5 +41,28 @@ describe('Lenis Smooth Scroll Architecture', () => {
 
     // Nested scroll prevention on mobile drawer
     expect(layout).toContain('data-lenis-prevent');
+  });
+
+  it('scrollToElement safely no-ops for null and falls back to window.scrollTo honoring data-motion="reduced"', () => {
+    expect(() => scrollToElement(null)).not.toThrow();
+
+    let lastCall: { top: number; behavior: string } | null = null;
+    (globalThis as Record<string, unknown>).document = {
+      documentElement: { dataset: { motion: 'reduced' } },
+      querySelector: () => null,
+    };
+    (globalThis as Record<string, unknown>).window = {
+      scrollY: 100,
+      scrollTo: (opts: { top: number; behavior: string }) => {
+        lastCall = opts;
+      },
+    };
+
+    const fakeEl = {
+      getBoundingClientRect: () => ({ top: 240 }),
+    } as unknown as HTMLElement;
+
+    scrollToElement(fakeEl);
+    expect(lastCall).toEqual({ top: 340, behavior: 'auto' });
   });
 });

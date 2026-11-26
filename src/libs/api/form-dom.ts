@@ -6,10 +6,16 @@ import {
   type FormProvider,
 } from '@/libs/api/client';
 
-export interface TurnstileApi {
+interface TurnstileApi {
   render: (container: HTMLElement, options: Record<string, unknown>) => string;
   reset: (widgetId?: string) => void;
   getResponse: (widgetId?: string) => string | undefined;
+}
+
+export interface TurnstileController {
+  readonly enabled: boolean;
+  getToken: (formData: FormData) => string;
+  reset: () => void;
 }
 
 export interface FeedbackElements {
@@ -18,7 +24,7 @@ export interface FeedbackElements {
   body: HTMLElement | null;
 }
 
-export function ensureTurnstileLoaded(): Promise<TurnstileApi | null> {
+function ensureTurnstileLoaded(): Promise<TurnstileApi | null> {
   const win = window as unknown as {
     turnstile?: TurnstileApi;
     __turnstilePromise?: Promise<TurnstileApi | null>;
@@ -43,6 +49,48 @@ export function ensureTurnstileLoaded(): Promise<TurnstileApi | null> {
     document.head.appendChild(script);
   });
   return win.__turnstilePromise;
+}
+
+export function createTurnstileController(form: HTMLFormElement): TurnstileController {
+  const container = form.querySelector<HTMLElement>('[data-turnstile-container]');
+  const siteKey = form.dataset.turnstileSiteKey?.trim() ?? '';
+  let widgetId: string | null = null;
+  let callbackToken = '';
+
+  if (siteKey && container) {
+    void ensureTurnstileLoaded().then((api) => {
+      if (!api || !container.isConnected || widgetId !== null) return;
+      const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+      widgetId = api.render(container, {
+        sitekey: siteKey,
+        theme,
+        language: form.dataset.locale ?? 'auto',
+        callback: (token: string) => {
+          callbackToken = token;
+        },
+        'expired-callback': () => {
+          callbackToken = '';
+        },
+      });
+    });
+  }
+
+  return {
+    enabled: Boolean(siteKey),
+    getToken: (formData: FormData) => {
+      const winTurnstile = (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+      return (
+        callbackToken ||
+        (widgetId !== null ? (winTurnstile?.getResponse(widgetId) ?? '') : '') ||
+        String(formData.get('cf-turnstile-response') ?? '')
+      );
+    },
+    reset: () => {
+      callbackToken = '';
+      const winTurnstile = (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+      if (widgetId !== null) winTurnstile?.reset(widgetId);
+    },
+  };
 }
 
 export function readFormErrorMessages(

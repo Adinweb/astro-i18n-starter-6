@@ -10,7 +10,7 @@ declare global {
 let lenis: Lenis | null = null;
 let lifecycleBound = false;
 
-export function getHeaderOffset(): number {
+function getHeaderOffset(): number {
   if (typeof document === 'undefined') return 0;
   const header = document.querySelector<HTMLElement>('header[data-site-header]');
   if (!header) {
@@ -37,6 +37,28 @@ function prefersReducedMotion(): boolean {
 
 export function getLenis(): Lenis | null {
   return lenis;
+}
+
+export function scrollToElement(destination: HTMLElement | null): void {
+  if (!destination || typeof window === 'undefined') return;
+  const headerOffset = getHeaderOffset();
+  if (lenis) {
+    lenis.scrollTo(destination, {
+      offset: headerOffset,
+      duration: 0.9,
+    });
+    return;
+  }
+  const behavior: ScrollBehavior = prefersReducedMotion() ? 'auto' : 'smooth';
+  if (typeof window.scrollTo === 'function') {
+    const top = destination.getBoundingClientRect().top + window.scrollY + headerOffset;
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior,
+    });
+  } else {
+    destination.scrollIntoView({ behavior, block: 'start' });
+  }
 }
 
 export function destroyLenis(): void {
@@ -103,17 +125,7 @@ function handleSamePageAnchorClick(event: MouseEvent): void {
     window.history.pushState(null, '', parsed.hash);
   }
 
-  if (lenis) {
-    lenis.scrollTo(destination, {
-      offset: getHeaderOffset(),
-      duration: 0.9,
-    });
-  } else {
-    destination.scrollIntoView({
-      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-      block: 'start',
-    });
-  }
+  scrollToElement(destination);
 }
 
 export function initLenis(): void {

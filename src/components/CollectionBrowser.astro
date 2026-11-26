@@ -660,7 +660,7 @@ const compactControls = builtControls.filter(
   import type { GenericFilterFieldDef } from '@/libs/content/schema-config';
   import { paginate } from '@/libs/content/pagination';
   import { renderDynamicPagination } from '@/libs/ui/pagination-dom';
-  import { getHeaderOffset, getLenis } from '@/scripts/lenis';
+  import { scrollToElement } from '@/scripts/lenis';
   import { replayStaggerGrid } from '@/scripts/chronotrig';
 
   const catalogCache = new Map<string, Promise<SerializedCollectionEntry[]>>();
@@ -1178,20 +1178,7 @@ const compactControls = builtControls.filter(
 
           filterPage = nextPage;
           void applyFilters({ updateUrl: true });
-          if (grid) {
-            const headerOffset = getHeaderOffset();
-            const lenis = getLenis();
-            if (lenis) {
-              lenis.scrollTo(grid, { offset: headerOffset, duration: 0.9 });
-            } else {
-              const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-              const top = grid.getBoundingClientRect().top + window.scrollY + headerOffset;
-              window.scrollTo({
-                top: Math.max(0, top),
-                behavior: reducedMotion ? 'auto' : 'smooth',
-              });
-            }
-          }
+          scrollToElement(grid);
         },
         { signal: abortController.signal }
       );

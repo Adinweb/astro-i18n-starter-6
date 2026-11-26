@@ -488,9 +488,21 @@ if (manifest) {
         data.dir === dirFor(DEFAULT_LOCALE),
       `Manifest declares default locale lang="${DEFAULT_LOCALE}" and dir="${dirFor(DEFAULT_LOCALE)}"`
     );
+    const expectedManifestIconCount = appConfig.brand.icons.reduce((sum, icon) => {
+      const tokens = String(icon.purpose || 'any')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      return sum + (tokens.length > 0 ? new Set(tokens).size : 1);
+    }, 0);
     assert(
-      Array.isArray(data.icons) && data.icons.length === appConfig.brand.icons.length,
+      Array.isArray(data.icons) && data.icons.length === expectedManifestIconCount,
       'Manifest icons match merged site config'
+    );
+    assert(
+      Array.isArray(data.icons) &&
+        data.icons.every((entry) => typeof entry.purpose === 'string' && entry.purpose.length > 0 && !/\s/.test(entry.purpose)),
+      'Manifest icon entries each use a single purpose token'
     );
     assert(
       appConfig.brand.icons.every((icon) =>

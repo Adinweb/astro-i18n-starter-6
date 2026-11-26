@@ -270,8 +270,10 @@ const clarityInitSnippet = clarityId
     document.addEventListener(CONSENT_CHANGE_EVENT, () => {
       syncGoogleConsentMode();
       const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
-      const cookielessOpen = gatekeeper?.dataset.cookielessOpen === 'true';
-      if (document.documentElement.dataset.consentAnalytics !== 'true' && !cookielessOpen) {
+      const directOpen = gatekeeper?.dataset.requireConsent === 'false';
+      const cookielessOpen = directOpen || gatekeeper?.dataset.cookielessOpen === 'true';
+      const analyticsAllowed = directOpen || document.documentElement.dataset.consentAnalytics === 'true';
+      if (!analyticsAllowed && !cookielessOpen) {
         lastTrackedUrl = '';
       } else if (!lastTrackedUrl) {
         lastTrackedUrl = window.location.pathname + window.location.search;

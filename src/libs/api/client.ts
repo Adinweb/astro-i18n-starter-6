@@ -406,8 +406,8 @@ export function resolvePostSubmitRedirect(rawTarget: string | undefined): string
  * Fires a DOM `CustomEvent` (`astro-starter:contact-success` /
  * `astro-starter:newsletter-success`) on genuine non-honeypot submissions,
  * and forwards conversion events to GA4 / GTM / Plausible / Umami only when
- * active consent (`data-consent-analytics="true"`) or explicit cookieless mode
- * permits tracking.
+ * active consent (`data-consent-analytics="true"`), direct mode
+ * (`data-require-consent="false"`), or explicit cookieless mode permits tracking.
  */
 export function dispatchFormConversion(
   kind: FormConversionKind,
@@ -422,9 +422,10 @@ export function dispatchFormConversion(
   );
 
   const rootData = document.documentElement.dataset;
-  const analyticsAllowed = rootData.consentAnalytics === 'true';
   const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
-  const cookielessOpen = gatekeeper?.dataset.cookielessOpen === 'true';
+  const directOpen = gatekeeper?.dataset.requireConsent === 'false';
+  const analyticsAllowed = directOpen || rootData.consentAnalytics === 'true';
+  const cookielessOpen = directOpen || gatekeeper?.dataset.cookielessOpen === 'true';
   const win = window as ConversionAnalyticsWindow;
 
   const gaEventName = kind === 'contact' ? 'generate_lead' : 'sign_up';

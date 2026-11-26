@@ -227,13 +227,12 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
     type NewsletterSubscriptionPayload,
   } from '@/libs/api/client';
   import {
-    ensureTurnstileLoaded,
+    createTurnstileController,
     finalizeFormSuccess,
     readFormErrorMessages,
     renderFormFeedback,
     setFormSubmitting,
     type FeedbackElements,
-    type TurnstileApi,
   } from '@/libs/api/form-dom';
 
   function initNewsletterForms() {
@@ -251,28 +250,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
         title: form.querySelector<HTMLElement>('[data-newsletter-feedback-title]'),
         body: form.querySelector<HTMLElement>('[data-newsletter-feedback-body]'),
       };
-      const turnstileContainer = form.querySelector<HTMLElement>('[data-turnstile-container]');
-      const turnstileSiteKey = form.dataset.turnstileSiteKey?.trim() ?? '';
-      let turnstileWidgetId: string | null = null;
-      let turnstileToken = '';
-
-      if (turnstileSiteKey && turnstileContainer) {
-        ensureTurnstileLoaded().then((api) => {
-          if (!api || !turnstileContainer.isConnected || turnstileWidgetId !== null) return;
-          const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
-          turnstileWidgetId = api.render(turnstileContainer, {
-            sitekey: turnstileSiteKey,
-            theme,
-            language: form.dataset.locale ?? 'auto',
-            callback: (token: string) => {
-              turnstileToken = token;
-            },
-            'expired-callback': () => {
-              turnstileToken = '';
-            },
-          });
-        });
-      }
+      const turnstile = createTurnstileController(form);
 
       const errorMessages = readFormErrorMessages(form.dataset);
 
@@ -286,11 +264,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
 
         const formData = new FormData(form);
         const honeypot = String(formData.get('company_website') ?? '');
-        const winTurnstile = (window as unknown as { turnstile?: TurnstileApi }).turnstile;
-        const resolvedToken =
-          turnstileToken ||
-          (turnstileWidgetId !== null ? winTurnstile?.getResponse(turnstileWidgetId) ?? '' : '') ||
-          String(formData.get('cf-turnstile-response') ?? '');
+        const resolvedToken = turnstile.getToken(formData);
 
         const payload: NewsletterSubscriptionPayload = {
           email: String(formData.get('email') ?? ''),
@@ -315,7 +289,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
           baseUrl: form.dataset.baseUrl ?? '',
           endpoint: form.dataset.endpoint ?? '',
           accessKey: form.dataset.accessKey ?? '',
-          requireTurnstile: Boolean(turnstileSiteKey),
+          requireTurnstile: turnstile.enabled,
           timeoutMs: Number.isFinite(timeoutMs) ? timeoutMs : 10000,
         });
 
@@ -339,8 +313,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
             feedbackPadding: 'p-3.5',
             onReset: () => {
               emailInput?.removeAttribute('aria-invalid');
-              turnstileToken = '';
-              if (turnstileWidgetId !== null) winTurnstile?.reset(turnstileWidgetId);
+              turnstile.reset();
             },
           });
           return;

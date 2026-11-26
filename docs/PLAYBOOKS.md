@@ -153,7 +153,7 @@ npm run check:quick && npm run upstream:check && npm run doctor && npm run build
    ```
    Use `--skip-assets` during quick iterations or `--json` for structured output.
 5. **Visual Setup & Control Panel (`npm run studio` or `/__studio/` in `npm run dev`)**:
-   Open `http://localhost:3000/__studio/` while `npm run dev` runs (or run standalone `npm run studio`) for a bilingual RTL/LTR GUI covering the New Site Wizard (`site:apply`), `client/config.json` & `ui.navigation` editor, visual Page `SectionComposer`, locale/dictionary management (`i18n:sync-keys`), and allow-listed CLI checks. Disabled automatically in `npm run build` so `dist/` remains 100% pure SSG.
+   Open `http://localhost:3000/__studio/` while `npm run dev` runs (or run standalone `npm run studio`) for a bilingual RTL/LTR GUI covering the New Site Wizard (`site:apply`), `client/config.json` & `ui.navigation` editor, visual Page `SectionComposer`, locale/dictionary management (`i18n:sync-keys`), live site health diagnostics (`/api/health`), and allow-listed CLI checks. Disabled automatically in `npm run build` so `dist/` remains 100% pure SSG.
 6. **Tailwind RTL & Button Rules**:
    Use `npm run block:adapt -- --file=...`, `npm run i18n:extract -- --target=...`, `<Button>` (`src/components/ui/Button.astro` / `buttonClasses()`), `<IconButton>`, and `<Icon>` (custom client icons in `client/icons.ts` + `client/ClientIcons.astro`).
 

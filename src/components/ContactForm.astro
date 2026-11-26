@@ -273,13 +273,12 @@ const topicOptions = API_CONFIG.topics?.length
     type FormProvider,
   } from '@/libs/api/client';
   import {
-    ensureTurnstileLoaded,
+    createTurnstileController,
     finalizeFormSuccess,
     readFormErrorMessages,
     renderFormFeedback,
     setFormSubmitting,
     type FeedbackElements,
-    type TurnstileApi,
   } from '@/libs/api/form-dom';
 
   function initContactForms() {
@@ -296,28 +295,7 @@ const topicOptions = API_CONFIG.topics?.length
         title: form.querySelector<HTMLElement>('[data-contact-feedback-title]'),
         body: form.querySelector<HTMLElement>('[data-contact-feedback-body]'),
       };
-      const turnstileContainer = form.querySelector<HTMLElement>('[data-turnstile-container]');
-      const turnstileSiteKey = form.dataset.turnstileSiteKey?.trim() ?? '';
-      let turnstileWidgetId: string | null = null;
-      let turnstileToken = '';
-
-      if (turnstileSiteKey && turnstileContainer) {
-        ensureTurnstileLoaded().then((api) => {
-          if (!api || !turnstileContainer.isConnected || turnstileWidgetId !== null) return;
-          const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
-          turnstileWidgetId = api.render(turnstileContainer, {
-            sitekey: turnstileSiteKey,
-            theme,
-            language: form.dataset.locale ?? 'auto',
-            callback: (token: string) => {
-              turnstileToken = token;
-            },
-            'expired-callback': () => {
-              turnstileToken = '';
-            },
-          });
-        });
-      }
+      const turnstile = createTurnstileController(form);
 
       const fieldNames = ['name', 'email', 'topic', 'message'] as const;
       const errorMessages = readFormErrorMessages(form.dataset);
@@ -363,11 +341,7 @@ const topicOptions = API_CONFIG.topics?.length
 
         const formData = new FormData(form);
         const honeypot = String(formData.get('company_website') ?? '');
-        const winTurnstile = (window as unknown as { turnstile?: TurnstileApi }).turnstile;
-        const resolvedToken =
-          turnstileToken ||
-          (turnstileWidgetId !== null ? winTurnstile?.getResponse(turnstileWidgetId) ?? '' : '') ||
-          String(formData.get('cf-turnstile-response') ?? '');
+        const resolvedToken = turnstile.getToken(formData);
 
         const payload: ContactInquiryPayload = {
           name: String(formData.get('name') ?? ''),
@@ -418,7 +392,7 @@ const topicOptions = API_CONFIG.topics?.length
           baseUrl: form.dataset.baseUrl ?? '',
           endpoint: form.dataset.endpoint ?? '/contact',
           accessKey: form.dataset.accessKey ?? '',
-          requireTurnstile: Boolean(turnstileSiteKey),
+          requireTurnstile: turnstile.enabled,
           timeoutMs: Number.isFinite(timeoutMs) ? timeoutMs : 10000,
         });
 
@@ -440,8 +414,7 @@ const topicOptions = API_CONFIG.topics?.length
             feedback,
             onReset: () => {
               clearInvalidState();
-              turnstileToken = '';
-              if (turnstileWidgetId !== null) winTurnstile?.reset(turnstileWidgetId);
+              turnstile.reset();
             },
           });
           return;

@@ -143,6 +143,7 @@ const hasDarkLogo = Boolean(brandLogo?.dark?.trim());
 const hasAnyLogo = hasLightLogo || hasDarkLogo;
 const logoAlt = brandLogo?.alt?.trim() || siteName;
 const showBrandText = !hasAnyLogo || brandLogo?.showText !== false;
+const shouldSyncBrandLogoAlt = !showBrandText && !brandLogo?.alt?.trim();
 const logoAbsoluteUrl = brandLogo?.light?.trim()
   ? absoluteUrl(brandLogo.light.trim())
   : absoluteUrl(`/${siteConfig.icons[0]?.file ?? 'icon-512.png'}`);
@@ -448,7 +449,7 @@ const structuredData = schema ?? [
                   width={brandLogo.width}
                   height={brandLogo.height}
                   class="brand-logo-light h-7 w-auto shrink-0 object-contain sm:h-8"
-                  data-brand-logo={showBrandText ? undefined : 'true'}
+                  data-brand-logo={shouldSyncBrandLogoAlt ? 'true' : undefined}
                   data-has-dark={hasDarkLogo ? 'true' : undefined}
                   decoding="async"
                 />
@@ -462,7 +463,7 @@ const structuredData = schema ?? [
                   width={brandLogo.width}
                   height={brandLogo.height}
                   class="brand-logo-dark h-7 w-auto shrink-0 object-contain sm:h-8"
-                  data-brand-logo={showBrandText ? undefined : 'true'}
+                  data-brand-logo={shouldSyncBrandLogoAlt ? 'true' : undefined}
                   decoding="async"
                 />
               )
@@ -687,6 +688,7 @@ const structuredData = schema ?? [
                   width={brandLogo.width}
                   height={brandLogo.height}
                   class="brand-logo-light h-7 w-auto shrink-0 object-contain"
+                  data-brand-logo={shouldSyncBrandLogoAlt ? 'true' : undefined}
                   data-has-dark={hasDarkLogo ? 'true' : undefined}
                   decoding="async"
                 />
@@ -700,11 +702,12 @@ const structuredData = schema ?? [
                   width={brandLogo.width}
                   height={brandLogo.height}
                   class="brand-logo-dark h-7 w-auto shrink-0 object-contain"
+                  data-brand-logo={shouldSyncBrandLogoAlt ? 'true' : undefined}
                   decoding="async"
                 />
               )
             }
-            {showBrandText && <span class="truncate">{siteName}</span>}
+            {showBrandText && <span data-brand-text class="truncate">{siteName}</span>}
           </a>
           <IconButton
             icon="close"
@@ -983,7 +986,7 @@ const structuredData = schema ?? [
                     width={brandLogo.width}
                     height={brandLogo.height}
                     class="brand-logo-light h-7 w-auto shrink-0 object-contain"
-                    data-brand-logo={showBrandText ? undefined : 'true'}
+                    data-brand-logo={shouldSyncBrandLogoAlt ? 'true' : undefined}
                     data-has-dark={hasDarkLogo ? 'true' : undefined}
                     decoding="async"
                   />
@@ -997,7 +1000,7 @@ const structuredData = schema ?? [
                     width={brandLogo.width}
                     height={brandLogo.height}
                     class="brand-logo-dark h-7 w-auto shrink-0 object-contain"
-                    data-brand-logo={showBrandText ? undefined : 'true'}
+                    data-brand-logo={shouldSyncBrandLogoAlt ? 'true' : undefined}
                     decoding="async"
                   />
                 )

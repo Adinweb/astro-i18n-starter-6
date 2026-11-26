@@ -281,5 +281,70 @@ describe('src/libs/api/client.ts', () => {
         dispatchFormConversion('contact', { locale: 'en', provider: 'custom' })
       ).not.toThrow();
     });
+
+    it('forwards conversion events when analytics.requireConsent is false (direct mode) and gates them otherwise', () => {
+      const prevWindow = (globalThis as Record<string, unknown>).window;
+      const prevDocument = (globalThis as Record<string, unknown>).document;
+      const prevCustomEvent = (globalThis as Record<string, unknown>).CustomEvent;
+
+      try {
+        const gtag = vi.fn();
+        const plausible = vi.fn();
+        const umamiTrack = vi.fn();
+        const dispatched: unknown[] = [];
+        let gateDataset: Record<string, string | undefined> = {
+          requireConsent: 'true',
+          cookielessOpen: 'false',
+        };
+
+        (globalThis as Record<string, unknown>).CustomEvent = class MockCustomEvent {
+          type: string;
+          detail: unknown;
+          constructor(type: string, init?: { detail?: unknown }) {
+            this.type = type;
+            this.detail = init?.detail;
+          }
+        };
+        (globalThis as Record<string, unknown>).window = {
+          gtag,
+          plausible,
+          umami: { track: umamiTrack },
+          dispatchEvent: (ev: unknown) => {
+            dispatched.push(ev);
+            return true;
+          },
+        };
+        (globalThis as Record<string, unknown>).document = {
+          documentElement: { dataset: { consentAnalytics: 'false' } },
+          querySelector: (selector: string) =>
+            selector === '[data-analytics-gatekeeper]' ? { dataset: gateDataset } : null,
+        };
+
+        dispatchFormConversion('contact', { locale: 'en', provider: 'custom' });
+        expect(dispatched).toHaveLength(1);
+        expect(gtag).not.toHaveBeenCalled();
+        expect(plausible).not.toHaveBeenCalled();
+        expect(umamiTrack).not.toHaveBeenCalled();
+
+        gateDataset = { requireConsent: 'false', cookielessOpen: 'false' };
+        dispatchFormConversion('newsletter', { locale: 'fa', provider: 'web3forms', source: 'footer' });
+        expect(gtag).toHaveBeenCalledWith('event', 'sign_up', {
+          locale: 'fa',
+          form_provider: 'web3forms',
+          form_source: 'footer',
+        });
+        expect(plausible).toHaveBeenCalledWith('NewsletterSignup', {
+          props: { locale: 'fa', source: 'footer' },
+        });
+        expect(umamiTrack).toHaveBeenCalledWith('NewsletterSignup', {
+          locale: 'fa',
+          source: 'footer',
+        });
+      } finally {
+        (globalThis as Record<string, unknown>).window = prevWindow;
+        (globalThis as Record<string, unknown>).document = prevDocument;
+        (globalThis as Record<string, unknown>).CustomEvent = prevCustomEvent;
+      }
+    });
   });
 });

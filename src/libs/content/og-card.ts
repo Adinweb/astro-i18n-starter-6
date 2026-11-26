@@ -6,6 +6,7 @@ import { Resvg, type ResvgRenderOptions } from '@resvg/resvg-js';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
 import { siteConfig } from '@/libs/config/app';
 import {
+  THEME_PRESETS,
   oklchToRgb,
   parseHexRgb,
   resolveBrandTheme,
@@ -144,74 +145,70 @@ interface OgFontResolution {
   candidates: string[];
 }
 
-function resolveOgTypography(brand?: Pick<BrandThemeInput, 'fontPreset' | 'rtlFontPreset'>): OgFontResolution {
-  const fontPreset = brand?.fontPreset ?? 'system';
-  const rtlPreset = brand?.rtlFontPreset ?? 'vazirmatn';
-
-  let rtlFamily = 'Vazirmatn';
-  let rtlFontCss = "'Vazirmatn', 'Noto Naskh Arabic', 'Noto Sans Arabic', 'Tahoma', sans-serif";
-  const rtlFiles = [
+const OG_FONTSOURCE_FILES: Record<string, string[]> = {
+  '@fontsource-variable/vazirmatn': [
     'node_modules/@fontsource-variable/vazirmatn/files/vazirmatn-arabic-wght-normal.woff2',
     'node_modules/@fontsource-variable/vazirmatn/files/vazirmatn-latin-wght-normal.woff2',
+  ],
+  '@fontsource-variable/noto-sans-arabic': [
+    'node_modules/@fontsource-variable/noto-sans-arabic/files/noto-sans-arabic-arabic-wght-normal.woff2',
+    'node_modules/@fontsource-variable/noto-sans-arabic/files/noto-sans-arabic-latin-wght-normal.woff2',
+  ],
+  '@fontsource-variable/plus-jakarta-sans': [
+    'node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2',
+  ],
+  '@fontsource-variable/manrope': [
+    'node_modules/@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2',
+  ],
+  '@fontsource-variable/outfit': [
+    'node_modules/@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2',
+  ],
+  '@fontsource-variable/dm-sans': [
+    'node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2',
+  ],
+  '@fontsource-variable/fraunces': [
+    'node_modules/@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2',
+  ],
+};
+
+function extractPrimaryFamily(stack: string, fallback: string): string {
+  const first = stack.split(',')[0]?.trim().replace(/^['"]|['"]$/g, '') ?? '';
+  const normalized = first.replace(/\s+Variable$/i, '').trim();
+  return normalized || fallback;
+}
+
+function resolveOgTypography(brand?: Pick<BrandThemeInput, 'fontPreset' | 'rtlFontPreset'>): OgFontResolution {
+  const rawLatinKey = brand?.fontPreset ?? 'system';
+  const effectiveLatinKey = rawLatinKey === 'system' ? 'jakarta' : rawLatinKey;
+  const latinEntry =
+    THEME_PRESETS.latinFonts[effectiveLatinKey as keyof typeof THEME_PRESETS.latinFonts] ??
+    THEME_PRESETS.latinFonts.jakarta;
+
+  const rawRtlKey = brand?.rtlFontPreset ?? 'vazirmatn';
+  const rtlEntry =
+    THEME_PRESETS.rtlFonts[rawRtlKey as keyof typeof THEME_PRESETS.rtlFonts] ??
+    THEME_PRESETS.rtlFonts.vazirmatn;
+
+  const rtlFamily = extractPrimaryFamily(rtlEntry.stack, 'Vazirmatn');
+  const latinFamily = extractPrimaryFamily(latinEntry.display, 'Plus Jakarta Sans');
+
+  const rtlFontCss = `${rtlEntry.stack}, 'Vazirmatn', 'Noto Naskh Arabic', 'Tahoma', sans-serif`;
+  const latinFontCss = `${latinEntry.display}, 'Plus Jakarta Sans', 'Vazirmatn', 'Noto Sans', sans-serif`;
+
+  const packageNames = [
+    ...rtlEntry.packages,
+    '@fontsource-variable/vazirmatn',
+    ...latinEntry.packages,
+    '@fontsource-variable/plus-jakarta-sans',
   ];
-
-  if (rtlPreset === 'noto-arabic') {
-    rtlFamily = 'Noto Sans Arabic';
-    rtlFontCss = "'Noto Sans Arabic', 'Vazirmatn', 'Noto Naskh Arabic', 'Tahoma', sans-serif";
-    rtlFiles.unshift(
-      'node_modules/@fontsource-variable/noto-sans-arabic/files/noto-sans-arabic-arabic-wght-normal.woff2',
-      'node_modules/@fontsource-variable/noto-sans-arabic/files/noto-sans-arabic-latin-wght-normal.woff2'
-    );
-  }
-
-  let latinFamily = 'Plus Jakarta Sans';
-  let latinFontCss = "'Plus Jakarta Sans', 'Vazirmatn', 'Noto Sans', 'Liberation Sans', sans-serif";
-  const latinFiles: string[] = [];
-
-  switch (fontPreset) {
-    case 'manrope':
-      latinFamily = 'Manrope';
-      latinFontCss = "'Manrope', 'Plus Jakarta Sans', 'Vazirmatn', 'Noto Sans', sans-serif";
-      latinFiles.push('node_modules/@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2');
-      break;
-    case 'outfit':
-      latinFamily = 'Outfit';
-      latinFontCss = "'Outfit', 'DM Sans', 'Plus Jakarta Sans', 'Vazirmatn', sans-serif";
-      latinFiles.push(
-        'node_modules/@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2',
-        'node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2'
-      );
-      break;
-    case 'editorial':
-      latinFamily = 'Fraunces';
-      latinFontCss = "'Fraunces', 'DM Sans', 'Plus Jakarta Sans', 'Vazirmatn', serif";
-      latinFiles.push(
-        'node_modules/@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2',
-        'node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2'
-      );
-      break;
-    case 'jakarta':
-    case 'system':
-    default:
-      latinFiles.push(
-        'node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2'
-      );
-      break;
-  }
-
-  // Always keep Plus Jakarta Sans fallback available when custom preset file is missing
-  const defaultLatinFile =
-    'node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2';
-  if (!latinFiles.includes(defaultLatinFile)) {
-    latinFiles.push(defaultLatinFile);
-  }
+  const candidates = [...new Set(packageNames.flatMap((pkg) => OG_FONTSOURCE_FILES[pkg] ?? []))];
 
   return {
     rtlFamily,
     latinFamily,
     rtlFontCss,
     latinFontCss,
-    candidates: [...new Set([...rtlFiles, ...latinFiles])],
+    candidates,
   };
 }
 
@@ -423,7 +420,7 @@ export function renderBrandedOgSvg(
 
   <line x1="${marginX}" y1="528" x2="${width - marginX}" y2="528" stroke="#ffffff" stroke-opacity="0.16" stroke-width="1" />
   <text x="${siteFooterX}" y="572" text-anchor="${textAnchor}"${rtlTextAttrs} font-family="${fontFamily}" font-size="24" font-weight="600" fill="#e2e8f0">${escapeXml(siteName)}</text>
-  <text x="${localeX}" y="572" text-anchor="${localeAnchor}" font-family="'Plus Jakarta Sans', 'Vazirmatn', 'Noto Sans', sans-serif" font-size="18" font-weight="500" fill="#94a3b8">${escapeXml(localeBadgeText)}</text>
+  <text x="${localeX}" y="572" text-anchor="${localeAnchor}"${rtlTextAttrs} font-family="${fontFamily}" font-size="18" font-weight="500" fill="#94a3b8">${escapeXml(localeBadgeText)}</text>
 </svg>`;
 }
 
