@@ -2,8 +2,9 @@
  * Local Dev & Standalone Studio API handler (`/__studio/` in `astro dev`, or `npm run studio`).
  *
  * Strictly uses Node built-ins + existing project scripts/helpers (`site-apply`,
- * `config`, `blueprints`, `content-types`, `frontmatter`, `i18n-sync`, `blocks-catalog`)
- * with strict input validation, allow-listed CLI execution (no shell), and a
+ * `config`, `blueprints`, `content-types`, `frontmatter`, `i18n-sync`, `blocks-catalog`,
+ * `content-sync`, `redirects`, `compile-messages`) with strict input validation,
+ * path confinement, SVG sanitization, allow-listed CLI execution (no shell), and a
  * write mutex so Astro SSG output (`dist/`) remains 100% pure static HTML.
  */
 import fs from 'node:fs';
@@ -13,28 +14,103 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { BLUEPRINTS } from './blueprints.mjs';
 import { buildBlocksCatalog } from './blocks-catalog.mjs';
+import { compileMessages } from './compile-messages.mjs';
 import {
+  cmsConfigPathFor,
   deepMergeConfig,
   readClientConfig,
+  readCmsConfig,
   readCoreAndClientConfig,
+  readCoreConfig,
   readMergedConfig,
+  sanitizeCmsConfig,
   writeClientConfig,
 } from './config.mjs';
-import { readContentTypes } from './content-types.mjs';
+import {
+  CORE_TYPES,
+  countTodos,
+  countWords,
+  getKnownTypes,
+  readClientCollectionKeys,
+  readContentTypes,
+} from './content-types.mjs';
 import { parseFrontmatter, stringifyFrontmatter } from './frontmatter.mjs';
 import { syncDictionaryKeys } from './i18n-sync.mjs';
-import { readLocaleConfig } from './locales.mjs';
-import { readClientMessages, stripSchema } from './merge-messages.mjs';
+import { readLocaleConfig, writeLocaleConfig } from './locales.mjs';
+import {
+  readClientMessages,
+  readCoreMessages,
+  readMergedMessages,
+  stripSchema,
+  writeClientMessages,
+} from './merge-messages.mjs';
+import { validateRedirects } from './redirects.mjs';
 import { applySiteSpec, validateSiteSpec } from './site-apply.mjs';
 import { renderStudioHtml } from './studio-ui.mjs';
+import { syncCollections } from '../content-sync.mjs';
+import { upsertEnvContent } from '../client-bootstrap.mjs';
 
 const execFileAsync = promisify(execFile);
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 const SAFE_KEY_RE = /^[a-z0-9-]+$/;
+const SAFE_GROUP_RE = /^[\p{L}\p{N}][\p{L}\p{N}_-]*$/u;
+const SAFE_FIELD_NAME_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 const SAFE_I18N_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const SAFE_LOCALE_RE = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
+const SAFE_LOCALE_RE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
+const SAFE_PKG_NAME_RE = /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const ENV_ALLOWED_KEYS = [
+  'SITE_URL',
+  'PUBLIC_API_BASE_URL',
+  'PUBLIC_CONTACT_API_URL',
+  'PUBLIC_NEWSLETTER_API_URL',
+  'PUBLIC_TURNSTILE_SITE_KEY',
+  'PUBLIC_WEB3FORMS_KEY',
+];
+
+const RESERVED_BASES = new Set([
+  'page',
+  'pagefind',
+  '_astro',
+  'api',
+  'rss',
+  'og',
+  'sitemap',
+  'robots',
+  'icons',
+  'site.webmanifest',
+  'llms.txt',
+]);
+
+const VALID_FIELD_TYPES = new Set([
+  'string',
+  'text',
+  'number',
+  'boolean',
+  'date',
+  'url',
+  'image',
+  'enum',
+  'string[]',
+  'taxonomy[]',
+]);
+
+const VALID_FILTER_MODES = new Set(['single', 'multi', 'select', 'toggle', 'range']);
+const VALID_FILTER_SORTS = new Set(['alpha', 'count', 'config']);
+const VALID_CARD_LAYOUTS = new Set(['grid', 'gallery', 'compact']);
+const VALID_ASPECT_RATIOS = new Set(['video', 'square', 'portrait', 'auto']);
+const VALID_BUSINESS_TYPES = new Set([
+  'Organization',
+  'LocalBusiness',
+  'ProfessionalService',
+  'MedicalBusiness',
+  'Store',
+]);
+const VALID_API_PROVIDERS = new Set(['custom', 'web3forms', 'formspree', 'basin', 'webhook']);
 const SAFE_HERO_VALUES = new Set(['none', 'minimal', 'default', true, false]);
 const SAFE_CONTAINER_VALUES = new Set(['canvas', 'contained', 'prose']);
 const ALLOWED_LOGO_MIMES = new Map([
@@ -90,9 +166,20 @@ const HERO_PRIORITY_PROPS = [
   'imageAlt',
 ];
 
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
 function assertSafeKey(value, label) {
   if (typeof value !== 'string' || !SAFE_KEY_RE.test(value.trim())) {
     throw new Error(`Invalid ${label}: expected lowercase letters, digits, or hyphens.`);
+  }
+  return value.trim();
+}
+
+function assertSafeGroupKey(value, label = 'entry group') {
+  if (typeof value !== 'string' || !SAFE_GROUP_RE.test(value.trim())) {
+    throw new Error(`Invalid ${label}: expected letters, digits, hyphens, or underscores.`);
   }
   return value.trim();
 }
@@ -102,6 +189,32 @@ function assertSafeLocale(value) {
     throw new Error('Invalid locale code (expected e.g. "en", "fa", "ar", "en-US").');
   }
   return value.trim();
+}
+
+function assertConfinedPath(baseDir, targetPath) {
+  const resolvedBase = path.resolve(baseDir);
+  const resolvedTarget = path.resolve(targetPath);
+  if (!resolvedTarget.startsWith(resolvedBase + path.sep)) {
+    throw Object.assign(new Error('Invalid path outside allowed workspace directory.'), {
+      statusCode: 400,
+    });
+  }
+  return resolvedTarget;
+}
+
+function assertValidHttpUrl(raw, label) {
+  const trimmed = String(raw ?? '').trim();
+  if (!trimmed) return '';
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error(`Invalid ${label} "${trimmed}": expected an http:// or https:// URL.`);
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`Invalid ${label} "${trimmed}": only http:// and https:// schemes are allowed.`);
+  }
+  return trimmed;
 }
 
 function sendJson(res, status, payload) {
@@ -148,6 +261,422 @@ async function readJsonBody(req) {
   });
 }
 
+function loadThemePresets(rootDir) {
+  const presetsPath = path.join(rootDir, 'src', 'libs', 'config', 'theme-presets.json');
+  const fallbackPresetsPath = path.join(defaultRootDir, 'src', 'libs', 'config', 'theme-presets.json');
+  return JSON.parse(
+    fs.readFileSync(fs.existsSync(presetsPath) ? presetsPath : fallbackPresetsPath, 'utf-8')
+  );
+}
+
+function parseAllowListedEnv(rootDir) {
+  const envPath = path.join(rootDir, '.env');
+  const result = Object.fromEntries(ENV_ALLOWED_KEYS.map((k) => [k, '']));
+  if (!fs.existsSync(envPath)) {
+    return { exists: false, vars: result };
+  }
+  const raw = fs.readFileSync(envPath, 'utf-8');
+  for (const rawLine of raw.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+    const match = line.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!match) continue;
+    const key = match[1];
+    if (!ENV_ALLOWED_KEYS.includes(key)) continue;
+    let value = match[2].trim();
+    const quote = value[0];
+    if (value.length > 1 && (quote === '"' || quote === "'") && value.endsWith(quote)) {
+      value = value.slice(1, -1);
+    } else {
+      const inlineComment = value.indexOf(' #');
+      if (inlineComment !== -1) value = value.slice(0, inlineComment).trim();
+    }
+    result[key] = value;
+  }
+  return { exists: true, vars: result };
+}
+
+function readProjectMeta(rootDir) {
+  const pkgPath = path.join(rootDir, 'package.json');
+  let pkg = {};
+  if (fs.existsSync(pkgPath)) {
+    try {
+      pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    } catch {
+      pkg = {};
+    }
+  }
+
+  const metaPath = path.join(rootDir, 'metadata.json');
+  let appMeta = null;
+  if (fs.existsSync(metaPath)) {
+    try {
+      appMeta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+    } catch {
+      appMeta = null;
+    }
+  }
+
+  const envInfo = parseAllowListedEnv(rootDir);
+
+  return {
+    packageJson: {
+      name: typeof pkg.name === 'string' ? pkg.name : '',
+      version: typeof pkg.version === 'string' ? pkg.version : '1.0.0',
+      description: typeof pkg.description === 'string' ? pkg.description : '',
+      author: typeof pkg.author === 'string' ? pkg.author : '',
+      license: typeof pkg.license === 'string' ? pkg.license : 'MIT',
+      private: Boolean(pkg.private),
+    },
+    metadataJson: {
+      exists: Boolean(appMeta),
+      name: typeof appMeta?.name === 'string' ? appMeta.name : '',
+      description: typeof appMeta?.description === 'string' ? appMeta.description : '',
+    },
+    env: {
+      exists: envInfo.exists,
+      allowedKeys: ENV_ALLOWED_KEYS,
+      vars: envInfo.vars,
+    },
+  };
+}
+
+function saveProjectMeta(rootDir, payload) {
+  if (!isPlainObject(payload)) {
+    throw new Error('Project metadata payload must be an object.');
+  }
+
+  const updatedFiles = [];
+
+  if (isPlainObject(payload.packageJson)) {
+    const pkgPath = path.join(rootDir, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const current = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      const p = payload.packageJson;
+      if (p.name !== undefined) {
+        const name = String(p.name).trim();
+        if (!SAFE_PKG_NAME_RE.test(name)) {
+          throw new Error(
+            `Invalid package.json name "${name}". Use lowercase npm slug characters (e.g. "client-acme-site").`
+          );
+        }
+        current.name = name;
+      }
+      if (p.version !== undefined) {
+        const ver = String(p.version).trim();
+        if (!ver) throw new Error('package.json version cannot be empty.');
+        current.version = ver;
+      }
+      if (p.description !== undefined) {
+        const desc = String(p.description).trim();
+        if (desc) current.description = desc;
+        else delete current.description;
+      }
+      if (p.author !== undefined) {
+        const author = String(p.author).trim();
+        if (author) current.author = author;
+        else delete current.author;
+      }
+      if (p.license !== undefined) {
+        const license = String(p.license).trim();
+        if (license) current.license = license;
+      }
+      fs.writeFileSync(pkgPath, `${JSON.stringify(current, null, 2)}\n`, 'utf-8');
+      updatedFiles.push('package.json');
+    }
+  }
+
+  if (isPlainObject(payload.metadataJson)) {
+    const metaPath = path.join(rootDir, 'metadata.json');
+    const current = fs.existsSync(metaPath)
+      ? JSON.parse(fs.readFileSync(metaPath, 'utf-8'))
+      : { name: '', description: '', permissions: [], capabilities: [] };
+    const m = payload.metadataJson;
+    if (m.name !== undefined) {
+      const name = String(m.name).trim();
+      if (!name) throw new Error('metadata.json name cannot be empty.');
+      current.name = name;
+    }
+    if (m.description !== undefined) {
+      current.description = String(m.description).trim();
+    }
+    fs.writeFileSync(metaPath, `${JSON.stringify(current, null, 2)}\n`, 'utf-8');
+    updatedFiles.push('metadata.json');
+  }
+
+  if (isPlainObject(payload.env)) {
+    const updates = {};
+    for (const key of ENV_ALLOWED_KEYS) {
+      if (!(key in payload.env)) continue;
+      const rawVal = String(payload.env[key] ?? '').trim();
+      if (
+        rawVal !== '' &&
+        ['SITE_URL', 'PUBLIC_API_BASE_URL', 'PUBLIC_CONTACT_API_URL', 'PUBLIC_NEWSLETTER_API_URL'].includes(key)
+      ) {
+        if (key === 'SITE_URL' || !rawVal.startsWith('/')) {
+          assertValidHttpUrl(rawVal, `.env ${key}`);
+        }
+      }
+      updates[key] = rawVal;
+    }
+    if (Object.keys(updates).length > 0) {
+      const envPath = path.join(rootDir, '.env');
+      const existing = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf-8') : '';
+      fs.writeFileSync(envPath, upsertEnvContent(existing, updates), 'utf-8');
+      updatedFiles.push('.env');
+    }
+  }
+
+  return {
+    ok: true,
+    updatedFiles,
+    projectMeta: readProjectMeta(rootDir),
+  };
+}
+
+function validateConfigObject(cfg, rootDir) {
+  const errors = [];
+  if (!isPlainObject(cfg)) return ['Configuration must be a JSON object.'];
+
+  if (cfg.site !== undefined) {
+    if (!isPlainObject(cfg.site)) {
+      errors.push('site must be an object.');
+    } else {
+      for (const k of ['name', 'shortName', 'description']) {
+        if (cfg.site[k] !== undefined && !String(cfg.site[k]).trim()) {
+          errors.push(`site.${k} cannot be empty.`);
+        }
+      }
+      if (
+        cfg.site.contactEmail !== undefined &&
+        String(cfg.site.contactEmail).trim() !== '' &&
+        !EMAIL_RE.test(String(cfg.site.contactEmail).trim())
+      ) {
+        errors.push(`Invalid site.contactEmail "${cfg.site.contactEmail}".`);
+      }
+    }
+  }
+
+  if (cfg.brand !== undefined) {
+    if (!isPlainObject(cfg.brand)) {
+      errors.push('brand must be an object.');
+    } else {
+      const presets = loadThemePresets(rootDir);
+      if (cfg.brand.preset && !(cfg.brand.preset in (presets.palettes ?? {}))) {
+        errors.push(`Invalid brand.preset "${cfg.brand.preset}".`);
+      }
+      if (cfg.brand.fontPreset && !(cfg.brand.fontPreset in (presets.latinFonts ?? {}))) {
+        errors.push(`Invalid brand.fontPreset "${cfg.brand.fontPreset}".`);
+      }
+      if (cfg.brand.rtlFontPreset && !(cfg.brand.rtlFontPreset in (presets.rtlFonts ?? {}))) {
+        errors.push(`Invalid brand.rtlFontPreset "${cfg.brand.rtlFontPreset}".`);
+      }
+      for (const hexKey of [
+        'primaryColor',
+        'accentColor',
+        'themeColor',
+        'darkThemeColor',
+        'backgroundColor',
+      ]) {
+        const val = cfg.brand[hexKey];
+        if (val !== undefined && val !== '' && !HEX_COLOR_RE.test(String(val).trim())) {
+          errors.push(`Invalid brand.${hexKey} "${val}". Expected 6-digit hex color like #4338ca.`);
+        }
+      }
+    }
+  }
+
+  if (cfg.business !== undefined) {
+    if (!isPlainObject(cfg.business)) {
+      errors.push('business must be an object.');
+    } else {
+      if (cfg.business.type && !VALID_BUSINESS_TYPES.has(cfg.business.type)) {
+        errors.push(`Invalid business.type "${cfg.business.type}".`);
+      }
+      for (const strKey of [
+        'legalName',
+        'phone',
+        'whatsapp',
+        'telegram',
+        'address',
+        'city',
+        'country',
+        'workingHours',
+        'mapEmbedUrl',
+      ]) {
+        if (cfg.business[strKey] !== undefined && typeof cfg.business[strKey] !== 'string') {
+          errors.push(`business.${strKey} must be a plain string (not a nested object).`);
+        }
+      }
+      if (cfg.business.geo !== undefined) {
+        if (
+          !isPlainObject(cfg.business.geo) ||
+          !Number.isFinite(Number(cfg.business.geo.lat)) ||
+          !Number.isFinite(Number(cfg.business.geo.lng))
+        ) {
+          errors.push('business.geo must have numeric lat and lng.');
+        }
+      }
+    }
+  }
+
+  if (cfg.analytics !== undefined && isPlainObject(cfg.analytics)) {
+    const a = cfg.analytics;
+    if (a.ga4Id && !/^G-[A-Z0-9]{4,20}$/i.test(String(a.ga4Id).trim())) {
+      errors.push(`Invalid analytics.ga4Id "${a.ga4Id}" (expected G-XXXXXXXXXX).`);
+    }
+    if (a.gtmId && !/^GTM-[A-Z0-9]{4,16}$/i.test(String(a.gtmId).trim())) {
+      errors.push(`Invalid analytics.gtmId "${a.gtmId}" (expected GTM-XXXXXXX).`);
+    }
+    if (a.clarityId && !/^[a-z0-9]{6,20}$/i.test(String(a.clarityId).trim())) {
+      errors.push(`Invalid analytics.clarityId "${a.clarityId}".`);
+    }
+    if (
+      a.umamiWebsiteId &&
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        String(a.umamiWebsiteId).trim()
+      )
+    ) {
+      errors.push(`Invalid analytics.umamiWebsiteId "${a.umamiWebsiteId}" (expected UUID).`);
+    }
+    if (a.umamiWebsiteId && !String(a.umamiSrc ?? '').trim()) {
+      errors.push('analytics.umamiSrc is required when analytics.umamiWebsiteId is set.');
+    }
+    if (a.plausibleSrc && String(a.plausibleSrc).trim() !== '') {
+      assertValidHttpUrl(a.plausibleSrc, 'analytics.plausibleSrc');
+    }
+    if (a.umamiSrc && String(a.umamiSrc).trim() !== '') {
+      assertValidHttpUrl(a.umamiSrc, 'analytics.umamiSrc');
+    }
+  }
+
+  if (cfg.cookies !== undefined && isPlainObject(cfg.cookies)) {
+    const ck = cfg.cookies;
+    if (ck.expirationDays !== undefined) {
+      const days = Number(ck.expirationDays);
+      if (!Number.isInteger(days) || days < 1 || days > 400) {
+        errors.push('cookies.expirationDays must be an integer between 1 and 400.');
+      }
+    }
+    if (ck.consentVersion !== undefined) {
+      const ver = Number(ck.consentVersion);
+      if (!Number.isInteger(ver) || ver < 1) {
+        errors.push('cookies.consentVersion must be a positive integer.');
+      }
+    }
+    if (ck.storageKey !== undefined && !/^[a-zA-Z0-9_-]+$/.test(String(ck.storageKey))) {
+      errors.push('cookies.storageKey must contain only ASCII letters, digits, hyphens, or underscores.');
+    }
+  }
+
+  if (cfg.api !== undefined && isPlainObject(cfg.api)) {
+    if (cfg.api.provider !== undefined && !VALID_API_PROVIDERS.has(cfg.api.provider)) {
+      errors.push(`Invalid api.provider "${cfg.api.provider}".`);
+    }
+    if (cfg.api.timeoutMs !== undefined) {
+      const ms = Number(cfg.api.timeoutMs);
+      if (!Number.isInteger(ms) || ms < 1000 || ms > 60000) {
+        errors.push('api.timeoutMs must be an integer between 1000 and 60000.');
+      }
+    }
+  }
+
+  if (cfg.redirects !== undefined) {
+    errors.push(...validateRedirects(cfg.redirects));
+  }
+
+  if (cfg.server !== undefined && isPlainObject(cfg.server)) {
+    if (cfg.server.host !== undefined && !String(cfg.server.host).trim()) {
+      errors.push('server.host cannot be empty.');
+    }
+    if (cfg.server.port !== undefined) {
+      const port = Number(cfg.server.port);
+      if (!Number.isInteger(port) || port < 1 || port > 65535) {
+        errors.push('server.port must be an integer between 1 and 65535.');
+      }
+    }
+  }
+
+  return errors;
+}
+
+function cleanConfigBeforeWrite(cfg) {
+  const next = structuredClone(cfg);
+
+  // Clear optional empty hex overrides so preset palette takes effect
+  if (isPlainObject(next.brand)) {
+    if (next.brand.primaryColor === '') delete next.brand.primaryColor;
+    if (next.brand.accentColor === '') delete next.brand.accentColor;
+    if (next.brand.darkThemeColor === '') delete next.brand.darkThemeColor;
+    if (isPlainObject(next.brand.logo)) {
+      if (next.brand.logo.width === '' || next.brand.logo.width === 0 || next.brand.logo.width === null) {
+        delete next.brand.logo.width;
+      }
+      if (next.brand.logo.height === '' || next.brand.logo.height === 0 || next.brand.logo.height === null) {
+        delete next.brand.logo.height;
+      }
+      if (!next.brand.logo.light && !next.brand.logo.dark && !next.brand.logo.alt && next.brand.logo.showText !== false) {
+        delete next.brand.logo;
+      }
+    }
+  }
+
+  if (isPlainObject(next.analytics)) {
+    if (next.analytics.plausibleSrc === '') delete next.analytics.plausibleSrc;
+    if (Object.keys(next.analytics).length === 0) delete next.analytics;
+  }
+
+  if (isPlainObject(next.business?.geo)) {
+    const lat = next.business.geo.lat;
+    const lng = next.business.geo.lng;
+    if (
+      lat === '' ||
+      lat === null ||
+      lat === undefined ||
+      lng === '' ||
+      lng === null ||
+      lng === undefined ||
+      !Number.isFinite(Number(lat)) ||
+      !Number.isFinite(Number(lng))
+    ) {
+      delete next.business.geo;
+    } else {
+      next.business.geo = { lat: Number(lat), lng: Number(lng) };
+    }
+  }
+
+  if (isPlainObject(next.ui)) {
+    if (isPlainObject(next.ui.navigation)) {
+      const hasPages = Array.isArray(next.ui.navigation.pages) && next.ui.navigation.pages.length > 0;
+      const hasCols =
+        Array.isArray(next.ui.navigation.footerColumns) && next.ui.navigation.footerColumns.length > 0;
+      if (!hasPages && !hasCols) {
+        delete next.ui.navigation;
+      }
+    }
+    if (Array.isArray(next.ui.homeSections) && next.ui.homeSections.length === 0) {
+      delete next.ui.homeSections;
+    }
+    if (isPlainObject(next.ui.topBanner)) {
+      for (const optKey of ['startsAt', 'endsAt', 'dismissTtlDays', 'heightPx']) {
+        if (next.ui.topBanner[optKey] === '' || next.ui.topBanner[optKey] === null) {
+          delete next.ui.topBanner[optKey];
+        }
+      }
+    }
+  }
+
+  if (isPlainObject(next.api) && Array.isArray(next.api.topics) && next.api.topics.length === 0) {
+    delete next.api.topics;
+  }
+
+  if (Array.isArray(next.redirects) && next.redirects.length === 0) {
+    delete next.redirects;
+  }
+
+  return next;
+}
+
 function listContentGroups(rootDir, collectionKey, locales) {
   const colDir = path.join(rootDir, 'src', 'content', collectionKey);
   if (!fs.existsSync(colDir)) return [];
@@ -165,7 +694,7 @@ function listContentGroups(rootDir, collectionKey, locales) {
       const target = fs.existsSync(mdxPath) ? mdxPath : fs.existsSync(mdPath) ? mdPath : null;
       if (!target) continue;
       const raw = fs.readFileSync(target, 'utf-8');
-      const { data } = parseFrontmatter(raw);
+      const { data, body } = parseFrontmatter(raw);
       localeInfo[loc] = {
         file: path.relative(rootDir, target),
         title: typeof data.title === 'string' ? data.title : '',
@@ -177,6 +706,8 @@ function listContentGroups(rootDir, collectionKey, locales) {
         flushTop: Boolean(data.flushTop),
         template: typeof data.template === 'string' ? data.template : undefined,
         sections: Array.isArray(data.sections) ? data.sections : [],
+        words: countWords(body),
+        todos: countTodos(raw),
       };
     }
 
@@ -231,16 +762,40 @@ function buildSectionSchemaCatalog(rootDir) {
   });
 }
 
+function enrichContentTypes(mergedConfig, rootDir) {
+  const baseList = readContentTypes(mergedConfig, rootDir);
+  const typesMap = mergedConfig.content?.types ?? {};
+  const clientCodeKeys = new Set(readClientCollectionKeys(rootDir));
+
+  return baseList.map((item) => {
+    const raw = typesMap[item.key] ?? {};
+    const source = CORE_TYPES.includes(item.key)
+      ? 'core'
+      : clientCodeKeys.has(item.key)
+        ? 'client-code'
+        : 'schema';
+    return {
+      ...item,
+      source,
+      icon: raw.icon,
+      perPage: raw.perPage,
+      sortBy: raw.sortBy,
+      sortOrder: raw.sortOrder,
+      card: raw.card,
+      search: raw.search,
+    };
+  });
+}
+
 export function getStudioState(rootDir = defaultRootDir) {
-  const mergedConfig = readMergedConfig(rootDir);
+  const coreConfig = readCoreConfig(rootDir);
   const clientConfig = readClientConfig(rootDir);
+  const cmsConfig = readCmsConfig(rootDir);
+  const coreAndClientConfig = readCoreAndClientConfig(rootDir);
+  const mergedConfig = readMergedConfig(rootDir);
   const localeConfig = readLocaleConfig(rootDir);
-  const contentTypes = readContentTypes(mergedConfig, rootDir);
-  const presetsPath = path.join(rootDir, 'src', 'libs', 'config', 'theme-presets.json');
-  const fallbackPresetsPath = path.join(defaultRootDir, 'src', 'libs', 'config', 'theme-presets.json');
-  const themePresets = JSON.parse(
-    fs.readFileSync(fs.existsSync(presetsPath) ? presetsPath : fallbackPresetsPath, 'utf-8')
-  );
+  const contentTypes = enrichContentTypes(mergedConfig, rootDir);
+  const themePresets = loadThemePresets(rootDir);
 
   const pages = listContentGroups(rootDir, 'pages', localeConfig.locales);
   const collections = {};
@@ -250,19 +805,51 @@ export function getStudioState(rootDir = defaultRootDir) {
   }
 
   const syncPreview = syncDictionaryKeys(rootDir, { dryRun: true, compile: false });
+  const coreMessages = {};
   const clientMessages = {};
+  const mergedMessages = {};
+  const todoByLocale = {};
+
   for (const loc of localeConfig.locales) {
+    coreMessages[loc] = stripSchema(readCoreMessages(loc, rootDir));
     clientMessages[loc] = stripSchema(readClientMessages(loc, rootDir));
+    mergedMessages[loc] = stripSchema(readMergedMessages(loc, rootDir));
+    todoByLocale[loc] = Object.entries(mergedMessages[loc])
+      .filter(([, val]) => typeof val === 'string' && val.includes('[TODO:'))
+      .map(([k]) => k);
   }
 
+  const pagesYmlPath = path.join(rootDir, '.pages.yml');
+  let pagesYmlStatus = {
+    exists: fs.existsSync(pagesYmlPath),
+    ymlChanged: false,
+    missingDirs: [],
+    raw: fs.existsSync(pagesYmlPath) ? fs.readFileSync(pagesYmlPath, 'utf-8') : '',
+  };
+  if (pagesYmlStatus.exists) {
+    try {
+      const check = syncCollections(rootDir, { check: true, dryRun: true });
+      pagesYmlStatus.ymlChanged = check.ymlChanged;
+      pagesYmlStatus.missingDirs = check.missingDirs;
+    } catch {
+      // Keep status readable even if custom .pages.yml anchors were altered manually
+    }
+  }
+
+  const projectMeta = readProjectMeta(rootDir);
   const starterSeeded = fs.existsSync(path.join(rootDir, 'starter-kit'));
 
   return {
     rootDir,
-    hasEnv: fs.existsSync(path.join(rootDir, '.env')),
+    hasEnv: projectMeta.env.exists,
     starterAvailable: starterSeeded,
+    projectMeta,
+    coreConfig,
+    coreAndClientConfig,
     config: mergedConfig,
     clientOverrides: clientConfig,
+    cmsOverrides: cmsConfig,
+    pagesYml: pagesYmlStatus,
     locales: {
       ...localeConfig,
       archived: listArchivedLocales(rootDir),
@@ -274,7 +861,10 @@ export function getStudioState(rootDir = defaultRootDir) {
     collections,
     sectionBlocks: buildSectionSchemaCatalog(rootDir),
     messages: {
+      coreByLocale: coreMessages,
       clientByLocale: clientMessages,
+      mergedByLocale: mergedMessages,
+      todoByLocale,
       missingTotal: syncPreview.totalAdded,
       missingByLocale: syncPreview.addedByLocale,
     },
@@ -292,13 +882,13 @@ function buildAllowListedCommand(action, payload, rootDir) {
       const args = [binScript('new-page.mjs'), group];
       if (payload.title) args.push(`--title=${String(payload.title)}`);
       if (payload.slug) args.push(`--slug=${String(payload.slug)}`);
-      if (payload.locale) args.push(`--locale=${assertSafeLocale(payload.locale)}`);
+      if (payload.locale) args.push(`--from=${assertSafeLocale(payload.locale)}`);
       if (payload.preset === 'landing') args.push('--preset=landing');
       if (payload.publish) args.push('--publish');
       return { cmd: node, args };
     }
     case 'remove:page': {
-      const group = assertSafeKey(payload.group, 'page group');
+      const group = assertSafeGroupKey(payload.group, 'page group');
       const args = [binScript('remove-page.mjs'), group, '--yes'];
       if (payload.locale) args.push(`--locale=${assertSafeLocale(payload.locale)}`);
       if (payload.noCleanNav) args.push('--no-clean-nav');
@@ -307,17 +897,19 @@ function buildAllowListedCommand(action, payload, rootDir) {
     case 'new:post': {
       const group = assertSafeKey(payload.group, 'post group');
       const args = [binScript('new-post.mjs'), group];
+      if (payload.collection) args.push(`--collection=${assertSafeKey(payload.collection, 'collection')}`);
       if (payload.title) args.push(`--title=${String(payload.title)}`);
       if (payload.slug) args.push(`--slug=${String(payload.slug)}`);
-      if (payload.locale) args.push(`--locale=${assertSafeLocale(payload.locale)}`);
+      if (payload.locale) args.push(`--from=${assertSafeLocale(payload.locale)}`);
       if (payload.categories) args.push(`--categories=${String(payload.categories)}`);
       if (payload.tags) args.push(`--tags=${String(payload.tags)}`);
       if (payload.publish) args.push('--publish');
       return { cmd: node, args };
     }
     case 'remove:post': {
-      const group = assertSafeKey(payload.group, 'post group');
+      const group = assertSafeGroupKey(payload.group, 'entry group');
       const args = [binScript('remove-post.mjs'), group, '--yes'];
+      if (payload.collection) args.push(`--collection=${assertSafeKey(payload.collection, 'collection')}`);
       if (payload.locale) args.push(`--locale=${assertSafeLocale(payload.locale)}`);
       return { cmd: node, args };
     }
@@ -326,7 +918,7 @@ function buildAllowListedCommand(action, payload, rootDir) {
       const group = assertSafeKey(payload.group, 'entry group');
       const args = [binScript('content-new.mjs'), type, group];
       if (payload.title) args.push(`--title=${String(payload.title)}`);
-      if (payload.locale) args.push(`--locale=${assertSafeLocale(payload.locale)}`);
+      if (payload.locale) args.push(`--from=${assertSafeLocale(payload.locale)}`);
       if (payload.publish) args.push('--publish');
       return { cmd: node, args };
     }
@@ -343,14 +935,19 @@ function buildAllowListedCommand(action, payload, rootDir) {
       if (payload.check) args.push('--check');
       return { cmd: node, args };
     }
+    case 'content:status': {
+      const args = [binScript('content-status.mjs')];
+      if (payload.type) args.push(`--type=${assertSafeKey(payload.type, 'content type')}`);
+      return { cmd: node, args };
+    }
     case 'i18n:add-lang': {
       const code = assertSafeLocale(payload.code);
       const args = [binScript('add-language.mjs'), code];
       if (payload.dir && ['ltr', 'rtl'].includes(payload.dir)) args.push(`--dir=${payload.dir}`);
       if (payload.name) args.push(`--name=${String(payload.name)}`);
-      if (payload.htmlLang) args.push(`--html-lang=${String(payload.htmlLang)}`);
-      if (payload.fontFamily) args.push(`--font=${String(payload.fontFamily)}`);
-      args.push('--compile');
+      if (payload.from) args.push(`--from=${assertSafeLocale(payload.from)}`);
+      args.push(payload.withContent === false ? '--no-content' : '--with-content');
+      args.push(payload.publish ? '--publish' : '--draft');
       return { cmd: node, args };
     }
     case 'i18n:remove-lang': {
@@ -373,11 +970,22 @@ function buildAllowListedCommand(action, payload, rootDir) {
       return { cmd: node, args };
     }
     case 'i18n:add': {
-      const key = String(payload.key ?? '').trim();
-      if (!SAFE_I18N_KEY_RE.test(key)) {
-        throw new Error('Invalid message key (use alphanumeric + underscore, starting with a letter or _).');
+      let category = String(payload.category ?? '').trim();
+      let bareKey = String(payload.key ?? '').trim();
+      if (!category && bareKey.includes('_')) {
+        const idx = bareKey.indexOf('_');
+        category = bareKey.slice(0, idx);
+        bareKey = bareKey.slice(idx + 1);
+      } else if (!category) {
+        category = 'custom';
       }
-      const args = [binScript('i18n-add.mjs'), key];
+      const fullKey = `${category}_${bareKey}`;
+      if (!category || !bareKey || !SAFE_I18N_KEY_RE.test(fullKey)) {
+        throw new Error(
+          'Invalid message key (use alphanumeric + underscore, e.g. category "hero" and key "cta_note").'
+        );
+      }
+      const args = [binScript('i18n-add.mjs'), `--category=${category}`, `--key=${bareKey}`];
       if (payload.translations && typeof payload.translations === 'object') {
         for (const [loc, val] of Object.entries(payload.translations)) {
           const safeLoc = assertSafeLocale(loc);
@@ -484,11 +1092,12 @@ async function runCommandSteps(spec, rootDir) {
 }
 
 function savePageSections(rootDir, payload) {
-  const group = assertSafeKey(payload.group, 'page group');
+  const group = assertSafeGroupKey(payload.group, 'page group');
   const locale = assertSafeLocale(payload.locale);
-  const groupDir = path.join(rootDir, 'src', 'content', 'pages', group);
-  const mdxPath = path.join(groupDir, `${locale}.mdx`);
-  const mdPath = path.join(groupDir, `${locale}.md`);
+  const pagesRoot = path.join(rootDir, 'src', 'content', 'pages');
+  const groupDir = assertConfinedPath(pagesRoot, path.join(pagesRoot, group));
+  const mdxPath = assertConfinedPath(groupDir, path.join(groupDir, `${locale}.mdx`));
+  const mdPath = assertConfinedPath(groupDir, path.join(groupDir, `${locale}.md`));
   const filePath = fs.existsSync(mdxPath) ? mdxPath : fs.existsSync(mdPath) ? mdPath : null;
   if (!filePath) {
     throw new Error(`Page "${group}" does not have a "${locale}" entry.`);
@@ -533,6 +1142,27 @@ function savePageSections(rootDir, payload) {
   return { file: path.relative(rootDir, filePath), data: nextData };
 }
 
+function assertSafeSvg(bytes) {
+  const text = bytes.toString('utf-8');
+  if (!/<svg[\s>]/i.test(text)) {
+    throw new Error('Uploaded SVG does not contain a valid <svg> root element.');
+  }
+  const unsafePatterns = [
+    /<script[\s>]/i,
+    /<foreignObject[\s>]/i,
+    /<iframe[\s>]/i,
+    /<object[\s>]/i,
+    /<embed[\s>]/i,
+    /\bon[a-z]+\s*=/i,
+    /(?:javascript|vbscript):/i,
+  ];
+  for (const re of unsafePatterns) {
+    if (re.test(text)) {
+      throw new Error('Rejected SVG logo containing unsafe active content (script/event/iframe).');
+    }
+  }
+}
+
 function saveUploadedLogo(rootDir, payload) {
   const variant = payload.variant === 'dark' ? 'dark' : 'light';
   const dataUrl = String(payload.dataUrl ?? '');
@@ -550,19 +1180,562 @@ function saveUploadedLogo(rootDir, payload) {
   if (bytes.length === 0 || bytes.length > 1024 * 1024) {
     throw new Error('Logo image must be between 1 byte and 1 MB.');
   }
+  if (mime === 'image/svg+xml') {
+    assertSafeSvg(bytes);
+  }
 
   const brandDir = path.join(rootDir, 'public', 'brand');
   fs.mkdirSync(brandDir, { recursive: true });
   const prefix = variant === 'dark' ? 'logo-dark' : 'logo';
   for (const existing of fs.readdirSync(brandDir)) {
     if (existing.startsWith(`${prefix}.`)) {
-      fs.rmSync(path.join(brandDir, existing), { force: true });
+      fs.rmSync(assertConfinedPath(brandDir, path.join(brandDir, existing)), { force: true });
     }
   }
   const destFile = `${prefix}${ext}`;
-  const destPath = path.join(brandDir, destFile);
+  const destPath = assertConfinedPath(brandDir, path.join(brandDir, destFile));
   fs.writeFileSync(destPath, bytes);
   return { publicPath: `/brand/${destFile}`, file: path.relative(rootDir, destPath) };
+}
+
+function validateAndNormalizeContentType(payload, existingMergedConfig, rootDir) {
+  if (!isPlainObject(payload)) {
+    throw new Error('Content type payload must be an object.');
+  }
+  const key = assertSafeKey(payload.key, 'content type key');
+  const localeConfig = readLocaleConfig(rootDir);
+  const existingTypes = readContentTypes(existingMergedConfig, rootDir);
+  const isPages = key === 'pages';
+
+  let base = '';
+  if (!isPages) {
+    base = String(payload.base ?? key).trim().replace(/^\/+|\/+$/g, '');
+    if (!SAFE_KEY_RE.test(base)) {
+      throw new Error(`Invalid base "${base}": expected lowercase letters, digits, or hyphens.`);
+    }
+    if (RESERVED_BASES.has(base) || localeConfig.locales.includes(base)) {
+      throw new Error(`Base "${base}" is reserved by core routes or active locales.`);
+    }
+    const collision = existingTypes.find((t) => t.key !== key && t.base === base);
+    if (collision) {
+      throw new Error(`Base "${base}" is already used by content type "${collision.key}".`);
+    }
+  }
+
+  const next = {
+    enabled: isPages ? true : payload.enabled !== false,
+    base,
+    index: isPages ? false : payload.index !== false,
+    paginated: isPages ? false : Boolean(payload.paginated),
+    feed: isPages ? false : Boolean(payload.feed),
+    nav: isPages ? true : payload.nav !== false,
+  };
+
+  const clientCodeKeys = new Set(readClientCollectionKeys(rootDir));
+  if (!CORE_TYPES.includes(key) && !clientCodeKeys.has(key)) {
+    next.schemaDriven = true;
+  } else if (payload.schemaDriven !== undefined) {
+    next.schemaDriven = Boolean(payload.schemaDriven);
+  }
+
+  if (payload.icon && String(payload.icon).trim()) {
+    next.icon = String(payload.icon).trim();
+  }
+  if (isPlainObject(payload.labels)) {
+    const labels = Object.fromEntries(
+      Object.entries(payload.labels)
+        .filter(([, v]) => typeof v === 'string' && v.trim() !== '')
+        .map(([k, v]) => [assertSafeLocale(k), v.trim()])
+    );
+    if (Object.keys(labels).length > 0) next.labels = labels;
+  }
+  if (isPlainObject(payload.descriptions)) {
+    const descriptions = Object.fromEntries(
+      Object.entries(payload.descriptions)
+        .filter(([, v]) => typeof v === 'string' && v.trim() !== '')
+        .map(([k, v]) => [assertSafeLocale(k), v.trim()])
+    );
+    if (Object.keys(descriptions).length > 0) next.descriptions = descriptions;
+  }
+  if (payload.perPage !== undefined && payload.perPage !== '' && payload.perPage !== null) {
+    const perPage = Number(payload.perPage);
+    if (!Number.isInteger(perPage) || perPage < 1) {
+      throw new Error('perPage must be a positive integer.');
+    }
+    next.perPage = perPage;
+  }
+  if (payload.sortBy && String(payload.sortBy).trim()) {
+    next.sortBy = String(payload.sortBy).trim();
+  }
+  if (payload.sortOrder && ['asc', 'desc'].includes(payload.sortOrder)) {
+    next.sortOrder = payload.sortOrder;
+  }
+
+  if (isPlainObject(payload.card)) {
+    const card = {};
+    if (payload.card.layout && VALID_CARD_LAYOUTS.has(payload.card.layout)) {
+      card.layout = payload.card.layout;
+    }
+    if (payload.card.aspectRatio && VALID_ASPECT_RATIOS.has(payload.card.aspectRatio)) {
+      card.aspectRatio = payload.card.aspectRatio;
+    }
+    if (payload.card.badgeField && String(payload.card.badgeField).trim()) {
+      card.badgeField = String(payload.card.badgeField).trim();
+    }
+    if (payload.card.badgeLimit !== undefined && payload.card.badgeLimit !== '') {
+      const bl = Number(payload.card.badgeLimit);
+      if (Number.isInteger(bl) && bl >= 0 && bl <= 10) card.badgeLimit = bl;
+    }
+    if (Array.isArray(payload.card.metaFields) && payload.card.metaFields.length > 0) {
+      card.metaFields = payload.card.metaFields.map((s) => String(s).trim()).filter(Boolean);
+    }
+    if (Object.keys(card).length > 0) next.card = card;
+  }
+
+  if (isPlainObject(payload.search)) {
+    const search = { enabled: payload.search.enabled !== false };
+    if (Array.isArray(payload.search.fields) && payload.search.fields.length > 0) {
+      search.fields = payload.search.fields.map((s) => String(s).trim()).filter(Boolean);
+    }
+    if (isPlainObject(payload.search.placeholder)) {
+      const ph = Object.fromEntries(
+        Object.entries(payload.search.placeholder)
+          .filter(([, v]) => typeof v === 'string' && v.trim() !== '')
+          .map(([k, v]) => [assertSafeLocale(k), v.trim()])
+      );
+      if (Object.keys(ph).length > 0) search.placeholder = ph;
+    }
+    next.search = search;
+  }
+
+  if (Array.isArray(payload.fields)) {
+    const seenNames = new Set();
+    const seenParams = new Set();
+    const cleanedFields = [];
+
+    for (const rawField of payload.fields) {
+      if (!isPlainObject(rawField)) continue;
+      const name = String(rawField.name ?? '').trim();
+      if (!SAFE_FIELD_NAME_RE.test(name)) {
+        throw new Error(`Invalid field name "${name}": expected valid identifier.`);
+      }
+      if (seenNames.has(name)) {
+        throw new Error(`Duplicate field name "${name}" in content type "${key}".`);
+      }
+      seenNames.add(name);
+
+      const type = String(rawField.type ?? 'string');
+      if (!VALID_FIELD_TYPES.has(type)) {
+        throw new Error(`Invalid field type "${type}" on field "${name}".`);
+      }
+
+      const f = {
+        name,
+        type,
+        required: Boolean(rawField.required),
+        cms: rawField.cms !== false,
+      };
+      if (rawField.label && String(rawField.label).trim()) f.label = String(rawField.label).trim();
+      if (isPlainObject(rawField.labels)) {
+        const fl = Object.fromEntries(
+          Object.entries(rawField.labels)
+            .filter(([, v]) => typeof v === 'string' && v.trim() !== '')
+            .map(([k, v]) => [assertSafeLocale(k), v.trim()])
+        );
+        if (Object.keys(fl).length > 0) f.labels = fl;
+      }
+      if (type === 'enum') {
+        const opts = Array.isArray(rawField.options)
+          ? rawField.options.map((o) => String(o).trim()).filter(Boolean)
+          : String(rawField.options ?? '')
+              .split(',')
+              .map((o) => o.trim())
+              .filter(Boolean);
+        if (opts.length === 0) {
+          throw new Error(`Enum field "${name}" must define at least one option.`);
+        }
+        f.options = opts;
+      }
+      if (rawField.default !== undefined && rawField.default !== '') f.default = rawField.default;
+      if (rawField.searchable !== undefined) f.searchable = Boolean(rawField.searchable);
+      if (
+        rawField.showOnCard === true ||
+        rawField.showOnCard === false ||
+        ['badge', 'meta', 'subtitle'].includes(rawField.showOnCard)
+      ) {
+        f.showOnCard = rawField.showOnCard;
+      }
+      if (rawField.showOnEntry !== undefined) f.showOnEntry = Boolean(rawField.showOnEntry);
+
+      if (isPlainObject(rawField.filter) && rawField.filter.enabled !== false && rawField.filter.mode) {
+        if (!VALID_FILTER_MODES.has(rawField.filter.mode)) {
+          throw new Error(`Invalid filter mode "${rawField.filter.mode}" on field "${name}".`);
+        }
+        const param = rawField.filter.param
+          ? String(rawField.filter.param).trim()
+          : name === 'categories'
+            ? 'category'
+            : name === 'tags'
+              ? 'tag'
+              : name;
+        if (!/^[a-zA-Z0-9_-]+$/.test(param)) {
+          throw new Error(`Invalid filter param "${param}" on field "${name}".`);
+        }
+        if (seenParams.has(param)) {
+          throw new Error(`Duplicate filter query param "${param}" on field "${name}".`);
+        }
+        seenParams.add(param);
+        const filterObj = {
+          enabled: true,
+          mode: rawField.filter.mode,
+          ...(rawField.filter.param ? { param } : {}),
+          ...(rawField.filter.label ? { label: String(rawField.filter.label).trim() } : {}),
+          ...(VALID_FILTER_SORTS.has(rawField.filter.sort) ? { sort: rawField.filter.sort } : {}),
+        };
+        f.filter = filterObj;
+      }
+
+      cleanedFields.push(f);
+    }
+    if (cleanedFields.length > 0) next.fields = cleanedFields;
+  }
+
+  return { key, config: next };
+}
+
+function saveContentType(rootDir, payload) {
+  const current = readCoreAndClientConfig(rootDir);
+  const { key, config: ctConfig } = validateAndNormalizeContentType(payload, current, rootDir);
+
+  current.content = current.content ?? {};
+  current.content.types = current.content.types ?? {};
+  current.content.types[key] = ctConfig;
+
+  const sparse = writeClientConfig(current, { rootDir, sparse: true });
+  const syncResult = syncCollections(rootDir, { check: false });
+  const i18nResult = syncDictionaryKeys(rootDir, { dryRun: false, compile: true });
+
+  return {
+    ok: true,
+    key,
+    typeConfig: ctConfig,
+    clientOverrides: sparse,
+    syncResult,
+    i18nSync: i18nResult,
+  };
+}
+
+function deleteContentType(rootDir, payload) {
+  const key = assertSafeKey(payload.key, 'content type key');
+  if (CORE_TYPES.includes(key)) {
+    throw new Error(`Core content type "${key}" cannot be deleted; disable it instead.`);
+  }
+  const clientCodeKeys = new Set(readClientCollectionKeys(rootDir));
+  if (clientCodeKeys.has(key)) {
+    throw new Error(
+      `Content type "${key}" is exported from client/content.ts; remove it there or disable it instead.`
+    );
+  }
+
+  const clientCfg = readClientConfig(rootDir);
+  if (isPlainObject(clientCfg.content?.types) && key in clientCfg.content.types) {
+    delete clientCfg.content.types[key];
+    if (Object.keys(clientCfg.content.types).length === 0) {
+      delete clientCfg.content.types;
+    }
+    if (clientCfg.content && Object.keys(clientCfg.content).length === 0) {
+      delete clientCfg.content;
+    }
+  }
+  const coreCfg = readCoreConfig(rootDir);
+  const nextMerged = deepMergeConfig(coreCfg, clientCfg);
+  const sparse = writeClientConfig(nextMerged, { rootDir, sparse: true });
+
+  if (payload.deleteFiles === true) {
+    const contentRoot = path.join(rootDir, 'src', 'content');
+    const colDir = assertConfinedPath(contentRoot, path.join(contentRoot, key));
+    if (fs.existsSync(colDir)) {
+      fs.rmSync(colDir, { recursive: true, force: true });
+    }
+  }
+
+  const syncResult = syncCollections(rootDir, { check: false });
+  return { ok: true, key, clientOverrides: sparse, syncResult };
+}
+
+function readContentEntry(rootDir, collectionRaw, groupRaw, localeRaw) {
+  const collection = assertSafeKey(collectionRaw, 'collection');
+  const known = new Set(getKnownTypes(rootDir));
+  if (!known.has(collection)) {
+    throw new Error(`Unknown collection "${collection}".`);
+  }
+  const group = assertSafeGroupKey(groupRaw, 'entry group');
+  const locale = assertSafeLocale(localeRaw);
+
+  const contentRoot = path.join(rootDir, 'src', 'content');
+  const colDir = assertConfinedPath(contentRoot, path.join(contentRoot, collection));
+  const groupDir = assertConfinedPath(colDir, path.join(colDir, group));
+  const mdxPath = assertConfinedPath(groupDir, path.join(groupDir, `${locale}.mdx`));
+  const mdPath = assertConfinedPath(groupDir, path.join(groupDir, `${locale}.md`));
+  const existingPath = fs.existsSync(mdxPath) ? mdxPath : fs.existsSync(mdPath) ? mdPath : null;
+
+  if (existingPath) {
+    const raw = fs.readFileSync(existingPath, 'utf-8');
+    const { data, body } = parseFrontmatter(raw);
+    return {
+      ok: true,
+      exists: true,
+      collection,
+      group,
+      locale,
+      file: path.relative(rootDir, existingPath),
+      frontmatter: data,
+      body: body.replace(/^\n+/, ''),
+    };
+  }
+
+  // Suggest defaults from defaultLocale or any existing file in groupDir
+  const { defaultLocale } = readLocaleConfig(rootDir);
+  let sourceData = {};
+  if (fs.existsSync(groupDir)) {
+    const candidates = [
+      path.join(groupDir, `${defaultLocale}.mdx`),
+      path.join(groupDir, `${defaultLocale}.md`),
+      ...fs
+        .readdirSync(groupDir)
+        .filter((f) => /\.(mdx|md)$/.test(f))
+        .map((f) => path.join(groupDir, f)),
+    ];
+    const sourceFile = candidates.find((c) => fs.existsSync(c));
+    if (sourceFile) {
+      sourceData = parseFrontmatter(fs.readFileSync(sourceFile, 'utf-8')).data;
+    }
+  }
+
+  const suggestedFrontmatter = {
+    title: sourceData.title ? `[TODO: ${locale}] ${sourceData.title}` : group,
+    slug: collection === 'pages' && group === 'home' ? '' : `${group}-${locale}`,
+    description: sourceData.description ? `[TODO: ${locale}] ${sourceData.description}` : '',
+    draft: true,
+    ...(sourceData.image ? { image: sourceData.image } : {}),
+    ...(collection === 'pages'
+      ? {
+          hero: sourceData.hero ?? 'none',
+          container: sourceData.container ?? 'canvas',
+          flushTop: Boolean(sourceData.flushTop),
+          ...(sourceData.template ? { template: sourceData.template } : {}),
+        }
+      : {}),
+    ...(collection === 'blog'
+      ? { publishedAt: sourceData.publishedAt || new Date().toISOString().slice(0, 10) }
+      : {}),
+  };
+
+  return {
+    ok: true,
+    exists: false,
+    collection,
+    group,
+    locale,
+    file: path.relative(rootDir, mdxPath),
+    frontmatter: suggestedFrontmatter,
+    body: '',
+  };
+}
+
+function saveContentEntry(rootDir, payload) {
+  if (!isPlainObject(payload)) throw new Error('Entry payload must be an object.');
+  const collection = assertSafeKey(payload.collection, 'collection');
+  const known = new Set(getKnownTypes(rootDir));
+  if (!known.has(collection)) {
+    throw new Error(`Unknown collection "${collection}".`);
+  }
+  const group = assertSafeGroupKey(payload.group, 'entry group');
+  const locale = assertSafeLocale(payload.locale);
+  if (!isPlainObject(payload.frontmatter)) {
+    throw new Error('frontmatter must be an object.');
+  }
+
+  const fm = { ...payload.frontmatter };
+  const title = String(fm.title ?? '').trim();
+  if (!title) throw new Error('frontmatter.title is required.');
+  fm.title = title;
+
+  const slug = fm.slug !== undefined ? String(fm.slug).trim() : '';
+  if (collection !== 'pages') {
+    if (!slug) throw new Error('Non-page entries require a non-empty frontmatter.slug.');
+    if (slug === 'page') throw new Error('Slug "page" is reserved for pagination.');
+  }
+  if (slug !== '' && (/^\/|\/$/.test(slug) || slug.includes('//'))) {
+    throw new Error(`Invalid slug "${slug}": omit leading/trailing "/" (use "" only for home).`);
+  }
+  fm.slug = slug;
+
+  if (collection === 'pages') {
+    if (fm.hero !== undefined && !SAFE_HERO_VALUES.has(fm.hero)) {
+      throw new Error(`Invalid page hero "${String(fm.hero)}".`);
+    }
+    if (fm.container !== undefined && !SAFE_CONTAINER_VALUES.has(fm.container)) {
+      throw new Error(`Invalid page container "${String(fm.container)}".`);
+    }
+    if (fm.sections !== undefined) {
+      if (!Array.isArray(fm.sections)) throw new Error('sections must be an array.');
+      const validSet = new Set(SECTION_BLOCKS_META.map((b) => b.name));
+      for (const sec of fm.sections) {
+        if (!isPlainObject(sec) || !validSet.has(sec.block)) {
+          throw new Error(`Invalid section block "${sec?.block ?? ''}".`);
+        }
+      }
+      if (fm.sections.length === 0) delete fm.sections;
+    }
+  }
+
+  if (collection === 'blog' && !fm.publishedAt) {
+    throw new Error('Blog entries require frontmatter.publishedAt (YYYY-MM-DD).');
+  }
+
+  // Strip empty optional scalar values while retaining meaningful booleans/0/empty home slug
+  for (const [k, v] of Object.entries(fm)) {
+    if (k === 'slug' || k === 'title' || k === 'draft') continue;
+    if (v === '' || v === undefined || v === null) delete fm[k];
+    if (Array.isArray(v) && v.length === 0 && !['stack'].includes(k)) delete fm[k];
+  }
+
+  const contentRoot = path.join(rootDir, 'src', 'content');
+  const colDir = assertConfinedPath(contentRoot, path.join(contentRoot, collection));
+  const groupDir = assertConfinedPath(colDir, path.join(colDir, group));
+  fs.mkdirSync(groupDir, { recursive: true });
+
+  const mdPath = assertConfinedPath(groupDir, path.join(groupDir, `${locale}.md`));
+  const mdxPath = assertConfinedPath(groupDir, path.join(groupDir, `${locale}.mdx`));
+  const targetPath = fs.existsSync(mdPath) && !fs.existsSync(mdxPath) ? mdPath : mdxPath;
+
+  const bodyText = typeof payload.body === 'string' ? payload.body.trimEnd() : '';
+  const formattedBody = bodyText ? `\n${bodyText.replace(/^\n+/, '')}\n` : '\n';
+
+  fs.writeFileSync(targetPath, stringifyFrontmatter(fm, formattedBody), 'utf-8');
+  return {
+    ok: true,
+    file: path.relative(rootDir, targetPath),
+    frontmatter: fm,
+  };
+}
+
+function saveMessagesUpdates(rootDir, payload) {
+  if (!isPlainObject(payload)) throw new Error('Messages payload must be an object.');
+  const localeConfig = readLocaleConfig(rootDir);
+  const activeSet = new Set(localeConfig.locales);
+  const updatedLocales = [];
+
+  if (isPlainObject(payload.updatesByLocale)) {
+    for (const [locRaw, updates] of Object.entries(payload.updatesByLocale)) {
+      const loc = assertSafeLocale(locRaw);
+      if (!activeSet.has(loc)) {
+        throw new Error(`Locale "${loc}" is not registered in client/locales.json.`);
+      }
+      if (!isPlainObject(updates)) continue;
+
+      const currentClient = stripSchema(readClientMessages(loc, rootDir));
+      const coreDict = stripSchema(readCoreMessages(loc, rootDir));
+      let changed = false;
+
+      for (const [key, value] of Object.entries(updates)) {
+        if (!SAFE_I18N_KEY_RE.test(key)) {
+          throw new Error(`Invalid dictionary key "${key}".`);
+        }
+        if (value === null) {
+          if (key in currentClient) {
+            delete currentClient[key];
+            changed = true;
+          }
+        } else if (typeof value === 'string' || Array.isArray(value)) {
+          // Avoid storing redundant identical override if core has exact same value
+          if (key in coreDict && JSON.stringify(coreDict[key]) === JSON.stringify(value)) {
+            if (key in currentClient) {
+              delete currentClient[key];
+              changed = true;
+            }
+          } else {
+            currentClient[key] = value;
+            changed = true;
+          }
+        }
+      }
+
+      if (changed) {
+        writeClientMessages(loc, currentClient, rootDir);
+        updatedLocales.push(loc);
+      }
+    }
+  }
+
+  if (Array.isArray(payload.deleteKeys) && payload.deleteKeys.length > 0) {
+    for (const loc of localeConfig.locales) {
+      const coreDict = stripSchema(readCoreMessages(loc, rootDir));
+      const currentClient = stripSchema(readClientMessages(loc, rootDir));
+      let changed = false;
+      for (const key of payload.deleteKeys) {
+        if (!SAFE_I18N_KEY_RE.test(key)) {
+          throw new Error(`Invalid dictionary key "${key}".`);
+        }
+        if (key in coreDict) {
+          throw new Error(`Key "${key}" is a core message key and cannot be deleted (only overridden).`);
+        }
+        if (key in currentClient) {
+          delete currentClient[key];
+          changed = true;
+        }
+      }
+      if (changed) {
+        writeClientMessages(loc, currentClient, rootDir);
+        if (!updatedLocales.includes(loc)) updatedLocales.push(loc);
+      }
+    }
+  }
+
+  compileMessages(rootDir);
+  return { ok: true, updatedLocales, compiled: true };
+}
+
+function saveLocaleMeta(rootDir, payload) {
+  if (!isPlainObject(payload)) throw new Error('Locale metadata payload must be an object.');
+  const locale = assertSafeLocale(payload.locale);
+  const localeConfig = readLocaleConfig(rootDir);
+  if (!localeConfig.locales.includes(locale)) {
+    throw new Error(`Locale "${locale}" is not registered in client/locales.json.`);
+  }
+
+  const currentMeta = { ...(localeConfig.metadata?.[locale] ?? {}) };
+  if (payload.name !== undefined) {
+    const name = String(payload.name).trim();
+    if (!name) throw new Error('Locale display name cannot be empty.');
+    currentMeta.name = name;
+  }
+  if (payload.dir !== undefined) {
+    if (!['ltr', 'rtl'].includes(payload.dir)) {
+      throw new Error('Locale dir must be "ltr" or "rtl".');
+    }
+    currentMeta.dir = payload.dir;
+  }
+  if (payload.htmlLang !== undefined) {
+    const hl = assertSafeLocale(payload.htmlLang);
+    currentMeta.htmlLang = hl;
+  }
+  if (payload.fontFamily !== undefined) {
+    const ff = String(payload.fontFamily).trim();
+    if (!ff || /[;{}]/.test(ff)) {
+      throw new Error('Invalid fontFamily value.');
+    }
+    currentMeta.fontFamily = ff;
+  }
+
+  localeConfig.metadata = {
+    ...localeConfig.metadata,
+    [locale]: currentMeta,
+  };
+  writeLocaleConfig(localeConfig, rootDir);
+  compileMessages(rootDir);
+  return { ok: true, locale, meta: currentMeta };
 }
 
 export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' } = {}) {
@@ -587,9 +1760,12 @@ export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' 
 
       // Ensure `/__studio` (without trailing slash) redirects to `/__studio/` so relative fetch('api/...') always resolves
       const origUrl = req.originalUrl || '';
-      if (origUrl === '/__studio') {
+      const origPath = origUrl.split('?')[0];
+      if (origPath === '/__studio') {
+        const queryIdx = origUrl.indexOf('?');
+        const suffix = queryIdx !== -1 ? origUrl.slice(queryIdx) : '';
         res.statusCode = 302;
-        res.setHeader('Location', '/__studio/');
+        res.setHeader('Location', `/__studio/${suffix}`);
         res.end();
         return;
       }
@@ -603,6 +1779,29 @@ export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' 
       if (req.method === 'GET' && pathname === '/api/state') {
         const state = getStudioState(rootDir);
         sendJson(res, 200, { ok: true, ...state });
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/api/content-entry') {
+        const collection = parsed.searchParams.get('collection') || '';
+        const group = parsed.searchParams.get('group') || '';
+        const locale = parsed.searchParams.get('locale') || '';
+        const result = readContentEntry(rootDir, collection, group, locale);
+        sendJson(res, 200, result);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/api/content-entry') {
+        const body = await readJsonBody(req);
+        const result = await withWriteLock(() => saveContentEntry(rootDir, body));
+        sendJson(res, 200, result);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/api/project-meta') {
+        const body = await readJsonBody(req);
+        const result = await withWriteLock(() => saveProjectMeta(rootDir, body));
+        sendJson(res, 200, result);
         return;
       }
 
@@ -631,22 +1830,70 @@ export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' 
         const replaceRaw = body.replace === true;
 
         const result = await withWriteLock(() => {
-          let nextFullConfig;
-          if (replaceRaw) {
-            nextFullConfig = deepMergeConfig(readCoreAndClientConfig(rootDir), {});
-            // Replace client overrides while preserving merged core defaults underneath
-            const coreSnapshot = JSON.parse(
-              fs.readFileSync(path.join(rootDir, 'app.config.json'), 'utf-8')
-            );
-            nextFullConfig = deepMergeConfig(coreSnapshot, partial);
-          } else {
-            const current = readCoreAndClientConfig(rootDir);
-            nextFullConfig = deepMergeConfig(current, partial);
+          const base = replaceRaw ? readCoreConfig(rootDir) : readCoreAndClientConfig(rootDir);
+          const nextFullConfig = cleanConfigBeforeWrite(deepMergeConfig(base, partial));
+          const errors = validateConfigObject(nextFullConfig, rootDir);
+          if (errors.length > 0) {
+            throw Object.assign(new Error(errors.join('\n')), { statusCode: 400 });
           }
           const sparse = writeClientConfig(nextFullConfig, { rootDir, sparse: true });
           return { ok: true, clientOverrides: sparse };
         });
 
+        sendJson(res, 200, result);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/api/cms-save') {
+        const body = await readJsonBody(req);
+        const reset = body.reset === true;
+        const rawCms = isPlainObject(body.cms) ? body.cms : isPlainObject(body) && !('reset' in body) ? body : {};
+
+        const result = await withWriteLock(() => {
+          const cmsPath = cmsConfigPathFor(rootDir);
+          fs.mkdirSync(path.dirname(cmsPath), { recursive: true });
+          if (reset) {
+            fs.writeFileSync(cmsPath, '{}\n', 'utf-8');
+            return { ok: true, cmsOverrides: {} };
+          }
+          const cleaned = sanitizeCmsConfig(rawCms);
+          const mergedCheck = deepMergeConfig(readCoreAndClientConfig(rootDir), cleaned);
+          const errors = validateConfigObject(mergedCheck, rootDir);
+          if (errors.length > 0) {
+            throw Object.assign(new Error(errors.join('\n')), { statusCode: 400 });
+          }
+          fs.writeFileSync(cmsPath, `${JSON.stringify(cleaned, null, 2)}\n`, 'utf-8');
+          return { ok: true, cmsOverrides: cleaned };
+        });
+
+        sendJson(res, 200, result);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/api/content-type-save') {
+        const body = await readJsonBody(req);
+        const result = await withWriteLock(() => saveContentType(rootDir, body));
+        sendJson(res, 200, result);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/api/content-type-delete') {
+        const body = await readJsonBody(req);
+        const result = await withWriteLock(() => deleteContentType(rootDir, body));
+        sendJson(res, 200, result);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/api/messages-save') {
+        const body = await readJsonBody(req);
+        const result = await withWriteLock(() => saveMessagesUpdates(rootDir, body));
+        sendJson(res, 200, result);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/api/locale-meta') {
+        const body = await readJsonBody(req);
+        const result = await withWriteLock(() => saveLocaleMeta(rootDir, body));
         sendJson(res, 200, result);
         return;
       }
@@ -668,8 +1915,19 @@ export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' 
       if (req.method === 'POST' && pathname === '/api/run-cli') {
         const body = await readJsonBody(req);
         const action = String(body.action ?? '').trim();
-        const cmdSpec = buildAllowListedCommand(action, body.payload ?? body, rootDir);
-        const result = await withWriteLock(() => runCommandSteps(cmdSpec, rootDir));
+        const payload = body.payload ?? body;
+        const cmdSpec = buildAllowListedCommand(action, payload, rootDir);
+        const result = await withWriteLock(async () => {
+          const cliRes = await runCommandSteps(cmdSpec, rootDir);
+          if (action === 'i18n:add-lang' && (payload.fontFamily || payload.htmlLang)) {
+            saveLocaleMeta(rootDir, {
+              locale: payload.code,
+              ...(payload.fontFamily ? { fontFamily: payload.fontFamily } : {}),
+              ...(payload.htmlLang ? { htmlLang: payload.htmlLang } : {}),
+            });
+          }
+          return cliRes;
+        });
         sendJson(res, 200, { ok: true, action, ...result });
         return;
       }
