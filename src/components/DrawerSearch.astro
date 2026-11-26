@@ -63,7 +63,7 @@ const { locale } = Astro.props;
 </div>
 
 <script>
-  import { executeSearch, formatSearchResultsStatus } from '@/libs/search/client';
+  import { bindSearchWidget } from '@/libs/search/widget';
 
   function setupDrawerSearch() {
     const root = document.querySelector<HTMLElement>('[data-drawer-search]');
@@ -76,92 +76,20 @@ const { locale } = Astro.props;
     if (root.dataset.bound === 'true') return;
     root.dataset.bound = 'true';
 
-    let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-    let requestId = 0;
-
-    function announceStatus(text: string) {
-      if (statusEl) statusEl.textContent = text;
-    }
-
-    function setMessage(text: string, announce = '') {
-      if (!resultsContainer) return;
-      resultsContainer.replaceChildren();
-      const p = document.createElement('p');
-      p.className = 'py-8 text-center text-xs text-muted';
-      p.textContent = text;
-      resultsContainer.append(p);
-      announceStatus(announce);
-    }
-
-    function createResultLink(href: string, title: string, excerpt: string) {
-      const link = document.createElement('a');
-      link.href = href;
-      link.className =
-        'block rounded-lg border border-transparent p-2.5 transition-colors hover:border-border hover:bg-surface-hover';
-
-      const h = document.createElement('div');
-      h.className = 'text-sm font-medium text-fg';
-      h.textContent = title;
-      link.append(h);
-
-      if (excerpt) {
-        const desc = document.createElement('p');
-        desc.className = 'mt-0.5 line-clamp-2 text-xs text-muted';
-        desc.textContent = excerpt;
-        link.append(desc);
-      }
-
-      link.addEventListener('click', () => {
-        // Dispatch custom close-drawer event
+    bindSearchWidget({
+      root,
+      input,
+      resultsContainer,
+      statusElement: statusEl,
+      clearButton: clearBtn,
+      maxResults: 8,
+      messageClass: 'py-8 text-center text-xs text-muted',
+      linkClass:
+        'block rounded-lg border border-transparent p-2.5 transition-colors hover:border-border hover:bg-surface-hover',
+      excerptClass: 'mt-0.5 line-clamp-2 text-xs text-muted',
+      onSelectResult: () => {
         document.dispatchEvent(new CustomEvent('app:close-drawer'));
-      });
-
-      return link;
-    }
-
-    async function handleSearch(query: string) {
-      const currentReq = ++requestId;
-      const locale = root?.dataset.locale || document.documentElement.lang || 'en';
-
-      if (!query.trim()) {
-        clearBtn?.classList.add('hidden');
-        setMessage(root?.dataset.placeholder || 'Type to search...');
-        return;
-      }
-
-      clearBtn?.classList.remove('hidden');
-
-      const results = await executeSearch(query, locale);
-      if (currentReq !== requestId) return;
-
-      if (results.length === 0) {
-        const noResultsMsg = root?.dataset.noResults || 'No results found.';
-        setMessage(noResultsMsg, noResultsMsg);
-        return;
-      }
-
-      resultsContainer?.replaceChildren(
-        ...results.map((item) => createResultLink(item.url, item.title, item.excerpt))
-      );
-      announceStatus(
-        formatSearchResultsStatus(
-          results.length,
-          root?.dataset.resultsCount || '{count} result(s) found.',
-          locale
-        )
-      );
-    }
-
-    input.addEventListener('input', () => {
-      const val = input.value;
-      if (searchTimeout) clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => handleSearch(val), 150);
-    });
-
-    clearBtn?.addEventListener('click', () => {
-      input.value = '';
-      input.focus();
-      handleSearch('');
+      },
     });
   }
 

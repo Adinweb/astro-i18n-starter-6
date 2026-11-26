@@ -233,10 +233,12 @@
   animation-name: trig-blur-in;
 }
 /* Adaptive lightweight fallback: strip blur filters on phones/tablets */
-body.chronotrig-mobile-lightweight .js [data-trig].blurIn:not(.trig) {
+body.chronotrig-mobile-lightweight .js [data-trig].blurIn:not(.trig),
+.js body.chronotrig-mobile-lightweight [data-trig].blurIn:not(.trig) {
   filter: none;
 }
-body.chronotrig-mobile-lightweight .js [data-trig].blurIn.trig {
+body.chronotrig-mobile-lightweight .js [data-trig].blurIn.trig,
+.js body.chronotrig-mobile-lightweight [data-trig].blurIn.trig {
   animation-name: trig-fade-up-sm;
 }
 
@@ -467,17 +469,27 @@ body.trig-scroll-up .js [data-trig].trig-directional.trig {
    flattening all reveals/timelines/pins instantaneously; engine-disabled states
    and print always flatten. */
 html[data-motion="reduced"] .js [data-trig],
+html.js[data-motion="reduced"] [data-trig],
 html[data-motion="reduced"] .js [data-parallax-stage][data-trig],
+html.js[data-motion="reduced"] [data-parallax-stage][data-trig],
 html[data-motion="reduced"] .js [data-trig-stagger] > *,
+html.js[data-motion="reduced"] [data-trig-stagger] > *,
 html[data-motion="reduced"] .js [data-trig-stagger] [data-trig-stagger-item],
+html.js[data-motion="reduced"] [data-trig-stagger] [data-trig-stagger-item],
 html[data-motion="reduced"] .js [data-trig-stagger] .trig-stagger-item,
+html.js[data-motion="reduced"] [data-trig-stagger] .trig-stagger-item,
 html[data-motion="reduced"] [data-trig-timeline],
 html[data-motion="reduced"] [data-trig-pin] [data-trig-pin-track],
 body.chronotrig-mobile-disabled .js [data-trig],
+.js body.chronotrig-mobile-disabled [data-trig],
 body.chronotrig-mobile-disabled .js [data-parallax-stage][data-trig],
+.js body.chronotrig-mobile-disabled [data-parallax-stage][data-trig],
 body.chronotrig-mobile-disabled .js [data-trig-stagger] > *,
+.js body.chronotrig-mobile-disabled [data-trig-stagger] > *,
 body.chronotrig-mobile-disabled .js [data-trig-stagger] [data-trig-stagger-item],
+.js body.chronotrig-mobile-disabled [data-trig-stagger] [data-trig-stagger-item],
 body.chronotrig-mobile-disabled .js [data-trig-stagger] .trig-stagger-item,
+.js body.chronotrig-mobile-disabled [data-trig-stagger] .trig-stagger-item,
 body.chronotrig-mobile-disabled [data-trig-timeline],
 body.chronotrig-mobile-disabled [data-trig-pin] [data-trig-pin-track] {
   opacity: 1 !important;
@@ -929,25 +941,45 @@ html:not([data-motion="full"]) body.chronotrig-mobile-disabled [data-parallax-st
 
 /* Reduced-motion, mobile-disabled, and print flattening for BentoGrid internals */
 html[data-motion="reduced"] .js [data-bento-card] [data-bento-emblem],
+html.js[data-motion="reduced"] [data-bento-card] [data-bento-emblem],
 html[data-motion="reduced"] .js [data-bento-card] [data-bento-orbit],
+html.js[data-motion="reduced"] [data-bento-card] [data-bento-orbit],
 html[data-motion="reduced"] .js [data-bento-card] [data-bento-radar],
+html.js[data-motion="reduced"] [data-bento-card] [data-bento-radar],
 html[data-motion="reduced"] .js [data-bento-card] [data-bento-metric],
+html.js[data-motion="reduced"] [data-bento-card] [data-bento-metric],
 html[data-motion="reduced"] .js [data-bento-card] [data-bento-chip],
+html.js[data-motion="reduced"] [data-bento-card] [data-bento-chip],
 html[data-motion="reduced"] .js [data-bento-card] [data-bento-dot],
+html.js[data-motion="reduced"] [data-bento-card] [data-bento-dot],
 html[data-motion="reduced"] .js [data-bento-card] [data-bento-bar],
+html.js[data-motion="reduced"] [data-bento-card] [data-bento-bar],
 html[data-motion="reduced"] .js [data-bento-card] [data-bento-pill],
+html.js[data-motion="reduced"] [data-bento-card] [data-bento-pill],
 html[data-motion="reduced"] .js [data-bento-card] [data-bento-window],
+html.js[data-motion="reduced"] [data-bento-card] [data-bento-window],
 html[data-motion="reduced"] .js [data-bento-card] [data-bento-row],
+html.js[data-motion="reduced"] [data-bento-card] [data-bento-row],
 body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-emblem],
+.js body.chronotrig-mobile-disabled [data-bento-card] [data-bento-emblem],
 body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-orbit],
+.js body.chronotrig-mobile-disabled [data-bento-card] [data-bento-orbit],
 body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-radar],
+.js body.chronotrig-mobile-disabled [data-bento-card] [data-bento-radar],
 body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-metric],
+.js body.chronotrig-mobile-disabled [data-bento-card] [data-bento-metric],
 body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-chip],
+.js body.chronotrig-mobile-disabled [data-bento-card] [data-bento-chip],
 body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-dot],
+.js body.chronotrig-mobile-disabled [data-bento-card] [data-bento-dot],
 body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-bar],
+.js body.chronotrig-mobile-disabled [data-bento-card] [data-bento-bar],
 body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-pill],
+.js body.chronotrig-mobile-disabled [data-bento-card] [data-bento-pill],
 body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-window],
-body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-row] {
+.js body.chronotrig-mobile-disabled [data-bento-card] [data-bento-window],
+body.chronotrig-mobile-disabled .js [data-bento-card] [data-bento-row],
+.js body.chronotrig-mobile-disabled [data-bento-card] [data-bento-row] {
   opacity: 1 !important;
   transform: none !important;
   animation: none !important;

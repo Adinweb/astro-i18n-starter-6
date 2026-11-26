@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import AxeBuilder from '@axe-core/playwright';
-import { chromium } from 'playwright';
+import { launchQaChromium } from './lib/chromium.mjs';
+import { resolveDistFile, startDistStaticServer } from './lib/static-server.mjs';
 import { readLocaleConfig } from './lib/locales.mjs';
 import { readMergedConfig } from './lib/config.mjs';
+import { parseFrontmatter } from './lib/frontmatter.mjs';
 import {
   DEFAULT_CLS_BUDGET,
   DEFAULT_JS_BUDGET_KB,
@@ -25,101 +26,50 @@ if (!fs.existsSync(distDir)) {
   process.exit(1);
 }
 
-const MIME_TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'application/javascript; charset=utf-8',
-  '.mjs': 'application/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.webp': 'image/webp',
-  '.avif': 'image/avif',
-  '.ico': 'image/x-icon',
-  '.json': 'application/json; charset=utf-8',
-  '.xml': 'application/xml; charset=utf-8',
-  '.txt': 'text/plain; charset=utf-8',
-  '.webmanifest': 'application/manifest+json; charset=utf-8',
-  '.woff': 'font/woff',
-  '.woff2': 'font/woff2',
-  '.wasm': 'application/wasm',
-};
-
-function resolveDistFile(urlPath) {
-  const cleanPath = decodeURIComponent(urlPath.split('?')[0] || '/');
-  const candidate = path.resolve(distDir, `.${cleanPath}`);
-  if (candidate !== distDir && !candidate.startsWith(distDir + path.sep)) return null;
-
-  if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-    return candidate;
-  }
-  const indexHtml = path.join(candidate, 'index.html');
-  if (fs.existsSync(indexHtml) && fs.statSync(indexHtml).isFile()) {
-    return indexHtml;
-  }
-  const htmlFile = `${candidate}.html`;
-  if (fs.existsSync(htmlFile) && fs.statSync(htmlFile).isFile()) {
-    return htmlFile;
-  }
-  return null;
-}
-
-function startStaticServer() {
-  return new Promise((resolve, reject) => {
-    const server = http.createServer((req, res) => {
-      const target = resolveDistFile(req.url || '/');
-      if (target) {
-        const ext = path.extname(target).toLowerCase();
-        res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
-        fs.createReadStream(target).pipe(res);
-        return;
-      }
-
-      const notFoundPage = path.join(distDir, '404.html');
-      if (fs.existsSync(notFoundPage)) {
-        res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
-        fs.createReadStream(notFoundPage).pipe(res);
-        return;
-      }
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('Not found');
-    });
-
-    server.on('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const addr = server.address();
-      if (!addr || typeof addr === 'string') {
-        reject(new Error('Failed to bind local QA server port'));
-        return;
-      }
-      resolve({ server, origin: `http://127.0.0.1:${addr.port}` });
-    });
-  });
-}
-
 const localeConfig = readLocaleConfig(rootDir);
 const mergedConfig = readMergedConfig(rootDir);
 const defaultLocale = localeConfig.defaultLocale || 'en';
 const secondaryLocale =
   localeConfig.locales.find((loc) => loc !== defaultLocale) ?? null;
 
+function resolvePageRoute(group, locale) {
+  const mdxPath = path.join(rootDir, 'src', 'content', 'pages', group, `${locale}.mdx`);
+  if (!fs.existsSync(mdxPath)) return null;
+  const { data } = parseFrontmatter(fs.readFileSync(mdxPath, 'utf-8'));
+  if (data.draft === true) return null;
+  const slug = typeof data.slug === 'string' ? data.slug.trim() : '';
+  if (!slug && group !== 'home') return null;
+  const prefix = locale === defaultLocale ? '' : `/${locale}`;
+  const candidate = slug ? `${prefix}/${slug}/` : `${prefix || ''}/`;
+  return resolveDistFile(distDir, candidate) ? candidate : null;
+}
+
 const candidateRoutes = ['/'];
-if (secondaryLocale) {
+if (secondaryLocale && resolveDistFile(distDir, `/${secondaryLocale}/`)) {
   candidateRoutes.push(`/${secondaryLocale}/`);
 }
-const blogCfg = mergedConfig.content?.types?.blog;
-if (blogCfg?.enabled !== false && blogCfg?.index !== false) {
-  const base = blogCfg?.base || 'blog';
-  const defaultBlogPath = `/${base}/`;
-  if (resolveDistFile(defaultBlogPath)) {
-    candidateRoutes.push(defaultBlogPath);
+
+for (const [typeKey, typeCfg] of Object.entries(mergedConfig.content?.types ?? {})) {
+  if (typeKey === 'pages' || typeCfg?.enabled === false || typeCfg?.index === false) continue;
+  const base = typeCfg?.base || typeKey;
+  const defaultPath = `/${base}/`;
+  if (resolveDistFile(distDir, defaultPath)) {
+    candidateRoutes.push(defaultPath);
   }
   if (secondaryLocale) {
-    const secBlogPath = `/${secondaryLocale}/${base}/`;
-    if (resolveDistFile(secBlogPath)) {
-      candidateRoutes.push(secBlogPath);
+    const secPath = `/${secondaryLocale}/${base}/`;
+    if (resolveDistFile(distDir, secPath)) {
+      candidateRoutes.push(secPath);
     }
+  }
+}
+
+for (const group of ['contact']) {
+  const defRoute = resolvePageRoute(group, defaultLocale);
+  if (defRoute && !candidateRoutes.includes(defRoute)) candidateRoutes.push(defRoute);
+  if (secondaryLocale) {
+    const secRoute = resolvePageRoute(group, secondaryLocale);
+    if (secRoute && !candidateRoutes.includes(secRoute)) candidateRoutes.push(secRoute);
   }
 }
 
@@ -144,12 +94,12 @@ console.log(
   `🌐 Running Playwright Layout QA across ${candidateRoutes.length} route(s), ${VIEWPORTS.length} viewports, ${THEMES.length} themes...\n`
 );
 
-const { server, origin } = await startStaticServer();
+const { server, origin } = await startDistStaticServer(distDir);
 let browser;
 
 try {
   try {
-    browser = await chromium.launch({ headless: true });
+    browser = await launchQaChromium();
   } catch (err) {
     console.error(
       `❌ Failed to launch Playwright Chromium (${err instanceof Error ? err.message : String(err)}). Run "npx playwright install chromium" if browser binaries are missing.`
@@ -192,8 +142,13 @@ try {
           }
         });
 
-        await page.goto(`${origin}${route}`, { waitUntil: 'load' });
-        await page.waitForTimeout(160);
+        await page.goto(`${origin}${encodeURI(route)}`, { waitUntil: 'load' });
+        await page.evaluate(async () => {
+          try {
+            await document.fonts?.ready;
+          } catch {}
+        });
+        await page.waitForTimeout(220);
 
         const label = `${route} [${viewport.name} ${viewport.width}x${viewport.height}, ${theme}]`;
 
@@ -339,8 +294,25 @@ try {
           `count=${perfAndDom.h1Count}`
         );
 
+        // Fast-forward active reveal animations only AFTER CLS has been captured
+        // so Axe evaluates settled contrast ratios rather than mid-fade opacity frames.
+        await page.evaluate(
+          () =>
+            new Promise((resolve) => {
+              document.documentElement.dataset.motion = 'reduced';
+              if (typeof document.getAnimations === 'function') {
+                for (const anim of document.getAnimations()) {
+                  try {
+                    anim.finish();
+                  } catch {}
+                }
+              }
+              requestAnimationFrame(() => requestAnimationFrame(resolve));
+            })
+        );
+
         const axeResult = await new AxeBuilder({ page })
-          .withTags(['wcag2a', 'wcag2aa'])
+          .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
           .analyze();
         const axeSummary = summarizeAxeViolations(axeResult.violations);
         record(
@@ -356,7 +328,6 @@ try {
 
   // Interactive flows (Search modal, Mobile Drawer, QuickContact vs CookieConsent, ImageGallery lightbox)
   {
-    // 1. Desktop Search modal open & close
     const desktopCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const desktopPage = await desktopCtx.newPage();
     await desktopPage.goto(`${origin}/`, { waitUntil: 'load' });
@@ -381,7 +352,6 @@ try {
     }
     await desktopCtx.close();
 
-    // 2. Mobile Drawer open/close + QuickContact vs CookieConsent behavior
     const mobileCtx = await browser.newContext({ viewport: { width: 375, height: 812 } });
     const mobilePage = await mobileCtx.newPage();
     await mobilePage.goto(`${origin}/`, { waitUntil: 'load' });
@@ -441,8 +411,7 @@ try {
     }
     await mobileCtx.close();
 
-    // 3. ImageGallerySection multi-slide lightbox (when /components/ is built)
-    if (resolveDistFile('/components/')) {
+    if (resolveDistFile(distDir, '/components/')) {
       const galleryCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
       const galleryPage = await galleryCtx.newPage();
       await galleryPage.goto(`${origin}/components/`, { waitUntil: 'load' });

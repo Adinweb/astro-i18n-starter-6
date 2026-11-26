@@ -8,6 +8,7 @@ import { getNavigationSlots } from '@/libs/config/navigation';
 import { absoluteUrl, BUSINESS_CONFIG, siteConfig, SOCIAL_CONFIG } from '@/libs/config/app';
 import { buildBrandThemeCss } from '@/libs/config/theme';
 import { buildOrganizationSchema } from '@/libs/content/schema';
+import { resolveLocalizedSiteName } from '@/libs/content/seo';
 import type { SocialCardContext } from '@/libs/content/social';
 import * as m from '@/paraglide/messages';
 import Seo from '@/components/Seo.astro';
@@ -24,11 +25,15 @@ import Button from '@/components/ui/Button.astro';
 import Icon from '@/components/ui/Icon.astro';
 import DrawerNavLink from '@/components/DrawerNavLink.astro';
 import DrawerSearch from '@/components/DrawerSearch.astro';
-import DevThemePreview from '@/components/DevThemePreview.astro';
 import LayoutHooks from '@client/LayoutHooks.astro';
+import 'virtual:brand-fonts';
 import '@/styles/global.css';
 import '@/styles/prose.css';
 import '@client/styles.css';
+
+const DevThemePreview = import.meta.env.DEV
+  ? (await import('@/components/DevThemePreview.astro')).default
+  : null;
 
 interface Props {
   title: string;
@@ -100,7 +105,7 @@ const {
 } = Astro.props;
 
 const meta = getLocaleMeta(locale);
-const siteName = siteConfig.name;
+const siteName = resolveLocalizedSiteName(siteConfig, locale, m.site_name({}, { locale }));
 const brandThemeCss = buildBrandThemeCss(siteConfig);
 const showLanguageSwitcher = siteConfig.ui.showLanguageSwitcher && LOCALES.length > 1;
 const { header: headerNav, drawer: drawerNav, footer: footerNav, legal: legalNav } =
@@ -452,7 +457,7 @@ const structuredData = schema ?? [
                         type="button"
                         class:list={[
                           'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap transition-colors hover:text-primary py-1 cursor-pointer focus-visible:outline-none',
-                          item.active && 'text-primary font-medium',
+                          item.active ? 'font-semibold text-fg underline decoration-primary decoration-2 underline-offset-4' : 'text-fg',
                         ]}
                         aria-expanded="false"
                         aria-haspopup="true"
@@ -541,7 +546,7 @@ const structuredData = schema ?? [
                     aria-current={item.active ? 'page' : undefined}
                     class:list={[
                       'shrink-0 whitespace-nowrap transition-colors hover:text-primary',
-                      item.active && 'text-primary font-medium',
+                      item.active ? 'font-semibold text-fg underline decoration-primary decoration-2 underline-offset-4' : 'text-fg',
                     ]}
                   >
                     {item.label}
@@ -1054,7 +1059,7 @@ const structuredData = schema ?? [
       )
     }
     <AnalyticsScripts />
-    {import.meta.env.DEV && <DevThemePreview locale={locale} />}
+    {DevThemePreview && <DevThemePreview locale={locale} />}
 
     <!--
       Icons a script has to place later. The code-copy button is built at

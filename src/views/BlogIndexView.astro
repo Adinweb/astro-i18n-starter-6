@@ -122,7 +122,7 @@ const ogContext: SocialCardContext = {
   nextUrl={nextHref}
   hero
 >
-  <PageHero slot="hero">
+  <PageHero slot="hero" persistKey="default">
     <HeroCopy title={m.nav_blog({}, { locale })} description={m.blog_index_description({}, { locale })}>
       <Breadcrumbs
         slot="prelude"
@@ -148,7 +148,6 @@ const ogContext: SocialCardContext = {
           <section
             class="space-y-4 rounded-2xl border border-border bg-surface/70 p-4 sm:p-5"
             data-blog-filter
-            hidden
             data-locale={locale}
             data-total-pages={String(totalPages)}
             data-per-page={String(perPage)}
@@ -297,6 +296,10 @@ const ogContext: SocialCardContext = {
 </BaseLayout>
 
 <style>
+  :global(html:not(.js)) [data-blog-filter] {
+    display: none;
+  }
+
   /* Card layout uses `flex`, so enforce the hidden state explicitly. */
   [data-post-card][hidden] {
     display: none !important;
@@ -307,8 +310,8 @@ const ogContext: SocialCardContext = {
   import { formatNumber } from '@/i18n/format';
   import { getLenis } from '@/scripts/lenis';
   import { refreshChronoTrig, replayStaggerGrid } from '@/scripts/chronotrig';
-  import { buildPageWindow, PAGE_GAP, paginate } from '@/libs/content/pagination';
-  import { buttonClasses } from '@/libs/ui/button';
+  import { paginate } from '@/libs/content/pagination';
+  import { cloneTemplateIcon, renderDynamicPagination } from '@/libs/ui/pagination-dom';
   import {
     NO_FILTERS,
     areBlogFiltersEqual,
@@ -350,25 +353,6 @@ const ogContext: SocialCardContext = {
     return request;
   }
 
-  /**
-   * Clones an icon the server already rendered into a `<template>`.
-   *
-   * The pager is built after a filter change, so its chevrons cannot come from
-   * the `Icon` component directly; cloning keeps one source of icon markup and
-   * keeps SVG paths out of this script.
-   */
-  function cloneIcon(name: string, size: number, extraClass = ''): SVGElement | null {
-    const template = document.querySelector<HTMLTemplateElement>(
-      `template[data-icon-template="${name}"]`
-    );
-    const node = template?.content.firstElementChild?.cloneNode(true) as SVGElement | null | undefined;
-    if (!node) return null;
-    node.setAttribute('width', String(size));
-    node.setAttribute('height', String(size));
-    if (extraClass) node.classList.add(...extraClass.split(' ').filter(Boolean));
-    return node;
-  }
-
   function createDynamicPostCard(
     post: SerializedBlogPost,
     showReadingTime: boolean
@@ -390,7 +374,7 @@ const ogContext: SocialCardContext = {
     const createCoverPlaceholder = () => {
       const placeholder = document.createElement('div');
       placeholder.className = 'flex h-full items-center justify-center text-primary/40';
-      const placeholderIcon = cloneIcon('globe', 44);
+      const placeholderIcon = cloneTemplateIcon('globe', 44);
       if (placeholderIcon) placeholder.append(placeholderIcon);
       return placeholder;
     };
@@ -560,75 +544,20 @@ const ogContext: SocialCardContext = {
 
     const renderFilteredPager = (currentPage: number, filteredTotalPages: number) => {
       if (!pagerWrap) return;
-      if (filteredTotalPages <= 1) {
-        pagerWrap.hidden = true;
-        return;
-      }
-
-      usingDynamicPager = true;
-      pagerWrap.hidden = false;
-      pagerWrap.replaceChildren();
-
-      const statusEl = document.createElement('p');
-      statusEl.className = 'text-center text-xs text-muted';
-      statusEl.dataset.blogPageStatus = '';
-      statusEl.textContent = pageStatusTemplate
-        .replace('{page}', formatNumber(currentPage, locale))
-        .replace('{totalPages}', formatNumber(filteredTotalPages, locale));
-
-      const nav = document.createElement('nav');
-      nav.className = 'flex flex-wrap items-center justify-center gap-1.5';
-      nav.setAttribute('aria-label', pagerAriaLabel);
-      nav.dataset.blogPagination = '';
-
-      const makePageHref = (targetPage: number) =>
-        `${baseHref}${buildBlogFilterQuery(filters, targetPage)}`;
-
-      if (currentPage > 1) {
-        const prev = document.createElement('a');
-        prev.href = makePageHref(currentPage - 1);
-        prev.dataset.dynamicPage = String(currentPage - 1);
-        prev.className = buttonClasses({ variant: 'secondary', size: 'sm' });
-        const prevIcon = cloneIcon('chevron-left', 16, 'shrink-0 rtl:rotate-180');
-        if (prevIcon) prev.append(prevIcon);
-        prev.append(document.createTextNode(prevLabel));
-        nav.append(prev);
-      }
-
-      for (const entry of buildPageWindow(currentPage, filteredTotalPages)) {
-        if (entry === PAGE_GAP) {
-          const gap = document.createElement('span');
-          gap.className = 'px-1 text-xs text-muted';
-          gap.setAttribute('aria-hidden', 'true');
-          gap.textContent = '…';
-          nav.append(gap);
-        } else {
-          const link = document.createElement('a');
-          link.href = makePageHref(entry);
-          link.dataset.dynamicPage = String(entry);
-          link.setAttribute(
-            'aria-label',
-            pageLabelTemplate.replace('{page}', formatNumber(entry, locale))
-          );
-          if (entry === currentPage) link.setAttribute('aria-current', 'page');
-          link.className = 'chip h-9 min-w-9 justify-center px-3 text-xs';
-          link.textContent = formatNumber(entry, locale);
-          nav.append(link);
-        }
-      }
-
-      if (currentPage < filteredTotalPages) {
-        const next = document.createElement('a');
-        next.href = makePageHref(currentPage + 1);
-        next.dataset.dynamicPage = String(currentPage + 1);
-        next.className = buttonClasses({ variant: 'secondary', size: 'sm' });
-        next.append(document.createTextNode(nextLabel));
-        const nextIcon = cloneIcon('chevron-right', 16, 'shrink-0 rtl:rotate-180');
-        if (nextIcon) next.append(nextIcon);
-        nav.append(next);
-      }
-
-      pagerWrap.append(statusEl, nav);
+      usingDynamicPager = renderDynamicPagination({
+        container: pagerWrap,
+        locale,
+        currentPage,
+        totalPages: filteredTotalPages,
+        makePageHref: (targetPage) => `${baseHref}${buildBlogFilterQuery(filters, targetPage)}`,
+        pageStatusTemplate,
+        pageLabelTemplate,
+        prevLabel,
+        nextLabel,
+        pagerAriaLabel,
+        statusDataKey: 'blogPageStatus',
+        navDataKey: 'blogPagination',
+      });
     };
 
     const render = async (

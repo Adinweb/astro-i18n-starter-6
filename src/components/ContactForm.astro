@@ -1,6 +1,7 @@
 ---
 import Button from '@/components/ui/Button.astro';
-import IconBox from '@/components/ui/IconBox.astro';
+import FormFallbackCard from '@/components/ui/FormFallbackCard.astro';
+import FormFeedbackBox from '@/components/ui/FormFeedbackBox.astro';
 import UiInput from '@/components/ui/UiInput.astro';
 import { DEFAULT_LOCALE, type Locale } from '@/i18n/locales';
 import { localizeHref } from '@/i18n/paths';
@@ -38,7 +39,6 @@ const resolvedRedirectTo = safeRawRedirect
 // never an environment variable name; the developer note below is rendered in
 // development only, where it is actually useful.
 const emailHref = siteConfig.contactEmail ? `mailto:${siteConfig.contactEmail}` : null;
-const isDev = import.meta.env.DEV;
 
 const copy = {
   kicker: m.contact_kicker({}, { locale }),
@@ -116,29 +116,14 @@ const topicOptions = API_CONFIG.topics?.length
     <div class:list={[!embedded && 'lg:col-span-7']}>
       {
         !isConfigured && (
-          <div class="rounded-2xl border border-dashed border-border bg-bg p-6 sm:p-8">
-            <IconBox icon="mail" size="lg" radius="xl" tone="primary" iconSize={20} class="size-11" />
-            <p class="mt-4 text-sm leading-relaxed text-muted">
-              {emailHref ? copy.fallbackDesc : copy.unavailableDesc}
-            </p>
-            {emailHref && (
-              <Button
-                href={emailHref}
-                variant="primary"
-                size="lg"
-                icon="mail"
-                iconPosition="start"
-                class="mt-5"
-              >
-                {copy.fallbackCta}
-              </Button>
-            )}
-            {isDev && (
-              <p class="mt-5 rounded-lg border border-border bg-surface p-3 text-xs leading-relaxed text-muted">
-                {copy.devNotice}
-              </p>
-            )}
-          </div>
+          <FormFallbackCard
+            emailHref={emailHref}
+            fallbackDesc={copy.fallbackDesc}
+            fallbackCta={copy.fallbackCta}
+            unavailableDesc={copy.unavailableDesc}
+            devNotice={copy.devNotice}
+            layout="stacked"
+          />
         )
       }
 
@@ -260,16 +245,7 @@ const topicOptions = API_CONFIG.topics?.length
           <div data-turnstile-container class="min-h-[65px]" />
         )}
 
-        <div
-          data-contact-feedback
-          role="status"
-          aria-live="polite"
-          hidden
-          class="rounded-xl border p-4 text-sm"
-        >
-          <p data-contact-feedback-title class="font-semibold"></p>
-          <p data-contact-feedback-body class="mt-0.5 text-xs leading-relaxed"></p>
-        </div>
+        <FormFeedbackBox kind="contact" />
 
         <div class="flex items-center justify-end pt-1">
           <Button
@@ -291,44 +267,20 @@ const topicOptions = API_CONFIG.topics?.length
 
 <script>
   import {
-    dispatchFormConversion,
     getInvalidContactFields,
-    resolvePostSubmitRedirect,
     submitContactInquiry,
     type ContactInquiryPayload,
-    type ContactSubmissionErrorCode,
     type FormProvider,
   } from '@/libs/api/client';
-
-  type TurnstileApi = {
-    render: (container: HTMLElement, options: Record<string, unknown>) => string;
-    reset: (widgetId?: string) => void;
-    getResponse: (widgetId?: string) => string | undefined;
-  };
-
-  function ensureTurnstileLoaded(): Promise<TurnstileApi | null> {
-    const win = window as unknown as { turnstile?: TurnstileApi; __turnstilePromise?: Promise<TurnstileApi | null> };
-    if (win.turnstile) return Promise.resolve(win.turnstile);
-    if (win.__turnstilePromise) return win.__turnstilePromise;
-
-    win.__turnstilePromise = new Promise((resolve) => {
-      const existing = document.querySelector<HTMLScriptElement>('script[data-turnstile-script]');
-      if (existing) {
-        existing.addEventListener('load', () => resolve(win.turnstile ?? null), { once: true });
-        existing.addEventListener('error', () => resolve(null), { once: true });
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-      script.async = true;
-      script.defer = true;
-      script.dataset.turnstileScript = 'true';
-      script.onload = () => resolve(win.turnstile ?? null);
-      script.onerror = () => resolve(null);
-      document.head.appendChild(script);
-    });
-    return win.__turnstilePromise;
-  }
+  import {
+    ensureTurnstileLoaded,
+    finalizeFormSuccess,
+    readFormErrorMessages,
+    renderFormFeedback,
+    setFormSubmitting,
+    type FeedbackElements,
+    type TurnstileApi,
+  } from '@/libs/api/form-dom';
 
   function initContactForms() {
     const forms = document.querySelectorAll<HTMLFormElement>('[data-contact-form-el]');
@@ -339,9 +291,11 @@ const topicOptions = API_CONFIG.topics?.length
 
       const submitBtn = form.querySelector<HTMLButtonElement>('[data-contact-submit]');
       const submitLabel = form.querySelector<HTMLElement>('[data-contact-submit-label]');
-      const feedback = form.querySelector<HTMLElement>('[data-contact-feedback]');
-      const feedbackTitle = form.querySelector<HTMLElement>('[data-contact-feedback-title]');
-      const feedbackBody = form.querySelector<HTMLElement>('[data-contact-feedback-body]');
+      const feedback: FeedbackElements = {
+        box: form.querySelector<HTMLElement>('[data-contact-feedback]'),
+        title: form.querySelector<HTMLElement>('[data-contact-feedback-title]'),
+        body: form.querySelector<HTMLElement>('[data-contact-feedback-body]'),
+      };
       const turnstileContainer = form.querySelector<HTMLElement>('[data-turnstile-container]');
       const turnstileSiteKey = form.dataset.turnstileSiteKey?.trim() ?? '';
       let turnstileWidgetId: string | null = null;
@@ -366,15 +320,7 @@ const topicOptions = API_CONFIG.topics?.length
       }
 
       const fieldNames = ['name', 'email', 'topic', 'message'] as const;
-
-      const errorMessages: Record<ContactSubmissionErrorCode, string> = {
-        validation: form.dataset.errValidation ?? '',
-        turnstile: form.dataset.errTurnstile ?? form.dataset.errValidation ?? '',
-        unconfigured: form.dataset.errUnconfigured ?? '',
-        timeout: form.dataset.errTimeout ?? '',
-        http: form.dataset.errHttp ?? '',
-        network: form.dataset.errNetwork ?? '',
-      };
+      const errorMessages = readFormErrorMessages(form.dataset);
 
       const fieldErrorMessages: Record<(typeof fieldNames)[number], string> = {
         name: form.dataset.errName ?? '',
@@ -410,17 +356,6 @@ const topicOptions = API_CONFIG.topics?.length
 
       form.addEventListener('input', handleFieldEdit);
       form.addEventListener('change', handleFieldEdit);
-
-      const renderFeedback = (kind: 'success' | 'error', title: string, body: string) => {
-        if (!feedback || !feedbackTitle || !feedbackBody) return;
-        feedback.hidden = false;
-        feedback.className =
-          kind === 'success'
-            ? 'rounded-xl border border-success/30 bg-success/10 p-4 text-sm text-fg'
-            : 'rounded-xl border border-error/30 bg-error/10 p-4 text-sm text-fg';
-        feedbackTitle.textContent = title;
-        feedbackBody.textContent = body;
-      };
 
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -462,16 +397,19 @@ const topicOptions = API_CONFIG.topics?.length
                 if (!firstInvalid) firstInvalid = el;
               }
             }
-            renderFeedback('error', errorMessages.validation, '');
+            renderFormFeedback(feedback, 'error', errorMessages.validation, '');
             firstInvalid?.focus();
             return;
           }
         }
 
-        submitBtn.disabled = true;
-        if (submitLabel && form.dataset.labelSubmitting) {
-          submitLabel.textContent = form.dataset.labelSubmitting;
-        }
+        setFormSubmitting(
+          submitBtn,
+          submitLabel,
+          true,
+          form.dataset.labelSubmit,
+          form.dataset.labelSubmitting
+        );
 
         const timeoutMs = Number.parseInt(form.dataset.timeoutMs ?? '10000', 10);
         const provider = (form.dataset.provider as FormProvider | undefined) ?? 'custom';
@@ -484,36 +422,32 @@ const topicOptions = API_CONFIG.topics?.length
           timeoutMs: Number.isFinite(timeoutMs) ? timeoutMs : 10000,
         });
 
-        submitBtn.disabled = false;
-        if (submitLabel && form.dataset.labelSubmit) {
-          submitLabel.textContent = form.dataset.labelSubmit;
-        }
+        setFormSubmitting(
+          submitBtn,
+          submitLabel,
+          false,
+          form.dataset.labelSubmit,
+          form.dataset.labelSubmitting
+        );
 
         if (result.ok) {
-          form.reset();
-          clearInvalidState();
-          turnstileToken = '';
-          if (turnstileWidgetId !== null) winTurnstile?.reset(turnstileWidgetId);
-          renderFeedback(
-            'success',
-            form.dataset.msgSuccessTitle ?? '',
-            form.dataset.msgSuccessDesc ?? ''
-          );
-          if (!honeypot.trim()) {
-            const redirectTarget = resolvePostSubmitRedirect(form.dataset.redirectTo);
-            dispatchFormConversion('contact', {
-              locale: payload.locale,
-              provider,
-              ...(redirectTarget ? { redirectTo: redirectTarget } : {}),
-            });
-            if (redirectTarget) {
-              window.location.assign(redirectTarget);
-            }
-          }
+          finalizeFormSuccess({
+            form,
+            kind: 'contact',
+            locale: payload.locale,
+            provider,
+            honeypot,
+            feedback,
+            onReset: () => {
+              clearInvalidState();
+              turnstileToken = '';
+              if (turnstileWidgetId !== null) winTurnstile?.reset(turnstileWidgetId);
+            },
+          });
           return;
         }
 
-        renderFeedback('error', errorMessages[result.errorCode] ?? '', '');
+        renderFormFeedback(feedback, 'error', errorMessages[result.errorCode] ?? '', '');
       });
     });
   }

@@ -41,6 +41,10 @@ const mode = isBuild ? 'production' : 'development';
 
 import { readMergedConfig } from './scripts/lib/config.mjs';
 import {
+  injectFontPreloadsIntoDist,
+  resolveBrandFontPackages,
+} from './scripts/lib/brand-fonts.mjs';
+import {
   buildHtaccessRedirects,
   buildNetlifyRedirects,
   buildNginxRedirects,
@@ -51,8 +55,34 @@ import {
 // origin, and the app all share the same port.
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const appConfig = readMergedConfig(rootDir);
+const themePresets = JSON.parse(
+  fs.readFileSync(path.join(rootDir, 'src', 'libs', 'config', 'theme-presets.json'), 'utf-8')
+);
 const { host: serverHost, port: serverPort } = appConfig.server;
 const fallbackSite = `http://localhost:${serverPort}`;
+
+function brandFontsPlugin() {
+  const virtualId = 'virtual:brand-fonts';
+  const resolvedVirtualId = `\0${virtualId}`;
+
+  return {
+    name: 'astro-brand-fonts',
+    /** @param {string} id */
+    resolveId(id) {
+      if (id === virtualId) return resolvedVirtualId;
+      return null;
+    },
+    /** @param {string} id */
+    load(id) {
+      if (id !== resolvedVirtualId) return null;
+      const includeAll = !isBuild;
+      const packages = resolveBrandFontPackages(themePresets, appConfig.brand, includeAll);
+      return packages.length > 0
+        ? packages.map((pkg) => `import '${pkg}';`).join('\n')
+        : '/* system font stack active; no external font packages required */';
+    },
+  };
+}
 
 function agencyRedirectsIntegration() {
   return {
@@ -67,6 +97,17 @@ function agencyRedirectsIntegration() {
         }
 
         const outDir = fileURLToPath(dir);
+        injectFontPreloadsIntoDist(outDir, themePresets, appConfig.brand);
+
+        // Strip dev-only scratch/AIStudio reference assets copied from `public/assets/aistudio`
+        // while keeping workspace dev folders intact.
+        const aistudioOutDir = path.join(outDir, 'assets', 'aistudio');
+        fs.rmSync(aistudioOutDir, { recursive: true, force: true });
+        const assetsOutDir = path.join(outDir, 'assets');
+        if (fs.existsSync(assetsOutDir) && fs.readdirSync(assetsOutDir).length === 0) {
+          fs.rmSync(assetsOutDir, { recursive: true, force: true });
+        }
+
         const netlifyPath = path.join(outDir, '_redirects');
         const deployDir = path.join(rootDir, 'deploy');
         const nginxPath = path.join(deployDir, 'nginx-redirects.conf');
@@ -216,7 +257,7 @@ export default defineConfig({
   },
   integrations: [mdx(), agencyRedirectsIntegration()],
   vite: {
-    plugins: [tailwindcss(), codeInspectorPlugin({ bundler: 'vite' })],
+    plugins: [brandFontsPlugin(), tailwindcss(), codeInspectorPlugin({ bundler: 'vite' })],
     resolve: {
       alias: {
         'astro/components': astroComponentsDir,

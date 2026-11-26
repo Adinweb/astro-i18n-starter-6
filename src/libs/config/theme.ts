@@ -198,7 +198,7 @@ export function resolveBrandTheme(input: BrandThemeInput): ResolvedBrandTheme {
     !input.accentColor;
 
   const lightPrimary: OklchColor = {
-    l: clamp(primaryOklch.l, 0.36, 0.56),
+    l: clamp(primaryOklch.l, 0.36, 0.48),
     c: clamp(primaryOklch.c, 0, 0.22),
     h: primaryOklch.h,
   };

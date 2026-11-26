@@ -40,11 +40,16 @@ interface Props {
   image?: ImageMetadata;
   headingId?: string | null;
   compact?: boolean;
+  /** Non-asset identifier used for `transition:persist` without referencing `background.src`. */
+  persistKey?: string;
 }
 
-const { image, headingId = HERO_TITLE_ID, compact = false } = Astro.props;
+const { image, headingId = HERO_TITLE_ID, compact = false, persistKey } = Astro.props;
 const background = image ?? DEFAULT_HERO_IMAGE;
-const backdropKey = compact ? undefined : `hero-backdrop:${background.src}`;
+const resolvedPersistKey =
+  persistKey ??
+  (image ? `${background.width}x${background.height}:${background.format}` : 'default');
+const backdropKey = compact ? undefined : `hero-backdrop:${resolvedPersistKey}`;
 
 /**
  * Renditions offered to the browser. The band is full-bleed, so `sizes` is

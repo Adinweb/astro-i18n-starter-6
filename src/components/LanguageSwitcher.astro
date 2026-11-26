@@ -21,11 +21,11 @@ const { currentLocale, alternates } = Astro.props;
     iconPosition="start"
     data-switcher-button
     aria-expanded="false"
-    aria-label={m.common_change_language({}, { locale: currentLocale })}
     title={m.common_change_language({}, { locale: currentLocale })}
     class="text-fg"
   >
     <span data-switcher-active lang="en" dir="ltr" class="text-xs font-semibold tracking-wide uppercase">{currentLocale}</span>
+    <span class="sr-only">— {m.common_change_language({}, { locale: currentLocale })}</span>
   </Button>
 
   <div

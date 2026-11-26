@@ -21,6 +21,7 @@ import {
   RTL_FONT_PRESET_KEYS,
   SOCIAL_CARD_MODES,
 } from './theme';
+import { isValidScheduleString, parseScheduleBound } from './schedule';
 
 /**
  * Typed access to the application's three-tier merged configuration
@@ -37,34 +38,6 @@ import {
 const hexColor = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, 'Use a six-digit hex colour, for example "#4338ca".');
-
-const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
-const ISO_DATETIME_RE =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?$/i;
-
-function isValidScheduleString(value: string): boolean {
-  const dateOnlyMatch = DATE_ONLY_RE.exec(value);
-  if (dateOnlyMatch) {
-    const year = Number(dateOnlyMatch[1]);
-    const month = Number(dateOnlyMatch[2]);
-    const day = Number(dateOnlyMatch[3]);
-    const dt = new Date(Date.UTC(year, month - 1, day));
-    return (
-      dt.getUTCFullYear() === year &&
-      dt.getUTCMonth() === month - 1 &&
-      dt.getUTCDate() === day
-    );
-  }
-  if (!ISO_DATETIME_RE.test(value)) return false;
-  return Number.isFinite(Date.parse(value));
-}
-
-function parseScheduleMs(value: string, bound: 'start' | 'end'): number {
-  if (DATE_ONLY_RE.test(value)) {
-    return Date.parse(bound === 'start' ? `${value}T00:00:00.000Z` : `${value}T23:59:59.999Z`);
-  }
-  return Date.parse(value);
-}
 
 const scheduleDateSchema = z
   .string()
@@ -130,9 +103,9 @@ const topBannerScheduleRefinement = (
   ctx: z.RefinementCtx
 ) => {
   if (val.startsAt && val.endsAt) {
-    const startMs = parseScheduleMs(val.startsAt, 'start');
-    const endMs = parseScheduleMs(val.endsAt, 'end');
-    if (Number.isFinite(startMs) && Number.isFinite(endMs) && endMs < startMs) {
+    const startMs = parseScheduleBound(val.startsAt, 'start');
+    const endMs = parseScheduleBound(val.endsAt, 'end');
+    if (startMs !== null && endMs !== null && endMs < startMs) {
       ctx.addIssue({
         code: 'custom',
         path: ['endsAt'],
@@ -504,6 +477,7 @@ export type AuthorProfile = z.infer<typeof authorProfileSchema>;
 export const appConfigSchema = z.object({
   site: z.object({
     name: z.string().min(1),
+    localizedNames: localizedStringMapSchema.optional().default({}),
     shortName: z.string().min(1),
     description: z.string().min(1),
     author: z.string().optional().default('Astro Starter Team'),
@@ -565,6 +539,7 @@ export const appConfig = appConfigSchema.parse(mergedRawConfig);
 const siteConfigSchema = z.object({
   url: z.url(),
   name: z.string().min(1),
+  localizedNames: localizedStringMapSchema.optional().default({}),
   shortName: z.string().min(1),
   description: z.string().min(1),
   author: z.string(),
@@ -610,6 +585,7 @@ export const siteConfig = siteConfigSchema.parse({
   // both read it from app.config.json.
   url: import.meta.env.SITE || `http://localhost:${appConfig.server.port}`,
   name: appConfig.site.name,
+  localizedNames: appConfig.site.localizedNames,
   shortName: appConfig.site.shortName,
   description: appConfig.site.description,
   author: appConfig.site.author,

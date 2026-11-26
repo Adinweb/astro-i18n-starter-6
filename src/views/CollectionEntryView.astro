@@ -18,6 +18,7 @@ import {
   type ContentTypeKey,
 } from '@/libs/content/types';
 import { parseContentEntryId } from '@/libs/content/entries';
+import { getCollectionCategoryLabel } from '@/libs/content/taxonomy';
 import { buildOgRouteKey, getSocialCard, type SocialCardContext } from '@/libs/content/social';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { formatYear } from '@/i18n/format';
@@ -41,7 +42,7 @@ interface Props {
 
 const { contentType, entry, locale, alternates, url } = Astro.props;
 const { Content } = await render(entry as CollectionEntry<'projects'>);
-const { title, description, image, client, year, link, stack = [] } = entry.data;
+const { title, description, image, client, year, link, stack = [], categories = [] } = entry.data;
 
 const typeLabel = getContentTypeLabel(contentType, locale);
 const indexHref = getContentTypeIndexHref(contentType, locale);
@@ -106,7 +107,7 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
   alternates={alternates}
   hero
 >
-  <PageHero slot="hero" image={image}>
+  <PageHero slot="hero" image={image} persistKey={image ? `${contentType}:${group}` : 'default'}>
     <HeroCopy title={title} description={description} size="post">
       <Fragment slot="prelude">
         <Breadcrumbs
@@ -124,9 +125,9 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
 
   <article class="w-full max-w-5xl">
     {
-      (metaItems.length > 0 || stack.length > 0 || link) && (
+      (metaItems.length > 0 || categories.length > 0 || stack.length > 0 || link) && (
         <div class="mb-8 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 border-b border-border pb-6 text-sm">
-          {(metaItems.length > 0 || stack.length > 0) && (
+          {(metaItems.length > 0 || categories.length > 0 || stack.length > 0) && (
             <dl class="flex flex-wrap items-baseline gap-x-8 gap-y-3">
               {metaItems.map((item) => (
                 <div class="flex items-baseline gap-2">
@@ -136,6 +137,24 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
                   <dd class="text-fg">{item.value}</dd>
                 </div>
               ))}
+              {categories.length > 0 && (
+                <div class="flex flex-wrap items-baseline gap-2">
+                  <dt class="text-xs font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
+                    {m.collection_filter_category({}, { locale })}
+                  </dt>
+                  <dd class="flex flex-wrap items-center gap-1.5">
+                    {categories.map((cat) => (
+                      <UiBadge
+                        label={getCollectionCategoryLabel(contentType, String(cat), locale)}
+                        variant="primary"
+                        size="sm"
+                        locale={locale}
+                        class="font-medium"
+                      />
+                    ))}
+                  </dd>
+                </div>
+              )}
               {stack.length > 0 && (
                 <div class="flex flex-wrap items-baseline gap-2">
                   <dt class="text-xs font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">

@@ -50,3 +50,30 @@ describe('astro.config.mjs — the astro/components alias', () => {
     expect((astroConfig as { trailingSlash?: string }).trailingSlash).toBe('ignore');
   });
 });
+
+import presets from './theme-presets.json';
+import { resolveBrandFontPackages } from '../../../scripts/lib/brand-fonts.mjs';
+
+describe('resolveBrandFontPackages — selective font bundle loading', () => {
+  it('loads only the active font presets in production build mode', () => {
+    expect(resolveBrandFontPackages(presets, { fontPreset: 'system', rtlFontPreset: 'vazirmatn' }, false)).toEqual([
+      '@fontsource-variable/vazirmatn',
+    ]);
+    expect(resolveBrandFontPackages(presets, { fontPreset: 'outfit', rtlFontPreset: 'noto-arabic' }, false)).toEqual([
+      '@fontsource-variable/outfit',
+      '@fontsource-variable/dm-sans',
+      '@fontsource-variable/noto-sans-arabic',
+    ]);
+  });
+
+  it('loads all 7 font packages in dev mode so DevThemePreview works instantaneously', () => {
+    const devPackages = resolveBrandFontPackages(
+      presets,
+      { fontPreset: 'system', rtlFontPreset: 'vazirmatn' },
+      true
+    );
+    expect(devPackages).toHaveLength(7);
+    expect(devPackages).toContain('@fontsource-variable/fraunces');
+    expect(devPackages).toContain('@fontsource-variable/noto-sans-arabic');
+  });
+});

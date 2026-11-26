@@ -2,6 +2,7 @@
 import type { ImageMetadata } from 'astro';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { getRssFeedHref, isBlogFeedEnabled } from '@/libs/content/service';
+import { formatDocumentTitle } from '@/libs/content/seo';
 import { getSocialCard, type SocialCardContext } from '@/libs/content/social';
 import { DEFAULT_LOCALE, LOCALES, getLocaleMeta, getOgLocale, type Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
@@ -69,9 +70,10 @@ const ogLocales = LOCALES.filter((loc) => loc !== locale)
 const jsonLd = schema
   ? JSON.stringify(schema).replace(/</g, '\\u003c')
   : undefined;
+const fullTitle = formatDocumentTitle(title, siteName);
 ---
 
-<title>{title} | {siteName}</title>
+<title>{fullTitle}</title>
 <meta name="description" content={resolvedDescription} />
 <link rel="canonical" href={canonicalUrl} />
 {prevUrl && <link rel="prev" href={absoluteUrl(prevUrl)} />}

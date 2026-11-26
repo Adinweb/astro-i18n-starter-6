@@ -11,6 +11,7 @@ import Icon from '@/components/ui/Icon.astro';
 import IconButton from '@/components/ui/IconButton.astro';
 import type { Locale } from '@/i18n/locales';
 import { siteConfig, type TopBannerItemConfig, type TopBannerVariant } from '@/libs/config/app';
+import { parseScheduleBound } from '@/libs/config/schedule';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
@@ -23,19 +24,6 @@ interface Props {
 const { locale, url = Astro.url.pathname } = Astro.props;
 const activeLocale = resolveComponentLocale(locale, Astro.url.pathname);
 const bannerConfig = siteConfig.ui.topBanner;
-
-const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
-function parseScheduleBound(value: string | undefined, bound: 'start' | 'end'): number | null {
-  const trimmed = value?.trim();
-  if (!trimmed) return null;
-  const target = DATE_ONLY_RE.test(trimmed)
-    ? bound === 'start'
-      ? `${trimmed}T00:00:00.000Z`
-      : `${trimmed}T23:59:59.999Z`
-    : trimmed;
-  const ms = Date.parse(target);
-  return Number.isFinite(ms) ? ms : null;
-}
 
 function pickLocalized(map: Record<string, string> | undefined, fallback: string | undefined): string {
   const localized = map?.[activeLocale]?.trim();
@@ -152,21 +140,21 @@ const VARIANT_CLASSES: Record<TopBannerVariant, string> = {
 };
 
 const BADGE_CLASSES: Record<TopBannerVariant, string> = {
-  primary: 'bg-primary-fg/20 text-primary-fg',
+  primary: 'bg-primary-fg text-primary',
   hero: 'bg-accent text-accent-fg',
-  surface: 'border border-primary/25 bg-primary/10 text-primary',
-  accent: 'bg-accent-fg/15 text-accent-fg',
-  info: 'bg-info-fg/20 text-info-fg',
-  warning: 'bg-warning-fg/15 text-warning-fg',
+  surface: 'border border-border bg-bg text-fg',
+  accent: 'bg-accent-fg text-accent',
+  info: 'bg-info-fg text-info',
+  warning: 'bg-warning-fg text-warning',
 };
 
 const CTA_CLASSES: Record<TopBannerVariant, string> = {
-  primary: 'bg-primary-fg/15 text-primary-fg hover:bg-primary-fg/25',
-  hero: 'bg-hero-fg/12 text-hero-fg hover:bg-hero-fg/22',
-  surface: 'bg-primary/10 text-primary hover:bg-primary/18',
-  accent: 'bg-accent-fg/12 text-accent-fg hover:bg-accent-fg/20',
-  info: 'bg-info-fg/15 text-info-fg hover:bg-info-fg/25',
-  warning: 'bg-warning-fg/12 text-warning-fg hover:bg-warning-fg/20',
+  primary: 'border border-current/35 bg-transparent text-primary-fg hover:bg-primary-fg hover:text-primary',
+  hero: 'border border-hero-fg/35 bg-hero-base text-hero-fg hover:bg-hero-fg hover:text-hero-base',
+  surface: 'border border-border bg-bg text-fg hover:bg-surface-hover',
+  accent: 'border border-current/35 bg-transparent text-accent-fg hover:bg-accent-fg hover:text-accent',
+  info: 'border border-current/35 bg-transparent text-info-fg hover:bg-info-fg hover:text-info',
+  warning: 'border border-current/35 bg-transparent text-warning-fg hover:bg-warning-fg hover:text-warning',
 };
 
 const dismissLabel = m.site_top_banner_dismiss({}, { locale: activeLocale });
@@ -257,19 +245,7 @@ const regionLabel = m.site_top_banner_region_label({}, { locale: activeLocale })
 }
 
 <script>
-  const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-  function parseScheduleBound(value: string | undefined, bound: 'start' | 'end'): number | null {
-    const trimmed = value?.trim();
-    if (!trimmed) return null;
-    const normalized = DATE_ONLY_RE.test(trimmed)
-      ? bound === 'start'
-        ? `${trimmed}T00:00:00.000Z`
-        : `${trimmed}T23:59:59.999Z`
-      : trimmed;
-    const ms = Date.parse(normalized);
-    return Number.isFinite(ms) ? ms : null;
-  }
+  import { parseScheduleBound } from '@/libs/config/schedule';
 
   function isBannerDismissed(banner: HTMLElement, nowMs: number): boolean {
     if (banner.dataset.dismissible !== 'true') return false;

@@ -8,7 +8,8 @@
  */
 import PageSection from '@/components/PageSection.astro';
 import Button from '@/components/ui/Button.astro';
-import IconBox from '@/components/ui/IconBox.astro';
+import FormFallbackCard from '@/components/ui/FormFallbackCard.astro';
+import FormFeedbackBox from '@/components/ui/FormFeedbackBox.astro';
 import { type Locale } from '@/i18n/locales';
 import { localizeHref } from '@/i18n/paths';
 import { resolveFormEndpoint, resolvePostSubmitRedirect } from '@/libs/api/client';
@@ -68,7 +69,6 @@ const resolvedRedirectTo = safeRawRedirect
   : '';
 
 const emailHref = siteConfig.contactEmail ? `mailto:${siteConfig.contactEmail}` : null;
-const isDev = import.meta.env.DEV;
 
 const copy = {
   kicker: eyebrow ?? m.newsletter_kicker({}, { locale: activeLocale }),
@@ -125,33 +125,14 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
       <div class="lg:col-span-6">
         {
           !isConfigured && (
-            <div class="rounded-2xl border border-dashed border-border bg-surface/60 p-5 sm:p-6">
-              <div class="flex items-start gap-3">
-                <IconBox icon="mail" size="md" radius="xl" tone="primary" iconSize={18} />
-                <div class="min-w-0">
-                  <p class="text-sm leading-relaxed text-muted">
-                    {emailHref ? copy.fallbackDesc : copy.unavailableDesc}
-                  </p>
-                  {emailHref && (
-                    <Button
-                      href={emailHref}
-                      variant="primary"
-                      size="md"
-                      icon="mail"
-                      iconPosition="start"
-                      class="mt-4"
-                    >
-                      {copy.fallbackCta}
-                    </Button>
-                  )}
-                  {isDev && (
-                    <p class="mt-4 rounded-lg border border-border bg-surface p-3 text-xs leading-relaxed text-muted">
-                      {copy.devNotice}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <FormFallbackCard
+              emailHref={emailHref}
+              fallbackDesc={copy.fallbackDesc}
+              fallbackCta={copy.fallbackCta}
+              unavailableDesc={copy.unavailableDesc}
+              devNotice={copy.devNotice}
+              layout="inline"
+            />
           )
         }
 
@@ -207,7 +188,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
                   required
                   autocomplete="email"
                   placeholder={copy.emailPlaceholder}
-                  class="min-w-0 flex-1 rounded-full border border-border bg-surface px-4 py-2.5 text-start text-sm text-fg placeholder:text-muted/70 focus:border-primary focus:outline-none aria-[invalid=true]:border-error rtl:text-end"
+                  class="min-w-0 flex-1 rounded-full border border-border bg-surface px-4 py-2.5 text-start text-sm text-fg placeholder:text-muted focus:border-primary focus:outline-none aria-[invalid=true]:border-error rtl:text-end"
                 />
 
                 <Button
@@ -222,16 +203,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
                 </Button>
               </div>
 
-              <div
-                data-newsletter-feedback
-                role="status"
-                aria-live="polite"
-                hidden
-                class="rounded-xl border p-3.5 text-sm"
-              >
-                <p data-newsletter-feedback-title class="font-semibold"></p>
-                <p data-newsletter-feedback-body class="mt-0.5 text-xs leading-relaxed"></p>
-              </div>
+              <FormFeedbackBox kind="newsletter" />
             </form>
           )
         }
@@ -242,13 +214,17 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
 
 <script>
   import {
-    dispatchFormConversion,
-    resolvePostSubmitRedirect,
     submitNewsletterSubscription,
-    type ContactSubmissionErrorCode,
     type FormProvider,
     type NewsletterSubscriptionPayload,
   } from '@/libs/api/client';
+  import {
+    finalizeFormSuccess,
+    readFormErrorMessages,
+    renderFormFeedback,
+    setFormSubmitting,
+    type FeedbackElements,
+  } from '@/libs/api/form-dom';
 
   function initNewsletterForms() {
     const forms = document.querySelectorAll<HTMLFormElement>('[data-newsletter-form-el]');
@@ -260,29 +236,12 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
       const emailInput = form.querySelector<HTMLInputElement>('input[name="email"]');
       const submitBtn = form.querySelector<HTMLButtonElement>('[data-newsletter-submit]');
       const submitLabel = form.querySelector<HTMLElement>('[data-newsletter-submit-label]');
-      const feedback = form.querySelector<HTMLElement>('[data-newsletter-feedback]');
-      const feedbackTitle = form.querySelector<HTMLElement>('[data-newsletter-feedback-title]');
-      const feedbackBody = form.querySelector<HTMLElement>('[data-newsletter-feedback-body]');
-
-      const errorMessages: Record<ContactSubmissionErrorCode, string> = {
-        validation: form.dataset.errValidation ?? '',
-        turnstile: form.dataset.errValidation ?? '',
-        unconfigured: form.dataset.errUnconfigured ?? '',
-        timeout: form.dataset.errTimeout ?? '',
-        http: form.dataset.errHttp ?? '',
-        network: form.dataset.errNetwork ?? '',
+      const feedback: FeedbackElements = {
+        box: form.querySelector<HTMLElement>('[data-newsletter-feedback]'),
+        title: form.querySelector<HTMLElement>('[data-newsletter-feedback-title]'),
+        body: form.querySelector<HTMLElement>('[data-newsletter-feedback-body]'),
       };
-
-      const renderFeedback = (kind: 'success' | 'error', title: string, body: string) => {
-        if (!feedback || !feedbackTitle || !feedbackBody) return;
-        feedback.hidden = false;
-        feedback.className =
-          kind === 'success'
-            ? 'rounded-xl border border-success/30 bg-success/10 p-3.5 text-sm text-fg'
-            : 'rounded-xl border border-error/30 bg-error/10 p-3.5 text-sm text-fg';
-        feedbackTitle.textContent = title;
-        feedbackBody.textContent = body;
-      };
+      const errorMessages = readFormErrorMessages(form.dataset);
 
       emailInput?.addEventListener('input', () => {
         emailInput.removeAttribute('aria-invalid');
@@ -301,10 +260,13 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
           honeypot,
         };
 
-        submitBtn.disabled = true;
-        if (submitLabel && form.dataset.labelSubmitting) {
-          submitLabel.textContent = form.dataset.labelSubmitting;
-        }
+        setFormSubmitting(
+          submitBtn,
+          submitLabel,
+          true,
+          form.dataset.labelSubmit,
+          form.dataset.labelSubmitting
+        );
 
         const timeoutMs = Number.parseInt(form.dataset.timeoutMs ?? '10000', 10);
         const provider = (form.dataset.provider as FormProvider | undefined) ?? 'custom';
@@ -316,31 +278,26 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
           timeoutMs: Number.isFinite(timeoutMs) ? timeoutMs : 10000,
         });
 
-        submitBtn.disabled = false;
-        if (submitLabel && form.dataset.labelSubmit) {
-          submitLabel.textContent = form.dataset.labelSubmit;
-        }
+        setFormSubmitting(
+          submitBtn,
+          submitLabel,
+          false,
+          form.dataset.labelSubmit,
+          form.dataset.labelSubmitting
+        );
 
         if (result.ok) {
-          form.reset();
-          emailInput?.removeAttribute('aria-invalid');
-          renderFeedback(
-            'success',
-            form.dataset.msgSuccessTitle ?? '',
-            form.dataset.msgSuccessDesc ?? ''
-          );
-          if (!honeypot.trim()) {
-            const redirectTarget = resolvePostSubmitRedirect(form.dataset.redirectTo);
-            dispatchFormConversion('newsletter', {
-              locale: payload.locale,
-              provider,
-              ...(payload.source ? { source: payload.source } : {}),
-              ...(redirectTarget ? { redirectTo: redirectTarget } : {}),
-            });
-            if (redirectTarget) {
-              window.location.assign(redirectTarget);
-            }
-          }
+          finalizeFormSuccess({
+            form,
+            kind: 'newsletter',
+            locale: payload.locale,
+            provider,
+            source: payload.source,
+            honeypot,
+            feedback,
+            feedbackPadding: 'p-3.5',
+            onReset: () => emailInput?.removeAttribute('aria-invalid'),
+          });
           return;
         }
 
@@ -349,7 +306,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
           emailInput?.focus();
         }
 
-        renderFeedback('error', errorMessages[result.errorCode] ?? '', '');
+        renderFormFeedback(feedback, 'error', errorMessages[result.errorCode] ?? '', '', 'p-3.5');
       });
     });
   }

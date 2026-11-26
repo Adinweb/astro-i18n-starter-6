@@ -35,49 +35,59 @@
     "system": {
       "label": "System Sans",
       "display": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
-      "body": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif"
+      "body": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
+      "packages": []
     },
     "jakarta": {
       "label": "Jakarta Geometric",
       "display": "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'Avenir Next', 'Segoe UI', system-ui, sans-serif",
-      "body": "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'DM Sans', 'Segoe UI', system-ui, sans-serif"
+      "body": "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'DM Sans', 'Segoe UI', system-ui, sans-serif",
+      "packages": ["@fontsource-variable/plus-jakarta-sans"]
     },
     "manrope": {
       "label": "Manrope Neo-Grotesk",
       "display": "'Manrope Variable', 'Manrope', 'Segoe UI', system-ui, sans-serif",
-      "body": "'Manrope Variable', 'Manrope', 'Public Sans', system-ui, sans-serif"
+      "body": "'Manrope Variable', 'Manrope', 'Public Sans', system-ui, sans-serif",
+      "packages": ["@fontsource-variable/manrope"]
     },
     "outfit": {
       "label": "Outfit Modern",
       "display": "'Outfit Variable', 'Outfit', 'Avenir Next', system-ui, sans-serif",
-      "body": "'DM Sans Variable', 'DM Sans', 'Segoe UI', system-ui, sans-serif"
+      "body": "'DM Sans Variable', 'DM Sans', 'Segoe UI', system-ui, sans-serif",
+      "packages": ["@fontsource-variable/outfit", "@fontsource-variable/dm-sans"]
     },
     "editorial": {
       "label": "Editorial Serif + Sans",
       "display": "'Fraunces Variable', 'Fraunces', 'Playfair Display', Georgia, 'Times New Roman', serif",
-      "body": "'DM Sans Variable', 'DM Sans', 'Public Sans', system-ui, sans-serif"
+      "body": "'DM Sans Variable', 'DM Sans', 'Public Sans', system-ui, sans-serif",
+      "packages": ["@fontsource-variable/fraunces", "@fontsource-variable/dm-sans"]
     }
   },
   "rtlFonts": {
     "vazirmatn": {
       "label": "Vazirmatn (Persian/Arabic Sans)",
-      "stack": "'Vazirmatn Variable', 'Vazirmatn', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif"
+      "stack": "'Vazirmatn Variable', 'Vazirmatn', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif",
+      "packages": ["@fontsource-variable/vazirmatn"]
     },
     "noto-arabic": {
       "label": "Noto Sans Arabic",
-      "stack": "'Noto Sans Arabic Variable', 'Noto Sans Arabic', 'Geeza Pro', 'Al Bayan', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif"
+      "stack": "'Noto Sans Arabic Variable', 'Noto Sans Arabic', 'Geeza Pro', 'Al Bayan', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif",
+      "packages": ["@fontsource-variable/noto-sans-arabic"]
     },
     "iransans": {
       "label": "IRANSansX (Commercial Stack + Vazirmatn Fallback)",
-      "stack": "'IRANSansX', 'IRANSans', 'Vazirmatn Variable', 'Vazirmatn', system-ui, -apple-system, Tahoma, sans-serif"
+      "stack": "'IRANSansX', 'IRANSans', 'Vazirmatn Variable', 'Vazirmatn', system-ui, -apple-system, Tahoma, sans-serif",
+      "packages": ["@fontsource-variable/vazirmatn"]
     },
     "yekan-bakh": {
       "label": "Yekan Bakh (Commercial Stack + Vazirmatn Fallback)",
-      "stack": "'Yekan Bakh', 'YekanBakh', 'Vazirmatn Variable', 'Vazirmatn', system-ui, -apple-system, Tahoma, sans-serif"
+      "stack": "'Yekan Bakh', 'YekanBakh', 'Vazirmatn Variable', 'Vazirmatn', system-ui, -apple-system, Tahoma, sans-serif",
+      "packages": ["@fontsource-variable/vazirmatn"]
     },
     "peyda": {
       "label": "Peyda (Commercial Editorial + Vazirmatn Fallback)",
-      "stack": "'Peyda', 'PeydaWeb', 'Vazirmatn Variable', 'Vazirmatn', system-ui, -apple-system, Tahoma, sans-serif"
+      "stack": "'Peyda', 'PeydaWeb', 'Vazirmatn Variable', 'Vazirmatn', system-ui, -apple-system, Tahoma, sans-serif",
+      "packages": ["@fontsource-variable/vazirmatn"]
     }
   }
 }

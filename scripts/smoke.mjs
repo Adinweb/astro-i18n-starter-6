@@ -717,6 +717,14 @@ for (const [typeKey, typeCfg] of Object.entries(contentTypes)) {
     );
   }
 
+  for (const locale of LOCALES) {
+    const catalogRaw = readHtml(path.join('api', 'collections', typeKey, `${locale}.json`));
+    assert(
+      catalogRaw !== null,
+      `Per-locale collection catalog (dist/api/collections/${typeKey}/${locale}.json) exists`
+    );
+  }
+
   const typeRoot = path.join(rootDir, 'src', 'content', typeKey);
   if (fs.existsSync(typeRoot)) {
     const firstGroup = fs
@@ -743,6 +751,11 @@ for (const [typeKey, typeCfg] of Object.entries(contentTypes)) {
     }
   }
 }
+
+assert(
+  !fs.existsSync(path.join(distDir, 'assets', 'aistudio')),
+  'Production dist/ omits dev-only public/assets/aistudio artifacts'
+);
 
 const pagesRoot = path.join(rootDir, 'src', 'content', 'pages');
 function readDefaultLocalePageHtml(groupName) {

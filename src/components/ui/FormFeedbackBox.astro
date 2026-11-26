@@ -1,0 +1,26 @@
+---
+/**
+ * Accessible live-region container used by pure-SSG forms (`ContactForm`,
+ * `NewsletterBanner`) to announce validation, network, and success states.
+ */
+interface Props {
+  kind: 'contact' | 'newsletter';
+  class?: string;
+}
+
+const { kind, class: className } = Astro.props;
+const boxAttrs = kind === 'contact' ? { 'data-contact-feedback': true } : { 'data-newsletter-feedback': true };
+const titleAttrs = kind === 'contact' ? { 'data-contact-feedback-title': true } : { 'data-newsletter-feedback-title': true };
+const bodyAttrs = kind === 'contact' ? { 'data-contact-feedback-body': true } : { 'data-newsletter-feedback-body': true };
+---
+
+<div
+  {...boxAttrs}
+  role="status"
+  aria-live="polite"
+  hidden
+  class:list={['rounded-xl border text-sm', kind === 'contact' ? 'p-4' : 'p-3.5', className]}
+>
+  <p {...titleAttrs} class="font-semibold"></p>
+  <p {...bodyAttrs} class="mt-0.5 text-xs leading-relaxed"></p>
+</div>

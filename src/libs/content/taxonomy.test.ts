@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getCategoryLabel, getTagLabel } from './taxonomy';
+import { getCategoryLabel, getCollectionCategoryLabel, getTagLabel } from './taxonomy';
 import { DEFAULT_LOCALE, LOCALES, isLocale, type Locale } from '@/i18n/locales';
 import * as m from '@/paraglide/messages';
 
@@ -24,6 +24,15 @@ describe('src/libs/content/taxonomy.ts', () => {
     expectCategoryIfActive('engineering', 'de', 'Entwicklung', 'Engineering');
     expectCategoryIfActive('engineering', 'fa', 'مهندسی', 'Engineering');
     expectCategoryIfActive('guides', 'ar', 'أدلة', 'Guides');
+  });
+
+  it('resolves collection category labels via shared taxonomy dictionaries or humanized fallback', () => {
+    expect(getCollectionCategoryLabel('projects', 'engineering', DEFAULT_LOCALE)).toBe(
+      getCategoryLabel('engineering', DEFAULT_LOCALE)
+    );
+    expect(getCollectionCategoryLabel('projects', 'industrial-audit', DEFAULT_LOCALE)).toBe(
+      'Industrial Audit'
+    );
   });
 
   it('resolves localized tag labels when present in dictionaries, or falls back cleanly', () => {

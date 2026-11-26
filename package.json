@@ -47,8 +47,9 @@
     "client:bootstrap": "node scripts/client-bootstrap.mjs",
     "upstream:check": "node scripts/upstream-check.mjs",
     "qa:browser": "node scripts/qa-browser.mjs",
+    "qa:lighthouse": "node scripts/qa-lighthouse.mjs",
     "preflight": "node scripts/messages-compile.mjs && node scripts/upstream-check.mjs && node scripts/audit-i18n.mjs && node scripts/doctor.mjs && vitest run && npm run build && node scripts/smoke.mjs && node scripts/link-check.mjs",
-    "preflight:full": "npm run preflight && node scripts/qa-browser.mjs"
+    "preflight:full": "npm run preflight && node scripts/qa-browser.mjs && node scripts/qa-lighthouse.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "~8.0.3",
@@ -79,6 +80,7 @@
     "@types/node": "^22.12.0",
     "code-inspector-plugin": "^2.0.9",
     "knip": "^6.40.0",
+    "lighthouse": "^13.6.0",
     "playwright": "^1.65.1",
     "sharp": "^0.35.5",
     "typescript": "^6.0.3",

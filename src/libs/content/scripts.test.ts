@@ -35,12 +35,19 @@ import {
 import {
   DEFAULT_CLS_BUDGET,
   DEFAULT_JS_BUDGET_KB,
+  DEFAULT_LIGHTHOUSE_THRESHOLDS,
   evaluateClsMetric,
   evaluateJsBudget,
+  evaluateLighthouseResult,
   isTrackedAppScriptUrl,
   summarizeAxeViolations,
 } from '../../../scripts/lib/qa-metrics.mjs';
+import { resolveChromiumExecutable } from '../../../scripts/lib/chromium.mjs';
 import { upsertEnvContent } from '../../../scripts/client-bootstrap.mjs';
+import {
+  injectFontPreloadsIntoDist,
+  resolveBrandFontPreloadFiles,
+} from '../../../scripts/lib/brand-fonts.mjs';
 
 describe('scripts/i18n-add-batch.mjs normalizeBatchData', () => {
   const activeLocales = ['en', 'de', 'fr', 'fa', 'ar'];
@@ -727,6 +734,41 @@ describe('scripts/lib/qa-metrics.mjs & scripts/client-bootstrap.mjs', () => {
     expect(blockingSummary.ok).toBe(false);
     expect(blockingSummary.blockingCount).toBe(1);
     expect(blockingSummary.summaryLines[0]).toContain('[serious] color-contrast');
+
+    const lhPass = evaluateLighthouseResult({
+      categories: {
+        performance: { score: 0.96 },
+        accessibility: { score: 1 },
+        'best-practices': { score: 1 },
+        seo: { score: 1 },
+      },
+      audits: { 'cumulative-layout-shift': { numericValue: 0.01 } },
+    });
+    expect(lhPass.ok).toBe(true);
+    expect(lhPass.scores).toEqual({
+      performance: 96,
+      accessibility: 100,
+      bestPractices: 100,
+      seo: 100,
+    });
+
+    const lhFail = evaluateLighthouseResult(
+      {
+        categories: {
+          performance: { score: 0.72 },
+          accessibility: { score: 0.91 },
+          'best-practices': { score: 0.96 },
+          seo: { score: 1 },
+        },
+        audits: { 'cumulative-layout-shift': { numericValue: 0.12 } },
+      },
+      DEFAULT_LIGHTHOUSE_THRESHOLDS
+    );
+    expect(lhFail.ok).toBe(false);
+    expect(lhFail.failures.length).toBe(3);
+
+    const bin = resolveChromiumExecutable();
+    expect(bin === undefined || typeof bin === 'string').toBe(true);
   });
 
   it('updates and appends .env keys cleanly while sanitizing newlines', () => {
@@ -740,5 +782,53 @@ describe('scripts/lib/qa-metrics.mjs & scripts/client-bootstrap.mjs', () => {
     expect(next).toContain('SITE_URL=https://client.example injected');
     expect(next).toContain('PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAA');
   });
+
+  it('injects script-appropriate .woff2 preload links into RTL and LTR built HTML pages', () => {
+    const tmpOut = fs.mkdtempSync(path.join(os.tmpdir(), 'font-preload-test-'));
+    try {
+      fs.mkdirSync(path.join(tmpOut, '_astro'), { recursive: true });
+      fs.mkdirSync(path.join(tmpOut, 'fa'), { recursive: true });
+      fs.writeFileSync(path.join(tmpOut, '_astro', 'vazirmatn-arabic-wght-normal.abc.woff2'), '');
+      fs.writeFileSync(path.join(tmpOut, '_astro', 'vazirmatn-latin-wght-normal.def.woff2'), '');
+      fs.writeFileSync(path.join(tmpOut, '_astro', 'manrope-latin-wght-normal.ghi.woff2'), '');
+
+      const presets = {
+        latinFonts: { system: { packages: [] }, manrope: { packages: ['@fontsource-variable/manrope'] } },
+        rtlFonts: { vazirmatn: { packages: ['@fontsource-variable/vazirmatn'] } },
+      };
+
+      const selection = resolveBrandFontPreloadFiles(
+        fs.readdirSync(path.join(tmpOut, '_astro')),
+        presets,
+        { fontPreset: 'system', rtlFontPreset: 'vazirmatn' }
+      );
+      expect(selection).toEqual({
+        rtl: ['vazirmatn-arabic-wght-normal.abc.woff2'],
+        ltr: [],
+      });
+
+      fs.writeFileSync(
+        path.join(tmpOut, 'index.html'),
+        '<!doctype html><html lang="en" dir="ltr"><head><link rel="stylesheet" href="/a.css"></head></html>'
+      );
+      fs.writeFileSync(
+        path.join(tmpOut, 'fa', 'index.html'),
+        '<!doctype html><html lang="fa" dir="rtl"><head><link rel="stylesheet" href="/a.css"></head></html>'
+      );
+
+      const updated = injectFontPreloadsIntoDist(tmpOut, presets, {
+        fontPreset: 'system',
+        rtlFontPreset: 'vazirmatn',
+      });
+      expect(updated).toBe(1);
+      expect(fs.readFileSync(path.join(tmpOut, 'index.html'), 'utf-8')).not.toContain('rel="preload"');
+      expect(fs.readFileSync(path.join(tmpOut, 'fa', 'index.html'), 'utf-8')).toContain(
+        '<link rel="preload" as="font" type="font/woff2" href="/_astro/vazirmatn-arabic-wght-normal.abc.woff2" crossorigin>'
+      );
+    } finally {
+      fs.rmSync(tmpOut, { recursive: true, force: true });
+    }
+  });
 });
+
 

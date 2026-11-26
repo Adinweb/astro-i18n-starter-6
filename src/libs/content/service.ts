@@ -31,6 +31,8 @@ interface GenericCollectionEntryData {
   year?: number;
   link?: string;
   stack?: string[];
+  categories?: string[];
+  tags?: string[];
   [key: string]: unknown;
 }
 

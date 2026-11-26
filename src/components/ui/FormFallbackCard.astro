@@ -1,0 +1,88 @@
+---
+import Button from '@/components/ui/Button.astro';
+import IconBox from '@/components/ui/IconBox.astro';
+
+/**
+ * Shared visitor-safe fallback panel rendered by form components (`ContactForm`,
+ * `NewsletterBanner`) when no external endpoint/provider is configured. Shows
+ * an accessible `mailto:` action when `contactEmail` exists or an unavailable
+ * message, plus a dev-only configuration hint.
+ */
+interface Props {
+  emailHref: string | null;
+  fallbackDesc: string;
+  fallbackCta: string;
+  unavailableDesc: string;
+  devNotice: string;
+  layout?: 'stacked' | 'inline';
+  class?: string;
+}
+
+const {
+  emailHref,
+  fallbackDesc,
+  fallbackCta,
+  unavailableDesc,
+  devNotice,
+  layout = 'stacked',
+  class: className,
+} = Astro.props;
+
+const isDev = import.meta.env.DEV;
+---
+
+{
+  layout === 'inline' ? (
+    <div class:list={['rounded-2xl border border-dashed border-border bg-surface/60 p-5 sm:p-6', className]}>
+      <div class="flex items-start gap-3">
+        <IconBox icon="mail" size="md" radius="xl" tone="primary" iconSize={18} />
+        <div class="min-w-0">
+          <p class="text-sm leading-relaxed text-muted">
+            {emailHref ? fallbackDesc : unavailableDesc}
+          </p>
+          {emailHref && (
+            <Button
+              href={emailHref}
+              variant="primary"
+              size="md"
+              icon="mail"
+              iconPosition="start"
+              class="mt-4"
+            >
+              {fallbackCta}
+            </Button>
+          )}
+          {isDev && (
+            <p class="mt-4 rounded-lg border border-border bg-surface p-3 text-xs leading-relaxed text-muted">
+              {devNotice}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div class:list={['rounded-2xl border border-dashed border-border bg-bg p-6 sm:p-8', className]}>
+      <IconBox icon="mail" size="lg" radius="xl" tone="primary" iconSize={20} class="size-11" />
+      <p class="mt-4 text-sm leading-relaxed text-muted">
+        {emailHref ? fallbackDesc : unavailableDesc}
+      </p>
+      {emailHref && (
+        <Button
+          href={emailHref}
+          variant="primary"
+          size="lg"
+          icon="mail"
+          iconPosition="start"
+          class="mt-5"
+        >
+          {fallbackCta}
+        </Button>
+      )}
+      {isDev && (
+        <p class="mt-5 rounded-lg border border-border bg-surface p-3 text-xs leading-relaxed text-muted">
+          {devNotice}
+        </p>
+      )}
+    </div>
+  )
+}

@@ -76,194 +76,64 @@ const { locale } = Astro.props;
 </dialog>
 
 <script>
-  import { executeSearch, formatSearchResultsStatus } from '@/libs/search/client';
+  import { bindSearchWidget, type SearchWidgetController } from '@/libs/search/widget';
 
-  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-  let searchRequestId = 0;
+  const modalControllers = new WeakMap<HTMLDialogElement, SearchWidgetController>();
 
   function getDialog() {
     return document.querySelector<HTMLDialogElement>('[data-search-modal]');
   }
 
-  function getResults() {
-    return document.getElementById('search-results');
-  }
-
-  function getStatus() {
-    return document.getElementById('search-status');
-  }
-
-  function announceStatus(text: string) {
-    const status = getStatus();
-    if (status) status.textContent = text;
-  }
-
-  let activeIndex = -1;
-
-  function setMessage(text: string, announce = '') {
-    activeIndex = -1;
-    const container = getResults();
-    if (!container) return;
-    container.replaceChildren();
-    const message = document.createElement('p');
-    message.className = 'py-6 text-center text-sm text-muted';
-    message.textContent = text;
-    container.append(message);
-    announceStatus(announce);
-  }
-
-  function getResultLinks(): HTMLAnchorElement[] {
-    const container = getResults();
-    return container
-      ? [...container.querySelectorAll<HTMLAnchorElement>('a[data-search-result]')]
-      : [];
-  }
-
-  function highlightResult(index: number) {
-    const links = getResultLinks();
-    if (links.length === 0) {
-      activeIndex = -1;
-      return;
-    }
-    const clamped = ((index % links.length) + links.length) % links.length;
-    activeIndex = clamped;
-    links.forEach((link, idx) => {
-      const active = idx === clamped;
-      link.dataset.active = active ? 'true' : 'false';
-      link.classList.toggle('border-primary/50', active);
-      link.classList.toggle('bg-surface-hover', active);
-      link.classList.toggle('border-transparent', !active);
-      if (active) link.scrollIntoView({ block: 'nearest' });
+  function openSearchModal() {
+    const current = getDialog();
+    if (!current) return;
+    current.showModal();
+    requestAnimationFrame(() => {
+      document.getElementById('search-input')?.focus();
     });
-  }
-
-  function createResultLink(href: string, title: string, excerpt: string, index: number) {
-    const link = document.createElement('a');
-    link.href = href;
-    link.dataset.searchResult = String(index);
-    link.className =
-      'block rounded-lg border border-transparent p-3 transition-colors hover:border-border hover:bg-surface-hover';
-
-    const heading = document.createElement('div');
-    heading.className = 'text-sm font-medium text-fg';
-    heading.textContent = title;
-    link.append(heading);
-
-    if (excerpt) {
-      const description = document.createElement('p');
-      description.className = 'mt-1 line-clamp-2 text-xs text-muted';
-      description.textContent = excerpt;
-      link.append(description);
-    }
-
-    link.addEventListener('mouseenter', () => {
-      highlightResult(index);
-    });
-
-    return link;
-  }
-
-  function resetSearch(dialog: HTMLDialogElement) {
-    const input = document.getElementById('search-input') as HTMLInputElement | null;
-    if (input) input.value = '';
-    setMessage(dialog.dataset.placeholder || 'Type to search...');
   }
 
   function setupSearch() {
     const dialog = getDialog();
     const input = document.getElementById('search-input') as HTMLInputElement | null;
     const closeBtn = document.getElementById('search-close-btn');
-    const resultsContainer = getResults();
+    const resultsContainer = document.getElementById('search-results');
+    const statusElement = document.getElementById('search-status');
 
     if (!dialog || !input || !resultsContainer) return;
     if (dialog.dataset.bound === 'true') return;
 
     const modal: HTMLDialogElement = dialog;
-    const searchInput: HTMLInputElement = input;
-    const resultsEl: HTMLElement = resultsContainer;
     modal.dataset.bound = 'true';
+
+    const widget = bindSearchWidget({
+      root: modal,
+      input,
+      resultsContainer,
+      statusElement,
+      maxResults: 6,
+      enableKeyboard: true,
+      messageClass: 'py-6 text-center text-sm text-muted',
+      linkClass:
+        'block rounded-lg border border-transparent p-3 transition-colors hover:border-border hover:bg-surface-hover',
+      excerptClass: 'mt-1 line-clamp-2 text-xs text-muted',
+      onSelectResult: () => modal.close(),
+    });
+    modalControllers.set(modal, widget);
 
     closeBtn?.addEventListener('click', () => modal.close());
     modal.addEventListener('click', (event) => {
-      // The dialog element itself is only the backdrop area outside the panel.
       if (event.target === modal) modal.close();
     });
-    modal.addEventListener('close', () => resetSearch(modal));
-    modal.addEventListener('cancel', () => resetSearch(modal));
-
-    resultsEl.addEventListener('click', (event) => {
-      if ((event.target as HTMLElement)?.closest('a')) modal.close();
-    });
-
-    async function performSearch(query: string) {
-      const activeLocale = modal.dataset.locale || 'en';
-      const requestId = ++searchRequestId;
-
-      if (!query.trim()) {
-        setMessage(modal.dataset.placeholder || 'Type to search...');
-        return;
-      }
-
-      const results = await executeSearch(query, activeLocale);
-      if (requestId !== searchRequestId) return;
-
-      if (results.length === 0) {
-        const noResultsMsg = modal.dataset.noResults || 'No results';
-        setMessage(noResultsMsg, noResultsMsg);
-        return;
-      }
-
-      const visible = results.slice(0, 6);
-      resultsEl.replaceChildren(
-        ...visible.map((result, idx) =>
-          createResultLink(result.url, result.title, result.excerpt, idx)
-        )
-      );
-      announceStatus(
-        formatSearchResultsStatus(
-          results.length,
-          modal.dataset.resultsCount || '{count} result(s) found.',
-          activeLocale
-        )
-      );
-      highlightResult(0);
-    }
-
-    searchInput.addEventListener('input', () => {
-      const value = searchInput.value;
-      if (searchTimeout) clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => performSearch(value), 150);
-    });
-
-    searchInput.addEventListener('keydown', (event) => {
-      const links = getResultLinks();
-      if (links.length === 0) return;
-
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        highlightResult(activeIndex + 1);
-      } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        highlightResult(activeIndex <= 0 ? links.length - 1 : activeIndex - 1);
-      } else if (event.key === 'Enter' && activeIndex >= 0 && links[activeIndex]) {
-        event.preventDefault();
-        const targetLink = links[activeIndex];
-        modal.close();
-        targetLink.click();
-      }
-    });
+    modal.addEventListener('close', () => widget.reset());
+    modal.addEventListener('cancel', () => widget.reset());
 
     if (document.documentElement.dataset.searchShortcutsBound !== 'true') {
       document.documentElement.dataset.searchShortcutsBound = 'true';
 
       document.addEventListener('click', (event) => {
         if ((event.target as HTMLElement)?.closest('[data-open-search]')) {
-          const current = getDialog();
-          if (!current) return;
-          current.showModal();
-          requestAnimationFrame(() => {
-            document.getElementById('search-input')?.focus();
-          });
+          openSearchModal();
         }
       });
 
@@ -276,10 +146,7 @@ const { locale } = Astro.props;
           if (current.open) {
             current.close();
           } else {
-            current.showModal();
-            requestAnimationFrame(() => {
-              document.getElementById('search-input')?.focus();
-            });
+            openSearchModal();
           }
         }
       });

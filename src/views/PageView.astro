@@ -114,7 +114,11 @@ const isCanvas = containerMode === 'canvas';
       canvas={isCanvas}
     >
       {isDefaultHero && (
-        <PageHero slot="hero" image={entry.data.image}>
+        <PageHero
+          slot="hero"
+          image={entry.data.image}
+          persistKey={entry.data.image ? `page:${group}` : 'default'}
+        >
           <HeroCopy title={entry.data.title} description={entry.data.description}>
             {breadcrumbs.length > 1 && (
               <Breadcrumbs

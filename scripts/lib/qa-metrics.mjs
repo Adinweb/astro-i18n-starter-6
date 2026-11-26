@@ -1,10 +1,19 @@
 /**
- * Pure QA metric evaluators for `scripts/qa-browser.mjs` (CLS budget,
- * client JavaScript payload budget, and Axe accessibility violation gating).
+ * Pure QA metric evaluators for `scripts/qa-browser.mjs` and
+ * `scripts/qa-lighthouse.mjs` (CLS budget, JS payload budget, Axe WCAG gating,
+ * and Lighthouse category thresholds).
  */
 
 export const DEFAULT_CLS_BUDGET = 0.05;
 export const DEFAULT_JS_BUDGET_KB = 180;
+
+export const DEFAULT_LIGHTHOUSE_THRESHOLDS = {
+  performance: 90,
+  accessibility: 95,
+  bestPractices: 95,
+  seo: 95,
+  cls: DEFAULT_CLS_BUDGET,
+};
 
 export function isTrackedAppScriptUrl(url, origin = '') {
   if (typeof url !== 'string' || !url.trim()) return false;
@@ -53,5 +62,47 @@ export function summarizeAxeViolations(violations = []) {
     totalCount: list.length,
     blockingCount: blocking.length,
     summaryLines,
+  };
+}
+
+export function evaluateLighthouseResult(lhr, thresholds = DEFAULT_LIGHTHOUSE_THRESHOLDS) {
+  const categories = lhr?.categories ?? {};
+  const toScore = (id) => {
+    const raw = categories?.[id]?.score;
+    return typeof raw === 'number' && Number.isFinite(raw) ? Math.round(raw * 100) : 0;
+  };
+
+  const scores = {
+    performance: toScore('performance'),
+    accessibility: toScore('accessibility'),
+    bestPractices: toScore('best-practices'),
+    seo: toScore('seo'),
+  };
+
+  const clsRaw = lhr?.audits?.['cumulative-layout-shift']?.numericValue;
+  const cls = Number.isFinite(clsRaw) ? Number(clsRaw.toFixed(4)) : 0;
+
+  const failures = [];
+  if (scores.performance < thresholds.performance) {
+    failures.push(`performance ${scores.performance} < ${thresholds.performance}`);
+  }
+  if (scores.accessibility < thresholds.accessibility) {
+    failures.push(`accessibility ${scores.accessibility} < ${thresholds.accessibility}`);
+  }
+  if (scores.bestPractices < thresholds.bestPractices) {
+    failures.push(`best-practices ${scores.bestPractices} < ${thresholds.bestPractices}`);
+  }
+  if (scores.seo < thresholds.seo) {
+    failures.push(`seo ${scores.seo} < ${thresholds.seo}`);
+  }
+  if (cls > thresholds.cls) {
+    failures.push(`CLS ${cls} > ${thresholds.cls}`);
+  }
+
+  return {
+    ok: failures.length === 0,
+    scores,
+    cls,
+    failures,
   };
 }

@@ -170,6 +170,47 @@ function formatContactRequestBody(
   }
 }
 
+async function postJsonWithTimeout(
+  targetUrl: string,
+  body: Record<string, unknown>,
+  locale: string,
+  options: Pick<SubmitContactOptions, 'timeoutMs' | 'fetchImpl'> = {}
+): Promise<ContactSubmissionResult> {
+  const fetchFn = options.fetchImpl ?? globalThis.fetch;
+  const timeoutMs = Math.max(1000, options.timeoutMs ?? 10000);
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetchFn(targetUrl, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-Client-Locale': locale,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return { ok: false, errorCode: 'http', status: response.status };
+    }
+
+    return { ok: true, status: response.status };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return { ok: false, errorCode: 'timeout' };
+    }
+    if (error instanceof Error && error.name === 'AbortError') {
+      return { ok: false, errorCode: 'timeout' };
+    }
+    return { ok: false, errorCode: 'network' };
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 export async function submitContactInquiry(
   payload: ContactInquiryPayload,
   options: SubmitContactOptions = {}
@@ -201,44 +242,15 @@ export async function submitContactInquiry(
     return { ok: false, errorCode: 'unconfigured' };
   }
 
-  const fetchFn = options.fetchImpl ?? globalThis.fetch;
-  const timeoutMs = Math.max(1000, options.timeoutMs ?? 10000);
-  const controller = new AbortController();
-  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetchFn(targetUrl, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'X-Client-Locale': payload.locale,
-      },
-      body: JSON.stringify(
-        formatContactRequestBody(payload, {
-          provider,
-          accessKey: options.accessKey,
-        })
-      ),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      return { ok: false, errorCode: 'http', status: response.status };
-    }
-
-    return { ok: true, status: response.status };
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      return { ok: false, errorCode: 'timeout' };
-    }
-    if (error instanceof Error && error.name === 'AbortError') {
-      return { ok: false, errorCode: 'timeout' };
-    }
-    return { ok: false, errorCode: 'network' };
-  } finally {
-    globalThis.clearTimeout(timer);
-  }
+  return postJsonWithTimeout(
+    targetUrl,
+    formatContactRequestBody(payload, {
+      provider,
+      accessKey: options.accessKey,
+    }),
+    payload.locale,
+    options
+  );
 }
 
 export interface NewsletterSubscriptionPayload {
@@ -335,44 +347,15 @@ export async function submitNewsletterSubscription(
     return { ok: false, errorCode: 'unconfigured' };
   }
 
-  const fetchFn = options.fetchImpl ?? globalThis.fetch;
-  const timeoutMs = Math.max(1000, options.timeoutMs ?? 10000);
-  const controller = new AbortController();
-  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetchFn(targetUrl, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'X-Client-Locale': payload.locale,
-      },
-      body: JSON.stringify(
-        formatNewsletterRequestBody(payload, {
-          provider,
-          accessKey: options.accessKey,
-        })
-      ),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      return { ok: false, errorCode: 'http', status: response.status };
-    }
-
-    return { ok: true, status: response.status };
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      return { ok: false, errorCode: 'timeout' };
-    }
-    if (error instanceof Error && error.name === 'AbortError') {
-      return { ok: false, errorCode: 'timeout' };
-    }
-    return { ok: false, errorCode: 'network' };
-  } finally {
-    globalThis.clearTimeout(timer);
-  }
+  return postJsonWithTimeout(
+    targetUrl,
+    formatNewsletterRequestBody(payload, {
+      provider,
+      accessKey: options.accessKey,
+    }),
+    payload.locale,
+    options
+  );
 }
 
 export type FormConversionKind = 'contact' | 'newsletter';

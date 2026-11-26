@@ -106,7 +106,7 @@ const schema = [
   alternates={alternates}
   hero
 >
-  <PageHero slot="hero" image={image}>
+  <PageHero slot="hero" image={image} persistKey={image ? `blog:${group}` : 'default'}>
     <BlogPostHeroContent
       title={title}
       description={description}

@@ -69,6 +69,9 @@ jobs:
       - name: Browser layout, CLS, JS budget & accessibility QA
         run: pnpm run qa:browser
 
+      - name: Lighthouse performance, accessibility & SEO audit
+        run: pnpm run qa:lighthouse
+
       - name: Dead code check
         run: pnpm run knip
 
