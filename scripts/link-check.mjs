@@ -23,6 +23,7 @@ const args = process.argv.slice(2);
 const dirArg = args.find((arg) => arg.startsWith('--dir='));
 const limitArg = args.find((arg) => arg.startsWith('--limit='));
 const wantsJson = args.includes('--json');
+const isQuiet = args.includes('--quiet');
 
 const siteDir = path.resolve(rootDir, dirArg ? dirArg.slice(6) : 'dist');
 const limit = limitArg ? Number(limitArg.slice(8)) || 50 : 50;
@@ -231,12 +232,18 @@ if (wantsJson) {
   process.exit(uniqueBroken.length === 0 ? 0 : 1);
 }
 
-console.log(
-  `🔗 Checked ${checked} internal link(s) across ${htmlFiles.length} page(s) in ${path.relative(rootDir, siteDir)}/.`
-);
+if (!isQuiet) {
+  console.log(
+    `🔗 Checked ${checked} internal link(s) across ${htmlFiles.length} page(s) in ${path.relative(rootDir, siteDir)}/.`
+  );
+}
 
 if (uniqueBroken.length === 0) {
-  console.log('✅ Every internal link and fragment resolves to a built file and an anchor.');
+  if (isQuiet) {
+    console.log(`✅ Link check passed (${checked} links, ${htmlFiles.length} pages).`);
+  } else {
+    console.log('✅ Every internal link and fragment resolves to a built file and an anchor.');
+  }
   process.exit(0);
 }
 

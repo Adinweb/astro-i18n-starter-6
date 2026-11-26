@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { readCoreAndClientConfig, writeClientConfig } from './lib/config.mjs';
 import { applyBlueprintToConfig, VALID_BLUEPRINTS } from './lib/blueprints.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
+import { syncCollections } from './content-sync.mjs';
 import { readLocaleConfig } from './lib/locales.mjs';
 import { switchDefaultLocale, switchToSingleLocale } from './lib/locale-mutations.mjs';
 import {
@@ -416,6 +417,15 @@ config.social = {
 
 writeClientConfig(config, { rootDir, sparse: true });
 console.log('✅ Updated client/config.json.');
+
+if (opts.blueprint !== undefined) {
+  const syncResult = syncCollections(rootDir);
+  if (syncResult.ymlChanged || syncResult.missingDirs.length > 0) {
+    console.log(
+      `✅ Synced content collections (.pages.yml: ${syncResult.ymlChanged ? 'updated' : 'unchanged'}, created dirs: ${syncResult.missingDirs.length}).`
+    );
+  }
+}
 
 try {
   if (opts.singleLang === true) {

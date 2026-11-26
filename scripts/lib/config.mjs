@@ -32,6 +32,7 @@ const CMS_LOCALE_MAP_KEYS = new Set([
   'ctaLabelByLocale',
   'ctaHrefByLocale',
   'labels',
+  'titles',
   'descriptions',
   'placeholder',
   'allLabel',

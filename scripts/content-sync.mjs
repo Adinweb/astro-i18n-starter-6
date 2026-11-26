@@ -364,8 +364,12 @@ export function syncCollections(targetRootDir = rootDir, { check = false, dryRun
   const config = readMergedConfig(targetRootDir);
   const types = readContentTypes(config, targetRootDir);
   const pagesYmlPath = path.join(targetRootDir, '.pages.yml');
-  const existingYml = fs.readFileSync(pagesYmlPath, 'utf-8');
-  const nextYml = buildSyncedPagesYml(existingYml, types);
+  const hasPagesYml = fs.existsSync(pagesYmlPath);
+  if (!hasPagesYml && check) {
+    throw new Error(`Missing ${pagesYmlPath}`);
+  }
+  const existingYml = hasPagesYml ? fs.readFileSync(pagesYmlPath, 'utf-8') : '';
+  const nextYml = hasPagesYml ? buildSyncedPagesYml(existingYml, types) : '';
 
   const missingDirs = [];
   for (const type of types) {
@@ -376,7 +380,7 @@ export function syncCollections(targetRootDir = rootDir, { check = false, dryRun
     }
   }
 
-  const ymlChanged = existingYml !== nextYml;
+  const ymlChanged = hasPagesYml && existingYml !== nextYml;
 
   if (!check && !dryRun) {
     for (const dir of missingDirs) {

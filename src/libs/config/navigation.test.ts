@@ -324,4 +324,82 @@ describe('src/libs/config/navigation.ts', () => {
       expect(legacyNav.map((i) => i.key)).toEqual(drawerNav.map((i) => i.key));
     });
   });
+
+  describe('ui.navigation config-first merge', () => {
+    it('merges ui.navigation.pages overrides and appends new published pages without dropping unpublished guards', async () => {
+      vi.mocked(service.getPageUrl).mockImplementation(async (group: string, locale: string) => {
+        if (group === 'draft-only') return null;
+        return locale === DEFAULT_LOCALE ? `/${group}/` : `/${locale}/${group}/`;
+      });
+
+      const slots = await getNavigationSlots('en', '/services/', {
+        ...sampleNavOptions,
+        uiNavigation: {
+          pages: [
+            { group: 'features', icon: 'rocket', labels: { en: 'Capabilities', fa: 'امکانات' } },
+            { group: 'services', icon: 'sparkles', labels: { en: 'Services', fa: 'خدمات' } },
+            { group: 'draft-only', icon: 'lock', labels: { en: 'Secret', fa: 'محرمانه' } },
+          ],
+          footerColumns: [],
+        },
+      });
+
+      const featuresHeader = slots.header.find((item) => item.key === 'features');
+      expect(featuresHeader?.label).toBe('Capabilities');
+      expect(featuresHeader?.icon).toBe('rocket');
+
+      const servicesHeader = slots.header.find((item) => item.key === 'services');
+      expect(servicesHeader).toMatchObject({
+        key: 'services',
+        label: 'Services',
+        href: '/services/',
+        icon: 'sparkles',
+        active: true,
+      });
+
+      expect(slots.header.some((item) => item.key === 'draft-only')).toBe(false);
+      expect(slots.drawer.map((i) => i.key)).toEqual(slots.header.map((i) => i.key));
+    });
+
+    it('merges ui.navigation.footerColumns overrides and appends custom footer columns', async () => {
+      vi.mocked(service.getPageUrl).mockImplementation(async (group: string, locale: string) => {
+        if (group === 'missing') return null;
+        return locale === DEFAULT_LOCALE ? `/${group}/` : `/${locale}/${group}/`;
+      });
+
+      const footer = await getFooterNavigation('en', '/about/', {
+        ...sampleNavOptions,
+        uiNavigation: {
+          pages: [],
+          footerColumns: [
+            {
+              key: 'legal_links',
+              titles: { en: 'Support', fa: 'پشتیبانی' },
+              items: [
+                { group: 'about', labels: { en: 'About Us', fa: 'درباره ما' }, external: false },
+                { group: 'missing', labels: { en: 'Missing' }, external: false },
+                { href: 'https://status.example.com', external: true, label: 'Status' },
+              ],
+            },
+          ],
+        },
+      });
+
+      const supportCol = footer.find((col) => col.key === 'legal_links');
+      expect(supportCol?.title).toBe('Support');
+      expect(supportCol?.items).toHaveLength(2);
+      expect(supportCol?.items[0]).toMatchObject({
+        key: 'about',
+        label: 'About Us',
+        href: '/about/',
+        active: true,
+      });
+      expect(supportCol?.items[1]).toMatchObject({
+        href: 'https://status.example.com',
+        label: 'Status',
+        external: true,
+      });
+    });
+  });
 });
+

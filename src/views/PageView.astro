@@ -5,6 +5,7 @@ import Breadcrumbs from '@/components/ui/Breadcrumbs.astro';
 import PageHero from '@/components/PageHero.astro';
 import HeroCopy from '@/components/HeroCopy.astro';
 import PageHeader from '@/components/PageHeader.astro';
+import SectionComposer from '@/components/SectionComposer.astro';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { parseContentEntryId } from '@/libs/content/entries';
@@ -87,6 +88,9 @@ const containerMode = entry.data.container;
 const isDefaultHero = heroMode === 'default';
 const isMinimalHero = heroMode === 'minimal';
 const isCanvas = containerMode === 'canvas';
+const sections = entry.data.sections ?? [];
+const hasSections = sections.length > 0;
+const entryDir = `src/content/pages/${group}`;
 ---
 
 {
@@ -148,6 +152,14 @@ const isCanvas = containerMode === 'canvas';
               />
             </div>
           )}
+          {hasSections && (
+            <SectionComposer
+              sections={sections}
+              locale={locale}
+              entryDir={entryDir}
+              hasPageH1={isDefaultHero || isMinimalHero}
+            />
+          )}
           {Content && <Content />}
         </>
       ) : (
@@ -162,10 +174,28 @@ const isCanvas = containerMode === 'canvas';
           )}
           {containerMode === 'contained' ? (
             <div class:list={['prose prose-wide', isMinimalHero && 'pt-8 sm:pt-10']}>
+              {hasSections && (
+                <SectionComposer
+                  sections={sections}
+                  locale={locale}
+                  entryDir={entryDir}
+                  contained
+                  hasPageH1={isDefaultHero || isMinimalHero}
+                />
+              )}
               {Content && <Content />}
             </div>
           ) : (
             <article class:list={['prose w-full max-w-5xl', isMinimalHero && 'pt-8 sm:pt-10']}>
+              {hasSections && (
+                <SectionComposer
+                  sections={sections}
+                  locale={locale}
+                  entryDir={entryDir}
+                  contained
+                  hasPageH1={isDefaultHero || isMinimalHero}
+                />
+              )}
               {Content && <Content />}
             </article>
           )}

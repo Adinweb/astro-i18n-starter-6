@@ -1,13 +1,14 @@
 import * as m from '@/paraglide/messages';
 import type { Locale } from '@/i18n/locales';
-import { getPathname, stripLocale, withTrailingSlash } from '@/i18n/paths';
+import { getPathname, localizeHref, stripLocale, withTrailingSlash } from '@/i18n/paths';
+import { humanizeKey } from '@/libs/content/blog';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import {
   getContentTypeIndexHref,
   getContentTypeLabel,
   getNavigableContentTypes,
 } from '@/libs/content/types';
-import { siteConfig } from '@/libs/config/app';
+import { siteConfig, type UiNavigationConfig } from '@/libs/config/app';
 import { CLIENT_CONTENT_TYPES } from '@client/content';
 import {
   CLIENT_PAGE_ITEMS,
@@ -74,6 +75,53 @@ export const BLOG_ITEM = {
   label: (locale: Locale) => m.nav_blog({}, { locale }),
 } as const;
 
+type MessageCatalog = Record<
+  string,
+  ((params: Record<string, never>, opts: { locale: Locale }) => string) | undefined
+>;
+
+function lookupCatalog(key: string, locale: Locale): string | null {
+  const catalog = m as unknown as MessageCatalog;
+  const fn = catalog[key];
+  return typeof fn === 'function' ? fn({}, { locale }) : null;
+}
+
+function mergePageNavItems(
+  baseItems: readonly ClientPageNavItem[],
+  configPages?: UiNavigationConfig['pages']
+): ClientPageNavItem[] {
+  const merged = [...baseItems];
+  if (!configPages?.length) return merged;
+
+  for (const entry of configPages) {
+    const existingIdx = merged.findIndex((item) => item.group === entry.group);
+    const existing = existingIdx >= 0 ? merged[existingIdx] : undefined;
+
+    const resolveLabel = (locale: Locale): string => {
+      const fromMap = entry.labels?.[locale]?.trim();
+      if (fromMap) return fromMap;
+      const explicit = entry.label?.trim();
+      if (explicit) return explicit;
+      if (existing) return existing.label(locale);
+      return lookupCatalog(`nav_${entry.group}`, locale) ?? humanizeKey(entry.group);
+    };
+
+    const nextItem: ClientPageNavItem = {
+      group: entry.group,
+      icon: entry.icon ?? existing?.icon ?? 'file',
+      label: resolveLabel,
+    };
+
+    if (existingIdx >= 0) {
+      merged[existingIdx] = nextItem;
+    } else {
+      merged.push(nextItem);
+    }
+  }
+
+  return merged;
+}
+
 /**
  * Icon of a content type's navigation row. Honors client overrides first.
  */
@@ -123,6 +171,7 @@ export function isActive(href: string | undefined, currentUrl: string): boolean 
 
 export interface NavigationBuildOptions {
   pageItems?: readonly ClientPageNavItem[];
+  uiNavigation?: UiNavigationConfig;
   primaryExtras?: (ctx: NavContext) => Promise<NavItem[]>;
   footerColumns?: (ctx: NavContext) => Promise<FooterColumn[]>;
   legalItems?: (ctx: NavContext) => Promise<NavItem[]>;
@@ -136,7 +185,8 @@ async function buildPrimaryNavigation(
   currentUrl = '',
   options: NavigationBuildOptions = {}
 ): Promise<NavItem[]> {
-  const pageItems = options.pageItems ?? PAGE_ITEMS;
+  const effectiveUiNav = options.uiNavigation ?? siteConfig.ui.navigation;
+  const pageItems = mergePageNavItems(options.pageItems ?? PAGE_ITEMS, effectiveUiNav?.pages);
   const extrasFn = options.primaryExtras ?? getClientPrimaryExtras;
   const items: NavItem[] = [];
 
@@ -190,7 +240,8 @@ export async function getFooterNavigation(
   currentUrl = '',
   options: NavigationBuildOptions = {}
 ): Promise<FooterColumn[]> {
-  const pageList = options.pageItems ?? PAGE_ITEMS;
+  const effectiveUiNav = options.uiNavigation ?? siteConfig.ui.navigation;
+  const pageList = mergePageNavItems(options.pageItems ?? PAGE_ITEMS, effectiveUiNav?.pages);
   const extraFooterFn = options.footerColumns ?? getClientFooterColumns;
   const pageItems: NavItem[] = [];
 
@@ -240,10 +291,70 @@ export async function getFooterNavigation(
   };
 
   const extraColumns = await extraFooterFn({ locale, currentUrl, isActive });
+  const columns: FooterColumn[] = [pagesColumn, resourcesColumn, companyColumn, ...extraColumns];
 
-  return [pagesColumn, resourcesColumn, companyColumn, ...extraColumns].filter(
-    (column) => column.items.length > 0
-  );
+  if (effectiveUiNav?.footerColumns?.length) {
+    for (const cfgCol of effectiveUiNav.footerColumns) {
+      const existingIdx = columns.findIndex((col) => col.key === cfgCol.key);
+      const existing = existingIdx >= 0 ? columns[existingIdx] : undefined;
+
+      const resolvedTitle =
+        cfgCol.titles?.[locale]?.trim() ||
+        cfgCol.title?.trim() ||
+        existing?.title ||
+        lookupCatalog(`footer_col_${cfgCol.key}`, locale) ||
+        humanizeKey(cfgCol.key);
+
+      let resolvedItems: NavItem[] = existing?.items ?? [];
+      if (cfgCol.items !== undefined) {
+        resolvedItems = [];
+        for (const cfgItem of cfgCol.items) {
+          let href: string | null = null;
+          if (cfgItem.group) {
+            href =
+              (await getPageUrl(cfgItem.group, locale)) ??
+              (cfgItem.group === 'home' ? await getHomeHref(locale) : null);
+            if (!href) continue;
+          } else if (cfgItem.href) {
+            href =
+              cfgItem.external || /^https?:\/\//i.test(cfgItem.href)
+                ? cfgItem.href
+                : localizeHref(cfgItem.href, locale);
+          }
+          if (!href) continue;
+
+          const label =
+            cfgItem.labels?.[locale]?.trim() ||
+            cfgItem.label?.trim() ||
+            (cfgItem.group ? lookupCatalog(`nav_${cfgItem.group}`, locale) : null) ||
+            humanizeKey(cfgItem.group ?? cfgItem.href ?? 'link');
+
+          resolvedItems.push({
+            key: cfgItem.group ?? cfgItem.href ?? label,
+            label,
+            href,
+            external: Boolean(cfgItem.external),
+            ...(cfgItem.icon ? { icon: cfgItem.icon } : {}),
+            active: cfgItem.external ? false : isActive(href, currentUrl),
+          });
+        }
+      }
+
+      const nextCol: FooterColumn = {
+        key: cfgCol.key,
+        title: resolvedTitle,
+        items: resolvedItems,
+      };
+
+      if (existingIdx >= 0) {
+        columns[existingIdx] = nextCol;
+      } else {
+        columns.push(nextCol);
+      }
+    }
+  }
+
+  return columns.filter((column) => column.items.length > 0);
 }
 
 /**

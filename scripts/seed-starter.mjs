@@ -9,8 +9,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { applyBlueprintToConfig, VALID_BLUEPRINTS } from './lib/blueprints.mjs';
-import { readMergedConfig, writeClientConfig } from './lib/config.mjs';
+import { readCoreAndClientConfig, writeClientConfig } from './lib/config.mjs';
 import { compileMessages } from './lib/compile-messages.mjs';
+import { syncCollections } from './content-sync.mjs';
 import {
   readClientLocales,
   readClientMessages,
@@ -229,10 +230,11 @@ if (blueprintKey) {
   }
   const presetsPath = path.join(rootDir, 'src', 'libs', 'config', 'theme-presets.json');
   const rootPresets = JSON.parse(fs.readFileSync(presetsPath, 'utf-8'));
-  const merged = readMergedConfig(rootDir);
+  const merged = readCoreAndClientConfig(rootDir);
   applyBlueprintToConfig(merged, blueprintKey, { rootPresets });
   writeClientConfig(merged, { rootDir, sparse: true });
-  console.log(`✅ Applied blueprint "${blueprintKey}" to client/config.json.`);
+  syncCollections(rootDir);
+  console.log(`✅ Applied blueprint "${blueprintKey}" to client/config.json and synced collections.`);
 }
 
 compileMessages(rootDir);

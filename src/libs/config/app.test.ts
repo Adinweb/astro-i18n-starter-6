@@ -9,6 +9,7 @@ import {
   topBannerConfigSchema,
   quickContactConfigSchema,
   motionConfigSchema,
+  uiNavigationSchema,
   uiConfigSchema,
   blogConfigSchema,
   cookieConfigSchema,
@@ -41,6 +42,7 @@ import {
   type ThemeMode,
 } from './app';
 import { mergeLayeredConfig, sanitizeCmsConfig } from './defaults';
+import { pageSectionItemSchema } from '@/libs/ui/sections';
 
 describe('src/libs/config/app.ts', () => {
   describe('themeModeSchema', () => {
@@ -608,6 +610,42 @@ describe('src/libs/config/app.ts', () => {
         .gallery as Record<string, unknown>;
       expect(cleanGallery.descriptions).toEqual({ fa: 'توضیح' });
       expect((cleanGallery.search as Record<string, unknown>).placeholder).toEqual({ fa: 'جستجو...' });
+    });
+  });
+
+  describe('uiNavigationSchema & declarative SectionComposer config', () => {
+    it('validates ui.navigation.pages and ui.navigation.footerColumns', () => {
+      expect(uiNavigationSchema.parse({})).toEqual({});
+
+      const parsed = uiNavigationSchema.parse({
+        pages: [{ group: 'services', icon: 'sparkles', labels: { en: 'Services', fa: 'خدمات' } }],
+        footerColumns: [
+          {
+            key: 'support',
+            titles: { en: 'Support' },
+            items: [{ group: 'contact', label: 'Contact Us' }],
+          },
+        ],
+      });
+      expect(parsed.pages).toHaveLength(1);
+      expect(parsed.footerColumns?.[0]?.items).toHaveLength(1);
+      expect(() => uiNavigationSchema.parse({ pages: [{ group: '' }] })).toThrow();
+    });
+
+    it('validates ui.homeSections and pageSectionItemSchema across registered blocks', () => {
+      const section = pageSectionItemSchema.parse({
+        block: 'LandingHeroSplit',
+        props: { title: 'Hello', primaryCta: { label: 'Start', href: '/contact/' } },
+      });
+      expect(section.block).toBe('LandingHeroSplit');
+      expect(() =>
+        pageSectionItemSchema.parse({ block: 'NonExistentBlock', props: {} })
+      ).toThrow();
+
+      const uiParsed = uiConfigSchema.parse({
+        homeSections: [{ block: 'CtaBanner', props: { title: 'Ready?' } }],
+      });
+      expect(uiParsed.homeSections).toHaveLength(1);
     });
   });
 });

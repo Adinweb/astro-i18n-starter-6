@@ -1,0 +1,42 @@
+روی این پروژه (استارتر SSG چندزبانهٔ Astro v7) بهبودهای زیر را به‌صورت ماژولار، با حفظ کامل سازگاری با معماری سه‌لایه (`Core` / `client/` / `starter-kit/`) و بدون شکستن تست‌ها و قراردادهای فعلی پیاده‌سازی کن:
+
+### ۱. سبک‌سازی `AGENTS.md` (زیر ۱۲ کیلوبایت) بدون حذف اطلاعات
+- فایل `AGENTS.md` را به یک مرجع فشردهٔ قوانین خط‌قرمز (SSOT، RTL، ممنوعیت‌های بیلد، جدول دستورات و آدرس‌دهی دقیق به فایل‌های مرجع) تبدیل کن تا حجم آن زیر ۱۲ کیلوبایت بماند و در محیط‌های محدود به ۲۴ کیلوبایت برش نخورد.
+- جزئیات درخت پوشه‌ها، توضیحات بلند ChronoTrig و متن کامل Playbookها را به `docs/PLAYBOOKS.md` و فایل‌های `.agents/skills/astro-i18n-starter/references/` منتقل کن (بدون حذف هیچ قانون یا دستور واقعی).
+
+### ۲. تولید خودکار کاتالوگ فشردهٔ پراپ‌های کامپوننت‌ها (`blocks:catalog`)
+- اسکریپتی (`scripts/blocks-catalog.mjs` + `npm run blocks:catalog`) بساز که با تحلیل `interface Props` در `src/components/*.astro` و `src/components/ui/*.astro`، دو خروجی فشرده تولید کند:
+  1. `docs/BLOCKS-API.md` (زیر ۵ کیلوبایت: نام کامپوننت، دسته، پراپ‌ها با نوع و مقدار پیش‌فرض، بدون متن توضیحی اضافه)
+  2. `npm run blocks:catalog -- --check` برای اطمینان از همگام بودن کاتالوگ با کامپوننت‌ها در CI/preflight.
+
+### ۳. اسکریپت اعمال یک‌جای مشخصات سایت (`site:apply`)
+- اسکریپت `scripts/site-apply.mjs` (`npm run site:apply -- --spec=site-spec.json [--dry-run]`) را ایجاد کن که یک فایل JSON واحد را بخواند و با یک اجرا تمام این کارها را به‌ترتیب و با استفاده از helperهای موجود (`scripts/lib/*`) انجام دهد:
+  - اعمال تنظیمات برند، `business`، `ui` و `content.types` روی `client/config.json` (به‌صورت sparse و اعتبارسنجی‌شده با اسکیمای `app.ts`)
+  - ساخت یا به‌روزرسانی صفحات مشخص‌شده در `spec.pages` (با پشتیبانی از `preset`، `title`/`description`/`slug` چندزبانه و افزودن به ناوبری)
+  - ثبت ترجمه‌های `spec.messages` در `client/messages/*.json` و کامپایل Paraglide
+  - ساخت ورودی‌های اولیهٔ کالکشن‌ها در `spec.entries`
+  - اجرای خودکار `content:sync` و `assets:generate` (اختیاری با `--skip-assets`) و چاپ خلاصهٔ نتایج.
+
+### ۴. پشتیبانی Config-First از ناوبری و چیدمان صفحهٔ خانه
+- در اسکیمای تنظیمات (`src/libs/config/app.ts` و `defaults.ts`) بخش اختیاری `ui.navigation` را اضافه کن (`pages`: لیست `{ group, icon, labels? }`، و `footerColumns`: ستون‌های سفارشی فوتر) و `src/libs/config/navigation.ts` طوری عمل کند که اگر `ui.navigation` در `client/config.json` تعریف شده بود از آن (در کنار `client/navigation.ts`) بخواند تا برای منوهای استاندارد نیازی به دست‌کاری TypeScript نباشد.
+- برای صفحات خانه/لندینگ (`src/views/pages/HomePageTemplate.astro` یا یک کامپوننت composer در `src/components/`) امکان رندر لیست اعلان‌محورِ سکشن‌ها (`sections: [{ block, props }]`) از روی تنظیمات یا فرانت‌متر را بررسی و در صورت تمیز بودنِ تایپ‌ها اضافه کن؛ بدون اینکه روش فعلی MDX `container: "canvas"` یا `client/templates/` از کار بیفتد.
+
+### ۵. تکمیل بلوپرینت‌های صنعتی (`scripts/lib/blueprints.mjs`)
+- بلوپرینت‌های `corporate`، `agency`، `portfolio`، `medical`، `catalog` و `legal` را طوری گسترش بده که علاوه بر پالت و فونت، در صورت نیاز هر صنعت یک `content.types` اعلان‌محور آماده (مثلاً `products` با فیلتر قیمت `range` و وضعیت `toggle` برای `catalog`، `services` یا `doctors` با فیلتر `select` برای `medical`، و `gallery` با فیلتر `single` برای `portfolio`/`agency`) را هم همراه با `content:sync` به `client/config.json` تزریق کنند (با حفظ سازگاری کامل با `site:init` و `starter:seed`).
+
+### ۶. حالت تست و بررسی سریع حین توسعه (`check:quick` و خروجی `--quiet` / `--json`)
+- در `package.json` دستور `npm run check:quick` را اضافه کن (`messages:compile` + `tsc --noEmit` + `vitest run --no-isolate` یا فیلتر سریع برای دورهای میانی)، بدون تغییر دادن رفتار سخت‌گیرانهٔ `npm test` و `npm run lint` نهایی.
+- به اسکریپت‌های `scripts/audit-i18n.mjs`، `scripts/smoke.mjs` و `scripts/link-check.mjs` فلگ‌های `--json` و `--quiet` (چاپ فقط خطاها و خلاصهٔ نهایی) اضافه کن تا خروجی‌های طولانی و تزئینی کانتکست را پر نکنند.
+
+### ۷. همگام‌سازی خودکار کلیدهای جاافتادهٔ دیکشنری (`i18n:sync-keys`)
+- اسکریپت `scripts/i18n-sync-keys.mjs` (`npm run i18n:sync-keys [--dry-run] [--fix]`) را بساز که:
+  - کلیدهای ارجاع‌شده در `client/navigation.ts` (`nav_*`)، `content.types` (`nav_<type>`, `<type>_index_description`) و تاکسونومی‌های موجود در frontmatter پست‌ها/آیتم‌ها (`blog_category_*`, `blog_tag_*`) را استخراج کند،
+  - کلیدهای غایب در `client/messages/<locale>.json` را با مقدار خوانای انگلیسی یا برچسب `[TODO: <locale>]` به‌صورت خودکار اضافه کند،
+  - و دیکشنری‌ها را کامپایل کند تا `npm run audit:i18n` خطای کلید گم‌شده ندهد.
+
+### الزامات اجرا و تأیید نهایی:
+1. تمام فایل‌های جدید CLI و اسکریپت‌ها از ساختار `scripts/lib/` استفاده کنند و فقط با تغییر لایهٔ `client/` کار کنند (سازگار با `upstream:check`).
+2. برای قابلیت‌های جدید (`blocks-catalog`، `site-apply`، `i18n-sync-keys`، `ui.navigation`، `blueprints`) تست‌های واحد در Vitest اضافه کن.
+3. فایل `knip.json`، مستندات (`README.md`، `AGENTS.md`، `docs/PLAYBOOKS.md`، `docs/GUIDE-FA.md`) و مهارت `.agents/skills/astro-i18n-starter/` را دقیقاً هماهنگ با تغییرات به‌روزرسانی کن.
+4. در پایان، کل زنجیرهٔ راستی‌آزمایی را اجرا و پاس کن:
+   `npm run blocks:catalog -- --check && npm run content:sync -- --check && npm run upstream:check && npm run lint && npm test && npm run audit:i18n && npm run knip && npm run build && npm run smoke && npm run link:check && npm run verify:cli`

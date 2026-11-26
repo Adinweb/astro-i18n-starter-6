@@ -11,22 +11,35 @@ const rootDir = path.resolve(__dirname, '..');
 const distDir = path.resolve(rootDir, 'dist');
 const appConfig = readMergedConfig(rootDir);
 
-console.log('🧪 Starting Smoke Test Suite over dist/ ...\n');
+const args = process.argv.slice(2);
+const isQuiet = args.includes('--quiet');
+const wantsJson = args.includes('--json');
+
+if (!isQuiet && !wantsJson) {
+  console.log('🧪 Starting Smoke Test Suite over dist/ ...\n');
+}
 
 if (!fs.existsSync(distDir)) {
-  console.error('❌ dist/ directory not found! Run "npm run build" first.');
+  const err = 'dist/ directory not found! Run "npm run build" first.';
+  if (wantsJson) {
+    console.log(JSON.stringify({ ok: false, checks: 0, passed: 0, failures: [err] }, null, 2));
+  } else {
+    console.error(`❌ ${err}`);
+  }
   process.exit(1);
 }
 
 let failed = false;
 let checks = 0;
+const failures = [];
 
 function assert(condition, message) {
   checks += 1;
   if (!condition) {
-    console.error(`❌ FAILED: ${message}`);
+    failures.push(message);
+    if (!wantsJson) console.error(`❌ FAILED: ${message}`);
     failed = true;
-  } else {
+  } else if (!isQuiet && !wantsJson) {
     console.log(`✅ PASSED: ${message}`);
   }
 }
@@ -951,7 +964,23 @@ if (blogPaginated && postsPerPage > 0) {
   }
 }
 
-console.log('\n----------------------------------------');
+if (wantsJson) {
+  console.log(
+    JSON.stringify(
+      {
+        ok: !failed,
+        checks,
+        passed: checks - failures.length,
+        failures,
+      },
+      null,
+      2
+    )
+  );
+  process.exit(failed ? 1 : 0);
+}
+
+if (!isQuiet) console.log('\n----------------------------------------');
 if (failed) {
   console.error(`❌ Smoke test suite failed (${checks} checks).`);
   process.exit(1);

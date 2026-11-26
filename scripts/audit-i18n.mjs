@@ -27,25 +27,46 @@ const ENABLED_CONTENT_BASES = CONTENT_TYPES.filter(
   (type) => type.key !== 'pages' && type.enabled && type.base
 ).map((type) => type.base);
 
+const args = process.argv.slice(2);
+const isQuiet = args.includes('--quiet');
+const wantsJson = args.includes('--json');
+
 if (!LOCALES.includes(BASE_LOCALE)) {
-  console.error(`❌ FATAL: defaultLocale "${BASE_LOCALE}" is not listed in client/locales.json locales.`);
+  const errMsg = `defaultLocale "${BASE_LOCALE}" is not listed in client/locales.json locales.`;
+  if (wantsJson) {
+    console.log(JSON.stringify({ ok: false, errors: [errMsg], warnings: [] }, null, 2));
+  } else {
+    console.error(`❌ FATAL: ${errMsg}`);
+  }
   process.exit(1);
 }
 
 let hasFatal = false;
 let warningCount = 0;
+const fatals = [];
+const warnings = [];
+
+const logInfo = (...msg) => {
+  if (!isQuiet && !wantsJson) console.log(...msg);
+};
+const logWarn = (msg) => {
+  warnings.push(msg);
+  warningCount += 1;
+  if (!isQuiet && !wantsJson) console.warn(msg);
+};
 
 function fatal(message) {
-  console.error(`❌ FATAL: ${message}`);
+  fatals.push(message);
+  if (!wantsJson) console.error(`❌ FATAL: ${message}`);
   hasFatal = true;
 }
 
-console.log('🔍 Running i18n Audit Suite...\n');
+logInfo('🔍 Running i18n Audit Suite...\n');
 
 // ---------------------------------------------------------------------------
 // 1. Locale configuration validation (`client/locales.json`)
 // ---------------------------------------------------------------------------
-console.log('--- 1. Locale Configuration (`client/locales.json`) ---');
+logInfo('--- 1. Locale Configuration (`client/locales.json`) ---');
 
 let localeConfigOk = true;
 const recordLocaleFatal = (message) => {
@@ -94,14 +115,14 @@ if (!fs.existsSync(localesJsonPath)) {
   }
 
   if (localeConfigOk) {
-    console.log(`✅ client/locales.json defines ${LOCALES.length} valid locale(s) (default: ${BASE_LOCALE}).`);
+    logInfo(`✅ client/locales.json defines ${LOCALES.length} valid locale(s) (default: ${BASE_LOCALE}).`);
   }
 }
 
 // ---------------------------------------------------------------------------
 // 2. Two-tier dictionary parity: `messages/core/` + `client/messages/`
 // ---------------------------------------------------------------------------
-console.log('\n--- 2. Dictionary Parity ---');
+logInfo('\n--- 2. Dictionary Parity ---');
 
 function messageKeys(dictionary) {
   return Object.keys(dictionary).filter((key) => !key.startsWith('$'));
@@ -217,7 +238,7 @@ if (baseDictionary) {
   }
 
   if (!hasFatal) {
-    console.log(
+    logInfo(
       `✅ Merged core + client dictionaries in parity across ${LOCALES.length} locales (${baseKeys.length} keys).`
     );
   }
@@ -248,7 +269,7 @@ if (baseDictionary) {
       fatal(`Message "${key}" used in ${file} is not defined in merged ${BASE_LOCALE} dictionary`);
     }
   } else {
-    console.log(`✅ All ${usedKeys.size} statically referenced message keys exist.`);
+    logInfo(`✅ All ${usedKeys.size} statically referenced message keys exist.`);
   }
 
   // Flag orphaned client-owned keys (skip dynamic prefix families & overrides of core keys).
@@ -267,20 +288,19 @@ if (baseDictionary) {
   );
   if (unusedClientKeys.length > 0) {
     for (const key of unusedClientKeys) {
-      console.warn(
+      logWarn(
         `⚠️ [WARN] Unused client dictionary key "${key}" in client/messages/${BASE_LOCALE}.json`
       );
-      warningCount += 1;
     }
   } else {
-    console.log('✅ No orphaned client dictionary keys detected.');
+    logInfo('✅ No orphaned client dictionary keys detected.');
   }
 }
 
 // ---------------------------------------------------------------------------
 // 3. Content parity and frontmatter validity
 // ---------------------------------------------------------------------------
-console.log('\n--- 3. Content Collection Parity ---');
+logInfo('\n--- 3. Content Collection Parity ---');
 const contentDir = path.join(rootDir, 'src', 'content');
 
 function readFrontmatter(filePath) {
@@ -300,7 +320,7 @@ function localeFile(groupDir, locale) {
 const groups = [];
 let missingLocales = 0;
 if (!fs.existsSync(contentDir)) {
-  console.log('⚠️ No content directory found.');
+  logInfo('⚠️ No content directory found.');
 } else {
   const collections = fs
     .readdirSync(contentDir, { withFileTypes: true })
@@ -317,8 +337,7 @@ if (!fs.existsSync(contentDir)) {
       for (const locale of LOCALES) {
         if (!localeFile(groupDir, locale)) {
           const message = `Missing ${locale}.mdx for src/content/${collection}/${group.name}`;
-          console.warn(`⚠️ [WARN] ${message}`);
-          warningCount += 1;
+          logWarn(`⚠️ [WARN] ${message}`);
           missingLocales += 1;
         }
       }
@@ -335,9 +354,9 @@ if (!fs.existsSync(contentDir)) {
   }
 
   if (missingLocales === 0) {
-    console.log(`✅ All ${groups.length} content groups have a file for every locale.`);
+    logInfo(`✅ All ${groups.length} content groups have a file for every locale.`);
   } else {
-    console.log(
+    logInfo(
       `ℹ️ ${missingLocales} of ${groups.length * LOCALES.length} group/locale combinations have no entry (see the warnings above).`
     );
   }
@@ -346,7 +365,7 @@ if (!fs.existsSync(contentDir)) {
 // ---------------------------------------------------------------------------
 // 4. Slugs, required frontmatter, and route collisions
 // ---------------------------------------------------------------------------
-console.log('\n--- 4. Slug & Route Guard ---');
+logInfo('\n--- 4. Slug & Route Guard ---');
 
 function deriveReservedRouteBases() {
   const pagesDir = path.join(rootDir, 'src', 'pages');
@@ -470,8 +489,7 @@ for (const { collection, group, groupDir } of groups) {
     if (frontmatter.draft !== true && frontmatter.draft !== 'true') {
       const source = fs.readFileSync(file, 'utf-8');
       if (source.includes('[TODO')) {
-        console.warn(`⚠️ [WARN] ${relative} is published but still contains "[TODO" placeholders`);
-        warningCount += 1;
+        logWarn(`⚠️ [WARN] ${relative} is published but still contains "[TODO" placeholders`);
       }
     }
 
@@ -563,13 +581,13 @@ for (const locale of LOCALES) {
 }
 
 if (!slugFatal) {
-  console.log('✅ Frontmatter valid and no route collisions detected.');
+  logInfo('✅ Frontmatter valid and no route collisions detected.');
 }
 
 // ---------------------------------------------------------------------------
 // 5. Unextracted text scanner (warnings only, scans `src/` and `client/`)
 // ---------------------------------------------------------------------------
-console.log('\n--- 5. Unextracted Text Scanner (Warnings) ---');
+logInfo('\n--- 5. Unextracted Text Scanner (Warnings) ---');
 const skippedTemplatePatterns = [/©/, /^[0-9]+$/, /^[\s|·/–—↑←→]+$/];
 
 function scanAstro(dir) {
@@ -604,23 +622,22 @@ for (const file of [
       return;
     }
 
-    console.warn(
+    logWarn(
       `⚠️ [WARN] Potential unextracted text in ${path.relative(rootDir, file)}:${lineIndex + 1}: "${text}"`
     );
-    warningCount += 1;
   });
 }
 
 if (warningCount === 0) {
-  console.log('✅ Unextracted text scanner clean (0 warnings).');
+  logInfo('✅ Unextracted text scanner clean (0 warnings).');
 } else {
-  console.log(`ℹ️ Emitted ${warningCount} warning(s).`);
+  logInfo(`ℹ️ Emitted ${warningCount} warning(s).`);
 }
 
 // ---------------------------------------------------------------------------
 // 6. RTL Logical Property & Reveal Vector Guard (`src/` and `client/`)
 // ---------------------------------------------------------------------------
-console.log('\n--- 6. RTL Logical Property Guard ---');
+logInfo('\n--- 6. RTL Logical Property Guard ---');
 const FORBIDDEN_PHYSICAL_CLASS =
   /^(?:-?m[lr]-|p[lr]-|-?(?:left|right)-|text-(?:left|right)$|border-[lr](?:$|-)|rounded-(?:[tb])?[lr](?:$|-))/;
 const FORBIDDEN_REVEAL_VECTOR =
@@ -684,12 +701,35 @@ for (const file of [
 }
 
 if (rtlViolations === 0) {
-  console.log('✅ Zero physical directional CSS classes or reveal vectors detected.');
+  logInfo('✅ Zero physical directional CSS classes or reveal vectors detected.');
 }
 
-console.log('\n----------------------------------------');
+if (wantsJson) {
+  console.log(
+    JSON.stringify(
+      {
+        ok: !hasFatal,
+        locales: LOCALES.length,
+        groups: groups.length,
+        missingLocales,
+        warningCount,
+        warnings,
+        errors: fatals,
+      },
+      null,
+      2
+    )
+  );
+  process.exit(hasFatal ? 1 : 0);
+}
+
+if (!isQuiet) console.log('\n----------------------------------------');
 if (hasFatal) {
   console.error('❌ Audit Failed: resolve the fatal errors above.');
   process.exit(1);
 }
-console.log('🎉 Audit Passed: 0 fatal errors.');
+if (isQuiet) {
+  console.log(`✅ i18n audit passed (${LOCALES.length} locales, ${groups.length} groups, ${warningCount} warning(s)).`);
+} else {
+  console.log('🎉 Audit Passed: 0 fatal errors.');
+}

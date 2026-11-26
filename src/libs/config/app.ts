@@ -22,6 +22,7 @@ import {
   SOCIAL_CARD_MODES,
 } from './theme';
 import { isValidScheduleString, parseScheduleBound } from './schedule';
+import { pageSectionItemSchema } from '../ui/sections';
 
 /**
  * Typed access to the application's three-tier merged configuration
@@ -219,6 +220,44 @@ export const motionConfigSchema = z.object({
 });
 export type MotionConfig = z.infer<typeof motionConfigSchema>;
 
+const uiNavigationPageSchema = z.object({
+  group: z.string().min(1),
+  icon: z.string().min(1).optional(),
+  label: z.string().optional(),
+  labels: localizedStringMapSchema.optional(),
+});
+
+const uiNavigationFooterItemSchema = z
+  .object({
+    label: z.string().optional(),
+    labels: localizedStringMapSchema.optional(),
+    group: z.string().min(1).optional(),
+    href: z.string().min(1).optional(),
+    external: z.boolean().optional().default(false),
+    icon: z.string().min(1).optional(),
+  })
+  .superRefine((item, ctx) => {
+    if (!item.group && !item.href) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Footer navigation item must specify either "group" or "href".',
+      });
+    }
+  });
+
+const uiNavigationFooterColumnSchema = z.object({
+  key: z.string().min(1),
+  title: z.string().optional(),
+  titles: localizedStringMapSchema.optional(),
+  items: z.array(uiNavigationFooterItemSchema).optional(),
+});
+
+export const uiNavigationSchema = z.object({
+  pages: z.array(uiNavigationPageSchema).optional(),
+  footerColumns: z.array(uiNavigationFooterColumnSchema).optional(),
+});
+export type UiNavigationConfig = z.infer<typeof uiNavigationSchema>;
+
 export const uiConfigSchema = z.object({
   /**
    * Content group the header and drawer CTA (the "Get Started" button) links
@@ -235,6 +274,8 @@ export const uiConfigSchema = z.object({
   topBanner: topBannerConfigSchema.default(TOP_BANNER_CONFIG_DEFAULTS),
   quickContact: quickContactConfigSchema.default(QUICK_CONTACT_CONFIG_DEFAULTS),
   motion: motionConfigSchema.default(MOTION_CONFIG_DEFAULTS),
+  navigation: uiNavigationSchema.optional(),
+  homeSections: z.array(pageSectionItemSchema).optional(),
 });
 export type UiConfig = z.infer<typeof uiConfigSchema>;
 

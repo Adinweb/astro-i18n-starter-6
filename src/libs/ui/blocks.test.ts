@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { HERO_SECTION_NAMES, SECTION_BLOCK_NAMES } from './sections';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../../..');
@@ -181,6 +182,21 @@ describe('PrebuiltUI-Adapted Reusable Corporate & Landing Blocks', () => {
       );
       expect(hero).toMatch(/<h1[\s>]|<HeroHeadline[\s>]/);
       expect(hero).toContain("headingTag = 'h1'");
+    }
+  });
+
+  it('SectionComposer supports all 29 section blocks and obeys RTL/SVG/hex rules', () => {
+    expect([...HERO_SECTION_NAMES]).toEqual([...HERO_SECTIONS]);
+    expect([...SECTION_BLOCK_NAMES].sort()).toEqual([...COMPOSABLE_SECTIONS].sort());
+
+    const composerSource = fs.readFileSync(
+      path.join(rootDir, 'src/components/SectionComposer.astro'),
+      'utf-8'
+    );
+    expect(composerSource).not.toMatch(/<svg[\s>]/i);
+    expect(composerSource).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    for (const block of COMPOSABLE_SECTIONS) {
+      expect(composerSource, `SectionComposer missing ${block}`).toContain(block);
     }
   });
 });

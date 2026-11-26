@@ -129,18 +129,18 @@ export function getContentTypeNavItems(locale: Locale, currentUrl = ''): NavItem
 
 ---
 
-## 5. Extending Navigation Menus
+## 5. Extending Navigation Menus (`ui.navigation` & `client/navigation.ts`)
 
-To add a new page or custom link:
-1. Ensure the page exists under `src/content/pages/<page-key>/` (`npm run new:page <page-key>` scaffolds it and registers `nav_<key>` in `client/messages/`).
-2. Add one entry to `CLIENT_PAGE_ITEMS` in `client/navigation.ts` — the single list the header **and** the drawer read, so a page is never added twice:
+You can declare navigation items either via config (`client/config.json` → `ui.navigation.pages` / `ui.navigation.footerColumns`, which **merge cleanly** over `client/navigation.ts` by matching `group`/`key` and appending new items) or programmatically in `client/navigation.ts`:
+1. Ensure the page exists under `src/content/pages/<page-key>/` (`npm run new:page <page-key>` or `npm run site:apply`).
+2. Add one entry to `ui.navigation.pages` in `client/config.json` (e.g. `{ "group": "contact", "icon": "mail", "labels": { "en": "Contact", "fa": "تماس" } }`) **or** `CLIENT_PAGE_ITEMS` in `client/navigation.ts` — the single list the header **and** the drawer read:
    ```ts
    { group: 'contact', icon: 'mail', label: (locale: Locale) => m.nav_contact({}, { locale }) },
    ```
    `icon` names an entry of `src/libs/ui/icons.ts` or `client/icons.ts`; the mobile drawer shows it in the row's tile, and a missing entry simply falls back to `file`.
-3. For extra dropdowns/anchors, footer-only columns, or legal links, edit `getClientPrimaryExtras`, `getClientFooterColumns`, and `getClientLegalNavigation` in `client/navigation.ts`.
-4. Use compiled Paraglide message functions for labels (`m.nav_<key>({}, { locale })`).
-5. Run `npm test` and `npm run lint` to verify active state and TypeScript types.
+3. For extra dropdowns/anchors, programmatic footer-only columns, or legal links, use `ui.navigation.footerColumns` in `client/config.json` or edit `getClientPrimaryExtras`, `getClientFooterColumns`, and `getClientLegalNavigation` in `client/navigation.ts`.
+4. Use compiled Paraglide message functions (`m.nav_<key>({}, { locale })`) or inline `labels` maps.
+5. Run `npm run check:quick` to verify active state and TypeScript types.
 
 ---
 

@@ -28,7 +28,12 @@ npm run site:init -- [--name="Acme Studio"] [--short-name="Acme"] [--desc="..."]
   [--cta-page=<key>] [--github=...] [--twitter=...] [--linkedin=...] [--instagram=...] [--telegram=...] \
   [--skip-assets] [--yes]
 ```
-* Updates `client/config.json` (sparse diff against `app.config.json`), applies optional industry `--blueprint` presets (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal` from `scripts/lib/blueprints.mjs`), validates & copies optional `--logo` / `--logo-dark` assets into `public/brand/logo*` (passing empty `--logo=` clears the uploaded logo), keeps `site_description` synchronized in `client/messages/<targetLocale>.json`, optionally switches default/solo locale mode in `client/locales.json`, and refreshes brand icons / `og-default.png` unless `--skip-assets` is passed. Runs interactively when stdin is a TTY or headlessly with `--yes`.
+* Updates `client/config.json` (sparse diff against `app.config.json`), applies optional industry `--blueprint` presets (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal` from `scripts/lib/blueprints.mjs`, each injecting domain `content.types` and invoking `content:sync` without sample data), validates & copies optional `--logo` / `--logo-dark` assets into `public/brand/logo*` (passing empty `--logo=` clears the uploaded logo), keeps `site_description` synchronized in `client/messages/<targetLocale>.json`, optionally switches default/solo locale mode in `client/locales.json`, and refreshes brand icons / `og-default.png` unless `--skip-assets` is passed. Runs interactively when stdin is a TTY or headlessly with `--yes`.
+* **One-Shot Declarative Site Provisioner (`site:apply`)**:
+  ```bash
+  npm run site:apply -- --spec=site-spec.json [--dry-run] [--skip-assets] [--json]
+  ```
+  Validates and applies a complete JSON site spec in a single transaction: `blueprint`, `site`, `brand` (incl. `logo` copying to `public/brand/`), `business`, `social`, `analytics`, `cookies`, `api`, `redirects`, `ui` (incl. `navigation` and `homeSections`), `content.types` (`content:sync`), `messages`, `pages` (with `nav` merge and `sections`), `entries` across built-in/custom collections, `locale` switches (`defaultLocale`, `solo`), automatic `i18n:sync-keys`, and brand/cover assets.
 * **Resetting a workspace between client projects (`site:reset`)**:
   ```bash
   npm run site:reset -- --yes [--clean-starter]
@@ -157,10 +162,18 @@ npm run block:adapt -- --file=<path-to-component>
 * Automatically converts physical classes (`ml-`, `mr-`, `pl-`, `pr-`, `left-`, `right-`, `text-left`, `text-right`, `border-l-`, `border-r-`) to logical equivalents (`ms-`, `me-`, `ps-`, `pe-`, `start-`, `end-`, `text-start`, `text-end`, `border-s-`, `border-e-`).
 * Replaces hardcoded grayscale colors with semantic tokens (`bg-white` → `bg-bg`, `text-gray-900` → `text-fg`, `border-gray-200` → `border-border`).
 
-### 5.3 Extracting User-Visible Copy (`i18n:extract`)
+### 5.3 Extracting User-Visible Copy (`i18n:extract`) & Auto-Syncing Keys (`i18n:sync-keys`)
 ```bash
 npm run i18n:extract -- --target=<file-or-dir> --key=<namespace> --auto-add --replace
+npm run i18n:sync-keys [-- --dry-run] [--json] [--quiet]
 ```
+`i18n:sync-keys` scans static `m.*()` usages, enabled `content.types`, `ui.navigation.pages`, and frontmatter taxonomy (`categories`/`tags`), fills missing keys in `client/messages/<locale>.json` with humanized English for `defaultLocale` and `[TODO: <locale>] <English>` for other locales, and compiles Paraglide.
+
+### 5.3b Generating Component Props Catalog (`blocks:catalog`)
+```bash
+npm run blocks:catalog [-- --check] [--json] [--quiet]
+```
+Parses TypeScript `interface Props` and defaults across `src/components/*.astro` and `src/components/ui/*.astro` to emit `< 5 KB` `docs/BLOCKS-API.md`.
 
 ### 5.4 Regenerating Brand Artwork & Logo-Derived Icon Suite (`assets:generate`)
 ```bash

@@ -1,6 +1,58 @@
-# AI Playbooks & Operational Guides
+# AI Playbooks & Architectural Reference
 
-This document provides step-by-step verified playbooks for common architectural and content operations.
+This document holds the full directory layout and step-by-step verified playbooks moved out of `AGENTS.md` to keep the root agent manual lightweight (`< 12 KB`).
+
+---
+
+## Directory Layout & Architectural Map
+
+```text
+/
+├── .agents/skills/            # Agent skills (astro-i18n-starter/SKILL.md + references/)
+├── .pages.yml                 # Pages CMS schema for client content + client/cms.json editing
+├── app.config.json            # Upstream core defaults (site, brand, business, analytics, content types, redirects, blog, cookies, API, server)
+├── client/                    # Client-owned workspace (survives upstream merges cleanly):
+│   ├── config.json            # Agency/CLI sparse overrides merged onto app.config.json (incl. ui.navigation, ui.homeSections, content.types)
+│   ├── cms.json               # Pages CMS non-technical settings layer (sanitized + merged atop client/config.json)
+│   ├── locales.json           # SSOT for active locales, defaultLocale, and metadata (dir, font, htmlLang)
+│   ├── messages/              # Client translation overrides & new keys (<locale>.json)
+│   ├── navigation.ts          # CLIENT_PAGE_ITEMS + custom primary extras, footer columns & legal links (merged with ui.navigation)
+│   ├── content.ts             # Custom Astro contentCollections & CLIENT_CONTENT_TYPES UI metadata
+│   ├── icons.ts & ClientIcons.astro # Extra client Tabler icons merged into <Icon />
+│   ├── LayoutHooks.astro      # Custom `top-banner`, `<head>`, and `<body>`-end slots inside BaseLayout
+│   ├── styles.css             # Client CSS tokens & @font-face commercial Persian font slots (@source "../../client")
+│   └── templates/index.ts     # Custom page templates merged into PageView.astro
+├── deploy/                    # Build-generated server redirect configs (`nginx-redirects.conf`, `.htaccess-redirects`; outside `dist/`)
+├── docs/
+│   ├── BLOCKS-API.md          # Auto-generated < 5 KB component & Props catalog (`npm run blocks:catalog`)
+│   ├── PLAYBOOKS.md           # This file: directory map + operational playbooks
+│   └── deploy/                # Production Nginx config (`nginx.conf`) & webhook starter (`cloudflare-worker-webhook.js`)
+├── messages/core/             # Upstream core UI dictionaries (en.json, fa.json)
+├── starter-kit/               # Optional demo pages, blog posts, projects & 6 industry blueprints (`npm run starter:seed`)
+├── public/                    # Static assets (_headers, chronotrig.min.js, favicons, manifest, default OG)
+├── scripts/                   # Developer CLI, QA, health check, sync, Pagefind indexing & upstream check scripts
+│   ├── site-apply.mjs         # One-shot declarative site provisioner (`--spec=<path>`, `--dry-run`, `--skip-assets`, `--json`)
+│   ├── blocks-catalog.mjs     # Auto-generates `docs/BLOCKS-API.md` from TypeScript AST (`--check`, `--json`, `--quiet`)
+│   ├── i18n-sync-keys.mjs     # Scans static `m.*()`, `content.types`, nav & frontmatter to fill missing dictionary keys
+│   └── lib/                   # Shared modules (config, blueprints, blocks-catalog, site-apply, i18n-sync, frontmatter, redirects, ...)
+├── src/
+│   ├── assets/hero/hero-0.jpg # Shared hero photograph fallback
+│   ├── components/            # Core chrome (`HomeHero`, `SiteTopBanner`, `QuickContactWidget`, `AnalyticsScripts`, `ThemeToggle`, `DevThemePreview`, `LanguageSwitcher`, `DrawerNavLink`, `PageHeader`, `PageHero`, `PageSection`, `SectionComposer`, `HeroCopy`, `BlogPostHeroContent`, `PostCard`, `CollectionBrowser`, `SearchModal`, `DrawerSearch`, `CookieConsent`, `ContactForm`, `Seo`, `TopLoadingBar`)
+│   │                          # + 29 section blocks (7 hero + 22 structural) & 4 interactive/motion showcases (`BentoGrid`, `LatestPostsCarousel`, `SwipeableTabs`, `TestimonialMarquee`) + `ui/` (35 UI primitives incl. `Icon`, `IconButton`, `Button` — guarded by `blocks.test.ts`)
+│   ├── content/               # Symmetrical content collections:
+│   │   ├── pages/<group>/     # Static pages (<locale>.mdx per active locale + hero artwork; optional `sections: [{ block, props }]`)
+│   │   ├── blog/<group>/      # Blog posts with localized slugs (+ cover artwork)
+│   │   └── projects/<group>/  # Case studies/portfolio entries + any declarative client collections (`gallery`, `products`, …)
+│   ├── i18n/                  # Core i18n engine (`locales.ts`, `format.ts`, `paths.ts`)
+│   ├── layouts/               # BaseLayout.astro
+│   ├── libs/                  # Core services (`api/client.ts`, `config/{app,client,defaults,theme,navigation}.ts`, `content/*`, `cookies/`, `search/`, `ui/{button,icons,sections}.ts`)
+│   ├── pages/                 # Minimal physical pages (`[...path].astro`, `404.astro`, `og/`, `llms.txt.ts`, `rss*`, `sitemap.xml.ts`, `robots.txt.ts`, `api/*.json.ts`)
+│   ├── paraglide/             # AUTO-GENERATED compiled messages (DO NOT EDIT)
+│   ├── scripts/               # Client modules (`navbar.ts`, `chronotrig.ts`, `lenis.ts`)
+│   ├── styles/                # `global.css`, `prose.css`, `chronotrig.css`
+│   ├── types/                 # `tabler-icons-astro.d.ts`
+│   └── views/                 # Presentation views (`PageView`, `BlogIndexView`, `BlogPostView`, `CollectionIndexView`, `CollectionEntryView` + `pages/HomePageTemplate`)
+```
 
 ---
 
@@ -18,12 +70,12 @@ npm run i18n:set-default fa
    - Recompiles Paraglide dictionaries (`src/paraglide/`).
 2. **Verify**:
    ```bash
-   npm run messages:compile && npm test && npm run audit:i18n && npm run build && npm run smoke
+   npm run check:quick && npm run audit:i18n && npm run build && npm run smoke
    ```
 3. **Expected Outcome**:
-   - Persian (`fa`) instantly routes to prefix-less URLs (`/`, `/درباره-ما/`, `/blog/...`).
+   - Persian (`fa`) routes to prefix-less URLs (`/`, `/درباره-ما/`, `/blog/...`).
    - English (`en`) routes to prefixed URLs (`/en/`, `/en/about/`, `/en/blog/first-post/`).
-   - Hreflang `x-default`, canonical URLs, and sitemap update seamlessly without moving a single file.
+   - Hreflang `x-default`, canonical URLs, and sitemap update automatically.
 
 ### Single-Language Client Sites
 * **Recommended (zero structural changes)**: Set `"showLanguageSwitcher": false` under `"ui"` in `client/config.json` (plus `npm run i18n:set-default <locale>` if the root `/` site should use another locale). Both desktop `<LanguageSwitcher>` and the mobile drawer language grid hide cleanly while keeping all files intact.
@@ -36,20 +88,15 @@ npm run i18n:set-default fa
 Which collections are built is decided by merged `app.config.json` + `client/config.json` → `content.types`. `pages` owns the root and cannot be disabled; `blog` and `projects` ship enabled.
 
 ### 1. Toggle an existing type
-
 ```bash
 npm run content:list                 # state, route base, entry counts
 npm run content:disable projects     # writes sparse override to client/config.json; routes, sitemap & nav links disappear
 npm run content:enable projects      # they come back
 npm run build && npm run smoke
 ```
-
-* The command writes only the sparse `content.types.<type>.enabled` override in `client/config.json`, leaving upstream `app.config.json` untouched.
-* Disabling never deletes content. It removes the index/entry routes, the sitemap entries, the header/drawer/footer link and the home-page CTA. `/api/blog-posts.json` and `/rss.xml` deliberately keep working so external consumers do not break.
-* Hand-written MDX links to a removed section are not rewritten — `npm run link:check` reports the missing page **or the missing `#anchor`** after a build, and the navigation itself never emits an anchor whose target page is gone.
+* Disabling never deletes content; it removes the index/entry routes, sitemap entries, header/drawer/footer link, and home-page CTA. `/api/blog-posts.json` and `/rss.xml` keep working so external consumers do not break.
 
 ### 2. Inspect what is ready
-
 ```bash
 npm run content:status                      # group × locale matrix
 npm run content:status -- --write=docs/STATUS.md
@@ -58,268 +105,130 @@ npm run upstream:check                      # verifies core vs client/ separatio
 ```
 
 ### 3. Add a declarative collection (e.g. `gallery` or `services`) — Zero Core Edits
-
-1. **Config-First Definition (`client/config.json`)** — declare `content.types.<key>` directly with its `base`, `labels`/`descriptions`, `sortBy`/`sortOrder`, `fields[]` (`type`, `filter: { mode: 'single' | 'multi' | 'select' | 'toggle' | 'range', param, ... }`, `showOnCard`, `showOnEntry`), `search`, and `card` (`layout`, `aspectRatio`). `src/content.config.ts` (`buildConfiguredCollectionSchema()`), `types.ts`, `service.ts`, `/api/collections/[type]/[locale].json`, and `<CollectionBrowser />` wire automatically. (Only add an entry in `client/content.ts` if you need custom Astro Zod transforms or computed defaults beyond the 10 built-in field types.)
+1. **Config-First Definition (`client/config.json`)** — declare `content.types.<key>` directly (or apply an industry blueprint via `site:init --blueprint=...` / `site:apply`, which injects domain `content.types` and runs `content:sync` without sample entries): `base`, `labels`/`descriptions`, `sortBy`/`sortOrder`, `fields[]` (`type`, `filter: { mode: 'single' | 'multi' | 'select' | 'toggle' | 'range', param, ... }`, `showOnCard`, `showOnEntry`), `search`, and `card` (`layout`, `aspectRatio`).
 2. **Sync CMS & Folders** — run `npm run content:sync` so `.pages.yml` and `src/content/<key>/` match `content.types`.
-3. **Optional Messages (`client/messages/<locale>.json`)** — add `nav_<key>` / `<key>_index_description` (or inline `labels` / `descriptions` directly inside `client/config.json`).
-
-### 4. Scaffold, embed, and verify
-
+3. **Sync Missing Keys** — run `npm run i18n:sync-keys` to generate any missing `nav_<key>`, `<key>_index_description`, or field/option keys into `client/messages/*.json` and compile Paraglide.
+4. **Scaffold, embed, and verify**:
 ```bash
 npm run content:new gallery studio-shot -- --title="Studio Shot" --publish
 npm run assets:generate
 npm run content:sync -- --check
-npm run upstream:check && npm run doctor && npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke && npm run link:check
+npm run check:quick && npm run upstream:check && npm run doctor && npm run build && npm run smoke && npm run link:check
 ```
-
-`content:new` delegates `pages` and `blog` to `new:page` / `new:post`; every other type automatically populates `default`/`required` configured fields from `content.types.<type>.fields`, generates a cover, and leaves `[TODO: …]` drafts for untranslated locales. You can also embed `<CollectionBrowser collection="gallery" columns={3} syncUrl={false} contained />` inside any custom page or MDX file. Full reference: `docs/CONTENT-TYPES-FA.md`.
-
-## Playbook 3: Composable Corporate Blocks & Client Rebranding
-
-1. **Rapid Client Onboarding, Branding & Logo Assets (`npm run client:bootstrap` + `site:init` + `assets:generate --from-logo` + `DevThemePreview`)**:
-   Configure site identity, industry blueprint (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal`), 6 OKLCH palettes (`indigo`, `cobalt`, `emerald`, `amber`, `slate`, `rose`), Light/Dark `brand.logo` (with automatic `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, multi-size `favicon.ico`, `favicon.svg`, and logo-badged `og-default.png` derivation), Latin/RTL font pairings (`vazirmatn`, `noto-arabic`, `iransans`, `yekan-bakh`, `peyda` with commercial `@font-face` hooks in `client/styles.css`), deterministic Resvg+wawoff2 branded OG cards, `.env` origins, and active modules in one step:
-   ```bash
-   npm run client:bootstrap -- --name="Acme Studio" --blueprint=agency --logo=logo.svg --site-url=https://acme.com --rtl-font=vazirmatn --yes
-   ```
-   Or invoke `npm run site:init` directly (`npm run site:init -- --name="Acme Studio" --blueprint=agency --logo=logo.svg --yes`). While running `npm run dev`, open the floating **DEV Theme Studio** (`src/components/DevThemePreview.astro`, strictly excluded from production builds) to preview light/dark mode, palettes, custom primary/accent hex overrides, and Latin/RTL fonts live, then copy the generated JSON snippet straight into `client/config.json`.
-   Need optional demo pages, posts, and projects to preview or copy blocks from? Run `npm run starter:seed -- --blueprint=corporate` (and `npm run starter:seed -- --clean --yes` to strip demo items cleanly, or `npm run site:reset -- --yes` to wipe client overrides between builds).
-
-2. **Start From the 64 Guarded Blocks (`src/components/` & `src/components/ui/`)**:
-   Before building custom markup from scratch, check the starter's **29 RTL/LTR-safe section blocks** (**7 hero sections** + **22 content/feature sections**), **35 UI primitives** in `src/components/ui/`, and **4 interactive/motion showcase blocks** — all work with zero props using localized Paraglide defaults (`locale` auto-detects from URL) or custom overrides:
-   - **Hero Sections (7):** `LandingHeroSplit.astro`, `HeroCenteredEditorial.astro`, `HeroDashboardShowcase.astro`, `HeroCommandCli.astro`, `HeroInteractivePrompt.astro`, `HeroProofMarquee.astro`, and `HeroFloatingOrbSplit.astro`.
-   - **Content & Feature Sections (22):** `PromoBanner.astro`, `PartnerLogos.astro`, `AboutSplitSection.astro`, `BentoCapabilities.astro`, `FeatureTabsSection.astro`, `ProcessSteps.astro`, `FeatureCardGrid.astro`, `ProofStatsRow.astro`, `ComparisonTable.astro`, `PricingSection.astro`, `TestimonialGrid.astro`, `ImageGallerySection.astro`, `LatestPostsSection.astro`, `TeamSection.astro`, `FaqAccordion.astro`, `ContactSplitSection.astro`, `NewsletterBanner.astro`, `CtaBanner.astro`, `CarouselSection.astro`, `ProductShowcaseGrid.astro` (`currency`, `currencyPrefix`, `currencySuffix`), `AuthFormCard.astro`, and `ParallaxSection.astro`.
-   - **UI Primitives (`src/components/ui/`, 35):** `UiBadge`, `UiAlert`, `AvatarGroup`, `Breadcrumbs`, `HeroPreviewNav`, `HeroParallaxLayer`, `HeroShowcaseCard`, `UiPagination`, `UiModal`, `UiTooltip`, `UiProgress`, `UiSwitch`, `UiCheckbox`, `UiInput`, `UiDropdown`, `SocialLinks`, `Accordion`, `AnnouncementPill`, `ChipGroup`, `CodeBlock`, `Divider`, `RatingStars`, `Skeleton`, `StatTile`, `TopBanner`, `BackdropLayer`, `Button`, `Card`, `HeroHeadline`, `Icon`, `IconBox`, `IconButton`, `Kbd`, `PartnerStrip`, and `SectionHeader`.
-   - **Interactive Showcase Blocks (4):** `BentoGrid.astro`, `LatestPostsCarousel.astro`, `SwipeableTabs.astro` (Embla-powered swipeable/keyboard tabs supporting `variant="pills"|"underline"` and `data-motion="reduced"`), and `TestimonialMarquee.astro`.
-   - Use `npm run new:page <key> -- --preset=landing` to scaffold a multi-locale landing page pre-wired with canvas layout and composable blocks.
-
-3. **Tailwind Blocks RTL & Token Adaptation**:
-   When pasting custom Tailwind UI or external component code, adapt directions and utility colors:
-   ```bash
-   npm run block:adapt -- --file=src/components/MyComponent.astro
-   ```
-
-4. **Extract Copy to Compiled Messages & Recompile**:
-   ```bash
-   npm run i18n:extract -- --target=src/components/MyComponent.astro --key=mycomp --auto-add --replace
-   npm run messages:compile
-   ```
-
-5. **Reach for `<Button>`, not a hand-rolled control**:
-   Every text button in the project is `src/components/ui/Button.astro` — only its colour (`variant`), scale (`size`), label and icon change. It renders `<a>` for navigation and `<button>` for actions, adds the shared hover lift/press, and mirrors directional icons in RTL:
-   ```astro
-   <Button href={pricingHref} variant="primary" size="lg" icon="arrow-right">
-     {m.common_get_started({}, { locale })}
-   </Button>
-   ```
-   The class recipe lives in `src/libs/ui/button.ts` (`buttonClasses()`), so client-side renderers such as the blog pager produce the same control. Icon-only controls stay `src/components/ui/IconButton.astro`. Custom client icons go into `client/icons.ts` + `client/ClientIcons.astro` without editing `src/libs/ui/icons.ts`.
 
 ---
 
-## Playbook 4: Adding New Languages & Scaffolding Multilingual Content
+## Playbook 3: Composable Blocks, Blueprints & Declarative Composition
 
-### 1. Adding a New Language (`npm run i18n:add-lang`)
+1. **Inspect `docs/BLOCKS-API.md` First (`npm run blocks:catalog`)**:
+   Before reading source `.astro` files, check `docs/BLOCKS-API.md` (< 5 KB) for exact Props & defaults across all **7 heroes**, **22 structural sections + `SectionComposer`**, **4 interactive showcases**, core components, and **35 UI primitives**.
+2. **Industry Blueprints (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal`)**:
+   Every blueprint in `scripts/lib/blueprints.mjs` configures palette, font pairing, enabled built-ins (`blog`/`projects`), and **domain `content.types`**, automatically invoking `content:sync` without seeding dummy entries.
+3. **Declarative Page Composition via `SectionComposer.astro` (`sections` / `ui.homeSections`)**:
+   Instead of authoring custom `.astro` wrappers, pass declarative section arrays in either page MDX frontmatter (`sections: [{ block, props }]`) or `client/config.json` (`ui.homeSections`):
+   ```yaml
+   ---
+   title: "Services"
+   slug: "services"
+   hero: "none"
+   container: "canvas"
+   flushTop: true
+   sections:
+     - block: LandingHeroSplit
+       props:
+         title: "Precision Engineering"
+         image: "./hero.jpg"
+     - block: FeatureCardGrid
+       props:
+         surface: "surface"
+     - block: CtaBanner
+   ---
+   ```
+   `SectionComposer.astro` supports all **29 section blocks** (7 heroes + 22 structural sections), resolves relative `image` / `parallaxImage` / `bottomImage` / `avatar` paths cleanly, assigns `h1` vs `h2` based on `hasPageH1`, and applies `contained` automatically.
+4. **One-Shot Provisioning (`npm run site:apply`)**:
+   Apply brand, config, blueprint, `ui.navigation`, `ui.homeSections`, pages (`sections`), collection entries, localized messages, locale modes, `i18n:sync-keys`, and brand assets in one declarative JSON pass:
+   ```bash
+   npm run site:apply -- --spec=site-spec.json --dry-run
+   npm run site:apply -- --spec=site-spec.json
+   ```
+   Use `--skip-assets` during quick iterations or `--json` for structured output.
+5. **Tailwind RTL & Button Rules**:
+   Use `npm run block:adapt -- --file=...`, `npm run i18n:extract -- --target=...`, `<Button>` (`src/components/ui/Button.astro` / `buttonClasses()`), `<IconButton>`, and `<Icon>` (custom client icons in `client/icons.ts` + `client/ClientIcons.astro`).
+
+---
+
+## Playbook 4: Adding Languages, Content & Config-First Navigation
+
+### 1. Config-First Navigation (`ui.navigation` + `client/navigation.ts`)
+You can declare/override primary page links and footer columns right inside `client/config.json` under `ui.navigation`:
+```json
+{
+  "ui": {
+    "ctaPage": "contact",
+    "navigation": {
+      "pages": [
+        { "group": "services", "icon": "sparkles", "labels": { "en": "Services", "fa": "خدمات" } }
+      ],
+      "footerColumns": [
+        {
+          "key": "company",
+          "titles": { "en": "Company", "fa": "شرکت" },
+          "items": [{ "key": "about", "group": "about" }]
+        }
+      ]
+    }
+  }
+}
+```
+Items from `ui.navigation` **merge cleanly** with `client/navigation.ts` (`group`/`key` matches override; new items append). Prefer `ui.navigation` when adding simple links or wiring pages via `site:apply`, and keep `client/navigation.ts` for complex dynamic dropdowns.
+
+### 2. Adding a Language & Syncing Keys (`i18n:add-lang`, `i18n:sync-keys`)
 ```bash
-# Add a new language with interactive prompt or explicit flags:
 npm run i18n:add-lang -- ar --with-content --from=en
-npm run i18n:add-lang -- es --with-content --from=fa
-npm run i18n:add-lang -- it --no-content
+npm run i18n:sync-keys -- --dry-run   # preview missing keys
+npm run i18n:sync-keys                # fill baseLocale with humanized English & others with [TODO: <locale>] <English> + compile
 ```
-* **Flags:**
-  * `--with-content` / `--no-content`: Chooses whether to auto-generate markdown files for all existing pages and posts in the new language.
-  * `--from=<locale>`: Selects which existing language to clone titles, descriptions, and markdown body from (defaults to `DEFAULT_LOCALE` / `en`).
-  * `--publish` / `--draft=false`: Requests published output, but entries whose title still contains a `[TODO: ...]` placeholder always stay `draft: true`. Generated content copies the source language, so translate each file and flip its `draft` flag instead of forcing it.
-  * A body copied from `--from=<locale>` starts with an MDX comment naming the source file (`{/* TODO(de): translate this body — it is still en copy. */}`). It is not translated copy, and the marker makes that obvious in review instead of leaving source-language prose under a translated title. Locales that were never translated keep a localized `[TODO: …]` stub instead.
-
-### 2. Scaffolding New Articles (`npm run new:post`)
-```bash
-# Create post with default source language (en) and draft non-source translations:
-npm run new:post tech-trends
-
-# Create post from Persian and publish the locales that have translations:
-npm run new:post ai-features -- --from=fa --title="قابلیت‌های هوش مصنوعی" --publish
-
-# Non-interactive frontmatter sync across all active language files without overwriting markdown body:
-npm run new:post tech-trends -- --update --sync-frontmatter --title="Modern Tech Trends" --desc="Updated description"
-```
-* **Why non-source locales default to `draft: true`:**
-  To prevent unreviewed placeholder translations (`[TODO: ...]`) from appearing publicly on the live blog index (`/fa/blog/`, etc.), `new:post` sets `draft: true` on non-source locales by default.
-  * To show a post on a specific language's blog listing, set `draft: false` in its frontmatter.
-  * To publish every ready language at creation, pass `--publish` or `--draft=false`. Locales that still contain `[TODO: ...]` placeholders stay drafts; supply `--title:<locale>` / `--desc:<locale>` for each one you want to publish.
-  * `--draft` / `--draft=true` keeps **every** locale (including the source) as a draft.
-* **Slugs:** The source and default locale use the group key (`tech-trends`); the other locales get a placeholder (`tech-trends-fa`) until a native slug is set with `--slug:fa="روندهای-فناوری"`. `--from` selects the source locale only — use `--clone-from=<group>` to copy the body of an existing article.
-* **Blog taxonomy and covers:** Pass `--category=engineering`, `--tags="astro,performance"`, and `--image=cover.png` when scaffolding (the file is looked up next to the content group and in the project root, then copied into the group folder, because the frontmatter reference is relative to the entry file) so cards, filters, and the article hero are populated from the start. The same flags work with `--update`, and inline YAML arrays are preserved when frontmatter is rewritten.
-  * Category and tag keys stay language-neutral (`engineering`, `i18n`); visible labels are message keys (`blog_category_engineering`, `blog_tag_i18n`). Unknown keys fall back to a humanized label, so a new tag never blocks a build.
-  * Run `npm run assets:generate` after adding a post group to produce `src/content/blog/<group>/<group>.png` (1200×675).
-  * Filtering lives entirely in `src/libs/content/blog.ts`; the blog index syncs `?category=…&tag=a,b` so filtered views are linkable.
-* **Updating Frontmatter:** Pass `--update` and `--sync-frontmatter` to update `title`, `description`, `publishedAt`, `categories`, `tags`, `image`, `author`, or `draft` across all active language files while preserving markdown body content.
-
-### 3. Scaffolding New Pages (`npm run new:page`)
-```bash
-# Create new page across all active locales with layout options:
-npm run new:page contact -- --from=fa --title="تماس با ما" --hero=minimal --container=contained
-
-# Non-interactive frontmatter update across all active locales:
-npm run new:page contact -- --update --sync-frontmatter --title:fa="تماس با تیم ما" --title:en="Contact Our Team"
-```
-* Auto-creates localized page entries across all active locales in `client/locales.json`.
-* Automatically registers navigation key `nav_<key>` in `client/messages/*.json` and recompiles Paraglide. The label alone does not add the page to a menu: add `{ group: '<key>', label: … }` to `CLIENT_PAGE_ITEMS` in `client/navigation.ts` (header + drawer) or to `getClientFooterColumns` / `getClientLegalNavigation`.
-* Use `--update` / `--sync-frontmatter` to synchronize structural frontmatter (`image`, `hero`, `container`, `flushTop`, `template`) without manual file rewrites.
-* Only the source locale is published by default; the other locales stay `draft: true` until translated. Use `--publish`, `--draft`, and `--slug:<locale>="…"` to control that explicitly.
-* **Slugs:** the source locale owns the group slug (`contact`); every other locale starts with the placeholder `contact-<locale>` so that each locale has a valid route. The command lists those placeholders with the exact fix (`--update --slug:fa="تماس"`), and `npm run doctor` keeps reporting any placeholder that is still in the content: it builds and routes, but `/fa/contact-fa/` is not a URL you want to ship.
-* **`--publish` and scaffold copy:** publishing flips the entry live while its body is still the localized "content coming soon" sentence. The command warns about it, and `npm run smoke` fails while that sentence is in `dist/`, so the copy cannot reach production by accident.
-
-### 4. Batch Adding Translations (`npm run i18n:add-batch`)
-```bash
-# Import from JSON file:
-npm run i18n:add-batch -- --file=translations.json
-
-# Pass JSON directly or pipe via stdin:
-npm run i18n:add-batch -- --json='{"cart_checkout": {"en": "Checkout", "fa": "تسویه حساب"}}'
-cat translations.json | npm run i18n:add-batch
-```
-* Writes keys into `client/messages/*.json` (while preserving `messages/core/*.json` cleanly).
-* Supports key-to-locale maps, locale-to-keys maps, or nested category objects.
-* Automatically generates fallback placeholders for missing locales to guarantee dictionary key parity.
-* Merges two-tier dictionaries into `.paraglide-work/` and recompiles Paraglide in a single pass instead of running multi-step loops.
+Always use `--from`, `--title:<locale>`, `--slug:<locale>`, `npm run new:page`, `npm run new:post`, and `npm run i18n:add-batch` for batch copy updates.
 
 ---
 
 ## Playbook 5: Removing Languages & Content (Clean Lifecycle)
-
-### 1. Removing a Language (`npm run i18n:remove-lang`)
-```bash
-# Interactive mode (asks whether to delete content files):
-npm run i18n:remove-lang -- ar
-
-# Force mode (deletes language config, dictionary, and all ar.mdx content files):
-npm run i18n:remove-lang -- ar --with-content --force
-
-# Keep existing content files under src/content/:
-npm run i18n:remove-lang -- ar --keep-content --force
-```
-* **Guard:** Protects the default base locale (`DEFAULT_LOCALE`) from accidental deletion.
-* **Cleanup:**
-  1. Updates `client/locales.json` (removes from `locales` array and `metadata`).
-  2. Deletes `client/messages/<locale>.json` (and core fallback if applicable).
-  3. Deletes associated `<locale>.mdx` files across `src/content/` (if `--with-content`).
-  4. Merges dictionaries into `.paraglide-work/` and recompiles Paraglide messages automatically.
-
-### 2. Removing an Article / Blog Post (`npm run remove:post`)
-```bash
-# Delete entire article across all languages:
-npm run remove:post tech-trends -- --force
-
-# Delete only the German translation file for a post:
-npm run remove:post tech-trends -- --locale=de --force
-```
-
-### 3. Removing a Static Page (`npm run remove:page`)
-```bash
-# Delete entire page and clean its navigation key from dictionaries:
-npm run remove:page pricing -- --force
-
-# Delete only a specific language's page file:
-npm run remove:page pricing -- --locale=de --force
-```
-* Automatically cleans up `nav_<page-key>` from client dictionary files (`client/messages/*.json`) and recompiles Paraglide messages. With `--locale` only that locale's file is deleted and the navigation key stays in every dictionary, because the dictionaries always carry the same key set; the missing locale is reported by `npm run audit:i18n` as a warning, not an error.
-* Before deleting the key it scans `src/` and `client/` for surviving `m.nav_<page-key>(` calls and names every file that still needs fixing. The footer's pages column is derived from `CLIENT_PAGE_ITEMS` (`client/navigation.ts`), so after removing a group from that list there is nothing else to rewrite — but a leftover reference is reported here instead of failing the next build with an undefined message.
-* Guards the critical `home` page from deletion without `--force`.
+* `npm run i18n:remove-lang -- ar --with-content --force` (guards `DEFAULT_LOCALE`, cleans `client/locales.json`, `client/messages/`, optional `.mdx` files, recompiles Paraglide).
+* `npm run remove:post <slug> [--locale=de] -- --force`
+* `npm run remove:page <page-key> [--locale=de] -- --force` (cleans `nav_<key>` and warns on any remaining references).
 
 ---
 
 ## Playbook 6: Working with the Paginated Blog Index
-
-The blog index is a **static, paginated** listing: one URL per page per locale. Nothing is paginated in the browser, so every page is a real, linkable, crawlable document.
-
-### 1. Changing the Page Size
-The single source of truth is merged `app.config.json` / `client/config.json`:
-```json
-"blog": { "postsPerPage": 9 }
-```
-`src/libs/config/app.ts` validates the file and exposes the value as `POSTS_PER_PAGE`.
-* The route builder (`src/libs/content/service.ts`), the view (`src/views/BlogIndexView.astro`), and the smoke test all read that value, so the number of generated pages and the number of rendered cards can never drift apart.
-* Changing the value is enough — no template edit is needed. Rebuild to see the new page set.
-
-### 2. The URL of a Page
-Page URLs are built by `getBlogPageHref(page, locale)` in `src/libs/content/service.ts`:
-
-| Page | Default locale (`en`) | Other locales |
-| :--- | :--- | :--- |
-| 1 | `/blog/` | `/de/blog/`, `/fa/blog/` |
-| 2 | `/blog/page/2/` | `/de/blog/page/2/`, `/fa/blog/page/2/` |
-
-* Never hardcode `/blog/page/2` — the locale prefix and the trailing slash are the job of `localizeHref`.
-* A requested page is always clamped into `1..totalPages`, so a stale link (`/blog/page/99/`) can never produce an out-of-range slice.
-* The number of pages of a locale follows from the number of *published* posts that locale has. A locale with fewer posts has fewer pages, and its `alternates` map falls back to its last page, so the language switcher never leads to a missing URL.
-
-### 3. The Page Math
-All of it is pure and lives in `src/libs/content/pagination.ts` (unit-tested in `pagination.test.ts`):
-```ts
-const { items, page, totalPages, previousPage, nextPage } = paginate(posts, page, perPage);
-const window = buildPageWindow(page, totalPages);   // holes become the PAGE_GAP ellipsis
-```
-
-### 4. The Pager UI
-`src/views/BlogIndexView.astro` renders the pager only when there is more than one page:
-* The previous/next arrows are cloned from the server-rendered `<template data-icon-template="chevron-left">` / `…chevron-right` markup and flipped with `rtl:rotate-180` / `rotate-180 rtl:rotate-0`, so the direction follows the reading direction and the pager never carries its own SVG paths.
-* Every pager link carries the active taxonomy filter query, so paging never drops the selection.
-* `Seo.astro` / `BaseLayout.astro` accept `prevUrl` / `nextUrl` and emit `<link rel="prev">` / `<link rel="next">`; pages beyond the first get a distinct document title (`Blog — Page 2 of 3`).
-
-### 5. Verify
-```bash
-npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke
-```
-`npm run smoke` derives the expected page count from the content collection and asserts that every page exists, that `rel="prev"` / `rel="next"` point at the right neighbours, that the pager is present only when there is more than one page, and that no page beyond the last one was generated.
-
-> To see the pager while developing, either run `npm run starter:seed` (which adds 6 demo posts) and lower `POSTS_PER_PAGE`, or adjust `blog.postsPerPage` in `client/config.json` (default `9`).
+* Configure page size via `"blog": { "postsPerPage": 9 }` (`POSTS_PER_PAGE`).
+* Build URLs exclusively with `getBlogPageHref(page, locale)` and math with `paginate()` / `buildPageWindow()` (`src/libs/content/pagination.ts`).
+* Multi-page category/tag filtering loads static `/api/blog-posts/<locale>.json` catalogs and emits `rel="prev"` / `rel="next"`.
 
 ---
 
-## Playbook 7: Implementing Viewport Reveals, Staggered Grids & ChronoTrig v6.2.0 Motion
-
-### 1. The ChronoTrig v6.2.0 Reveal Contract
-* Never hide elements with `display: none` / `hidden` or unscoped Tailwind `opacity-0` for scroll entrance.
-* `BaseLayout.astro` synchronously adds `.js` on `<html class="js">` in `<head>`. `src/styles/chronotrig.css` scopes initial entrance offsets strictly under `.js [data-trig]` (preserving full layout geometry, zero CLS, and 100% visibility when JS is disabled or printed).
-* When an element enters the viewport, ChronoTrig adds `.trig`, animating `opacity: 1` and `transform: none` using the `ui.motion` tokens injected by `BaseLayout.astro` (defaults from `app.config.json`: `revealDelayMs` `0ms` → `--trig-reveal-delay`, `revealDurationMs` **`1600ms`** → `--trig-duration`, `revealDistancePx` **`56px`** → `--trig-distance`, `revealSmallDistancePx` **`18px`** → `--trig-distance-sm`, and `revealEasing` **`cubic-bezier(0.16, 1, 0.3, 1)`** → `--trig-ease`; stagger cards travel `44px`).
-* Add `data-trig-once="true"` on static `[data-trig]` and `[data-trig-stagger]` elements so ChronoTrig triggers once, releases `will-change: auto` (multi-callback `q()` queue on `animationend`/`animationcancel`), and unobserves cleanly with zero idle scroll overhead.
-* Motion preference is resolved once in `BaseLayout.astro`'s `<head>` (`resolveMotion()`): it checks `localStorage.getItem('motion')` (`'reduced' | 'full'`), otherwise honors the OS `prefers-reduced-motion: reduce` setting, and writes `html[data-motion]`. `chronotrig.css`, `lenis.ts` (reading `CLIENT_MOTION_CONFIG.smoothScroll` / `smoothScrollLerp: 0.125`, calling `setExternalScroll(true)` + `sync()`, and computing anchor offsets dynamically via `getHeaderOffset()`), `global.css`, ChronoTrig's live `respectReducedMotion` watcher (`body.chronotrig-mobile-disabled`), and `@media print` all flatten reveals, timelines, and `[data-trig-pin]` containers cleanly.
-
-### 2. Single Elements, Presets & RTL-Safe Directions
-* Add `data-trig data-trig-once="true"` to any element, title, or card for a smooth bottom reveal, optionally paired with v6.2.0 presets/modifiers (`.fadeInUpSm`, `.blurIn`, `.clipUp`, `.clipStart`, `.trig-delay-100`..`1000`, `.trig-delay-150`, `.trig-duration-*`, `.trig-ease-*`, `.trig-reactive-*`). Because base delay comes from `ui.motion.revealDelayMs` (`--trig-reveal-delay`), `.trig-delay-*` utilities set `--trig-reveal-offset` and apply **additively** (`calc(var(--trig-reveal-delay) + var(--trig-reveal-offset))`). Avoid non-existent attributes like `data-trig-delay`.
-* For split columns or directional entrances, use `data-trig-direction="start"` and `data-trig-direction="end"` or `.clipStart` so horizontal entrances mirror automatically in RTL (`fa` and `ar`).
-
-### 3. Harmonic Stagger Grids (`data-trig-stagger`), Pins, Timelines & GPU Hygiene
-* Add `data-trig-stagger data-trig-once="true"` (with optional `data-trig-stagger-delay` defaulting from `ui.motion.staggerStepMs / 1000` = `0.08`, and `data-trig-stagger-mode="linear|wave|center|reverse"`) to the parent grid or list container.
-* ChronoTrig v6.2.0 targets `[data-trig-stagger-item], :scope > *`, computes `--stagger-index`, `--stagger-delay`, and `--stagger-total` natively (clamping delays `<= 0.04s` in lightweight mobile mode), propagates parent `data-trig-root-margin` (or configured `CLIENT_MOTION_CONFIG.rootMargin`) to children without overwriting child-level overrides, activates child items via `.trig-stagger-active`, resets transition delays via `.trig-stagger-settled`, and checks both `.trig-stagger-settled` and `data-trig-settled="true"` in `scan()` so settled one-shots never replay.
-* For pinned scrollytelling (`[data-trig-pin]`, `data-trig-pin-distance`, `data-trig-pin-horizontal="true"` + `[data-trig-pin-track]`, `data-trig-pin-media`) and multi-step `[data-trig-timeline]` waypoints, ensure ancestor wrappers never use `overflow-x: hidden` (`src/styles/global.css` uses `overflow-x: clip` on `body`).
-* Avoid `blur-2xl` / `blur-3xl` glow layers (use `.hero-glow-primary` / `.hero-glow-accent` from `global.css`), never nest `backdrop-blur` layers, set `loading="lazy"` on below-the-fold `<Image>` elements, and gate continuous scroll/marquee/counter loops (`ParallaxSection`, `TestimonialMarquee`, `UiProgress` sharing `CLIENT_MOTION_CONFIG.rootMargin`) with `IntersectionObserver` + `data-motion="reduced"`.
-
-### 4. Dynamic Filtering, Mounted Tabs & Filter Replays
-* When dynamically appending cards in client scripts, call `refreshChronoTrig()` from `@/scripts/chronotrig` (which calls `window.chronoTrig.refresh()` to re-measure viewport, tracks, and observers; use `window.chronoTrig.sync(scrollY)` or `trigScroll?.(true)` inside scroll callbacks).
-* Keep CSS `transition` utilities off `[data-trig]` card roots (`PostCard.astro`, `CollectionBrowser.astro`) and place hover/shadow transitions on an inner child wrapper for clean separation from reveal keyframes.
-* A filter change is different: hiding cards leaves the surviving ones with `.trig` / `data-trig-settled="true"` or mid-flight animations. When `visibilityChanged` is true (or filtered items are replaced), call `replayStaggerGrid(grid)` from `@/scripts/chronotrig` (used in `BlogIndexView.astro`, `CollectionBrowser.astro`, `ImageGallerySection.astro`, and `ProductShowcaseGrid.astro`, with `data-trig-root-margin="0px"` on filtered grids below tall heroes). It calls `window.chronoTrig.resetStagger(grid)`, clears reveal/settled classes and `willChange`, forces layout, and coalesces across two animation frames before calling `refreshChronoTrig()` — restarting pre-existing and newly revealed cards together while ChronoTrig natively excludes `[hidden]` children from `--stagger-index` / `--stagger-delay` / `--stagger-total`, locks already-settled `data-trig-once="true"` headers, and skips replay on initial render.
-* **Do not call `refreshChronoTrig()` when switching tabs** inside mounted interactive tab components (`SwipeableTabs.astro` / `FeatureTabsSection.astro`), because tab panels stay mounted in the DOM.
+## Playbook 7: Viewport Reveals, Staggered Grids & ChronoTrig v6.2.0 Motion
+* Scoped under `.js [data-trig]` (`src/styles/chronotrig.css`) with `data-trig-once="true"` so ChronoTrig unobserves after animation and releases `will-change: auto`.
+* Logical horizontal vectors only: `data-trig-direction="start|end"`, `.clipStart`. Additive delays use `.trig-delay-*` (never `data-trig-delay`).
+* `[data-trig-stagger data-trig-once="true"]` on parent grid/list containers; put hover `transition` classes on inner child wrappers, never `[data-trig]` roots. Filter updates call `replayStaggerGrid(grid)` from `@/scripts/chronotrig` (`data-trig-root-margin="0px"` below tall heroes); dynamic appends call `refreshChronoTrig()`. Never refresh on mounted tab switches (`SwipeableTabs`, `FeatureTabsSection`).
+* Pinned sections (`[data-trig-pin]`, `[data-trig-timeline]`) require `overflow-x: clip` (never `overflow-x: hidden`). Add `data-lenis-prevent` on scrollable modals/drawers (`overflow-y-auto`). Avoid `blur-2xl`/`blur-3xl` glow layers (use `.hero-glow-*`) and nested `backdrop-blur`, set `loading="lazy"` below the fold, and gate scrubbers/counters/marquees (`ParallaxSection`, `UiProgress`, `TestimonialMarquee`) via `IntersectionObserver` + `data-motion="reduced"`. See `.agents/skills/astro-i18n-starter/references/scroll-and-motion.md`.
 
 ---
 
-## Playbook 8: Custom Page Layouts, Top Banner / Adaptive Navbar & Serverless Form APIs
+## Playbook 8: Page Layouts, Top Banner, Serverless Forms & Production Artifacts
+* **Layouts (`pages`)**: Schema defaults `hero: "none"`, `container: "canvas"`. Use `hero: "minimal"` (`PageHeader`), `hero: "default"` (`PageHero`), `container: "contained" | "prose"`, `flushTop: true`, `template: "<name>"` (`client/templates/index.ts`), or declarative `sections: [...]`. Never use `layout:` in MDX frontmatter.
+* **Top Banner, Adaptive Navbar & Quick Contact**: Configure `ui.topBanner` (scheduled strips, session/persistent dismiss, or stacked `items[]`), `<LayoutHooks slot="top-banner" />`, `ui.navbar` (`ResizeObserver` banner clearance), and `ui.quickContact`.
+* **Pure SSG External APIs & Privacy**: Configure `api.provider` (`custom | web3forms | formspree | basin | webhook`), `turnstileSiteKey`, `api.redirects`, `business` (`Organization` / `LocalBusiness` JSON-LD), and consent-gated `analytics` (`CookieConsent.astro`, Consent Mode v2). Forms gracefully omit themselves in favor of `site.contactEmail` `mailto:` fallback if no endpoint is configured.
+* **Redirects, `/llms.txt` & QA**: Exact and `/*` -> `:splat` redirects emit `dist/_redirects`, `deploy/nginx-redirects.conf`, and `deploy/.htaccess-redirects`. Verify with `npm run check:quick`, `npm run audit:i18n -- --quiet`, `npm run build`, `npm run smoke -- --quiet`, `npm run link:check -- --quiet`, `npm run doctor:handoff`, and `npm run qa:browser`.
 
-### 1. Choosing a Page Layout (`src/content/pages/<group>/<locale>.mdx`) & Site-Wide Top Banner
-Unlike `blog` entries (which always use `BlogPostView.astro` + `PageHero.astro`), static `pages` default to `hero: "none"` and `container: "canvas"`:
-* **Custom Full-Bleed Canvas (`hero: "none"`, `container: "canvas"`)**: Compose arbitrary sections inside MDX using `<PageSection>` or `.layout-container` (`1280px` max-width), or delegate to a shared `.astro` view registered in `CLIENT_PAGE_TEMPLATES` (`client/templates/index.ts`, or `template: "home"` in `src/views/pages/`). Add `flushTop: true` when your first section starts directly behind the floating glass header. Never use `layout:` in MDX frontmatter (reserved by `@astrojs/mdx`).
-* **Minimal Typographic Header (`hero: "minimal"`, `container: "contained" | "prose"`)**: Renders `PageHeader.astro` (breadcrumbs, accent rule, `<h1>`, description) above either a `1280px` `.layout-container` (`contained`) or a `72ch` editorial column (`prose`).
-* **Atmospheric Banner (`hero: "default"`)**: Renders the defocused full-bleed `PageHero.astro` + `HeroCopy.astro`.
-* **Site-Wide Top Banner, Adaptive Sticky Header & Quick Contact (`ui.topBanner`, `ui.navbar`, `ui.quickContact`)**: Configure announcements in `client/config.json` or `client/cms.json` under `ui.topBanner` (`SiteTopBanner.astro`, `heightPx`, localized `*ByLocale` overrides, `variant`, `startsAt`/`endsAt` schedule windows, `dismissMode: 'session' | 'persistent'`, `excludePaths`, or stacked `items[]` — shipping out of the box with a persistent `40px` non-dismissible `site-notice` bar plus a compact `32px` dismissible `site-announcement` bar) or slot custom client markup into `<LayoutHooks slot="top-banner" />`. Control header offsets and sticky threshold via `ui.navbar` (`initialTopOffset: 16`, `stickyScrollThreshold: 0`, `stickyTopOffset: 12`, `autoBannerOffset: true`, `manualBannerOffset: 0`) — `src/scripts/navbar.ts` tracks banner height via `ResizeObserver` and syncs `--actual-banner-height` / `--header-height` cleanly. Enable/disable the collapsible corner `QuickContactWidget.astro` via `ui.quickContact` (auto-hides during undecided CookieConsent banners, drawers, or modals).
+---
 
-### 2. Connecting Contact, Newsletter & Privacy-First Analytics (Zero Backend)
-This starter is **100% Pure SSG** and ships with no backend server. Both `src/components/ContactForm.astro` and `src/components/NewsletterBanner.astro` post directly to external/serverless providers through `src/libs/api/client.ts`:
-1. Configure `api.provider` in `client/config.json` (`'custom' | 'web3forms' | 'formspree' | 'basin' | 'webhook'`), optional `accessKey` / `PUBLIC_WEB3FORMS_KEY` (when using `web3forms`, `resolveFormEndpoint()` automatically targets `https://api.web3forms.com/submit`), `api.redirects.{contact,newsletter}` (or per-component `redirectTo` prop for post-submit thank-you redirects), and optional Cloudflare Turnstile `turnstileSiteKey` / `PUBLIC_TURNSTILE_SITE_KEY` alongside `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL`, or `PUBLIC_API_BASE_URL` in `.env` / deployment environment variables. Successful non-honeypot submissions also trigger `dispatchFormConversion()` (`astro-starter:contact-success` / `astro-starter:newsletter-success` `CustomEvent`s and consent-gated `gtag`/`dataLayer`/`plausible`/`umami` events). For custom webhooks behind Turnstile (Telegram/Resend), deploy `docs/deploy/cloudflare-worker-webhook.js`.
-2. Optionally populate `business` (`type`, `legalName`, `phone`, `whatsapp`, `telegram`, `address`, `city`, `country`, `workingHours`, `mapEmbedUrl`, `geo`) and `site.authors` (`Person` E-E-A-T profiles) in `client/config.json` or `client/cms.json`. `BaseLayout.astro` and `BlogPostView.astro` emit `Organization` / `LocalBusiness` / `Person` JSON-LD via `src/libs/content/schema.ts`, `ProductShowcaseGrid.astro` emits `ItemList` + `Product` + `Offer` JSON-LD (normalizing `IRT` Toman → `IRR` × 10), and `ContactSplitSection.astro` pairs `<ContactForm embedded />` with instant Phone/WhatsApp/Telegram quick-action buttons and a click-to-load lazy map embed.
-3. Configure privacy-first analytics under `analytics` (`ga4Id`, `gtmId`, `plausibleDomain`, `umamiWebsiteId`, `clarityId`, optional `consentMode` v2 & `allowCookielessWithoutBanner`) in `client/config.json` — `src/components/AnalyticsScripts.astro` blocks all non-exempt SDKs behind `CookieConsent.astro` and `npm run doctor` warns if analytics are enabled without consent enabled.
-4. Without JavaScript or without a configured endpoint, neither form renders; visitors see a clean `mailto:` fallback (when `site.contactEmail` is set) or neutral unavailable notice, and `import.meta.env.DEV`-only setup notes guide developers without leaking env var names in production HTML.
+## Playbooks A–H Quick Lookup
 
-### 3. Schema-Driven Collection Browser, Git CMS, Redirects & Production Deployment Artifacts
-* **Schema-Driven Collection Browser (`<CollectionBrowser />`)**: `src/components/CollectionBrowser.astro` (used by `CollectionIndexView.astro` and embeddable anywhere with `collection="<id>"`) automatically renders `single` / `multi` / `select` / `toggle` / `range` filters, Perso-Arabic keyword search (`normalizeForFallbackMatch`), localized counts (`formatNumber`), `/api/collections/<type>/<locale>.json` multi-page filtering, and ChronoTrig reveal replays from `content.types.<id>.fields`.
-* **Three-Tier Config & Git CMS**: `.pages.yml` (synchronized with `npm run content:sync`) edits `pages`, `blog`, `projects`, custom declarative collections, and client settings in `client/cms.json` without overwriting `client/config.json` overrides.
-* **Wildcard & Exact Redirects**: Declare exact or trailing-wildcard (`/*` → `:splat`) rules under `redirects`. Builds emit `dist/_redirects`, `deploy/nginx-redirects.conf`, and `deploy/.htaccess-redirects` cleanly.
-* **AI Discovery & Production Checks**: `/llms.txt` lists default-locale content for crawlers; `public/_headers` and `docs/deploy/nginx.conf` handle security/caching headers; run `npm run doctor:handoff` and `npm run preflight:full` to verify everything including Chromium Playwright QA (`npm run qa:browser`: CLS `<= 0.05`, `/_astro/*.js` payload budget, `<img>` `alt`/single `<h1>`, and `@axe-core/playwright` WCAG 2A/2AA audit).
+* **Playbook A (Add Nav Link)**: Create page (`new:page <key>`), add `{ group, icon, labels }` in `ui.navigation.pages` (`client/config.json`) or `CLIENT_PAGE_ITEMS` (`client/navigation.ts`), run `i18n:sync-keys` + `check:quick`.
+* **Playbook B (Swap Default / Single-Language)**: `npm run i18n:set-default fa` + `"ui": { "showLanguageSwitcher": false }` (or optional `i18n:solo fa`).
+* **Playbook C (Canvas Pages & Heroes)**: Use `hero: "none"`, `container: "canvas"`, optional `flushTop: true`, declarative `sections: [{ block, props }]` (`SectionComposer.astro`), or `template: "<name>"`; keep **exactly one `<h1>`**.
+* **Playbook D (Add Icon)**: Import individual `@tabler/icons-astro/dist/esm/icons/<name>.mjs` modules inside `client/ClientIcons.astro` + list in `client/icons.ts`. Never import barrel or paste raw `<svg>`. Clone `<template data-icon-template>` in JS.
+* **Playbook E (Blog Pagination)**: Set `blog.postsPerPage` in `client/config.json`; use `getBlogPageHref` + `paginate()`.
+* **Playbook F (ChronoTrig & Lenis)**: See Playbook 7 & `references/scroll-and-motion.md`.
+* **Playbook G (Content Types)**: Declare `content.types.<key>` -> `npm run content:sync` -> `npm run i18n:sync-keys` -> `npm run content:new` -> `<CollectionBrowser collection="<key>" />`.
+* **Playbook H (64 Guarded Blocks + 4 Showcases)**: Consult `docs/BLOCKS-API.md` (`npm run blocks:catalog`) before building custom markup; compose declaratively via `SectionComposer` (`sections` / `ui.homeSections`).

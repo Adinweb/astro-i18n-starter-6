@@ -1,0 +1,204 @@
+---
+import type { ImageMetadata } from 'astro';
+import type { Locale } from '@/i18n/locales';
+import { HERO_SECTION_NAMES, type PageSectionConfig, type SectionBlockName } from '@/libs/ui/sections';
+
+import LandingHeroSplit from '@/components/LandingHeroSplit.astro';
+import HeroCenteredEditorial from '@/components/HeroCenteredEditorial.astro';
+import HeroDashboardShowcase from '@/components/HeroDashboardShowcase.astro';
+import HeroCommandCli from '@/components/HeroCommandCli.astro';
+import HeroInteractivePrompt from '@/components/HeroInteractivePrompt.astro';
+import HeroProofMarquee from '@/components/HeroProofMarquee.astro';
+import HeroFloatingOrbSplit from '@/components/HeroFloatingOrbSplit.astro';
+import BentoCapabilities from '@/components/BentoCapabilities.astro';
+import ProofStatsRow from '@/components/ProofStatsRow.astro';
+import FaqAccordion from '@/components/FaqAccordion.astro';
+import CtaBanner from '@/components/CtaBanner.astro';
+import PricingSection from '@/components/PricingSection.astro';
+import TestimonialGrid from '@/components/TestimonialGrid.astro';
+import TeamSection from '@/components/TeamSection.astro';
+import PartnerLogos from '@/components/PartnerLogos.astro';
+import NewsletterBanner from '@/components/NewsletterBanner.astro';
+import PromoBanner from '@/components/PromoBanner.astro';
+import AboutSplitSection from '@/components/AboutSplitSection.astro';
+import ProcessSteps from '@/components/ProcessSteps.astro';
+import FeatureTabsSection from '@/components/FeatureTabsSection.astro';
+import ComparisonTable from '@/components/ComparisonTable.astro';
+import FeatureCardGrid from '@/components/FeatureCardGrid.astro';
+import ImageGallerySection from '@/components/ImageGallerySection.astro';
+import LatestPostsSection from '@/components/LatestPostsSection.astro';
+import ContactSplitSection from '@/components/ContactSplitSection.astro';
+import CarouselSection from '@/components/CarouselSection.astro';
+import ProductShowcaseGrid from '@/components/ProductShowcaseGrid.astro';
+import AuthFormCard from '@/components/AuthFormCard.astro';
+import ParallaxSection from '@/components/ParallaxSection.astro';
+
+interface Props {
+  sections: readonly PageSectionConfig[];
+  locale: Locale | string;
+  entryDir?: string;
+  contained?: boolean;
+  hasPageH1?: boolean;
+}
+
+const SECTION_COMPONENTS: Record<SectionBlockName, any> = {
+  LandingHeroSplit,
+  HeroCenteredEditorial,
+  HeroDashboardShowcase,
+  HeroCommandCli,
+  HeroInteractivePrompt,
+  HeroProofMarquee,
+  HeroFloatingOrbSplit,
+  BentoCapabilities,
+  ProofStatsRow,
+  FaqAccordion,
+  CtaBanner,
+  PricingSection,
+  TestimonialGrid,
+  TeamSection,
+  PartnerLogos,
+  NewsletterBanner,
+  PromoBanner,
+  AboutSplitSection,
+  ProcessSteps,
+  FeatureTabsSection,
+  ComparisonTable,
+  FeatureCardGrid,
+  ImageGallerySection,
+  LatestPostsSection,
+  ContactSplitSection,
+  CarouselSection,
+  ProductShowcaseGrid,
+  AuthFormCard,
+  ParallaxSection,
+};
+
+const HERO_SET = new Set<string>(HERO_SECTION_NAMES);
+const IMAGE_PROP_KEYS = new Set(['image', 'parallaxImage', 'bottomImage', 'avatar']);
+const IMAGE_LOADERS = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/{assets,content}/**/*.{png,jpg,jpeg,webp,avif,svg}'
+);
+
+function normalizePosixPath(input: string): string {
+  const parts = input.split('/');
+  const stack: string[] = [];
+  for (const part of parts) {
+    if (!part || part === '.') continue;
+    if (part === '..') {
+      if (stack.length > 0) stack.pop();
+    } else {
+      stack.push(part);
+    }
+  }
+  return `/${stack.join('/')}`;
+}
+
+async function resolveImagePath(rawPath: string, entryDir?: string): Promise<ImageMetadata | undefined> {
+  const trimmed = rawPath.trim();
+  if (!trimmed) return undefined;
+
+  const candidates: string[] = [];
+  if (trimmed.startsWith('/src/')) {
+    candidates.push(normalizePosixPath(trimmed));
+  } else if (trimmed.startsWith('src/')) {
+    candidates.push(normalizePosixPath(`/${trimmed}`));
+  } else if ((trimmed.startsWith('./') || trimmed.startsWith('../')) && entryDir) {
+    const cleanDir = entryDir.startsWith('/') ? entryDir : `/${entryDir}`;
+    candidates.push(normalizePosixPath(`${cleanDir}/${trimmed}`));
+  } else {
+    if (entryDir) {
+      const cleanDir = entryDir.startsWith('/') ? entryDir : `/${entryDir}`;
+      candidates.push(normalizePosixPath(`${cleanDir}/${trimmed}`));
+    }
+    candidates.push(normalizePosixPath(`/src/assets/${trimmed}`));
+  }
+
+  for (const key of candidates) {
+    const loader = IMAGE_LOADERS[key];
+    if (loader) {
+      const mod = await loader();
+      return mod.default;
+    }
+  }
+  return undefined;
+}
+
+async function resolveSectionValue(
+  value: unknown,
+  propKey: string | undefined,
+  entryDir?: string
+): Promise<unknown> {
+  if (propKey && IMAGE_PROP_KEYS.has(propKey)) {
+    if (typeof value === 'string') {
+      return await resolveImagePath(value, entryDir);
+    }
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return Promise.all(value.map((item) => resolveSectionValue(item, undefined, entryDir)));
+  }
+
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      const resolved = await resolveSectionValue(v, k, entryDir);
+      if (resolved !== undefined) {
+        out[k] = resolved;
+      }
+    }
+    return out;
+  }
+
+  return value;
+}
+
+const { sections, locale, entryDir, contained = false, hasPageH1 = false } = Astro.props;
+
+const resolvedPropEntries = await Promise.all(
+  (sections ?? []).map(async (section) => {
+    const Component = SECTION_COMPONENTS[section.block];
+    if (!Component) return null;
+
+    const rawProps = (section.props ?? {}) as Record<string, unknown>;
+    const resolvedProps = (await resolveSectionValue(rawProps, undefined, entryDir)) as Record<
+      string,
+      unknown
+    >;
+
+    return { block: section.block, Component, resolvedProps };
+  })
+);
+
+let seenH1 = hasPageH1;
+const resolvedSections = resolvedPropEntries.map((entry) => {
+  if (!entry) return null;
+
+  const isHero = HERO_SET.has(entry.block);
+  const propsWithDefaults: Record<string, unknown> = {
+    ...entry.resolvedProps,
+    locale: entry.resolvedProps.locale ?? locale,
+  };
+
+  if (isHero) {
+    if (propsWithDefaults.headingTag === undefined) {
+      propsWithDefaults.headingTag = seenH1 ? 'h2' : 'h1';
+    }
+    if (propsWithDefaults.headingTag === 'h1') {
+      seenH1 = true;
+    }
+  } else if (contained && propsWithDefaults.contained === undefined) {
+    propsWithDefaults.contained = true;
+  }
+
+  return { Component: entry.Component, props: propsWithDefaults };
+});
+---
+
+{
+  resolvedSections.map((item) => {
+    if (!item) return null;
+    const SectionComponent = item.Component;
+    return <SectionComponent {...item.props} />;
+  })
+}

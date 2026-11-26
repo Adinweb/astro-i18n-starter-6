@@ -102,6 +102,7 @@ function makeSandbox() {
 
   for (const entry of [
     '.gitignore',
+    '.pages.yml',
     'app.config.json',
     'package.json',
     'astro.config.mjs',

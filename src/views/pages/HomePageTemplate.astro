@@ -14,8 +14,10 @@ import CtaBanner from '@/components/CtaBanner.astro';
 import HomeHero from '@/components/HomeHero.astro';
 import LatestPostsSection from '@/components/LatestPostsSection.astro';
 import ProofStatsRow from '@/components/ProofStatsRow.astro';
+import SectionComposer from '@/components/SectionComposer.astro';
 import type { Locale } from '@/i18n/locales';
 import { siteConfig } from '@/libs/config/app';
+import { parseContentEntryId } from '@/libs/content/entries';
 import { getBlogIndexHref, getPageUrl } from '@/libs/content/service';
 import type { SocialCardContext } from '@/libs/content/social';
 import { getContentType, getContentTypeIndexHref } from '@/libs/content/types';
@@ -34,6 +36,14 @@ const { entry, locale, alternates, url, schema, ogContext } = Astro.props;
 const rawBody = (entry.body ?? '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').trim();
 const hasCustomContent = rawBody.length > 0;
 const { Content } = hasCustomContent ? await render(entry) : { Content: null };
+
+const declarativeSections = entry.data.sections?.length
+  ? entry.data.sections
+  : siteConfig.ui.homeSections?.length
+    ? siteConfig.ui.homeSections
+    : [];
+const { group } = parseContentEntryId(entry.id);
+const entryDir = `src/content/pages/${group}`;
 
 const blogHref = getContentType('blog').enabled ? getBlogIndexHref(locale) : null;
 const projectsHref = getContentType('projects').enabled
@@ -82,52 +92,67 @@ const highlights = [
   flushTop
   canvas
 >
-  <HomeHero
-    locale={locale}
-    description={entry.data.description}
-    primaryHref={featuresHref}
-    secondaryHref={blogHref ?? undefined}
-    highlights={highlights}
-  />
+  {
+    declarativeSections.length > 0 ? (
+      <>
+        <SectionComposer
+          sections={declarativeSections}
+          locale={locale}
+          entryDir={entryDir}
+        />
+        {Content ? <Content /> : null}
+      </>
+    ) : (
+      <>
+        <HomeHero
+          locale={locale}
+          description={entry.data.description}
+          primaryHref={featuresHref}
+          secondaryHref={blogHref ?? undefined}
+          highlights={highlights}
+        />
 
-  <BentoGrid
-    locale={locale}
-    layout="classic"
-    variant="elevated"
-    surface="default"
-    spacing="lg"
-  />
+        <BentoGrid
+          locale={locale}
+          layout="classic"
+          variant="elevated"
+          surface="default"
+          spacing="lg"
+        />
 
-  <ProofStatsRow locale={locale} surface="surface" spacing="md" />
+        <ProofStatsRow locale={locale} surface="surface" spacing="md" />
 
-  {Content ? <Content /> : null}
+        {Content ? <Content /> : null}
 
-  <LatestPostsSection
-    locale={locale}
-    limit={3}
-    surface="default"
-    spacing="lg"
-  />
+        <LatestPostsSection
+          locale={locale}
+          limit={3}
+          surface="default"
+          spacing="lg"
+        />
 
-  <CtaBanner
-    id="get-started"
-    eyebrow={m.home_badge({}, { locale })}
-    title={m.home_cta_title({}, { locale })}
-    description={m.home_cta_desc({}, { locale })}
-    primaryCta={{
-      label: m.home_cta_primary({}, { locale }),
-      href: ctaHref,
-      icon: 'arrow-right',
-    }}
-    secondaryCta={
-      projectsHref
-        ? {
-            label: m.home_cta_secondary({}, { locale }),
-            href: projectsHref,
+        <CtaBanner
+          id="get-started"
+          eyebrow={m.home_badge({}, { locale })}
+          title={m.home_cta_title({}, { locale })}
+          description={m.home_cta_desc({}, { locale })}
+          primaryCta={{
+            label: m.home_cta_primary({}, { locale }),
+            href: ctaHref,
+            icon: 'arrow-right',
+          }}
+          secondaryCta={
+            projectsHref
+              ? {
+                  label: m.home_cta_secondary({}, { locale }),
+                  href: projectsHref,
+                }
+              : undefined
           }
-        : undefined
-    }
-    surface="hero"
-    spacing="md"
-  />
+          surface="hero"
+          spacing="md"
+        />
+      </>
+    )
+  }
 </BaseLayout>

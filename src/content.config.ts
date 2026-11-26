@@ -15,6 +15,7 @@ import {
   slugSchema,
   type ConfiguredCollectionInput,
 } from './libs/content/zod-schema';
+import { pageSectionItemSchema } from './libs/ui/sections';
 
 const mergedAppConfig = mergeLayeredConfig(
   rawConfig as Record<string, unknown>,
@@ -77,6 +78,7 @@ export const collections = {
         container: z.enum(['canvas', 'contained', 'prose']).default('canvas'),
         flushTop: z.boolean().default(false),
         template: z.string().min(1).optional(),
+        sections: z.array(pageSectionItemSchema).optional(),
       }),
   }),
   blog: defineCollection({

@@ -249,8 +249,12 @@ All automation scripts run from the terminal using `npm run <command>` (or `pnpm
 
 | Command | Action | Example |
 | :--- | :--- | :--- |
+| `npm run site:apply` | One-shot declarative provisioning from a JSON site spec (`--dry-run`, `--skip-assets`, `--json`) | `npm run site:apply -- --spec=site-spec.json` |
 | `npm run client:bootstrap` | One-step reset/seed + `site:init` + `.env` + logo asset suite + `doctor` wizard | `npm run client:bootstrap -- --blueprint=agency --logo=logo.svg --site-url=https://client.com --yes` |
 | `npm run site:init` | Interactive/headless branding, `--blueprint` (`corporate`/`agency`/`portfolio`/`medical`/`catalog`/`legal`), `--logo`, palette, fonts & OG wizard | `npm run site:init -- --name="Acme" --blueprint=agency --logo=logo.svg --yes` |
+| `npm run blocks:catalog` | Generates `< 5 KB` `docs/BLOCKS-API.md` component Props catalog (`--check`, `--json`) | `npm run blocks:catalog` |
+| `npm run i18n:sync-keys` | Fills missing keys in `client/messages/*.json` (`--dry-run`, `--json`) and compiles Paraglide | `npm run i18n:sync-keys` |
+| `npm run check:quick` | Fast dev check: `messages:compile` + `tsc --noEmit` + Vitest (`--no-isolate`) | `npm run check:quick` |
 | `npm run site:reset` | Resets `client/config.json` & `client/cms.json` cleanly between projects (optional `--clean-starter`) | `npm run site:reset -- --yes` |
 | `npm run new:page` | Scaffolds a new page across all locales (`standard` or `landing` preset) | `npm run new:page offer -- --preset=landing --title="Product Launch"` |
 | `npm run new:post` | Scaffolds a new blog post across all locales | `npm run new:post ai-trends -- --title="AI Trends" --publish` |
@@ -354,7 +358,8 @@ Unlike `blog` posts (which render uniformly through `BlogPostView.astro` + `Page
 
 * **`hero`**: `'none'` (default — no forced banner), `'minimal'` (`src/components/PageHeader.astro` typographic header with breadcrumbs), or `'default'` (`src/components/PageHero.astro` atmospheric banner).
 * **`container`**: `'canvas'` (default — full-bleed `<main>` for custom `<PageSection>` / `.layout-container` compositions), `'contained'` (`1280px` `.layout-container` + `.prose-wide`), or `'prose'` (`72ch` editorial column). Named `container` so it never collides with `@astrojs/mdx`'s reserved `layout` key.
-* **`flushTop` & `template`**: Set `flushTop: true` when a custom `hero: 'none'` canvas starts directly under the fixed glass header, or set `template: '<name>'` to delegate rendering to a bespoke `.astro` view registered in `CLIENT_PAGE_TEMPLATES` (`client/templates/index.ts`) — or `template: 'home'` (`src/views/pages/`) — while sourcing localized copy/SEO from MDX.
+* **`flushTop`, `sections` & `template`**: Set `flushTop: true` when a custom `hero: 'none'` canvas starts directly under the fixed glass header; pass declarative `sections: [{ block, props }]` in frontmatter (or `ui.homeSections` in `client/config.json`) to compose any of the 29 section blocks via `SectionComposer.astro`; or set `template: '<name>'` to delegate rendering to a bespoke `.astro` view registered in `CLIENT_PAGE_TEMPLATES` (`client/templates/index.ts`) — or `template: 'home'` (`src/views/pages/`) — while sourcing localized copy/SEO from MDX.
+* **`ui.navigation` (`client/config.json`)**: Optionally declare `pages` and `footerColumns` in config (merged cleanly over `client/navigation.ts`) alongside `CLIENT_PAGE_ITEMS`.
 * **Atmospheric `PageHero.astro` (Blog & `hero: "default"` pages)**:
   * The entry's `image` frontmatter **is** the background of the band — one full-bleed image layer, defocused (`blur-md scale-105`) under vertical/flat scrims so the band reads identically in LTR and RTL.
   * Inner copy is passed through the default slot: `HeroCopy.astro` for pages and the blog index, `BlogPostHeroContent.astro` for articles. Without an `image`, `src/assets/hero/hero-0.jpg` is used.
@@ -537,9 +542,10 @@ The same pipeline runs on every push and pull request in [`.github/workflows/ci.
 | [docs/GUIDE-HOMEPAGE-FA.md](docs/GUIDE-HOMEPAGE-FA.md) | فارسی | راهنمای گام‌به‌گام ساخت صفحهٔ اصلی سفارشی برای پروژهٔ مشتری (سه مسیر، بلوک‌های آماده، چک‌لیست تحویل) |
 | [docs/CONTENT-TYPES-FA.md](docs/CONTENT-TYPES-FA.md) | فارسی | انواع محتوا: رجیستری، فعال/غیرفعال کردن، افزودن مجموعهٔ جدید و دستورهای content/doctor/link |
 | [README.md](README.md) | English | Feature overview, quick start, and operational guide |
-| [AGENTS.md](AGENTS.md) | English | Contract rules and playbooks for AI coding agents |
+| [AGENTS.md](AGENTS.md) | English | Lightweight (`< 12 KB`) contract rules & fast-path workflow for AI coding agents |
+| [docs/BLOCKS-API.md](docs/BLOCKS-API.md) | English | Auto-generated (`< 5 KB`) reference of component Props & defaults (`npm run blocks:catalog`) |
 | [docs/PRD.md](docs/PRD.md) | English | Master build prompt: goals, architecture, and definition of done |
-| [docs/PLAYBOOKS.md](docs/PLAYBOOKS.md) | English | Step-by-step playbooks for common changes |
+| [docs/PLAYBOOKS.md](docs/PLAYBOOKS.md) | English | Full directory map and step-by-step playbooks for common changes |
 | [.agents/skills/astro-i18n-starter/references/scroll-and-motion.md](.agents/skills/astro-i18n-starter/references/scroll-and-motion.md) | English | Deep-dive reference on `data-trig`, `data-trig-stagger`, replaying filtered grids, and Lenis |
 
 ---
