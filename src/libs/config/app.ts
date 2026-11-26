@@ -246,6 +246,82 @@ export const blogConfigSchema = z.object({
 });
 export type BlogConfig = z.infer<typeof blogConfigSchema>;
 
+const collectionFieldTypeSchema = z.enum([
+  'string',
+  'text',
+  'number',
+  'boolean',
+  'date',
+  'url',
+  'image',
+  'enum',
+  'string[]',
+  'taxonomy[]',
+]);
+
+const collectionFilterModeSchema = z.enum(['single', 'multi', 'select', 'toggle', 'range']);
+
+const collectionFilterSchema = z.object({
+  enabled: z.boolean().default(true),
+  mode: collectionFilterModeSchema,
+  param: z
+    .string()
+    .trim()
+    .min(1)
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Filter query param must use ASCII letters, digits, "_" or "-".')
+    .optional(),
+  label: z.string().optional(),
+  labels: localizedStringMapSchema.optional(),
+  allLabel: localizedStringMapSchema.optional(),
+  sort: z.enum(['alpha', 'count', 'config']).default('alpha'),
+});
+
+export const collectionFieldSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1)
+      .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, 'Field name must be a valid frontmatter identifier.'),
+    type: collectionFieldTypeSchema,
+    required: z.boolean().default(false),
+    default: z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]).optional(),
+    options: z.array(z.string().min(1)).optional(),
+    optionLabels: z.record(z.string(), localizedStringMapSchema).optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    label: z.string().optional(),
+    labels: localizedStringMapSchema.optional(),
+    searchable: z.boolean().optional(),
+    showOnCard: z.union([z.boolean(), z.enum(['badge', 'meta', 'subtitle'])]).optional(),
+    showOnEntry: z.boolean().optional(),
+    cms: z.boolean().default(true),
+    filter: collectionFilterSchema.optional(),
+  })
+  .superRefine((field, ctx) => {
+    if (field.type === 'enum' && (!field.options || field.options.length === 0)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['options'],
+        message: `Enum field "${field.name}" must define at least one option.`,
+      });
+    }
+  });
+
+const collectionSearchSchema = z.object({
+  enabled: z.boolean().default(true),
+  placeholder: localizedStringMapSchema.optional(),
+  fields: z.array(z.string().min(1)).optional(),
+});
+
+const collectionCardSchema = z.object({
+  layout: z.enum(['grid', 'gallery', 'compact']).default('grid'),
+  aspectRatio: z.enum(['video', 'square', 'portrait', 'auto']).default('video'),
+  badgeField: z.string().min(1).optional(),
+  badgeLimit: z.number().int().min(0).max(10).default(3),
+  metaFields: z.array(z.string().min(1)).optional(),
+});
+
 /**
  * One content type (a content collection plus the routes it owns).
  *
@@ -253,14 +329,43 @@ export type BlogConfig = z.infer<typeof blogConfigSchema>;
  * its index. `pages` is the page system itself and always owns the root, so its
  * base stays empty.
  */
-const contentTypeSchema = z.object({
-  enabled: z.boolean().default(true),
-  base: z.string().default(''),
-  index: z.boolean().default(true),
-  paginated: z.boolean().default(false),
-  feed: z.boolean().default(false),
-  nav: z.boolean().default(true),
-});
+export const contentTypeSchema = z
+  .object({
+    enabled: z.boolean().default(true),
+    base: z.string().default(''),
+    index: z.boolean().default(true),
+    paginated: z.boolean().default(false),
+    feed: z.boolean().default(false),
+    nav: z.boolean().default(true),
+    schemaDriven: z.boolean().optional(),
+    icon: z.string().min(1).optional(),
+    labels: localizedStringMapSchema.optional(),
+    descriptions: localizedStringMapSchema.optional(),
+    sortBy: z.string().min(1).optional(),
+    sortOrder: z.enum(['asc', 'desc']).optional(),
+    perPage: z.number().int().positive().optional(),
+    search: collectionSearchSchema.optional(),
+    card: collectionCardSchema.optional(),
+    fields: z.array(collectionFieldSchema).optional(),
+  })
+  .superRefine((cfg, ctx) => {
+    if (!cfg.fields) return;
+    const seenParams = new Set<string>();
+    cfg.fields.forEach((field, index) => {
+      if (!field.filter || field.filter.enabled === false) return;
+      const param =
+        field.filter.param?.trim() ||
+        (field.name === 'categories' ? 'category' : field.name === 'tags' ? 'tag' : field.name);
+      if (seenParams.has(param)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['fields', index, 'filter', 'param'],
+          message: `Duplicate filter query param "${param}" in collection fields.`,
+        });
+      }
+      seenParams.add(param);
+    });
+  });
 
 const contentConfigSchema = z.object({
   types: z.record(z.string(), contentTypeSchema).default({}),

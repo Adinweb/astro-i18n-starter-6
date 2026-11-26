@@ -57,21 +57,22 @@ npm run doctor                              # setup health, with a fix hint per 
 npm run upstream:check                      # verifies core vs client/ separation
 ```
 
-### 3. Add a new collection (e.g. `services`) — Zero Core Edits
+### 3. Add a declarative collection (e.g. `gallery` or `services`) — Zero Core Edits
 
-1. **Schema & UI Metadata (`client/content.ts`)** — register `services: defineCollection(...)` in `clientCollections` (`glob` loader in `./src/content/services`) and add `CLIENT_CONTENT_TYPES.services` (`label`, `description`, `icon`). `src/content.config.ts`, `src/libs/content/types.ts`, `src/libs/content/service.ts`, and `scripts/lib/content-types.mjs` read `client/content.ts` automatically.
-2. **Configuration (`client/config.json`)** — add `content.types.services` (`"enabled": true, "base": "services", "index": true, "nav": true`).
-3. **Messages (`client/messages/<locale>.json`)** — add `nav_services` to each client dictionary and reference `m.nav_services({}, { locale })` from `CLIENT_CONTENT_TYPES.services.label`.
+1. **Config-First Definition (`client/config.json`)** — declare `content.types.<key>` directly with its `base`, `labels`/`descriptions`, `sortBy`/`sortOrder`, `fields[]` (`type`, `filter: { mode: 'single' | 'multi' | 'select' | 'toggle' | 'range', param, ... }`, `showOnCard`, `showOnEntry`), `search`, and `card` (`layout`, `aspectRatio`). `src/content.config.ts` (`buildConfiguredCollectionSchema()`), `types.ts`, `service.ts`, `/api/collections/[type]/[locale].json`, and `<CollectionBrowser />` wire automatically. (Only add an entry in `client/content.ts` if you need custom Astro Zod transforms or computed defaults beyond the 10 built-in field types.)
+2. **Sync CMS & Folders** — run `npm run content:sync` so `.pages.yml` and `src/content/<key>/` match `content.types`.
+3. **Optional Messages (`client/messages/<locale>.json`)** — add `nav_<key>` / `<key>_index_description` (or inline `labels` / `descriptions` directly inside `client/config.json`).
 
-### 4. Scaffold and verify
+### 4. Scaffold, embed, and verify
 
 ```bash
-npm run content:new services web-design -- --title="Web Design" --publish
+npm run content:new gallery studio-shot -- --title="Studio Shot" --publish
 npm run assets:generate
+npm run content:sync -- --check
 npm run upstream:check && npm run doctor && npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke && npm run link:check
 ```
 
-`content:new` delegates `pages` and `blog` to `new:page` / `new:post`; every other type receives the shared frontmatter, a generated cover, and `[TODO: …]` drafts for locales that are not translated yet. Full reference: `docs/CONTENT-TYPES-FA.md`.
+`content:new` delegates `pages` and `blog` to `new:page` / `new:post`; every other type automatically populates `default`/`required` configured fields from `content.types.<type>.fields`, generates a cover, and leaves `[TODO: …]` drafts for untranslated locales. You can also embed `<CollectionBrowser collection="gallery" columns={3} syncUrl={false} contained />` inside any custom page or MDX file. Full reference: `docs/CONTENT-TYPES-FA.md`.
 
 ## Playbook 3: Composable Corporate Blocks & Client Rebranding
 
@@ -295,8 +296,8 @@ npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke
 
 ### 4. Dynamic Filtering, Mounted Tabs & Filter Replays
 * When dynamically appending cards in client scripts, call `refreshChronoTrig()` from `@/scripts/chronotrig` (which calls `window.chronoTrig.refresh()` to re-measure viewport, tracks, and observers; use `window.chronoTrig.sync(scrollY)` or `trigScroll?.(true)` inside scroll callbacks).
-* Keep CSS `transition` utilities off `[data-trig]` card roots (`PostCard.astro`, `CollectionIndexView.astro`) and place hover/shadow transitions on an inner child wrapper for clean separation from reveal keyframes.
-* A filter change is different: hiding cards leaves the surviving ones with `.trig` / `data-trig-settled="true"` or mid-flight animations. When `visibilityChanged` is true (or filtered items are replaced), call `replayStaggerGrid(grid)` from `@/scripts/chronotrig` (used in `BlogIndexView.astro`, `CollectionIndexView.astro`, `ImageGallerySection.astro`, and `ProductShowcaseGrid.astro`, with `data-trig-root-margin="0px"` on filtered grids below tall heroes). It calls `window.chronoTrig.resetStagger(grid)`, clears reveal/settled classes and `willChange`, forces layout, and coalesces across two animation frames before calling `refreshChronoTrig()` — restarting pre-existing and newly revealed cards together while ChronoTrig natively excludes `[hidden]` children from `--stagger-index` / `--stagger-delay` / `--stagger-total`, locks already-settled `data-trig-once="true"` headers, and skips replay on initial render.
+* Keep CSS `transition` utilities off `[data-trig]` card roots (`PostCard.astro`, `CollectionBrowser.astro`) and place hover/shadow transitions on an inner child wrapper for clean separation from reveal keyframes.
+* A filter change is different: hiding cards leaves the surviving ones with `.trig` / `data-trig-settled="true"` or mid-flight animations. When `visibilityChanged` is true (or filtered items are replaced), call `replayStaggerGrid(grid)` from `@/scripts/chronotrig` (used in `BlogIndexView.astro`, `CollectionBrowser.astro`, `ImageGallerySection.astro`, and `ProductShowcaseGrid.astro`, with `data-trig-root-margin="0px"` on filtered grids below tall heroes). It calls `window.chronoTrig.resetStagger(grid)`, clears reveal/settled classes and `willChange`, forces layout, and coalesces across two animation frames before calling `refreshChronoTrig()` — restarting pre-existing and newly revealed cards together while ChronoTrig natively excludes `[hidden]` children from `--stagger-index` / `--stagger-delay` / `--stagger-total`, locks already-settled `data-trig-once="true"` headers, and skips replay on initial render.
 * **Do not call `refreshChronoTrig()` when switching tabs** inside mounted interactive tab components (`SwipeableTabs.astro` / `FeatureTabsSection.astro`), because tab panels stay mounted in the DOM.
 
 ---
@@ -317,8 +318,8 @@ This starter is **100% Pure SSG** and ships with no backend server. Both `src/co
 3. Configure privacy-first analytics under `analytics` (`ga4Id`, `gtmId`, `plausibleDomain`, `umamiWebsiteId`, `clarityId`, optional `consentMode` v2 & `allowCookielessWithoutBanner`) in `client/config.json` — `src/components/AnalyticsScripts.astro` blocks all non-exempt SDKs behind `CookieConsent.astro` and `npm run doctor` warns if analytics are enabled without consent enabled.
 4. Without JavaScript or without a configured endpoint, neither form renders; visitors see a clean `mailto:` fallback (when `site.contactEmail` is set) or neutral unavailable notice, and `import.meta.env.DEV`-only setup notes guide developers without leaking env var names in production HTML.
 
-### 3. Collection Filtering, Git CMS, Redirects & Production Deployment Artifacts
-* **Generic Collection Filtering**: `CollectionIndexView.astro` (`projects`, etc.) supports progressive category, tech `stack`, and keyword search filtering (`normalizeForFallbackMatch`) with locale-native `formatNumber` counters and ChronoTrig reveal replays.
-* **Three-Tier Config & Git CMS**: `.pages.yml` edits `pages`, `blog`, `projects`, and client settings in `client/cms.json` without overwriting `client/config.json` overrides.
+### 3. Schema-Driven Collection Browser, Git CMS, Redirects & Production Deployment Artifacts
+* **Schema-Driven Collection Browser (`<CollectionBrowser />`)**: `src/components/CollectionBrowser.astro` (used by `CollectionIndexView.astro` and embeddable anywhere with `collection="<id>"`) automatically renders `single` / `multi` / `select` / `toggle` / `range` filters, Perso-Arabic keyword search (`normalizeForFallbackMatch`), localized counts (`formatNumber`), `/api/collections/<type>/<locale>.json` multi-page filtering, and ChronoTrig reveal replays from `content.types.<id>.fields`.
+* **Three-Tier Config & Git CMS**: `.pages.yml` (synchronized with `npm run content:sync`) edits `pages`, `blog`, `projects`, custom declarative collections, and client settings in `client/cms.json` without overwriting `client/config.json` overrides.
 * **Wildcard & Exact Redirects**: Declare exact or trailing-wildcard (`/*` → `:splat`) rules under `redirects`. Builds emit `dist/_redirects`, `deploy/nginx-redirects.conf`, and `deploy/.htaccess-redirects` cleanly.
 * **AI Discovery & Production Checks**: `/llms.txt` lists default-locale content for crawlers; `public/_headers` and `docs/deploy/nginx.conf` handle security/caching headers; run `npm run doctor:handoff` and `npm run preflight:full` to verify everything including Chromium Playwright QA (`npm run qa:browser`: CLS `<= 0.05`, `/_astro/*.js` payload budget, `<img>` `alt`/single `<h1>`, and `@axe-core/playwright` WCAG 2A/2AA audit).

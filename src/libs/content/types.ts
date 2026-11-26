@@ -1,20 +1,41 @@
 import { CONTENT_CONFIG } from '@/libs/config/app';
+import { formatYear } from '@/i18n/format';
 import { LOCALES, type Locale } from '@/i18n/locales';
 import { localizeHref } from '@/i18n/paths';
 import { humanizeKey } from '@/libs/content/blog';
+import {
+  resolveCollectionSchema,
+  type CollectionCardConfig,
+  type CollectionFieldConfig,
+  type CollectionSearchConfig,
+} from '@/libs/content/schema-config';
 import { CLIENT_CONTENT_TYPES, clientCollections } from '@client/content';
 import * as m from '@/paraglide/messages';
 
 /**
  * The content-type registry: the single source of truth for which collections
- * exist, which of them are switched on, and which route segment each one owns.
+ * exist, which of them are switched on, which route segment each one owns,
+ * and how its declarative frontmatter/filter schema is configured.
  *
  * Built-in types (`pages`, `blog`, `projects`) combine dynamically with custom
- * collections exported from `client/content.ts` and configured in `client/config.json`.
+ * collections exported from `client/content.ts` AND schema-driven collections
+ * configured in `app.config.json` / `client/config.json` (`content.types`).
  */
 const BUILT_IN_TYPES = ['pages', 'blog', 'projects'] as const;
+
+function getConfigDefinedKeys(): string[] {
+  const configured = CONTENT_CONFIG.types ?? {};
+  return Object.entries(configured)
+    .filter(([, cfg]) => Array.isArray(cfg?.fields) || cfg?.schemaDriven === true)
+    .map(([key]) => key);
+}
+
 const KNOWN_CONTENT_TYPE_KEYS: string[] = [
-  ...new Set([...BUILT_IN_TYPES, ...Object.keys(clientCollections)]),
+  ...new Set([
+    ...BUILT_IN_TYPES,
+    ...Object.keys(clientCollections),
+    ...getConfigDefinedKeys(),
+  ]),
 ];
 
 export type ContentTypeKey = (typeof BUILT_IN_TYPES)[number] | (string & {});
@@ -32,6 +53,15 @@ export interface ContentTypeConfig {
   feed: boolean;
   /** Whether the type appears in the header, drawer and footer navigation. */
   nav: boolean;
+  icon?: string;
+  labels?: Record<string, string>;
+  descriptions?: Record<string, string>;
+  fields: CollectionFieldConfig[];
+  search: CollectionSearchConfig;
+  card: CollectionCardConfig;
+  sortBy?: string;
+  sortOrder: 'asc' | 'desc';
+  perPage?: number;
 }
 
 /**
@@ -63,7 +93,7 @@ function readConfig(): ContentTypeConfig[] {
     throw new Error(
       `[ContentTypes] Unknown content type(s) in config: ${unknown.join(', ')}. ` +
         `Known types: ${KNOWN_CONTENT_TYPE_KEYS.join(', ')}. Register custom collections ` +
-        'in client/content.ts first.'
+        'in client/content.ts or declare "fields" in content.types first.'
     );
   }
 
@@ -103,6 +133,8 @@ function readConfig(): ContentTypeConfig[] {
       seenBases.set(base, key);
     }
 
+    const schema = resolveCollectionSchema(key, settings);
+
     types.push({
       key,
       base,
@@ -111,6 +143,15 @@ function readConfig(): ContentTypeConfig[] {
       paginated: settings?.paginated ?? false,
       feed: settings?.feed ?? false,
       nav: settings?.nav ?? true,
+      icon: settings?.icon ?? CLIENT_CONTENT_TYPES[key]?.icon,
+      labels: settings?.labels,
+      descriptions: settings?.descriptions,
+      fields: schema.fields,
+      search: schema.search,
+      card: schema.card,
+      sortBy: schema.sortBy,
+      sortOrder: schema.sortOrder,
+      perPage: schema.perPage,
     });
   }
 
@@ -159,10 +200,20 @@ export function getContentTypeEntryHref(
 
 type MessageCatalog = Record<string, ((params: Record<string, never>, opts: { locale: Locale }) => string) | undefined>;
 
+function lookupCatalog(key: string, locale: Locale): string | null {
+  const catalog = m as unknown as MessageCatalog;
+  const fn = catalog[key];
+  return typeof fn === 'function' ? fn({}, { locale }) : null;
+}
+
 /** Localized menu label of a type. */
 export function getContentTypeLabel(key: ContentTypeKey, locale: Locale): string {
   const clientLabel = CLIENT_CONTENT_TYPES[key]?.label;
   if (clientLabel) return clientLabel(locale);
+
+  const type = CONTENT_TYPES.find((candidate) => candidate.key === key);
+  const configLabel = type?.labels?.[locale]?.trim();
+  if (configLabel) return configLabel;
 
   switch (key) {
     case 'pages':
@@ -172,9 +223,7 @@ export function getContentTypeLabel(key: ContentTypeKey, locale: Locale): string
     case 'projects':
       return m.nav_projects({}, { locale });
     default: {
-      const catalog = m as unknown as MessageCatalog;
-      const fn = catalog[`nav_${key}`];
-      return typeof fn === 'function' ? fn({}, { locale }) : humanizeKey(key);
+      return lookupCatalog(`nav_${key}`, locale) ?? humanizeKey(key);
     }
   }
 }
@@ -184,6 +233,10 @@ export function getContentTypeDescription(key: ContentTypeKey, locale: Locale): 
   const clientDesc = CLIENT_CONTENT_TYPES[key]?.description;
   if (clientDesc) return clientDesc(locale);
 
+  const type = CONTENT_TYPES.find((candidate) => candidate.key === key);
+  const configDesc = type?.descriptions?.[locale]?.trim();
+  if (configDesc) return configDesc;
+
   switch (key) {
     case 'pages':
       return m.site_description({}, { locale });
@@ -192,9 +245,73 @@ export function getContentTypeDescription(key: ContentTypeKey, locale: Locale): 
     case 'projects':
       return m.projects_index_description({}, { locale });
     default: {
-      const catalog = m as unknown as MessageCatalog;
-      const fn = catalog[`${key}_index_description`];
-      return typeof fn === 'function' ? fn({}, { locale }) : m.site_description({}, { locale });
+      return lookupCatalog(`${key}_index_description`, locale) ?? m.site_description({}, { locale });
     }
   }
+}
+
+/** Localized label for a collection field / filter group. */
+export function getContentTypeFieldLabel(
+  contentType: ContentTypeKey,
+  field: Pick<CollectionFieldConfig, 'name' | 'label' | 'labels' | 'filter'>,
+  locale: Locale
+): string {
+  const filterConfigLabel = field.filter?.labels?.[locale]?.trim() || field.filter?.label?.trim();
+  if (filterConfigLabel) return filterConfigLabel;
+
+  const fieldConfigLabel = field.labels?.[locale]?.trim() || field.label?.trim();
+  if (fieldConfigLabel) return fieldConfigLabel;
+
+  const messageKey = `${contentType}_field_${field.name}`;
+  const customMsg = lookupCatalog(messageKey, locale);
+  if (customMsg) return customMsg;
+
+  if (field.name === 'categories') return m.collection_filter_category({}, { locale });
+  if (field.name === 'tags') return m.blog_tags({}, { locale });
+  if (field.name === 'stack') return m.collection_filter_stack({}, { locale });
+  if (field.name === 'client') return m.projects_client({}, { locale });
+  if (field.name === 'year') return m.projects_year({}, { locale });
+
+  return humanizeKey(field.name);
+}
+
+/** Localized label for a filter option value within a collection field. */
+export function getContentTypeOptionLabel(
+  contentType: ContentTypeKey,
+  field: Pick<CollectionFieldConfig, 'name' | 'type' | 'optionLabels'>,
+  rawValue: string,
+  locale: Locale
+): string {
+  const configOptionLabel = field.optionLabels?.[rawValue]?.[locale]?.trim();
+  if (configOptionLabel) return configOptionLabel;
+
+  const safeKey = rawValue.replace(/[^a-zA-Z0-9_-]+/g, '_');
+  const exactMsg = lookupCatalog(`${contentType}_${field.name}_${safeKey}`, locale);
+  if (exactMsg) return exactMsg;
+
+  if (field.name === 'categories') {
+    return (
+      lookupCatalog(`${contentType}_category_${rawValue}`, locale) ??
+      lookupCatalog(`blog_category_${rawValue}`, locale) ??
+      humanizeKey(rawValue)
+    );
+  }
+
+  if (field.name === 'tags') {
+    return (
+      lookupCatalog(`${contentType}_tag_${rawValue}`, locale) ??
+      lookupCatalog(`blog_tag_${rawValue}`, locale) ??
+      humanizeKey(rawValue)
+    );
+  }
+
+  if (field.name === 'year' && /^\d{4}$/.test(rawValue)) {
+    return formatYear(Number(rawValue), locale);
+  }
+
+  if (field.type === 'taxonomy[]' || field.type === 'enum') {
+    return humanizeKey(rawValue);
+  }
+
+  return rawValue;
 }

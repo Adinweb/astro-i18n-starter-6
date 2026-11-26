@@ -1,15 +1,19 @@
-# انواع محتوا (Content Types)
+# انواع محتوا و مجموعه‌های اعلان‌محور (Declarative Content Types)
 
-این پروژه سه نوع محتوا دارد: `pages` (صفحه‌های ثابت)، `blog` (نوشته‌ها) و `projects` (نمونه‌کارها). هر نوع یک مجموعه (collection) در `src/content/` است و قرارداد مشترک مسیر را رعایت می‌کند:
+این پروژه علاوه بر سه مجموعهٔ پیش‌فرض `pages` (صفحه‌های ثابت)، `blog` (نوشته‌ها) و `projects` (نمونه‌کارها)، امکان تعریف **انواع محتوای سفارشی (مانند `gallery`، `products`، `services` و …)** را به‌صورت کاملاً اعلان‌محور در فایل پیکربندی (`client/config.json`) و CMS دارد؛ به‌طوری که اسکیمای Astro Zod، فرم ویرایش `.pages.yml` و **فرم فیلتر و جستجوی کامپوننت `<CollectionBrowser />`** به‌طور خودکار از روی همان تعریف ساخته می‌شوند.
+
+همهٔ مجموعه‌ها قرارداد مشترک پوشه‌ای را رعایت می‌کنند:
 
 ```text
 src/content/<type>/<group>/<locale>.mdx
 src/content/<type>/<group>/<group>.png   ← کاور، با ارجاع نسبی ./<group>.png در فرانتمتر
 ```
 
-## ۱. منبع حقیقت
+---
 
-تنظیمات هسته در `app.config.json` با بازنویسی‌های پروژهٔ مشتری در `client/config.json` ادغام می‌شود و بخش `content.types` تعیین می‌کند چه چیزی ساخته شود:
+## ۱. منبع حقیقت و پیکربندی پیشرفتهٔ `content.types`
+
+تنظیمات هسته در `app.config.json` با بازنویسی‌های پروژهٔ مشتری در `client/config.json` و تنظیمات غیرفنی `client/cms.json` ادغام می‌شود و بخش `content.types` علاوه بر مسیریابی، فیلدهای فرانت‌متر، فیلترها، جستجو و ظاهر کارت‌ها را نیز تعریف می‌کند:
 
 ```json
 "content": {
@@ -21,85 +25,192 @@ src/content/<type>/<group>/<group>.png   ← کاور، با ارجاع نسبی
 }
 ```
 
+### فیلدهای سطح کلکشن
+
 | فیلد | معنا |
 | :--- | :--- |
-| `enabled` | اگر `false` باشد، هیچ مسیر، ورودی sitemap یا لینک ناوبری‌ای برای این نوع ساخته نمی‌شود. فایل‌های محتوا دست‌نخورده می‌مانند. |
-| `base` | بخش اول مسیر (`/projects/`). `pages` همیشه ریشه است و نمی‌تواند مقدار بگیرد. |
-| `index` | آیا این نوع صفحهٔ فهرست دارد. |
-| `paginated` | آیا فهرست به `/base/page/<n>/` تقسیم شود (مثل وبلاگ). |
+| `enabled` | اگر `false` باشد، هیچ مسیر، ورودی sitemap یا لینک ناوبری‌ای ساخته نمی‌شود. فایل‌های محتوا دست‌نخورده می‌مانند. |
+| `base` | بخش اول مسیر (`/projects/`). `pages` همیشه ریشه است و مقدار `""` می‌گیرد. |
+| `index` | آیا صفحهٔ فهرست عمومی برای این مجموعه ساخته شود. |
+| `paginated` | آیا فهرست به `/<base>/page/<n>/` تقسیم شود (مثل وبلاگ). |
+| `perPage` | تعداد کارت در هر صفحه (در صورت `paginated: true`، مقدار پیش‌فرض را از `blog.postsPerPage` بازنویسی می‌کند). |
 | `feed` | آیا فید Atom مخصوص این نوع ساخته شود. |
 | `nav` | آیا در هدر، دراور و فوتر لینک بگیرد. |
+| `icon` | نام آیکون Tabler (اختیاری، مثلاً `"photo"` یا `"briefcase"`). |
+| `labels` / `descriptions` | عنوان و توضیح چندزبانه (`{ "en": "Gallery", "fa": "گالری" }`). در صورت نبودن، از کلیدهای `nav_<key>` و `<key>_index_description` در Paraglide خوانده می‌شود. |
+| `sortBy` / `sortOrder` | مرتب‌سازی پیش‌فرض ورودی‌ها (مثلاً `"year"`, `"publishedAt"`, `"title"`, یا هر فیلد سفارشی) به همراه `"asc"` یا `"desc"`. |
+| `fields` | آرایهٔ فیلدهای فرانت‌متر + تنظیمات اسکیما، CMS و فیلتر خودکار (بخش ۲). |
+| `search` | `{ "enabled": true, "placeholder": { "fa": "جستجو..." }, "fields": ["title", "description", ...] }`. |
+| `card` | ظاهر کارت‌ها در فهرست و `<CollectionBrowser />`: `{ "layout": "grid" \| "gallery" \| "compact", "aspectRatio": "video" \| "square" \| "portrait" \| "auto", "badgeField": "...", "badgeLimit": 3, "metaFields": ["..."] }`. |
 
-اعتبارسنجی در `src/libs/content/types.ts` انجام می‌شود: `base` تکراری، خالی، یا رزروشده (`page`, `api`, `rss`, `pagefind`, پیشوند زبان‌ها…) باعث خطای صریح در build می‌شود. اسکریپت‌های Node همان بلوک را از `scripts/lib/content-types.mjs` می‌خوانند، بنابراین CLI و build هرگز دو فهرست متفاوت ندارند.
+اعتبارسنجی در `src/libs/config/app.ts` و `src/libs/content/types.ts` انجام می‌شود: `base` تکراری/خالی/رزروشده (`page`, `api`, `rss`, `pagefind`, پیشوند زبان‌ها…)، فیلد `enum` بدون `options`، یا نام پارامتر فیلتر (`filter.param`) تکراری در یک مجموعه باعث خطای صریح در build می‌شود. اسکریپت‌های Node نیز همان منبع را از `scripts/lib/config.mjs` و `scripts/lib/content-types.mjs` می‌خوانند.
 
-## ۲. فعال و غیرفعال کردن
+---
 
-```bash
-npm run content:disable projects     # مسیرها، sitemap و لینک‌ها حذف می‌شوند
-npm run content:enable projects      # برمی‌گردند
-npm run content:list                 # وضعیت همهٔ نوع‌ها
+## ۲. تعریف خودکار فیلدها و فیلترها (`fields[]`)
+
+هر عضو آرایهٔ `fields` هم‌زمان چهار کار را انجام می‌دهد:
+1. ساخت خودکار اسکیمای Astro Zod (`src/libs/content/zod-schema.ts` -> `src/content.config.ts`)
+2. ساخت فیلد متناظر در `.pages.yml` هنگام اجرای `npm run content:sync`
+3. ساخت خودکار کنترل فیلتر در `<CollectionBrowser />` و `CollectionIndexView.astro`
+4. نمایش متادیتا روی کارت و صفحهٔ تکی ورودی (`CollectionEntryView.astro`)
+
+### انواع فیلد پشتیبانی‌شده (`type`)
+- `'string'` · `'text'` · `'number'` (`min` / `max`) · `'boolean'` · `'date'` · `'url'` · `'image'`
+- `'enum'` (نیازمند `options: [...]` + اختیاری `optionLabels` چندزبانه)
+- `'string[]'` (لیست رشته‌ها مانند تگ‌ها یا پشتهٔ فنی `stack`)
+- `'taxonomy[]'` (دسته/برچسب ASCII hyphenated استاندارد مانند `categories`)
+
+### گزینهٔ `filter` و ۵ حالت فیلتر خودکار
+اگر برای یک فیلد شیء `filter` تعریف کنید، کنترل فیلتر متناظر به‌صورت خودکار ساخته و به پارامتر URL (`?param=...`) متصل می‌شود:
+
+| `filter.mode` | رابط کاربری تولیدشده | مثال پارامتر URL |
+| :--- | :--- | :--- |
+| `'single'` | دکمه‌های چیپ تک‌انتخابی + گزینهٔ «همه» | `?medium=editorial` |
+| `'multi'` | دکمه‌های چیپ چندانتخابی با منطق `AND` | `?stack=astro,tailwind` |
+| `'select'` | منوی بازشو (`<select>`) دسترس‌پذیر | `?city=tehran` |
+| `'toggle'` | کلید روشن/خاموش برای فیلدهای `boolean` | `?featured=true` |
+| `'range'` | فیلدهای عددی `حداقل` و `حداکثر` | `?year_min=2024&year_max=2026` |
+
+سایر تنظیمات فیلد:
+- `required`, `default`, `searchable` (تعیین حضور فیلد در جستجوی متنی)، `showOnCard` (`true | false | 'badge' | 'meta' | 'subtitle'`)، `showOnEntry` (پیش‌فرض `true`) و `cms: false` (حذف از `.pages.yml`).
+- `filter`: `enabled`, `param` (در هر مجموعه باید یکتا باشد)، `label` / `labels`, `allLabel` (`{ "fa": "همه موارد" }`) و `sort` (`'alpha' | 'count' | 'config'`).
+
+---
+
+## ۳. استفاده از کامپوننت `<CollectionBrowser />`
+
+کامپوننت `src/components/CollectionBrowser.astro` شناسهٔ هر مجموعه (`collection`) را می‌گیرد و فرم فیلتر، جستجوی سازگار با فارسی/عربی (حذف/نرمال‌سازی نیم‌فاصله و حروف عربی)، گرید کارت‌ها، شمارندهٔ بومی (`formatNumber`)، صفحه‌بندی و بازپخش انیمیشن ChronoTrig (`replayStaggerGrid`) را به‌طور خودکار رندر می‌کند.
+
+نمای فهرست هر مجموعه (`CollectionIndexView.astro`) به‌طور پیش‌فرض از همین کامپوننت استفاده می‌کند؛ اما شما می‌توانید آن را مستقیماً درون هر صفحهٔ دلخواه (`.mdx` یا `.astro`) نیز جاسازی کنید:
+
+```astro
+---
+import CollectionBrowser from '@/components/CollectionBrowser.astro';
+---
+
+<CollectionBrowser
+  collection="gallery"
+  columns={3}
+  syncUrl={false}
+  contained
+/>
 ```
 
-`content:disable` فقط `content.types.<type>.enabled` را در `client/config.json` به‌صورت sparse می‌نویسد/تغییر می‌دهد (بدون دست‌زدن به `app.config.json` هسته)، و `pages` را رد می‌کند. بعد از تغییر:
+### پراپ‌های `<CollectionBrowser />`
 
-```bash
-npm run build && npm run smoke
+| پراپ | نوع / پیش‌فرض | کاربرد |
+| :--- | :--- | :--- |
+| `collection` | `ContentTypeKey` *(اجباری)* | شناسهٔ مجموعهٔ تعریف‌شده در `content.types` (`blog`, `projects`, `gallery`, …) |
+| `locale` | خودکار از URL | زبان رندر |
+| `columns` | `2 \| 3 \| 4` | تعداد ستون‌های گرید کارت |
+| `showSearch` | از `typeConfig.search.enabled` | نمایش یا پنهان کردن باکس جستجو |
+| `showFilters` | `true` | نمایش یا پنهان کردن نوار فیلترهای خودکار |
+| `showPagination` | `true` | نمایش صفحه‌بندی استاتیک/کلاینتی |
+| `perPage` | از کانفیگ | تعداد آیتم در هر صفحه |
+| `syncUrl` | `true` | همگام‌سازی پارامترهای فیلتر با نوار آدرس مرورگر (برای جاسازی در لندینگ‌ها می‌توانید `false` بگذارید) |
+| `contained` | `false` | پیچیدن داخل `.layout-container` در صفحه‌های `canvas` |
+
+در فهرست‌های چندصفحه‌ای، کاتالوگ JSON استاتیک از مسیر `/api/collections/<type>/<locale>.json` خوانده می‌شود تا فیلتر و جستجو روی **همهٔ صفحات مجموعه** بدون هیچ سرور بک‌اند کار کند و تصاویر بهینهٔ Astro WebP نیز حفظ شوند.
+
+---
+
+## ۴. مثال عملی: افزودن گالری (`gallery`) بدون تغییر فایل‌های هسته
+
+در `client/config.json` مجموعهٔ `gallery` را تعریف کنید:
+
+```json
+{
+  "content": {
+    "types": {
+      "gallery": {
+        "enabled": true,
+        "base": "gallery",
+        "index": true,
+        "paginated": true,
+        "perPage": 9,
+        "nav": true,
+        "icon": "photo",
+        "labels": { "en": "Gallery", "fa": "گالری" },
+        "descriptions": { "en": "Curated project visuals.", "fa": "مجموعه آثار تصویری" },
+        "sortBy": "year",
+        "sortOrder": "desc",
+        "card": { "layout": "gallery", "aspectRatio": "square", "badgeLimit": 2 },
+        "search": { "enabled": true, "placeholder": { "en": "Search works...", "fa": "جستجو در آثار..." } },
+        "fields": [
+          {
+            "name": "medium",
+            "type": "enum",
+            "options": ["editorial", "branding", "3d"],
+            "optionLabels": {
+              "editorial": { "en": "Editorial", "fa": "سرمقاله و نشر" },
+              "branding": { "en": "Branding", "fa": "هویت بصری" },
+              "3d": { "en": "3D Art", "fa": "سه‌بعدی" }
+            },
+            "required": true,
+            "default": "branding",
+            "labels": { "en": "Medium", "fa": "سبک" },
+            "showOnCard": "badge",
+            "filter": { "enabled": true, "mode": "single", "param": "medium", "sort": "config" }
+          },
+          {
+            "name": "year",
+            "type": "number",
+            "min": 2000,
+            "max": 2035,
+            "labels": { "en": "Year", "fa": "سال" },
+            "showOnCard": "meta",
+            "filter": { "enabled": true, "mode": "range", "param": "year" }
+          },
+          {
+            "name": "featured",
+            "type": "boolean",
+            "default": false,
+            "labels": { "en": "Featured only", "fa": "فقط آثار برگزیده" },
+            "filter": { "enabled": true, "mode": "toggle", "param": "featured" }
+          }
+        ]
+      }
+    }
+  }
+}
 ```
 
-نکته: خاموش‌کردن `blog` مسیرهای آن، لینک ناوبری و دکمهٔ «وبلاگ» در صفحهٔ خانه را حذف می‌کند، ولی اندپوینت‌های استاتیک `/api/blog-posts.json` و `/rss.xml` باقی می‌مانند تا مصرف‌کننده‌های بیرونی نشکنند. لینک‌های دستی داخل متن MDX با رجیستری هماهنگ نمی‌شوند؛ `npm run link:check` آن‌ها را پس از build پیدا می‌کند.
-
-## ۳. دستورهای محتوا
+سپس همگام‌سازی و ساخت نمونهٔ اول را اجرا کنید:
 
 ```bash
-npm run content:new <type> <slug> -- [--title="…"] [--desc="…"] [--from=<locale>] \
-  [--slug:<locale>="…"] [--image=cover.png|none] [--publish]
-```
-
-- `pages` و `blog` به `new:page` و `new:post` منتقل می‌شوند (فرانتمتر و تاکسونومی مخصوص خودشان را دارند).
-- برای بقیهٔ نوع‌ها، فایل هر زبان ساخته می‌شود. فقط زبان مبدأ با `--publish` منتشر می‌شود؛ بقیه عنوان `[TODO: <locale>]` و `draft: true` می‌گیرند تا محتوای ناتمام وارد سایت نشود.
-- کاور Placeholder با `assets:generate` ساخته می‌شود؛ این اسکریپت فایل‌های موجود را بازنویسی نمی‌کند (برای بازتولید صریح: `--force`).
-- کاور برای همهٔ مجموعه‌های تعریف‌شده تولید می‌شود، **حتی اگر نوع خاموش باشد**: ورودی ساخته‌شده به `./<group>.png` ارجاع می‌دهد و نباید با روشن‌کردن دوبارهٔ نوع، بیلد را بشکند.
-- slug نامعتبر (`../blog`, `/etc`, `.`) و slug رزروشدهٔ `page` (مسیر صفحه‌بندی) قبل از هر نوشتن رد می‌شوند.
-
-## ۴. ابزارهای بررسی
-
-```bash
-npm run doctor            # سلامت پروژه بدون build؛ با دستور رفع هر مورد
-npm run doctor -- --json  # خروجی ماشین‌خوان (exit 1 فقط برای خطاها)
-npm run content:status    # ماتریس آمادگی: هر گروه × هر زبان
-npm run content:status -- --write=docs/STATUS.md
-npm run link:check        # خزش dist/ و گزارش لینک‌ها و لنگرهای شکسته
-npm run upstream:check    # بررسی قرارداد لایهٔ هسته و client/
-```
-
-`doctor` این‌ها را می‌سنجد: نسخهٔ Node در برابر `engines`، pin بودن package manager، اعتبار پیکربندی سه‌لایهٔ ادغام‌شده (`app.config.json` + `client/config.json` + `client/cms.json`) و نوع‌های محتوا، جای‌نگهدارهای برند، `SITE_URL`، هم‌ارزی کلیدهای دیکشنری و `[TODO: …]`ها، تازگی `src/paraglide/`، فایل‌های غایب هر گروه، تصویر فرانتمتر ناموجود و نبود `dist/`.
-
-## ۵. افزودن یک نوع محتوای تازه (بدون ویرایش هسته)
-
-مثال: `services`. به لطف معماری لایه‌بندی‌شدهٔ `client/`، افزودن یک مجموعهٔ جدید نیازی به تغییر فایل‌های هسته (`src/content.config.ts`، `types.ts` یا `service.ts`) ندارد:
-
-1. **مجموعه و متادیتای رابط در `client/content.ts`** — در `clientCollections` یک `defineCollection` با loader `glob` در `./src/content/services` اضافه کنید و در `CLIENT_CONTENT_TYPES.services` برچسب/توضیح/آیکون (`label`، `description`، `icon`) آن را بدهید.
-2. **پیکربندی در `client/config.json`** — بلوک `content.types.services` (`enabled: true`, `base: "services"`, `index: true`, `nav: true`) را اضافه کنید.
-3. **برچسب ترجمه‌شده در `client/messages/<locale>.json`** — کلید `nav_services` را در فرهنگ‌های کلاینت قرار دهید تا در ناوبری و بردکرامب استفاده شود (و در `CLIENT_CONTENT_TYPES` با `m.nav_services({}, { locale })` بخوانید).
-4. **مسیرسازی خودکار** — هسته (`src/content.config.ts`، `src/libs/content/types.ts`، `src/libs/content/service.ts` و `scripts/lib/content-types.mjs`) به‌طور خودکار مجموعه، مسیرهای لیست/ورودی، sitemap، بردکرامب و ناوبری را از `client/content.ts` می‌خواند و `assets:generate` برای آن کاور می‌سازد.
-
-سپس:
-
-```bash
-npm run content:new services web-design -- --title="Web Design" --publish
+npm run content:sync
+npm run content:new gallery brand-shot -- --title="Brand Shoot" --publish
 npm run assets:generate
-npm run upstream:check && npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke
+npm run upstream:check && npm run doctor && npm run lint && npm test && npm run audit:i18n && npm run build && npm run smoke && npm run link:check
 ```
 
-## ۶. محدودیت‌های آگاهانه و امکانات نمای عمومی
+- دستور `content:sync` به‌طور خودکار مجموعهٔ جدید و فیلدهایش را به `.pages.yml` اضافه می‌کند و پوشهٔ `src/content/gallery/` را آماده می‌سازد.
+- دستور `content:new` مقادیر `default` و فیلدهای `required` تعریف‌شده در `fields[]` را در فرانت‌متر فایل‌های `.mdx` قرار می‌دهد.
+- (تنها اگر نیاز به فیلدهای Zod بسیار خاص یا منطق محاسباتی سفارشی داشتید، می‌توانید همچنان از `client/content.ts` -> `clientCollections` استفاده کنید.)
 
-- **وبلاگ نمای اختصاصی دارد.** `BlogIndexView` و `BlogPostView` فیلتر فراصفحه‌ای (`/api/blog-posts/<locale>.json`)، تاکسونومی، فهرست مطالب، نوشته‌های مرتبط و فید را در خود دارند. نوع‌های دیگر از `CollectionIndexView` و `CollectionEntryView` استفاده می‌کنند که علاوه بر قرارداد مشترک ورودی، دارای **فیلتر تعاملی سمت کلاینت** (دسته‌بندی، فناوری‌های `stack` و جستجوی متنی همراه با شمارندهٔ بومی `formatNumber` و بازپخش انیمیشن ChronoTrig) و اسکیمای JSON-LD (`CreativeWork` + `BreadcrumbList`) هستند.
-- **schemaها ایستا هستند.** Astro مجموعه‌ها را در زمان build می‌خواهد، پس افزودن نوع تازه مستلزم ثبت آن در `client/content.ts` است (و برای ویرایش بصری در Git می‌توانید همان کالکشن را به `.pages.yml` هم اضافه کنید)؛ فعال/غیرفعال کردن اما فقط یک خط در `client/config.json` است.
+---
+
+## ۵. فعال/غیرفعال کردن، همگام‌سازی و دستورهای بررسی
+
+```bash
+npm run content:list                 # وضعیت، مسیر، و تعداد ورودی‌های هر مجموعه
+npm run content:sync                 # همگام‌سازی .pages.yml و پوشه‌های محتوا با content.types
+npm run content:sync -- --check      # بررسی عدم ناهماهنگی در CI و پیش از تحویل
+npm run content:disable gallery      # غیرفعال‌سازی در client/config.json بدون حذف فایل‌ها
+npm run content:enable gallery       # فعال‌سازی مجدد
+npm run content:status               # ماتریس آمادگی هر گروه × هر زبان
+npm run doctor                       # بررسی سلامت پیکربندی، کلیدها، تصاویر و مسیرها
+npm run link:check                   # بررسی تمام لینک‌های داخلی و #لنگرها در dist/
+npm run upstream:check               # بررسی رعایت مرزبندی لایهٔ هسته و client/
+```
+
+---
+
+## ۶. محدودیت‌های آگاهانه و نکات مهم
+
+- **وبلاگ نمای اختصاصی خود را حفظ می‌کند:** `BlogIndexView` و `BlogPostView` همچنان تاکسونومی، فهرست مطالب (TOC)، نوشته‌های مرتبط و فید Atom دارند؛ ضمن اینکه امکان افزودن فیلدهای تکمیلی روی `content.types.blog.fields` یا نمایش وبلاگ درون `<CollectionBrowser collection="blog" />` نیز فراهم است.
 - **`pages` خاموش‌شدنی نیست** چون مالک صفحهٔ خانه و ریشهٔ سایت است.
-- **بلوپرینت‌های آماده هنگام شروع پروژه:** هنگام تزریق دمو با `npm run starter:seed -- --blueprint=<corporate|agency|portfolio|medical|catalog|legal>` یا راه‌اندازی اولیه با `site:init --blueprint=...`، فعال/غیرفعال بودن `blog` و `projects` متناسب با نوع کسب‌وکار مشتری تنظیم می‌شود.
-
-## ۷. تأیید
-
-`npm run verify:cli` تمامی گردش‌کارهای CLI را در یک مخزن موقت می‌آزماید: فهرست نوع‌ها، خاموش/روشن کردن در `client/config.json`، رد شدن خاموش‌کردن `pages`، ساخت گروه در `projects` (انتشار فقط زبان مبدأ) و در نوع خاموش (تولید کاور)، رد شدن slug فرار، واگذاری `pages`/`blog` به فرمان‌های خودشان، خروجی JSON `doctor` و `doctor --handoff` و `content:status`، اینکه `link:check` لینک و لنگر (`#section`) شکسته را می‌گیرد ولی مسیرهای بدون اسلش پایانی، بدون پسوند و لنگرهای موجود را می‌پذیرد، و گردش‌کارهای `--preset=landing`، `client:bootstrap`، `site:init` (با `--logo` و `catalog`)، `site:reset`، `starter:seed`، `upstream:check` و `i18n:solo`.
-
-> نمای فهرست و نمای ورودی هر دو بردکرامب زبان‌مقصد را نشان می‌دهند («خانه → پروژه‌ها → داشبورد …»)، با همان `BreadcrumbList` که در JSON-LD اعلام می‌شود؛ فهرست خالی هم پیام `content_empty` و حالت بدون نتیجهٔ فیلتر پیام `collection_filter_empty` را نشان می‌دهد.
+- **ساخت کاور در وضعیت خاموش:** `content:new` و `assets:generate` کاور `./<group>.png` را حتی برای نوع‌های خاموش می‌سازند تا فعال‌کردن مجدد آن‌ها بیلد را نشکند.
+- **تطابق دیکشنری در `audit:i18n`:** کلیدهای پویا مثل `nav_<type>`، `<type>_index_description`، `<type>_field_<field>`، `<type>_filter_<field>_all` و `<type>_option_<field>_<val>` اگر در `client/messages/<locale>.json` قرار بگیرند به‌طور خودکار توسط `npm run audit:i18n` به رسمیت شناخته می‌شوند (و برای دسترسی سریع می‌توان برچسب‌ها را مستقیم در `labels` / `optionLabels` داخل `client/config.json` نوشت).
+- **تأیید خودکار (`verify:cli` و تست‌های واحد):** مجموعهٔ تست شامل `schema-config.test.ts`، `collection-filters.test.ts`، `content-types.test.ts` و `app.test.ts` است و اعتبار پارامترهای فیلتر یکتا، فیلدهای `enum`، رندر `<CollectionBrowser />` و جریان‌های CLI را تضمین می‌کند.

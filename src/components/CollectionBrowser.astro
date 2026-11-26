@@ -1,0 +1,1227 @@
+---
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import Divider from '@/components/ui/Divider.astro';
+import Icon from '@/components/ui/Icon.astro';
+import UiBadge from '@/components/ui/UiBadge.astro';
+import UiPagination from '@/components/ui/UiPagination.astro';
+import { formatNumber } from '@/i18n/format';
+import type { Locale } from '@/i18n/locales';
+import { POSTS_PER_PAGE } from '@/libs/config/app';
+import {
+  formatEntryFieldForDisplay,
+  sortCollectionEntries,
+} from '@/libs/content/collection-catalog';
+import { buildCollectionSearchHaystack } from '@/libs/content/collection-filters';
+import { parseContentEntryId } from '@/libs/content/entries';
+import { paginate } from '@/libs/content/pagination';
+import {
+  getCanonicalFilterParam,
+  toFilterFieldDefs,
+  type CollectionFieldConfig,
+  type GenericFilterFieldDef,
+} from '@/libs/content/schema-config';
+import { getCollectionPageHref } from '@/libs/content/service';
+import {
+  getContentType,
+  getContentTypeEntryHref,
+  getContentTypeFieldLabel,
+  getContentTypeIndexHref,
+  getContentTypeOptionLabel,
+  type ContentTypeKey,
+} from '@/libs/content/types';
+import { resolveComponentLocale } from '@/libs/ui/locale';
+import * as m from '@/paraglide/messages';
+
+/**
+ * Schema-driven collection browser component.
+ *
+ * Accepts any declared `collection` ID (`blog`, `projects`, `gallery`, etc.),
+ * automatically renders its search & filter controls from `content.types.<id>.fields`,
+ * displays responsive cards with ChronoTrig stagger reveals, and handles
+ * client-side + multi-page JSON catalog pagination with RTL/LTR support.
+ */
+interface Props {
+  collection: ContentTypeKey;
+  locale?: Locale | string;
+  page?: number;
+  totalPages?: number;
+  perPage?: number;
+  baseHref?: string;
+  currentUrl?: string;
+  columns?: 2 | 3 | 4;
+  showSearch?: boolean;
+  showFilters?: boolean;
+  showPagination?: boolean;
+  syncUrl?: boolean;
+  contained?: boolean;
+  class?: string;
+}
+
+const {
+  collection,
+  locale: localeProp,
+  page: pageProp = 1,
+  totalPages: totalPagesProp,
+  perPage: perPageProp,
+  baseHref: baseHrefProp,
+  currentUrl: currentUrlProp,
+  columns: columnsProp,
+  showSearch: showSearchProp,
+  showFilters = true,
+  showPagination = true,
+  syncUrl = true,
+  contained = false,
+  class: className,
+} = Astro.props;
+
+const activeLocale = resolveComponentLocale(localeProp, Astro.url.pathname);
+const typeConfig = getContentType(collection);
+
+const rawEntries = (await getCollection(collection as 'projects')) as Array<{
+  id: string;
+  data: Record<string, unknown>;
+}>;
+
+const published = rawEntries.filter((entry) => {
+  if (entry.data.draft === true) return false;
+  return parseContentEntryId(entry.id).locale === activeLocale;
+});
+
+sortCollectionEntries(published, typeConfig, activeLocale);
+
+const effectivePerPage = Math.max(
+  1,
+  perPageProp ??
+    typeConfig.perPage ??
+    (typeConfig.paginated ? POSTS_PER_PAGE : published.length || 1)
+);
+
+const paginated = paginate(published, pageProp, effectivePerPage);
+const currentPage = paginated.page;
+const totalPages = totalPagesProp ?? (showPagination ? paginated.totalPages : 1);
+const pageEntries = paginated.items;
+
+const indexHref = baseHrefProp ?? getContentTypeIndexHref(collection, activeLocale);
+const currentUrl = currentUrlProp ?? Astro.url.pathname;
+
+const searchEnabled = showSearchProp ?? typeConfig.search.enabled;
+const searchPlaceholder =
+  typeConfig.search.placeholder?.[activeLocale]?.trim() ||
+  m.collection_search_placeholder({}, { locale: activeLocale });
+
+const filterDefs: GenericFilterFieldDef[] = toFilterFieldDefs(typeConfig.fields);
+
+interface BuiltFilterControl {
+  field: CollectionFieldConfig;
+  param: string;
+  mode: NonNullable<CollectionFieldConfig['filter']>['mode'];
+  label: string;
+  allLabel: string;
+  options: { value: string; label: string; count: number }[];
+  minBound?: number;
+  maxBound?: number;
+}
+
+const builtControls: BuiltFilterControl[] = [];
+
+if (showFilters && published.length > 0) {
+  for (const field of typeConfig.fields) {
+    if (!field.filter || field.filter.enabled === false) continue;
+    const param = getCanonicalFilterParam(field);
+    const mode = field.filter.mode;
+    const label = getContentTypeFieldLabel(collection, field, activeLocale);
+    const allLabel =
+      field.filter.allLabel?.[activeLocale]?.trim() ||
+      m.collection_filter_all({}, { locale: activeLocale });
+
+    if (mode === 'toggle') {
+      const hasTrue = published.some((entry) => entry.data[field.name] === true);
+      if (!hasTrue && !field.required) continue;
+      builtControls.push({
+        field,
+        param,
+        mode,
+        label,
+        allLabel,
+        options: [],
+      });
+      continue;
+    }
+
+    if (mode === 'range') {
+      const nums = published
+        .map((entry) => Number(entry.data[field.name]))
+        .filter((num) => Number.isFinite(num));
+      const minBound = nums.length > 0 ? Math.min(...nums) : field.min;
+      const maxBound = nums.length > 0 ? Math.max(...nums) : field.max;
+      if (minBound === undefined && maxBound === undefined) continue;
+      builtControls.push({
+        field,
+        param,
+        mode,
+        label,
+        allLabel,
+        options: [],
+        minBound,
+        maxBound,
+      });
+      continue;
+    }
+
+    const counts = new Map<string, number>();
+    if (field.options?.length) {
+      for (const opt of field.options) {
+        counts.set(opt, 0);
+      }
+    }
+    for (const entry of published) {
+      const raw = entry.data[field.name];
+      if (raw === undefined || raw === null) continue;
+      const items = Array.isArray(raw) ? raw.map(String) : [String(raw)];
+      for (const item of items) {
+        const trimmed = item.trim();
+        if (!trimmed) continue;
+        counts.set(trimmed, (counts.get(trimmed) ?? 0) + 1);
+      }
+    }
+
+    const keys = [...counts.keys()];
+    if (keys.length === 0) continue;
+
+    const sortMode = field.filter.sort ?? 'alpha';
+    if (sortMode === 'count') {
+      keys.sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0) || a.localeCompare(b, activeLocale));
+    } else if (sortMode === 'alpha') {
+      keys.sort((a, b) => {
+        const aLabel = getContentTypeOptionLabel(collection, field, a, activeLocale);
+        const bLabel = getContentTypeOptionLabel(collection, field, b, activeLocale);
+        return aLabel.localeCompare(bLabel, activeLocale);
+      });
+    }
+
+    builtControls.push({
+      field,
+      param,
+      mode,
+      label,
+      allLabel,
+      options: keys.map((value) => ({
+        value,
+        label: getContentTypeOptionLabel(collection, field, value, activeLocale),
+        count: counts.get(value) ?? 0,
+      })),
+    });
+  }
+}
+
+const hasAnyFilterUi =
+  published.length > 0 &&
+  ((searchEnabled && published.length > 1) || builtControls.length > 0);
+
+const pageStatus = m.blog_pagination_status(
+  {
+    page: formatNumber(currentPage, activeLocale),
+    totalPages: formatNumber(totalPages, activeLocale),
+  },
+  { locale: activeLocale }
+);
+
+const pageHref = (target: number) => getCollectionPageHref(typeConfig.base, target, activeLocale);
+const countTemplate = m.collection_showing_count(
+  { visible: '__V__', total: '__T__' },
+  { locale: activeLocale }
+);
+
+const gridColumnsClass =
+  columnsProp === 2
+    ? 'sm:grid-cols-2'
+    : columnsProp === 4
+      ? 'sm:grid-cols-2 lg:grid-cols-4'
+      : 'sm:grid-cols-2 lg:grid-cols-3';
+
+const aspectClass =
+  typeConfig.card.aspectRatio === 'square'
+    ? 'aspect-square'
+    : typeConfig.card.aspectRatio === 'portrait'
+      ? 'aspect-[3/4]'
+      : typeConfig.card.aspectRatio === 'auto'
+        ? 'aspect-auto'
+        : 'aspect-video';
+
+const chipControls = builtControls.filter((c) => c.mode === 'single' || c.mode === 'multi');
+const compactControls = builtControls.filter(
+  (c) => c.mode === 'select' || c.mode === 'toggle' || c.mode === 'range'
+);
+---
+
+<div class:list={[contained && 'layout-container', className]}>
+  {
+    pageEntries.length === 0 ? (
+      <p class="mt-10 text-sm text-muted">{m.content_empty({}, { locale: activeLocale })}</p>
+    ) : (
+      <div
+        data-collection-root
+        data-content-type={collection}
+        data-locale={activeLocale}
+        data-total={String(pageEntries.length)}
+        data-total-pages={String(totalPages)}
+        data-per-page={String(effectivePerPage)}
+        data-base-href={indexHref}
+        data-current-url={currentUrl}
+        data-sync-url={syncUrl ? 'true' : 'false'}
+        data-aspect-class={aspectClass}
+        data-badge-limit={String(typeConfig.card.badgeLimit)}
+        data-filter-defs={JSON.stringify(filterDefs)}
+        data-count-template={countTemplate}
+        data-page-status-template={m.blog_pagination_status(
+          { page: '{page}', totalPages: '{totalPages}' },
+          { locale: activeLocale }
+        )}
+        data-page-label-template={m.blog_pagination_page(
+          { page: '{page}' },
+          { locale: activeLocale }
+        )}
+        data-prev-label={m.blog_pagination_previous({}, { locale: activeLocale })}
+        data-next-label={m.blog_pagination_next({}, { locale: activeLocale })}
+        data-pager-aria-label={m.blog_pagination_label({}, { locale: activeLocale })}
+      >
+        {hasAnyFilterUi && (
+          <div class="mt-8 space-y-4 rounded-2xl border border-border bg-surface/70 p-4 sm:p-5" data-pagefind-ignore>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              {searchEnabled && (
+                <div class="relative flex-1 sm:max-w-sm">
+                  <Icon
+                    name="search"
+                    size={16}
+                    class="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted"
+                  />
+                  <input
+                    type="search"
+                    data-collection-search
+                    aria-label={m.collection_search_label({}, { locale: activeLocale })}
+                    placeholder={searchPlaceholder}
+                    class="w-full rounded-xl border border-border bg-bg py-2 ps-9 pe-3 text-sm text-fg placeholder:text-muted focus:border-primary focus:outline-none"
+                  />
+                </div>
+              )}
+
+              <div class="ms-auto flex items-center gap-3 text-xs text-muted">
+                <span role="status" aria-live="polite" data-collection-count>
+                  {m.collection_showing_count(
+                    {
+                      visible: formatNumber(pageEntries.length, activeLocale),
+                      total: formatNumber(pageEntries.length, activeLocale),
+                    },
+                    { locale: activeLocale }
+                  )}
+                </span>
+                <button
+                  type="button"
+                  data-collection-clear
+                  hidden
+                  class="inline-flex cursor-pointer items-center gap-1 font-semibold text-primary hover:underline"
+                >
+                  <Icon name="close" size={12} />
+                  <span>{m.collection_filter_clear({}, { locale: activeLocale })}</span>
+                </button>
+              </div>
+            </div>
+
+            {compactControls.length > 0 && (
+              <>
+                <Divider locale={activeLocale} />
+                <div class="flex flex-wrap items-center gap-3">
+                  {compactControls.map((ctrl) => {
+                    if (ctrl.mode === 'select') {
+                      const selectId = `filter-select-${collection}-${ctrl.param}`;
+                      return (
+                        <div class="flex items-center gap-2">
+                          <label
+                            for={selectId}
+                            class="text-xs font-semibold text-muted"
+                          >
+                            {ctrl.label}
+                          </label>
+                          <select
+                            id={selectId}
+                            data-filter-select={ctrl.field.name}
+                            class="rounded-xl border border-border bg-bg px-3 py-1.5 text-xs font-medium text-fg focus:border-primary focus:outline-none"
+                          >
+                            <option value="">{ctrl.allLabel}</option>
+                            {ctrl.options.map((opt) => (
+                              <option value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    }
+
+                    if (ctrl.mode === 'toggle') {
+                      return (
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked="false"
+                          data-filter-toggle={ctrl.field.name}
+                          class="chip inline-flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs"
+                        >
+                          <Icon name="check" size={13} class="hidden [[aria-checked='true']_&]:inline" />
+                          <span>
+                            {m.collection_filter_toggle_on(
+                              { label: ctrl.label },
+                              { locale: activeLocale }
+                            )}
+                          </span>
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <div class="flex flex-wrap items-center gap-2" data-filter-range={ctrl.field.name}>
+                        <span class="text-xs font-semibold text-muted">{ctrl.label}</span>
+                        <input
+                          type="number"
+                          inputmode="numeric"
+                          data-filter-range-min={ctrl.field.name}
+                          min={ctrl.minBound}
+                          max={ctrl.maxBound}
+                          aria-label={`${ctrl.label} ${m.collection_filter_min({}, { locale: activeLocale })}`}
+                          placeholder={
+                            ctrl.minBound !== undefined
+                              ? `${m.collection_filter_min({}, { locale: activeLocale })} (${formatNumber(ctrl.minBound, activeLocale)})`
+                              : m.collection_filter_min({}, { locale: activeLocale })
+                          }
+                          class="w-28 rounded-xl border border-border bg-bg px-2.5 py-1.5 text-xs text-fg placeholder:text-muted focus:border-primary focus:outline-none"
+                        />
+                        <span class="text-xs text-muted">–</span>
+                        <input
+                          type="number"
+                          inputmode="numeric"
+                          data-filter-range-max={ctrl.field.name}
+                          min={ctrl.minBound}
+                          max={ctrl.maxBound}
+                          aria-label={`${ctrl.label} ${m.collection_filter_max({}, { locale: activeLocale })}`}
+                          placeholder={
+                            ctrl.maxBound !== undefined
+                              ? `${m.collection_filter_max({}, { locale: activeLocale })} (${formatNumber(ctrl.maxBound, activeLocale)})`
+                              : m.collection_filter_max({}, { locale: activeLocale })
+                          }
+                          class="w-28 rounded-xl border border-border bg-bg px-2.5 py-1.5 text-xs text-fg placeholder:text-muted focus:border-primary focus:outline-none"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {chipControls.map((ctrl) => (
+              <>
+                <Divider locale={activeLocale} />
+                <div class="flex flex-wrap items-center gap-2" data-filter-group={ctrl.field.name}>
+                  <span class="me-1 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
+                    <Icon name={ctrl.mode === 'multi' ? 'tag' : 'filter'} size={13} />
+                    <span>{ctrl.label}</span>
+                  </span>
+                  <button
+                    type="button"
+                    data-filter-chip-field={ctrl.field.name}
+                    data-filter-chip-mode={ctrl.mode}
+                    data-filter-chip-value=""
+                    data-collection-category={ctrl.field.name === 'categories' ? '' : undefined}
+                    data-collection-stack={ctrl.field.name === 'stack' ? '' : undefined}
+                    aria-pressed="true"
+                    class="chip cursor-pointer px-3 py-1.5 text-xs"
+                  >
+                    {ctrl.allLabel}
+                  </button>
+                  {ctrl.options.map((opt) => (
+                    <button
+                      type="button"
+                      data-filter-chip-field={ctrl.field.name}
+                      data-filter-chip-mode={ctrl.mode}
+                      data-filter-chip-value={opt.value}
+                      data-collection-category={ctrl.field.name === 'categories' ? opt.value : undefined}
+                      data-collection-stack={ctrl.field.name === 'stack' ? opt.value : undefined}
+                      aria-pressed="false"
+                      class="chip cursor-pointer px-3 py-1.5 text-xs"
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ))}
+          </div>
+        )}
+
+        <ul
+          data-collection-grid
+          class:list={['mt-8 grid gap-6', gridColumnsClass]}
+          data-trig-stagger
+          data-trig-stagger-delay="0.06"
+          data-trig-root-margin="0px"
+          data-trig-once="true"
+        >
+          {pageEntries.map((entry) => {
+            const data = entry.data;
+            const slug = String(data.slug ?? '');
+            const title = String(data.title ?? '');
+            const description = typeof data.description === 'string' ? data.description : '';
+            const image = data.image as ImageMetadata | string | undefined;
+            const href = getContentTypeEntryHref(collection, slug, activeLocale);
+
+            const entryValues: Record<string, unknown> = {};
+            const haystackParts: Array<string | number | boolean | undefined | null> = [title, description];
+
+            for (const field of typeConfig.fields) {
+              if (field.type === 'image') continue;
+              const raw = data[field.name];
+              if (raw !== undefined) {
+                entryValues[field.name] = raw instanceof Date ? raw.toISOString() : raw;
+              }
+              const includeInSearch =
+                typeConfig.search.fields && typeConfig.search.fields.length > 0
+                  ? typeConfig.search.fields.includes(field.name)
+                  : field.searchable !== false;
+
+              if (includeInSearch && raw !== undefined && raw !== null) {
+                if (Array.isArray(raw)) {
+                  for (const item of raw) {
+                    const str = String(item);
+                    haystackParts.push(str);
+                    const optLabel = getContentTypeOptionLabel(collection, field, str, activeLocale);
+                    if (optLabel !== str) haystackParts.push(optLabel);
+                  }
+                } else if (typeof raw !== 'boolean') {
+                  const str = String(raw);
+                  haystackParts.push(str);
+                  const optLabel = getContentTypeOptionLabel(collection, field, str, activeLocale);
+                  if (optLabel !== str) haystackParts.push(optLabel);
+                }
+              }
+            }
+
+            const searchHaystack = buildCollectionSearchHaystack(haystackParts);
+
+            const badgeFieldName = typeConfig.card.badgeField;
+            const badgeRaw = badgeFieldName ? data[badgeFieldName] : undefined;
+            const badgeFieldDef = badgeFieldName
+              ? typeConfig.fields.find((f) => f.name === badgeFieldName)
+              : undefined;
+            const badgeLabels: string[] = Array.isArray(badgeRaw)
+              ? badgeRaw.map((item) =>
+                  badgeFieldDef
+                    ? getContentTypeOptionLabel(collection, badgeFieldDef, String(item), activeLocale)
+                    : String(item)
+                )
+              : badgeRaw !== undefined && badgeRaw !== null && String(badgeRaw).trim() !== ''
+                ? [
+                    badgeFieldDef
+                      ? getContentTypeOptionLabel(collection, badgeFieldDef, String(badgeRaw), activeLocale)
+                      : String(badgeRaw),
+                  ]
+                : [];
+
+            const metaParts = (typeConfig.card.metaFields ?? [])
+              .map((fieldName) =>
+                formatEntryFieldForDisplay(collection, fieldName, data[fieldName], typeConfig, activeLocale)
+              )
+              .filter((item): item is string => Boolean(item));
+
+            const badgeLimit = typeConfig.card.badgeLimit;
+
+            return (
+              <li
+                data-trig
+                data-trig-once="true"
+                data-collection-card
+                data-values={JSON.stringify(entryValues)}
+                data-search={searchHaystack}
+              >
+                <a
+                  href={href}
+                  class="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface transition-colors hover:border-primary/50 hover:bg-surface-hover"
+                >
+                  {image && (
+                    <div class:list={[aspectClass, 'overflow-hidden bg-surface-hover']}>
+                      {typeof image === 'string' ? (
+                        <img
+                          src={image}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                        />
+                      ) : (
+                        <Image
+                          src={image}
+                          alt=""
+                          widths={[400, 640, 900]}
+                          sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw"
+                          loading="lazy"
+                          decoding="async"
+                          class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                        />
+                      )}
+                    </div>
+                  )}
+                  <div class="flex flex-1 flex-col gap-2 p-5">
+                    <h2 class="text-lg font-semibold tracking-tight text-fg transition-colors group-hover:text-primary">
+                      {title}
+                    </h2>
+                    {description && (
+                      <p class="line-clamp-3 text-sm leading-relaxed text-muted">
+                        {description}
+                      </p>
+                    )}
+                    {badgeLimit > 0 && badgeLabels.length > 0 && (
+                      <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                        {badgeLabels.slice(0, badgeLimit).map((badge) => (
+                          <UiBadge
+                            label={badge}
+                            variant="neutral"
+                            size="sm"
+                            locale={activeLocale}
+                            class="font-medium"
+                          />
+                        ))}
+                        {badgeLabels.length > badgeLimit && (
+                          <UiBadge
+                            label={`+${formatNumber(badgeLabels.length - badgeLimit, activeLocale)}`}
+                            variant="neutral"
+                            size="sm"
+                            locale={activeLocale}
+                            class="font-medium"
+                          />
+                        )}
+                      </div>
+                    )}
+                    {metaParts.length > 0 && (
+                      <p class="mt-auto pt-3 text-xs text-muted">
+                        {metaParts.join(' · ')}
+                      </p>
+                    )}
+                  </div>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+
+        <p data-collection-empty hidden class="mt-10 text-center text-sm text-muted">
+          {m.collection_filter_empty({}, { locale: activeLocale })}
+        </p>
+
+        {
+          showPagination && totalPages > 1 && (
+            <div class="mt-12 border-t border-border pt-8" data-collection-pager-wrap data-pagefind-ignore>
+              <p class="mb-3 text-center text-xs text-muted" data-collection-page-status>
+                {pageStatus}
+              </p>
+              <UiPagination
+                locale={activeLocale}
+                variant="compact"
+                currentPage={currentPage}
+                totalPages={totalPages}
+                hrefBuilder={pageHref}
+                interactive={false}
+                pageLinkAttrs
+                class="justify-center"
+              />
+            </div>
+          )
+        }
+      </div>
+    )
+  }
+
+  <template data-icon-template="chevron-left">
+    <Icon name="chevron-left" size={16} />
+  </template>
+  <template data-icon-template="chevron-right">
+    <Icon name="chevron-right" size={16} />
+  </template>
+</div>
+
+<script>
+  import { formatNumber } from '@/i18n/format';
+  import {
+    buildGenericCollectionFilterQuery,
+    hasActiveGenericCollectionFilters,
+    matchesGenericCollectionFilters,
+    parseCollectionFilterPage,
+    parseGenericCollectionFilters,
+    type GenericFilterState,
+    type SerializedCollectionEntry,
+  } from '@/libs/content/collection-filters';
+  import type { GenericFilterFieldDef } from '@/libs/content/schema-config';
+  import { paginate } from '@/libs/content/pagination';
+  import { renderDynamicPagination } from '@/libs/ui/pagination-dom';
+  import { getLenis } from '@/scripts/lenis';
+  import { replayStaggerGrid } from '@/scripts/chronotrig';
+
+  const catalogCache = new Map<string, Promise<SerializedCollectionEntry[]>>();
+
+  function fetchCollectionCatalog(
+    contentType: string,
+    locale: string
+  ): Promise<SerializedCollectionEntry[]> {
+    const cacheKey = `${contentType}:${locale}`;
+    const existing = catalogCache.get(cacheKey);
+    if (existing) return existing;
+
+    const request = fetch(
+      `/api/collections/${encodeURIComponent(contentType)}/${encodeURIComponent(locale)}.json`
+    )
+      .then((res) => {
+        if (!res.ok) throw new Error(`Catalog HTTP ${res.status}`);
+        return res.json() as Promise<SerializedCollectionEntry[]>;
+      })
+      .catch((error) => {
+        catalogCache.delete(cacheKey);
+        throw error;
+      });
+
+    catalogCache.set(cacheKey, request);
+    return request;
+  }
+
+  function createDynamicCollectionCard(
+    entry: SerializedCollectionEntry,
+    aspectClass: string,
+    badgeLimit: number
+  ): HTMLLIElement {
+    const li = document.createElement('li');
+    li.dataset.trig = '';
+    li.dataset.trigOnce = 'true';
+    li.dataset.dynamicCollectionCard = 'true';
+
+    const link = document.createElement('a');
+    link.href = entry.href;
+    link.className =
+      'group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface transition-colors hover:border-primary/50 hover:bg-surface-hover';
+
+    if (entry.coverSrc) {
+      const media = document.createElement('div');
+      media.className = `${aspectClass} overflow-hidden bg-surface-hover`;
+      const img = document.createElement('img');
+      img.src = entry.coverSrc;
+      img.alt = '';
+      if (entry.coverWidth) img.width = entry.coverWidth;
+      if (entry.coverHeight) img.height = entry.coverHeight;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.className =
+        'h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]';
+      media.append(img);
+      link.append(media);
+    }
+
+    const body = document.createElement('div');
+    body.className = 'flex flex-1 flex-col gap-2 p-5';
+
+    const h2 = document.createElement('h2');
+    h2.className =
+      'text-lg font-semibold tracking-tight text-fg transition-colors group-hover:text-primary';
+    h2.textContent = entry.title;
+    body.append(h2);
+
+    if (entry.description) {
+      const desc = document.createElement('p');
+      desc.className = 'line-clamp-3 text-sm leading-relaxed text-muted';
+      desc.textContent = entry.description;
+      body.append(desc);
+    }
+
+    const badges = entry.badges ?? entry.stack ?? [];
+    if (badgeLimit > 0 && badges.length > 0) {
+      const badgeWrap = document.createElement('div');
+      badgeWrap.className = 'mt-2 flex flex-wrap items-center gap-1.5';
+      const badgeClass =
+        'inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] font-medium text-muted';
+      for (const badge of badges.slice(0, badgeLimit)) {
+        const span = document.createElement('span');
+        span.className = badgeClass;
+        span.textContent = badge;
+        badgeWrap.append(span);
+      }
+      if (badges.length > badgeLimit) {
+        const more = document.createElement('span');
+        more.className = badgeClass;
+        more.textContent = `+${formatNumber(badges.length - badgeLimit, entry.locale)}`;
+        badgeWrap.append(more);
+      }
+      body.append(badgeWrap);
+    }
+
+    const metaText =
+      entry.metaText ??
+      ([entry.client, entry.formattedYear].filter(Boolean).join(' · ') || null);
+
+    if (metaText) {
+      const meta = document.createElement('p');
+      meta.className = 'mt-auto pt-3 text-xs text-muted';
+      meta.textContent = metaText;
+      body.append(meta);
+    }
+
+    link.append(body);
+    li.append(link);
+    return li;
+  }
+
+  function parseJsonSafe<T>(raw: string | undefined, fallback: T): T {
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
+    }
+  }
+
+  function bindCollectionFilters() {
+    document.querySelectorAll<HTMLElement>('[data-collection-root]').forEach((root) => {
+      if (root.dataset.bound === 'true') return;
+      root.dataset.bound = 'true';
+
+      const abortController = new AbortController();
+      document.addEventListener(
+        'astro:before-swap',
+        () => abortController.abort(),
+        { once: true }
+      );
+
+      const contentType = root.dataset.contentType || 'projects';
+      const locale = root.dataset.locale || document.documentElement.lang || 'en';
+      const total = Number(root.dataset.total || '0');
+      const totalPages = Number(root.dataset.totalPages || '1');
+      const perPage = Math.max(1, Number(root.dataset.perPage || '6'));
+      const baseHref = root.dataset.baseHref || window.location.pathname;
+      const currentUrl = root.dataset.currentUrl || window.location.pathname;
+      const syncUrl = root.dataset.syncUrl !== 'false';
+      const aspectClass = root.dataset.aspectClass || 'aspect-video';
+      const badgeLimit = Math.max(0, Number(root.dataset.badgeLimit || '3'));
+      const filterDefs = parseJsonSafe<GenericFilterFieldDef[]>(root.dataset.filterDefs, []);
+
+      const countTemplate = root.dataset.countTemplate || '__V__ / __T__';
+      const pageStatusTemplate = root.dataset.pageStatusTemplate ?? '';
+      const pageLabelTemplate = root.dataset.pageLabelTemplate ?? '';
+      const prevLabel = root.dataset.prevLabel ?? 'Previous';
+      const nextLabel = root.dataset.nextLabel ?? 'Next';
+      const pagerAriaLabel = root.dataset.pagerAriaLabel ?? 'Pagination';
+
+      const searchInput = root.querySelector<HTMLInputElement>('[data-collection-search]');
+      const countEl = root.querySelector<HTMLElement>('[data-collection-count]');
+      const clearBtn = root.querySelector<HTMLButtonElement>('[data-collection-clear]');
+      const emptyEl = root.querySelector<HTMLElement>('[data-collection-empty]');
+      const grid = root.querySelector<HTMLElement>('[data-collection-grid]');
+      const pagerWrap = root.querySelector<HTMLElement>('[data-collection-pager-wrap]');
+      const serverPagerHtml = pagerWrap?.innerHTML ?? '';
+      const cards = [...root.querySelectorAll<HTMLElement>('[data-collection-card]')];
+      const chipButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-filter-chip-field]')];
+      const selectInputs = [...root.querySelectorAll<HTMLSelectElement>('[data-filter-select]')];
+      const toggleButtons = [...root.querySelectorAll<HTMLButtonElement>('[data-filter-toggle]')];
+      const rangeMinInputs = [...root.querySelectorAll<HTMLInputElement>('[data-filter-range-min]')];
+      const rangeMaxInputs = [...root.querySelectorAll<HTMLInputElement>('[data-filter-range-max]')];
+
+      let state: GenericFilterState = syncUrl
+        ? parseGenericCollectionFilters(window.location.search, filterDefs)
+        : { query: '', values: {} };
+      let filterPage = syncUrl ? parseCollectionFilterPage(window.location.search) : 1;
+      let usingDynamicPager = false;
+      let renderToken = 0;
+
+      const syncUiFromState = () => {
+        if (searchInput) searchInput.value = state.query;
+
+        chipButtons.forEach((btn) => {
+          const fieldName = btn.dataset.filterChipField ?? '';
+          const mode = btn.dataset.filterChipMode ?? 'single';
+          const value = (btn.dataset.filterChipValue ?? '').trim();
+          const currentVal = state.values[fieldName];
+
+          let active = false;
+          if (mode === 'multi') {
+            const selected = Array.isArray(currentVal) ? currentVal : [];
+            active = value === '' ? selected.length === 0 : selected.includes(value);
+          } else {
+            const selected = typeof currentVal === 'string' ? currentVal : '';
+            active = value === selected;
+          }
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+
+        selectInputs.forEach((select) => {
+          const fieldName = select.dataset.filterSelect ?? '';
+          const val = state.values[fieldName];
+          select.value = typeof val === 'string' ? val : '';
+        });
+
+        toggleButtons.forEach((btn) => {
+          const fieldName = btn.dataset.filterToggle ?? '';
+          const checked = state.values[fieldName] === true;
+          btn.setAttribute('aria-checked', checked ? 'true' : 'false');
+          btn.setAttribute('aria-pressed', checked ? 'true' : 'false');
+        });
+
+        rangeMinInputs.forEach((input) => {
+          const fieldName = input.dataset.filterRangeMin ?? '';
+          const val = state.values[fieldName];
+          const minVal =
+            val && typeof val === 'object' && !Array.isArray(val) ? val.min : undefined;
+          input.value = minVal !== undefined ? String(minVal) : '';
+        });
+
+        rangeMaxInputs.forEach((input) => {
+          const fieldName = input.dataset.filterRangeMax ?? '';
+          const val = state.values[fieldName];
+          const maxVal =
+            val && typeof val === 'object' && !Array.isArray(val) ? val.max : undefined;
+          input.value = maxVal !== undefined ? String(maxVal) : '';
+        });
+      };
+
+      const clearDynamicCards = () => {
+        grid?.querySelectorAll('[data-dynamic-collection-card]').forEach((el) => el.remove());
+      };
+
+      const restoreServerPager = () => {
+        if (!pagerWrap) return;
+        if (usingDynamicPager) {
+          pagerWrap.innerHTML = serverPagerHtml;
+          usingDynamicPager = false;
+        }
+        pagerWrap.hidden = totalPages <= 1;
+      };
+
+      const applyFilters = async (options: { updateUrl?: boolean; replay?: boolean } = {}) => {
+        const { updateUrl = true, replay = true } = options;
+        const token = ++renderToken;
+        const hasFilter = hasActiveGenericCollectionFilters(state);
+
+        if (totalPages > 1 && hasFilter && grid) {
+          try {
+            const entries = await fetchCollectionCatalog(contentType, locale);
+            if (token !== renderToken) return;
+
+            const matching = entries.filter((entry) =>
+              matchesGenericCollectionFilters(
+                {
+                  values: entry.values ?? {
+                    categories: entry.categories,
+                    stack: entry.stack,
+                    client: entry.client,
+                    year: entry.year,
+                  },
+                  searchHaystack: entry.searchHaystack,
+                },
+                state,
+                filterDefs
+              )
+            );
+            const slice = paginate(matching, filterPage, perPage);
+            filterPage = slice.page;
+
+            if (syncUrl && updateUrl) {
+              window.history.replaceState(
+                window.history.state,
+                '',
+                `${baseHref}${buildGenericCollectionFilterQuery(state, filterDefs, filterPage)}`
+              );
+            }
+
+            cards.forEach((card) => {
+              card.hidden = true;
+              card.classList.add('hidden');
+            });
+            clearDynamicCards();
+            grid.append(
+              ...slice.items.map((entry) =>
+                createDynamicCollectionCard(entry, aspectClass, badgeLimit)
+              )
+            );
+
+            if (pagerWrap) {
+              usingDynamicPager = renderDynamicPagination({
+                container: pagerWrap,
+                locale,
+                currentPage: slice.page,
+                totalPages: slice.totalPages,
+                makePageHref: (targetPage) =>
+                  `${baseHref}${buildGenericCollectionFilterQuery(state, filterDefs, targetPage)}`,
+                pageStatusTemplate,
+                pageLabelTemplate,
+                prevLabel,
+                nextLabel,
+                pagerAriaLabel,
+                statusDataKey: 'collectionPageStatus',
+                navDataKey: 'collectionPagination',
+              });
+            }
+
+            if (countEl) {
+              countEl.textContent = countTemplate
+                .replace('__V__', formatNumber(matching.length, locale))
+                .replace('__T__', formatNumber(entries.length, locale));
+            }
+            if (clearBtn) clearBtn.hidden = !hasFilter;
+            if (emptyEl) emptyEl.hidden = matching.length > 0;
+            if (replay) replayStaggerGrid(grid);
+            return;
+          } catch {
+            if (token !== renderToken) return;
+          }
+        }
+
+        clearDynamicCards();
+        restoreServerPager();
+
+        const filterQuery = buildGenericCollectionFilterQuery(state, filterDefs);
+        root.querySelectorAll<HTMLAnchorElement>('[data-page-link]').forEach((link) => {
+          const pageBase = link.dataset.pageHref;
+          if (pageBase) link.setAttribute('href', `${pageBase}${filterQuery}`);
+        });
+
+        if (syncUrl && updateUrl) {
+          const targetPath = hasFilter ? `${baseHref}${filterQuery}` : currentUrl;
+          window.history.replaceState(window.history.state, '', targetPath);
+        }
+
+        let visibleCount = 0;
+        let visibilityChanged = false;
+
+        cards.forEach((card) => {
+          const entry = {
+            values: parseJsonSafe<Record<string, unknown>>(card.dataset.values, {}),
+            searchHaystack: card.dataset.search || '',
+          };
+          const show = matchesGenericCollectionFilters(entry, state, filterDefs);
+          const nextHidden = !show;
+
+          if (card.hidden !== nextHidden) visibilityChanged = true;
+          card.hidden = nextHidden;
+          card.classList.toggle('hidden', nextHidden);
+          if (show) visibleCount += 1;
+        });
+
+        if (countEl) {
+          countEl.textContent = countTemplate
+            .replace('__V__', formatNumber(visibleCount, locale))
+            .replace('__T__', formatNumber(total, locale));
+        }
+        if (clearBtn) clearBtn.hidden = !hasFilter;
+        if (emptyEl) emptyEl.hidden = visibleCount > 0;
+        if (grid && visibilityChanged) {
+          replayStaggerGrid(grid);
+        }
+      };
+
+      chipButtons.forEach((btn) => {
+        btn.addEventListener(
+          'click',
+          () => {
+            const fieldName = btn.dataset.filterChipField ?? '';
+            const mode = btn.dataset.filterChipMode ?? 'single';
+            const value = (btn.dataset.filterChipValue ?? '').trim();
+            if (!fieldName) return;
+
+            if (mode === 'multi') {
+              const activeSet = new Set<string>(
+                Array.isArray(state.values[fieldName]) ? (state.values[fieldName] as string[]) : []
+              );
+              if (value === '') {
+                if (activeSet.size === 0) return;
+                activeSet.clear();
+              } else if (activeSet.has(value)) {
+                activeSet.delete(value);
+              } else {
+                activeSet.add(value);
+              }
+              if (activeSet.size > 0) {
+                state.values[fieldName] = [...activeSet];
+              } else {
+                delete state.values[fieldName];
+              }
+            } else {
+              const current = typeof state.values[fieldName] === 'string' ? state.values[fieldName] : '';
+              if (value === current) return;
+              if (value === '') {
+                delete state.values[fieldName];
+              } else {
+                state.values[fieldName] = value;
+              }
+            }
+
+            filterPage = 1;
+            syncUiFromState();
+            void applyFilters({ updateUrl: true });
+          },
+          { signal: abortController.signal }
+        );
+      });
+
+      selectInputs.forEach((select) => {
+        select.addEventListener(
+          'change',
+          () => {
+            const fieldName = select.dataset.filterSelect ?? '';
+            if (!fieldName) return;
+            const value = select.value.trim();
+            if (value) {
+              state.values[fieldName] = value;
+            } else {
+              delete state.values[fieldName];
+            }
+            filterPage = 1;
+            void applyFilters({ updateUrl: true });
+          },
+          { signal: abortController.signal }
+        );
+      });
+
+      toggleButtons.forEach((btn) => {
+        btn.addEventListener(
+          'click',
+          () => {
+            const fieldName = btn.dataset.filterToggle ?? '';
+            if (!fieldName) return;
+            const next = state.values[fieldName] !== true;
+            if (next) {
+              state.values[fieldName] = true;
+            } else {
+              delete state.values[fieldName];
+            }
+            filterPage = 1;
+            syncUiFromState();
+            void applyFilters({ updateUrl: true });
+          },
+          { signal: abortController.signal }
+        );
+      });
+
+      const updateRange = (fieldName: string, bound: 'min' | 'max', raw: string) => {
+        const trimmed = raw.trim();
+        const parsed = trimmed !== '' && Number.isFinite(Number(trimmed)) ? Number(trimmed) : undefined;
+        const current =
+          state.values[fieldName] &&
+          typeof state.values[fieldName] === 'object' &&
+          !Array.isArray(state.values[fieldName])
+            ? { ...(state.values[fieldName] as { min?: number; max?: number }) }
+            : {};
+
+        if (parsed !== undefined) {
+          current[bound] = parsed;
+        } else {
+          delete current[bound];
+        }
+
+        if (current.min === undefined && current.max === undefined) {
+          delete state.values[fieldName];
+        } else {
+          state.values[fieldName] = current;
+        }
+        filterPage = 1;
+        void applyFilters({ updateUrl: true });
+      };
+
+      rangeMinInputs.forEach((input) => {
+        input.addEventListener(
+          'input',
+          () => updateRange(input.dataset.filterRangeMin ?? '', 'min', input.value),
+          { signal: abortController.signal }
+        );
+      });
+
+      rangeMaxInputs.forEach((input) => {
+        input.addEventListener(
+          'input',
+          () => updateRange(input.dataset.filterRangeMax ?? '', 'max', input.value),
+          { signal: abortController.signal }
+        );
+      });
+
+      searchInput?.addEventListener(
+        'input',
+        () => {
+          state.query = searchInput.value;
+          filterPage = 1;
+          void applyFilters({ updateUrl: true });
+        },
+        { signal: abortController.signal }
+      );
+
+      clearBtn?.addEventListener(
+        'click',
+        () => {
+          state = { query: '', values: {} };
+          filterPage = 1;
+          syncUiFromState();
+          void applyFilters({ updateUrl: true });
+        },
+        { signal: abortController.signal }
+      );
+
+      pagerWrap?.addEventListener(
+        'click',
+        (event) => {
+          const target = (event.target as HTMLElement | null)?.closest<HTMLAnchorElement>(
+            '[data-dynamic-page]'
+          );
+          if (!target) return;
+
+          event.preventDefault();
+          const nextPage = Number(target.dataset.dynamicPage);
+          if (!Number.isInteger(nextPage) || nextPage < 1 || nextPage === filterPage) return;
+
+          filterPage = nextPage;
+          void applyFilters({ updateUrl: true });
+          if (grid) {
+            const headerOffset = document.querySelector('header.fixed') ? -96 : 0;
+            const lenis = getLenis();
+            if (lenis) {
+              lenis.scrollTo(grid, { offset: headerOffset, duration: 0.9 });
+            } else {
+              const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+              const top = grid.getBoundingClientRect().top + window.scrollY + headerOffset;
+              window.scrollTo({
+                top: Math.max(0, top),
+                behavior: reducedMotion ? 'auto' : 'smooth',
+              });
+            }
+          }
+        },
+        { signal: abortController.signal }
+      );
+
+      if (syncUrl) {
+        document.addEventListener(
+          'collection:filters-restore',
+          () => {
+            state = parseGenericCollectionFilters(window.location.search, filterDefs);
+            filterPage = parseCollectionFilterPage(window.location.search);
+            syncUiFromState();
+            void applyFilters({ updateUrl: false, replay: true });
+          },
+          { signal: abortController.signal }
+        );
+      }
+
+      syncUiFromState();
+      if (syncUrl && hasActiveGenericCollectionFilters(state)) {
+        void applyFilters({ updateUrl: false, replay: false });
+      }
+    });
+  }
+
+  if (document.documentElement.dataset.collectionFilterBound !== 'true') {
+    document.documentElement.dataset.collectionFilterBound = 'true';
+    window.addEventListener('popstate', () => {
+      document.dispatchEvent(new CustomEvent('collection:filters-restore'));
+    });
+    document.addEventListener('astro:page-load', bindCollectionFilters);
+  }
+  bindCollectionFilters();
+</script>

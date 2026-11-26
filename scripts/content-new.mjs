@@ -124,6 +124,33 @@ if (fs.existsSync(groupDir)) {
   process.exit(1);
 }
 
+function defaultFrontmatterValue(field) {
+  if (field.default !== undefined) return field.default;
+  if (!field.required) return undefined;
+  switch (field.type) {
+    case 'boolean':
+      return false;
+    case 'number':
+      return field.min ?? 0;
+    case 'enum':
+      return Array.isArray(field.options) && field.options.length > 0 ? field.options[0] : 'default';
+    case 'string[]':
+    case 'taxonomy[]':
+      return [];
+    case 'date':
+      return new Date().toISOString().slice(0, 10);
+    case 'url':
+      return 'https://example.com';
+    case 'image':
+      return undefined;
+    default:
+      return `[TODO: ${field.name}]`;
+  }
+}
+
+const configuredFields = Array.isArray(declared?.fields) ? declared.fields : [];
+const reservedKeys = new Set(['title', 'slug', 'description', 'image', 'draft']);
+
 const baseTitle = options.title || group.replace(/[-_]+/g, ' ');
 fs.mkdirSync(groupDir, { recursive: true });
 
@@ -135,10 +162,18 @@ for (const locale of locales) {
     : `[TODO: ${locale}] ${baseTitle}`;
   const description = isSource ? options.description : '';
 
+  const extraFields = {};
+  for (const field of configuredFields) {
+    if (!field?.name || reservedKeys.has(field.name)) continue;
+    const val = defaultFrontmatterValue(field);
+    if (val !== undefined) extraFields[field.name] = val;
+  }
+
   const frontmatter = {
     title,
     slug,
     ...(description ? { description } : {}),
+    ...extraFields,
     ...(options.noImage ? {} : { image: options.image || `./${group}.png` }),
     // Only the source locale of a `--publish` run goes live; a placeholder
     // title must never be published as if it were translated copy.

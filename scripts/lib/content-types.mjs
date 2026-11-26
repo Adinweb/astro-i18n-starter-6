@@ -72,8 +72,26 @@ export function readClientCollectionKeys(targetRootDir = rootDir) {
   return keys;
 }
 
-export function getKnownTypes(targetRootDir = rootDir) {
-  return [...new Set([...CORE_TYPES, ...readClientCollectionKeys(targetRootDir)])];
+export function getConfigDefinedTypes(targetRootDir = rootDir, config) {
+  try {
+    const resolved = config ?? readMergedConfig(targetRootDir);
+    const types = resolved?.content?.types ?? {};
+    return Object.entries(types)
+      .filter(([, cfg]) => Array.isArray(cfg?.fields) || cfg?.schemaDriven === true)
+      .map(([key]) => key);
+  } catch {
+    return [];
+  }
+}
+
+export function getKnownTypes(targetRootDir = rootDir, config) {
+  return [
+    ...new Set([
+      ...CORE_TYPES,
+      ...readClientCollectionKeys(targetRootDir),
+      ...getConfigDefinedTypes(targetRootDir, config),
+    ]),
+  ];
 }
 
 export const KNOWN_TYPES = getKnownTypes(rootDir);
@@ -96,11 +114,13 @@ export { readCoreConfig, readClientConfig, readMergedConfig, writeClientConfig }
  * Every declared type with its effective settings.
  *
  * @returns {{ key: string, enabled: boolean, base: string, index: boolean,
- *   paginated: boolean, feed: boolean, nav: boolean, declared: boolean }[]}
+ *   paginated: boolean, feed: boolean, nav: boolean, declared: boolean,
+ *   schemaDriven: boolean, fields?: unknown[], labels?: Record<string, string>,
+ *   descriptions?: Record<string, string> }[]}
  */
 export function readContentTypes(config = readAppConfig(), targetRootDir = rootDir) {
   const types = config.content?.types ?? {};
-  const keys = [...new Set([...getKnownTypes(targetRootDir), ...Object.keys(types)])];
+  const keys = [...new Set([...getKnownTypes(targetRootDir, config), ...Object.keys(types)])];
 
   return keys.map((key) => {
     const settings = types[key] ?? {};
@@ -113,6 +133,10 @@ export function readContentTypes(config = readAppConfig(), targetRootDir = rootD
       paginated: settings.paginated === true,
       feed: settings.feed === true,
       nav: key === 'pages' ? false : settings.nav !== false,
+      schemaDriven: settings.schemaDriven === true || Array.isArray(settings.fields),
+      fields: Array.isArray(settings.fields) ? settings.fields : undefined,
+      labels: settings.labels,
+      descriptions: settings.descriptions,
     };
   });
 }
@@ -128,7 +152,7 @@ export function contentTypeKeyError(key, targetRootDir = rootDir) {
   if (!known.includes(key)) {
     return (
       `❌ Unknown content type "${key}". Known types: ${known.join(', ')}. ` +
-      'Declare the collection in client/content.ts (and configure it in client/config.json) first.'
+      'Declare the collection in content.types (with fields/schemaDriven) or client/content.ts first.'
     );
   }
   return null;

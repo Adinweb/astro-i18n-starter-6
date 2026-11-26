@@ -252,7 +252,14 @@ if (baseDictionary) {
   }
 
   // Flag orphaned client-owned keys (skip dynamic prefix families & overrides of core keys).
-  const dynamicPrefixPattern = /^(?:nav_|blog_category_|blog_tag_)/;
+  const customTypePrefixes = CONTENT_TYPES.filter(
+    (t) => t.key !== 'pages' && t.key !== 'blog' && t.key !== 'projects'
+  ).map((t) => `${t.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}_`);
+  const dynamicPrefixPattern = new RegExp(
+    `^(?:nav_|blog_category_|blog_tag_|(?:blog|projects)_field_|(?:blog|projects)_index_description$${
+      customTypePrefixes.length ? `|${customTypePrefixes.join('|')}` : ''
+    })`
+  );
   const baseCoreKeys = new Set(messageKeys(readCoreMessages(BASE_LOCALE, rootDir)));
   const baseClientKeys = messageKeys(readClientMessages(BASE_LOCALE, rootDir));
   const unusedClientKeys = baseClientKeys.filter(

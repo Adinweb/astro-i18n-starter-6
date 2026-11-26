@@ -1,74 +1,67 @@
-import { defineCollection, type ImageFunction } from 'astro:content';
+import { defineCollection } from 'astro:content';
 import { z } from 'astro/zod';
 import { glob } from 'astro/loaders';
+import rawConfig from '../app.config.json';
+import clientConfig from '../client/config.json';
+import cmsConfig from '../client/cms.json';
 import { clientCollections } from '../client/content';
+import { mergeLayeredConfig } from './libs/config/defaults';
+import type { CollectionFieldConfig } from './libs/content/schema-config';
+import {
+  baseCollectionSchema,
+  buildConfiguredCollections,
+  buildFieldsZodShape,
+  pageSlugSchema,
+  slugSchema,
+  type ConfiguredCollectionInput,
+} from './libs/content/zod-schema';
 
-/**
- * Slugs may contain Unicode letters, digits, combining marks, and the
- * zero-width joiners Persian/Arabic words rely on. Hyphen, ZWNJ (U+200C), and
- * ZWJ (U+200D) are the only permitted separators, and none may be doubled.
- */
-const SLUG_PART = /^[\p{L}\p{N}\p{M}]+$/u;
-
-function isValidSlug(value: string): boolean {
-  if (value === '') return true;
-  return value.split(/[\u200C\u200D-]/u).every((part) => SLUG_PART.test(part));
-}
-
-const slugSchema = z.string().refine(
-  isValidSlug,
-  'Use letters, digits, and single hyphens or zero-width joiners only (empty is allowed only for the home page).'
+const mergedAppConfig = mergeLayeredConfig(
+  rawConfig as Record<string, unknown>,
+  clientConfig as Record<string, unknown>,
+  cmsConfig as Record<string, unknown>
 );
+const configuredTypes =
+  ((mergedAppConfig.content as { types?: Record<string, ConfiguredCollectionInput> } | undefined)
+    ?.types ?? {}) as Record<string, ConfiguredCollectionInput>;
 
-function isValidPageSlug(value: string): boolean {
-  if (value === '') return true;
-  return value.split('/').every((segment) => segment.length > 0 && isValidSlug(segment));
-}
+const BUILT_IN_PROJECT_RESERVED = new Set([
+  'title',
+  'slug',
+  'description',
+  'image',
+  'author',
+  'publishedAt',
+  'updatedAt',
+  'categories',
+  'tags',
+  'draft',
+  'client',
+  'year',
+  'link',
+  'stack',
+]);
 
-const pageSlugSchema = z.string().refine(
-  isValidPageSlug,
-  'Use letters, digits, and single hyphens or zero-width joiners per path segment (no leading, trailing, or empty "/" segments).'
-);
+const BUILT_IN_BLOG_RESERVED = new Set([
+  'title',
+  'slug',
+  'description',
+  'image',
+  'author',
+  'publishedAt',
+  'updatedAt',
+  'categories',
+  'tags',
+  'draft',
+]);
 
-/**
- * Taxonomy keys double as URL query values and message keys, so they stay
- * ASCII, lowercase, and hyphen-separated. Visible labels are localized in
- * `src/libs/content/taxonomy.ts`.
- */
-const taxonomyKey = z
-  .string()
-  .min(1)
-  .regex(
-    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-    'Use lowercase letters, digits, and single hyphens (for example "design-systems").'
-  );
-
-/**
- * Base schema shared by every content collection.
- *
- * `image` uses Astro's own `image()` helper. The frontmatter value is a path
- * relative to the content file (`./cover.png`); the content layer resolves it,
- * checks that the file exists, and hands the entry a ready-to-use
- * `ImageMetadata` — so the components never look a path up themselves and a
- * broken reference fails the build instead of shipping a missing picture.
- */
-const baseSchema = ({ image }: { image: ImageFunction }) =>
-  z.object({
-    title: z.string().min(1),
-    slug: slugSchema,
-    description: z.string().optional(),
-    image: image().optional(),
-    author: z.string().min(1).optional(),
-    publishedAt: z.coerce.date().optional(),
-    updatedAt: z.coerce.date().optional(),
-    categories: z.array(taxonomyKey).default([]),
-    tags: z.array(taxonomyKey).default([]),
-    draft: z.boolean().default(false),
-  });
+const blogExtraFields: readonly CollectionFieldConfig[] = configuredTypes.blog?.fields ?? [];
+const projectExtraFields: readonly CollectionFieldConfig[] = configuredTypes.projects?.fields ?? [];
 
 /**
- * Collections combine built-in core collections (`pages`, `blog`, `projects`)
- * with client-defined collections in `client/content.ts`.
+ * Collections combine built-in core collections (`pages`, `blog`, `projects`),
+ * client-defined collections in `client/content.ts`, and config-driven
+ * collections declared under `content.types.<key>.fields`.
  */
 export const collections = {
   pages: defineCollection({
@@ -78,28 +71,11 @@ export const collections = {
       generateId: ({ entry }) => entry.replace(/\.(md|mdx)$/, ''),
     }),
     schema: ({ image }) =>
-      baseSchema({ image }).extend({
+      baseCollectionSchema({ image }).extend({
         slug: pageSlugSchema,
-        /**
-         * Hero presentation mode for pages. Defaults to `'none'` so pages do not
-         * force a pre-built hero banner unless explicitly requested.
-         */
         hero: z.union([z.boolean(), z.enum(['none', 'minimal', 'default'])]).default('none'),
-        /**
-         * Page body container mode (`container` avoids colliding with Astro MDX's
-         * reserved `layout` import specifier and static MDX analyzers). Defaults
-         * to `'canvas'` so authors have full freedom for custom full-bleed sections.
-         */
         container: z.enum(['canvas', 'contained', 'prose']).default('canvas'),
-        /**
-         * Renders `<main>` flush to the top edge (`pt-0`) when `hero` is `'none'`,
-         * allowing custom full-bleed heroes to sit directly under the fixed header.
-         */
         flushTop: z.boolean().default(false),
-        /**
-         * Optional named `.astro` template in `src/views/pages/` or `client/templates/`
-         * mapped by `PageView.astro` for DRY bespoke page designs shared across locales.
-         */
         template: z.string().min(1).optional(),
       }),
   }),
@@ -110,10 +86,7 @@ export const collections = {
       generateId: ({ entry }) => entry.replace(/\.(md|mdx)$/, ''),
     }),
     schema: ({ image }) =>
-      baseSchema({ image }).extend({
-        // A blog post owns the `/blog/<slug>/` route, so an empty slug would
-        // collide with the blog index itself and `"page"` is reserved for
-        // pagination (`/blog/page/<n>/`).
+      baseCollectionSchema({ image }).extend({
         slug: slugSchema
           .min(1, 'Blog posts need a non-empty slug.')
           .refine(
@@ -121,12 +94,9 @@ export const collections = {
             'Slug "page" is reserved for pagination (/blog/page/<n>/).'
           ),
         publishedAt: z.coerce.date(),
+        ...buildFieldsZodShape(blogExtraFields, image, BUILT_IN_BLOG_RESERVED),
       }),
   }),
-  /**
-   * Case studies and portfolio entries. Same `<group>/<locale>.mdx` contract as
-   * the other collections, plus the fields a project page actually shows.
-   */
   projects: defineCollection({
     loader: glob({
       pattern: '**/*.{md,mdx}',
@@ -134,20 +104,25 @@ export const collections = {
       generateId: ({ entry }) => entry.replace(/\.(md|mdx)$/, ''),
     }),
     schema: ({ image }) =>
-      baseSchema({ image }).extend({
-        slug: slugSchema.min(1, 'Projects need a non-empty slug.').refine(
-          (value) => value !== 'page',
-          'Slug "page" is reserved for pagination (/projects/page/<n>/).'
-        ),
-        /** Who the work was done for. */
+      baseCollectionSchema({ image }).extend({
+        slug: slugSchema
+          .min(1, 'Projects need a non-empty slug.')
+          .refine(
+            (value) => value !== 'page',
+            'Slug "page" is reserved for pagination (/projects/page/<n>/).'
+          ),
         client: z.string().min(1).optional(),
-        /** Delivery year, used for the index card meta. */
         year: z.number().int().min(1990).max(2100).optional(),
-        /** Live project URL, rendered as an external link. */
         link: z.url().optional(),
-        /** Technologies shown as chips on the entry page. */
         stack: z.array(z.string().min(1)).default([]),
+        ...buildFieldsZodShape(projectExtraFields, image, BUILT_IN_PROJECT_RESERVED),
       }),
   }),
   ...clientCollections,
+  ...buildConfiguredCollections(configuredTypes, [
+    'pages',
+    'blog',
+    'projects',
+    ...Object.keys(clientCollections),
+  ]),
 };

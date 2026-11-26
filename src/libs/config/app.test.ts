@@ -20,6 +20,8 @@ import {
   apiRedirectsSchema,
   apiConfigSchema,
   authorProfileSchema,
+  collectionFieldSchema,
+  contentTypeSchema,
   defaultUiConfig,
   defaultSocialConfig,
   defaultBusinessConfig,
@@ -532,6 +534,80 @@ describe('src/libs/config/app.ts', () => {
       expect(() =>
         redirectsConfigSchema.parse([{ from: '/same', to: '/same/', status: 301 }])
       ).toThrow();
+    });
+  });
+
+  describe('declarative collectionFieldSchema & contentTypeSchema', () => {
+    it('validates config-defined collection fields, filter modes, and CMS locale maps', () => {
+      const parsed = contentTypeSchema.parse({
+        enabled: true,
+        base: 'gallery',
+        index: true,
+        paginated: true,
+        perPage: 12,
+        labels: { en: 'Gallery', fa: 'گالری آثار' },
+        descriptions: { en: 'Browse artworks', fa: 'مرور آثار هنری' },
+        sortBy: 'year',
+        sortOrder: 'desc',
+        card: { layout: 'gallery', aspectRatio: 'square', badgeField: 'medium', badgeLimit: 2 },
+        fields: [
+          {
+            name: 'medium',
+            type: 'enum',
+            options: ['oil', 'digital'],
+            required: true,
+            labels: { en: 'Medium', fa: 'تکنیک' },
+            filter: { enabled: true, mode: 'single', allLabel: { en: 'All', fa: 'همه' } },
+            showOnCard: 'badge',
+          },
+          {
+            name: 'year',
+            type: 'number',
+            min: 1990,
+            max: 2100,
+            filter: { enabled: true, mode: 'range' },
+            showOnCard: 'meta',
+          },
+        ],
+      });
+
+      expect(parsed.base).toBe('gallery');
+      expect(parsed.perPage).toBe(12);
+      expect(parsed.fields).toHaveLength(2);
+
+      // Enum without options must fail
+      expect(() =>
+        collectionFieldSchema.parse({
+          name: 'status',
+          type: 'enum',
+        })
+      ).toThrow();
+
+      // Duplicate filter URL params within one collection must fail
+      expect(() =>
+        contentTypeSchema.parse({
+          fields: [
+            { name: 'a', type: 'string', filter: { enabled: true, mode: 'single', param: 'shared' } },
+            { name: 'b', type: 'string', filter: { enabled: true, mode: 'single', param: 'shared' } },
+          ],
+        })
+      ).toThrow();
+
+      // Sanitizer strips empty strings from descriptions/placeholder/allLabel maps
+      const clean = sanitizeCmsConfig({
+        content: {
+          types: {
+            gallery: {
+              descriptions: { en: '', fa: 'توضیح' },
+              search: { placeholder: { en: '', fa: 'جستجو...' } },
+            },
+          },
+        },
+      });
+      const cleanGallery = ((clean.content as Record<string, unknown>).types as Record<string, unknown>)
+        .gallery as Record<string, unknown>;
+      expect(cleanGallery.descriptions).toEqual({ fa: 'توضیح' });
+      expect((cleanGallery.search as Record<string, unknown>).placeholder).toEqual({ fa: 'جستجو...' });
     });
   });
 });

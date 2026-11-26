@@ -422,8 +422,9 @@ export function buildSiteRoutes(
       }
     }
 
+    const pageSize = type.perPage ?? POSTS_PER_PAGE;
     const perPage = type.paginated
-      ? POSTS_PER_PAGE
+      ? pageSize
       : Math.max(1, ...entriesPerLocale.values());
 
     for (const locale of LOCALES) {

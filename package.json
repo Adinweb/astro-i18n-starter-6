@@ -41,6 +41,7 @@
     "content:list": "node scripts/content-list.mjs",
     "content:status": "node scripts/content-status.mjs",
     "content:new": "node scripts/content-new.mjs",
+    "content:sync": "node scripts/content-sync.mjs",
     "content:enable": "node scripts/content-toggle.mjs enable",
     "content:disable": "node scripts/content-toggle.mjs disable",
     "starter:seed": "node scripts/seed-starter.mjs",

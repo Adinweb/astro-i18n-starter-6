@@ -67,7 +67,7 @@
 | **معماری Pure SSG و فرم بدون سرور** | خروجی ۱۰۰٪ استاتیک بدون سرور بک‌اند؛ فرم تماس (`ContactForm.astro`) و خبرنامه (`NewsletterBanner.astro`) از طریق `src/libs/api/client.ts` از ارائه‌دهندگان `custom`، `web3forms`، `formspree`، `basin` و `webhook` به‌همراه Cloudflare Turnstile و Honeypot پشتیبانی می‌کنند + مدیریت رضایت کوکی (`CookieConsent.astro`) |
 | **زبان‌ها و حالت تک‌زبانه** | انگلیسی (`en`) و فارسی (`fa`) به‌صورت پیش‌فرض فعال + آمادگی کامل فونت/فرمت و افزودن تک‌فرمانی زبان‌های دیگر (`ar`, `de`, `fr`, …) با `i18n:add-lang`؛ برای سایت تک‌زبانه، صرفاً `ui.showLanguageSwitcher: false` (+ در صورت نیاز `i18n:set-default`) کافی است (و `i18n:solo` به‌صورت اختیاری مسیرهای اضافی را حذف می‌کند) |
 | **مسیریابی** | دیسپچر تک‌فایلی `[...path].astro` — بدون هیچ فایل مسیر پویا در `src/pages/` |
-| **محتوا، فیلتر نمونه‌کارها و CMS** | کالکشن‌های `pages`، `blog` و `projects` با قرارداد `گروه/زبان.mdx`؛ ۲۹ بلوک سکشن (۷ هیرو سکشن + ۲۲ سکشن شرکتی/لندینگ) + ۳۵ پریمیتیو رابط در `src/components/ui/` + ۴ بلوک تعاملی/حرکتی، گالری تصویر با لایت‌باکس `<dialog>`، فیلتر دسته/پشتهٔ فنی/جستجو (`normalizeForFallbackMatch`) در `CollectionIndexView.astro` و پیکربندی Pages CMS در `.pages.yml` متصل به لایهٔ امن `client/cms.json` |
+| **محتوا، کالکشن‌های اعلان‌محور و CMS** | کالکشن‌های `pages`، `blog`، `projects` و هر کالکشن سفارشی تعریف‌شده در `client/config.json` با قرارداد `گروه/زبان.mdx`؛ ۲۹ بلوک سکشن (۷ هیرو + ۲۲ سکشن شرکتی/لندینگ) + ۳۵ پریمیتیو `src/components/ui/` + ۴ بلوک تعاملی/حرکتی، کامپوننت فیلتر خودکار `<CollectionBrowser collection="..." />` (فیلتر تک‌انتخابی، چندانتخابی، کشویی، کلیدی، بازهٔ عددی و جستجوی فارسی در `CollectionIndexView.astro` و قابل جاسازی در هر صفحه)، گالری تصویر با لایت‌باکس `<dialog>`، همگام‌سازی `.pages.yml` با `npm run content:sync` و لایهٔ امن `client/cms.json` |
 | **RTL و فونت‌های تجاری فارسی** | خواص منطقی CSS (`ms-`, `pe-`, `start-`), ۵ پیش‌تنظیم فونت RTL (`vazirmatn`, `noto-arabic`, `iransans`, `yekan-bakh`, `peyda` با ساختار `@font-face` در `client/styles.css`)، جداسازی `pre/code` به LTR، چرخاندن آیکون پیجر |
 | **وبلاگ** | دسته‌بندی، برچسب، فیلتر ترکیبی در کل مجموعهٔ مقالات (`/api/blog-posts/<locale>.json`)، صفحه‌بندی استاتیک، فهرست مطالب خودکار (TOC)، مقالات مرتبط و ناوبری مقالهٔ قبلی/بعدی، دکمهٔ کپی کد، زمان مطالعه و تاریخ به‌روزرسانی، استایل چاپ (`@media print`) |
 | **برندینگ، لوگو، بلوپرینت و DEV Studio** | راه‌اندازی سریع با `site:init --blueprint=corporate\|agency\|portfolio\|medical\|catalog\|legal` و `--logo`، پشتیبانی از لوگوی تصویر/SVG روشن و تیره (`brand.logo`)، ۶ پالت OKLCH آماده و فونت‌های variable نصب‌شده + **استودیوی زندهٔ تم در DEV (`DevThemePreview.astro` با خروجی صفر بایت در بیلد نهایی)** |
@@ -187,7 +187,8 @@ npx astro dev stop           # توقف سرور
 | `npm run audit:i18n` | ممیزی چندزبانه (۶ مرحله) |
 | `npm run verify:cli` | تست سرتاسری همهٔ گردش‌کارهای CLI |
 | `npm run content:list` | فهرست انواع محتوا، مسیر و تعداد ورودی‌ها (`--json`) |
-| `npm run content:new` | ساخت گروه در هر نوع محتوا |
+| `npm run content:sync` | همگام‌سازی `.pages.yml` و پوشه‌های `src/content/<type>/` با `content.types` (`--check` / `--dry-run`) |
+| `npm run content:new` | ساخت گروه در هر نوع محتوا (با پرکردن خودکار فیلدهای `default`/`required`) |
 | `npm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا در `client/config.json` (مسیرها، sitemap و ناوبری) |
 | `npm run content:status` | ماتریس آمادگی هر گروه × هر زبان (`--write=docs/STATUS.md`) |
 | `npm run doctor` | بررسی سلامت پروژه بدون build (از جمله کنترل آنالیتیکس/GDPR)، با دستور رفع هر مورد |
@@ -227,7 +228,7 @@ SITE_URL=https://example.com npm run build
 │   ├── LayoutHooks.astro    # قلاب‌های `top-banner`، `<head>` و انتهای `<body>` در BaseLayout
 │   └── styles.css           # توکن‌ها، بازنویسی‌های CSS مشتری و جایگاه آمادهٔ @font-face فونت‌های تجاری فارسی
 ├── deploy/                  # ریدایرکت‌های تولیدشدهٔ Nginx/Apache در زمان بیلد (nginx-redirects.conf, .htaccess-redirects؛ بیرون از dist/)
-├── messages/core/           # فرهنگ‌های هسته (۶۴۴ کلید پایه در en.json و fa.json)
+├── messages/core/           # فرهنگ‌های هسته (۶۵۰ کلید پایه در en.json و fa.json)
 ├── starter-kit/             # بستهٔ اختیاری دمو (صفحات، مقالات، پروژه‌ها، دارایی‌ها و ۶ بلوپرینت — با starter:seed)
 ├── .paraglide-work/         # ⚠️ تولیدی/موقت (gitignore): حاصل ادغام core + client پیش از کامپایل
 ├── astro.config.mjs         # Astro + هوک تولید خودکار _redirects، nginx-redirects.conf و .htaccess-redirects
@@ -237,22 +238,22 @@ SITE_URL=https://example.com npm run build
 ├── .npmrc                   # تنظیمات npm/pnpm
 ├── .env.example             # متغیرهای محیطی (SITE_URL, PUBLIC_API_BASE_URL, PUBLIC_CONTACT_API_URL, PUBLIC_NEWSLETTER_API_URL, PUBLIC_WEB3FORMS_KEY, PUBLIC_TURNSTILE_SITE_KEY)
 ├── public/                  # _headers، chronotrig.min.js، favicon، آیکون‌ها، کارت OG پیش‌فرض
-├── scripts/                 # ۳۰ اسکریپت CLI، بررسی سلامت، تست مرورگر qa:browser، Pagefind و upstream:check
-│   └── lib/                 # ۱۴ ماژول مشترک: config, blueprints, merge-messages, locales, locale-mutations,
-│                            # frontmatter, image-reference, content-stub, slug, validate, content-types, redirects, prompt
+├── scripts/                 # ۳۳ اسکریپت CLI، بررسی سلامت، sync، تست مرورگر qa:browser، Pagefind و upstream:check
+│   └── lib/                 # ۱۸ ماژول مشترک: config, blueprints, merge-messages, locales, locale-mutations,
+│                            # frontmatter, image-reference, content-stub, slug, validate, content-types, redirects, prompt, ...
 ├── .github/workflows/ci.yml # CI: upstream:check → lint → test → audit:i18n → doctor → build → smoke → link:check → knip → verify:cli
 ├── .agents/skills/         # مهارت عملیاتی برای عامل‌های AI
 │   └── astro-i18n-starter/  # SKILL.md + references/
 ├── docs/                    # GUIDE-FA.md، GUIDE-HOMEPAGE-FA.md، CONTENT-TYPES-FA.md، PLAYBOOKS.md، deploy/ (nginx.conf, cloudflare-worker-webhook.js)
 └── src/
     ├── assets/hero/hero-0.jpg  # عکس مشترک هیرو (پس‌زمینهٔ پیش‌فرض)
-    ├── components/          # کامپوننت‌های هسته (`SiteTopBanner`, `QuickContactWidget`, `AnalyticsScripts`, `DevThemePreview` فقط در DEV، `TopLoadingBar`)، ۳۵ پریمیتیو ui/
+    ├── components/          # کامپوننت‌های هسته (`CollectionBrowser`, `SiteTopBanner`, `QuickContactWidget`, `AnalyticsScripts`, `DevThemePreview` فقط در DEV، `TopLoadingBar`)، ۳۵ پریمیتیو ui/
     │                        # و ۲۹ بلوک سکشن (۷ هیرو + ۲۲ سکشن محتوا) به‌همراه ۴ بلوک تعاملی/حرکتی (BentoGrid, LatestPostsCarousel, SwipeableTabs, TestimonialMarquee)
     ├── content/
     │   ├── pages/<گروه>/    # صفحات ایستا: <locale>.mdx + <گروه>.png
     │   ├── blog/<گروه>/     # مقالات: <locale>.mdx + <گروه>.png
-    │   └── projects/<گروه>/ # نمونه‌کارها: <locale>.mdx + <گروه>.png
-    ├── content.config.ts    # شمای Zod کالکشن‌های هسته + ادغام clientCollections
+    │   └── projects/<گروه>/ # نمونه‌کارها و سایر کالکشن‌های اعلان‌محور مشتری (`gallery`, `products`, …)
+    ├── content.config.ts    # ساخت خودکار شمای Zod برای کالکشن‌های `content.types` + ادغام `clientCollections`
     ├── i18n/
     │   ├── locales.ts       # خواندن و صدور نوع‌امن LOCALES, DEFAULT_LOCALE, LOCALE_METADATA از client/locales.json
     │   ├── format.ts        # فرمت بومی تاریخ (هجری شمسی برای fa) و اعداد (Intl)
@@ -265,7 +266,7 @@ SITE_URL=https://example.com npm run build
     │   │   ├── client.ts    # خوانندهٔ پیکربندی در باندل مرورگر (`CLIENT_COOKIE_CONFIG`, `CLIENT_NAVBAR_CONFIG`, `CLIENT_MOTION_CONFIG`؛ بدون Zod) + defaults.ts
     │   │   ├── theme.ts     # پالت‌های OKLCH، پیش‌تنظیم فونت (از جمله ۵ پیش‌تنظیم فارسی) و کارت OG
     │   │   └── navigation.ts # ساخت ناوبری چندمنویی از client/navigation.ts
-    │   ├── content/         # entries, service, types, feed, pagination, blog, blog-catalog, taxonomy, faq, social, og-card, schema, redirects
+    │   ├── content/         # schema-config, zod-schema, collection-filters, catalog-utils, collection-catalog, entries, service, types, feed, pagination, blog, blog-catalog, taxonomy, faq, social, og-card, schema, redirects
     │   ├── cookies/         # مدل رضایت کوکی و مدیریت اسکریپت‌ها (model.ts, manager.ts)
     │   ├── search/          # client.ts + persian.ts (جستجوی Pagefind و فالبک با نرمال‌سازی فارسی)
     │   └── ui/              # button.ts (کلاس دکمه‌ها) + icons.ts (۶۹ آیکون هسته + client/icons.ts) + locale.ts + initials.ts
@@ -279,6 +280,7 @@ SITE_URL=https://example.com npm run build
     │   ├── rss/[locale].xml.ts # فیدهای Atom سایر زبان‌ها
     │   ├── sitemap.xml.ts   # نقشهٔ سایت چندزبانه
     │   ├── robots.txt.ts
+    │   ├── api/collections/[type]/[locale].json.ts # کاتالوگ استاتیک برای همهٔ کالکشن‌های فعال
     │   ├── api/blog-posts.json.ts # کاتالوگ استاتیک ترکیبی وبلاگ
     │   ├── api/blog-posts/[locale].json.ts # کاتالوگ استاتیک تفکیک‌شده به ازای هر زبان
     │   ├── api/search-dev.json.ts # فهرست fallback جستجو (کل زبان‌ها)
@@ -287,7 +289,7 @@ SITE_URL=https://example.com npm run build
     ├── scripts/             # navbar.ts (بنر و چسبندگی هدر)، lenis.ts (اسکرول نرم)، chronotrig.ts (هماهنگ‌کنندهٔ انیمیشن)
     ├── styles/              # global.css (.layout-container + پالت معنایی)، prose.css، chronotrig.css
     ├── test/                # mock ماژول astro:content برای Vitest
-    └── views/               # PageView, BlogIndexView, BlogPostView, CollectionIndexView (با فیلتر تعاملی),
+    └── views/               # PageView, BlogIndexView, BlogPostView, CollectionIndexView (واگذاری به CollectionBrowser),
                              # CollectionEntryView + pages/HomePageTemplate
 ```
 
@@ -689,10 +691,11 @@ src/content/pages/about/
 
 ### انواع محتوا (`content.types`)
 
-سه نوع محتوای داخلی وجود دارد: `pages`، `blog` و `projects` (به علاوه هر کالکشن دلخواه مشتری در `client/content.ts`). تنظیمات ادغام‌شدهٔ `app.config.json` و `client/config.json` تعیین می‌کند کدام‌ها ساخته شوند:
+سه نوع محتوای پیش‌فرض وجود دارد: `pages`، `blog` و `projects`؛ و شما می‌توانید هر کالکشن سفارشی دیگری (مانند `gallery`، `products`، `services`) را با فیلدها و تنظیمات فیلتر دلخواه مستقیماً در `client/config.json` → `content.types` تعریف کنید (یا برای موارد خاص به `client/content.ts` بسپارید):
 
 ```bash
 npm run content:list                 # وضعیت، مسیر و تعداد ورودی هر نوع
+npm run content:sync                 # همگام‌سازی .pages.yml و پوشه‌های محتوا با content.types
 npm run content:disable projects     # نوشتن override در client/config.json؛ مسیرها، sitemap و ناوبری حذف می‌شوند
 npm run content:enable projects      # برمی‌گردند (فایل‌ها هرگز حذف نمی‌شوند)
 npm run content:new projects atlas -- --title="Atlas" --publish
@@ -700,10 +703,10 @@ npm run content:new projects atlas -- --title="Atlas" --publish
 
 * `enabled: false` فقط روت و لینک را حذف می‌کند؛ محتوا سرجایش می‌ماند. `pages` را نمی‌توان خاموش کرد.
 * `base` بخش اول مسیر است (`/projects/`). `pages` همیشه ریشه است و مقدار `base` نمی‌گیرد.
-* `index` / `paginated` / `feed` / `nav` تعیین می‌کنند فهرست، صفحه‌بندی، فید و لینک ناوبری ساخته شود یا نه.
-* `content:new` برای `pages` و `blog` به `new:page` / `new:post` واگذار می‌شود؛ بقیهٔ نوع‌ها فرانت‌متر مشترک، کاور تولیدی و برای زبان ترجمه‌نشده `[TODO: …]` + `draft: true` می‌گیرند.
+* `index` / `paginated` / `perPage` / `feed` / `nav` / `fields` / `search` / `card` تعیین می‌کنند فهرست، صفحه‌بندی، فیلترهای خودکار `<CollectionBrowser />` و ناوبری چگونه ساخته شوند.
+* `content:new` برای `pages` و `blog` به `new:page` / `new:post` واگذار می‌شود؛ بقیهٔ نوع‌ها فرانت‌متر مشترک + فیلدهای `default`/`required` تعریف‌شده در `fields[]`، کاور تولیدی و برای زبان ترجمه‌نشده `[TODO: …]` + `draft: true` می‌گیرند.
 
-جزئیات کامل، از جمله مراحل افزودن نوع چهارم در `client/content.ts` بدون تغییر هسته، در [CONTENT-TYPES-FA.md](CONTENT-TYPES-FA.md) آمده است.
+جزئیات کامل تعریف فیلدها، ۵ حالت فیلتر و جاسازی کامپوننت `<CollectionBrowser collection="..." />` در [CONTENT-TYPES-FA.md](CONTENT-TYPES-FA.md) آمده است.
 
 ### شمای Zod (`src/content.config.ts`)
 
@@ -1114,6 +1117,7 @@ npm run assets:generate -- --from-logo=./logo.svg --brand-only --force
 
 ```bash
 npm run content:list                 # نوع‌ها، مسیر، وضعیت و تعداد ورودی
+npm run content:sync                 # همگام‌سازی .pages.yml و پوشه‌های محتوا (--check در CI)
 npm run content:disable projects     # حذف مسیرها/sitemap/ناوبری در client/config.json (فایل‌ها می‌مانند)
 npm run content:enable projects
 npm run content:new projects atlas -- --title="Atlas" --publish
@@ -1524,7 +1528,7 @@ pre, code, .math {
 | افزودن کارت‌های **جدید** به گرید (مثلاً «نمایش بیشتر») | کافی است پس از `grid.append(...)` تابع `refreshChronoTrig()` را از `@/scripts/chronotrig` صدا بزنید. |
 | **تغییر فیلتر یا تب** که فقط `card.hidden` را عوض می‌کند | باید ابتدا کلاس‌های ورود کارت‌های موجود پاک شود، سپس `refreshChronoTrig()` صدا زده شود؛ وگرنه کارت‌های قبلی بدون انیمیشن ظاهر می‌شوند. |
 
-الگوی بازپخش یکپارچهٔ فیلتر با `replayStaggerGrid(grid)` از `@/scripts/chronotrig` (استفاده‌شده در `BlogIndexView.astro`، `CollectionIndexView.astro`، `ImageGallerySection.astro` و `ProductShowcaseGrid.astro`):
+الگوی بازپخش یکپارچهٔ فیلتر با `replayStaggerGrid(grid)` از `@/scripts/chronotrig` (استفاده‌شده در `BlogIndexView.astro`، `CollectionBrowser.astro`، `ImageGallerySection.astro` و `ProductShowcaseGrid.astro`):
 
 ```typescript
 import { replayStaggerGrid } from '@/scripts/chronotrig';
@@ -1758,9 +1762,9 @@ export const CLIENT_PAGE_ITEMS: ClientPageItemConfig[] = [
 `getLegalNavigation`؛ نیازی به ویرایش فایل‌های هسته نیست. صفحه‌ای که ترجمه‌ای برای زبانی
 ندارد، خودکار از منو حذف می‌شود (`getPageUrl` مقدار `null` برمی‌گرداند).
 
-**فیلتر تعاملی در کالکشن‌های عمومی (`CollectionIndexView.astro`)**: برای `projects` و مجموعه‌های اختصاصی، فهرست به‌صورت پیش‌رونده از فیلتر دسته‌بندی، تگ‌های فناوری (`stack`) و جستجوی متنی، شمارندهٔ زنده با `formatNumber`، دکمهٔ پاک‌سازی فیلتر و بازپخش انیمیشن‌های ChronoTrig پشتیبانی می‌کند.
+**فیلتر و مرورگر خودکار کالکشن‌ها (`<CollectionBrowser />` و `CollectionIndexView.astro`)**: فهرست `projects` و تمام مجموعه‌های اعلان‌محور مشتری از طریق کامپوننت `src/components/CollectionBrowser.astro` به‌طور خودکار فرم فیلتر (`single`، `multi`، `select`، `toggle`، `range`)، جستجوی فارسی/عربی (`normalizeForFallbackMatch`)، شمارندهٔ بومی (`formatNumber`)، صفحه‌بندی چندصفحه‌ای با `/api/collections/<type>/<locale>.json` و بازپخش انیمیشن ChronoTrig را می‌سازد و قابل جاسازی مستقیم در هر صفحهٔ دلخواه هم هست.
 
-**ویرایشگر Git-محور (Pages CMS)**: فایل `.pages.yml` در ریشهٔ مخزن به‌صورت آماده برای مدیریت صفحات (`pages`)، مقالات (`blog`)، پروژه‌ها (`projects`) و رسانه تنظیم شده است.
+**ویرایشگر Git-محور (Pages CMS)**: فایل `.pages.yml` در ریشهٔ مخزن با `npm run content:sync` همگام با `content.types` نگه داشته می‌شود و آمادهٔ مدیریت صفحات، مقالات، پروژه‌ها، کالکشن‌های سفارشی و تنظیمات `client/cms.json` است.
 
 **منوی Resources**: زیرمنوها به بخش‌های صفحهٔ `features` (`#rtl` و `#design`) اشاره می‌کنند. اگر صفحهٔ features وجود نداشته باشد، این منو به یک لینک «Overview» به وبلاگ کاهش می‌یابد و اگر وبلاگ هم خاموش باشد کاملاً حذف می‌شود — هیچ لنگر مرده‌ای (`#rtl`) در منو نمی‌ماند.
 
@@ -2291,6 +2295,7 @@ dist/
 | `npm run audit:i18n` | ممیزی چندزبانه |
 | `npm run verify:cli` | تست سرتاسری گردش‌کارهای CLI |
 | `npm run content:list` | فهرست انواع محتوا و وضعیت آن‌ها |
+| `npm run content:sync` | همگام‌سازی `.pages.yml` و پوشه‌های محتوا (`--check`) |
 | `npm run content:new` | ساخت گروه در هر نوع محتوا |
 | `npm run content:enable` / `content:disable` | روشن/خاموش کردن یک نوع محتوا |
 | `npm run content:status` | ماتریس آمادگی گروه × زبان |
@@ -2309,7 +2314,7 @@ dist/
 
 ## پیوست B — کلیدهای ترجمه
 
-۶۴۴ کلید ترجمهٔ هسته در `messages/core/en.json` (و `fa.json`) به‌علاوهٔ کلیدهای اختصاصی مشتری در `client/messages/<locale>.json` (جمع ۶۶۵ کلید ادغام‌شده؛ کلیدهای دمو مثل `nav_about` / دسته‌های نمونهٔ وبلاگ با `npm run starter:seed` افزوده می‌شوند). منبع دقیق خود فایل‌ها و `npm run audit:i18n` است:
+۶۵۰ کلید ترجمهٔ هسته در `messages/core/en.json` (و `fa.json`) به‌علاوهٔ کلیدهای اختصاصی مشتری در `client/messages/<locale>.json` (کلیدهای دمو مثل `nav_about` / دسته‌های نمونهٔ وبلاگ با `npm run starter:seed` افزوده می‌شوند). منبع دقیق خود فایل‌ها و `npm run audit:i18n` است:
 
 ### `block_*` (۴۲۵ کلید) و `doc_*` (۱۲ کلید)
 
@@ -2344,9 +2349,9 @@ dist/
 - `cookie_*`: بنر و مودال مدیریت رضایت کوکی و دسته‌بندی اسکریپت‌ها (`CookieConsent.astro`).
 - `dev_theme_*`: برچسب‌های پنل استودیوی زندهٔ تم در DEV (`DevThemePreview.astro`).
 
-### `collection_*` (۸ کلید) و `projects_*` (۶ کلید)
+### `collection_*` (۱۳ کلید) و `projects_*` (۶ کلید)
 
-- `collection_*`: فیلترهای دسته، فناوری (`stack`)، جستجو، شمارندهٔ بومی (`collection_showing_count`) و پیام حالت خالی فیلتر در `CollectionIndexView.astro`.
+- `collection_*`: برچسب‌های فیلتر خودکار (`single`/`multi`/`select`/`toggle`/`range`)، جستجو، فیلتر «همه» و شمارندهٔ بومی (`collection_showing_count`)، و وضعیت خالی فیلتر در `<CollectionBrowser />` (`CollectionIndexView.astro`).
 - `projects_*`: `projects_back` · `projects_client` · `projects_index_description` · `projects_stack` · `projects_visit` · `projects_year` (در کنار `content_empty`).
 
 ### `home_*` (۱۴ کلید)، `drawer_*` (۲ کلید)، `footer_*` (۶ کلید) و `site_top_banner_*` (۸ کلید)

@@ -180,7 +180,7 @@ node scripts/index-pagefind.mjs [--site=dist]
 
 ## 6. Content-Type Management (`content:*`)
 
-Every command reads merged config (`app.config.json` + `client/config.json`) and custom client collections (`client/content.ts`) through `scripts/lib/content-types.mjs`, so the CLI and the build can never disagree about which collections exist.
+Every command reads merged config (`app.config.json` + `client/config.json` + `client/cms.json`) and custom client collections (`client/content.ts`) through `scripts/lib/content-types.mjs` and `scripts/lib/config.mjs`, so the CLI, `.pages.yml`, and the Astro build stay in complete sync.
 
 ### 6.1 Inspect (`content:list`)
 ```bash
@@ -213,9 +213,18 @@ npm run content:new <type> <slug> -- [--title="<Title>"] [--desc="<Desc>"] \
 ```
 * `pages` and `blog` are forwarded to `new:page` / `new:post` (their frontmatter and taxonomy stay authoritative).
 * Other types get `src/content/<type>/<slug>/<locale>.mdx` for every active locale, plus a generated `./<slug>.png` cover.
+* **Schema-driven field scaffolding**: `content:new` inspects `content.types.<type>.fields` and automatically populates `default` values and safe placeholders for `required` fields in the generated `.mdx` frontmatter (`enum` picks the first `options` entry unless a `default` is set; `string[]`/`taxonomy[]` become `[]`, etc.).
 * Only the source locale is published with `--publish`; other locales get a `[TODO: <locale>]` title and `draft: true`, so untranslated placeholder copy never reaches production.
 * Group slugs are validated before any write (`../blog`, `/etc`, `.` are rejected, as is the reserved pagination slug `page`), and an existing group is never overwritten.
 * The cover is generated even when the type is disabled: the entry's `image` reference must exist so re-enabling the type cannot fail the build. `assets:generate` covers every declared collection for the same reason.
+
+### 6.5 Sync CMS & Collection Folders (`content:sync`)
+```bash
+npm run content:sync              # Regenerate .pages.yml collection blocks & ensure src/content/<type>/ directories exist
+npm run content:sync -- --check   # Dry-check in CI / pre-delivery: exits 1 if .pages.yml or content folders are out of sync
+npm run content:sync -- --dry-run # Print planned .pages.yml / folder updates without writing
+```
+* Reads `content.types` from the merged 3-tier config (`app.config.json` + `client/config.json` + `client/cms.json`), preserves `pages` and `client/cms.json` file entries, appends any client-added `fields` on `blog` / `projects` / custom collections (skipping `cms: false`), maps `enum` → Pages CMS `select`, `string[]`/`taxonomy[]` → `list: true`, `text`/`number`/`boolean`/`date`/`image` appropriately, and creates empty `src/content/<type>/` directories with `.gitkeep` so Astro's content loader stays clean before entries exist.
 
 ---
 

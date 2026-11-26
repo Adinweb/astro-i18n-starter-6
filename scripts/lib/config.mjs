@@ -32,6 +32,9 @@ const CMS_LOCALE_MAP_KEYS = new Set([
   'ctaLabelByLocale',
   'ctaHrefByLocale',
   'labels',
+  'descriptions',
+  'placeholder',
+  'allLabel',
 ]);
 
 function isPlainObject(value) {

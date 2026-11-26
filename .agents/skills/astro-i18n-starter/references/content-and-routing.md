@@ -17,8 +17,8 @@ src/content/{collection}/{group}/{locale}.mdx
   - `container`: `'canvas' | 'contained' | 'prose'` (defaults to `'canvas'` — unconstrained `<main>` canvas; `'contained'` uses `.layout-container` (`1280px`) + `.prose-wide`; `'prose'` uses a `72ch` editorial column. Named `container` so it never collides with `@astrojs/mdx`'s reserved `layout` import property).
   - `flushTop`: `boolean` (defaults to `false`; removes header top padding when `hero: 'none'` so custom full-bleed heroes sit under the floating glass header).
   - `template`: optional key mapped in `client/templates/index.ts` (`CLIENT_PAGE_TEMPLATES`) or core `src/views/PageView.astro` to render a shared bespoke `.astro` page template across all locales while sourcing localized copy/SEO from MDX.
-* **`blog`**: Chronological articles requiring `publishedAt` and a non-empty `slug`, rendered uniformly through `BlogPostView.astro` (taxonomy, TOC, related posts, feed).
-* **`projects`**: Case studies/portfolio entries on top of `baseSchema` plus `client`, `year`, `link` and `stack`, rendered through the generic `CollectionEntryView.astro`. Whether it is routed, listed, linked or fed is decided by its `content.types` entry, not by the schema. (Additional client-specific collections can be exported inside `clientCollections` in `client/content.ts` and are automatically spread into `src/content.config.ts`.)
+* **`blog`**: Chronological articles requiring `publishedAt` and a non-empty `slug`, rendered uniformly through `BlogPostView.astro` (taxonomy, TOC, related posts, feed). Supports optional client-added fields declared in `content.types.blog.fields`.
+* **`projects` & Declarative Collections (`gallery`, `products`, `services`, …)**: `src/content.config.ts` inspects every entry collection configured in `content.types` (`app.config.json` + `client/config.json` + `client/cms.json`) and dynamically generates its Zod schema via `buildConfiguredCollectionSchema()` (`src/libs/content/zod-schema.ts`) from `fields[]` (`schema-config.ts`). Any bespoke collection or custom Zod schema exported inside `clientCollections` in `client/content.ts` overrides or extends the generated definition cleanly. Whether a collection is routed, listed, paginated, fed, or linked is decided by its `content.types` entry.
 * **Group Identity**: The directory name `{group}` is the universal entity identity shared across all locales.
 * **Featured Image**: Specified as a relative path (`./<group>.png`). Astro's `image()` helper resolves the reference at build time, checks file existence, and provides ready-to-use `ImageMetadata` (used for `og:image` social cards and optional `hero: 'default'` banners). A broken path fails the build immediately.
 
@@ -129,11 +129,12 @@ Physical dynamic routes are consolidated into a single dispatcher file (`src/pag
   - `src/libs/content/social.ts` (`getSocialCard`) switches behavior based on `brand.socialCardMode`: `'branded'` (shipped `app.config.json` default — `renderBrandedOgSvg()` + `renderBrandedOgPng()` generates deterministic `1200×630` RTL/LTR SVG→PNG cards matching the active brand palette, `brand.logo` badge overlay, and page title using `@resvg/resvg-js` + decompressed bundled `@fontsource-variable/vazirmatn` & `@fontsource-variable/plus-jakarta-sans` fonts via `wawoff2` with zero OS font dependency, setting `direction="rtl" unicode-bidi="embed"` and `text-anchor="end"` on RTL margins), `'artwork'` (cropped `entry.data.image`), or `'default'` (`/og-default.png`).
 * **Corporate, Author (`Person`), LocalBusiness & Product Structured Data (`src/libs/content/schema.ts`)**:
   - `buildOrganizationSchema()`, `buildServiceSchema()`, `buildPersonSchema()` / `resolveAuthorSchema()` (`site.authors` profiles), `buildProductSchema()` / `buildProductListSchema()` (`Product` + `Offer`, normalizing `IRT` Toman → ISO-4217 `IRR` × 10), and `collectSocialProfiles()` build Schema.org JSON-LD injected automatically by `BaseLayout.astro`, `BlogPostView.astro`, and `ProductShowcaseGrid.astro`.
-* **Git-Based Editing (`.pages.yml` + `client/cms.json`)**: Pre-configured Pages CMS schema mapping `pages`, `blog`, `projects`, media uploads, and an isolated client settings form writing to `client/cms.json` (`site.contactEmail`, `business`, `social`, `ui.topBanner` with localized `*ByLocale` & scheduling, `ui.quickContact`, `redirects`).
+* **Git-Based Editing (`.pages.yml` + `client/cms.json`)**: Pre-configured Pages CMS schema mapping `pages`, `blog`, `projects`, and any custom declarative collections (kept synchronized via `npm run content:sync`), media uploads, and an isolated client settings form writing to `client/cms.json` (`site.contactEmail`, `business`, `social`, `ui.topBanner` with localized `*ByLocale` & scheduling, `ui.quickContact`, `redirects`, plus safe collection overrides).
 * **AI Discovery Index (`src/pages/llms.txt.ts`)**: Generates `/llms.txt` at build time listing site canonical origin, sitemap, active locales, contact mailto, and published default-locale pages, blog posts, and collection entries.
 * **Config-Driven Wildcard & Exact Redirects (`src/libs/content/redirects.ts`, `scripts/lib/redirects.mjs`, `astro.config.mjs`)**: Supports exact paths (`/old/`) and single trailing prefix wildcards (`/old-blog/*` -> `/blog/:splat`). Automatically emits `dist/_redirects` (Netlify/Cloudflare Pages), `deploy/nginx-redirects.conf` (included optionally by `docs/deploy/nginx.conf`), and `deploy/.htaccess-redirects` (Apache/LiteSpeed) without publishing Nginx/Apache configs inside `dist/`.
-* **Static Blog & Search Fallback Catalogs (`src/pages/api/*.json.ts`)**:
-  - `/api/blog-posts/[locale].json` (plus combined `/api/blog-posts.json`): Build-time static JSON catalogs powering client-side cross-page taxonomy filtering on multi-page blogs.
+* **Static Collection, Blog & Search Fallback Catalogs (`src/pages/api/*.json.ts`)**:
+  - `/api/collections/[type]/[locale].json`: Build-time static JSON catalogs emitted for every enabled non-`pages` collection (`blog`, `projects`, and custom client collections), powering multi-page filtering in `<CollectionBrowser />`.
+  - `/api/blog-posts/[locale].json` (plus combined `/api/blog-posts.json`): Build-time static JSON catalogs powering client-side cross-page taxonomy filtering on multi-page blogs (`BlogIndexView.astro`).
   - `/api/search-dev/[locale].json` (plus combined `/api/search-dev.json`): Emits title, description, URL, and locale for every published route as a dev/offline search fallback.
 
 ---
@@ -159,9 +160,9 @@ Physical dynamic routes are consolidated into a single dispatcher file (`src/pag
 
 ---
 
-## 7. Content-Type Registry (`app.config.json` → `content.types`)
+## 7. Schema-Driven Content-Type Registry (`app.config.json` / `client/config.json` → `content.types`)
 
-A content type is a collection directory (`src/content/<key>/`) plus the routes it owns. The registry decides what is built; the collection schema only decides what a field means.
+A content type is a collection directory (`src/content/<key>/`) plus its declarative frontmatter schema, filter/search UI rules, card presentation, and routes. The merged 3-tier config (`app.config.json` <- `client/config.json` <- `client/cms.json`) decides what is built and how it filters.
 
 ```json
 "content": {
@@ -178,20 +179,40 @@ A content type is a collection directory (`src/content/<key>/`) plus the routes 
 | `enabled` | `false` removes the type's index/entry routes, sitemap entries, navigation links and home-page CTA. Content files stay on disk. `pages` cannot be disabled. |
 | `base` | First route segment (`/projects/`). `pages` always owns the root and must keep `""`. |
 | `index` | Whether the type has a listing route. |
-| `paginated` | Whether the listing is split into `/<base>/page/<n>/` like the blog. |
+| `paginated` | Whether the listing is split into `/<base>/page/<n>/` like the blog (`perPage` overrides `blog.postsPerPage`). |
+| `perPage` | Optional per-collection page size (defaults to `blog.postsPerPage` when `paginated: true`). |
 | `feed` | Whether a type-specific Atom feed is produced (blog only today). |
 | `nav` | Whether `getContentTypeNavItems()` includes the type in header, drawer and footer. |
+| `icon` | Optional semantic Tabler icon name (e.g. `"photo"`, `"briefcase"`). |
+| `labels` / `descriptions` | Optional locale-keyed titles & index meta descriptions (`{ "en": "Gallery", "fa": "گالری" }`), fallback to Paraglide keys (`nav_<key>`, `<key>_index_description`). |
+| `sortBy` / `sortOrder` | Sorting field (e.g. `"year"`, `"publishedAt"`, `"title"`, or any numeric/date/string field) + `"asc" | "desc"`. |
+| `fields[]` | Declarative frontmatter & auto-filter schema definitions (see 7.1). |
+| `search` | `{ "enabled": true, "placeholder": { "fa": "..." }, "fields": ["title", "description", ...] }`. |
+| `card` | `{ "layout": "grid" | "gallery" | "compact", "aspectRatio": "video" | "square" | "portrait" | "auto", "badgeField": "...", "badgeLimit": 3, "metaFields": ["..."] }`. |
 
-### 7.1 Validation (`src/libs/content/types.ts`)
+### 7.1 Declarative Fields & Validation (`schema-config.ts`, `zod-schema.ts`, `types.ts`)
 
-`readConfig()` runs once at module load and throws on: an unknown type key, `pages` disabled, an empty/invalid base, a base reserved by the router (`page`, `pagefind`, `_astro`, `api`, `rss`, `sitemap`, `robots`, `icons`, `site.webmanifest`, locale prefixes), or two types sharing a base. A misconfiguration fails the build with a specific message instead of silently producing a broken site.
+Each object in `content.types.<key>.fields` configures Zod validation, `.pages.yml` CMS fields, `<CollectionBrowser />` filter controls, and `<CollectionEntryView />` metadata rendering:
 
-Helpers exported from the same module — use these instead of hardcoding a segment:
+* **Supported `type` values**: `'string'`, `'text'`, `'number'`, `'boolean'`, `'date'`, `'url'`, `'image'`, `'enum'` (requires non-empty `options[]`), `'string[]'`, `'taxonomy[]'`.
+* **Display & metadata options**: `required`, `default`, `options`, `optionLabels` (`{ "<value>": { "en": "...", "fa": "..." } }`), `min`, `max`, `label` / `labels` (`{ "en": "...", "fa": "..." }`), `searchable` (default `true` on text/array fields), `showOnCard` (`boolean | 'badge' | 'meta' | 'subtitle'`), `showOnEntry` (default `true`), `cms` (`false` omits from `.pages.yml`).
+* **Auto-generated filter controls (`filter`)**:
+  - `mode: 'single'` — Pill/chip single-select (`?param=val`)
+  - `mode: 'multi'` — Toggleable multi-value pills with AND matching (`?param=a,b`)
+  - `mode: 'select'` — Accessible `<select>` dropdown
+  - `mode: 'toggle'` — Boolean switch/checkbox (`?param=true`)
+  - `mode: 'range'` — Numeric min/max inputs (`?param_min=...&param_max=...`)
+  - Plus `enabled`, `param` (defaults to `field.name`; **must be unique per collection**), `label`/`labels`, `allLabel`, and `sort` (`'alpha' | 'count' | 'config'`).
+
+`readConfig()` runs once at module load and throws on: an unknown/reserved type key, `pages` disabled, an empty/invalid base, a base reserved by the router (`page`, `pagefind`, `_astro`, `api`, `rss`, `sitemap`, `robots`, `icons`, `site.webmanifest`, locale prefixes), two types sharing a base, `enum` without `options`, or duplicate `filter.param` values inside the same collection.
+
+Helpers exported from `src/libs/content/types.ts` — use these instead of hardcoding segments or labels:
 
 * `getContentType(key)` / `CONTENT_TYPES`
 * `getIndexedContentTypes()` / `getEntryContentTypes()` / `getNavigableContentTypes()`
 * `getContentTypeIndexHref(key, locale)` / `getContentTypeEntryHref(key, slug, locale)`
 * `getContentTypeLabel(key, locale)` / `getContentTypeDescription(key, locale)`
+* `getContentTypeFieldLabel(key, field, locale)` / `getContentTypeOptionLabel(key, field, value, locale)`
 
 ### 7.2 Route generation (`src/libs/content/service.ts`)
 
@@ -200,26 +221,31 @@ Helpers exported from the same module — use these instead of hardcoding a segm
 * one `collection-entry` route per published entry per locale, with `alternates` built from `getContentTypeEntryHref`;
 * one `collection-index` route per **live** locale when `index` is on — paginated types get the same clamping logic as the blog (`switcherAlternates` never points past a locale's last page).
 
-**Live locales.** A locale is live once at least one entry of it is published — a page, a post or an entry of any other collection. A locale that exists in configuration only gets no section indexes at all (`/de/blog/` is not built for a German dictionary that still holds `[TODO: de]` titles), because those listings would be placeholder copy and would link at a home page that was never built. Declaring a locale therefore never publishes anything: the first translated, published entry is what turns its sections on, and `npm run i18n:add-lang` alone cannot produce a broken build.
+**Live locales.** A locale is live once at least one entry of it is published — a page, a post or an entry of any other collection. A locale that exists in configuration only gets no section indexes at all (`/de/blog/` is not built for a German dictionary that still holds `[TODO: de]` titles), because those listings would be placeholder copy and would link at a home page that was never built.
 
 A disabled blog registers **no** routes at all (not even an empty `/blog/`). `getBreadcrumbs()` matches the first URL segment against the enabled indexed types, so a new collection gets `Home → Section → Entry` for free.
 
-### 7.3 Views & Interactive Filtering
+### 7.3 `<CollectionBrowser />`, `CollectionIndexView`, & `CollectionEntryView`
 
-`CollectionIndexView.astro` loads the collection itself, filters `draft` and locale via `parseContentEntryId`, sorts by `year` then title, and renders a staggered card grid, an empty state (`content_empty`) and an optional pager. On client render (`[data-collection-root]`), progressive controls allow filtering by category, tech `stack`, and keyword search (normalized via `normalizeForFallbackMatch` from `src/libs/search/persian.ts` for Persian/Arabic ZWNJ and character variants), updating visible counts via `formatNumber`, offering `collection_filter_clear` / `collection_filter_empty`, and replaying card animations via `refreshChronoTrig()`. It passes the type's localized label as the breadcrumb section, so the trail reads `Home → Projects` rather than the raw route segment.
+**`<CollectionBrowser collection="..." />` (`src/components/CollectionBrowser.astro`)** is a standalone, schema-driven browser component you can drop into any page, MDX file, or bespoke template — and which `CollectionIndexView.astro` delegates to automatically:
 
-`CollectionEntryView.astro` renders the hero (with a breadcrumb prelude inside `HeroCopy`'s `prelude` slot, matching `BlogPostHeroContent`), the prose body, optional project meta (`client`, `year`, `stack`, `link`) and a `CreativeWork` + `BreadcrumbList` JSON-LD pair (`year` is serialized as an ISO `dateCreated: '<year>-01-01'`, because schema.org rejects a bare four-digit year). The visible trail and the structured data must stay in sync: if a view emits `BreadcrumbList`, it must render the same breadcrumbs.
+```astro
+---
+import CollectionBrowser from '@/components/CollectionBrowser.astro';
+---
+<CollectionBrowser collection="gallery" columns={3} contained />
+```
 
-Neither view knows about blog taxonomy/TOC/related-posts/feeds: collection filtering stays local to the collection index, so adding a collection never drags blog complexity along.
+* **Props**: `collection` (`ContentTypeKey`, required), `locale`, `page` (`1`), `totalPages`, `perPage`, `baseHref`, `currentUrl`, `columns` (`2 | 3 | 4`), `showSearch` (defaults to `typeConfig.search.enabled`), `showFilters` (`true`), `showPagination` (`true`), `syncUrl` (`true`), `contained` (`false`), `class`.
+* **Runtime Engine (`collection-filters.ts`, `catalog-utils.ts`, `replayStaggerGrid`)**: Dynamically renders all configured `filter` controls (`single`, `multi`, `select`, `toggle`, `range`), Perso-Arabic-aware keyword search (`normalizeForFallbackMatch`), live count updates (`formatNumber`), clear-filters reset, URL query syncing (`syncUrl`), multi-page filtering across the full locale via static `/api/collections/<type>/<locale>.json` (preserving Astro-optimized WebP thumbnails), and synchronized ChronoTrig stagger replays (`replayStaggerGrid()`). When embedded inside an unrelated page (e.g. a landing page showcase), set `syncUrl={false}` or `showPagination={false}` as desired.
+* **`CollectionEntryView.astro`**: Renders the hero (with breadcrumb prelude inside `HeroCopy`), prose body, built-in project fields (`client`, `year`, `stack`, `link`) plus any configured `fields` where `showOnEntry !== false` (formatted via `formatEntryFieldForDisplay()`), and `CreativeWork` + `BreadcrumbList` JSON-LD (`year` serialized as `dateCreated: '<year>-01-01'`).
 
-### 7.4 Adding a fourth client collection / content type (zero core edits)
+### 7.4 Adding a declarative client collection (zero core edits)
 
-1. Define the client collection schema inside `clientCollections` in `client/content.ts` (and optional `label` / `description` / `icon` UI metadata in `CLIENT_CONTENT_TYPES`) — `src/content.config.ts`, `src/libs/content/types.ts`, `src/libs/content/service.ts`, and `scripts/lib/content-types.mjs` discover exported keys automatically.
-2. Add the collection settings under `content.types.<key>` in `client/config.json` (e.g. `{ "enabled": true, "base": "services", "index": true, "paginated": false, "feed": false, "nav": true }`).
-3. Add `nav_<key>` and optional `<key>_index_description` in `client/messages/<locale>.json` (picked up automatically by `getContentTypeLabel` / `getContentTypeDescription` when not overridden in `CLIENT_CONTENT_TYPES`).
-4. Optional: add a hue row in `TYPE_HUES` of `scripts/generate-assets.mjs` if customizing generated cover tones.
-
-Then `npm run content:new <key> <slug> --publish` and the standard verification suite.
+1. **Recommended (Config-First in `client/config.json`)**: Add your collection directly under `content.types.<key>` (e.g. `gallery`, `products`, `services`) with its `base`, `labels`, `fields[]` (including `filter` config), `search`, and `card` layout. You can also extend `blog` or `projects` with extra `fields[]` the same way.
+2. **Sync CMS & folders**: Run `npm run content:sync` to update `.pages.yml` and initialize `src/content/<key>/`. (If you need non-standard Astro Zod transforms or computed fields, you can additionally export a custom entry in `clientCollections` inside `client/content.ts`.)
+3. **Optional localized labels**: Add `nav_<key>`, `<key>_index_description`, or field/option labels in `client/messages/<locale>.json` (or supply `labels` / `optionLabels` directly in `client/config.json`).
+4. **Scaffold entries & verify**: Run `npm run content:new <key> <slug> -- --publish`, drop `<CollectionBrowser collection="<key>" />` anywhere needed, and run `npm run content:sync -- --check` + `npm run preflight`.
 
 ---
 

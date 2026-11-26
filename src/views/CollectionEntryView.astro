@@ -13,10 +13,14 @@ import {
   type GenericCollectionEntry,
 } from '@/libs/content/service';
 import {
+  getContentType,
+  getContentTypeFieldLabel,
   getContentTypeIndexHref,
   getContentTypeLabel,
+  getContentTypeOptionLabel,
   type ContentTypeKey,
 } from '@/libs/content/types';
+import { formatEntryFieldForDisplay } from '@/libs/content/collection-catalog';
 import { parseContentEntryId } from '@/libs/content/entries';
 import { getCollectionCategoryLabel } from '@/libs/content/taxonomy';
 import { buildOgRouteKey, getSocialCard, type SocialCardContext } from '@/libs/content/social';
@@ -28,9 +32,8 @@ import * as m from '@/paraglide/messages';
 /**
  * Entry page of a content type declared in `content.types`.
  *
- * Shared by every non-blog collection: hero, prose body, optional project meta
- * (client, year, stack, live link) and the way back to the index. Blog entries
- * keep `BlogPostView.astro` because they own taxonomy, related posts and feeds.
+ * Shared by every non-blog collection: hero, prose body, schema-driven entry meta,
+ * and navigation back to the collection index.
  */
 interface Props {
   contentType: ContentTypeKey;
@@ -42,8 +45,10 @@ interface Props {
 
 const { contentType, entry, locale, alternates, url } = Astro.props;
 const { Content } = await render(entry as CollectionEntry<'projects'>);
+const rawData = entry.data as Record<string, unknown>;
 const { title, description, image, client, year, link, stack = [], categories = [] } = entry.data;
 
+const typeConfig = getContentType(contentType);
 const typeLabel = getContentTypeLabel(contentType, locale);
 const indexHref = getContentTypeIndexHref(contentType, locale);
 
@@ -78,8 +83,6 @@ const schema = [
     image: socialImageUrl,
     url: canonicalUrl,
     inLanguage: meta.htmlLang,
-    // `year` is a four-digit delivery year, but schema.org expects an ISO 8601
-    // date, so it is expanded to the first day of that year.
     ...(year ? { dateCreated: `${year}-01-01` } : {}),
     creator: {
       '@type': 'Organization',
@@ -93,6 +96,38 @@ const schema = [
 const metaItems: { label: string; value: string }[] = [];
 if (client) metaItems.push({ label: `${m.projects_client({}, { locale })}`, value: client });
 if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: formatYear(year, locale) });
+
+const handledFields = new Set(['categories', 'tags', 'stack', 'client', 'year', 'link', 'image']);
+const extraBadgeGroups: { label: string; items: string[] }[] = [];
+let extraLink = link;
+
+for (const field of typeConfig.fields) {
+  if (handledFields.has(field.name)) continue;
+  if (field.showOnEntry === false) continue;
+
+  const rawVal = rawData[field.name];
+  if (rawVal === undefined || rawVal === null || rawVal === '') continue;
+
+  if (field.type === 'url' && !extraLink && typeof rawVal === 'string') {
+    extraLink = rawVal;
+    continue;
+  }
+
+  const label = getContentTypeFieldLabel(contentType, field, locale);
+
+  if (Array.isArray(rawVal) && rawVal.length > 0) {
+    extraBadgeGroups.push({
+      label,
+      items: rawVal.map((item) => getContentTypeOptionLabel(contentType, field, String(item), locale)),
+    });
+    continue;
+  }
+
+  const formatted = formatEntryFieldForDisplay(contentType, field.name, rawVal, typeConfig, locale);
+  if (formatted) {
+    metaItems.push({ label, value: formatted });
+  }
+}
 ---
 
 <BaseLayout
@@ -125,9 +160,9 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
 
   <article class="w-full max-w-5xl">
     {
-      (metaItems.length > 0 || categories.length > 0 || stack.length > 0 || link) && (
+      (metaItems.length > 0 || categories.length > 0 || stack.length > 0 || extraBadgeGroups.length > 0 || extraLink) && (
         <div class="mb-8 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 border-b border-border pb-6 text-sm">
-          {(metaItems.length > 0 || categories.length > 0 || stack.length > 0) && (
+          {(metaItems.length > 0 || categories.length > 0 || stack.length > 0 || extraBadgeGroups.length > 0) && (
             <dl class="flex flex-wrap items-baseline gap-x-8 gap-y-3">
               {metaItems.map((item) => (
                 <div class="flex items-baseline gap-2">
@@ -167,11 +202,23 @@ if (year) metaItems.push({ label: `${m.projects_year({}, { locale })}`, value: f
                   </dd>
                 </div>
               )}
+              {extraBadgeGroups.map((groupItem) => (
+                <div class="flex flex-wrap items-baseline gap-2">
+                  <dt class="text-xs font-semibold uppercase tracking-wider text-muted rtl:tracking-normal">
+                    {groupItem.label}
+                  </dt>
+                  <dd class="flex flex-wrap items-center gap-1.5">
+                    {groupItem.items.map((badgeLabel) => (
+                      <UiBadge label={badgeLabel} variant="neutral" size="sm" locale={locale} class="font-medium" />
+                    ))}
+                  </dd>
+                </div>
+              ))}
             </dl>
           )}
-          {link && (
+          {extraLink && (
             <a
-              href={link}
+              href={extraLink}
               rel="noopener noreferrer"
               target="_blank"
               class="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"

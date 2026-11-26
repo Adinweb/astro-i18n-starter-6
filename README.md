@@ -15,8 +15,8 @@ Designed for high performance, strict type safety, zero route collisions, and ef
 * **Swappable Default Language**: Swap the default language cleanly at any time via `npm run i18n:set-default <locale>` (updates `client/locales.json` + recompiles merged messages) with zero file restructuring.
 * **Zero Route Collisions**: A single Lean Router Dispatcher (`src/pages/[...path].astro`) dynamically handles all localized pages, translated slugs, and index views.
 * **Compile-Time i18n via Paraglide**: Strongly typed translations with native ICU plurals and ordinals, compiled directly from `messages/core/` + `client/messages/` into tree-shakeable JS functions without runtime overhead.
-* **Symmetrical Content Collections & Filterable Indexes**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs, cross-language alternate linking, and interactive category/stack/keyword filtering in `CollectionIndexView.astro` (`projects`, etc.).
-* **Manageable Content Types, 3-Tier CMS Config & Pages CMS**: `pages`, `blog` and `projects` are declared in `app.config.json` → `content.types` (overridable in `client/config.json`, plus client collections via `client/content.ts`). `.pages.yml` ships ready for Git-based editing and writes non-technical client settings cleanly into `client/cms.json` (public contact email, business profile, social links, localized scheduled top banners, quick-contact widget toggle, and wildcard/exact redirects). `npm run content:enable|disable <type>` toggles a type's routes, sitemap entries and navigation links without touching content files.
+* **Symmetrical Content Collections & Schema-Driven `<CollectionBrowser />`**: Folder-per-entry content pipeline (`src/content/{collection}/{group}/{locale}.mdx`) with localized slugs, cross-language alternate linking, and config-driven declarative fields & auto-generated filter forms (`single`, `multi`, `select`, `toggle`, `range`, keyword search) via reusable `<CollectionBrowser collection="..." />` (`CollectionIndexView.astro` + embeddable anywhere).
+* **Manageable Content Types, 3-Tier CMS Config & Pages CMS (`content:sync`)**: `pages`, `blog`, `projects`, and any declarative client collections (e.g. `gallery`, `products`, `services`) can be declared directly in `client/config.json` → `content.types` (or extended via `client/content.ts`). `.pages.yml` syncs automatically via `npm run content:sync`, writes non-technical client settings cleanly into `client/cms.json`, and `npm run content:enable|disable <type>` toggles a type's routes, sitemap entries and navigation links without touching content files.
 * **64 Guarded Composable Blocks & UI Primitives + 4 Interactive Showcases**: **29 section blocks** (**7 hero sections**: `LandingHeroSplit`, `HeroCenteredEditorial`, `HeroDashboardShowcase`, `HeroCommandCli`, `HeroInteractivePrompt`, `HeroProofMarquee`, `HeroFloatingOrbSplit`, and **22 content/feature sections**: `PromoBanner`, `PartnerLogos`, `AboutSplitSection`, `BentoCapabilities`, `FeatureTabsSection`, `ProcessSteps`, `FeatureCardGrid`, `ProofStatsRow`, `ComparisonTable`, `PricingSection`, `TestimonialGrid`, `ImageGallerySection` with multi-slide `<dialog>` lightbox, `LatestPostsSection`, `TeamSection`, `FaqAccordion`, `ContactSplitSection` with phone/WhatsApp/Telegram quick actions and click-to-load lazy map embed, `NewsletterBanner`, `CtaBanner`, `CarouselSection`, `ProductShowcaseGrid` with `currencyPrefix`/`currencySuffix` & automatic `Product` JSON-LD, `AuthFormCard`, `ParallaxSection`), **35 UI primitives** in `src/components/ui/`, **4 interactive/motion showcase blocks** (`BentoGrid`, `LatestPostsCarousel`, `SwipeableTabs` with `variant="pills"|"underline"`, `TestimonialMarquee`), `QuickContactWidget.astro` (collapsible mobile/desktop quick-contact corner button with automatic overlap avoidance), and 6 industry onboarding blueprints (`--blueprint=corporate|agency|portfolio|medical|catalog|legal`).
 * **Configurable, Dead-Link-Free Navigation**: `CLIENT_PAGE_ITEMS` in `client/navigation.ts` feeds both the desktop header **and** the mobile drawer from a single builder, `ui.ctaPage` in config picks the header/drawer CTA target, and any entry whose page (or `#anchor`) no longer exists hides itself — `npm run link:check` fails the pipeline if an internal link or fragment resolves to nothing.
 * **Paginated Blog Index & Cross-Page Filtering**: Static paginated route set — one URL per page per locale (`/blog/`, `/blog/page/2/`, `/fa/blog/page/2/`) — with reciprocal `hreflang`, `rel="prev"` / `rel="next"`, and progressive cross-page taxonomy filtering powered by lightweight per-locale static catalogs (`/api/blog-posts/<locale>.json`).
@@ -129,6 +129,7 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   │   ├── HomeHero.astro     # Bespoke home hero band (badge, headline, CTAs, three proofs)
 │   │   ├── BlogPostHeroContent.astro # Hero copy for articles (breadcrumbs, meta)
 │   │   ├── PostCard.astro     # Blog listing card (direct child of [data-trig-stagger])
+│   │   ├── CollectionBrowser.astro # Schema-driven collection filter/search/grid browser (embeddable anywhere)
 │   │   ├── DrawerSearch.astro # Inline mobile drawer search
 │   │   ├── SearchModal.astro  # Accessible search modal (Pagefind + Dev fallback)
 │   │   ├── CookieConsent.astro # TDDDG § 25 / GDPR cookie & script consent modal
@@ -145,7 +146,7 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   │   │   └── <group>/       # Holds <locale>.mdx files + group hero/OG artwork
 │   │   ├── blog/              # Blog articles with localized slugs
 │   │   │   └── <group>/       # Holds <locale>.mdx files + group cover artwork
-│   │   └── projects/          # Case studies/portfolio entries (registry-driven type)
+│   │   └── projects/          # Case studies/portfolio entries + any declarative client collections (`gallery`, `products`, …)
 │   │       └── <group>/       # Holds <locale>.mdx files + group cover artwork
 │   ├── i18n/                  # Core i18n Single Source of Truth (SSOT)
 │   │   ├── locales.ts         # LOCALES array, DEFAULT_LOCALE, metadata (dir, fonts)
@@ -160,9 +161,14 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   │   ├── config/defaults.ts # Shared defaults for client.ts, CMS sanitization & Zod schemas (`*CONFIG_DEFAULTS`)
 │   │   ├── config/theme.ts    # OKLCH palette & font preset resolver (+ theme-presets.json)
 │   │   ├── config/navigation.ts # Multi-menu header/drawer/footer/legal navigation builder
+│   │   ├── content/schema-config.ts # Pure declarative collection fields, search & card schema types/resolvers
+│   │   ├── content/zod-schema.ts    # Dynamic Astro Zod collection factory (`buildConfiguredCollectionSchema`)
+│   │   ├── content/collection-filters.ts # Schema-driven filter query & entry matching engine
+│   │   ├── content/catalog-utils.ts # Pure sorting & locale-native field display formatting
+│   │   ├── content/collection-catalog.ts # Static catalog serializer for `/api/collections/[type]/[locale].json`
 │   │   ├── content/entries.ts # Entry IDs, draft filtering, locale selection & sorting
 │   │   ├── content/service.ts # Route resolution, slug alternates, feeds & breadcrumbs
-│   │   ├── content/types.ts   # Content-type registry: enabled/base/index/paginated/feed/nav + URL helpers
+│   │   ├── content/types.ts   # Content-type registry: enabled/base/index/paginated/feed/nav/fields + URL/label helpers
 │   │   ├── content/blog-catalog.ts # Serializer for static blog JSON catalogs
 │   │   ├── content/faq.ts     # FAQPage JSON-LD builder for FaqAccordion
 │   │   ├── content/feed.ts    # Per-locale Atom 1.0 feed builder
@@ -185,6 +191,7 @@ This merges and compiles Paraglide messages, runs `audit:i18n`, builds all stati
 │   │   ├── rss/[locale].xml.ts # Non-default locale Atom feeds (/rss/fa.xml, etc.)
 │   │   ├── sitemap.xml.ts     # Multi-lingual sitemap with x-default + lastmod
 │   │   ├── robots.txt.ts      # Robots.txt pointing to sitemap
+│   │   ├── api/collections/[type]/[locale].json.ts # Build-time static catalogs for every enabled entry collection
 │   │   ├── api/blog-posts.json.ts # Combined static blog catalog fallback
 │   │   ├── api/blog-posts/[locale].json.ts # Per-locale static blog catalog
 │   │   ├── api/search-dev.json.ts # Combined locale-aware search fallback index
@@ -257,7 +264,8 @@ All automation scripts run from the terminal using `npm run <command>` (or `pnpm
 | `npm run i18n:extract` | Extracts raw copy into Paraglide message keys in `client/messages/` | `npm run i18n:extract -- --target=src/components/MyCard.astro --key=card --auto-add --replace` |
 | `npm run i18n:add` | Adds a single translation key to `client/messages/*.json` | `npm run i18n:add -- --category=nav --key=docs --en="Docs" --fa="مستندات"` |
 | `npm run content:list` | Lists every declared content type with its route base, state and entry counts | `npm run content:list -- --json` |
-| `npm run content:new` | Scaffolds an entry group in any content type | `npm run content:new projects atlas -- --title="Atlas" --publish` |
+| `npm run content:sync` | Syncs `.pages.yml` CMS fields and `src/content/<type>/` directories from `content.types` | `npm run content:sync -- --check` |
+| `npm run content:new` | Scaffolds an entry group in any content type (auto-populating configured `default`/`required` fields) | `npm run content:new projects atlas -- --title="Atlas" --publish` |
 | `npm run content:enable` / `content:disable` | Toggles a content type override in `client/config.json` without editing core | `npm run content:disable projects` |
 | `npm run content:status` | Prints the per-locale readiness matrix (published/draft/missing, words, TODOs) | `npm run content:status -- --write=docs/STATUS.md` |
 | `npm run doctor` | No-build health check (runtime, 3-tier config, analytics/GDPR, redirects, content types, dictionaries) with fix hints | `npm run doctor` |
@@ -480,7 +488,7 @@ npm run upstream:check
 # 2. TypeScript Strict Check
 npm run lint
 
-# 3. Vitest Unit Tests (29 files, 297 tests: paths, ICU, routes, redirects, cookies, blocks, theme, schema, OG, API/conversions, Navbar, ChronoTrig, TopLoadingBar, and CLI/QA helpers)
+# 3. Vitest Unit Tests (33 files, 315 tests: paths, ICU, routes, declarative collection schemas/filters, redirects, cookies, blocks, theme, schema, OG, API/conversions, Navbar, ChronoTrig, TopLoadingBar, and CLI/QA helpers)
 npm test
 
 # 4. i18n Parity, Placeholder, Content & Route Audit

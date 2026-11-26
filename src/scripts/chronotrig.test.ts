@@ -650,6 +650,10 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
       path.join(rootDir, 'src/views/CollectionIndexView.astro'),
       'utf-8'
     );
+    const collectionBrowser = fs.readFileSync(
+      path.join(rootDir, 'src/components/CollectionBrowser.astro'),
+      'utf-8'
+    );
     const gallery = fs.readFileSync(path.join(rootDir, 'src/components/ImageGallerySection.astro'), 'utf-8');
     const showcase = fs.readFileSync(path.join(rootDir, 'src/components/ProductShowcaseGrid.astro'), 'utf-8');
     const postCard = fs.readFileSync(path.join(rootDir, 'src/components/PostCard.astro'), 'utf-8');
@@ -673,15 +677,16 @@ describe('ChronoTrig v6.1.0 Integration & Lifecycle', () => {
     expect(view).toContain("article.className = 'flex h-full'");
     expect(postCard).toContain('UiBadge');
 
-    // Collection index shares chip filter sizing/active state, UiBadge stack pills, and shared grid replay.
+    // Collection index delegates to CollectionBrowser, which shares chip filter sizing, UiBadge pills, and grid replay.
     expect(globalCss).toContain(".chip[aria-pressed='true']");
     expect(view).not.toContain('text-muted/70');
-    expect(collectionView).toContain('UiBadge');
-    expect(collectionView).toContain('class="chip cursor-pointer px-3 py-1.5 text-xs"');
-    expect(collectionView).toContain('const activeStacks = new Set<string>()');
-    expect(collectionView).toContain('activeStacks.delete(val)');
-    expect(collectionView).toContain('if (grid && visibilityChanged)');
-    expect(collectionView).toContain('replayStaggerGrid(grid)');
+    expect(collectionView).toContain('<CollectionBrowser');
+    expect(collectionBrowser).toContain('UiBadge');
+    expect(collectionBrowser).toContain('class="chip cursor-pointer px-3 py-1.5 text-xs"');
+    expect(collectionBrowser).toContain('const activeSet = new Set<string>(');
+    expect(collectionBrowser).toContain('activeSet.delete(value)');
+    expect(collectionBrowser).toContain('if (grid && visibilityChanged)');
+    expect(collectionBrowser).toContain('replayStaggerGrid(grid)');
     expect(gallery).toContain('replayStaggerGrid(grid)');
     expect(showcase).toContain('replayStaggerGrid(grid)');
   });

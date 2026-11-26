@@ -127,7 +127,7 @@ grid.append(...newCards);
 refreshChronoTrig();
 ```
 
-When a client-side filter toggles `card.hidden` (or replaces filtered cards) and `visibilityChanged` is true, call `replayStaggerGrid(grid)` from `@/scripts/chronotrig` (used in `BlogIndexView.astro`, `CollectionIndexView.astro`, `ImageGallerySection.astro`, and `ProductShowcaseGrid.astro`). `replayStaggerGrid()` calls `window.chronoTrig.resetStagger(grid)` to detach in-flight listeners, clears reveal classes, `data-trig-settled`, inline stagger variables, and `willChange`, forces a synchronous layout flush, and waits across two animation frames (`requestAnimationFrame`) before invoking `refreshChronoTrig()` so pre-existing visible cards and newly shown cards restart together in one synchronized cascade (with stale `animationcancel` events safely drained). ChronoTrig v6.2.0 natively excludes `[hidden]` children when computing `--stagger-index`, `--stagger-delay`, and `--stagger-total`, while keeping settled `data-trig-once="true"` elements (such as page headers and sibling staggers) locked across `refresh()`:
+When a client-side filter toggles `card.hidden` (or replaces filtered cards) and `visibilityChanged` is true, call `replayStaggerGrid(grid)` from `@/scripts/chronotrig` (used in `BlogIndexView.astro`, `CollectionBrowser.astro`, `ImageGallerySection.astro`, and `ProductShowcaseGrid.astro`). `replayStaggerGrid()` calls `window.chronoTrig.resetStagger(grid)` to detach in-flight listeners, clears reveal classes, `data-trig-settled`, inline stagger variables, and `willChange`, forces a synchronous layout flush, and waits across two animation frames (`requestAnimationFrame`) before invoking `refreshChronoTrig()` so pre-existing visible cards and newly shown cards restart together in one synchronized cascade (with stale `animationcancel` events safely drained). ChronoTrig v6.2.0 natively excludes `[hidden]` children when computing `--stagger-index`, `--stagger-delay`, and `--stagger-total`, while keeping settled `data-trig-once="true"` elements (such as page headers and sibling staggers) locked across `refresh()`:
 
 ```typescript
 import { replayStaggerGrid } from '@/scripts/chronotrig';
@@ -139,7 +139,7 @@ if (grid && visibilityChanged) {
 ```
 
 Two additional rules prevent laggy or cut-off filter animations:
-* **Keep card hover `transition` utilities on inner wrappers**: Put card hover/border/shadow transitions on an inner wrapper (`<div>` or `<a>`, as in `PostCard.astro` and `CollectionIndexView.astro`) rather than the outer `[data-trig]` root so hover styles stay decoupled from reveal keyframes.
+* **Keep card hover `transition` utilities on inner wrappers**: Put card hover/border/shadow transitions on an inner wrapper (`<div>` or `<a>`, as in `PostCard.astro` and `CollectionBrowser.astro`) rather than the outer `[data-trig]` root so hover styles stay decoupled from reveal keyframes.
 * **Override root margin below tall heroes**: Filtered grids sitting under tall hero headers (e.g. `[data-blog-grid]`, `[data-collection-grid]`) should set `data-trig-root-margin="0px"` so surviving cards below the filter bar trigger immediately instead of waiting for the default `-8%` bottom margin.
 
 * **Do not call `refreshChronoTrig()` on mounted tab switches**: Interactive tab components (`SwipeableTabs.astro` powered by Embla Carousel and `FeatureTabsSection.astro`) keep their tab panels mounted in the DOM — switching tabs must not invoke `refreshChronoTrig()`, preventing unnecessary page-wide re-scans.
