@@ -62,6 +62,11 @@ const SAFE_LOCALE_RE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
 const SAFE_PKG_NAME_RE = /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const ISO_DATETIME_RE =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?$/i;
+const TAXONOMY_KEY_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const SLUG_PART_RE = /^[\p{L}\p{N}\p{M}]+$/u;
 
 const ENV_ALLOWED_KEYS = [
   'SITE_URL',
@@ -103,6 +108,12 @@ const VALID_FILTER_MODES = new Set(['single', 'multi', 'select', 'toggle', 'rang
 const VALID_FILTER_SORTS = new Set(['alpha', 'count', 'config']);
 const VALID_CARD_LAYOUTS = new Set(['grid', 'gallery', 'compact']);
 const VALID_ASPECT_RATIOS = new Set(['video', 'square', 'portrait', 'auto']);
+const VALID_THEME_MODES = new Set(['system', 'light', 'dark']);
+const VALID_SOCIAL_CARD_MODES = new Set(['branded', 'artwork', 'default']);
+const VALID_BANNER_VARIANTS = new Set(['primary', 'hero', 'surface', 'accent', 'info', 'warning']);
+const VALID_BANNER_DISMISS_MODES = new Set(['session', 'persistent']);
+const VALID_QUICK_CONTACT_CHANNELS = new Set(['phone', 'whatsapp', 'telegram']);
+const VALID_MOBILE_BEHAVIORS = new Set(['lightweight', 'disable', 'full']);
 const VALID_BUSINESS_TYPES = new Set([
   'Organization',
   'LocalBusiness',
@@ -215,6 +226,86 @@ function assertValidHttpUrl(raw, label) {
     throw new Error(`Invalid ${label} "${trimmed}": only http:// and https:// schemes are allowed.`);
   }
   return trimmed;
+}
+
+function collectHttpUrlError(raw, label, errors, { allowRelative = false } = {}) {
+  const trimmed = String(raw ?? '').trim();
+  if (!trimmed) return;
+  if (allowRelative && trimmed.startsWith('/')) {
+    if (trimmed.startsWith('//')) {
+      errors.push(`Invalid ${label} "${trimmed}": protocol-relative URLs are not allowed.`);
+    }
+    return;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      errors.push(`Invalid ${label} "${trimmed}": only http:// and https:// schemes are allowed.`);
+    }
+  } catch {
+    errors.push(
+      `Invalid ${label} "${trimmed}": expected an http:// or https:// URL${allowRelative ? ' or /path' : ''}.`
+    );
+  }
+}
+
+function isUnsafeProtocolHref(raw) {
+  const normalized = String(raw ?? '').trim().replace(/[\u0000-\u0020]+/g, '').toLowerCase();
+  return normalized.startsWith('javascript:') || normalized.startsWith('vbscript:') || normalized.startsWith('data:');
+}
+
+function isValidScheduleString(value) {
+  const trimmed = String(value ?? '').trim();
+  const dateOnlyMatch = DATE_ONLY_RE.exec(trimmed);
+  if (dateOnlyMatch) {
+    const year = Number(dateOnlyMatch[1]);
+    const month = Number(dateOnlyMatch[2]);
+    const day = Number(dateOnlyMatch[3]);
+    const dt = new Date(Date.UTC(year, month - 1, day));
+    return (
+      dt.getUTCFullYear() === year &&
+      dt.getUTCMonth() === month - 1 &&
+      dt.getUTCDate() === day
+    );
+  }
+  if (!ISO_DATETIME_RE.test(trimmed)) return false;
+  return Number.isFinite(Date.parse(trimmed));
+}
+
+function parseScheduleBound(value, bound) {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed) return null;
+  const target = DATE_ONLY_RE.test(trimmed)
+    ? bound === 'start'
+      ? `${trimmed}T00:00:00.000Z`
+      : `${trimmed}T23:59:59.999Z`
+    : trimmed;
+  const ms = Date.parse(target);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function isValidSlug(value) {
+  if (value === '') return true;
+  return value.split(/[\u200C\u200D-]/u).every((part) => SLUG_PART_RE.test(part));
+}
+
+function isValidPageSlug(value) {
+  if (value === '') return true;
+  return value.split('/').every((segment) => segment.length > 0 && isValidSlug(segment));
+}
+
+function readClientTemplateKeys(rootDir) {
+  const tplPath = path.join(rootDir, 'client', 'templates', 'index.ts');
+  if (!fs.existsSync(tplPath)) return [];
+  const raw = fs.readFileSync(tplPath, 'utf-8');
+  const match = raw.match(/CLIENT_PAGE_TEMPLATES[^=]*=\s*\{([\s\S]*?)\}/);
+  if (!match) return [];
+  const keys = [];
+  for (const line of match[1].split(',')) {
+    const m = line.trim().match(/^['"]?([a-zA-Z0-9_-]+)['"]?\s*(?::|$)/);
+    if (m && m[1]) keys.push(m[1]);
+  }
+  return keys;
 }
 
 function sendJson(res, status, payload) {
@@ -434,6 +525,69 @@ function saveProjectMeta(rootDir, payload) {
   };
 }
 
+function validateTopBannerNode(tb, prefix, errors) {
+  if (!isPlainObject(tb)) {
+    errors.push(`${prefix} must be an object.`);
+    return;
+  }
+  if (tb.id !== undefined && !String(tb.id).trim()) {
+    errors.push(`${prefix}.id cannot be empty.`);
+  }
+  if (tb.variant !== undefined && !VALID_BANNER_VARIANTS.has(tb.variant)) {
+    errors.push(`${prefix}.variant "${tb.variant}" is invalid.`);
+  }
+  if (tb.dismissMode !== undefined && !VALID_BANNER_DISMISS_MODES.has(tb.dismissMode)) {
+    errors.push(`${prefix}.dismissMode "${tb.dismissMode}" must be "session" or "persistent".`);
+  }
+  if (tb.dismissTtlDays !== undefined) {
+    const ttl = Number(tb.dismissTtlDays);
+    if (typeof tb.dismissTtlDays === 'string' && tb.dismissTtlDays.trim() === '') {
+      errors.push(`${prefix}.dismissTtlDays cannot be blank (omit to clear).`);
+    } else if (!Number.isInteger(ttl) || ttl < 1 || ttl > 365) {
+      errors.push(`${prefix}.dismissTtlDays must be an integer between 1 and 365.`);
+    }
+  }
+  if (tb.dismissVersion !== undefined) {
+    const ver = Number(tb.dismissVersion);
+    if (typeof tb.dismissVersion === 'string' && tb.dismissVersion.trim() === '') {
+      errors.push(`${prefix}.dismissVersion cannot be blank.`);
+    } else if (!Number.isInteger(ver) || ver < 1) {
+      errors.push(`${prefix}.dismissVersion must be a positive integer.`);
+    }
+  }
+  if (tb.heightPx !== undefined) {
+    const h = Number(tb.heightPx);
+    if (typeof tb.heightPx === 'string' && tb.heightPx.trim() === '') {
+      errors.push(`${prefix}.heightPx cannot be blank (omit to clear).`);
+    } else if (!Number.isInteger(h) || h < 24 || h > 160) {
+      errors.push(`${prefix}.heightPx must be an integer between 24 and 160.`);
+    }
+  }
+  if (tb.ctaHref !== undefined && isUnsafeProtocolHref(tb.ctaHref)) {
+    errors.push(`${prefix}.ctaHref uses a disallowed URL scheme.`);
+  }
+  if (isPlainObject(tb.ctaHrefByLocale)) {
+    for (const [loc, href] of Object.entries(tb.ctaHrefByLocale)) {
+      if (isUnsafeProtocolHref(href)) {
+        errors.push(`${prefix}.ctaHrefByLocale.${loc} uses a disallowed URL scheme.`);
+      }
+    }
+  }
+  if (tb.startsAt !== undefined && tb.startsAt !== '' && !isValidScheduleString(tb.startsAt)) {
+    errors.push(`${prefix}.startsAt "${tb.startsAt}" must be YYYY-MM-DD or ISO datetime.`);
+  }
+  if (tb.endsAt !== undefined && tb.endsAt !== '' && !isValidScheduleString(tb.endsAt)) {
+    errors.push(`${prefix}.endsAt "${tb.endsAt}" must be YYYY-MM-DD or ISO datetime.`);
+  }
+  if (tb.startsAt && tb.endsAt) {
+    const sMs = parseScheduleBound(tb.startsAt, 'start');
+    const eMs = parseScheduleBound(tb.endsAt, 'end');
+    if (sMs !== null && eMs !== null && eMs < sMs) {
+      errors.push(`${prefix}.endsAt must not be earlier than startsAt.`);
+    }
+  }
+}
+
 function validateConfigObject(cfg, rootDir) {
   const errors = [];
   if (!isPlainObject(cfg)) return ['Configuration must be a JSON object.'];
@@ -454,10 +608,57 @@ function validateConfigObject(cfg, rootDir) {
       ) {
         errors.push(`Invalid site.contactEmail "${cfg.site.contactEmail}".`);
       }
+      if (cfg.site.localizedNames !== undefined) {
+        if (!isPlainObject(cfg.site.localizedNames)) {
+          errors.push('site.localizedNames must be an object.');
+        } else {
+          for (const [loc, val] of Object.entries(cfg.site.localizedNames)) {
+            if (typeof val !== 'string') {
+              errors.push(`site.localizedNames.${loc} must be a string.`);
+            }
+          }
+        }
+      }
+      if (cfg.site.socialImage !== undefined) {
+        if (!isPlainObject(cfg.site.socialImage)) {
+          errors.push('site.socialImage must be an object.');
+        } else {
+          const si = cfg.site.socialImage;
+          if (!String(si.path ?? '').startsWith('/')) {
+            errors.push('site.socialImage.path must start with "/".');
+          }
+          const w = Number(si.width);
+          const h = Number(si.height);
+          if (!Number.isInteger(w) || w <= 0) {
+            errors.push('site.socialImage.width must be a positive integer.');
+          }
+          if (!Number.isInteger(h) || h <= 0) {
+            errors.push('site.socialImage.height must be a positive integer.');
+          }
+        }
+      }
       if (isPlainObject(cfg.site.authors)) {
         for (const [id, author] of Object.entries(cfg.site.authors)) {
           if (!isPlainObject(author) || !String(author.name ?? '').trim()) {
             errors.push(`site.authors.${id}.name cannot be empty.`);
+            continue;
+          }
+          for (const strKey of ['name', 'url', 'jobTitle', 'description', 'image']) {
+            if (author[strKey] !== undefined && typeof author[strKey] !== 'string') {
+              errors.push(`site.authors.${id}.${strKey} must be a plain string.`);
+            }
+          }
+          if (author.url) {
+            collectHttpUrlError(author.url, `site.authors.${id}.url`, errors, { allowRelative: true });
+          }
+          if (author.sameAs !== undefined) {
+            if (!Array.isArray(author.sameAs)) {
+              errors.push(`site.authors.${id}.sameAs must be an array.`);
+            } else {
+              author.sameAs.forEach((u, ui) => {
+                collectHttpUrlError(u, `site.authors.${id}.sameAs[${ui}]`, errors);
+              });
+            }
           }
         }
       }
@@ -478,16 +679,38 @@ function validateConfigObject(cfg, rootDir) {
       if (cfg.brand.rtlFontPreset && !(cfg.brand.rtlFontPreset in (presets.rtlFonts ?? {}))) {
         errors.push(`Invalid brand.rtlFontPreset "${cfg.brand.rtlFontPreset}".`);
       }
-      for (const hexKey of [
-        'primaryColor',
-        'accentColor',
-        'themeColor',
-        'darkThemeColor',
-        'backgroundColor',
-      ]) {
+      if (cfg.brand.defaultTheme !== undefined && !VALID_THEME_MODES.has(cfg.brand.defaultTheme)) {
+        errors.push(`Invalid brand.defaultTheme "${cfg.brand.defaultTheme}".`);
+      }
+      if (cfg.brand.socialCardMode !== undefined && !VALID_SOCIAL_CARD_MODES.has(cfg.brand.socialCardMode)) {
+        errors.push(`Invalid brand.socialCardMode "${cfg.brand.socialCardMode}".`);
+      }
+      for (const reqHexKey of ['themeColor', 'backgroundColor']) {
+        if (reqHexKey in cfg.brand) {
+          const val = String(cfg.brand[reqHexKey] ?? '').trim();
+          if (!HEX_COLOR_RE.test(val)) {
+            errors.push(`Invalid brand.${reqHexKey} "${val}". Required 6-digit hex color like #4338ca.`);
+          }
+        }
+      }
+      for (const hexKey of ['primaryColor', 'accentColor', 'darkThemeColor']) {
         const val = cfg.brand[hexKey];
         if (val !== undefined && val !== '' && !HEX_COLOR_RE.test(String(val).trim())) {
           errors.push(`Invalid brand.${hexKey} "${val}". Expected 6-digit hex color like #4338ca.`);
+        }
+      }
+      if (cfg.brand.logo !== undefined) {
+        if (!isPlainObject(cfg.brand.logo)) {
+          errors.push('brand.logo must be an object.');
+        } else {
+          for (const dimKey of ['width', 'height']) {
+            if (cfg.brand.logo[dimKey] !== undefined) {
+              const n = Number(cfg.brand.logo[dimKey]);
+              if (!Number.isInteger(n) || n <= 0) {
+                errors.push(`brand.logo.${dimKey} must be a positive integer.`);
+              }
+            }
+          }
         }
       }
     }
@@ -497,53 +720,72 @@ function validateConfigObject(cfg, rootDir) {
     if (cfg.ui.ctaPage !== undefined && !String(cfg.ui.ctaPage).trim()) {
       errors.push('ui.ctaPage cannot be empty.');
     }
+    if (isPlainObject(cfg.ui.navbar)) {
+      const nb = cfg.ui.navbar;
+      const nbRanges = [
+        ['initialTopOffset', 0, 400],
+        ['stickyScrollThreshold', 0, 2000],
+        ['stickyTopOffset', 0, 400],
+        ['manualBannerOffset', 0, 600],
+      ];
+      for (const [k, min, max] of nbRanges) {
+        if (nb[k] !== undefined) {
+          const val = nb[k] === '' ? NaN : Number(nb[k]);
+          if (!Number.isFinite(val) || val < min || val > max) {
+            errors.push(`ui.navbar.${k} must be between ${min} and ${max}.`);
+          }
+        }
+      }
+    }
     if (isPlainObject(cfg.ui.topBanner)) {
-      const tb = cfg.ui.topBanner;
-      if (tb.id !== undefined && !String(tb.id).trim()) {
-        errors.push('ui.topBanner.id cannot be empty.');
-      }
-      if (tb.dismissTtlDays !== undefined) {
-        const ttl = Number(tb.dismissTtlDays);
-        if (!Number.isInteger(ttl) || ttl < 1 || ttl > 365) {
-          errors.push('ui.topBanner.dismissTtlDays must be an integer between 1 and 365.');
+      validateTopBannerNode(cfg.ui.topBanner, 'ui.topBanner', errors);
+      if (cfg.ui.topBanner.items !== undefined) {
+        if (!Array.isArray(cfg.ui.topBanner.items)) {
+          errors.push('ui.topBanner.items must be an array.');
+        } else {
+          cfg.ui.topBanner.items.forEach((item, idx) => {
+            validateTopBannerNode(item, `ui.topBanner.items[${idx}]`, errors);
+          });
         }
       }
-      if (tb.dismissVersion !== undefined) {
-        const ver = Number(tb.dismissVersion);
-        if (!Number.isInteger(ver) || ver < 1) {
-          errors.push('ui.topBanner.dismissVersion must be a positive integer.');
-        }
-      }
-      if (tb.heightPx !== undefined) {
-        const h = Number(tb.heightPx);
-        if (!Number.isInteger(h) || h < 24 || h > 160) {
-          errors.push('ui.topBanner.heightPx must be an integer between 24 and 160.');
-        }
-      }
-      if (tb.startsAt && tb.endsAt) {
-        const sMs = Date.parse(tb.startsAt);
-        const eMs = Date.parse(tb.endsAt);
-        if (Number.isFinite(sMs) && Number.isFinite(eMs) && eMs < sMs) {
-          errors.push('ui.topBanner.endsAt must not be earlier than startsAt.');
+    }
+    if (isPlainObject(cfg.ui.quickContact) && cfg.ui.quickContact.channels !== undefined) {
+      if (!Array.isArray(cfg.ui.quickContact.channels)) {
+        errors.push('ui.quickContact.channels must be an array.');
+      } else {
+        for (const ch of cfg.ui.quickContact.channels) {
+          if (!VALID_QUICK_CONTACT_CHANNELS.has(ch)) {
+            errors.push(`Invalid ui.quickContact.channels entry "${ch}".`);
+          }
         }
       }
     }
     if (isPlainObject(cfg.ui.motion)) {
       const mt = cfg.ui.motion;
-      if (mt.revealDurationMs !== undefined) {
-        const d = Number(mt.revealDurationMs);
-        if (!Number.isFinite(d) || d < 100 || d > 5000) {
-          errors.push('ui.motion.revealDurationMs must be between 100 and 5000.');
+      const motionRanges = [
+        ['revealDelayMs', 0, 5000],
+        ['revealDurationMs', 100, 5000],
+        ['revealDistancePx', 0, 240],
+        ['revealSmallDistancePx', 0, 120],
+        ['staggerStepMs', 0, 1000],
+        ['smoothScrollLerp', 0.02, 1],
+      ];
+      for (const [k, min, max] of motionRanges) {
+        if (mt[k] !== undefined) {
+          const n = mt[k] === '' ? NaN : Number(mt[k]);
+          if (!Number.isFinite(n) || n < min || n > max) {
+            errors.push(`ui.motion.${k} must be between ${min} and ${max}.`);
+          }
         }
       }
-      if (mt.smoothScrollLerp !== undefined) {
-        const lerp = Number(mt.smoothScrollLerp);
-        if (!Number.isFinite(lerp) || lerp < 0.02 || lerp > 1) {
-          errors.push('ui.motion.smoothScrollLerp must be between 0.02 and 1.');
-        }
+      if (mt.rootMargin !== undefined && !String(mt.rootMargin).trim()) {
+        errors.push('ui.motion.rootMargin cannot be empty.');
       }
       if (mt.revealEasing !== undefined && (!String(mt.revealEasing).trim() || /[;\n{}]/.test(String(mt.revealEasing)))) {
         errors.push('ui.motion.revealEasing must be a valid CSS timing function without semicolons or braces.');
+      }
+      if (mt.mobileBehavior !== undefined && !VALID_MOBILE_BEHAVIORS.has(mt.mobileBehavior)) {
+        errors.push(`Invalid ui.motion.mobileBehavior "${mt.mobileBehavior}".`);
       }
     }
     if (isPlainObject(cfg.ui.navigation)) {
@@ -564,6 +806,8 @@ function validateConfigObject(cfg, rootDir) {
             col.items.forEach((it, ii) => {
               if (!isPlainObject(it) || (!String(it.group ?? '').trim() && !String(it.href ?? '').trim())) {
                 errors.push(`ui.navigation.footerColumns[${ci}].items[${ii}] must specify "group" or "href".`);
+              } else if (it.href && isUnsafeProtocolHref(it.href)) {
+                errors.push(`ui.navigation.footerColumns[${ci}].items[${ii}].href uses a disallowed URL scheme.`);
               }
             });
           }
@@ -574,7 +818,7 @@ function validateConfigObject(cfg, rootDir) {
 
   if (cfg.blog !== undefined && isPlainObject(cfg.blog)) {
     if (cfg.blog.postsPerPage !== undefined) {
-      const ppp = Number(cfg.blog.postsPerPage);
+      const ppp = cfg.blog.postsPerPage === '' ? NaN : Number(cfg.blog.postsPerPage);
       if (!Number.isInteger(ppp) || ppp < 1) {
         errors.push('blog.postsPerPage must be a positive integer.');
       }
@@ -603,14 +847,33 @@ function validateConfigObject(cfg, rootDir) {
           errors.push(`business.${strKey} must be a plain string (not a nested object).`);
         }
       }
+      if (cfg.business.mapEmbedUrl) {
+        collectHttpUrlError(cfg.business.mapEmbedUrl, 'business.mapEmbedUrl', errors);
+      }
       if (cfg.business.geo !== undefined) {
+        const lat = Number(cfg.business.geo?.lat);
+        const lng = Number(cfg.business.geo?.lng);
         if (
           !isPlainObject(cfg.business.geo) ||
-          !Number.isFinite(Number(cfg.business.geo.lat)) ||
-          !Number.isFinite(Number(cfg.business.geo.lng))
+          !Number.isFinite(lat) ||
+          !Number.isFinite(lng) ||
+          lat < -90 ||
+          lat > 90 ||
+          lng < -180 ||
+          lng > 180
         ) {
-          errors.push('business.geo must have numeric lat and lng.');
+          errors.push('business.geo must have valid numeric lat (-90..90) and lng (-180..180).');
         }
+      }
+    }
+  }
+
+  if (cfg.social !== undefined && isPlainObject(cfg.social)) {
+    for (const [k, v] of Object.entries(cfg.social)) {
+      if (typeof v !== 'string') {
+        errors.push(`social.${k} must be a string.`);
+      } else if (v.trim() !== '') {
+        collectHttpUrlError(v, `social.${k}`, errors);
       }
     }
   }
@@ -641,23 +904,23 @@ function validateConfigObject(cfg, rootDir) {
       errors.push('analytics.umamiSrc is required when analytics.umamiWebsiteId is set.');
     }
     if (a.plausibleSrc && String(a.plausibleSrc).trim() !== '') {
-      assertValidHttpUrl(a.plausibleSrc, 'analytics.plausibleSrc');
+      collectHttpUrlError(a.plausibleSrc, 'analytics.plausibleSrc', errors);
     }
     if (a.umamiSrc && String(a.umamiSrc).trim() !== '') {
-      assertValidHttpUrl(a.umamiSrc, 'analytics.umamiSrc');
+      collectHttpUrlError(a.umamiSrc, 'analytics.umamiSrc', errors);
     }
   }
 
   if (cfg.cookies !== undefined && isPlainObject(cfg.cookies)) {
     const ck = cfg.cookies;
     if (ck.expirationDays !== undefined) {
-      const days = Number(ck.expirationDays);
+      const days = ck.expirationDays === '' ? NaN : Number(ck.expirationDays);
       if (!Number.isInteger(days) || days < 1 || days > 400) {
         errors.push('cookies.expirationDays must be an integer between 1 and 400.');
       }
     }
     if (ck.consentVersion !== undefined) {
-      const ver = Number(ck.consentVersion);
+      const ver = ck.consentVersion === '' ? NaN : Number(ck.consentVersion);
       if (!Number.isInteger(ver) || ver < 1) {
         errors.push('cookies.consentVersion must be a positive integer.');
       }
@@ -671,8 +934,11 @@ function validateConfigObject(cfg, rootDir) {
     if (cfg.api.provider !== undefined && !VALID_API_PROVIDERS.has(cfg.api.provider)) {
       errors.push(`Invalid api.provider "${cfg.api.provider}".`);
     }
+    if (cfg.api.baseUrl !== undefined && String(cfg.api.baseUrl).trim() !== '') {
+      collectHttpUrlError(cfg.api.baseUrl, 'api.baseUrl', errors, { allowRelative: true });
+    }
     if (cfg.api.timeoutMs !== undefined) {
-      const ms = Number(cfg.api.timeoutMs);
+      const ms = cfg.api.timeoutMs === '' ? NaN : Number(cfg.api.timeoutMs);
       if (!Number.isInteger(ms) || ms < 1000 || ms > 60000) {
         errors.push('api.timeoutMs must be an integer between 1000 and 60000.');
       }
@@ -695,7 +961,7 @@ function validateConfigObject(cfg, rootDir) {
       errors.push('server.host cannot be empty.');
     }
     if (cfg.server.port !== undefined) {
-      const port = Number(cfg.server.port);
+      const port = cfg.server.port === '' ? NaN : Number(cfg.server.port);
       if (!Number.isInteger(port) || port < 1 || port > 65535) {
         errors.push('server.port must be an integer between 1 and 65535.');
       }
@@ -705,8 +971,48 @@ function validateConfigObject(cfg, rootDir) {
   return errors;
 }
 
+function stripEmptyMapEntries(obj) {
+  if (!isPlainObject(obj)) return {};
+  return Object.fromEntries(
+    Object.entries(obj)
+      .filter(([, v]) => typeof v === 'string' && v.trim() !== '')
+      .map(([k, v]) => [k, v.trim()])
+  );
+}
+
+function cleanTopBannerNode(node) {
+  if (!isPlainObject(node)) return node;
+  const out = { ...node };
+  if (out.icon === '') delete out.icon;
+  for (const optKey of ['startsAt', 'endsAt', 'dismissTtlDays', 'heightPx', 'dismissVersion']) {
+    if (out[optKey] === '' || out[optKey] === null) {
+      delete out[optKey];
+    }
+  }
+  for (const mapKey of ['badgeByLocale', 'messageByLocale', 'ctaLabelByLocale', 'ctaHrefByLocale']) {
+    if (isPlainObject(out[mapKey])) {
+      out[mapKey] = stripEmptyMapEntries(out[mapKey]);
+    }
+  }
+  return out;
+}
+
 function cleanConfigBeforeWrite(cfg) {
   const next = structuredClone(cfg);
+
+  if (isPlainObject(next.site)) {
+    if (isPlainObject(next.site.localizedNames)) {
+      next.site.localizedNames = stripEmptyMapEntries(next.site.localizedNames);
+    }
+    if (isPlainObject(next.site.authors)) {
+      for (const auth of Object.values(next.site.authors)) {
+        if (!isPlainObject(auth)) continue;
+        if (Array.isArray(auth.sameAs)) {
+          auth.sameAs = auth.sameAs.map((u) => String(u).trim()).filter(Boolean);
+        }
+      }
+    }
+  }
 
   // Clear optional empty hex overrides so preset palette takes effect
   if (isPlainObject(next.brand)) {
@@ -759,7 +1065,7 @@ function cleanConfigBeforeWrite(cfg) {
           if (np.icon === '') delete np.icon;
           if (np.label === '') delete np.label;
           if (isPlainObject(np.labels)) {
-            np.labels = Object.fromEntries(Object.entries(np.labels).filter(([, v]) => v !== ''));
+            np.labels = stripEmptyMapEntries(np.labels);
             if (Object.keys(np.labels).length === 0) delete np.labels;
           }
           return np;
@@ -771,7 +1077,7 @@ function cleanConfigBeforeWrite(cfg) {
           const nc = { ...col };
           if (nc.title === '') delete nc.title;
           if (isPlainObject(nc.titles)) {
-            nc.titles = Object.fromEntries(Object.entries(nc.titles).filter(([, v]) => v !== ''));
+            nc.titles = stripEmptyMapEntries(nc.titles);
             if (Object.keys(nc.titles).length === 0) delete nc.titles;
           }
           if (Array.isArray(nc.items)) {
@@ -783,7 +1089,7 @@ function cleanConfigBeforeWrite(cfg) {
               if (ni.icon === '') delete ni.icon;
               if (ni.label === '') delete ni.label;
               if (isPlainObject(ni.labels)) {
-                ni.labels = Object.fromEntries(Object.entries(ni.labels).filter(([, v]) => v !== ''));
+                ni.labels = stripEmptyMapEntries(ni.labels);
                 if (Object.keys(ni.labels).length === 0) delete ni.labels;
               }
               return ni;
@@ -803,21 +1109,9 @@ function cleanConfigBeforeWrite(cfg) {
       delete next.ui.homeSections;
     }
     if (isPlainObject(next.ui.topBanner)) {
-      if (next.ui.topBanner.icon === '') delete next.ui.topBanner.icon;
-      for (const optKey of ['startsAt', 'endsAt', 'dismissTtlDays', 'heightPx', 'dismissVersion']) {
-        if (next.ui.topBanner[optKey] === '' || next.ui.topBanner[optKey] === null) {
-          delete next.ui.topBanner[optKey];
-        }
-      }
+      next.ui.topBanner = cleanTopBannerNode(next.ui.topBanner);
       if (Array.isArray(next.ui.topBanner.items)) {
-        next.ui.topBanner.items = next.ui.topBanner.items.map((item) => {
-          if (!isPlainObject(item)) return item;
-          const ni = { ...item };
-          for (const optKey of ['startsAt', 'endsAt', 'dismissTtlDays', 'heightPx', 'dismissVersion']) {
-            if (ni[optKey] === '' || ni[optKey] === null) delete ni[optKey];
-          }
-          return ni;
-        });
+        next.ui.topBanner.items = next.ui.topBanner.items.map((item) => cleanTopBannerNode(item));
       }
     }
   }
@@ -826,8 +1120,20 @@ function cleanConfigBeforeWrite(cfg) {
     if (isPlainObject(next.api.endpoints) && next.api.endpoints.newsletter === '') {
       delete next.api.endpoints.newsletter;
     }
-    if (Array.isArray(next.api.topics) && next.api.topics.length === 0) {
-      delete next.api.topics;
+    if (Array.isArray(next.api.topics)) {
+      next.api.topics = next.api.topics.map((tp) => {
+        if (!isPlainObject(tp)) return tp;
+        const nt = { ...tp };
+        if (nt.label === '') delete nt.label;
+        if (isPlainObject(nt.labels)) {
+          nt.labels = stripEmptyMapEntries(nt.labels);
+          if (Object.keys(nt.labels).length === 0) delete nt.labels;
+        }
+        return nt;
+      });
+      if (next.api.topics.length === 0) {
+        delete next.api.topics;
+      }
     }
   }
 
@@ -841,6 +1147,35 @@ function cleanConfigBeforeWrite(cfg) {
   }
 
   return next;
+}
+
+function pruneEmptyCmsObjects(obj) {
+  if (!isPlainObject(obj)) return {};
+  const walk = (node) => {
+    if (Array.isArray(node)) {
+      return node.map((x) => (isPlainObject(x) ? walk(x) : x)).filter((x) => x !== undefined);
+    }
+    if (!isPlainObject(node)) return node;
+    const out = {};
+    for (const [k, v] of Object.entries(node)) {
+      if (v === undefined || v === null) continue;
+      if (isPlainObject(v)) {
+        const sub = walk(v);
+        if (sub && Object.keys(sub).length > 0) out[k] = sub;
+      } else if (Array.isArray(v)) {
+        const arr = walk(v);
+        if (arr.length > 0) out[k] = arr;
+      } else if (typeof v === 'string' && v === '') {
+        // Keep empty string only if explicitly needed? Actually empty override strings in CMS layer override lower tiers with blank,
+        // unless stripped as optional. Keep empty string out when cleaning unedited empty CMS fields? Wait: in cmsDraft user only sets fields they typed in!
+        continue;
+      } else {
+        out[k] = v;
+      }
+    }
+    return out;
+  };
+  return walk(obj) || {};
 }
 
 function listContentGroups(rootDir, collectionKey, locales) {
@@ -1026,6 +1361,7 @@ export function getStudioState(rootDir = defaultRootDir) {
     pages,
     collections,
     sectionBlocks: buildSectionSchemaCatalog(rootDir),
+    registeredTemplates: readClientTemplateKeys(rootDir),
     messages: {
       coreByLocale: coreMessages,
       clientByLocale: clientMessages,
@@ -1306,13 +1642,16 @@ function savePageSections(rootDir, payload) {
       if (!sec || typeof sec !== 'object' || !validSet.has(sec.block)) {
         throw new Error(`Invalid section block "${sec?.block ?? ''}".`);
       }
+      if (sec.props !== undefined && !isPlainObject(sec.props)) {
+        throw new Error(`Section "${sec.block}" props must be a plain JSON object.`);
+      }
     }
     if (payload.sections.length === 0) {
       delete nextData.sections;
     } else {
       nextData.sections = payload.sections.map((s) => ({
         block: s.block,
-        props: s.props && typeof s.props === 'object' && !Array.isArray(s.props) ? s.props : {},
+        props: isPlainObject(s.props) ? s.props : {},
       }));
     }
   }
@@ -1446,7 +1785,10 @@ function validateAndNormalizeContentType(payload, existingMergedConfig, rootDir)
   if (payload.sortBy && String(payload.sortBy).trim()) {
     next.sortBy = String(payload.sortBy).trim();
   }
-  if (payload.sortOrder && ['asc', 'desc'].includes(payload.sortOrder)) {
+  if (payload.sortOrder !== undefined && payload.sortOrder !== '' && payload.sortOrder !== null) {
+    if (!['asc', 'desc'].includes(payload.sortOrder)) {
+      throw new Error(`Invalid sortOrder "${payload.sortOrder}": expected "asc" or "desc".`);
+    }
     next.sortOrder = payload.sortOrder;
   }
 
@@ -1461,9 +1803,12 @@ function validateAndNormalizeContentType(payload, existingMergedConfig, rootDir)
     if (payload.card.badgeField && String(payload.card.badgeField).trim()) {
       card.badgeField = String(payload.card.badgeField).trim();
     }
-    if (payload.card.badgeLimit !== undefined && payload.card.badgeLimit !== '') {
+    if (payload.card.badgeLimit !== undefined && payload.card.badgeLimit !== '' && payload.card.badgeLimit !== null) {
       const bl = Number(payload.card.badgeLimit);
-      if (Number.isInteger(bl) && bl >= 0 && bl <= 10) card.badgeLimit = bl;
+      if (!Number.isInteger(bl) || bl < 0 || bl > 10) {
+        throw new Error('card.badgeLimit must be an integer between 0 and 10.');
+      }
+      card.badgeLimit = bl;
     }
     if (Array.isArray(payload.card.metaFields) && payload.card.metaFields.length > 0) {
       card.metaFields = payload.card.metaFields.map((s) => String(s).trim()).filter(Boolean);
@@ -1486,6 +1831,16 @@ function validateAndNormalizeContentType(payload, existingMergedConfig, rootDir)
     }
     next.search = search;
   }
+
+  const sanitizeLocalizedMap = (rawMap) => {
+    if (!isPlainObject(rawMap)) return undefined;
+    const out = Object.fromEntries(
+      Object.entries(rawMap)
+        .filter(([, v]) => typeof v === 'string' && v.trim() !== '')
+        .map(([k, v]) => [assertSafeLocale(k), v.trim()])
+    );
+    return Object.keys(out).length > 0 ? out : undefined;
+  };
 
   if (Array.isArray(payload.fields)) {
     const seenNames = new Set();
@@ -1515,14 +1870,29 @@ function validateAndNormalizeContentType(payload, existingMergedConfig, rootDir)
         cms: rawField.cms !== false,
       };
       if (rawField.label && String(rawField.label).trim()) f.label = String(rawField.label).trim();
-      if (isPlainObject(rawField.labels)) {
-        const fl = Object.fromEntries(
-          Object.entries(rawField.labels)
-            .filter(([, v]) => typeof v === 'string' && v.trim() !== '')
-            .map(([k, v]) => [assertSafeLocale(k), v.trim()])
-        );
-        if (Object.keys(fl).length > 0) f.labels = fl;
+      const fieldLabels = sanitizeLocalizedMap(rawField.labels);
+      if (fieldLabels) f.labels = fieldLabels;
+
+      if (type === 'number') {
+        if (rawField.min !== undefined && rawField.min !== '' && rawField.min !== null) {
+          const minVal = Number(rawField.min);
+          if (!Number.isFinite(minVal)) {
+            throw new Error(`Field "${name}" min "${rawField.min}" must be a finite number.`);
+          }
+          f.min = minVal;
+        }
+        if (rawField.max !== undefined && rawField.max !== '' && rawField.max !== null) {
+          const maxVal = Number(rawField.max);
+          if (!Number.isFinite(maxVal)) {
+            throw new Error(`Field "${name}" max "${rawField.max}" must be a finite number.`);
+          }
+          f.max = maxVal;
+        }
+        if (f.min !== undefined && f.max !== undefined && f.min > f.max) {
+          throw new Error(`Field "${name}" min (${f.min}) cannot exceed max (${f.max}).`);
+        }
       }
+
       if (type === 'enum') {
         const opts = Array.isArray(rawField.options)
           ? rawField.options.map((o) => String(o).trim()).filter(Boolean)
@@ -1534,12 +1904,29 @@ function validateAndNormalizeContentType(payload, existingMergedConfig, rootDir)
           throw new Error(`Enum field "${name}" must define at least one option.`);
         }
         f.options = opts;
+        if (isPlainObject(rawField.optionLabels)) {
+          const cleanedOptLabels = {};
+          for (const [optKey, locMap] of Object.entries(rawField.optionLabels)) {
+            if (!opts.includes(optKey)) continue;
+            const cleanLocMap = sanitizeLocalizedMap(locMap);
+            if (cleanLocMap) cleanedOptLabels[optKey] = cleanLocMap;
+          }
+          if (Object.keys(cleanedOptLabels).length > 0) {
+            f.optionLabels = cleanedOptLabels;
+          }
+        }
       }
-      if (rawField.default !== undefined && rawField.default !== '') {
+      if (rawField.default !== undefined && rawField.default !== '' && rawField.default !== null) {
         if (type === 'number') {
           const n = Number(rawField.default);
           if (!Number.isFinite(n)) {
             throw new Error(`Number field "${name}" default "${rawField.default}" must be finite.`);
+          }
+          if (f.min !== undefined && n < f.min) {
+            throw new Error(`Number field "${name}" default (${n}) is below min (${f.min}).`);
+          }
+          if (f.max !== undefined && n > f.max) {
+            throw new Error(`Number field "${name}" default (${n}) exceeds max (${f.max}).`);
           }
           f.default = n;
         } else if (type === 'boolean') {
@@ -1556,7 +1943,11 @@ function validateAndNormalizeContentType(payload, existingMergedConfig, rootDir)
                 .map((x) => x.trim())
                 .filter(Boolean);
         } else {
-          f.default = String(rawField.default);
+          const defStr = String(rawField.default);
+          if (type === 'enum' && f.options && !f.options.includes(defStr)) {
+            throw new Error(`Enum field "${name}" default "${defStr}" must be one of [${f.options.join(', ')}].`);
+          }
+          f.default = defStr;
         }
       }
       if (rawField.searchable !== undefined) f.searchable = Boolean(rawField.searchable);
@@ -1587,11 +1978,15 @@ function validateAndNormalizeContentType(payload, existingMergedConfig, rootDir)
           throw new Error(`Duplicate filter query param "${param}" on field "${name}".`);
         }
         seenParams.add(param);
+        const filterLabels = sanitizeLocalizedMap(rawField.filter.labels);
+        const filterAllLabel = sanitizeLocalizedMap(rawField.filter.allLabel);
         const filterObj = {
           enabled: true,
           mode: rawField.filter.mode,
           ...(rawField.filter.param ? { param } : {}),
           ...(rawField.filter.label ? { label: String(rawField.filter.label).trim() } : {}),
+          ...(filterLabels ? { labels: filterLabels } : {}),
+          ...(filterAllLabel ? { allLabel: filterAllLabel } : {}),
           ...(VALID_FILTER_SORTS.has(rawField.filter.sort) ? { sort: rawField.filter.sort } : {}),
         };
         f.filter = filterObj;
@@ -1807,9 +2202,13 @@ function saveContentEntry(rootDir, payload) {
   if (collection !== 'pages') {
     if (!slug) throw new Error('Non-page entries require a non-empty frontmatter.slug.');
     if (slug === 'page') throw new Error('Slug "page" is reserved for pagination.');
-  }
-  if (slug !== '' && (/^\/|\/$/.test(slug) || slug.includes('//'))) {
-    throw new Error(`Invalid slug "${slug}": omit leading/trailing "/" (use "" only for home).`);
+    if (!isValidSlug(slug)) {
+      throw new Error(`Invalid slug "${slug}": use letters, digits, and single hyphens or zero-width joiners only.`);
+    }
+  } else {
+    if (!isValidPageSlug(slug)) {
+      throw new Error(`Invalid page slug "${slug}": omit leading/trailing "/" and avoid empty segments.`);
+    }
   }
   fm.slug = slug;
 
@@ -1827,27 +2226,115 @@ function saveContentEntry(rootDir, payload) {
         if (!isPlainObject(sec) || !validSet.has(sec.block)) {
           throw new Error(`Invalid section block "${sec?.block ?? ''}".`);
         }
+        if (sec.props !== undefined && !isPlainObject(sec.props)) {
+          throw new Error(`Section "${sec.block}" props must be a JSON object.`);
+        }
       }
       if (fm.sections.length === 0) delete fm.sections;
     }
   }
 
-  if (collection === 'blog' && !fm.publishedAt) {
-    throw new Error('Blog entries require frontmatter.publishedAt (YYYY-MM-DD).');
+  if (collection === 'blog') {
+    if (!fm.publishedAt || !Number.isFinite(Date.parse(String(fm.publishedAt)))) {
+      throw new Error('Blog entries require a valid frontmatter.publishedAt date (YYYY-MM-DD).');
+    }
+  }
+  if (fm.publishedAt && !Number.isFinite(Date.parse(String(fm.publishedAt)))) {
+    throw new Error(`Invalid publishedAt date "${fm.publishedAt}".`);
+  }
+  if (fm.updatedAt && !Number.isFinite(Date.parse(String(fm.updatedAt)))) {
+    throw new Error(`Invalid updatedAt date "${fm.updatedAt}".`);
+  }
+
+  for (const taxKey of ['categories', 'tags']) {
+    if (Array.isArray(fm[taxKey])) {
+      for (const tagVal of fm[taxKey]) {
+        if (!TAXONOMY_KEY_RE.test(String(tagVal))) {
+          throw new Error(
+            `Invalid ${taxKey} key "${tagVal}": use lowercase ASCII letters, digits, and single hyphens.`
+          );
+        }
+      }
+    }
+  }
+
+  if (collection === 'projects') {
+    if (fm.year !== undefined && fm.year !== '') {
+      const y = Number(fm.year);
+      if (!Number.isInteger(y) || y < 1990 || y > 2100) {
+        throw new Error('projects.year must be an integer between 1990 and 2100.');
+      }
+      fm.year = y;
+    }
+    if (fm.link !== undefined && String(fm.link).trim() !== '') {
+      assertValidHttpUrl(fm.link, 'projects.link');
+    }
   }
 
   const mergedCfg = readMergedConfig(rootDir);
   const typeFields = mergedCfg.content?.types?.[collection]?.fields ?? [];
+  const reservedFieldKeys = new Set([
+    'title',
+    'slug',
+    'description',
+    'image',
+    'author',
+    'publishedAt',
+    'updatedAt',
+    'categories',
+    'tags',
+    'draft',
+    ...(collection === 'projects' ? ['client', 'year', 'link', 'stack'] : []),
+  ]);
+
   for (const field of typeFields) {
-    if (field.type === 'number' && fm[field.name] !== undefined && fm[field.name] !== '') {
-      const n = Number(fm[field.name]);
-      if (!Number.isFinite(n)) throw new Error(`Field "${field.name}" must be a valid number.`);
-      fm[field.name] = n;
+    if (!field?.name || reservedFieldKeys.has(field.name)) continue;
+    const rawVal = fm[field.name];
+    const isEmpty =
+      rawVal === undefined ||
+      rawVal === null ||
+      (typeof rawVal === 'string' && rawVal.trim() === '');
+
+    if (field.required && field.default === undefined) {
+      if (isEmpty) {
+        throw new Error(`Required field "${field.name}" cannot be empty.`);
+      }
+      if ((field.type === 'string[]' || field.type === 'taxonomy[]') && !Array.isArray(rawVal)) {
+        throw new Error(`Field "${field.name}" must be an array.`);
+      }
     }
-  }
-  if (collection === 'projects' && fm.year !== undefined && fm.year !== '') {
-    const y = Number(fm.year);
-    if (Number.isFinite(y)) fm.year = y;
+
+    if (isEmpty) continue;
+
+    if (field.type === 'number') {
+      const n = Number(rawVal);
+      if (!Number.isFinite(n)) throw new Error(`Field "${field.name}" must be a valid number.`);
+      if (typeof field.min === 'number' && n < field.min) {
+        throw new Error(`Field "${field.name}" (${n}) must be >= ${field.min}.`);
+      }
+      if (typeof field.max === 'number' && n > field.max) {
+        throw new Error(`Field "${field.name}" (${n}) must be <= ${field.max}.`);
+      }
+      fm[field.name] = n;
+    } else if (field.type === 'date') {
+      if (!Number.isFinite(Date.parse(String(rawVal)))) {
+        throw new Error(`Field "${field.name}" must be a valid date.`);
+      }
+    } else if (field.type === 'url') {
+      assertValidHttpUrl(rawVal, `field "${field.name}"`);
+    } else if (field.type === 'enum' && Array.isArray(field.options) && field.options.length > 0) {
+      if (!field.options.includes(String(rawVal))) {
+        throw new Error(`Field "${field.name}" value "${rawVal}" must be one of: ${field.options.join(', ')}.`);
+      }
+    } else if (field.type === 'taxonomy[]' && Array.isArray(rawVal)) {
+      for (const item of rawVal) {
+        if (!TAXONOMY_KEY_RE.test(String(item))) {
+          throw new Error(
+            `Field "${field.name}" item "${item}" must use lowercase ASCII letters, digits, and single hyphens.`
+          );
+        }
+      }
+    }
   }
 
   // Strip empty optional scalar values while retaining meaningful booleans/0/empty home slug
@@ -2086,7 +2573,16 @@ export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' 
         const replaceRaw = body.replace === true;
 
         const result = await withWriteLock(() => {
-          const base = replaceRaw ? readCoreConfig(rootDir) : readCoreAndClientConfig(rootDir);
+          const coreCfg = readCoreConfig(rootDir);
+          const currentFull = readCoreAndClientConfig(rootDir);
+          const base = replaceRaw
+            ? deepMergeConfig(
+                coreCfg,
+                partial.content === undefined && currentFull.content !== undefined
+                  ? { content: currentFull.content }
+                  : {}
+              )
+            : currentFull;
           const nextFullConfig = cleanConfigBeforeWrite(deepMergeConfig(base, partial));
           const errors = validateConfigObject(nextFullConfig, rootDir);
           if (errors.length > 0) {
@@ -2112,7 +2608,7 @@ export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' 
             fs.writeFileSync(cmsPath, '{}\n', 'utf-8');
             return { ok: true, cmsOverrides: {} };
           }
-          const cleaned = sanitizeCmsConfig(rawCms);
+          const cleaned = pruneEmptyCmsObjects(sanitizeCmsConfig(rawCms));
           if (isPlainObject(cleaned.ui?.topBanner)) {
             for (const numKey of ['dismissTtlDays', 'dismissVersion', 'heightPx']) {
               const rawVal = cleaned.ui.topBanner[numKey];

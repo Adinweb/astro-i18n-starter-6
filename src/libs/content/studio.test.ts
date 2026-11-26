@@ -613,5 +613,219 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
     expect(cmsRes.json.cmsOverrides.business.geo).toEqual({ lat: 35.6892, lng: 51.389 });
     expect(cmsRes.json.cmsOverrides.redirects[0].status).toBe(301);
   });
+
+  it('supports replace:true deletion in config-save while preserving content.types and enforcing strict schema rules', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+
+    // Seed a content type + two authors + localized names first
+    await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/content-type-save',
+      body: {
+        key: 'services',
+        base: 'services',
+        enabled: true,
+        index: true,
+        fields: [{ name: 'price', type: 'number', min: 10, max: 500, required: true }],
+      },
+    });
+    const seeded = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/config-save',
+      body: {
+        patch: {
+          site: {
+            localizedNames: { en: 'Acme EN', de: 'Acme DE' },
+            authors: { a1: { name: 'Alice' }, a2: { name: 'Bob' } },
+          },
+        },
+      },
+    });
+    expect(seeded.status).toBe(200);
+
+    // Replace config without author a2 and without empty localizedName de, omitting content -> preserves content.types!
+    const replaced = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/config-save',
+      body: {
+        replace: true,
+        patch: {
+          brand: {
+            themeColor: '#123456',
+            backgroundColor: '#ffffff',
+            socialCardMode: 'default',
+          },
+          site: {
+            localizedNames: { en: 'Acme EN', de: '' },
+            authors: { a1: { name: 'Alice' } },
+          },
+        },
+      },
+    });
+    expect(replaced.status).toBe(200);
+    expect(replaced.json.clientOverrides.site.authors.a2).toBeUndefined();
+    expect(replaced.json.clientOverrides.site.localizedNames?.de).toBeUndefined();
+    expect(replaced.json.clientOverrides.brand.socialCardMode).toBe('default');
+    expect(replaced.json.clientOverrides.content?.types?.services).toBeDefined();
+
+    // Reject invalid config values matching src/libs/config/app.ts
+    const badConfigs = [
+      { brand: { themeColor: '' } },
+      { brand: { backgroundColor: 'not-hex' } },
+      { brand: { socialCardMode: 'invalid-mode' } },
+      { ui: { navbar: { initialTopOffset: 999 } } },
+      { ui: { motion: { revealDurationMs: 50 } } },
+      { business: { geo: { lat: 120, lng: 50 } } },
+      { ui: { topBanner: { startsAt: '2026-05-01T00:00:00Z', endsAt: '2026-04-01T00:00:00Z' } } },
+      { ui: { topBanner: { items: [{ id: 'p', ctaHref: 'javascript:alert(1)' }] } } },
+      { ui: { quickContact: { channels: ['telegram', 'icq'] } } },
+      { social: { github: 'notaurl' } },
+    ];
+    for (const patch of badConfigs) {
+      const res = await invokeStudio(handler, {
+        method: 'POST',
+        url: '/api/config-save',
+        body: { patch },
+      });
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it('enforces custom field bounds/options on content-type-save and content-entry', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+
+    const badCt = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/content-type-save',
+      body: {
+        key: 'badtype',
+        base: 'badtype',
+        fields: [{ name: 'score', type: 'number', min: 100, max: 10 }],
+      },
+    });
+    expect(badCt.status).toBe(400);
+
+    const badEnum = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/content-type-save',
+      body: {
+        key: 'badtype',
+        base: 'badtype',
+        fields: [{ name: 'tier', type: 'enum', options: ['a', 'b'], default: 'c' }],
+      },
+    });
+    expect(badEnum.status).toBe(400);
+
+    const goodCt = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/content-type-save',
+      body: {
+        key: 'offers',
+        base: 'offers',
+        enabled: true,
+        index: true,
+        card: { layout: 'grid', badgeLimit: 2 },
+        search: { enabled: true, fields: ['title'], placeholder: { en: 'Search offers...' } },
+        fields: [
+          {
+            name: 'discount',
+            type: 'number',
+            min: 0,
+            max: 100,
+            required: true,
+            filter: { enabled: true, mode: 'multi', labels: { en: 'Discount' }, allLabel: { en: 'All' } },
+          },
+          { name: 'deadline', type: 'date', required: false },
+          { name: 'externalUrl', type: 'url', required: false },
+        ],
+      },
+    });
+    expect(goodCt.status).toBe(200);
+    expect(goodCt.json.typeConfig.fields[0].min).toBe(0);
+    expect(goodCt.json.typeConfig.fields[0].max).toBe(100);
+    expect(goodCt.json.typeConfig.search.placeholder.en).toBe('Search offers...');
+
+    // Missing required custom field
+    const missingReq = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/content-entry',
+      body: {
+        collection: 'offers',
+        group: 'spring-sale',
+        locale: 'en',
+        frontmatter: { title: 'Spring Sale', slug: 'spring-sale', draft: false },
+        body: 'Details',
+      },
+    });
+    expect(missingReq.status).toBe(400);
+
+    // Out-of-bounds number field
+    const outOfRange = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/content-entry',
+      body: {
+        collection: 'offers',
+        group: 'spring-sale',
+        locale: 'en',
+        frontmatter: { title: 'Spring Sale', slug: 'spring-sale', discount: 150 },
+        body: 'Details',
+      },
+    });
+    expect(outOfRange.status).toBe(400);
+
+    // Invalid URL & invalid date
+    const badDate = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/content-entry',
+      body: {
+        collection: 'offers',
+        group: 'spring-sale',
+        locale: 'en',
+        frontmatter: { title: 'Spring Sale', slug: 'spring-sale', discount: 0, deadline: 'not-a-date' },
+        body: 'Details',
+      },
+    });
+    expect(badDate.status).toBe(400);
+
+    // Valid numeric 0 passes required + min:0 check
+    const validZero = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/content-entry',
+      body: {
+        collection: 'offers',
+        group: 'spring-sale',
+        locale: 'en',
+        frontmatter: {
+          title: 'Spring Sale',
+          slug: 'spring-sale',
+          discount: 0,
+          deadline: '2026-12-31',
+          externalUrl: 'https://example.com/offer',
+        },
+        body: 'Details',
+      },
+    });
+    expect(validZero.status).toBe(200);
+  });
+
+  it('serves updated Studio UI with valid JS, accurate palette swatches, block surfaces, and replace:true', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+    const stateRes = await invokeStudio(handler, { method: 'GET', url: '/api/state' });
+    expect(stateRes.status).toBe(200);
+    expect(Array.isArray(stateRes.json.registeredTemplates)).toBe(true);
+    expect(stateRes.json.sectionBlocks.some((b: any) => b.name === 'FaqAccordion' && Array.isArray(b.props))).toBe(true);
+
+    const html = await invokeStudio(handler, { method: 'GET', url: '/', originalUrl: '/__studio/' });
+    expect(html.status).toBe(200);
+    const script = html.text.match(/<script>([\s\S]*?)<\/script>/)![1];
+    expect(() => new Function(script)).not.toThrow();
+    expect(script).toContain('p.primary');
+    expect(script).not.toContain('p.themeColor');
+    expect(script).toContain('replace: true');
+    expect(script).toContain('skipAssets: Boolean(wizardDraft.skipAssets)');
+    expect(script).toContain('registeredTemplates');
+    expect(script).toContain("['default', 'surface', 'subtle']");
+  });
 });
+
 

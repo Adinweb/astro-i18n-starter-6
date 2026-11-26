@@ -323,7 +323,7 @@
     const DEFAULT_BLOCK_PROPS = {
       LandingHeroSplit: {
         eyebrow: 'New Launch',
-        titleLead: 'Build Modern Multilingual Sites',
+        title: 'Build Modern Multilingual Sites',
         titleAccent: 'Fast',
         description: 'RTL-native Astro v7 starter configured via Studio.',
         primaryCta: { label: 'Get Started', href: '/contact/', icon: 'arrow-right' },
@@ -335,35 +335,202 @@
         description: 'Fast static delivery across RTL and LTR languages.',
         primaryCta: { label: 'Explore', href: '/about/' },
       },
-      ProofStatsRow: { surface: 'surface', spacing: 'md' },
+      HeroDashboardShowcase: {
+        titleLead: 'Analytics Built for',
+        titleAccent: 'Teams',
+        description: 'Monitor KPIs cleanly in static-first architecture.',
+        primaryCta: { label: 'Get Started', href: '/pricing/' },
+      },
+      HeroCommandCli: {
+        eyebrow: 'Developer First',
+        titleLead: 'Ship Websites via',
+        titleAccent: 'CLI',
+        description: 'Configure your entire multilingual site from one spec.',
+        primaryCta: { label: 'Read Docs', href: '/features/' },
+      },
+      HeroInteractivePrompt: {
+        badge: 'Interactive',
+        title: 'Build Faster with Structured Content',
+        description: 'Declarative sections backed by type-safe Astro collections.',
+        mode: 'prompt',
+      },
+      HeroProofMarquee: {
+        titleLead: 'Trusted by',
+        titleAccent: 'Industry Leaders',
+        description: 'Deliver fast multilingual websites with zero bloat.',
+        primaryCta: { label: 'Contact Sales', href: '/contact/' },
+      },
+      HeroFloatingOrbSplit: {
+        eyebrow: 'Modern Architecture',
+        titleLead: 'Design That',
+        titleHighlight: 'Moves',
+        titleSecondary: 'With Purpose',
+        description: 'Logical RTL/LTR motion powered by ChronoTrig.',
+      },
+      AboutSplitSection: {
+        eyebrow: 'About Us',
+        heading: 'Engineering Excellence',
+        description: 'Built for speed, accessibility, and multilingual clarity.',
+        surface: 'default',
+        spacing: 'lg',
+      },
+      AuthFormCard: {
+        eyebrow: 'Account',
+        heading: 'Sign in to Your Workspace',
+        subheading: 'Access your client portal securely.',
+        mode: 'login',
+        surface: 'default',
+        spacing: 'lg',
+      },
       BentoCapabilities: {
-        title: 'Core Capabilities',
-        description: 'Everything configured cleanly through declarative sections.',
+        eyebrow: 'Capabilities',
+        heading: 'Core Capabilities',
+        subheading: 'Everything configured cleanly through declarative sections.',
+        surface: 'default',
+        spacing: 'lg',
+      },
+      CarouselSection: {
+        eyebrow: 'Showcase',
+        heading: 'Featured Highlights',
+        subheading: 'Swipe through curated highlights.',
+        surface: 'surface',
+        spacing: 'lg',
+      },
+      ComparisonTable: {
+        eyebrow: 'Compare',
+        heading: 'Compare Plans',
+        subheading: 'Transparent feature breakdown.',
+        surface: 'default',
+        spacing: 'lg',
+      },
+      ContactSplitSection: {
+        eyebrow: 'Get in Touch',
+        heading: 'Talk with Our Team',
+        subheading: 'Reach us directly or send a message.',
+        surface: 'surface',
+        spacing: 'lg',
+      },
+      CtaBanner: {
+        eyebrow: 'Next Step',
+        title: 'Ready to launch your site?',
+        description: 'Contact our team today to get started.',
+        primaryCta: { label: 'Contact Us', href: '/contact/', icon: 'arrow-right' },
+        surface: 'hero',
+        spacing: 'md',
+      },
+      FaqAccordion: {
+        eyebrow: 'FAQ',
+        heading: 'Frequently Asked Questions',
+        subheading: 'Answers to common questions.',
+        items: [
+          { question: 'How is content managed?', answer: 'Directly via localized MDX files and Pages CMS.' },
+        ],
         surface: 'default',
         spacing: 'lg',
       },
       FeatureCardGrid: {
-        title: 'Key Features',
+        eyebrow: 'Features',
+        heading: 'Key Features',
+        subheading: 'Designed for performance and reliability.',
         columns: 3,
         items: [
           { title: 'Fast Static SSG', description: 'Zero runtime bloat.', icon: 'bolt' },
           { title: 'RTL & LTR Native', description: 'Logical Tailwind v4 CSS.', icon: 'globe' },
           { title: 'SEO & Search Ready', description: 'JSON-LD + Pagefind built in.', icon: 'search' },
         ],
+        surface: 'default',
+        spacing: 'lg',
       },
-      FaqAccordion: {
-        title: 'Frequently Asked Questions',
-        items: [
-          { question: 'How is content managed?', answer: 'Directly via localized MDX files and Pages CMS.' },
-        ],
+      FeatureTabsSection: {
+        eyebrow: 'Workflow',
+        heading: 'Built for Every Team',
+        subheading: 'Switch between capabilities interactively.',
+        surface: 'surface',
+        spacing: 'lg',
       },
-      LatestPostsSection: { limit: 3, surface: 'default', spacing: 'lg' },
-      CtaBanner: {
-        title: 'Ready to launch your site?',
-        description: 'Contact our team today to get started.',
-        primaryCta: { label: 'Contact Us', href: '/contact/', icon: 'arrow-right' },
-        surface: 'hero',
+      ImageGallerySection: {
+        eyebrow: 'Gallery',
+        heading: 'Visual Showcase',
+        subheading: 'Explore recent photography and project stills.',
+        columns: 3,
+        surface: 'default',
+        spacing: 'lg',
+      },
+      LatestPostsSection: {
+        eyebrow: 'Journal',
+        heading: 'Latest Articles',
+        subheading: 'Insights and updates from our team.',
+        limit: 3,
+        surface: 'default',
+        spacing: 'lg',
+      },
+      NewsletterBanner: {
+        eyebrow: 'Newsletter',
+        title: 'Stay in the Loop',
+        subtitle: 'Receive monthly product notes and guides.',
+        surface: 'surface',
         spacing: 'md',
+      },
+      ParallaxSection: {
+        eyebrow: 'Craftsmanship',
+        title: 'Precision at Scale',
+        description: 'Subtle motion with hardware-accelerated layers.',
+        surface: 'default',
+        spacing: 'md',
+      },
+      PartnerLogos: {
+        eyebrow: 'Partners',
+        heading: 'Trusted Worldwide',
+        surface: 'surface',
+        spacing: 'md',
+      },
+      PricingSection: {
+        eyebrow: 'Pricing',
+        heading: 'Simple, Transparent Pricing',
+        subheading: 'Choose the tier that matches your team.',
+        surface: 'default',
+        spacing: 'lg',
+      },
+      ProcessSteps: {
+        eyebrow: 'Process',
+        heading: 'How It Works',
+        subheading: 'From discovery to launch in clear milestones.',
+        surface: 'default',
+        spacing: 'lg',
+      },
+      ProductShowcaseGrid: {
+        eyebrow: 'Products',
+        heading: 'Featured Solutions',
+        subheading: 'Built for demanding environments.',
+        columns: 3,
+        surface: 'default',
+        spacing: 'lg',
+      },
+      PromoBanner: {
+        badge: 'New',
+        message: 'Explore our latest release features today.',
+        variant: 'primary',
+        spacing: 'sm',
+      },
+      ProofStatsRow: {
+        eyebrow: 'Impact',
+        heading: 'Proven Metrics',
+        surface: 'surface',
+        spacing: 'md',
+      },
+      TeamSection: {
+        eyebrow: 'Team',
+        heading: 'Meet the Experts',
+        subheading: 'Experienced specialists across engineering and design.',
+        surface: 'default',
+        spacing: 'lg',
+      },
+      TestimonialGrid: {
+        eyebrow: 'Testimonials',
+        heading: 'What Clients Say',
+        subheading: 'Feedback from long-term partners.',
+        surface: 'surface',
+        spacing: 'lg',
       },
     };
 
@@ -379,6 +546,7 @@
     let activeTab = localStorage.getItem('studio_tab') || 'wizard';
     let configSubTab = localStorage.getItem('studio_config_subtab') || 'site';
     let activeCollection = 'pages';
+    let contentSearch = '';
     let state = null;
     let projectDraft = null;
     let wizardDraft = null;
@@ -641,10 +809,20 @@
         }
       }
 
-      if (wizardDraft.homeSections.length > 0) {
+      if (wizardDraft.homeSections.length > 0 || (state?.coreAndClientConfig?.ui?.homeSections?.length || 0) > 0) {
         spec.ui = { homeSections: wizardDraft.homeSections };
       }
       return spec;
+    }
+
+    function hasInvalidJsonInputs(root = document) {
+      const bad = root.querySelector('[data-json-invalid="1"]');
+      if (bad) {
+        bad.focus();
+        showToast(L('لطفاً خطای JSON مشخص‌شده را اصلاح کنید', 'Fix the highlighted invalid JSON field first'));
+        return true;
+      }
+      return false;
     }
 
     function updateChrome() {
@@ -656,7 +834,9 @@
       document.getElementById('console-clear').textContent = c.clear;
 
       const statusEl = document.getElementById('console-status');
-      if (!busy && statusEl.textContent === 'Ready') statusEl.textContent = c.ready;
+      if (!busy && ['Ready', COPY.en.ready, COPY.fa.ready].includes(statusEl.textContent)) {
+        statusEl.textContent = c.ready;
+      }
       const lbl = document.getElementById('console-label');
       if (lbl.textContent === 'Console Output' || lbl.textContent === COPY.fa.consoleTitle) {
         lbl.textContent = c.consoleTitle;
@@ -783,8 +963,52 @@
       }
       return sections.map((sec, idx) => {
         const meta = state.sectionBlocks.find((b) => b.name === sec.block);
+        const propNames = new Set((meta?.props || []).map((p) => p.name));
+        const isHero = meta?.category === 'hero';
         const props = sec.props || {};
-        const quickTitle = props.title || props.titleLead || props.eyebrow || '';
+        const quickTitle = props.title || props.titleLead || props.heading || props.message || props.eyebrow || '';
+
+        const primaryCopyField = propNames.has('titleLead')
+          ? 'titleLead'
+          : propNames.has('heading')
+            ? 'heading'
+            : propNames.has('title')
+              ? 'title'
+              : propNames.has('message')
+                ? 'message'
+                : null;
+        const secondaryCopyField = propNames.has('titleAccent')
+          ? 'titleAccent'
+          : propNames.has('titleHighlight')
+            ? 'titleHighlight'
+            : propNames.has('eyebrow')
+              ? 'eyebrow'
+              : propNames.has('badge')
+                ? 'badge'
+                : null;
+        const bodyCopyField = propNames.has('description')
+          ? 'description'
+          : propNames.has('subheading')
+            ? 'subheading'
+            : propNames.has('subtitle')
+              ? 'subtitle'
+              : null;
+
+        const surfaceOpts = isHero
+          ? ['default', 'hero', 'surface', 'subtle']
+          : sec.block === 'CtaBanner'
+            ? ['hero', 'surface']
+            : sec.block === 'PromoBanner'
+              ? null
+              : ['default', 'surface', 'subtle'];
+        const spacingOpts = isHero
+          ? null
+          : sec.block === 'PromoBanner'
+            ? ['none', 'sm', 'md']
+            : sec.block === 'ParallaxSection'
+              ? ['none', 'sm', 'md', 'lg']
+              : ['sm', 'md', 'lg'];
+
         return `<div class="sec-item">
           <div class="between" style="margin-bottom:8px;">
             <div class="row">
@@ -799,20 +1023,30 @@
             </div>
           </div>
           <div class="grid grid-3" style="margin-bottom:8px;">
-            ${props.title !== undefined || !['LandingHeroSplit', 'HeroCenteredEditorial'].includes(sec.block)
-              ? `<div class="field"><label>title</label><input type="text" data-sec-prop="${scope}:${idx}:title" value="${esc(props.title ?? '')}" /></div>` : ''}
-            ${props.titleLead !== undefined || sec.block.startsWith('Hero') || sec.block.startsWith('Landing')
-              ? `<div class="field"><label>titleLead</label><input type="text" data-sec-prop="${scope}:${idx}:titleLead" value="${esc(props.titleLead ?? '')}" /></div>` : ''}
-            <div class="field"><label>description</label><input type="text" data-sec-prop="${scope}:${idx}:description" value="${esc(props.description ?? '')}" /></div>
-            <div class="field"><label>surface</label>
+            ${primaryCopyField ? `<div class="field"><label>${primaryCopyField}</label><input type="text" data-sec-prop="${scope}:${idx}:${primaryCopyField}" value="${esc(props[primaryCopyField] ?? '')}" /></div>` : ''}
+            ${secondaryCopyField ? `<div class="field"><label>${secondaryCopyField}</label><input type="text" data-sec-prop="${scope}:${idx}:${secondaryCopyField}" value="${esc(props[secondaryCopyField] ?? '')}" /></div>` : ''}
+            ${bodyCopyField ? `<div class="field"><label>${bodyCopyField}</label><input type="text" data-sec-prop="${scope}:${idx}:${bodyCopyField}" value="${esc(props[bodyCopyField] ?? '')}" /></div>` : ''}
+            ${surfaceOpts ? `<div class="field"><label>surface</label>
               <select data-sec-prop="${scope}:${idx}:surface">
                 <option value="">(default)</option>
-                ${['default', 'surface', 'hero', 'primary'].map((v) => `<option value="${v}" ${props.surface === v ? 'selected' : ''}>${v}</option>`).join('')}
+                ${surfaceOpts.map((v) => `<option value="${v}" ${props.surface === v ? 'selected' : ''}>${v}</option>`).join('')}
               </select>
-            </div>
+            </div>` : ''}
+            ${sec.block === 'PromoBanner' ? `<div class="field"><label>variant</label>
+              <select data-sec-prop="${scope}:${idx}:variant">
+                <option value="">(default)</option>
+                ${['primary', 'hero', 'surface', 'accent'].map((v) => `<option value="${v}" ${props.variant === v ? 'selected' : ''}>${v}</option>`).join('')}
+              </select>
+            </div>` : ''}
+            ${spacingOpts ? `<div class="field"><label>spacing</label>
+              <select data-sec-prop="${scope}:${idx}:spacing">
+                <option value="">(default)</option>
+                ${spacingOpts.map((v) => `<option value="${v}" ${props.spacing === v ? 'selected' : ''}>${v}</option>`).join('')}
+              </select>
+            </div>` : ''}
           </div>
           <details>
-            <summary class="muted" style="cursor:pointer;">JSON Props (${Object.keys(props).length})</summary>
+            <summary class="muted" style="cursor:pointer;">JSON Props (<span data-sec-count="${scope}:${idx}">${Object.keys(props).length}</span>)</summary>
             <textarea class="mono" style="margin-top:6px;" data-sec-json="${scope}:${idx}">${esc(JSON.stringify(props, null, 2))}</textarea>
           </details>
         </div>`;
@@ -846,8 +1080,9 @@
         </button>`;
       }).join('');
 
+      const activePalette = presets.palettes?.[wizardDraft.brand.preset];
       const presetOpts = Object.entries(presets.palettes || {}).map(([k, p]) =>
-        `<option value="${esc(k)}" ${wizardDraft.brand.preset === k ? 'selected' : ''}>${esc(k)} (${esc(p.themeColor)})</option>`
+        `<option value="${esc(k)}" ${wizardDraft.brand.preset === k ? 'selected' : ''}>${esc(k)} (${esc(p.primary)})</option>`
       ).join('');
       const fontOpts = Object.keys(presets.latinFonts || {}).map((k) =>
         `<option value="${esc(k)}" ${wizardDraft.brand.fontPreset === k ? 'selected' : ''}>${esc(k)}</option>`
@@ -970,7 +1205,7 @@
             <div>
               <h3 style="font-size:13.5px;">${L('۳. برندینگ، رنگ و لوگو', '3. Brand, Palette & Logo')}</h3>
               <div class="grid grid-2">
-                <div class="field"><label>Palette Preset</label><select data-wiz="brand.preset">${presetOpts}</select></div>
+                <div class="field"><label>Palette Preset ${activePalette ? `<span class="swatch" style="background:${esc(activePalette.primary)}"></span> <span class="swatch" style="background:${esc(activePalette.accent)}"></span>` : ''}</label><select data-wiz="brand.preset">${presetOpts}</select></div>
                 <div class="field"><label>Default Theme</label>
                   <select data-wiz="brand.defaultTheme">
                     ${['system', 'light', 'dark'].map((v) => `<option value="${v}" ${wizardDraft.brand.defaultTheme === v ? 'selected' : ''}>${v}</option>`).join('')}
@@ -979,10 +1214,10 @@
               </div>
               <div class="grid grid-2">
                 <div class="field"><label>Primary Hex (optional)</label>
-                  <div class="row"><input type="color" data-wiz-color="brand.primaryColor" value="${esc(wizardDraft.brand.primaryColor || '#4338ca')}" /><input type="text" class="mono" placeholder="#4338ca" data-wiz="brand.primaryColor" value="${esc(wizardDraft.brand.primaryColor)}" /></div>
+                  <div class="row"><input type="color" data-wiz-color="brand.primaryColor" value="${esc(wizardDraft.brand.primaryColor || activePalette?.primary || '#4338ca')}" /><input type="text" class="mono" placeholder="#4338ca" data-wiz="brand.primaryColor" value="${esc(wizardDraft.brand.primaryColor)}" /><button type="button" class="btn btn-sm" data-wiz-clear="brand.primaryColor">✕</button></div>
                 </div>
                 <div class="field"><label>Accent Hex (optional)</label>
-                  <div class="row"><input type="color" data-wiz-color="brand.accentColor" value="${esc(wizardDraft.brand.accentColor || '#10b981')}" /><input type="text" class="mono" placeholder="#10b981" data-wiz="brand.accentColor" value="${esc(wizardDraft.brand.accentColor)}" /></div>
+                  <div class="row"><input type="color" data-wiz-color="brand.accentColor" value="${esc(wizardDraft.brand.accentColor || activePalette?.accent || '#10b981')}" /><input type="text" class="mono" placeholder="#10b981" data-wiz="brand.accentColor" value="${esc(wizardDraft.brand.accentColor)}" /><button type="button" class="btn btn-sm" data-wiz-clear="brand.accentColor">✕</button></div>
                 </div>
               </div>
               <div class="grid grid-3">
@@ -990,7 +1225,7 @@
                 <div class="field"><label>RTL Font</label><select data-wiz="brand.rtlFontPreset">${rtlOpts}</select></div>
                 <div class="field"><label>OG Card Mode</label>
                   <select data-wiz="brand.socialCardMode">
-                    ${['branded', 'artwork'].map((v) => `<option value="${v}" ${wizardDraft.brand.socialCardMode === v ? 'selected' : ''}>${v}</option>`).join('')}
+                    ${['branded', 'artwork', 'default'].map((v) => `<option value="${v}" ${wizardDraft.brand.socialCardMode === v ? 'selected' : ''}>${v}</option>`).join('')}
                   </select>
                 </div>
               </div>
@@ -999,14 +1234,14 @@
                   <label>Logo Light <span class="mono muted">${esc(wizardDraft.brand.logoLight || '')}</span></label>
                   <div class="row">
                     <input type="file" accept="image/svg+xml,image/png,image/webp,image/jpeg" data-upload-logo="light:wizard" />
-                    ${wizardDraft.brand.logoLight ? `<img class="logo-preview" src="${esc(wizardDraft.brand.logoLight)}" alt="light logo" />` : ''}
+                    ${wizardDraft.brand.logoLight ? `<img class="logo-preview" src="${esc(wizardDraft.brand.logoLight)}" alt="light logo" /><button type="button" class="btn btn-sm" data-wiz-clear="brand.logoLight">✕</button>` : ''}
                   </div>
                 </div>
                 <div class="field">
                   <label>Logo Dark <span class="mono muted">${esc(wizardDraft.brand.logoDark || '')}</span></label>
                   <div class="row">
                     <input type="file" accept="image/svg+xml,image/png,image/webp,image/jpeg" data-upload-logo="dark:wizard" />
-                    ${wizardDraft.brand.logoDark ? `<img class="logo-preview" src="${esc(wizardDraft.brand.logoDark)}" alt="dark logo" />` : ''}
+                    ${wizardDraft.brand.logoDark ? `<img class="logo-preview" src="${esc(wizardDraft.brand.logoDark)}" alt="dark logo" /><button type="button" class="btn btn-sm" data-wiz-clear="brand.logoDark">✕</button>` : ''}
                   </div>
                 </div>
               </div>
@@ -1014,15 +1249,19 @@
           </div>
 
           <div class="divider"></div>
-          <div class="field">
-            <label>${L('۴. صفحات استارتر پیشنهادی (هم‌زمان با اعمال ساخته و منتشر می‌شوند)', '4. Starter Pages to Provision & Publish')}</label>
-            <div class="row">${starterChecks}</div>
+          <div class="between">
+            <div class="field" style="margin-bottom:0;">
+              <label>${L('۴. صفحات استارتر پیشنهادی (هم‌زمان با اعمال ساخته و منتشر می‌شوند)', '4. Starter Pages to Provision & Publish')}</label>
+              <div class="row">${starterChecks}</div>
+            </div>
+            <label class="check-pill"><input type="checkbox" data-wiz-bool="skipAssets" ${wizardDraft.skipAssets ? 'checked' : ''} /><span>${L('رد کردن ساخت آیکون/OG (--skip-assets)', 'Skip brand asset generation (--skip-assets)')}</span></label>
           </div>
 
           <div class="divider"></div>
           <div class="between" style="margin-bottom:8px;">
             <strong style="font-size:13.5px;">${L('۵. ترکیب‌بندی سکشن‌های صفحه اصلی (ui.homeSections)', '5. Declarative Homepage Sections (ui.homeSections)')}</strong>
             <div class="row">
+              ${wizardDraft.homeSections.length > 0 ? `<button type="button" class="btn btn-sm btn-danger" data-action="wiz-clear-sec">${L('پاک‌سازی سکشن‌ها', 'Clear All')}</button>` : ''}
               <select id="wiz-add-block-sel" style="width:auto;">${blockOpts}</select>
               <button type="button" class="btn btn-sm btn-primary" data-action="wiz-add-sec">+ ${L('افزودن سکشن', 'Add Section')}</button>
             </div>
@@ -1116,8 +1355,9 @@
           </div>
         `;
       } else if (configSubTab === 'brand') {
-        const palOpts = Object.keys(presets.palettes || {}).map((k) =>
-          `<option value="${esc(k)}" ${cfg.brand.preset === k ? 'selected' : ''}>${esc(k)}</option>`
+        const cfgPalette = presets.palettes?.[cfg.brand.preset];
+        const palOpts = Object.entries(presets.palettes || {}).map(([k, p]) =>
+          `<option value="${esc(k)}" ${cfg.brand.preset === k ? 'selected' : ''}>${esc(k)} (${esc(p.primary)})</option>`
         ).join('');
         const fontOpts = Object.keys(presets.latinFonts || {}).map((k) =>
           `<option value="${esc(k)}" ${cfg.brand.fontPreset === k ? 'selected' : ''}>${esc(k)}</option>`
@@ -1127,9 +1367,12 @@
         ).join('');
         panel = `
           <div class="card">
-            <h3>${L('تنظیمات برندینگ و تم (brand)', 'Brand, Colors, Typography & Logo (brand)')}</h3>
+            <div class="between" style="margin-bottom:8px;">
+              <h3>${L('تنظیمات برندینگ و تم (brand)', 'Brand, Colors, Typography & Logo (brand)')}</h3>
+              <button type="button" class="btn btn-sm" data-action="cfg-sync-preset">${L('همگام‌سازی رنگ با پالت انتخابی', 'Sync colors to preset')}</button>
+            </div>
             <div class="grid grid-3">
-              <div class="field"><label>brand.preset</label><select data-cfg="brand.preset">${palOpts}</select></div>
+              <div class="field"><label>brand.preset ${cfgPalette ? `<span class="swatch" style="background:${esc(cfgPalette.primary)}"></span> <span class="swatch" style="background:${esc(cfgPalette.accent)}"></span>` : ''}</label><select data-cfg="brand.preset">${palOpts}</select></div>
               <div class="field"><label>brand.defaultTheme</label>
                 <select data-cfg="brand.defaultTheme">
                   ${['system', 'light', 'dark'].map((v) => `<option value="${v}" ${cfg.brand.defaultTheme === v ? 'selected' : ''}>${v}</option>`).join('')}
@@ -1137,16 +1380,16 @@
               </div>
               <div class="field"><label>brand.socialCardMode</label>
                 <select data-cfg="brand.socialCardMode">
-                  ${['branded', 'artwork'].map((v) => `<option value="${v}" ${cfg.brand.socialCardMode === v ? 'selected' : ''}>${v}</option>`).join('')}
+                  ${['branded', 'artwork', 'default'].map((v) => `<option value="${v}" ${cfg.brand.socialCardMode === v ? 'selected' : ''}>${v}</option>`).join('')}
                 </select>
               </div>
             </div>
             <div class="grid grid-3">
               <div class="field"><label>brand.primaryColor (optional)</label>
-                <div class="row"><input type="color" data-cfg-color="brand.primaryColor" value="${esc(cfg.brand.primaryColor || '#4338ca')}" /><input type="text" class="mono" placeholder="#4338ca" data-cfg="brand.primaryColor" value="${esc(cfg.brand.primaryColor || '')}" /><button type="button" class="btn btn-sm" data-cfg-clear="brand.primaryColor">✕</button></div>
+                <div class="row"><input type="color" data-cfg-color="brand.primaryColor" value="${esc(cfg.brand.primaryColor || cfgPalette?.primary || '#4338ca')}" /><input type="text" class="mono" placeholder="#4338ca" data-cfg="brand.primaryColor" value="${esc(cfg.brand.primaryColor || '')}" /><button type="button" class="btn btn-sm" data-cfg-clear="brand.primaryColor">✕</button></div>
               </div>
               <div class="field"><label>brand.accentColor (optional)</label>
-                <div class="row"><input type="color" data-cfg-color="brand.accentColor" value="${esc(cfg.brand.accentColor || '#10b981')}" /><input type="text" class="mono" placeholder="#10b981" data-cfg="brand.accentColor" value="${esc(cfg.brand.accentColor || '')}" /><button type="button" class="btn btn-sm" data-cfg-clear="brand.accentColor">✕</button></div>
+                <div class="row"><input type="color" data-cfg-color="brand.accentColor" value="${esc(cfg.brand.accentColor || cfgPalette?.accent || '#10b981')}" /><input type="text" class="mono" placeholder="#10b981" data-cfg="brand.accentColor" value="${esc(cfg.brand.accentColor || '')}" /><button type="button" class="btn btn-sm" data-cfg-clear="brand.accentColor">✕</button></div>
               </div>
               <div class="field"><label>brand.themeColor *</label>
                 <div class="row"><input type="color" data-cfg-color="brand.themeColor" value="${esc(cfg.brand.themeColor || '#4338ca')}" /><input type="text" class="mono" data-cfg="brand.themeColor" value="${esc(cfg.brand.themeColor || '#4338ca')}" /></div>
@@ -1206,23 +1449,23 @@
             <div class="divider"></div>
             <h4 style="margin:0 0 8px; font-size:13.5px;">ui.navbar</h4>
             <div class="grid grid-4">
-              <div class="field"><label>initialTopOffset</label><input type="number" class="mono" data-cfg-num="ui.navbar.initialTopOffset" value="${esc(cfg.ui.navbar.initialTopOffset ?? 16)}" /></div>
-              <div class="field"><label>stickyScrollThreshold</label><input type="number" class="mono" data-cfg-num="ui.navbar.stickyScrollThreshold" value="${esc(cfg.ui.navbar.stickyScrollThreshold ?? 0)}" /></div>
-              <div class="field"><label>stickyTopOffset</label><input type="number" class="mono" data-cfg-num="ui.navbar.stickyTopOffset" value="${esc(cfg.ui.navbar.stickyTopOffset ?? 12)}" /></div>
-              <div class="field"><label>manualBannerOffset</label><input type="number" class="mono" data-cfg-num="ui.navbar.manualBannerOffset" value="${esc(cfg.ui.navbar.manualBannerOffset ?? 0)}" /></div>
+              <div class="field"><label>initialTopOffset</label><input type="number" min="0" max="400" class="mono" data-cfg-num="ui.navbar.initialTopOffset" value="${esc(cfg.ui.navbar.initialTopOffset ?? 16)}" /></div>
+              <div class="field"><label>stickyScrollThreshold</label><input type="number" min="0" max="2000" class="mono" data-cfg-num="ui.navbar.stickyScrollThreshold" value="${esc(cfg.ui.navbar.stickyScrollThreshold ?? 0)}" /></div>
+              <div class="field"><label>stickyTopOffset</label><input type="number" min="0" max="400" class="mono" data-cfg-num="ui.navbar.stickyTopOffset" value="${esc(cfg.ui.navbar.stickyTopOffset ?? 12)}" /></div>
+              <div class="field"><label>manualBannerOffset</label><input type="number" min="0" max="600" class="mono" data-cfg-num="ui.navbar.manualBannerOffset" value="${esc(cfg.ui.navbar.manualBannerOffset ?? 0)}" /></div>
             </div>
             <label class="check-pill"><input type="checkbox" data-cfg-bool="ui.navbar.autoBannerOffset" ${cfg.ui.navbar.autoBannerOffset !== false ? 'checked' : ''} /><span>autoBannerOffset (ResizeObserver)</span></label>
 
             <div class="divider"></div>
             <h4 style="margin:0 0 8px; font-size:13.5px;">ui.motion (ChronoTrig & Lenis)</h4>
             <div class="grid grid-4">
-              <div class="field"><label>revealDelayMs</label><input type="number" class="mono" data-cfg-num="ui.motion.revealDelayMs" value="${esc(cfg.ui.motion.revealDelayMs ?? 0)}" /></div>
-              <div class="field"><label>revealDurationMs</label><input type="number" class="mono" data-cfg-num="ui.motion.revealDurationMs" value="${esc(cfg.ui.motion.revealDurationMs ?? 1600)}" /></div>
-              <div class="field"><label>revealDistancePx</label><input type="number" class="mono" data-cfg-num="ui.motion.revealDistancePx" value="${esc(cfg.ui.motion.revealDistancePx ?? 56)}" /></div>
-              <div class="field"><label>revealSmallDistancePx</label><input type="number" class="mono" data-cfg-num="ui.motion.revealSmallDistancePx" value="${esc(cfg.ui.motion.revealSmallDistancePx ?? 18)}" /></div>
+              <div class="field"><label>revealDelayMs</label><input type="number" min="0" max="5000" class="mono" data-cfg-num="ui.motion.revealDelayMs" value="${esc(cfg.ui.motion.revealDelayMs ?? 0)}" /></div>
+              <div class="field"><label>revealDurationMs</label><input type="number" min="100" max="5000" class="mono" data-cfg-num="ui.motion.revealDurationMs" value="${esc(cfg.ui.motion.revealDurationMs ?? 1600)}" /></div>
+              <div class="field"><label>revealDistancePx</label><input type="number" min="0" max="240" class="mono" data-cfg-num="ui.motion.revealDistancePx" value="${esc(cfg.ui.motion.revealDistancePx ?? 56)}" /></div>
+              <div class="field"><label>revealSmallDistancePx</label><input type="number" min="0" max="120" class="mono" data-cfg-num="ui.motion.revealSmallDistancePx" value="${esc(cfg.ui.motion.revealSmallDistancePx ?? 18)}" /></div>
             </div>
             <div class="grid grid-4">
-              <div class="field"><label>staggerStepMs</label><input type="number" class="mono" data-cfg-num="ui.motion.staggerStepMs" value="${esc(cfg.ui.motion.staggerStepMs ?? 80)}" /></div>
+              <div class="field"><label>staggerStepMs</label><input type="number" min="0" max="1000" class="mono" data-cfg-num="ui.motion.staggerStepMs" value="${esc(cfg.ui.motion.staggerStepMs ?? 80)}" /></div>
               <div class="field"><label>rootMargin</label><input type="text" class="mono" data-cfg="ui.motion.rootMargin" value="${esc(cfg.ui.motion.rootMargin || '0px 0px -8% 0px')}" /></div>
               <div class="field"><label>revealEasing</label><input type="text" class="mono" data-cfg="ui.motion.revealEasing" value="${esc(cfg.ui.motion.revealEasing || 'cubic-bezier(0.16, 1, 0.3, 1)')}" /></div>
               <div class="field"><label>mobileBehavior</label>
@@ -1232,7 +1475,7 @@
               </div>
             </div>
             <div class="grid grid-2">
-              <div class="field"><label>smoothScrollLerp (0.02–1)</label><input type="number" step="0.005" class="mono" data-cfg-num="ui.motion.smoothScrollLerp" value="${esc(cfg.ui.motion.smoothScrollLerp ?? 0.125)}" /></div>
+              <div class="field"><label>smoothScrollLerp (0.02–1)</label><input type="number" min="0.02" max="1" step="0.005" class="mono" data-cfg-num="ui.motion.smoothScrollLerp" value="${esc(cfg.ui.motion.smoothScrollLerp ?? 0.125)}" /></div>
               <div class="field"><label>Lenis Smooth Scroll</label><label class="check-pill"><input type="checkbox" data-cfg-bool="ui.motion.smoothScroll" ${cfg.ui.motion.smoothScroll !== false ? 'checked' : ''} /><span>smoothScroll</span></label></div>
             </div>
 
@@ -1438,10 +1681,12 @@
             </div>
             ${navPages.length === 0 ? `<p class="muted">${L('خالی است (به صورت خودکار از client/navigation.ts یا صفحات منتشرشده استفاده می‌شود).', 'Empty (uses client/navigation.ts or published pages automatically).')}</p>` : navPages.map((np, i) => `
               <div class="row" style="margin-bottom:6px;">
-                <input type="text" class="mono" style="width:140px;" placeholder="group" data-cfg="ui.navigation.pages.${i}.group" value="${esc(np.group || '')}" />
-                <input type="text" class="mono" style="width:120px;" placeholder="icon" data-cfg="ui.navigation.pages.${i}.icon" value="${esc(np.icon || '')}" />
-                <input type="text" style="width:140px;" placeholder="label" data-cfg="ui.navigation.pages.${i}.label" value="${esc(np.label || '')}" />
-                ${locs.map((loc) => `<input type="text" style="width:140px;" placeholder="labels.${esc(loc)}" data-cfg="ui.navigation.pages.${i}.labels.${esc(loc)}" value="${esc(np.labels?.[loc] || '')}" />`).join('')}
+                <input type="text" class="mono" style="width:130px;" placeholder="group" data-cfg="ui.navigation.pages.${i}.group" value="${esc(np.group || '')}" />
+                <input type="text" class="mono" style="width:110px;" placeholder="icon" data-cfg="ui.navigation.pages.${i}.icon" value="${esc(np.icon || '')}" />
+                <input type="text" style="width:130px;" placeholder="label" data-cfg="ui.navigation.pages.${i}.label" value="${esc(np.label || '')}" />
+                ${locs.map((loc) => `<input type="text" style="width:130px;" placeholder="labels.${esc(loc)}" data-cfg="ui.navigation.pages.${i}.labels.${esc(loc)}" value="${esc(np.labels?.[loc] || '')}" />`).join('')}
+                <button type="button" class="btn btn-sm" data-cfg-move-navpage="${i}:-1" ${i === 0 ? 'disabled' : ''}>↑</button>
+                <button type="button" class="btn btn-sm" data-cfg-move-navpage="${i}:1" ${i === navPages.length - 1 ? 'disabled' : ''}>↓</button>
                 <button type="button" class="btn btn-sm btn-danger" data-cfg-del-navpage="${i}">✕</button>
               </div>
             `).join('')}
@@ -1460,17 +1705,22 @@
                     ${locs.map((loc) => `<input type="text" style="width:130px;" placeholder="titles.${esc(loc)}" data-cfg="ui.navigation.footerColumns.${ci}.titles.${esc(loc)}" value="${esc(col.titles?.[loc] || '')}" />`).join('')}
                   </div>
                   <div class="row">
+                    <button type="button" class="btn btn-sm" data-cfg-move-fcol="${ci}:-1" ${ci === 0 ? 'disabled' : ''}>↑</button>
+                    <button type="button" class="btn btn-sm" data-cfg-move-fcol="${ci}:1" ${ci === cols.length - 1 ? 'disabled' : ''}>↓</button>
                     <button type="button" class="btn btn-sm" data-cfg-add-fitem="${ci}">+ Item</button>
                     <button type="button" class="btn btn-sm btn-danger" data-cfg-del-fcol="${ci}">✕</button>
                   </div>
                 </div>
                 ${(col.items || []).map((it, ii) => `
                   <div class="row" style="margin-top:6px;">
-                    <input type="text" class="mono" style="width:120px;" placeholder="group" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.group" value="${esc(it.group || '')}" />
-                    <input type="text" class="mono" style="width:140px;" placeholder="href" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.href" value="${esc(it.href || '')}" />
-                    <input type="text" style="width:120px;" placeholder="label" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.label" value="${esc(it.label || '')}" />
-                    ${locs.map((loc) => `<input type="text" style="width:120px;" placeholder="${esc(loc)}" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.labels.${esc(loc)}" value="${esc(it.labels?.[loc] || '')}" />`).join('')}
+                    <input type="text" class="mono" style="width:110px;" placeholder="group" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.group" value="${esc(it.group || '')}" />
+                    <input type="text" class="mono" style="width:130px;" placeholder="href" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.href" value="${esc(it.href || '')}" />
+                    <input type="text" class="mono" style="width:95px;" placeholder="icon" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.icon" value="${esc(it.icon || '')}" />
+                    <input type="text" style="width:110px;" placeholder="label" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.label" value="${esc(it.label || '')}" />
+                    ${locs.map((loc) => `<input type="text" style="width:110px;" placeholder="${esc(loc)}" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.labels.${esc(loc)}" value="${esc(it.labels?.[loc] || '')}" />`).join('')}
                     <label class="check-pill"><input type="checkbox" data-cfg-bool="ui.navigation.footerColumns.${ci}.items.${ii}.external" ${it.external ? 'checked' : ''} /><span>ext</span></label>
+                    <button type="button" class="btn btn-sm" data-cfg-move-fitem="${ci}:${ii}:-1" ${ii === 0 ? 'disabled' : ''}>↑</button>
+                    <button type="button" class="btn btn-sm" data-cfg-move-fitem="${ci}:${ii}:1" ${ii === (col.items || []).length - 1 ? 'disabled' : ''}>↓</button>
                     <button type="button" class="btn btn-sm btn-danger" data-cfg-del-fitem="${ci}:${ii}">✕</button>
                   </div>
                 `).join('')}
@@ -1607,7 +1857,11 @@
               <p class="card-sub">${L('لایه سوم تنظیمات (روی client/config.json قرار می‌گیرد)؛ دقیقاً مطابق فیلدهای settings در .pages.yml.', 'Layer 3 overrides matching .pages.yml settings (never bleeds into client/config.json).')}</p>
             </div>
             <div class="row">
-              <button type="button" class="btn btn-danger btn-sm" data-action="cms-reset">${L('پاک‌سازی cms.json', 'Reset cms.json')}</button>
+              ${confirmTarget === 'cms:reset'
+                ? `<button type="button" class="btn btn-danger btn-sm" data-action="cms-reset">${L('تأیید پاک‌سازی cms.json', 'Confirm Reset cms.json')}</button>
+                   <button type="button" class="btn btn-sm" data-confirm-cancel="1">✕</button>`
+                : `<button type="button" class="btn btn-danger btn-sm" data-confirm-arm="cms:reset">${L('پاک‌سازی cms.json', 'Reset cms.json')}</button>`
+              }
               <button type="button" class="btn btn-primary" data-action="cms-save">${L('ذخیره client/cms.json', 'Save client/cms.json')}</button>
             </div>
           </div>
@@ -1730,7 +1984,18 @@
       }
       const activeType = types.find((x) => x.key === activeCollection) || { key: 'pages', fields: [] };
       const locs = state.locales.locales;
-      const groups = activeCollection === 'pages' ? (state.pages || []) : (state.collections?.[activeCollection] || []);
+      const rawGroups = activeCollection === 'pages' ? (state.pages || []) : (state.collections?.[activeCollection] || []);
+      const q = contentSearch.trim().toLowerCase();
+      const groups = q
+        ? rawGroups.filter((g) => {
+            if (g.group.toLowerCase().includes(q)) return true;
+            return Object.values(g.locales || {}).some(
+              (info) =>
+                String(info.title || '').toLowerCase().includes(q) ||
+                String(info.slug || '').toLowerCase().includes(q)
+            );
+          })
+        : rawGroups;
 
       const pills = types.map((ct) => {
         const count = ct.key === 'pages' ? (state.pages?.length || 0) : (state.collections?.[ct.key]?.length || 0);
@@ -1740,7 +2005,7 @@
       }).join('');
 
       const rowsHtml = groups.length === 0
-        ? `<tr><td colspan="${locs.length + 2}" class="muted">${L('مطلبی در این کالکشن ثبت نشده است.', 'No entries in this collection yet.')}</td></tr>`
+        ? `<tr><td colspan="${locs.length + 2}" class="muted">${L('مطلبی در این کالکشن ثبت نشده است.', 'No matching entries in this collection.')}</td></tr>`
         : groups.map((g) => {
             const existingLocaleCount = Object.keys(g.locales || {}).length;
             const locCells = locs.map((loc) => {
@@ -1825,7 +2090,8 @@
 
         <div class="card">
           <div class="between" style="margin-bottom:8px;">
-            <h3>${esc(activeCollection)} <span class="badge">${groups.length} groups</span> <span class="muted">base: /${esc(activeType.base || '')}</span></h3>
+            <h3>${esc(activeCollection)} <span class="badge">${groups.length} / ${rawGroups.length} groups</span> <span class="muted">base: /${esc(activeType.base || '')}</span></h3>
+            <input id="content-search" type="text" style="width:240px;" placeholder="${L('فیلتر گروه، عنوان یا اسلاگ...', 'Filter group, title, slug...')}" value="${esc(contentSearch)}" />
           </div>
           <div class="table-wrap">
             <table>
@@ -1898,13 +2164,17 @@
           const cat = k.includes('_') ? k.split('_')[0] : 'other';
           if (cat !== i18nFilterCategory) return false;
         }
-        const vals = locs.map((l) => String((msgDirty[l] && k in msgDirty[l] ? msgDirty[l][k] : mergedByLoc[l]?.[k]) ?? ''));
+        const vals = locs.map((l) => {
+          const rawVal = msgDirty[l] && k in msgDirty[l] ? msgDirty[l][k] : mergedByLoc[l]?.[k];
+          if (Array.isArray(rawVal)) return JSON.stringify(rawVal);
+          return String(rawVal ?? '');
+        });
         if (i18nFilterStatus === 'todo') {
           if (!vals.some((v) => v.includes('[TODO:'))) return false;
         } else if (i18nFilterStatus === 'client') {
           if (!locs.some((l) => k in (clientByLoc[l] || {}))) return false;
         } else if (i18nFilterStatus === 'missing') {
-          if (!vals.some((v) => v.trim() === '')) return false;
+          if (!vals.some((v) => v.trim() === '' || v === '[]')) return false;
         }
         if (i18nSearch.trim()) {
           const q = i18nSearch.trim().toLowerCase();
@@ -2134,29 +2404,33 @@
 
         const customInputs = customFields.map((f) => {
           const val = fm[f.name];
+          const reqMark = f.required ? ' *' : '';
           if (f.type === 'boolean') {
-            return `<div class="field"><label>${esc(f.label || f.name)}</label><label class="check-pill"><input type="checkbox" data-efm-custom-bool="${esc(f.name)}" ${val ? 'checked' : ''} /><span>${esc(f.name)}</span></label></div>`;
+            return `<div class="field"><label>${esc(f.label || f.name)}${reqMark}</label><label class="check-pill"><input type="checkbox" data-efm-custom-bool="${esc(f.name)}" ${val ? 'checked' : ''} /><span>${esc(f.name)}</span></label></div>`;
           }
           if (f.type === 'enum') {
-            return `<div class="field"><label>${esc(f.label || f.name)}${f.required ? ' *' : ''}</label>
+            return `<div class="field"><label>${esc(f.label || f.name)}${reqMark}</label>
               <select data-efm-custom="${esc(f.name)}">
                 <option value="">(none)</option>
                 ${(f.options || []).map((o) => `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}
               </select></div>`;
           }
           if (f.type === 'string[]' || f.type === 'taxonomy[]') {
-            return `<div class="field"><label>${esc(f.label || f.name)} (comma-sep)</label><input type="text" data-efm-custom-list="${esc(f.name)}" value="${esc(Array.isArray(val) ? val.join(', ') : (val || ''))}" /></div>`;
+            return `<div class="field"><label>${esc(f.label || f.name)}${reqMark} (comma-sep)</label><input type="text" data-efm-custom-list="${esc(f.name)}" value="${esc(Array.isArray(val) ? val.join(', ') : (val || ''))}" /></div>`;
           }
           if (f.type === 'text') {
-            return `<div class="field"><label>${esc(f.label || f.name)}</label><textarea data-efm-custom="${esc(f.name)}">${esc(val ?? '')}</textarea></div>`;
+            return `<div class="field"><label>${esc(f.label || f.name)}${reqMark}</label><textarea data-efm-custom="${esc(f.name)}">${esc(val ?? '')}</textarea></div>`;
           }
           if (f.type === 'number') {
-            return `<div class="field"><label>${esc(f.label || f.name)}</label><input type="number" class="mono" data-efm-custom-num="${esc(f.name)}" value="${esc(val ?? '')}" /></div>`;
+            const minAttr = f.min !== undefined && f.min !== '' ? `min="${esc(f.min)}"` : '';
+            const maxAttr = f.max !== undefined && f.max !== '' ? `max="${esc(f.max)}"` : '';
+            return `<div class="field"><label>${esc(f.label || f.name)}${reqMark}</label><input type="number" step="any" ${minAttr} ${maxAttr} class="mono" data-efm-custom-num="${esc(f.name)}" value="${esc(val ?? '')}" /></div>`;
           }
-          return `<div class="field"><label>${esc(f.label || f.name)}${f.required ? ' *' : ''}</label><input type="${f.type === 'date' ? 'date' : f.type === 'url' ? 'url' : 'text'}" class="${f.type === 'date' || f.type === 'url' ? 'mono' : ''}" data-efm-custom="${esc(f.name)}" value="${esc(f.type === 'date' ? String(val ?? '').slice(0, 10) : (val ?? ''))}" /></div>`;
+          return `<div class="field"><label>${esc(f.label || f.name)}${reqMark}</label><input type="${f.type === 'date' ? 'date' : f.type === 'url' ? 'url' : 'text'}" class="${f.type === 'date' || f.type === 'url' ? 'mono' : ''}" data-efm-custom="${esc(f.name)}" value="${esc(f.type === 'date' ? String(val ?? '').slice(0, 10) : (val ?? ''))}" /></div>`;
         }).join('');
 
         const normalizedHero = fm.hero === false ? 'none' : fm.hero === true ? 'default' : String(fm.hero ?? 'none');
+        const templateKeys = state.registeredTemplates || [];
 
         card.innerHTML = `
           <div class="between" style="margin-bottom:10px;">
@@ -2187,7 +2461,10 @@
               <div class="field"><label>container</label>
                 <select data-efm="container">${['canvas', 'contained', 'prose'].map((v) => `<option value="${v}" ${(fm.container || 'canvas') === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
               </div>
-              <div class="field"><label>template</label><input type="text" class="mono" data-efm="template" value="${esc(fm.template || '')}" /></div>
+              <div class="field"><label>template</label>
+                <input type="text" class="mono" list="page-template-list" data-efm="template" value="${esc(fm.template || '')}" />
+                <datalist id="page-template-list">${templateKeys.map((tk) => `<option value="${esc(tk)}"></option>`).join('')}</datalist>
+              </div>
               <div class="field"><label>Header Overlay</label><label class="check-pill"><input type="checkbox" data-efm-bool="flushTop" ${fm.flushTop ? 'checked' : ''} /><span>flushTop</span></label></div>
             </div>
           ` : ''}
@@ -2272,7 +2549,11 @@
           <div class="sec-item">
             <div class="between" style="margin-bottom:6px;">
               <strong class="mono">#${fi + 1} · ${esc(f.name || 'newField')} (${esc(f.type || 'string')})</strong>
-              <button type="button" class="btn btn-sm btn-danger" data-ct-del-field="${fi}">✕</button>
+              <div class="row">
+                <button type="button" class="btn btn-sm" data-ct-move-field="${fi}:-1" ${fi === 0 ? 'disabled' : ''}>↑</button>
+                <button type="button" class="btn btn-sm" data-ct-move-field="${fi}:1" ${fi === (ct.fields || []).length - 1 ? 'disabled' : ''}>↓</button>
+                <button type="button" class="btn btn-sm btn-danger" data-ct-del-field="${fi}">✕</button>
+              </div>
             </div>
             <div class="grid grid-4">
               <div class="field"><label>name *</label><input type="text" class="mono" data-ctf="${fi}:name" value="${esc(f.name || '')}" /></div>
@@ -2291,6 +2572,7 @@
             </div>
             <div class="grid grid-3">
               ${f.type === 'enum' ? `<div class="field"><label>options (comma-sep) *</label><input type="text" data-ctf-opts="${fi}" value="${esc((f.options || []).join(', '))}" /></div>` : ''}
+              ${f.type === 'number' ? `<div class="grid grid-2"><div class="field"><label>min</label><input type="number" step="any" class="mono" data-ctf-num="${fi}:min" value="${esc(f.min ?? '')}" /></div><div class="field"><label>max</label><input type="number" step="any" class="mono" data-ctf-num="${fi}:max" value="${esc(f.max ?? '')}" /></div></div>` : ''}
               <div class="field"><label>default</label>
                 ${f.type === 'boolean'
                   ? `<select data-ctf="${fi}:default"><option value="" ${f.default === undefined ? 'selected' : ''}>(none)</option><option value="true" ${f.default === true ? 'selected' : ''}>true</option><option value="false" ${f.default === false ? 'selected' : ''}>false</option></select>`
@@ -2300,6 +2582,7 @@
               <div class="row" style="padding-top:16px;">
                 <label class="check-pill"><input type="checkbox" data-ctf-bool="${fi}:required" ${f.required ? 'checked' : ''} /><span>required</span></label>
                 <label class="check-pill"><input type="checkbox" data-ctf-bool="${fi}:searchable" ${f.searchable ? 'checked' : ''} /><span>searchable</span></label>
+                <label class="check-pill"><input type="checkbox" data-ctf-bool="${fi}:showOnEntry" ${f.showOnEntry !== false ? 'checked' : ''} /><span>showOnEntry</span></label>
                 <label class="check-pill"><input type="checkbox" data-ctf-bool="${fi}:cms" ${f.cms !== false ? 'checked' : ''} /><span>cms</span></label>
               </div>
             </div>
@@ -2307,9 +2590,11 @@
               <label class="check-pill"><input type="checkbox" data-ctf-filter-en="${fi}" ${f.filter?.enabled ? 'checked' : ''} /><span>Filterable</span></label>
               ${f.filter?.enabled ? `
                 <select style="width:120px;" data-ctf-filter="${fi}:mode">${FILTER_MODES.map((m) => `<option value="${m}" ${f.filter.mode === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
-                <input type="text" class="mono" style="width:130px;" placeholder="param" data-ctf-filter="${fi}:param" value="${esc(f.filter.param || '')}" />
-                <input type="text" style="width:140px;" placeholder="filter label" data-ctf-filter="${fi}:label" value="${esc(f.filter.label || '')}" />
+                <input type="text" class="mono" style="width:120px;" placeholder="param" data-ctf-filter="${fi}:param" value="${esc(f.filter.param || '')}" />
+                <input type="text" style="width:130px;" placeholder="filter label" data-ctf-filter="${fi}:label" value="${esc(f.filter.label || '')}" />
                 <select style="width:110px;" data-ctf-filter="${fi}:sort">${['alpha', 'count', 'config'].map((s) => `<option value="${s}" ${(f.filter.sort || 'alpha') === s ? 'selected' : ''}>sort: ${s}</option>`).join('')}</select>
+                ${locs.map((l) => `<input type="text" style="width:115px;" placeholder="labels.${esc(l)}" data-ctf-filter-map="${fi}:labels:${esc(l)}" value="${esc(f.filter.labels?.[l] || '')}" />`).join('')}
+                ${locs.map((l) => `<input type="text" style="width:115px;" placeholder="allLabel.${esc(l)}" data-ctf-filter-map="${fi}:allLabel:${esc(l)}" value="${esc(f.filter.allLabel?.[l] || '')}" />`).join('')}
               ` : ''}
             </div>
           </div>
@@ -2334,7 +2619,7 @@
             <label class="check-pill"><input type="checkbox" data-ct-bool="nav" ${ct.nav !== false ? 'checked' : ''} ${isPagesType ? 'disabled' : ''} /><span>nav</span></label>
           </div>
           <div class="grid grid-3">
-            <div class="field"><label>perPage</label><input type="number" class="mono" data-ct-num="perPage" value="${esc(ct.perPage ?? '')}" /></div>
+            <div class="field"><label>perPage</label><input type="number" min="1" max="100" class="mono" data-ct-num="perPage" value="${esc(ct.perPage ?? '')}" /></div>
             <div class="field"><label>sortBy</label><input type="text" class="mono" data-ct="sortBy" value="${esc(ct.sortBy || '')}" /></div>
             <div class="field"><label>sortOrder</label>
               <select data-ct="sortOrder"><option value="">default</option><option value="asc" ${ct.sortOrder === 'asc' ? 'selected' : ''}>asc</option><option value="desc" ${ct.sortOrder === 'desc' ? 'selected' : ''}>desc</option></select>
@@ -2348,12 +2633,15 @@
             <div class="field"><label>card.layout</label><select data-ct-card="layout">${CARD_LAYOUTS.map((v) => `<option value="${v}" ${(ct.card?.layout || 'grid') === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
             <div class="field"><label>card.aspectRatio</label><select data-ct-card="aspectRatio">${CARD_RATIOS.map((v) => `<option value="${v}" ${(ct.card?.aspectRatio || 'video') === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
             <div class="field"><label>card.badgeField</label><input type="text" class="mono" data-ct-card="badgeField" value="${esc(ct.card?.badgeField || '')}" /></div>
-            <div class="field"><label>card.badgeLimit</label><input type="number" class="mono" data-ct-card-num="badgeLimit" value="${esc(ct.card?.badgeLimit ?? 3)}" /></div>
+            <div class="field"><label>card.badgeLimit (0-10)</label><input type="number" min="0" max="10" class="mono" data-ct-card-num="badgeLimit" value="${esc(ct.card?.badgeLimit ?? 3)}" /></div>
           </div>
           <div class="grid grid-3">
             <div class="field"><label>card.metaFields (comma-sep)</label><input type="text" class="mono" data-ct-card-list="metaFields" value="${esc((ct.card?.metaFields || []).join(', '))}" /></div>
             <div class="field"><label>search.enabled</label><label class="check-pill"><input type="checkbox" data-ct-search-en="1" ${ct.search?.enabled !== false ? 'checked' : ''} /><span>Search Enabled</span></label></div>
             <div class="field"><label>search.fields (comma-sep)</label><input type="text" class="mono" data-ct-search-fields="1" value="${esc((ct.search?.fields || []).join(', '))}" /></div>
+          </div>
+          <div class="grid grid-2">
+            ${locs.map((l) => `<div class="field"><label>search.placeholder.${esc(l)}</label><input type="text" data-ct-search-ph="${esc(l)}" value="${esc(ct.search?.placeholder?.[l] || '')}" /></div>`).join('')}
           </div>
           <div class="divider"></div>
           <div class="between" style="margin-bottom:8px;">
@@ -2475,13 +2763,15 @@
         setPath(projectDraft, el.dataset.pm, el.value);
       } else if (el.dataset.wiz) {
         setPath(wizardDraft, el.dataset.wiz, el.value);
+        if (el.dataset.wiz === 'brand.preset' && isChange) render();
       } else if (el.dataset.wizColor) {
         setPath(wizardDraft, el.dataset.wizColor, el.value);
         const paired = document.querySelector(`[data-wiz="${el.dataset.wizColor}"]`);
         if (paired) paired.value = el.value;
       } else if (el.dataset.cfg) {
         setPath(configDraft, el.dataset.cfg, el.value);
-        if (el.dataset.cfg.startsWith('brand.')) {
+        if (el.dataset.cfg === 'brand.preset' && isChange) render();
+        else if (el.dataset.cfg.startsWith('brand.')) {
           const colInp = document.querySelector(`[data-cfg-color="${el.dataset.cfg}"]`);
           if (colInp && /^#[0-9a-fA-F]{6}$/.test(el.value)) colInp.value = el.value;
         }
@@ -2500,11 +2790,14 @@
           const parsed = JSON.parse(el.value);
           if (Array.isArray(parsed)) {
             setPath(configDraft, el.dataset.cfgJson, parsed);
+            delete el.dataset.jsonInvalid;
             el.style.borderColor = '';
           } else {
+            el.dataset.jsonInvalid = '1';
             el.style.borderColor = 'var(--danger)';
           }
         } catch {
+          el.dataset.jsonInvalid = '1';
           el.style.borderColor = 'var(--danger)';
         }
       } else if (el.dataset.cms) {
@@ -2532,7 +2825,13 @@
           if (el.value === '') delete sec.props[prop];
           else sec.props[prop] = el.value;
           const jsonTa = document.querySelector(`[data-sec-json="${scope}:${idxStr}"]`);
-          if (jsonTa) jsonTa.value = JSON.stringify(sec.props, null, 2);
+          if (jsonTa) {
+            jsonTa.value = JSON.stringify(sec.props, null, 2);
+            delete jsonTa.dataset.jsonInvalid;
+            jsonTa.style.borderColor = '';
+          }
+          const cnt = document.querySelector(`[data-sec-count="${scope}:${idxStr}"]`);
+          if (cnt) cnt.textContent = String(Object.keys(sec.props).length);
         }
       } else if (el.dataset.secJson) {
         const [scope, idxStr] = el.dataset.secJson.split(':');
@@ -2543,11 +2842,20 @@
             const parsed = JSON.parse(el.value);
             if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
               sec.props = parsed;
+              delete el.dataset.jsonInvalid;
               el.style.borderColor = '';
+              const cnt = document.querySelector(`[data-sec-count="${scope}:${idxStr}"]`);
+              if (cnt) cnt.textContent = String(Object.keys(parsed).length);
+              document.querySelectorAll(`[data-sec-prop^="${scope}:${idxStr}:"]`).forEach((inp) => {
+                const prop = inp.dataset.secProp.split(':')[2];
+                inp.value = parsed[prop] ?? '';
+              });
             } else {
+              el.dataset.jsonInvalid = '1';
               el.style.borderColor = 'var(--danger)';
             }
           } catch {
+            el.dataset.jsonInvalid = '1';
             el.style.borderColor = 'var(--danger)';
           }
         }
@@ -2559,11 +2867,14 @@
             const parsed = JSON.parse(el.value);
             if (Array.isArray(parsed)) {
               msgDirty[loc][key] = parsed;
+              delete el.dataset.jsonInvalid;
               el.style.borderColor = 'var(--primary)';
             } else {
+              el.dataset.jsonInvalid = '1';
               el.style.borderColor = 'var(--danger)';
             }
           } catch {
+            el.dataset.jsonInvalid = '1';
             el.style.borderColor = 'var(--danger)';
           }
         } else {
@@ -2601,6 +2912,10 @@
         } else if (el.dataset.ctSearchFields) {
           ct.search = ct.search || { enabled: true };
           ct.search.fields = el.value.split(',').map((s) => s.trim()).filter(Boolean);
+        } else if (el.dataset.ctSearchPh) {
+          ct.search = ct.search || { enabled: true };
+          ct.search.placeholder = ct.search.placeholder || {};
+          ct.search.placeholder[el.dataset.ctSearchPh] = el.value;
         } else if (el.dataset.ctf) {
           const [fiStr, prop] = el.dataset.ctf.split(':');
           const fi = Number(fiStr);
@@ -2612,12 +2927,21 @@
             ct.fields[fi][prop] = el.value;
             if (isChange && prop === 'type') renderModal();
           }
+        } else if (el.dataset.ctfNum) {
+          const [fiStr, prop] = el.dataset.ctfNum.split(':');
+          ct.fields[Number(fiStr)][prop] = el.value === '' ? undefined : Number(el.value);
         } else if (el.dataset.ctfOpts) {
           ct.fields[Number(el.dataset.ctfOpts)].options = el.value.split(',').map((s) => s.trim()).filter(Boolean);
         } else if (el.dataset.ctfFilter) {
           const [fi, prop] = el.dataset.ctfFilter.split(':');
           ct.fields[Number(fi)].filter = ct.fields[Number(fi)].filter || { enabled: true, mode: 'multi' };
           ct.fields[Number(fi)].filter[prop] = el.value;
+        } else if (el.dataset.ctfFilterMap) {
+          const [fi, mapKey, loc] = el.dataset.ctfFilterMap.split(':');
+          const f = ct.fields[Number(fi)];
+          f.filter = f.filter || { enabled: true, mode: 'multi' };
+          f.filter[mapKey] = f.filter[mapKey] || {};
+          f.filter[mapKey][loc] = el.value;
         }
       } else if (modalState?.type === 'localeMeta') {
         if (el.dataset.lm) modalState.data[el.dataset.lm] = el.value;
@@ -2638,6 +2962,23 @@
           nextInput.setSelectionRange(pos, pos);
         }
         return;
+      }
+      if (el.id === 'content-search') {
+        contentSearch = el.value;
+        const pos = el.selectionStart;
+        render();
+        const nextInput = document.getElementById('content-search');
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.setSelectionRange(pos, pos);
+        }
+        return;
+      }
+      if (el.id === 'add-lang-code') {
+        const dirEl = document.getElementById('add-lang-dir');
+        if (dirEl && dirEl.dataset.dirTouched !== '1') {
+          dirEl.value = /^(fa|ar|he|ur|ps|ku|yi|sd)(?:-|$)/i.test(el.value.trim()) ? 'rtl' : 'ltr';
+        }
       }
       syncScalarField(el, false);
     });
@@ -2696,6 +3037,8 @@
           ct.fields[fi].filter = el.checked ? { enabled: true, mode: 'multi', sort: 'alpha' } : undefined;
           renderModal();
         }
+      } else if (el.id === 'add-lang-dir') {
+        el.dataset.dirTouched = '1';
       } else if (el.type !== 'checkbox' && el.type !== 'file') {
         syncScalarField(el, true);
       }
@@ -2733,6 +3076,11 @@
       }
       if (btn.dataset.cfgClear) {
         setPath(configDraft, btn.dataset.cfgClear, '');
+        render();
+        return;
+      }
+      if (btn.dataset.wizClear) {
+        setPath(wizardDraft, btn.dataset.wizClear, '');
         render();
         return;
       }
@@ -2787,9 +3135,29 @@
         render();
         return;
       }
+      if (btn.dataset.cfgMoveNavpage) {
+        const [i, d] = btn.dataset.cfgMoveNavpage.split(':').map(Number);
+        const arr = configDraft.ui?.navigation?.pages;
+        const j = i + d;
+        if (arr && j >= 0 && j < arr.length) {
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+          render();
+        }
+        return;
+      }
       if (btn.dataset.cfgDelNavpage !== undefined) {
         configDraft.ui.navigation.pages.splice(Number(btn.dataset.cfgDelNavpage), 1);
         render();
+        return;
+      }
+      if (btn.dataset.cfgMoveFcol) {
+        const [i, d] = btn.dataset.cfgMoveFcol.split(':').map(Number);
+        const arr = configDraft.ui?.navigation?.footerColumns;
+        const j = i + d;
+        if (arr && j >= 0 && j < arr.length) {
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+          render();
+        }
         return;
       }
       if (btn.dataset.cfgAddFitem !== undefined) {
@@ -2802,6 +3170,16 @@
       if (btn.dataset.cfgDelFcol !== undefined) {
         configDraft.ui.navigation.footerColumns.splice(Number(btn.dataset.cfgDelFcol), 1);
         render();
+        return;
+      }
+      if (btn.dataset.cfgMoveFitem) {
+        const [ci, ii, d] = btn.dataset.cfgMoveFitem.split(':').map(Number);
+        const arr = configDraft.ui?.navigation?.footerColumns?.[ci]?.items;
+        const j = ii + d;
+        if (arr && j >= 0 && j < arr.length) {
+          [arr[ii], arr[j]] = [arr[j], arr[ii]];
+          render();
+        }
         return;
       }
       if (btn.dataset.cfgDelFitem) {
@@ -2832,6 +3210,16 @@
       if (btn.dataset.ctEdit) {
         const found = state.contentTypes.find((x) => x.key === btn.dataset.ctEdit);
         if (found) openModal('contentType', { ...deepClone(found), isNew: false });
+        return;
+      }
+      if (btn.dataset.ctMoveField && modalState?.type === 'contentType') {
+        const [fi, d] = btn.dataset.ctMoveField.split(':').map(Number);
+        const arr = modalState.data.fields;
+        const j = fi + d;
+        if (arr && j >= 0 && j < arr.length) {
+          [arr[fi], arr[j]] = [arr[j], arr[fi]];
+          renderModal();
+        }
         return;
       }
       if (btn.dataset.ctDelField !== undefined && modalState?.type === 'contentType') {
@@ -2973,19 +3361,37 @@
         const block = document.getElementById('wiz-add-block-sel')?.value || 'LandingHeroSplit';
         wizardDraft.homeSections.push({ block, props: deepClone(DEFAULT_BLOCK_PROPS[block] || {}) });
         render();
+      } else if (act === 'wiz-clear-sec') {
+        wizardDraft.homeSections = [];
+        render();
       } else if (act === 'cfg-add-sec') {
         const block = document.getElementById('cfg-add-block-sel')?.value || 'LandingHeroSplit';
         configDraft.ui.homeSections = configDraft.ui.homeSections || [];
         configDraft.ui.homeSections.push({ block, props: deepClone(DEFAULT_BLOCK_PROPS[block] || {}) });
         render();
+      } else if (act === 'cfg-sync-preset') {
+        const pal = state.themePresets?.palettes?.[configDraft.brand?.preset];
+        if (pal) {
+          configDraft.brand.primaryColor = '';
+          configDraft.brand.accentColor = '';
+          if (pal.primary) configDraft.brand.themeColor = pal.primary;
+          render();
+          showToast(L('رنگ‌ها با پالت همگام شدند', 'Colors synced to preset'));
+        }
       } else if (act === 'wiz-copy-spec') {
+        if (hasInvalidJsonInputs()) return showToast(L('لطفاً خطای JSON را برطرف کنید', 'Fix invalid JSON inputs first'));
         navigator.clipboard?.writeText(JSON.stringify(buildWizardSpec(), null, 2));
         showToast(L('Spec JSON کپی شد', 'Spec JSON copied'));
       } else if (act === 'wiz-dry' || act === 'wiz-apply') {
+        if (hasInvalidJsonInputs()) return showToast(L('لطفاً خطای JSON را برطرف کنید', 'Fix invalid JSON inputs first'));
         const dryRun = act === 'wiz-dry';
         await withBusy('site:apply', async () => {
           try {
-            const res = await apiPost('api/site-apply', { spec: buildWizardSpec(), dryRun, skipAssets: false });
+            const res = await apiPost('api/site-apply', {
+              spec: buildWizardSpec(),
+              dryRun,
+              skipAssets: Boolean(wizardDraft.skipAssets),
+            });
             logConsole('site:apply' + (dryRun ? ' --dry-run' : ''), JSON.stringify(res, null, 2), true);
             showToast(dryRun ? 'Dry-run OK' : 'Site configured ✓');
             if (!dryRun) await refreshState({ resetDrafts: true });
@@ -2996,8 +3402,9 @@
         });
       } else if (act === 'cfg-add-author') {
         const id = document.getElementById('new-author-id')?.value.trim();
-        if (!id) return showToast('Author key required');
+        if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) return showToast(L('کلید نویسنده باید حروف انگلیسی، عدد، - یا _ باشد', 'Author key must use letters, digits, - or _'));
         configDraft.site.authors = configDraft.site.authors || {};
+        if (configDraft.site.authors[id]) return showToast(L('این کلید نویسنده قبلاً ثبت شده است', 'Author key already exists'));
         configDraft.site.authors[id] = { name: id, jobTitle: '', description: '', url: '', image: '', sameAs: [] };
         render();
       } else if (act === 'cfg-add-topic') {
@@ -3034,9 +3441,13 @@
           showToast(L('برای تایید ریست دوباره کلیک کنید', 'Click again to confirm site:reset'));
         }
       } else if (act === 'save-config') {
+        if (hasInvalidJsonInputs()) return showToast(L('لطفاً خطای JSON را برطرف کنید', 'Fix invalid JSON inputs first'));
+        confirmTarget = '';
         await withBusy('config-save', async () => {
           try {
-            const res = await apiPost('api/config-save', { patch: configDraft });
+            const payload = deepClone(configDraft);
+            delete payload.content;
+            const res = await apiPost('api/config-save', { patch: payload, replace: true });
             logConsole('config-save', JSON.stringify(res.clientOverrides, null, 2), true);
             showToast(L('تنظیمات در client/config.json ذخیره شد', 'Saved client/config.json'));
             await refreshState({ resetDrafts: true });
@@ -3061,6 +3472,7 @@
           }
         });
       } else if (act === 'cms-reset') {
+        confirmTarget = '';
         await withBusy('cms-reset', async () => {
           try {
             await apiPost('api/cms-save', { reset: true });
@@ -3075,6 +3487,20 @@
         modalState.data.fields.push({ name: 'field_' + (modalState.data.fields.length + 1), type: 'string', required: false, cms: true });
         renderModal();
       } else if (act === 'ct-save' && modalState?.type === 'contentType') {
+        const ct = modalState.data;
+        if (!ct.key || !/^[a-z0-9-]+$/.test(ct.key)) {
+          return showToast(L('کلید نوع محتوا باید حروف کوچک انگلیسی، عدد یا خط تیره باشد', 'Content type key must match [a-z0-9-]+'));
+        }
+        const seenFields = new Set();
+        for (const f of ct.fields || []) {
+          if (!f.name || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(f.name)) {
+            return showToast(L('نام فیلد نامعتبر: ' + (f.name || '(empty)'), 'Invalid field name: ' + (f.name || '(empty)')));
+          }
+          if (seenFields.has(f.name)) {
+            return showToast(L('نام فیلد تکراری: ' + f.name, 'Duplicate field name: ' + f.name));
+          }
+          seenFields.add(f.name);
+        }
         await withBusy('content-type-save', async () => {
           try {
             const res = await apiPost('api/content-type-save', modalState.data);
@@ -3108,6 +3534,20 @@
           await runCliAction('content:new', { type: activeCollection, group, title, slug, desc, locale, publish }, `content:new ${activeCollection}/${group}`);
         }
       } else if (act === 'save-entry' && modalState?.type === 'entry') {
+        const fm = modalState.data.frontmatter || {};
+        if (!String(fm.title || '').trim()) {
+          return showToast(L('فیلد title الزامی است', 'Title is required'));
+        }
+        if (!(modalState.data.collection === 'pages' && modalState.data.group === 'home') && !String(fm.slug || '').trim()) {
+          return showToast(L('فیلد slug الزامی است', 'Slug is required'));
+        }
+        for (const f of modalState.data.customFields || []) {
+          if (!f.required) continue;
+          const v = fm[f.name];
+          if (v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)) {
+            return showToast(L(`فیلد الزامی «${f.name}» نباید خالی باشد`, `Required field "${f.name}" cannot be empty`));
+          }
+        }
         await withBusy('content-entry', async () => {
           try {
             const res = await apiPost('api/content-entry', {
@@ -3131,6 +3571,9 @@
         modalState.data.sections.push({ block, props: deepClone(DEFAULT_BLOCK_PROPS[block] || {}) });
         renderModal();
       } else if (act === 'save-page-sections' && modalState?.type === 'sections') {
+        if (hasInvalidJsonInputs(document.getElementById('modal-card'))) {
+          return showToast(L('لطفاً خطای JSON سکشن‌ها را برطرف کنید', 'Fix invalid JSON props first'));
+        }
         await withBusy('page-sections', async () => {
           try {
             const d = modalState.data;
@@ -3187,6 +3630,9 @@
         msgDeleteQueue.clear();
         render();
       } else if (act === 'save-messages') {
+        if (hasInvalidJsonInputs()) {
+          return showToast(L('لطفاً خطای JSON آرایه را برطرف کنید', 'Fix invalid JSON array inputs first'));
+        }
         await withBusy('messages-save', async () => {
           try {
             const res = await apiPost('api/messages-save', {
