@@ -456,4 +456,162 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
     expect(fs.existsSync(path.join(tmpRoot, 'src/content/pages/about/en.mdx'))).toBe(true);
     expect(fs.existsSync(path.join(tmpRoot, 'src/content/products'))).toBe(true);
   }, 20000);
+
+  it('serves syntactically valid Studio JS using spec.locale and spec.ui.homeSections', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+    const html = await invokeStudio(handler, {
+      method: 'GET',
+      url: '/',
+      originalUrl: '/__studio/',
+    });
+    expect(html.status).toBe(200);
+    const match = html.text.match(/<script>([\s\S]*?)<\/script>/);
+    expect(match).not.toBeNull();
+    expect(() => new Function(match![1])).not.toThrow();
+    const wizFn = match![1].slice(
+      match![1].indexOf('function buildWizardSpec()'),
+      match![1].indexOf('function updateChrome()')
+    );
+    expect(wizFn).toContain('locale: {');
+    expect(wizFn).not.toContain('locales: {');
+    expect(wizFn).toContain('spec.ui = { homeSections: wizardDraft.homeSections }');
+    expect(match![1]).toContain("'content:new'");
+  });
+
+  it('forwards --slug:<locale> cleanly in new:page, new:post, and content:new and populates schema defaults', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+
+    const pageRes = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/run-cli',
+      body: {
+        action: 'new:page',
+        payload: { group: 'careers', title: 'Careers', slug: 'join-us', locale: 'en', publish: true },
+      },
+    });
+    expect(pageRes.status).toBe(200);
+    const careersEn = fs.readFileSync(path.join(tmpRoot, 'src/content/pages/careers/en.mdx'), 'utf-8');
+    expect(careersEn).toMatch(/slug:\s*["']?join-us["']?/);
+
+    const postRes = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/run-cli',
+      body: {
+        action: 'new:post',
+        payload: { group: 'launch-note', title: 'Launch', slug: 'custom-launch', locale: 'en', publish: true },
+      },
+    });
+    expect(postRes.status).toBe(200);
+    const postEn = fs.readFileSync(path.join(tmpRoot, 'src/content/blog/launch-note/en.mdx'), 'utf-8');
+    expect(postEn).toMatch(/slug:\s*["']?custom-launch["']?/);
+
+    const ctRes = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/content-type-save',
+      body: {
+        key: 'catalogs',
+        base: 'catalogs',
+        enabled: true,
+        index: true,
+        fields: [
+          { name: 'tier', type: 'enum', options: ['basic', 'pro'], default: 'pro', required: true },
+          { name: 'seats', type: 'number', default: '25', required: true },
+          { name: 'featured', type: 'boolean', default: 'true', required: false },
+        ],
+      },
+    });
+    expect(ctRes.status).toBe(200);
+    expect(ctRes.json.typeConfig.fields[1].default).toBe(25);
+    expect(ctRes.json.typeConfig.fields[2].default).toBe(true);
+
+    const entryCli = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/run-cli',
+      body: {
+        action: 'content:new',
+        payload: {
+          type: 'catalogs',
+          group: 'enterprise-pack',
+          title: 'Enterprise Pack',
+          slug: 'enterprise-slug',
+          desc: 'Custom package description',
+          locale: 'en',
+          publish: true,
+        },
+      },
+    });
+    expect(entryCli.status).toBe(200);
+    const catEn = fs.readFileSync(path.join(tmpRoot, 'src/content/catalogs/enterprise-pack/en.mdx'), 'utf-8');
+    expect(catEn).toMatch(/slug:\s*["']?enterprise-slug["']?/);
+    expect(catEn).toMatch(/tier:\s*["']?pro["']?/);
+
+    const missingDe = await invokeStudio(handler, {
+      method: 'GET',
+      url: '/api/content-entry?collection=catalogs&group=enterprise-pack&locale=de',
+    });
+    expect(missingDe.status).toBe(200);
+    expect(missingDe.json.exists).toBe(false);
+    expect(missingDe.json.frontmatter.tier).toBe('pro');
+    expect(missingDe.json.frontmatter.seats).toBe(25);
+  }, 30000);
+
+  it('cleans empty optional navigation/banner fields and coerces CMS redirect/banner numeric types', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+
+    const cfgRes = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/config-save',
+      body: {
+        patch: {
+          site: { authors: { ali: { name: 'Ali' } } },
+          ui: {
+            navigation: {
+              pages: [{ group: 'about', icon: '' }],
+              footerColumns: [{ key: 'links', items: [{ group: '', href: '/custom/', label: 'Custom' }] }],
+            },
+            topBanner: {
+              enabled: true,
+              id: 'promo-1',
+              icon: '',
+              startsAt: '',
+              endsAt: '',
+              dismissTtlDays: '',
+              dismissVersion: 2,
+            },
+          },
+          redirects: [{ from: '/old-a', to: '/about/', status: '302' }],
+        },
+      },
+    });
+    expect(cfgRes.status).toBe(200);
+    expect(cfgRes.json.clientOverrides.ui.navigation.pages[0].icon).toBeUndefined();
+    expect(cfgRes.json.clientOverrides.ui.navigation.footerColumns[0].items[0].group).toBeUndefined();
+    expect(cfgRes.json.clientOverrides.redirects[0].status).toBe(302);
+
+    const badAuthor = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/config-save',
+      body: { patch: { site: { authors: { emptyAuth: { name: '' } } } } },
+    });
+    expect(badAuthor.status).toBe(400);
+
+    const cmsRes = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/cms-save',
+      body: {
+        cms: {
+          business: { geo: { lat: '35.6892', lng: '51.3890' } },
+          ui: { topBanner: { enabled: false, dismissTtlDays: '14', dismissVersion: '3' } },
+          redirects: [{ from: '/legacy', to: '/', status: '301' }],
+        },
+      },
+    });
+    expect(cmsRes.status).toBe(200);
+    expect(cmsRes.json.cmsOverrides.ui.topBanner.enabled).toBe(false);
+    expect(cmsRes.json.cmsOverrides.ui.topBanner.dismissTtlDays).toBe(14);
+    expect(cmsRes.json.cmsOverrides.ui.topBanner.dismissVersion).toBe(3);
+    expect(cmsRes.json.cmsOverrides.business.geo).toEqual({ lat: 35.6892, lng: 51.389 });
+    expect(cmsRes.json.cmsOverrides.redirects[0].status).toBe(301);
+  });
 });
+

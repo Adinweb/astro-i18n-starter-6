@@ -454,6 +454,13 @@ function validateConfigObject(cfg, rootDir) {
       ) {
         errors.push(`Invalid site.contactEmail "${cfg.site.contactEmail}".`);
       }
+      if (isPlainObject(cfg.site.authors)) {
+        for (const [id, author] of Object.entries(cfg.site.authors)) {
+          if (!isPlainObject(author) || !String(author.name ?? '').trim()) {
+            errors.push(`site.authors.${id}.name cannot be empty.`);
+          }
+        }
+      }
     }
   }
 
@@ -482,6 +489,94 @@ function validateConfigObject(cfg, rootDir) {
         if (val !== undefined && val !== '' && !HEX_COLOR_RE.test(String(val).trim())) {
           errors.push(`Invalid brand.${hexKey} "${val}". Expected 6-digit hex color like #4338ca.`);
         }
+      }
+    }
+  }
+
+  if (cfg.ui !== undefined && isPlainObject(cfg.ui)) {
+    if (cfg.ui.ctaPage !== undefined && !String(cfg.ui.ctaPage).trim()) {
+      errors.push('ui.ctaPage cannot be empty.');
+    }
+    if (isPlainObject(cfg.ui.topBanner)) {
+      const tb = cfg.ui.topBanner;
+      if (tb.id !== undefined && !String(tb.id).trim()) {
+        errors.push('ui.topBanner.id cannot be empty.');
+      }
+      if (tb.dismissTtlDays !== undefined) {
+        const ttl = Number(tb.dismissTtlDays);
+        if (!Number.isInteger(ttl) || ttl < 1 || ttl > 365) {
+          errors.push('ui.topBanner.dismissTtlDays must be an integer between 1 and 365.');
+        }
+      }
+      if (tb.dismissVersion !== undefined) {
+        const ver = Number(tb.dismissVersion);
+        if (!Number.isInteger(ver) || ver < 1) {
+          errors.push('ui.topBanner.dismissVersion must be a positive integer.');
+        }
+      }
+      if (tb.heightPx !== undefined) {
+        const h = Number(tb.heightPx);
+        if (!Number.isInteger(h) || h < 24 || h > 160) {
+          errors.push('ui.topBanner.heightPx must be an integer between 24 and 160.');
+        }
+      }
+      if (tb.startsAt && tb.endsAt) {
+        const sMs = Date.parse(tb.startsAt);
+        const eMs = Date.parse(tb.endsAt);
+        if (Number.isFinite(sMs) && Number.isFinite(eMs) && eMs < sMs) {
+          errors.push('ui.topBanner.endsAt must not be earlier than startsAt.');
+        }
+      }
+    }
+    if (isPlainObject(cfg.ui.motion)) {
+      const mt = cfg.ui.motion;
+      if (mt.revealDurationMs !== undefined) {
+        const d = Number(mt.revealDurationMs);
+        if (!Number.isFinite(d) || d < 100 || d > 5000) {
+          errors.push('ui.motion.revealDurationMs must be between 100 and 5000.');
+        }
+      }
+      if (mt.smoothScrollLerp !== undefined) {
+        const lerp = Number(mt.smoothScrollLerp);
+        if (!Number.isFinite(lerp) || lerp < 0.02 || lerp > 1) {
+          errors.push('ui.motion.smoothScrollLerp must be between 0.02 and 1.');
+        }
+      }
+      if (mt.revealEasing !== undefined && (!String(mt.revealEasing).trim() || /[;\n{}]/.test(String(mt.revealEasing)))) {
+        errors.push('ui.motion.revealEasing must be a valid CSS timing function without semicolons or braces.');
+      }
+    }
+    if (isPlainObject(cfg.ui.navigation)) {
+      if (Array.isArray(cfg.ui.navigation.pages)) {
+        cfg.ui.navigation.pages.forEach((p, i) => {
+          if (!isPlainObject(p) || !String(p.group ?? '').trim()) {
+            errors.push(`ui.navigation.pages[${i}].group is required.`);
+          }
+        });
+      }
+      if (Array.isArray(cfg.ui.navigation.footerColumns)) {
+        cfg.ui.navigation.footerColumns.forEach((col, ci) => {
+          if (!isPlainObject(col) || !String(col.key ?? '').trim()) {
+            errors.push(`ui.navigation.footerColumns[${ci}].key is required.`);
+            return;
+          }
+          if (Array.isArray(col.items)) {
+            col.items.forEach((it, ii) => {
+              if (!isPlainObject(it) || (!String(it.group ?? '').trim() && !String(it.href ?? '').trim())) {
+                errors.push(`ui.navigation.footerColumns[${ci}].items[${ii}] must specify "group" or "href".`);
+              }
+            });
+          }
+        });
+      }
+    }
+  }
+
+  if (cfg.blog !== undefined && isPlainObject(cfg.blog)) {
+    if (cfg.blog.postsPerPage !== undefined) {
+      const ppp = Number(cfg.blog.postsPerPage);
+      if (!Number.isInteger(ppp) || ppp < 1) {
+        errors.push('blog.postsPerPage must be a positive integer.');
       }
     }
   }
@@ -531,6 +626,9 @@ function validateConfigObject(cfg, rootDir) {
     if (a.clarityId && !/^[a-z0-9]{6,20}$/i.test(String(a.clarityId).trim())) {
       errors.push(`Invalid analytics.clarityId "${a.clarityId}".`);
     }
+    if (a.plausibleDomain && /[\s/]/.test(String(a.plausibleDomain).trim())) {
+      errors.push(`Invalid analytics.plausibleDomain "${a.plausibleDomain}" (expected hostname like example.com).`);
+    }
     if (
       a.umamiWebsiteId &&
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -578,6 +676,13 @@ function validateConfigObject(cfg, rootDir) {
       if (!Number.isInteger(ms) || ms < 1000 || ms > 60000) {
         errors.push('api.timeoutMs must be an integer between 1000 and 60000.');
       }
+    }
+    if (Array.isArray(cfg.api.topics)) {
+      cfg.api.topics.forEach((tp, idx) => {
+        if (!isPlainObject(tp) || !String(tp.value ?? '').trim()) {
+          errors.push(`api.topics[${idx}].value cannot be empty.`);
+        }
+      });
     }
   }
 
@@ -647,6 +752,46 @@ function cleanConfigBeforeWrite(cfg) {
 
   if (isPlainObject(next.ui)) {
     if (isPlainObject(next.ui.navigation)) {
+      if (Array.isArray(next.ui.navigation.pages)) {
+        next.ui.navigation.pages = next.ui.navigation.pages.map((p) => {
+          if (!isPlainObject(p)) return p;
+          const np = { ...p };
+          if (np.icon === '') delete np.icon;
+          if (np.label === '') delete np.label;
+          if (isPlainObject(np.labels)) {
+            np.labels = Object.fromEntries(Object.entries(np.labels).filter(([, v]) => v !== ''));
+            if (Object.keys(np.labels).length === 0) delete np.labels;
+          }
+          return np;
+        });
+      }
+      if (Array.isArray(next.ui.navigation.footerColumns)) {
+        next.ui.navigation.footerColumns = next.ui.navigation.footerColumns.map((col) => {
+          if (!isPlainObject(col)) return col;
+          const nc = { ...col };
+          if (nc.title === '') delete nc.title;
+          if (isPlainObject(nc.titles)) {
+            nc.titles = Object.fromEntries(Object.entries(nc.titles).filter(([, v]) => v !== ''));
+            if (Object.keys(nc.titles).length === 0) delete nc.titles;
+          }
+          if (Array.isArray(nc.items)) {
+            nc.items = nc.items.map((it) => {
+              if (!isPlainObject(it)) return it;
+              const ni = { ...it };
+              if (ni.group === '') delete ni.group;
+              if (ni.href === '') delete ni.href;
+              if (ni.icon === '') delete ni.icon;
+              if (ni.label === '') delete ni.label;
+              if (isPlainObject(ni.labels)) {
+                ni.labels = Object.fromEntries(Object.entries(ni.labels).filter(([, v]) => v !== ''));
+                if (Object.keys(ni.labels).length === 0) delete ni.labels;
+              }
+              return ni;
+            });
+          }
+          return nc;
+        });
+      }
       const hasPages = Array.isArray(next.ui.navigation.pages) && next.ui.navigation.pages.length > 0;
       const hasCols =
         Array.isArray(next.ui.navigation.footerColumns) && next.ui.navigation.footerColumns.length > 0;
@@ -658,20 +803,41 @@ function cleanConfigBeforeWrite(cfg) {
       delete next.ui.homeSections;
     }
     if (isPlainObject(next.ui.topBanner)) {
-      for (const optKey of ['startsAt', 'endsAt', 'dismissTtlDays', 'heightPx']) {
+      if (next.ui.topBanner.icon === '') delete next.ui.topBanner.icon;
+      for (const optKey of ['startsAt', 'endsAt', 'dismissTtlDays', 'heightPx', 'dismissVersion']) {
         if (next.ui.topBanner[optKey] === '' || next.ui.topBanner[optKey] === null) {
           delete next.ui.topBanner[optKey];
         }
       }
+      if (Array.isArray(next.ui.topBanner.items)) {
+        next.ui.topBanner.items = next.ui.topBanner.items.map((item) => {
+          if (!isPlainObject(item)) return item;
+          const ni = { ...item };
+          for (const optKey of ['startsAt', 'endsAt', 'dismissTtlDays', 'heightPx', 'dismissVersion']) {
+            if (ni[optKey] === '' || ni[optKey] === null) delete ni[optKey];
+          }
+          return ni;
+        });
+      }
     }
   }
 
-  if (isPlainObject(next.api) && Array.isArray(next.api.topics) && next.api.topics.length === 0) {
-    delete next.api.topics;
+  if (isPlainObject(next.api)) {
+    if (isPlainObject(next.api.endpoints) && next.api.endpoints.newsletter === '') {
+      delete next.api.endpoints.newsletter;
+    }
+    if (Array.isArray(next.api.topics) && next.api.topics.length === 0) {
+      delete next.api.topics;
+    }
   }
 
-  if (Array.isArray(next.redirects) && next.redirects.length === 0) {
-    delete next.redirects;
+  if (Array.isArray(next.redirects)) {
+    next.redirects = next.redirects.map((r) =>
+      isPlainObject(r) ? { ...r, status: Number(r.status) === 302 ? 302 : 301 } : r
+    );
+    if (next.redirects.length === 0) {
+      delete next.redirects;
+    }
   }
 
   return next;
@@ -879,10 +1045,13 @@ function buildAllowListedCommand(action, payload, rootDir) {
   switch (action) {
     case 'new:page': {
       const group = assertSafeKey(payload.group, 'page group');
+      const targetLocale = payload.locale
+        ? assertSafeLocale(payload.locale)
+        : readLocaleConfig(rootDir).defaultLocale || 'en';
       const args = [binScript('new-page.mjs'), group];
       if (payload.title) args.push(`--title=${String(payload.title)}`);
-      if (payload.slug) args.push(`--slug=${String(payload.slug)}`);
-      if (payload.locale) args.push(`--from=${assertSafeLocale(payload.locale)}`);
+      if (payload.slug) args.push(`--slug:${targetLocale}=${String(payload.slug)}`);
+      if (payload.locale) args.push(`--from=${targetLocale}`);
       if (payload.preset === 'landing') args.push('--preset=landing');
       if (payload.publish) args.push('--publish');
       return { cmd: node, args };
@@ -896,11 +1065,14 @@ function buildAllowListedCommand(action, payload, rootDir) {
     }
     case 'new:post': {
       const group = assertSafeKey(payload.group, 'post group');
+      const targetLocale = payload.locale
+        ? assertSafeLocale(payload.locale)
+        : readLocaleConfig(rootDir).defaultLocale || 'en';
       const args = [binScript('new-post.mjs'), group];
       if (payload.collection) args.push(`--collection=${assertSafeKey(payload.collection, 'collection')}`);
       if (payload.title) args.push(`--title=${String(payload.title)}`);
-      if (payload.slug) args.push(`--slug=${String(payload.slug)}`);
-      if (payload.locale) args.push(`--from=${assertSafeLocale(payload.locale)}`);
+      if (payload.slug) args.push(`--slug:${targetLocale}=${String(payload.slug)}`);
+      if (payload.locale) args.push(`--from=${targetLocale}`);
       if (payload.categories) args.push(`--categories=${String(payload.categories)}`);
       if (payload.tags) args.push(`--tags=${String(payload.tags)}`);
       if (payload.publish) args.push('--publish');
@@ -916,9 +1088,16 @@ function buildAllowListedCommand(action, payload, rootDir) {
     case 'content:new': {
       const type = assertSafeKey(payload.type, 'collection type');
       const group = assertSafeKey(payload.group, 'entry group');
+      const targetLocale = payload.locale
+        ? assertSafeLocale(payload.locale)
+        : readLocaleConfig(rootDir).defaultLocale || 'en';
       const args = [binScript('content-new.mjs'), type, group];
       if (payload.title) args.push(`--title=${String(payload.title)}`);
-      if (payload.locale) args.push(`--from=${assertSafeLocale(payload.locale)}`);
+      if (payload.description || payload.desc) {
+        args.push(`--desc=${String(payload.description ?? payload.desc)}`);
+      }
+      if (payload.slug) args.push(`--slug:${targetLocale}=${String(payload.slug)}`);
+      if (payload.locale) args.push(`--from=${targetLocale}`);
       if (payload.publish) args.push('--publish');
       return { cmd: node, args };
     }
@@ -1356,7 +1535,30 @@ function validateAndNormalizeContentType(payload, existingMergedConfig, rootDir)
         }
         f.options = opts;
       }
-      if (rawField.default !== undefined && rawField.default !== '') f.default = rawField.default;
+      if (rawField.default !== undefined && rawField.default !== '') {
+        if (type === 'number') {
+          const n = Number(rawField.default);
+          if (!Number.isFinite(n)) {
+            throw new Error(`Number field "${name}" default "${rawField.default}" must be finite.`);
+          }
+          f.default = n;
+        } else if (type === 'boolean') {
+          if (typeof rawField.default === 'boolean') {
+            f.default = rawField.default;
+          } else if (rawField.default === 'true' || rawField.default === 'false') {
+            f.default = rawField.default === 'true';
+          }
+        } else if (type === 'string[]' || type === 'taxonomy[]') {
+          f.default = Array.isArray(rawField.default)
+            ? rawField.default.map((x) => String(x).trim()).filter(Boolean)
+            : String(rawField.default)
+                .split(',')
+                .map((x) => x.trim())
+                .filter(Boolean);
+        } else {
+          f.default = String(rawField.default);
+        }
+      }
       if (rawField.searchable !== undefined) f.searchable = Boolean(rawField.searchable);
       if (
         rawField.showOnCard === true ||
@@ -1479,6 +1681,22 @@ function readContentEntry(rootDir, collectionRaw, groupRaw, localeRaw) {
   const mdPath = assertConfinedPath(groupDir, path.join(groupDir, `${locale}.md`));
   const existingPath = fs.existsSync(mdxPath) ? mdxPath : fs.existsSync(mdPath) ? mdPath : null;
 
+  const mergedCfg = readMergedConfig(rootDir);
+  const typeFields = mergedCfg.content?.types?.[collection]?.fields ?? [];
+  const coerceEntryBySchema = (fmObj) => {
+    for (const field of typeFields) {
+      if (field.type === 'number' && typeof fmObj[field.name] === 'string' && fmObj[field.name].trim() !== '') {
+        const n = Number(fmObj[field.name]);
+        if (Number.isFinite(n)) fmObj[field.name] = n;
+      }
+    }
+    if (collection === 'projects' && typeof fmObj.year === 'string' && fmObj.year.trim() !== '') {
+      const y = Number(fmObj.year);
+      if (Number.isFinite(y)) fmObj.year = y;
+    }
+    return fmObj;
+  };
+
   if (existingPath) {
     const raw = fs.readFileSync(existingPath, 'utf-8');
     const { data, body } = parseFrontmatter(raw);
@@ -1489,7 +1707,7 @@ function readContentEntry(rootDir, collectionRaw, groupRaw, localeRaw) {
       group,
       locale,
       file: path.relative(rootDir, existingPath),
-      frontmatter: data,
+      frontmatter: coerceEntryBySchema(data),
       body: body.replace(/^\n+/, ''),
     };
   }
@@ -1508,7 +1726,16 @@ function readContentEntry(rootDir, collectionRaw, groupRaw, localeRaw) {
     ];
     const sourceFile = candidates.find((c) => fs.existsSync(c));
     if (sourceFile) {
-      sourceData = parseFrontmatter(fs.readFileSync(sourceFile, 'utf-8')).data;
+      sourceData = coerceEntryBySchema(parseFrontmatter(fs.readFileSync(sourceFile, 'utf-8')).data);
+    }
+  }
+
+  const customSuggested = {};
+  for (const field of typeFields) {
+    if (sourceData[field.name] !== undefined) {
+      customSuggested[field.name] = sourceData[field.name];
+    } else if (field.default !== undefined) {
+      customSuggested[field.name] = field.default;
     }
   }
 
@@ -1527,8 +1754,23 @@ function readContentEntry(rootDir, collectionRaw, groupRaw, localeRaw) {
         }
       : {}),
     ...(collection === 'blog'
-      ? { publishedAt: sourceData.publishedAt || new Date().toISOString().slice(0, 10) }
+      ? {
+          publishedAt: sourceData.publishedAt || new Date().toISOString().slice(0, 10),
+          ...(sourceData.author ? { author: sourceData.author } : {}),
+          ...(Array.isArray(sourceData.categories) ? { categories: sourceData.categories } : {}),
+          ...(Array.isArray(sourceData.tags) ? { tags: sourceData.tags } : {}),
+        }
       : {}),
+    ...(collection === 'projects'
+      ? {
+          ...(sourceData.client ? { client: sourceData.client } : {}),
+          ...(sourceData.year !== undefined ? { year: sourceData.year } : {}),
+          ...(sourceData.link ? { link: sourceData.link } : {}),
+          ...(Array.isArray(sourceData.stack) ? { stack: sourceData.stack } : {}),
+          ...(Array.isArray(sourceData.categories) ? { categories: sourceData.categories } : {}),
+        }
+      : {}),
+    ...customSuggested,
   };
 
   return {
@@ -1592,6 +1834,20 @@ function saveContentEntry(rootDir, payload) {
 
   if (collection === 'blog' && !fm.publishedAt) {
     throw new Error('Blog entries require frontmatter.publishedAt (YYYY-MM-DD).');
+  }
+
+  const mergedCfg = readMergedConfig(rootDir);
+  const typeFields = mergedCfg.content?.types?.[collection]?.fields ?? [];
+  for (const field of typeFields) {
+    if (field.type === 'number' && fm[field.name] !== undefined && fm[field.name] !== '') {
+      const n = Number(fm[field.name]);
+      if (!Number.isFinite(n)) throw new Error(`Field "${field.name}" must be a valid number.`);
+      fm[field.name] = n;
+    }
+  }
+  if (collection === 'projects' && fm.year !== undefined && fm.year !== '') {
+    const y = Number(fm.year);
+    if (Number.isFinite(y)) fm.year = y;
   }
 
   // Strip empty optional scalar values while retaining meaningful booleans/0/empty home slug
@@ -1857,6 +2113,21 @@ export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' 
             return { ok: true, cmsOverrides: {} };
           }
           const cleaned = sanitizeCmsConfig(rawCms);
+          if (isPlainObject(cleaned.ui?.topBanner)) {
+            for (const numKey of ['dismissTtlDays', 'dismissVersion', 'heightPx']) {
+              const rawVal = cleaned.ui.topBanner[numKey];
+              if (rawVal !== undefined && typeof rawVal !== 'number') {
+                const n = Number(rawVal);
+                if (Number.isFinite(n)) cleaned.ui.topBanner[numKey] = n;
+              }
+            }
+          }
+          if (Array.isArray(cleaned.redirects)) {
+            cleaned.redirects = cleaned.redirects.map((r) =>
+              isPlainObject(r) ? { ...r, status: Number(r.status) === 302 ? 302 : 301 } : r
+            );
+            if (cleaned.redirects.length === 0) delete cleaned.redirects;
+          }
           const mergedCheck = deepMergeConfig(readCoreAndClientConfig(rootDir), cleaned);
           const errors = validateConfigObject(mergedCheck, rootDir);
           if (errors.length > 0) {

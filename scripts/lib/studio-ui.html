@@ -35,6 +35,13 @@
       --danger: #dc2626;
     }
     * { box-sizing: border-box; }
+    html {
+      scroll-padding-top: 76px;
+      scroll-padding-bottom: 120px;
+    }
+    html:has(body.console-open) {
+      scroll-padding-bottom: 370px;
+    }
     body {
       margin: 0;
       font-family: var(--font);
@@ -69,7 +76,8 @@
     .badge.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 42%, transparent); cursor: pointer; }
     .badge.err { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 42%, transparent); }
     .topbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .shell { max-width: 1380px; margin: 0 auto; padding: 18px 20px 120px; }
+    .shell { max-width: 1380px; margin: 0 auto; padding: 18px 20px 140px; }
+    body.console-open .shell { padding-bottom: 380px; }
     .tabs {
       display: flex; flex-wrap: wrap; gap: 6px;
       margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
@@ -189,6 +197,9 @@
       backdrop-filter: blur(8px);
       border: 1px solid var(--primary); border-radius: 12px; padding: 10px 14px;
       display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    }
+    body.console-open .sticky-save-bar {
+      bottom: 306px;
     }
     .muted { color: var(--muted); font-size: 12px; }
     .divider { height: 1px; background: var(--border); margin: 12px 0; }
@@ -438,19 +449,24 @@
       el._timer = setTimeout(() => el.classList.add('hidden'), 3400);
     }
 
+    function setConsoleOpen(open) {
+      const body = document.getElementById('console-body');
+      const chev = document.getElementById('console-chevron');
+      body.classList.toggle('hidden', !open);
+      document.body.classList.toggle('console-open', Boolean(open));
+      chev.textContent = open ? '▼' : '▲';
+    }
+
     function logConsole(label, text, ok = true, durationMs = null) {
       const status = document.getElementById('console-status');
       const lbl = document.getElementById('console-label');
       const pre = document.getElementById('console-pre');
-      const body = document.getElementById('console-body');
-      const chev = document.getElementById('console-chevron');
 
       lbl.textContent = label + (durationMs !== null ? ' (' + durationMs + ' ms)' : '');
       status.textContent = ok ? 'OK' : 'ERROR';
       status.className = 'badge ' + (ok ? 'ok' : 'err');
       pre.textContent = text || (ok ? 'Completed successfully.' : 'Command failed.');
-      body.classList.remove('hidden');
-      chev.textContent = '▼';
+      setConsoleOpen(true);
     }
 
     async function apiGet(path) {
@@ -502,6 +518,7 @@
         locales: {
           defaultLocale: s.locales.defaultLocale,
           solo: s.locales.locales.length === 1,
+          allowDraft: false,
         },
         selectedPages: new Set(),
         homeSections: deepClone(cfg.ui?.homeSections || []),
@@ -537,7 +554,9 @@
       cfg.ui.topBanner.excludePaths = cfg.ui.topBanner.excludePaths || [];
       cfg.ui.topBanner.items = cfg.ui.topBanner.items || [];
       cfg.ui.quickContact = cfg.ui.quickContact || { enabled: true, mobileOnly: true, channels: ['phone', 'whatsapp', 'telegram'] };
-      cfg.ui.navigation = cfg.ui.navigation || { pages: [], footerColumns: [] };
+      cfg.ui.navigation = cfg.ui.navigation || {};
+      cfg.ui.navigation.pages = cfg.ui.navigation.pages || [];
+      cfg.ui.navigation.footerColumns = cfg.ui.navigation.footerColumns || [];
       cfg.ui.homeSections = cfg.ui.homeSections || [];
       cfg.blog = cfg.blog || { postsPerPage: 9, showReadingTime: true, showTableOfContents: true, showRelatedPosts: true };
       cfg.business = cfg.business || { type: 'Organization' };
@@ -587,9 +606,10 @@
           socialCardMode: wizardDraft.brand.socialCardMode,
           defaultTheme: wizardDraft.brand.defaultTheme,
         },
-        locales: {
+        locale: {
           defaultLocale: wizardDraft.locales.defaultLocale,
           solo: wizardDraft.locales.solo,
+          ...(wizardDraft.locales.allowDraft ? { allowDraft: true } : {}),
         },
       };
 
@@ -622,7 +642,7 @@
       }
 
       if (wizardDraft.homeSections.length > 0) {
-        spec.homeSections = wizardDraft.homeSections;
+        spec.ui = { homeSections: wizardDraft.homeSections };
       }
       return spec;
     }
@@ -686,24 +706,38 @@
       render();
     }
 
-    async function runCliAction(action, payload = {}, label = action) {
+    async function withBusy(label, fn) {
       if (busy) return null;
       busy = true;
-      document.getElementById('console-status').textContent = t().running;
-      document.getElementById('console-status').className = 'badge warn';
+      const statusEl = document.getElementById('console-status');
+      const prevStatus = statusEl.textContent;
+      statusEl.textContent = t().running;
+      statusEl.className = 'badge warn';
       try {
-        const res = await apiPost('api/run-cli', { action, payload });
-        logConsole(label, res.output, true, res.durationMs);
-        showToast(label + ' ✓');
-        await refreshState({ resetDrafts: action === 'site:reset' });
-        return res;
-      } catch (err) {
-        logConsole(label, [err.message, err.output].filter(Boolean).join('\n'), false);
-        showToast(err.message);
-        return null;
+        return await fn();
       } finally {
         busy = false;
+        if (statusEl.textContent === t().running) {
+          statusEl.textContent = prevStatus || t().ready;
+          statusEl.className = 'badge';
+        }
       }
+    }
+
+    async function runCliAction(action, payload = {}, label = action) {
+      return withBusy(label, async () => {
+        try {
+          const res = await apiPost('api/run-cli', { action, payload });
+          logConsole(label, res.output, true, res.durationMs);
+          showToast(label + ' ✓');
+          await refreshState({ resetDrafts: action === 'site:reset' });
+          return res;
+        } catch (err) {
+          logConsole(label, [err.message, err.output].filter(Boolean).join('\n'), false);
+          showToast(err.message);
+          return null;
+        }
+      });
     }
 
     async function uploadLogoFile(file, variant, target) {
@@ -789,20 +823,26 @@
     function renderWizardTab() {
       const pm = projectDraft;
       const presets = state.themePresets;
-      const bps = state.blueprints.catalog || {};
+      const bps = state.blueprints || {};
       const locs = state.locales.locales;
 
       const bpCards = Object.entries(bps).map(([key, bp]) => {
         const selected = wizardDraft.blueprint === key;
-        const label = isFa() ? (bp.labelFa || bp.label) : bp.label;
-        const desc = isFa() ? (bp.descriptionFa || bp.description) : bp.description;
+        const label = isFa() ? (bp.labelFa || bp.label || key) : (bp.label || key);
+        const colNames = [
+          'pages',
+          ...(bp.blog ? ['blog'] : []),
+          ...(bp.projects ? ['projects'] : []),
+          ...Object.keys(bp.contentTypes || {}),
+        ];
+        const summary = [bp.preset, bp.businessType].filter(Boolean).join(' · ');
         return `<button type="button" class="bp-card ${selected ? 'selected' : ''}" data-wiz-bp="${esc(key)}">
           <div class="between">
             <strong>${esc(label)}</strong>
             <span class="badge mono">${esc(key)}</span>
           </div>
-          <span class="muted">${esc(desc)}</span>
-          <span class="muted mono">${esc((bp.collections || []).join(', ') || 'pages, blog')}</span>
+          <span class="muted">${esc(summary)}</span>
+          <span class="muted mono">${esc(colNames.join(', '))}</span>
         </button>`;
       }).join('');
 
@@ -912,7 +952,7 @@
               </div>
               <div class="field"><label>Author</label><input type="text" data-wiz="site.author" value="${esc(wizardDraft.site.author)}" /></div>
               <div class="field"><label>Description</label><textarea data-wiz="site.description">${esc(wizardDraft.site.description)}</textarea></div>
-              <div class="grid grid-2">
+              <div class="grid grid-3">
                 <div class="field"><label>${L('زبان پیش‌فرض', 'Default Locale')}</label>
                   <select data-wiz="locales.defaultLocale">
                     ${locs.map((l) => `<option value="${esc(l)}" ${wizardDraft.locales.defaultLocale === l ? 'selected' : ''}>${esc(l)}</option>`).join('')}
@@ -920,6 +960,9 @@
                 </div>
                 <div class="field"><label>${L('حالت تک‌زبان', 'Language Mode')}</label>
                   <label class="check-pill" style="margin-top:2px;"><input type="checkbox" data-wiz-bool="locales.solo" ${wizardDraft.locales.solo ? 'checked' : ''} /><span>${L('تک‌زبان (Solo)', 'Solo Mode (1 language)')}</span></label>
+                </div>
+                <div class="field"><label>${L('اجازه تغییر روی پیش‌نویس', 'Draft Home Fallback')}</label>
+                  <label class="check-pill" style="margin-top:2px;"><input type="checkbox" data-wiz-bool="locales.allowDraft" ${wizardDraft.locales.allowDraft ? 'checked' : ''} /><span>--allow-draft</span></label>
                 </div>
               </div>
             </div>
@@ -1067,6 +1110,7 @@
                   <div class="field"><label>description</label><input type="text" data-cfg="site.authors.${esc(id)}.description" value="${esc(a.description || '')}" /></div>
                   <div class="field"><label>image</label><input type="text" class="mono" data-cfg="site.authors.${esc(id)}.image" value="${esc(a.image || '')}" /></div>
                 </div>
+                <div class="field"><label>sameAs (comma-sep profile URLs)</label><input type="text" class="mono" data-cfg-list="site.authors.${esc(id)}.sameAs" value="${esc((a.sameAs || []).join(', '))}" /></div>
               </div>
             `).join('')}
           </div>
@@ -1098,13 +1142,23 @@
               </div>
             </div>
             <div class="grid grid-3">
-              <div class="field"><label>brand.primaryColor (optional)</label><input type="text" class="mono" placeholder="#4338ca" data-cfg="brand.primaryColor" value="${esc(cfg.brand.primaryColor || '')}" /></div>
-              <div class="field"><label>brand.accentColor (optional)</label><input type="text" class="mono" placeholder="#10b981" data-cfg="brand.accentColor" value="${esc(cfg.brand.accentColor || '')}" /></div>
-              <div class="field"><label>brand.themeColor *</label><input type="text" class="mono" data-cfg="brand.themeColor" value="${esc(cfg.brand.themeColor || '#4338ca')}" /></div>
+              <div class="field"><label>brand.primaryColor (optional)</label>
+                <div class="row"><input type="color" data-cfg-color="brand.primaryColor" value="${esc(cfg.brand.primaryColor || '#4338ca')}" /><input type="text" class="mono" placeholder="#4338ca" data-cfg="brand.primaryColor" value="${esc(cfg.brand.primaryColor || '')}" /><button type="button" class="btn btn-sm" data-cfg-clear="brand.primaryColor">✕</button></div>
+              </div>
+              <div class="field"><label>brand.accentColor (optional)</label>
+                <div class="row"><input type="color" data-cfg-color="brand.accentColor" value="${esc(cfg.brand.accentColor || '#10b981')}" /><input type="text" class="mono" placeholder="#10b981" data-cfg="brand.accentColor" value="${esc(cfg.brand.accentColor || '')}" /><button type="button" class="btn btn-sm" data-cfg-clear="brand.accentColor">✕</button></div>
+              </div>
+              <div class="field"><label>brand.themeColor *</label>
+                <div class="row"><input type="color" data-cfg-color="brand.themeColor" value="${esc(cfg.brand.themeColor || '#4338ca')}" /><input type="text" class="mono" data-cfg="brand.themeColor" value="${esc(cfg.brand.themeColor || '#4338ca')}" /></div>
+              </div>
             </div>
             <div class="grid grid-3">
-              <div class="field"><label>brand.darkThemeColor</label><input type="text" class="mono" data-cfg="brand.darkThemeColor" value="${esc(cfg.brand.darkThemeColor || '')}" /></div>
-              <div class="field"><label>brand.backgroundColor *</label><input type="text" class="mono" data-cfg="brand.backgroundColor" value="${esc(cfg.brand.backgroundColor || '#f8fafc')}" /></div>
+              <div class="field"><label>brand.darkThemeColor</label>
+                <div class="row"><input type="color" data-cfg-color="brand.darkThemeColor" value="${esc(cfg.brand.darkThemeColor || '#0f172a')}" /><input type="text" class="mono" data-cfg="brand.darkThemeColor" value="${esc(cfg.brand.darkThemeColor || '')}" /><button type="button" class="btn btn-sm" data-cfg-clear="brand.darkThemeColor">✕</button></div>
+              </div>
+              <div class="field"><label>brand.backgroundColor *</label>
+                <div class="row"><input type="color" data-cfg-color="brand.backgroundColor" value="${esc(cfg.brand.backgroundColor || '#f8fafc')}" /><input type="text" class="mono" data-cfg="brand.backgroundColor" value="${esc(cfg.brand.backgroundColor || '#f8fafc')}" /></div>
+              </div>
               <div class="field"><label>brand.fontPreset</label><select data-cfg="brand.fontPreset">${fontOpts}</select></div>
             </div>
             <div class="grid grid-2">
@@ -1114,10 +1168,12 @@
             <h4 style="margin:0 0 8px; font-size:13.5px;">brand.logo</h4>
             <div class="grid grid-2">
               <div class="field"><label>logo.light</label>
-                <div class="row"><input type="text" class="mono" data-cfg="brand.logo.light" value="${esc(cfg.brand.logo?.light || '')}" /><input type="file" accept="image/svg+xml,image/png,image/webp,image/jpeg" data-upload-logo="light:config" /></div>
+                <div class="row"><input type="text" class="mono" data-cfg="brand.logo.light" value="${esc(cfg.brand.logo?.light || '')}" />${cfg.brand.logo?.light ? `<img class="logo-preview" src="${esc(cfg.brand.logo.light)}" alt="light logo" /><button type="button" class="btn btn-sm" data-cfg-clear="brand.logo.light">✕</button>` : ''}</div>
+                <input type="file" accept="image/svg+xml,image/png,image/webp,image/jpeg" data-upload-logo="light:config" />
               </div>
               <div class="field"><label>logo.dark</label>
-                <div class="row"><input type="text" class="mono" data-cfg="brand.logo.dark" value="${esc(cfg.brand.logo?.dark || '')}" /><input type="file" accept="image/svg+xml,image/png,image/webp,image/jpeg" data-upload-logo="dark:config" /></div>
+                <div class="row"><input type="text" class="mono" data-cfg="brand.logo.dark" value="${esc(cfg.brand.logo?.dark || '')}" />${cfg.brand.logo?.dark ? `<img class="logo-preview" src="${esc(cfg.brand.logo.dark)}" alt="dark logo" /><button type="button" class="btn btn-sm" data-cfg-clear="brand.logo.dark">✕</button>` : ''}</div>
+                <input type="file" accept="image/svg+xml,image/png,image/webp,image/jpeg" data-upload-logo="dark:config" />
               </div>
             </div>
             <div class="grid grid-4">
@@ -1130,6 +1186,7 @@
         `;
       } else if (configSubTab === 'ui') {
         const publishedPages = (state.pages || []).map((p) => p.group);
+        const blockOpts = state.sectionBlocks.map((b) => `<option value="${esc(b.name)}">[${esc(b.category)}] ${esc(b.name)}</option>`).join('');
         panel = `
           <div class="card">
             <h3>${L('تنظیمات رابط کاربری، هدر و موشن (ui)', 'UI Chrome, Navbar & Motion (ui)')}</h3>
@@ -1178,6 +1235,16 @@
               <div class="field"><label>smoothScrollLerp (0.02–1)</label><input type="number" step="0.005" class="mono" data-cfg-num="ui.motion.smoothScrollLerp" value="${esc(cfg.ui.motion.smoothScrollLerp ?? 0.125)}" /></div>
               <div class="field"><label>Lenis Smooth Scroll</label><label class="check-pill"><input type="checkbox" data-cfg-bool="ui.motion.smoothScroll" ${cfg.ui.motion.smoothScroll !== false ? 'checked' : ''} /><span>smoothScroll</span></label></div>
             </div>
+
+            <div class="divider"></div>
+            <div class="between" style="margin-bottom:8px;">
+              <h4 style="margin:0; font-size:13.5px;">ui.homeSections (${(cfg.ui.homeSections || []).length})</h4>
+              <div class="row">
+                <select id="cfg-add-block-sel" style="width:auto;">${blockOpts}</select>
+                <button type="button" class="btn btn-sm btn-primary" data-action="cfg-add-sec">+ ${L('افزودن سکشن', 'Add Section')}</button>
+              </div>
+            </div>
+            ${renderSectionList(cfg.ui.homeSections || [], 'config')}
           </div>
         `;
       } else if (configSubTab === 'banner') {
@@ -1218,9 +1285,17 @@
                 </select>
               </div>
               <div class="field"><label>dismissTtlDays</label><input type="number" class="mono" data-cfg-num-opt="ui.topBanner.dismissTtlDays" value="${esc(tb.dismissTtlDays ?? '')}" /></div>
+              <div class="field"><label>dismissVersion</label><input type="number" class="mono" data-cfg-num-opt="ui.topBanner.dismissVersion" value="${esc(tb.dismissVersion ?? 1)}" /></div>
+              <div class="field"><label>excludePaths (comma-sep)</label><input type="text" class="mono" placeholder="/contact/, /fa/تماس-با-ما/" data-cfg-list="ui.topBanner.excludePaths" value="${esc((tb.excludePaths || []).join(', '))}" /></div>
+            </div>
+            <div class="grid grid-2">
               <div class="field"><label>startsAt (ISO)</label><input type="text" class="mono" placeholder="2026-01-01" data-cfg="ui.topBanner.startsAt" value="${esc(tb.startsAt || '')}" /></div>
               <div class="field"><label>endsAt (ISO)</label><input type="text" class="mono" placeholder="2026-12-31" data-cfg="ui.topBanner.endsAt" value="${esc(tb.endsAt || '')}" /></div>
             </div>
+            <details style="margin-top:6px;">
+              <summary class="muted" style="cursor:pointer;">Stacked Banners JSON (ui.topBanner.items · ${(tb.items || []).length})</summary>
+              <textarea class="mono" style="margin-top:6px; min-height:110px;" data-cfg-json="ui.topBanner.items">${esc(JSON.stringify(tb.items || [], null, 2))}</textarea>
+            </details>
 
             <div class="divider"></div>
             <h3>${L('ویجت تماس سریع شناور (ui.quickContact)', 'Quick Contact Widget (ui.quickContact)')}</h3>
@@ -1548,8 +1623,8 @@
             <div class="field"><label>business.city</label><input type="text" data-cms="business.city" value="${esc(cms.business.city || '')}" /></div>
             <div class="field"><label>business.country</label><input type="text" data-cms="business.country" value="${esc(cms.business.country || '')}" /></div>
             <div class="field"><label>business.mapEmbedUrl</label><input type="url" class="mono" data-cms="business.mapEmbedUrl" value="${esc(cms.business.mapEmbedUrl || '')}" /></div>
-            <div class="field"><label>business.geo.lat</label><input type="text" class="mono" data-cms="business.geo.lat" value="${esc(cms.business.geo?.lat ?? '')}" /></div>
-            <div class="field"><label>business.geo.lng</label><input type="text" class="mono" data-cms="business.geo.lng" value="${esc(cms.business.geo?.lng ?? '')}" /></div>
+            <div class="field"><label>business.geo.lat</label><input type="number" step="any" class="mono" data-cms-num-opt="business.geo.lat" value="${esc(cms.business.geo?.lat ?? '')}" /></div>
+            <div class="field"><label>business.geo.lng</label><input type="number" step="any" class="mono" data-cms-num-opt="business.geo.lng" value="${esc(cms.business.geo?.lng ?? '')}" /></div>
           </div>
 
           <div class="divider"></div>
@@ -1562,10 +1637,35 @@
 
           <div class="divider"></div>
           <h4 style="margin:0 0 8px; font-size:13.5px;">CMS TopBanner & QuickContact</h4>
-          <div class="row" style="margin-bottom:10px;">
-            <label class="check-pill"><input type="checkbox" data-cms-tri="ui.topBanner.enabled" ${tb.enabled === true ? 'checked' : ''} /><span>topBanner.enabled</span></label>
-            <label class="check-pill"><input type="checkbox" data-cms-tri="ui.quickContact.enabled" ${qc.enabled === true ? 'checked' : ''} /><span>quickContact.enabled</span></label>
-            <label class="check-pill"><input type="checkbox" data-cms-tri="ui.quickContact.mobileOnly" ${qc.mobileOnly === true ? 'checked' : ''} /><span>quickContact.mobileOnly</span></label>
+          <div class="grid grid-4" style="margin-bottom:10px;">
+            <div class="field"><label>topBanner.enabled</label>
+              <select data-cms-optbool="ui.topBanner.enabled">
+                <option value="" ${tb.enabled === undefined ? 'selected' : ''}>(inherit)</option>
+                <option value="true" ${tb.enabled === true ? 'selected' : ''}>true (enabled)</option>
+                <option value="false" ${tb.enabled === false ? 'selected' : ''}>false (disabled)</option>
+              </select>
+            </div>
+            <div class="field"><label>topBanner.dismissible</label>
+              <select data-cms-optbool="ui.topBanner.dismissible">
+                <option value="" ${tb.dismissible === undefined ? 'selected' : ''}>(inherit)</option>
+                <option value="true" ${tb.dismissible === true ? 'selected' : ''}>true</option>
+                <option value="false" ${tb.dismissible === false ? 'selected' : ''}>false</option>
+              </select>
+            </div>
+            <div class="field"><label>quickContact.enabled</label>
+              <select data-cms-optbool="ui.quickContact.enabled">
+                <option value="" ${qc.enabled === undefined ? 'selected' : ''}>(inherit)</option>
+                <option value="true" ${qc.enabled === true ? 'selected' : ''}>true</option>
+                <option value="false" ${qc.enabled === false ? 'selected' : ''}>false</option>
+              </select>
+            </div>
+            <div class="field"><label>quickContact.mobileOnly</label>
+              <select data-cms-optbool="ui.quickContact.mobileOnly">
+                <option value="" ${qc.mobileOnly === undefined ? 'selected' : ''}>(inherit)</option>
+                <option value="true" ${qc.mobileOnly === true ? 'selected' : ''}>true</option>
+                <option value="false" ${qc.mobileOnly === false ? 'selected' : ''}>false</option>
+              </select>
+            </div>
           </div>
           <div class="grid grid-4">
             <div class="field"><label>topBanner.id</label><input type="text" class="mono" data-cms="ui.topBanner.id" value="${esc(tb.id || '')}" /></div>
@@ -1575,6 +1675,18 @@
                 ${BANNER_VARIANTS.map((v) => `<option value="${v}" ${tb.variant === v ? 'selected' : ''}>${v}</option>`).join('')}
               </select>
             </div>
+            <div class="field"><label>topBanner.icon</label><input type="text" class="mono" data-cms="ui.topBanner.icon" value="${esc(tb.icon || '')}" /></div>
+            <div class="field"><label>dismissMode</label>
+              <select data-cms="ui.topBanner.dismissMode">
+                <option value="">(inherit)</option>
+                <option value="session" ${tb.dismissMode === 'session' ? 'selected' : ''}>session</option>
+                <option value="persistent" ${tb.dismissMode === 'persistent' ? 'selected' : ''}>persistent</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-4">
+            <div class="field"><label>dismissTtlDays</label><input type="number" class="mono" data-cms-num-opt="ui.topBanner.dismissTtlDays" value="${esc(tb.dismissTtlDays ?? '')}" /></div>
+            <div class="field"><label>dismissVersion</label><input type="number" class="mono" data-cms-num-opt="ui.topBanner.dismissVersion" value="${esc(tb.dismissVersion ?? '')}" /></div>
             <div class="field"><label>startsAt (ISO)</label><input type="text" class="mono" data-cms="ui.topBanner.startsAt" value="${esc(tb.startsAt || '')}" /></div>
             <div class="field"><label>endsAt (ISO)</label><input type="text" class="mono" data-cms="ui.topBanner.endsAt" value="${esc(tb.endsAt || '')}" /></div>
           </div>
@@ -1584,6 +1696,23 @@
             ${locs.map((loc) => `<div class="field"><label>ctaLabelByLocale.${esc(loc)}</label><input type="text" data-cms="ui.topBanner.ctaLabelByLocale.${esc(loc)}" value="${esc(tb.ctaLabelByLocale?.[loc] || '')}" /></div>`).join('')}
             ${locs.map((loc) => `<div class="field"><label>ctaHrefByLocale.${esc(loc)}</label><input type="text" class="mono" data-cms="ui.topBanner.ctaHrefByLocale.${esc(loc)}" value="${esc(tb.ctaHrefByLocale?.[loc] || '')}" /></div>`).join('')}
           </div>
+
+          <div class="divider"></div>
+          <div class="between" style="margin-bottom:8px;">
+            <h4 style="margin:0; font-size:13.5px;">CMS Redirects (${(cms.redirects || []).length})</h4>
+            <button type="button" class="btn btn-sm btn-primary" data-action="cms-add-redirect">+ Add CMS Redirect</button>
+          </div>
+          ${(cms.redirects || []).map((r, ri) => `
+            <div class="row" style="margin-bottom:6px;">
+              <input type="text" class="mono" style="width:220px;" placeholder="/old-path" data-cms="redirects.${ri}.from" value="${esc(r.from || '')}" />
+              <input type="text" class="mono" style="width:220px;" placeholder="/new-path/" data-cms="redirects.${ri}.to" value="${esc(r.to || '')}" />
+              <select style="width:100px;" data-cms-num="redirects.${ri}.status">
+                <option value="301" ${Number(r.status || 301) === 301 ? 'selected' : ''}>301</option>
+                <option value="302" ${Number(r.status) === 302 ? 'selected' : ''}>302</option>
+              </select>
+              <button type="button" class="btn btn-sm btn-danger" data-cms-del-redirect="${ri}">✕</button>
+            </div>
+          `).join('')}
 
           <details style="margin-top:8px;">
             <summary class="muted" style="cursor:pointer;">Inspect current client/cms.json</summary>
@@ -1613,6 +1742,7 @@
       const rowsHtml = groups.length === 0
         ? `<tr><td colspan="${locs.length + 2}" class="muted">${L('مطلبی در این کالکشن ثبت نشده است.', 'No entries in this collection yet.')}</td></tr>`
         : groups.map((g) => {
+            const existingLocaleCount = Object.keys(g.locales || {}).length;
             const locCells = locs.map((loc) => {
               const info = g.locales?.[loc];
               if (!info) {
@@ -1623,6 +1753,9 @@
                   </div>
                 </td>`;
               }
+              const locArm = 'entrydel:' + activeCollection + ':' + g.group + ':' + loc;
+              const isLocArmed = confirmTarget === locArm;
+              const canDelLocale = existingLocaleCount > 1 && !(activeCollection === 'pages' && g.group === 'home' && loc === state.locales.defaultLocale);
               return `<td>
                 <div style="margin-bottom:4px;"><strong>${esc(info.title || g.group)}</strong></div>
                 <div class="row" style="margin-bottom:4px;">
@@ -1634,6 +1767,11 @@
                 <div class="row">
                   <button type="button" class="btn btn-sm btn-primary" data-entry-edit="${esc(activeCollection)}|${esc(g.group)}|${esc(loc)}">${L('ویرایش', 'Edit')}</button>
                   ${activeCollection === 'pages' ? `<button type="button" class="btn btn-sm" data-sec-modal="${esc(g.group)}|${esc(loc)}">${L('سکشن‌ها', 'Sections')} (${info.sections?.length || 0})</button>` : ''}
+                  ${canDelLocale ? (
+                    isLocArmed
+                      ? `<button type="button" class="btn btn-sm btn-danger" data-entry-del-loc-exec="${esc(activeCollection)}|${esc(g.group)}|${esc(loc)}">${L('تأیید حذف', 'Del')} ${esc(loc)}</button><button type="button" class="btn btn-sm" data-confirm-cancel="1">✕</button>`
+                      : `<button type="button" class="btn btn-sm btn-danger" title="Delete ${esc(loc)}" data-confirm-arm="${esc(locArm)}">✕</button>`
+                  ) : ''}
                 </div>
               </td>`;
             }).join('');
@@ -1661,7 +1799,7 @@
         <div class="card">
           <h3>${L('افزودن آیتم جدید در ', 'Create New Entry in ')}<span class="mono">${esc(activeCollection)}</span></h3>
           <div class="grid grid-4">
-            <div class="field"><label>Group Key (e.g. my-item)</label><input id="new-entry-group" type="text" class="mono" placeholder="new-entry" /></div>
+            <div class="field"><label>Group Key (lowercase slug) *</label><input id="new-entry-group" type="text" class="mono" placeholder="new-entry" /></div>
             <div class="field"><label>Title</label><input id="new-entry-title" type="text" placeholder="Title" /></div>
             <div class="field"><label>Slug (optional)</label><input id="new-entry-slug" type="text" class="mono" placeholder="auto" /></div>
             <div class="field"><label>Source Locale</label>
@@ -1674,9 +1812,11 @@
                 <option value="default">Standard Page</option>
                 <option value="landing">Landing Preset</option>
               </select>
-            ` : `
+            ` : activeCollection === 'blog' ? `
               <input id="new-entry-cats" type="text" style="width:200px;" placeholder="categories (comma-sep)" />
               <input id="new-entry-tags" type="text" style="width:200px;" placeholder="tags (comma-sep)" />
+            ` : `
+              <input id="new-entry-desc" type="text" style="width:320px;" placeholder="description (optional)" />
             `}
             <label class="check-pill"><input id="new-entry-pub" type="checkbox" /><span>${L('انتشار فوری (--publish)', 'Publish (--publish)')}</span></label>
             <button type="button" class="btn btn-primary" data-action="create-entry">${L('ایجاد مطلب', 'Create Entry')}</button>
@@ -1700,6 +1840,9 @@
     }
 
     // ---------- Tab 5: Locales & Translation Matrix ----------
+    let i18nAllowDraft = false;
+    let i18nDeleteContent = false;
+
     function renderI18nTab() {
       const locs = state.locales.locales;
       const metaMap = state.locales.metadata || {};
@@ -1818,7 +1961,13 @@
 
       return `
         <div class="card">
-          <h3>${L('زبان‌های فعال (client/locales.json)', 'Active Locales (client/locales.json)')}</h3>
+          <div class="between" style="margin-bottom:8px;">
+            <h3>${L('زبان‌های فعال (client/locales.json)', 'Active Locales (client/locales.json)')}</h3>
+            <div class="row">
+              <label class="check-pill"><input id="i18n-opt-draft" type="checkbox" ${i18nAllowDraft ? 'checked' : ''} /><span>--allow-draft</span></label>
+              <label class="check-pill"><input id="i18n-opt-delcontent" type="checkbox" ${i18nDeleteContent ? 'checked' : ''} /><span>${L('حذف دائم فایل‌های محتوا به جای آرشیو', '--delete-content (instead of archive)')}</span></label>
+            </div>
+          </div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>Locale</th><th>Name</th><th>Dir</th><th>htmlLang</th><th>Font</th><th>Keys Status</th><th>Actions</th></tr></thead>
@@ -1831,7 +1980,7 @@
           <div class="card">
             <h3>${L('افزودن زبان جدید (i18n:add-lang)', 'Add Language (i18n:add-lang)')}</h3>
             <div class="grid grid-2">
-              <div class="field"><label>Code (e.g. ar, de, fr)</label><input id="add-lang-code" type="text" class="mono" placeholder="ar" /></div>
+              <div class="field"><label>Code * (e.g. ar, de, fr)</label><input id="add-lang-code" type="text" class="mono" placeholder="ar" /></div>
               <div class="field"><label>Display Name</label><input id="add-lang-name" type="text" placeholder="العربية" /></div>
               <div class="field"><label>Direction</label><select id="add-lang-dir"><option value="ltr">ltr</option><option value="rtl">rtl</option></select></div>
               <div class="field"><label>Clone Content From</label><select id="add-lang-from">${locs.map((l) => `<option value="${esc(l)}">${esc(l)}</option>`).join('')}</select></div>
@@ -1855,7 +2004,7 @@
             <div class="divider"></div>
             <div class="grid grid-2">
               <div class="field"><label>Category (e.g. hero, custom)</label><input id="add-key-cat" type="text" class="mono" value="custom" /></div>
-              <div class="field"><label>Key Name (e.g. cta_note)</label><input id="add-key-name" type="text" class="mono" placeholder="cta_note" /></div>
+              <div class="field"><label>Key Name * (e.g. cta_note)</label><input id="add-key-name" type="text" class="mono" placeholder="cta_note" /></div>
             </div>
             <div class="grid grid-2">
               ${locs.map((l) => `<div class="field"><label>${esc(l)}</label><input type="text" data-add-key-loc="${esc(l)}" /></div>`).join('')}
@@ -1871,16 +2020,19 @@
               <span class="muted">${filteredKeys.length} / ${allKeys.length} keys</span>
             </div>
             <div class="row">
-              <input id="i18n-search" type="text" style="width:210px;" placeholder="${L('جستجو در کلید یا متن...', 'Search key or value...')}" value="${esc(i18nSearch)}" />
-              <select id="i18n-status-filter" style="width:150px;">
+              <input id="i18n-search" type="text" style="width:200px;" placeholder="${L('جستجو در کلید یا متن...', 'Search key or value...')}" value="${esc(i18nSearch)}" />
+              <select id="i18n-status-filter" style="width:140px;">
                 <option value="all" ${i18nFilterStatus === 'all' ? 'selected' : ''}>All Keys</option>
                 <option value="todo" ${i18nFilterStatus === 'todo' ? 'selected' : ''}>Has [TODO:]</option>
                 <option value="client" ${i18nFilterStatus === 'client' ? 'selected' : ''}>Client Overridden</option>
                 <option value="missing" ${i18nFilterStatus === 'missing' ? 'selected' : ''}>Empty / Missing</option>
               </select>
-              <select id="i18n-cat-filter" style="width:150px;">
+              <select id="i18n-cat-filter" style="width:130px;">
                 <option value="all">All Categories</option>
                 ${categories.map((cat) => `<option value="${esc(cat)}" ${i18nFilterCategory === cat ? 'selected' : ''}>${esc(cat)}</option>`).join('')}
+              </select>
+              <select id="i18n-page-size" style="width:90px;">
+                ${[25, 50, 100, 200].map((n) => `<option value="${n}" ${i18nPageSize === n ? 'selected' : ''}>${n} / pg</option>`).join('')}
               </select>
             </div>
           </div>
@@ -1901,7 +2053,7 @@
               <button type="button" class="btn btn-sm" data-i18n-page="${Math.min(pageCount - 1, i18nPage + 1)}" ${i18nPage >= pageCount - 1 ? 'disabled' : ''}>Next →</button>
             </div>
             <div class="row">
-              ${dirtyCount > 0 ? `<span class="badge warn">${dirtyCount} ${L('تغییر ذخیره‌نشده', 'unsaved edits')}</span>` : ''}
+              ${dirtyCount > 0 ? `<span class="badge warn">${dirtyCount} ${L('تغییر ذخیره‌نشده', 'unsaved edits')}</span><button type="button" class="btn btn-sm" data-action="discard-messages">${L('لغو تغییرات', 'Discard')}</button>` : ''}
               <button type="button" class="btn btn-primary" data-action="save-messages" ${dirtyCount === 0 ? 'disabled' : ''}>${L('ذخیره ترجمه‌ها و کامپایل Paraglide', 'Save & Compile Translations')}</button>
             </div>
           </div>
@@ -2001,8 +2153,10 @@
           if (f.type === 'number') {
             return `<div class="field"><label>${esc(f.label || f.name)}</label><input type="number" class="mono" data-efm-custom-num="${esc(f.name)}" value="${esc(val ?? '')}" /></div>`;
           }
-          return `<div class="field"><label>${esc(f.label || f.name)}${f.required ? ' *' : ''}</label><input type="${f.type === 'date' ? 'date' : 'text'}" data-efm-custom="${esc(f.name)}" value="${esc(val ?? '')}" /></div>`;
+          return `<div class="field"><label>${esc(f.label || f.name)}${f.required ? ' *' : ''}</label><input type="${f.type === 'date' ? 'date' : f.type === 'url' ? 'url' : 'text'}" class="${f.type === 'date' || f.type === 'url' ? 'mono' : ''}" data-efm-custom="${esc(f.name)}" value="${esc(f.type === 'date' ? String(val ?? '').slice(0, 10) : (val ?? ''))}" /></div>`;
         }).join('');
+
+        const normalizedHero = fm.hero === false ? 'none' : fm.hero === true ? 'default' : String(fm.hero ?? 'none');
 
         card.innerHTML = `
           <div class="between" style="margin-bottom:10px;">
@@ -2010,7 +2164,10 @@
               <h3 style="margin:0;">${d.exists ? L('ویرایش محتوا', 'Edit Entry') : L('ایجاد فایل زبان جدید', 'Create Missing Locale Entry')}</h3>
               <span class="muted mono">${esc(d.file)}</span>
             </div>
-            <button type="button" class="btn btn-sm" data-modal-close="1">✕</button>
+            <div class="row">
+              ${col === 'pages' && d.exists ? `<button type="button" class="btn btn-sm" data-sec-modal="${esc(d.group)}|${esc(d.locale)}">${L('ویرایشگر سکشن‌ها', 'Sections Editor')}</button>` : ''}
+              <button type="button" class="btn btn-sm" data-modal-close="1">✕</button>
+            </div>
           </div>
           <div class="grid grid-2">
             <div class="field"><label>title *</label><input type="text" data-efm="title" value="${esc(fm.title || '')}" /></div>
@@ -2025,7 +2182,7 @@
           ${col === 'pages' ? `
             <div class="grid grid-4">
               <div class="field"><label>hero</label>
-                <select data-efm="hero">${['none', 'minimal', 'default'].map((v) => `<option value="${v}" ${String(fm.hero ?? 'none') === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
+                <select data-efm="hero">${['none', 'minimal', 'default'].map((v) => `<option value="${v}" ${normalizedHero === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
               </div>
               <div class="field"><label>container</label>
                 <select data-efm="container">${['canvas', 'contained', 'prose'].map((v) => `<option value="${v}" ${(fm.container || 'canvas') === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
@@ -2134,7 +2291,12 @@
             </div>
             <div class="grid grid-3">
               ${f.type === 'enum' ? `<div class="field"><label>options (comma-sep) *</label><input type="text" data-ctf-opts="${fi}" value="${esc((f.options || []).join(', '))}" /></div>` : ''}
-              <div class="field"><label>default</label><input type="text" data-ctf="${fi}:default" value="${esc(f.default ?? '')}" /></div>
+              <div class="field"><label>default</label>
+                ${f.type === 'boolean'
+                  ? `<select data-ctf="${fi}:default"><option value="" ${f.default === undefined ? 'selected' : ''}>(none)</option><option value="true" ${f.default === true ? 'selected' : ''}>true</option><option value="false" ${f.default === false ? 'selected' : ''}>false</option></select>`
+                  : `<input type="${f.type === 'number' ? 'number' : 'text'}" data-ctf="${fi}:default" value="${esc(Array.isArray(f.default) ? f.default.join(', ') : (f.default ?? ''))}" />`
+                }
+              </div>
               <div class="row" style="padding-top:16px;">
                 <label class="check-pill"><input type="checkbox" data-ctf-bool="${fi}:required" ${f.required ? 'checked' : ''} /><span>required</span></label>
                 <label class="check-pill"><input type="checkbox" data-ctf-bool="${fi}:searchable" ${f.searchable ? 'checked' : ''} /><span>searchable</span></label>
@@ -2146,12 +2308,14 @@
               ${f.filter?.enabled ? `
                 <select style="width:120px;" data-ctf-filter="${fi}:mode">${FILTER_MODES.map((m) => `<option value="${m}" ${f.filter.mode === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
                 <input type="text" class="mono" style="width:130px;" placeholder="param" data-ctf-filter="${fi}:param" value="${esc(f.filter.param || '')}" />
-                <input type="text" style="width:150px;" placeholder="filter label" data-ctf-filter="${fi}:label" value="${esc(f.filter.label || '')}" />
+                <input type="text" style="width:140px;" placeholder="filter label" data-ctf-filter="${fi}:label" value="${esc(f.filter.label || '')}" />
+                <select style="width:110px;" data-ctf-filter="${fi}:sort">${['alpha', 'count', 'config'].map((s) => `<option value="${s}" ${(f.filter.sort || 'alpha') === s ? 'selected' : ''}>sort: ${s}</option>`).join('')}</select>
               ` : ''}
             </div>
           </div>
         `).join('');
 
+        const isPagesType = ct.key === 'pages';
         card.innerHTML = `
           <div class="between" style="margin-bottom:10px;">
             <h3 style="margin:0;">${ct.isNew ? L('ایجاد نوع محتوای جدید', 'Create Content Type') : L('ویرایش اسکیمای نوع محتوا', 'Edit Content Type Schema')}</h3>
@@ -2159,15 +2323,15 @@
           </div>
           <div class="grid grid-3">
             <div class="field"><label>key * (e.g. services)</label><input type="text" class="mono" data-ct="key" value="${esc(ct.key || '')}" ${ct.isNew ? '' : 'disabled'} /></div>
-            <div class="field"><label>base URL segment</label><input type="text" class="mono" data-ct="base" value="${esc(ct.base || '')}" ${ct.key === 'pages' ? 'disabled' : ''} /></div>
+            <div class="field"><label>base URL segment</label><input type="text" class="mono" data-ct="base" value="${esc(ct.base || '')}" ${isPagesType ? 'disabled' : ''} /></div>
             <div class="field"><label>icon</label><input type="text" class="mono" data-ct="icon" value="${esc(ct.icon || '')}" /></div>
           </div>
           <div class="row" style="margin-bottom:10px;">
-            <label class="check-pill"><input type="checkbox" data-ct-bool="enabled" ${ct.enabled !== false ? 'checked' : ''} /><span>enabled</span></label>
-            <label class="check-pill"><input type="checkbox" data-ct-bool="index" ${ct.index !== false ? 'checked' : ''} /><span>index</span></label>
-            <label class="check-pill"><input type="checkbox" data-ct-bool="paginated" ${ct.paginated ? 'checked' : ''} /><span>paginated</span></label>
-            <label class="check-pill"><input type="checkbox" data-ct-bool="feed" ${ct.feed ? 'checked' : ''} /><span>feed (RSS)</span></label>
-            <label class="check-pill"><input type="checkbox" data-ct-bool="nav" ${ct.nav !== false ? 'checked' : ''} /><span>nav</span></label>
+            <label class="check-pill"><input type="checkbox" data-ct-bool="enabled" ${ct.enabled !== false ? 'checked' : ''} ${isPagesType ? 'disabled' : ''} /><span>enabled</span></label>
+            <label class="check-pill"><input type="checkbox" data-ct-bool="index" ${ct.index !== false ? 'checked' : ''} ${isPagesType ? 'disabled' : ''} /><span>index</span></label>
+            <label class="check-pill"><input type="checkbox" data-ct-bool="paginated" ${ct.paginated ? 'checked' : ''} ${isPagesType ? 'disabled' : ''} /><span>paginated</span></label>
+            <label class="check-pill"><input type="checkbox" data-ct-bool="feed" ${ct.feed ? 'checked' : ''} ${isPagesType ? 'disabled' : ''} /><span>feed (RSS)</span></label>
+            <label class="check-pill"><input type="checkbox" data-ct-bool="nav" ${ct.nav !== false ? 'checked' : ''} ${isPagesType ? 'disabled' : ''} /><span>nav</span></label>
           </div>
           <div class="grid grid-3">
             <div class="field"><label>perPage</label><input type="number" class="mono" data-ct-num="perPage" value="${esc(ct.perPage ?? '')}" /></div>
@@ -2185,6 +2349,11 @@
             <div class="field"><label>card.aspectRatio</label><select data-ct-card="aspectRatio">${CARD_RATIOS.map((v) => `<option value="${v}" ${(ct.card?.aspectRatio || 'video') === v ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
             <div class="field"><label>card.badgeField</label><input type="text" class="mono" data-ct-card="badgeField" value="${esc(ct.card?.badgeField || '')}" /></div>
             <div class="field"><label>card.badgeLimit</label><input type="number" class="mono" data-ct-card-num="badgeLimit" value="${esc(ct.card?.badgeLimit ?? 3)}" /></div>
+          </div>
+          <div class="grid grid-3">
+            <div class="field"><label>card.metaFields (comma-sep)</label><input type="text" class="mono" data-ct-card-list="metaFields" value="${esc((ct.card?.metaFields || []).join(', '))}" /></div>
+            <div class="field"><label>search.enabled</label><label class="check-pill"><input type="checkbox" data-ct-search-en="1" ${ct.search?.enabled !== false ? 'checked' : ''} /><span>Search Enabled</span></label></div>
+            <div class="field"><label>search.fields (comma-sep)</label><input type="text" class="mono" data-ct-search-fields="1" value="${esc((ct.search?.fields || []).join(', '))}" /></div>
           </div>
           <div class="divider"></div>
           <div class="between" style="margin-bottom:8px;">
@@ -2242,7 +2411,12 @@
 
     // ---------- Event Delegation ----------
     function resolveSectionArray(scope) {
-      return scope === 'wizard' ? wizardDraft.homeSections : modalState?.data?.sections;
+      if (scope === 'wizard') return wizardDraft.homeSections;
+      if (scope === 'config') {
+        configDraft.ui.homeSections = configDraft.ui.homeSections || [];
+        return configDraft.ui.homeSections;
+      }
+      return modalState?.data?.sections;
     }
 
     document.getElementById('tabs-nav').addEventListener('click', (e) => {
@@ -2284,21 +2458,19 @@
     });
 
     document.getElementById('console-toggle').addEventListener('click', (e) => {
-      if (e.target.id === 'console-clear') return;
+      if (e.target.closest('#console-clear')) return;
       const body = document.getElementById('console-body');
-      body.classList.toggle('hidden');
-      document.getElementById('console-chevron').textContent = body.classList.contains('hidden') ? '▲' : '▼';
+      setConsoleOpen(body.classList.contains('hidden'));
     });
 
     document.getElementById('console-clear').addEventListener('click', () => {
       document.getElementById('console-pre').textContent = '';
       document.getElementById('console-status').textContent = t().ready;
       document.getElementById('console-status').className = 'badge';
+      setConsoleOpen(false);
     });
 
-    // Global delegated input & change handlers
-    document.addEventListener('input', (e) => {
-      const el = e.target;
+    function syncScalarField(el, isChange = false) {
       if (el.dataset.pm) {
         setPath(projectDraft, el.dataset.pm, el.value);
       } else if (el.dataset.wiz) {
@@ -2309,12 +2481,48 @@
         if (paired) paired.value = el.value;
       } else if (el.dataset.cfg) {
         setPath(configDraft, el.dataset.cfg, el.value);
+        if (el.dataset.cfg.startsWith('brand.')) {
+          const colInp = document.querySelector(`[data-cfg-color="${el.dataset.cfg}"]`);
+          if (colInp && /^#[0-9a-fA-F]{6}$/.test(el.value)) colInp.value = el.value;
+        }
+      } else if (el.dataset.cfgColor) {
+        setPath(configDraft, el.dataset.cfgColor, el.value);
+        const paired = document.querySelector(`[data-cfg="${el.dataset.cfgColor}"]`);
+        if (paired) paired.value = el.value;
       } else if (el.dataset.cfgNum) {
         setPath(configDraft, el.dataset.cfgNum, el.value === '' ? '' : Number(el.value));
       } else if (el.dataset.cfgNumOpt) {
         setPath(configDraft, el.dataset.cfgNumOpt, el.value === '' ? '' : Number(el.value));
+      } else if (el.dataset.cfgList) {
+        setPath(configDraft, el.dataset.cfgList, el.value.split(',').map((s) => s.trim()).filter(Boolean));
+      } else if (el.dataset.cfgJson) {
+        try {
+          const parsed = JSON.parse(el.value);
+          if (Array.isArray(parsed)) {
+            setPath(configDraft, el.dataset.cfgJson, parsed);
+            el.style.borderColor = '';
+          } else {
+            el.style.borderColor = 'var(--danger)';
+          }
+        } catch {
+          el.style.borderColor = 'var(--danger)';
+        }
       } else if (el.dataset.cms) {
         setPath(cmsDraft, el.dataset.cms, el.value);
+      } else if (el.dataset.cmsNum) {
+        setPath(cmsDraft, el.dataset.cmsNum, el.value === '' ? '' : Number(el.value));
+      } else if (el.dataset.cmsNumOpt) {
+        setPath(cmsDraft, el.dataset.cmsNumOpt, el.value === '' ? '' : Number(el.value));
+      } else if (el.dataset.cmsOptbool) {
+        const parts = el.dataset.cmsOptbool.split('.');
+        const leaf = parts.pop();
+        let parent = cmsDraft;
+        for (const p of parts) {
+          if (!parent[p] || typeof parent[p] !== 'object') parent[p] = {};
+          parent = parent[p];
+        }
+        if (el.value === '') delete parent[leaf];
+        else parent[leaf] = el.value === 'true';
       } else if (el.dataset.secProp) {
         const [scope, idxStr, prop] = el.dataset.secProp.split(':');
         const arr = resolveSectionArray(scope);
@@ -2323,6 +2531,8 @@
           sec.props = sec.props || {};
           if (el.value === '') delete sec.props[prop];
           else sec.props[prop] = el.value;
+          const jsonTa = document.querySelector(`[data-sec-json="${scope}:${idxStr}"]`);
+          if (jsonTa) jsonTa.value = JSON.stringify(sec.props, null, 2);
         }
       } else if (el.dataset.secJson) {
         const [scope, idxStr] = el.dataset.secJson.split(':');
@@ -2334,6 +2544,8 @@
             if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
               sec.props = parsed;
               el.style.borderColor = '';
+            } else {
+              el.style.borderColor = 'var(--danger)';
             }
           } catch {
             el.style.borderColor = 'var(--danger)';
@@ -2348,6 +2560,8 @@
             if (Array.isArray(parsed)) {
               msgDirty[loc][key] = parsed;
               el.style.borderColor = 'var(--primary)';
+            } else {
+              el.style.borderColor = 'var(--danger)';
             }
           } catch {
             el.style.borderColor = 'var(--danger)';
@@ -2355,16 +2569,6 @@
         } else {
           msgDirty[loc][key] = el.value;
           el.style.borderColor = 'var(--primary)';
-        }
-      } else if (el.id === 'i18n-search') {
-        i18nSearch = el.value;
-        i18nPage = 0;
-        const pos = el.selectionStart;
-        render();
-        const nextInput = document.getElementById('i18n-search');
-        if (nextInput) {
-          nextInput.focus();
-          nextInput.setSelectionRange(pos, pos);
         }
       } else if (modalState?.type === 'entry') {
         const fm = modalState.data.frontmatter;
@@ -2375,6 +2579,8 @@
         else if (el.dataset.efmCustomNum) fm[el.dataset.efmCustomNum] = el.value === '' ? undefined : Number(el.value);
         else if (el.dataset.efmCustomList) fm[el.dataset.efmCustomList] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
         else if (el.dataset.entryBody) modalState.data.body = el.value;
+      } else if (modalState?.type === 'sections') {
+        if (el.dataset.psec) modalState.data[el.dataset.psec] = el.value;
       } else if (modalState?.type === 'contentType') {
         const ct = modalState.data;
         if (el.dataset.ct) ct[el.dataset.ct] = el.value;
@@ -2389,9 +2595,23 @@
         } else if (el.dataset.ctCardNum) {
           ct.card = ct.card || {};
           ct.card[el.dataset.ctCardNum] = el.value === '' ? '' : Number(el.value);
+        } else if (el.dataset.ctCardList) {
+          ct.card = ct.card || {};
+          ct.card[el.dataset.ctCardList] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
+        } else if (el.dataset.ctSearchFields) {
+          ct.search = ct.search || { enabled: true };
+          ct.search.fields = el.value.split(',').map((s) => s.trim()).filter(Boolean);
         } else if (el.dataset.ctf) {
-          const [fi, prop] = el.dataset.ctf.split(':');
-          ct.fields[Number(fi)][prop] = el.value;
+          const [fiStr, prop] = el.dataset.ctf.split(':');
+          const fi = Number(fiStr);
+          if (prop === 'showOnCard') {
+            ct.fields[fi].showOnCard = el.value === '' ? undefined : el.value === 'true' ? true : el.value === 'false' ? false : el.value;
+          } else if (prop === 'default' && ct.fields[fi].type === 'boolean') {
+            ct.fields[fi].default = el.value === '' ? undefined : el.value === 'true';
+          } else {
+            ct.fields[fi][prop] = el.value;
+            if (isChange && prop === 'type') renderModal();
+          }
         } else if (el.dataset.ctfOpts) {
           ct.fields[Number(el.dataset.ctfOpts)].options = el.value.split(',').map((s) => s.trim()).filter(Boolean);
         } else if (el.dataset.ctfFilter) {
@@ -2402,6 +2622,24 @@
       } else if (modalState?.type === 'localeMeta') {
         if (el.dataset.lm) modalState.data[el.dataset.lm] = el.value;
       }
+    }
+
+    document.addEventListener('input', (e) => {
+      const el = e.target;
+      if (el.type === 'checkbox' || el.type === 'file') return;
+      if (el.id === 'i18n-search') {
+        i18nSearch = el.value;
+        i18nPage = 0;
+        const pos = el.selectionStart;
+        render();
+        const nextInput = document.getElementById('i18n-search');
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.setSelectionRange(pos, pos);
+        }
+        return;
+      }
+      syncScalarField(el, false);
     });
 
     document.addEventListener('change', (e) => {
@@ -2419,11 +2657,13 @@
         const list = new Set(configDraft.ui.quickContact.channels || []);
         if (el.checked) list.add(ch); else list.delete(ch);
         configDraft.ui.quickContact.channels = [...list];
-      } else if (el.dataset.cmsTri) {
-        setPath(cmsDraft, el.dataset.cmsTri, el.checked ? true : false);
       } else if (el.dataset.uploadLogo) {
         const [variant, target] = el.dataset.uploadLogo.split(':');
         uploadLogoFile(el.files?.[0], variant, target);
+      } else if (el.id === 'i18n-opt-draft') {
+        i18nAllowDraft = el.checked;
+      } else if (el.id === 'i18n-opt-delcontent') {
+        i18nDeleteContent = el.checked;
       } else if (el.id === 'i18n-status-filter') {
         i18nFilterStatus = el.value;
         i18nPage = 0;
@@ -2432,29 +2672,38 @@
         i18nFilterCategory = el.value;
         i18nPage = 0;
         render();
-      } else if (modalState?.type === 'entry') {
+      } else if (el.id === 'i18n-page-size') {
+        i18nPageSize = Number(el.value) || 50;
+        i18nPage = 0;
+        render();
+      } else if (modalState?.type === 'entry' && (el.dataset.efmBool || el.dataset.efmCustomBool)) {
         const fm = modalState.data.frontmatter;
         if (el.dataset.efmBool) fm[el.dataset.efmBool] = el.checked;
         else if (el.dataset.efmCustomBool) fm[el.dataset.efmCustomBool] = el.checked;
-      } else if (modalState?.type === 'sections') {
-        if (el.dataset.psec) modalState.data[el.dataset.psec] = el.value;
-        else if (el.dataset.psecBool) modalState.data[el.dataset.psecBool] = el.checked;
-      } else if (modalState?.type === 'contentType') {
+      } else if (modalState?.type === 'sections' && el.dataset.psecBool) {
+        modalState.data[el.dataset.psecBool] = el.checked;
+      } else if (modalState?.type === 'contentType' && (el.dataset.ctBool || el.dataset.ctSearchEn || el.dataset.ctfBool || el.dataset.ctfFilterEn !== undefined)) {
         const ct = modalState.data;
         if (el.dataset.ctBool) ct[el.dataset.ctBool] = el.checked;
-        else if (el.dataset.ctfBool) {
+        else if (el.dataset.ctSearchEn) {
+          ct.search = ct.search || {};
+          ct.search.enabled = el.checked;
+        } else if (el.dataset.ctfBool) {
           const [fi, prop] = el.dataset.ctfBool.split(':');
           ct.fields[Number(fi)][prop] = el.checked;
-        } else if (el.dataset.ctf && el.dataset.ctf.endsWith(':type')) {
-          renderModal();
-        } else if (el.dataset.ctf && el.dataset.ctf.endsWith(':showOnCard')) {
-          const fi = Number(el.dataset.ctf.split(':')[0]);
-          ct.fields[fi].showOnCard = el.value === '' ? undefined : el.value === 'true' ? true : el.value === 'false' ? false : el.value;
         } else if (el.dataset.ctfFilterEn !== undefined) {
           const fi = Number(el.dataset.ctfFilterEn);
-          ct.fields[fi].filter = el.checked ? { enabled: true, mode: 'multi' } : undefined;
+          ct.fields[fi].filter = el.checked ? { enabled: true, mode: 'multi', sort: 'alpha' } : undefined;
           renderModal();
         }
+      } else if (el.type !== 'checkbox' && el.type !== 'file') {
+        syncScalarField(el, true);
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modalState) {
+        closeModal();
       }
     });
 
@@ -2482,6 +2731,11 @@
         render();
         return;
       }
+      if (btn.dataset.cfgClear) {
+        setPath(configDraft, btn.dataset.cfgClear, '');
+        render();
+        return;
+      }
       if (btn.dataset.colSelect) {
         activeCollection = btn.dataset.colSelect;
         confirmTarget = '';
@@ -2489,7 +2743,15 @@
         return;
       }
       if (btn.dataset.wizBp !== undefined) {
-        wizardDraft.blueprint = btn.dataset.wizBp;
+        const bpKey = btn.dataset.wizBp;
+        wizardDraft.blueprint = bpKey;
+        const bp = state.blueprints?.[bpKey];
+        if (bp) {
+          if (bp.preset) wizardDraft.brand.preset = bp.preset;
+          if (bp.fontPreset) wizardDraft.brand.fontPreset = bp.fontPreset;
+          if (bp.rtlFontPreset) wizardDraft.brand.rtlFontPreset = bp.rtlFontPreset;
+          if (bp.socialCardMode) wizardDraft.brand.socialCardMode = bp.socialCardMode;
+        }
         render();
         return;
       }
@@ -2500,7 +2762,7 @@
         const j = i + d;
         if (arr && j >= 0 && j < arr.length) {
           [arr[i], arr[j]] = [arr[j], arr[i]];
-          if (scope === 'wizard') render(); else renderModal();
+          if (scope === 'modal') renderModal(); else render();
         }
         return;
       }
@@ -2509,12 +2771,12 @@
         const arr = resolveSectionArray(scope);
         if (arr) {
           arr.splice(Number(idxStr), 1);
-          if (scope === 'wizard') render(); else renderModal();
+          if (scope === 'modal') renderModal(); else render();
         }
         return;
       }
 
-      // Config structural additions/deletions
+      // Config & CMS structural additions/deletions
       if (btn.dataset.cfgDelAuthor) {
         delete configDraft.site.authors[btn.dataset.cfgDelAuthor];
         render();
@@ -2553,12 +2815,17 @@
         render();
         return;
       }
+      if (btn.dataset.cmsDelRedirect !== undefined) {
+        cmsDraft.redirects.splice(Number(btn.dataset.cmsDelRedirect), 1);
+        render();
+        return;
+      }
 
       // Content Type Modal triggers
       if (btn.dataset.ctNew) {
         openModal('contentType', {
           isNew: true, key: '', base: '', enabled: true, index: true, paginated: false, feed: false, nav: true,
-          labels: {}, descriptions: {}, card: { layout: 'grid', aspectRatio: 'video', badgeLimit: 3 }, fields: [],
+          labels: {}, descriptions: {}, card: { layout: 'grid', aspectRatio: 'video', badgeLimit: 3 }, search: { enabled: true }, fields: [],
         });
         return;
       }
@@ -2575,15 +2842,17 @@
       if (btn.dataset.ctDelExec) {
         const [key, mode] = btn.dataset.ctDelExec.split(':');
         confirmTarget = '';
-        try {
-          const res = await apiPost('api/content-type-delete', { key, deleteFiles: mode === 'files' });
-          logConsole('content-type-delete ' + key, JSON.stringify(res.syncResult, null, 2), true);
-          showToast(key + ' deleted');
-          await refreshState({ resetDrafts: true });
-        } catch (err) {
-          showToast(err.message);
-          logConsole('content-type-delete', err.message, false);
-        }
+        await withBusy('content-type-delete', async () => {
+          try {
+            const res = await apiPost('api/content-type-delete', { key, deleteFiles: mode === 'files' });
+            logConsole('content-type-delete ' + key, JSON.stringify(res.syncResult, null, 2), true);
+            showToast(key + ' deleted');
+            await refreshState({ resetDrafts: true });
+          } catch (err) {
+            showToast(err.message);
+            logConsole('content-type-delete', err.message, false);
+          }
+        });
         return;
       }
 
@@ -2604,8 +2873,8 @@
         const info = pGroup?.locales?.[locale];
         if (info) {
           openModal('sections', {
-            group, locale, hero: info.hero || 'none', container: info.container || 'canvas',
-            flushTop: Boolean(info.flushTop), sections: deepClone(info.sections || []),
+            group, locale, hero: info.hero === false ? 'none' : info.hero === true ? 'default' : (info.hero || 'none'),
+            container: info.container || 'canvas', flushTop: Boolean(info.flushTop), sections: deepClone(info.sections || []),
           });
         }
         return;
@@ -2620,6 +2889,16 @@
         }
         return;
       }
+      if (btn.dataset.entryDelLocExec) {
+        const [col, group, locale] = btn.dataset.entryDelLocExec.split('|');
+        confirmTarget = '';
+        if (col === 'pages') {
+          await runCliAction('remove:page', { group, locale }, `remove:page ${group} (${locale})`);
+        } else {
+          await runCliAction('remove:post', { collection: col, group, locale }, `remove:post ${col}/${group} (${locale})`);
+        }
+        return;
+      }
 
       // Locales & Messages actions
       if (btn.dataset.locEdit) {
@@ -2630,7 +2909,7 @@
       }
       if (btn.dataset.locDelExec) {
         confirmTarget = '';
-        await runCliAction('i18n:remove-lang', { code: btn.dataset.locDelExec, deleteContent: false }, 'i18n:remove-lang ' + btn.dataset.locDelExec);
+        await runCliAction('i18n:remove-lang', { code: btn.dataset.locDelExec, deleteContent: i18nDeleteContent }, 'i18n:remove-lang ' + btn.dataset.locDelExec);
         return;
       }
       if (btn.dataset.i18nPage !== undefined) {
@@ -2664,6 +2943,12 @@
         if (btn.dataset.cliBrand) payload.brandOnly = true;
         if (btn.dataset.cliForce) payload.force = true;
         if (btn.dataset.cliClean) payload.clean = true;
+        if (action === 'i18n:set-default' || action === 'i18n:solo') {
+          payload.allowDraft = i18nAllowDraft;
+        }
+        if (action === 'i18n:solo') {
+          payload.deleteContent = i18nDeleteContent;
+        }
         await runCliAction(action, payload, action + (payload.type ? ' ' + payload.type : payload.code ? ' ' + payload.code : ''));
         return;
       }
@@ -2673,49 +2958,69 @@
       if (!act) return;
 
       if (act === 'save-project-meta') {
-        try {
-          const res = await apiPost('api/project-meta', projectDraft);
-          logConsole('project-meta', 'Updated: ' + res.updatedFiles.join(', '), true);
-          showToast(L('هویت پروژه و .env ذخیره شد', 'Project metadata saved'));
-          await refreshState({ resetDrafts: true });
-        } catch (err) {
-          showToast(err.message);
-          logConsole('project-meta', err.message, false);
-        }
+        await withBusy('project-meta', async () => {
+          try {
+            const res = await apiPost('api/project-meta', projectDraft);
+            logConsole('project-meta', 'Updated: ' + res.updatedFiles.join(', '), true);
+            showToast(L('هویت پروژه و .env ذخیره شد', 'Project metadata saved'));
+            await refreshState({ resetDrafts: true });
+          } catch (err) {
+            showToast(err.message);
+            logConsole('project-meta', err.message, false);
+          }
+        });
       } else if (act === 'wiz-add-sec') {
         const block = document.getElementById('wiz-add-block-sel')?.value || 'LandingHeroSplit';
         wizardDraft.homeSections.push({ block, props: deepClone(DEFAULT_BLOCK_PROPS[block] || {}) });
+        render();
+      } else if (act === 'cfg-add-sec') {
+        const block = document.getElementById('cfg-add-block-sel')?.value || 'LandingHeroSplit';
+        configDraft.ui.homeSections = configDraft.ui.homeSections || [];
+        configDraft.ui.homeSections.push({ block, props: deepClone(DEFAULT_BLOCK_PROPS[block] || {}) });
         render();
       } else if (act === 'wiz-copy-spec') {
         navigator.clipboard?.writeText(JSON.stringify(buildWizardSpec(), null, 2));
         showToast(L('Spec JSON کپی شد', 'Spec JSON copied'));
       } else if (act === 'wiz-dry' || act === 'wiz-apply') {
         const dryRun = act === 'wiz-dry';
-        try {
-          const res = await apiPost('api/site-apply', { spec: buildWizardSpec(), dryRun, skipAssets: false });
-          logConsole('site:apply' + (dryRun ? ' --dry-run' : ''), JSON.stringify(res, null, 2), true);
-          showToast(dryRun ? 'Dry-run OK' : 'Site configured ✓');
-          if (!dryRun) await refreshState({ resetDrafts: true });
-        } catch (err) {
-          showToast(err.message);
-          logConsole('site:apply', err.message, false);
-        }
+        await withBusy('site:apply', async () => {
+          try {
+            const res = await apiPost('api/site-apply', { spec: buildWizardSpec(), dryRun, skipAssets: false });
+            logConsole('site:apply' + (dryRun ? ' --dry-run' : ''), JSON.stringify(res, null, 2), true);
+            showToast(dryRun ? 'Dry-run OK' : 'Site configured ✓');
+            if (!dryRun) await refreshState({ resetDrafts: true });
+          } catch (err) {
+            showToast(err.message);
+            logConsole('site:apply', err.message, false);
+          }
+        });
       } else if (act === 'cfg-add-author') {
         const id = document.getElementById('new-author-id')?.value.trim();
         if (!id) return showToast('Author key required');
+        configDraft.site.authors = configDraft.site.authors || {};
         configDraft.site.authors[id] = { name: id, jobTitle: '', description: '', url: '', image: '', sameAs: [] };
         render();
       } else if (act === 'cfg-add-topic') {
+        configDraft.api.topics = configDraft.api.topics || [];
         configDraft.api.topics.push({ value: 'general', label: 'General', labels: {} });
         render();
       } else if (act === 'cfg-add-navpage') {
+        configDraft.ui.navigation = configDraft.ui.navigation || {};
+        configDraft.ui.navigation.pages = configDraft.ui.navigation.pages || [];
         configDraft.ui.navigation.pages.push({ group: 'about', icon: 'info', labels: {} });
         render();
       } else if (act === 'cfg-add-fcol') {
+        configDraft.ui.navigation = configDraft.ui.navigation || {};
+        configDraft.ui.navigation.footerColumns = configDraft.ui.navigation.footerColumns || [];
         configDraft.ui.navigation.footerColumns.push({ key: 'links', title: 'Links', titles: {}, items: [] });
         render();
       } else if (act === 'cfg-add-redirect') {
+        configDraft.redirects = configDraft.redirects || [];
         configDraft.redirects.push({ from: '/old-path', to: '/', status: 301 });
+        render();
+      } else if (act === 'cms-add-redirect') {
+        cmsDraft.redirects = cmsDraft.redirects || [];
+        cmsDraft.redirects.push({ from: '/old-path', to: '/', status: 301 });
         render();
       } else if (act === 'toggle-diff-json') {
         showDiffJson = !showDiffJson;
@@ -2729,103 +3034,123 @@
           showToast(L('برای تایید ریست دوباره کلیک کنید', 'Click again to confirm site:reset'));
         }
       } else if (act === 'save-config') {
-        try {
-          const res = await apiPost('api/config-save', { patch: configDraft });
-          logConsole('config-save', JSON.stringify(res.clientOverrides, null, 2), true);
-          showToast(L('تنظیمات در client/config.json ذخیره شد', 'Saved client/config.json'));
-          await refreshState({ resetDrafts: true });
-        } catch (err) {
-          showToast(err.message);
-          logConsole('config-save', err.message, false);
-        }
+        await withBusy('config-save', async () => {
+          try {
+            const res = await apiPost('api/config-save', { patch: configDraft });
+            logConsole('config-save', JSON.stringify(res.clientOverrides, null, 2), true);
+            showToast(L('تنظیمات در client/config.json ذخیره شد', 'Saved client/config.json'));
+            await refreshState({ resetDrafts: true });
+          } catch (err) {
+            showToast(err.message);
+            logConsole('config-save', err.message, false);
+          }
+        });
       } else if (act === 'toggle-pagesyml') {
         showPagesYmlRaw = !showPagesYmlRaw;
         render();
       } else if (act === 'cms-save') {
-        try {
-          const res = await apiPost('api/cms-save', { cms: cmsDraft });
-          logConsole('cms-save', JSON.stringify(res.cmsOverrides, null, 2), true);
-          showToast(L('تنظیمات CMS ذخیره شد', 'Saved client/cms.json'));
-          await refreshState({ resetDrafts: true });
-        } catch (err) {
-          showToast(err.message);
-          logConsole('cms-save', err.message, false);
-        }
+        await withBusy('cms-save', async () => {
+          try {
+            const res = await apiPost('api/cms-save', { cms: cmsDraft });
+            logConsole('cms-save', JSON.stringify(res.cmsOverrides, null, 2), true);
+            showToast(L('تنظیمات CMS ذخیره شد', 'Saved client/cms.json'));
+            await refreshState({ resetDrafts: true });
+          } catch (err) {
+            showToast(err.message);
+            logConsole('cms-save', err.message, false);
+          }
+        });
       } else if (act === 'cms-reset') {
-        try {
-          await apiPost('api/cms-save', { reset: true });
-          showToast(L('فایل client/cms.json پاک‌سازی شد', 'Reset client/cms.json'));
-          await refreshState({ resetDrafts: true });
-        } catch (err) {
-          showToast(err.message);
-        }
+        await withBusy('cms-reset', async () => {
+          try {
+            await apiPost('api/cms-save', { reset: true });
+            showToast(L('فایل client/cms.json پاک‌سازی شد', 'Reset client/cms.json'));
+            await refreshState({ resetDrafts: true });
+          } catch (err) {
+            showToast(err.message);
+          }
+        });
       } else if (act === 'ct-add-field' && modalState?.type === 'contentType') {
         modalState.data.fields = modalState.data.fields || [];
         modalState.data.fields.push({ name: 'field_' + (modalState.data.fields.length + 1), type: 'string', required: false, cms: true });
         renderModal();
       } else if (act === 'ct-save' && modalState?.type === 'contentType') {
-        try {
-          const res = await apiPost('api/content-type-save', modalState.data);
-          logConsole('content-type-save ' + res.key, JSON.stringify(res.syncResult, null, 2), true);
-          closeModal();
-          showToast(L('اسکیمای نوع محتوا ذخیره و همگام‌سازی شد', 'Content type schema saved & synced'));
-          await refreshState({ resetDrafts: true });
-        } catch (err) {
-          showToast(err.message);
-          logConsole('content-type-save', err.message, false);
-        }
+        await withBusy('content-type-save', async () => {
+          try {
+            const res = await apiPost('api/content-type-save', modalState.data);
+            logConsole('content-type-save ' + res.key, JSON.stringify(res.syncResult, null, 2), true);
+            closeModal();
+            showToast(L('اسکیمای نوع محتوا ذخیره و همگام‌سازی شد', 'Content type schema saved & synced'));
+            await refreshState({ resetDrafts: true });
+          } catch (err) {
+            showToast(err.message);
+            logConsole('content-type-save', err.message, false);
+          }
+        });
       } else if (act === 'create-entry') {
         const group = document.getElementById('new-entry-group')?.value.trim();
         const title = document.getElementById('new-entry-title')?.value.trim();
         const slug = document.getElementById('new-entry-slug')?.value.trim();
         const locale = document.getElementById('new-entry-locale')?.value;
         const publish = document.getElementById('new-entry-pub')?.checked;
-        if (!group) return showToast('Group key required');
+        if (!group || !/^[a-z0-9-]+$/.test(group)) {
+          return showToast(L('کلید گروه باید حروف کوچک انگلیسی، عدد یا خط تیره باشد', 'Group key must use lowercase letters, digits, or hyphens'));
+        }
         if (activeCollection === 'pages') {
           const preset = document.getElementById('new-entry-preset')?.value;
           await runCliAction('new:page', { group, title, slug, locale, preset, publish }, 'new:page ' + group);
-        } else {
+        } else if (activeCollection === 'blog') {
           const categories = document.getElementById('new-entry-cats')?.value.trim();
           const tags = document.getElementById('new-entry-tags')?.value.trim();
-          await runCliAction('new:post', { collection: activeCollection, group, title, slug, locale, categories, tags, publish }, `new:post ${activeCollection}/${group}`);
+          await runCliAction('new:post', { collection: activeCollection, group, title, slug, locale, categories, tags, publish }, `new:post blog/${group}`);
+        } else {
+          const desc = document.getElementById('new-entry-desc')?.value.trim();
+          await runCliAction('content:new', { type: activeCollection, group, title, slug, desc, locale, publish }, `content:new ${activeCollection}/${group}`);
         }
       } else if (act === 'save-entry' && modalState?.type === 'entry') {
-        try {
-          const res = await apiPost('api/content-entry', {
-            collection: modalState.data.collection,
-            group: modalState.data.group,
-            locale: modalState.data.locale,
-            frontmatter: modalState.data.frontmatter,
-            body: modalState.data.body,
-          });
-          logConsole('content-entry', 'Saved ' + res.file, true);
-          closeModal();
-          showToast(L('محتوا ذخیره شد', 'Entry saved'));
-          await refreshState();
-        } catch (err) {
-          showToast(err.message);
-          logConsole('content-entry', err.message, false);
-        }
+        await withBusy('content-entry', async () => {
+          try {
+            const res = await apiPost('api/content-entry', {
+              collection: modalState.data.collection,
+              group: modalState.data.group,
+              locale: modalState.data.locale,
+              frontmatter: modalState.data.frontmatter,
+              body: modalState.data.body,
+            });
+            logConsole('content-entry', 'Saved ' + res.file, true);
+            closeModal();
+            showToast(L('محتوا ذخیره شد', 'Entry saved'));
+            await refreshState();
+          } catch (err) {
+            showToast(err.message);
+            logConsole('content-entry', err.message, false);
+          }
+        });
       } else if (act === 'modal-add-sec' && modalState?.type === 'sections') {
         const block = document.getElementById('modal-add-block-sel')?.value || 'LandingHeroSplit';
         modalState.data.sections.push({ block, props: deepClone(DEFAULT_BLOCK_PROPS[block] || {}) });
         renderModal();
       } else if (act === 'save-page-sections' && modalState?.type === 'sections') {
-        try {
-          const d = modalState.data;
-          const res = await apiPost('api/page-sections', {
-            group: d.group, locale: d.locale, hero: d.hero, container: d.container, flushTop: d.flushTop, sections: d.sections,
-          });
-          logConsole('page-sections', 'Updated ' + res.file, true);
-          closeModal();
-          showToast(L('سکشن‌ها ذخیره شدند', 'Sections saved'));
-          await refreshState();
-        } catch (err) {
-          showToast(err.message);
-          logConsole('page-sections', err.message, false);
-        }
+        await withBusy('page-sections', async () => {
+          try {
+            const d = modalState.data;
+            const res = await apiPost('api/page-sections', {
+              group: d.group, locale: d.locale, hero: d.hero, container: d.container, flushTop: d.flushTop, sections: d.sections,
+            });
+            logConsole('page-sections', 'Updated ' + res.file, true);
+            closeModal();
+            showToast(L('سکشن‌ها ذخیره شدند', 'Sections saved'));
+            await refreshState();
+          } catch (err) {
+            showToast(err.message);
+            logConsole('page-sections', err.message, false);
+          }
+        });
       } else if (act === 'add-lang') {
         const code = document.getElementById('add-lang-code')?.value.trim();
+        if (!code || !/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(code)) {
+          return showToast(L('کد زبان معتبر وارد کنید (مثلاً ar یا de)', 'Enter a valid locale code (e.g. ar or de)'));
+        }
         const name = document.getElementById('add-lang-name')?.value.trim();
         const dir = document.getElementById('add-lang-dir')?.value;
         const from = document.getElementById('add-lang-from')?.value;
@@ -2835,38 +3160,49 @@
         const publish = document.getElementById('add-lang-pub')?.checked;
         await runCliAction('i18n:add-lang', { code, name, dir, from, htmlLang, fontFamily, withContent, publish }, 'i18n:add-lang ' + code);
       } else if (act === 'lm-save' && modalState?.type === 'localeMeta') {
-        try {
-          const res = await apiPost('api/locale-meta', modalState.data);
-          logConsole('locale-meta', JSON.stringify(res.meta, null, 2), true);
-          closeModal();
-          showToast(L('متادیتای زبان ذخیره شد', 'Locale metadata saved'));
-          await refreshState();
-        } catch (err) {
-          showToast(err.message);
-        }
+        await withBusy('locale-meta', async () => {
+          try {
+            const res = await apiPost('api/locale-meta', modalState.data);
+            logConsole('locale-meta', JSON.stringify(res.meta, null, 2), true);
+            closeModal();
+            showToast(L('متادیتای زبان ذخیره شد', 'Locale metadata saved'));
+            await refreshState();
+          } catch (err) {
+            showToast(err.message);
+          }
+        });
       } else if (act === 'add-i18n-key') {
         const category = document.getElementById('add-key-cat')?.value.trim() || 'custom';
         const key = document.getElementById('add-key-name')?.value.trim();
+        if (!key || !/^[A-Za-z0-9_]+$/.test(key)) {
+          return showToast(L('نام کلید را با حروف انگلیسی و _ وارد کنید', 'Enter a valid alphanumeric key name'));
+        }
         const translations = {};
         document.querySelectorAll('[data-add-key-loc]').forEach((inp) => {
           if (inp.value.trim()) translations[inp.dataset.addKeyLoc] = inp.value.trim();
         });
         await runCliAction('i18n:add', { category, key, translations }, `i18n:add ${category}_${key}`);
+      } else if (act === 'discard-messages') {
+        msgDirty = {};
+        msgDeleteQueue.clear();
+        render();
       } else if (act === 'save-messages') {
-        try {
-          const res = await apiPost('api/messages-save', {
-            updatesByLocale: msgDirty,
-            deleteKeys: [...msgDeleteQueue],
-          });
-          msgDirty = {};
-          msgDeleteQueue.clear();
-          logConsole('messages-save', 'Updated locales: ' + (res.updatedLocales.join(', ') || 'compiled'), true);
-          showToast(L('ترجمه‌ها ذخیره و کامپایل شدند', 'Translations saved & compiled'));
-          await refreshState();
-        } catch (err) {
-          showToast(err.message);
-          logConsole('messages-save', err.message, false);
-        }
+        await withBusy('messages-save', async () => {
+          try {
+            const res = await apiPost('api/messages-save', {
+              updatesByLocale: msgDirty,
+              deleteKeys: [...msgDeleteQueue],
+            });
+            msgDirty = {};
+            msgDeleteQueue.clear();
+            logConsole('messages-save', 'Updated locales: ' + (res.updatedLocales.join(', ') || 'compiled'), true);
+            showToast(L('ترجمه‌ها ذخیره و کامپایل شدند', 'Translations saved & compiled'));
+            await refreshState();
+          } catch (err) {
+            showToast(err.message);
+            logConsole('messages-save', err.message, false);
+          }
+        });
       }
     });
 
