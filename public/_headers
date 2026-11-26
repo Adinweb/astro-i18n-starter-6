@@ -5,6 +5,10 @@
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin
+  # Optional strict Content-Security-Policy (review & enable for your client's allowed analytics/form hosts):
+  # Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.googletagmanager.com https://plausible.io https://www.clarity.ms; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://plausible.io https://api.web3forms.com https://formspree.io; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self' https://api.web3forms.com https://formspree.io; object-src 'none'
 
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable

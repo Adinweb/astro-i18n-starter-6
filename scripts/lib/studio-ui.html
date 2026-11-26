@@ -214,6 +214,7 @@
       <span id="ui-locales-badge" class="badge">...</span>
       <button id="ui-missing-badge" type="button" class="badge warn hidden"></button>
       <button id="ui-cms-sync-badge" type="button" class="badge warn hidden"></button>
+      <button id="ui-health-badge" type="button" class="badge hidden"></button>
     </div>
     <div class="topbar-actions">
       <a id="ui-preview-link" class="btn btn-sm hidden" target="_blank" rel="noopener">Preview ↗</a>
@@ -568,6 +569,7 @@
 
     // Active modal state
     let modalState = null;
+    let healthReport = null;
 
     function isFa() { return uiLang === 'fa'; }
     function L(faText, enText) { return isFa() ? faText : enText; }
@@ -874,10 +876,33 @@
           syncBadge.classList.add('hidden');
         }
       }
+
+      const healthBadge = document.getElementById('ui-health-badge');
+      if (healthBadge && healthReport?.summary) {
+        const { errors, warnings } = healthReport.summary;
+        healthBadge.className = 'badge ' + (errors > 0 ? 'err' : warnings > 0 ? 'warn' : 'ok');
+        healthBadge.style.cursor = 'pointer';
+        if (errors > 0) {
+          healthBadge.textContent = L(
+            `سلامت: ${errors} خطا / ${warnings} هشدار`,
+            `Health: ${errors} err · ${warnings} warn`
+          );
+        } else if (warnings > 0) {
+          healthBadge.textContent = L(`سلامت: ${warnings} هشدار`, `Health: ${warnings} warn`);
+        } else {
+          healthBadge.textContent = L('سلامت: عالی ✓', 'Health: OK ✓');
+        }
+        healthBadge.classList.remove('hidden');
+      }
     }
 
     async function refreshState({ resetDrafts = false } = {}) {
-      state = await apiGet('api/state');
+      const [nextState, nextHealth] = await Promise.all([
+        apiGet('api/state'),
+        apiGet('api/health').catch(() => null),
+      ]);
+      state = nextState;
+      if (nextHealth) healthReport = nextHealth;
       if (!projectDraft || resetDrafts) projectDraft = buildProjectDraft(state);
       if (!wizardDraft || resetDrafts) wizardDraft = buildDefaultWizardDraft(state);
       if (!configDraft || resetDrafts) configDraft = buildConfigDraft(state);
@@ -1622,6 +1647,7 @@
               <div class="field"><label>umamiSrc (URL)</label><input type="url" class="mono" data-cfg="analytics.umamiSrc" value="${esc(an.umamiSrc || '')}" /></div>
             </div>
             <div class="row">
+              <label class="check-pill"><input type="checkbox" data-cfg-bool="analytics.requireConsent" ${an.requireConsent !== false ? 'checked' : ''} /><span>requireConsent</span></label>
               <label class="check-pill"><input type="checkbox" data-cfg-bool="analytics.consentMode" ${an.consentMode ? 'checked' : ''} /><span>consentMode</span></label>
               <label class="check-pill"><input type="checkbox" data-cfg-bool="analytics.allowCookielessWithoutBanner" ${an.allowCookielessWithoutBanner ? 'checked' : ''} /><span>allowCookielessWithoutBanner</span></label>
             </div>
@@ -2674,6 +2700,38 @@
             <button type="button" class="btn btn-primary" data-action="lm-save">${L('ذخیره و کامپایل', 'Save & Compile')}</button>
           </div>
         `;
+      } else if (modalState.type === 'health') {
+        const rep = modalState.data || healthReport || { summary: { errors: 0, warnings: 0, passed: 0 }, checks: [] };
+        const items = rep.checks || [];
+        card.innerHTML = `
+          <div class="between" style="margin-bottom:10px;">
+            <div>
+              <h3 style="margin:0;">${L('گزارش سلامت پروژه (Live Doctor)', 'Project Health Diagnostics')}</h3>
+              <span class="muted">${L(
+                `${rep.summary.errors} خطا · ${rep.summary.warnings} هشدار · ${rep.summary.passed} تایید شده`,
+                `${rep.summary.errors} errors · ${rep.summary.warnings} warnings · ${rep.summary.passed} passed`
+              )}</span>
+            </div>
+            <div class="row">
+              <button type="button" class="btn btn-sm" data-action="refresh-health">${L('↻ بررسی مجدد', '↻ Re-check')}</button>
+              <button type="button" class="btn btn-sm" data-modal-close="1">✕</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${items.map((chk) => `
+              <div class="sec-item" style="margin:0;">
+                <div class="between">
+                  <div class="row">
+                    <span class="badge ${chk.level === 'error' ? 'err' : chk.level === 'warn' ? 'warn' : 'ok'}">${esc(chk.level.toUpperCase())}</span>
+                    <strong style="font-size:13px;">${esc(chk.message)}</strong>
+                  </div>
+                  ${chk.tab ? `<button type="button" class="btn btn-sm" data-health-jump="${esc(chk.tab)}:${esc(chk.subTab || '')}">${L('برو به بخش', 'Open')}</button>` : ''}
+                </div>
+                ${chk.hint ? `<p class="muted" style="margin:6px 0 0;">${esc(chk.hint)}</p>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
       }
     }
 
@@ -2726,6 +2784,16 @@
       activeTab = 'cms';
       localStorage.setItem('studio_tab', activeTab);
       render();
+    });
+
+    document.getElementById('ui-health-badge').addEventListener('click', () => {
+      apiGet('api/health')
+        .then((rep) => {
+          healthReport = rep;
+          updateChrome();
+          openModal('health', rep);
+        })
+        .catch((err) => showToast(err.message));
     });
 
     document.getElementById('btn-refresh').addEventListener('click', () => {
@@ -3649,6 +3717,33 @@
             logConsole('messages-save', err.message, false);
           }
         });
+      } else if (act === 'refresh-health') {
+        apiGet('api/health')
+          .then((rep) => {
+            healthReport = rep;
+            updateChrome();
+            if (modalState?.type === 'health') {
+              modalState.data = rep;
+              renderModal();
+            }
+            showToast(L('سلامت پروژه بررسی شد', 'Health diagnostics refreshed'));
+          })
+          .catch((err) => showToast(err.message));
+      }
+
+      const jump = e.target.closest('[data-health-jump]')?.dataset?.healthJump;
+      if (jump) {
+        const [tabName, subTabName] = jump.split(':');
+        if (tabName) {
+          activeTab = tabName;
+          localStorage.setItem('studio_tab', activeTab);
+        }
+        if (subTabName && tabName === 'config') {
+          configSubTab = subTabName;
+          localStorage.setItem('studio_config_subtab', configSubTab);
+        }
+        closeModal();
+        render();
       }
     });
 

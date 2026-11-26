@@ -211,27 +211,42 @@ const structuredData = schema ?? [
           if (fallback === 'dark' || fallback === 'light') return fallback;
           return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
-        function resolveConsentState() {
+        function resolveConsentSnapshot() {
           var key = document.documentElement.dataset.consentKey || 'cookie_consent';
           var expectedVer = Number(document.documentElement.dataset.consentVersion || '1');
-          function isValidRaw(raw) {
-            if (!raw) return false;
+          var emptySnapshot = {
+            state: 'undecided',
+            preferences: 'false',
+            analytics: 'false',
+            marketing: 'false',
+          };
+          function parseValidRaw(raw) {
+            if (!raw) return null;
             try {
               var parsed = JSON.parse(raw);
-              return Boolean(
+              if (
                 parsed &&
-                  parsed.version === expectedVer &&
-                  parsed.categories &&
-                  parsed.categories.necessary === true &&
-                  parsed.expiresAt &&
-                  Date.parse(parsed.expiresAt) > Date.now()
-              );
+                parsed.version === expectedVer &&
+                parsed.categories &&
+                parsed.categories.necessary === true &&
+                parsed.expiresAt &&
+                Date.parse(parsed.expiresAt) > Date.now()
+              ) {
+                return {
+                  state: 'decided',
+                  preferences: String(Boolean(parsed.categories.preferences)),
+                  analytics: String(Boolean(parsed.categories.analytics)),
+                  marketing: String(Boolean(parsed.categories.marketing)),
+                };
+              }
+              return null;
             } catch (_) {
-              return false;
+              return null;
             }
           }
           try {
-            if (isValidRaw(window.localStorage.getItem(key))) return 'decided';
+            var fromStorage = parseValidRaw(window.localStorage.getItem(key));
+            if (fromStorage) return fromStorage;
           } catch (_) {}
           try {
             var pairs = (document.cookie || '').split(';');
@@ -239,11 +254,12 @@ const structuredData = schema ?? [
               var eq = pairs[i].indexOf('=');
               if (eq > 0 && pairs[i].slice(0, eq).trim() === key) {
                 var val = decodeURIComponent(pairs[i].slice(eq + 1).trim());
-                if (isValidRaw(val)) return 'decided';
+                var fromCookie = parseValidRaw(val);
+                if (fromCookie) return fromCookie;
               }
             }
           } catch (_) {}
-          return 'undecided';
+          return emptySnapshot;
         }
         function resolveMotion() {
           try {
@@ -252,10 +268,13 @@ const structuredData = schema ?? [
           } catch (_) {}
           return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full';
         }
-        function applyToDocument(doc, theme, consentState, motion) {
+        function applyToDocument(doc, theme, consent, motion) {
           doc.documentElement.classList.add('js');
           doc.documentElement.dataset.theme = theme;
-          doc.documentElement.dataset.consentState = consentState;
+          doc.documentElement.dataset.consentState = consent.state;
+          doc.documentElement.dataset.consentPreferences = consent.preferences;
+          doc.documentElement.dataset.consentAnalytics = consent.analytics;
+          doc.documentElement.dataset.consentMarketing = consent.marketing;
           doc.documentElement.dataset.motion = motion;
           var meta = doc.querySelector('meta[name="theme-color"]');
           if (meta) {
@@ -263,13 +282,19 @@ const structuredData = schema ?? [
             if (next) meta.setAttribute('content', next);
           }
         }
-        applyToDocument(document, resolveTheme(), resolveConsentState(), resolveMotion());
+        applyToDocument(document, resolveTheme(), resolveConsentSnapshot(), resolveMotion());
         if (document.documentElement.dataset.themeSwapBound !== 'true') {
           document.documentElement.dataset.themeSwapBound = 'true';
           document.addEventListener('astro:before-swap', function (event) {
-            var current = document.documentElement.dataset.theme || resolveTheme();
-            var currentConsent =
-              document.documentElement.dataset.consentState || resolveConsentState();
+            var ds = document.documentElement.dataset;
+            var current = ds.theme || resolveTheme();
+            var fallbackConsent = resolveConsentSnapshot();
+            var currentConsent = {
+              state: ds.consentState || fallbackConsent.state,
+              preferences: ds.consentPreferences || fallbackConsent.preferences,
+              analytics: ds.consentAnalytics || fallbackConsent.analytics,
+              marketing: ds.consentMarketing || fallbackConsent.marketing,
+            };
             var currentMotion = resolveMotion();
             applyToDocument(event.newDocument, current, currentConsent, currentMotion);
           });
@@ -423,6 +448,7 @@ const structuredData = schema ?? [
                   width={brandLogo.width}
                   height={brandLogo.height}
                   class="brand-logo-light h-7 w-auto shrink-0 object-contain sm:h-8"
+                  data-brand-logo={showBrandText ? undefined : 'true'}
                   data-has-dark={hasDarkLogo ? 'true' : undefined}
                   decoding="async"
                 />
@@ -436,11 +462,12 @@ const structuredData = schema ?? [
                   width={brandLogo.width}
                   height={brandLogo.height}
                   class="brand-logo-dark h-7 w-auto shrink-0 object-contain sm:h-8"
+                  data-brand-logo={showBrandText ? undefined : 'true'}
                   decoding="async"
                 />
               )
             }
-            {showBrandText && <span class="truncate">{siteName}</span>}
+            {showBrandText && <span data-brand-text class="truncate">{siteName}</span>}
             <LayoutHooks slot="brand-badge" locale={locale} url={url} />
           </a>
 
@@ -956,6 +983,7 @@ const structuredData = schema ?? [
                     width={brandLogo.width}
                     height={brandLogo.height}
                     class="brand-logo-light h-7 w-auto shrink-0 object-contain"
+                    data-brand-logo={showBrandText ? undefined : 'true'}
                     data-has-dark={hasDarkLogo ? 'true' : undefined}
                     decoding="async"
                   />
@@ -969,11 +997,12 @@ const structuredData = schema ?? [
                     width={brandLogo.width}
                     height={brandLogo.height}
                     class="brand-logo-dark h-7 w-auto shrink-0 object-contain"
+                    data-brand-logo={showBrandText ? undefined : 'true'}
                     decoding="async"
                   />
                 )
               }
-              {showBrandText && <span>{siteName}</span>}
+              {showBrandText && <span data-brand-text>{siteName}</span>}
             </a>
             <p data-footer-tagline class="text-xs text-muted leading-relaxed max-w-xs">
               {m.site_description({}, { locale })}

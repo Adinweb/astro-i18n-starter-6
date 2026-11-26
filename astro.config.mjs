@@ -99,6 +99,13 @@ function agencyRedirectsIntegration() {
         const outDir = fileURLToPath(dir);
         injectFontPreloadsIntoDist(outDir, themePresets, appConfig.brand);
 
+        const blogType = appConfig.content?.types?.blog;
+        const blogFeedEnabled =
+          Boolean(blogType?.enabled ?? true) && Boolean(blogType?.feed ?? true);
+        if (!blogFeedEnabled) {
+          fs.rmSync(path.join(outDir, 'rss.xml'), { force: true });
+        }
+
         // Strip dev-only scratch/AIStudio reference assets copied from `public/assets/aistudio`
         // while keeping workspace dev folders intact.
         const aistudioOutDir = path.join(outDir, 'assets', 'aistudio');

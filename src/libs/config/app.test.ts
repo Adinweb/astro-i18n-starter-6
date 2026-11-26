@@ -514,11 +514,14 @@ describe('src/libs/config/app.ts', () => {
         umamiSrc: 'https://analytics.example.com/script.js',
         clarityId: 'abc123defg',
         consentMode: true,
+        requireConsent: false,
         allowCookielessWithoutBanner: true,
       });
+      expect(defaultAnalyticsConfig.requireConsent).toBe(true);
       expect(validAnalytics.ga4Id).toBe('G-ABCD1234EF');
       expect(validAnalytics.gtmId).toBe('GTM-AB12CD3');
       expect(validAnalytics.consentMode).toBe(true);
+      expect(validAnalytics.requireConsent).toBe(false);
       expect(validAnalytics.allowCookielessWithoutBanner).toBe(true);
 
       expect(() => analyticsConfigSchema.parse({ ga4Id: 'UA-12345-1' })).toThrow();

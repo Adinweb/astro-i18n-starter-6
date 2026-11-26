@@ -1,23 +1,23 @@
 import type { APIRoute } from 'astro';
-import { DEFAULT_LOCALE, LOCALES, LOCALE_METADATA } from '@/i18n/locales';
+import { DEFAULT_LOCALE, LOCALES, LOCALE_METADATA, type Locale } from '@/i18n/locales';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
+import { resolveLocalizedSiteName } from '@/libs/content/seo';
 import { getSiteRoutes } from '@/libs/content/service';
+import * as m from '@/paraglide/messages';
 
-/**
- * Generates `/llms.txt` as a clean Markdown index of published default-locale
- * pages, articles, and collections for AI/LLM crawlers without server overhead.
- */
-export const GET: APIRoute = async () => {
-  const routes = await getSiteRoutes();
-  const defaultRoutes = routes.filter((route) => route.props.locale === DEFAULT_LOCALE);
-
+function buildLocaleSections(
+  routes: Awaited<ReturnType<typeof getSiteRoutes>>,
+  targetLocale: Locale,
+  headingPrefix = ''
+): string[] {
+  const localeRoutes = routes.filter((route) => route.props.locale === targetLocale);
   const pageLines: string[] = [];
   const blogLines: string[] = [];
   let blogIndexUrl: string | undefined;
   const collectionMap = new Map<string, string[]>();
   const collectionIndexMap = new Map<string, string>();
 
-  for (const route of defaultRoutes) {
+  for (const route of localeRoutes) {
     const props = route.props;
     const href = absoluteUrl(props.url);
 
@@ -40,46 +40,71 @@ export const GET: APIRoute = async () => {
     }
   }
 
-  const localeSummary = LOCALES.map(
-    (loc) => `${LOCALE_METADATA[loc].name} (${loc}, ${LOCALE_METADATA[loc].dir.toUpperCase()})`
-  ).join(', ');
-
-  const sections: string[] = [
-    `# ${siteConfig.name}`,
-    '',
-    `> ${siteConfig.description}`,
-    '',
-    `- Canonical URL: ${absoluteUrl('/')}`,
-    `- Sitemap: ${absoluteUrl('/sitemap.xml')}`,
-    `- Active Locales: ${localeSummary}`,
-    ...(siteConfig.contactEmail ? [`- Contact: mailto:${siteConfig.contactEmail}`] : []),
-  ];
-
+  const out: string[] = [];
   if (pageLines.length > 0) {
-    sections.push('', '## Pages', '', ...pageLines);
+    out.push('', `## ${headingPrefix}Pages`, '', ...pageLines);
   }
-
   if (blogLines.length > 0) {
-    sections.push(
+    out.push(
       '',
-      '## Blog',
+      `## ${headingPrefix}Blog`,
       '',
       ...(blogIndexUrl ? [`- Index: ${blogIndexUrl}`] : []),
       ...blogLines
     );
   }
-
   for (const [collectionKey, entries] of collectionMap.entries()) {
     if (entries.length === 0) continue;
     const heading = collectionKey.charAt(0).toUpperCase() + collectionKey.slice(1);
     const indexHref = collectionIndexMap.get(collectionKey);
-    sections.push(
+    out.push(
       '',
-      `## ${heading}`,
+      `## ${headingPrefix}${heading}`,
       '',
       ...(indexHref ? [`- Index: ${indexHref}`] : []),
       ...entries
     );
+  }
+  return out;
+}
+
+/**
+ * Generates `/llms.txt` as a clean Markdown index of published pages, articles,
+ * and collections across all active locales for AI/LLM crawlers without server overhead.
+ */
+export const GET: APIRoute = async () => {
+  const routes = await getSiteRoutes();
+  const siteName = resolveLocalizedSiteName(
+    siteConfig,
+    DEFAULT_LOCALE,
+    m.site_name({}, { locale: DEFAULT_LOCALE })
+  );
+  const siteDescription =
+    m.site_description({}, { locale: DEFAULT_LOCALE }) || siteConfig.description;
+
+  const localeSummary = LOCALES.map(
+    (loc) => `${LOCALE_METADATA[loc].name} (${loc}, ${LOCALE_METADATA[loc].dir.toUpperCase()})`
+  ).join(', ');
+
+  const sections: string[] = [
+    `# ${siteName}`,
+    '',
+    `> ${siteDescription}`,
+    '',
+    `- Canonical URL: ${absoluteUrl('/')}`,
+    `- Sitemap: ${absoluteUrl('/sitemap.xml')}`,
+    `- Active Locales: ${localeSummary}`,
+    ...(siteConfig.contactEmail ? [`- Contact: mailto:${siteConfig.contactEmail}`] : []),
+    ...buildLocaleSections(routes, DEFAULT_LOCALE),
+  ];
+
+  for (const loc of LOCALES) {
+    if (loc === DEFAULT_LOCALE) continue;
+    const meta = LOCALE_METADATA[loc];
+    const localizedSections = buildLocaleSections(routes, loc, `${meta.name} (${loc}) — `);
+    if (localizedSections.length > 0) {
+      sections.push(...localizedSections);
+    }
   }
 
   const body = `${sections.join('\n')}\n`;

@@ -21,18 +21,21 @@ const umamiWebsiteId = (ANALYTICS_CONFIG.umamiWebsiteId || '').trim();
 const umamiSrc = (ANALYTICS_CONFIG.umamiSrc || '').trim();
 const clarityId = (ANALYTICS_CONFIG.clarityId || '').trim();
 const consentMode = Boolean(ANALYTICS_CONFIG.consentMode);
+const requireConsent = ANALYTICS_CONFIG.requireConsent !== false;
 const allowCookielessWithoutBanner = Boolean(ANALYTICS_CONFIG.allowCookielessWithoutBanner);
 
 const hasCookielessProvider = Boolean(plausibleDomain || (umamiWebsiteId && umamiSrc));
 const hasAnyProvider = Boolean(ga4Id || gtmId || hasCookielessProvider || clarityId);
+const canDirectLoad = !requireConsent;
+const canDirectCookieless = canDirectLoad || allowCookielessWithoutBanner;
 
 const consentModeDefaultSnippet =
-  consentMode && (ga4Id || gtmId)
+  requireConsent && consentMode && (ga4Id || gtmId)
     ? `window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};window.gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',functionality_storage:'denied',wait_for_update:500});`
     : '';
 
 const consentModeSyncSnippet =
-  consentMode && (ga4Id || gtmId)
+  requireConsent && consentMode && (ga4Id || gtmId)
     ? `(function(){var d=document.documentElement.dataset;if(typeof window.gtag==='function'){window.gtag('consent','update',{analytics_storage:d.consentAnalytics==='true'?'granted':'denied',ad_storage:d.consentMarketing==='true'?'granted':'denied',ad_user_data:d.consentMarketing==='true'?'granted':'denied',ad_personalization:d.consentMarketing==='true'?'granted':'denied',functionality_storage:d.consentPreferences==='true'?'granted':'denied'});}})();`
     : '';
 
@@ -55,8 +58,9 @@ const clarityInitSnippet = clarityId
       data-analytics-gatekeeper
       data-ga4-id={ga4Id || undefined}
       data-gtm-id={gtmId || undefined}
-      data-consent-mode={consentMode ? 'true' : undefined}
-      data-cookieless-open={allowCookielessWithoutBanner && hasCookielessProvider ? 'true' : undefined}
+      data-consent-mode={requireConsent && consentMode ? 'true' : undefined}
+      data-require-consent={requireConsent ? 'true' : 'false'}
+      data-cookieless-open={canDirectCookieless && hasCookielessProvider ? 'true' : undefined}
       transition:persist="analytics-gatekeeper"
       hidden
     >
@@ -71,38 +75,52 @@ const clarityInitSnippet = clarityId
         />
       )}
 
-      {ga4Id && (
-        <>
-          <script
-            is:inline
-            type="text/plain"
-            data-cookie-category="analytics"
-            data-cookie-id="ga4-gtag-sdk"
-            data-cookie-async="true"
-            data-cookie-src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga4Id)}`}
-          />
-          <script
-            is:inline
-            type="text/plain"
-            data-cookie-category="analytics"
-            data-cookie-id="ga4-gtag-init"
-            set:html={ga4InitSnippet}
-          />
-        </>
-      )}
+      {ga4Id &&
+        (canDirectLoad ? (
+          <>
+            <script
+              is:inline
+              async
+              id="ga4-gtag-sdk"
+              src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga4Id)}`}
+            />
+            <script is:inline id="ga4-gtag-init" set:html={ga4InitSnippet} />
+          </>
+        ) : (
+          <>
+            <script
+              is:inline
+              type="text/plain"
+              data-cookie-category="analytics"
+              data-cookie-id="ga4-gtag-sdk"
+              data-cookie-async="true"
+              data-cookie-src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga4Id)}`}
+            />
+            <script
+              is:inline
+              type="text/plain"
+              data-cookie-category="analytics"
+              data-cookie-id="ga4-gtag-init"
+              set:html={ga4InitSnippet}
+            />
+          </>
+        ))}
 
-      {gtmId && (
-        <script
-          is:inline
-          type="text/plain"
-          data-cookie-category="analytics"
-          data-cookie-id="gtm-sdk"
-          set:html={gtmInitSnippet}
-        />
-      )}
+      {gtmId &&
+        (canDirectLoad ? (
+          <script is:inline id="gtm-sdk" set:html={gtmInitSnippet} />
+        ) : (
+          <script
+            is:inline
+            type="text/plain"
+            data-cookie-category="analytics"
+            data-cookie-id="gtm-sdk"
+            set:html={gtmInitSnippet}
+          />
+        ))}
 
       {plausibleDomain &&
-        (allowCookielessWithoutBanner ? (
+        (canDirectCookieless ? (
           <script
             is:inline
             defer
@@ -124,7 +142,7 @@ const clarityInitSnippet = clarityId
 
       {umamiWebsiteId &&
         umamiSrc &&
-        (allowCookielessWithoutBanner ? (
+        (canDirectCookieless ? (
           <script
             is:inline
             defer
@@ -144,15 +162,18 @@ const clarityInitSnippet = clarityId
           />
         ))}
 
-      {clarityId && (
-        <script
-          is:inline
-          type="text/plain"
-          data-cookie-category="analytics"
-          data-cookie-id="ms-clarity-sdk"
-          set:html={clarityInitSnippet}
-        />
-      )}
+      {clarityId &&
+        (canDirectLoad ? (
+          <script is:inline id="ms-clarity-sdk" set:html={clarityInitSnippet} />
+        ) : (
+          <script
+            is:inline
+            type="text/plain"
+            data-cookie-category="analytics"
+            data-cookie-id="ms-clarity-sdk"
+            set:html={clarityInitSnippet}
+          />
+        ))}
     </div>
   )
 }
@@ -194,8 +215,9 @@ const clarityInitSnippet = clarityId
     syncGoogleConsentMode();
 
     const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
-    const analyticsAllowed = document.documentElement.dataset.consentAnalytics === 'true';
-    const cookielessOpen = gatekeeper?.dataset.cookielessOpen === 'true';
+    const directOpen = gatekeeper?.dataset.requireConsent === 'false';
+    const analyticsAllowed = directOpen || document.documentElement.dataset.consentAnalytics === 'true';
+    const cookielessOpen = directOpen || gatekeeper?.dataset.cookielessOpen === 'true';
 
     if (!analyticsAllowed && !cookielessOpen) {
       lastTrackedUrl = '';

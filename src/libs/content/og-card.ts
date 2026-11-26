@@ -133,16 +133,93 @@ function rgbToHex(rgb: readonly [number, number, number]): string {
 }
 
 const require = createRequire(import.meta.url);
-let cachedFontBuffersPromise: Promise<Buffer[]> | null = null;
+const cachedFontBuffersMap = new Map<string, Promise<Buffer[]>>();
 const cachedLogoDataUriMap = new Map<string, string | null>();
 
-function resolveBundledFontFiles(): string[] {
-  const roots = [process.cwd()];
-  const candidates = [
+interface OgFontResolution {
+  rtlFamily: string;
+  latinFamily: string;
+  rtlFontCss: string;
+  latinFontCss: string;
+  candidates: string[];
+}
+
+function resolveOgTypography(brand?: Pick<BrandThemeInput, 'fontPreset' | 'rtlFontPreset'>): OgFontResolution {
+  const fontPreset = brand?.fontPreset ?? 'system';
+  const rtlPreset = brand?.rtlFontPreset ?? 'vazirmatn';
+
+  let rtlFamily = 'Vazirmatn';
+  let rtlFontCss = "'Vazirmatn', 'Noto Naskh Arabic', 'Noto Sans Arabic', 'Tahoma', sans-serif";
+  const rtlFiles = [
     'node_modules/@fontsource-variable/vazirmatn/files/vazirmatn-arabic-wght-normal.woff2',
     'node_modules/@fontsource-variable/vazirmatn/files/vazirmatn-latin-wght-normal.woff2',
-    'node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2',
   ];
+
+  if (rtlPreset === 'noto-arabic') {
+    rtlFamily = 'Noto Sans Arabic';
+    rtlFontCss = "'Noto Sans Arabic', 'Vazirmatn', 'Noto Naskh Arabic', 'Tahoma', sans-serif";
+    rtlFiles.unshift(
+      'node_modules/@fontsource-variable/noto-sans-arabic/files/noto-sans-arabic-arabic-wght-normal.woff2',
+      'node_modules/@fontsource-variable/noto-sans-arabic/files/noto-sans-arabic-latin-wght-normal.woff2'
+    );
+  }
+
+  let latinFamily = 'Plus Jakarta Sans';
+  let latinFontCss = "'Plus Jakarta Sans', 'Vazirmatn', 'Noto Sans', 'Liberation Sans', sans-serif";
+  const latinFiles: string[] = [];
+
+  switch (fontPreset) {
+    case 'manrope':
+      latinFamily = 'Manrope';
+      latinFontCss = "'Manrope', 'Plus Jakarta Sans', 'Vazirmatn', 'Noto Sans', sans-serif";
+      latinFiles.push('node_modules/@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2');
+      break;
+    case 'outfit':
+      latinFamily = 'Outfit';
+      latinFontCss = "'Outfit', 'DM Sans', 'Plus Jakarta Sans', 'Vazirmatn', sans-serif";
+      latinFiles.push(
+        'node_modules/@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2',
+        'node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2'
+      );
+      break;
+    case 'editorial':
+      latinFamily = 'Fraunces';
+      latinFontCss = "'Fraunces', 'DM Sans', 'Plus Jakarta Sans', 'Vazirmatn', serif";
+      latinFiles.push(
+        'node_modules/@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2',
+        'node_modules/@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2'
+      );
+      break;
+    case 'jakarta':
+    case 'system':
+    default:
+      latinFiles.push(
+        'node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2'
+      );
+      break;
+  }
+
+  // Always keep Plus Jakarta Sans fallback available when custom preset file is missing
+  const defaultLatinFile =
+    'node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2';
+  if (!latinFiles.includes(defaultLatinFile)) {
+    latinFiles.push(defaultLatinFile);
+  }
+
+  return {
+    rtlFamily,
+    latinFamily,
+    rtlFontCss,
+    latinFontCss,
+    candidates: [...new Set([...rtlFiles, ...latinFiles])],
+  };
+}
+
+function resolveBundledFontFiles(
+  brand?: Pick<BrandThemeInput, 'fontPreset' | 'rtlFontPreset'>
+): string[] {
+  const roots = [process.cwd()];
+  const { candidates } = resolveOgTypography(brand);
 
   const resolved: string[] = [];
   for (const rel of candidates) {
@@ -157,11 +234,15 @@ function resolveBundledFontFiles(): string[] {
   return resolved;
 }
 
-export function loadDeterministicOgFonts(): Promise<Buffer[]> {
-  if (cachedFontBuffersPromise) return cachedFontBuffersPromise;
+export function loadDeterministicOgFonts(
+  brand?: Pick<BrandThemeInput, 'fontPreset' | 'rtlFontPreset'>
+): Promise<Buffer[]> {
+  const cacheKey = `${brand?.fontPreset ?? 'system'}:${brand?.rtlFontPreset ?? 'vazirmatn'}`;
+  const cached = cachedFontBuffersMap.get(cacheKey);
+  if (cached) return cached;
 
-  cachedFontBuffersPromise = (async () => {
-    const fontFiles = resolveBundledFontFiles();
+  const promise = (async () => {
+    const fontFiles = resolveBundledFontFiles(brand);
     if (fontFiles.length === 0) return [];
     const decompress = require('wawoff2/decompress') as (
       input: Buffer | Uint8Array
@@ -176,7 +257,8 @@ export function loadDeterministicOgFonts(): Promise<Buffer[]> {
     return buffers;
   })();
 
-  return cachedFontBuffersPromise;
+  cachedFontBuffersMap.set(cacheKey, promise);
+  return promise;
 }
 
 async function resolveBrandLogoDataUri(logoPath?: string): Promise<string | null> {
@@ -250,9 +332,8 @@ export function renderBrandedOgSvg(
   const glowPrimaryCx = isRtl ? Math.round(width * 0.18) : Math.round(width * 0.82);
   const glowAccentCx = isRtl ? Math.round(width * 0.76) : Math.round(width * 0.24);
 
-  const fontFamily = isRtl
-    ? "'Vazirmatn', 'Noto Naskh Arabic', 'Noto Sans Arabic', 'Tahoma', sans-serif"
-    : "'Plus Jakarta Sans', 'Vazirmatn', 'Noto Sans', 'Liberation Sans', sans-serif";
+  const typography = resolveOgTypography(brandInput);
+  const fontFamily = isRtl ? typography.rtlFontCss : typography.latinFontCss;
 
   const rtlTextAttrs = isRtl ? ` direction="rtl" unicode-bidi="embed" xml:lang="${escapeXml(meta.htmlLang)}"` : '';
 
@@ -357,15 +438,20 @@ export async function renderBrandedOgPng(
           (await resolveBrandLogoDataUri(siteConfig.logo?.dark || siteConfig.logo?.light)) ??
           undefined);
 
+  const brandInput: Pick<BrandThemeInput, 'fontPreset' | 'rtlFontPreset'> = {
+    fontPreset: options.brand?.fontPreset ?? siteConfig.fontPreset,
+    rtlFontPreset: options.brand?.rtlFontPreset ?? siteConfig.rtlFontPreset,
+  };
+  const typography = resolveOgTypography(brandInput);
   const svg = renderBrandedOgSvg(context, { ...options, logoDataUri });
-  const fontBuffers = await loadDeterministicOgFonts();
+  const fontBuffers = await loadDeterministicOgFonts(brandInput);
   const isRtl = getLocaleMeta(context.locale).dir === 'rtl';
 
   const fontOptions: NonNullable<ResvgRenderOptions['font']> & { fontBuffers?: Buffer[] } = {
     fontBuffers,
     loadSystemFonts: fontBuffers.length === 0,
-    defaultFontFamily: isRtl ? 'Vazirmatn' : 'Plus Jakarta Sans',
-    sansSerifFamily: isRtl ? 'Vazirmatn' : 'Plus Jakarta Sans',
+    defaultFontFamily: isRtl ? typography.rtlFamily : typography.latinFamily,
+    sansSerifFamily: isRtl ? typography.rtlFamily : typography.latinFamily,
   };
 
   const resvg = new Resvg(svg, { font: fontOptions });

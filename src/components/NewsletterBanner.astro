@@ -61,6 +61,7 @@ const resolvedEndpoint =
     : null;
 const isConfigured = resolvedEndpoint !== null;
 const effectiveTimeout = timeoutMs ?? API_CONFIG.timeoutMs;
+const turnstileSiteKey = API_CONFIG.turnstileSiteKey.trim();
 const safeRawRedirect = resolvePostSubmitRedirect(redirectTo ?? API_CONFIG.redirects?.newsletter);
 const resolvedRedirectTo = safeRawRedirect
   ? safeRawRedirect.startsWith('/')
@@ -81,6 +82,7 @@ const copy = {
   successTitle: m.newsletter_success_title({}, { locale: activeLocale }),
   successDesc: m.newsletter_success_desc({}, { locale: activeLocale }),
   errEmail: m.newsletter_error_email({}, { locale: activeLocale }),
+  errTurnstile: m.contact_error_turnstile({}, { locale: activeLocale }),
   errTimeout: m.newsletter_error_timeout({}, { locale: activeLocale }),
   errHttp: m.newsletter_error_http({}, { locale: activeLocale }),
   errNetwork: m.newsletter_error_network({}, { locale: activeLocale }),
@@ -145,6 +147,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
               data-base-url={effectiveBaseUrl}
               data-endpoint={effectiveEndpoint}
               data-access-key={effectiveAccessKey}
+              data-turnstile-site-key={turnstileSiteKey || undefined}
               data-timeout-ms={String(effectiveTimeout)}
               data-source={source}
               data-redirect-to={resolvedRedirectTo || undefined}
@@ -153,6 +156,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
               data-msg-success-title={copy.successTitle}
               data-msg-success-desc={copy.successDesc}
               data-err-validation={copy.errEmail}
+              data-err-turnstile={copy.errTurnstile}
               data-err-unconfigured={copy.errUnconfigured}
               data-err-timeout={copy.errTimeout}
               data-err-http={copy.errHttp}
@@ -203,6 +207,10 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
                 </Button>
               </div>
 
+              {turnstileSiteKey && (
+                <div data-turnstile-container class="min-h-[65px]" />
+              )}
+
               <FormFeedbackBox kind="newsletter" />
             </form>
           )
@@ -219,11 +227,13 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
     type NewsletterSubscriptionPayload,
   } from '@/libs/api/client';
   import {
+    ensureTurnstileLoaded,
     finalizeFormSuccess,
     readFormErrorMessages,
     renderFormFeedback,
     setFormSubmitting,
     type FeedbackElements,
+    type TurnstileApi,
   } from '@/libs/api/form-dom';
 
   function initNewsletterForms() {
@@ -241,6 +251,29 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
         title: form.querySelector<HTMLElement>('[data-newsletter-feedback-title]'),
         body: form.querySelector<HTMLElement>('[data-newsletter-feedback-body]'),
       };
+      const turnstileContainer = form.querySelector<HTMLElement>('[data-turnstile-container]');
+      const turnstileSiteKey = form.dataset.turnstileSiteKey?.trim() ?? '';
+      let turnstileWidgetId: string | null = null;
+      let turnstileToken = '';
+
+      if (turnstileSiteKey && turnstileContainer) {
+        ensureTurnstileLoaded().then((api) => {
+          if (!api || !turnstileContainer.isConnected || turnstileWidgetId !== null) return;
+          const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+          turnstileWidgetId = api.render(turnstileContainer, {
+            sitekey: turnstileSiteKey,
+            theme,
+            language: form.dataset.locale ?? 'auto',
+            callback: (token: string) => {
+              turnstileToken = token;
+            },
+            'expired-callback': () => {
+              turnstileToken = '';
+            },
+          });
+        });
+      }
+
       const errorMessages = readFormErrorMessages(form.dataset);
 
       emailInput?.addEventListener('input', () => {
@@ -253,11 +286,18 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
 
         const formData = new FormData(form);
         const honeypot = String(formData.get('company_website') ?? '');
+        const winTurnstile = (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+        const resolvedToken =
+          turnstileToken ||
+          (turnstileWidgetId !== null ? winTurnstile?.getResponse(turnstileWidgetId) ?? '' : '') ||
+          String(formData.get('cf-turnstile-response') ?? '');
+
         const payload: NewsletterSubscriptionPayload = {
           email: String(formData.get('email') ?? ''),
           locale: form.dataset.locale ?? 'en',
           source: form.dataset.source,
           honeypot,
+          ...(resolvedToken ? { turnstileToken: resolvedToken } : {}),
         };
 
         setFormSubmitting(
@@ -275,6 +315,7 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
           baseUrl: form.dataset.baseUrl ?? '',
           endpoint: form.dataset.endpoint ?? '',
           accessKey: form.dataset.accessKey ?? '',
+          requireTurnstile: Boolean(turnstileSiteKey),
           timeoutMs: Number.isFinite(timeoutMs) ? timeoutMs : 10000,
         });
 
@@ -296,7 +337,11 @@ const emailInputId = `${id ?? `newsletter-${crypto.randomUUID().slice(0, 6)}`}-e
             honeypot,
             feedback,
             feedbackPadding: 'p-3.5',
-            onReset: () => emailInput?.removeAttribute('aria-invalid'),
+            onReset: () => {
+              emailInput?.removeAttribute('aria-invalid');
+              turnstileToken = '';
+              if (turnstileWidgetId !== null) winTurnstile?.reset(turnstileWidgetId);
+            },
           });
           return;
         }

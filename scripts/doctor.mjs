@@ -345,16 +345,19 @@ if (appConfig) {
     add('error', 'analytics.umamiWebsiteId is set without analytics.umamiSrc.', 'Provide the full Umami script URL in analytics.umamiSrc.');
   }
   if (!cookiesEnabled) {
+    const requireConsent = analytics.requireConsent !== false;
     const hasCookieDependent = Boolean(analytics.ga4Id || analytics.gtmId || analytics.clarityId);
     const hasCookieless = Boolean(analytics.plausibleDomain || (analytics.umamiWebsiteId && analytics.umamiSrc));
-    if (hasCookieDependent) {
+    if (hasCookieDependent && requireConsent) {
       add(
         strictLevel,
         'Cookie-dependent analytics (GA4 / GTM / Clarity) are configured while cookies.enabled is false — consent-gated tags stay inactive.',
-        'Set cookies.enabled: true in client/config.json for TDDDG § 25 / GDPR compliance.'
+        'Set cookies.enabled: true in client/config.json (for GDPR compliance) or set analytics.requireConsent: false if the consent banner is intentionally disabled.'
       );
+    } else if (hasCookieDependent && !requireConsent) {
+      add('ok', 'Cookie-dependent analytics are configured with analytics.requireConsent: false (direct mode).');
     }
-    if (hasCookieless && analytics.allowCookielessWithoutBanner !== true) {
+    if (hasCookieless && requireConsent && analytics.allowCookielessWithoutBanner !== true) {
       add(
         strictLevel,
         'Plausible/Umami analytics are configured while cookies.enabled is false and analytics.allowCookielessWithoutBanner is false — tags will stay blocked.',

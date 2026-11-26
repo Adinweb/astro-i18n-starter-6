@@ -6,11 +6,12 @@ import { formatNumber, formatYear } from '@/i18n/format';
 import { getNavigationSlots, type NavItem } from '@/libs/config/navigation';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { siteConfig } from '@/libs/config/app';
+import { resolveLocalizedSiteName } from '@/libs/content/seo';
 import * as m from '@/paraglide/messages';
 
 const locale: Locale = DEFAULT_LOCALE;
 const defaultLanguageName = LOCALE_METADATA[DEFAULT_LOCALE].name;
-const siteName = siteConfig.name;
+const siteName = resolveLocalizedSiteName(siteConfig, locale, m.site_name({}, { locale }));
 
 // A 404 has no translations of its own: one static document serves every
 // unknown path. Language switching therefore leads to each locale's home
@@ -86,6 +87,7 @@ const i18nData = Object.fromEntries(
       return [
         loc,
         {
+          siteName: resolveLocalizedSiteName(siteConfig, loc, m.site_name({}, { locale: loc })),
           title: m.common_not_found_title({}, { locale: loc }),
           desc: m.common_not_found_desc({}, { locale: loc }),
           siteDesc: m.site_description({}, { locale: loc }),
@@ -214,7 +216,15 @@ const i18nData = Object.fromEntries(
       document.documentElement.lang = data.lang;
       document.documentElement.dir = data.dir;
       document.documentElement.style.fontFamily = data.fontFamily;
-      document.title = `${data.title} | ${siteName}`;
+      document.title = `${data.title} | ${data.siteName || siteName}`;
+      document.querySelectorAll('[data-brand-text]').forEach((el) => {
+        el.textContent = data.siteName || siteName;
+      });
+      document.querySelectorAll('[data-brand-logo]').forEach((el) => {
+        if (el instanceof HTMLImageElement) {
+          el.alt = data.siteName || siteName;
+        }
+      });
 
       // Update 404 body text nodes
       codeEl.textContent = data.code;

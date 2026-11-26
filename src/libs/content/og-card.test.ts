@@ -120,6 +120,47 @@ describe('src/libs/content/og-card.ts & faq.ts', () => {
     expect(rightSideBrightPixels).toBeGreaterThan(150);
   });
 
+  it('supports brand fontPreset and rtlFontPreset overrides in SVG and rasterized PNGs', async () => {
+    const manropeSvg = renderBrandedOgSvg(
+      {
+        routeKey: 'pages/about/en',
+        title: 'Custom Typography Preset',
+        subtitle: 'Matches brand font selection.',
+        locale: 'en',
+      },
+      { brand: { themeColor: '#10b981', preset: 'emerald', fontPreset: 'editorial', rtlFontPreset: 'noto-arabic' } }
+    );
+    expect(manropeSvg).toContain('Fraunces');
+
+    const notoRtlSvg = renderBrandedOgSvg(
+      {
+        routeKey: 'pages/about/fa',
+        title: 'تایپوگرافی اختصاصی فارسی',
+        subtitle: 'هماهنگ با فونت برند.',
+        locale: 'fa',
+      },
+      { brand: { themeColor: '#10b981', preset: 'emerald', fontPreset: 'manrope', rtlFontPreset: 'noto-arabic' } }
+    );
+    expect(notoRtlSvg).toContain('Noto Sans Arabic');
+
+    const presetFonts = await loadDeterministicOgFonts({
+      fontPreset: 'outfit',
+      rtlFontPreset: 'noto-arabic',
+    });
+    expect(presetFonts.length).toBeGreaterThanOrEqual(3);
+
+    const pngPreset = await renderBrandedOgPng(
+      {
+        routeKey: 'pages/pricing/en',
+        title: 'Outfit Branded Card',
+        locale: 'en',
+      },
+      { brand: { themeColor: '#4f46e5', preset: 'indigo', fontPreset: 'outfit', rtlFontPreset: 'vazirmatn' } }
+    );
+    expect(pngPreset.readUInt32BE(16)).toBe(1200);
+    expect(pngPreset.readUInt32BE(20)).toBe(630);
+  });
+
   it('builds valid Schema.org FAQPage JSON-LD', () => {
     const schema = buildFaqSchema([
       { question: 'How fast is the build?', answer: 'Static HTML ships in milliseconds.' },

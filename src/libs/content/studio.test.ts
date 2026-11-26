@@ -825,6 +825,30 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
     expect(script).toContain('skipAssets: Boolean(wizardDraft.skipAssets)');
     expect(script).toContain('registeredTemplates');
     expect(script).toContain("['default', 'surface', 'subtle']");
+    expect(html.text).toContain('ui-health-badge');
+    expect(script).toContain('api/health');
+    expect(script).toContain('requireConsent');
+  });
+
+  it('computes live workspace health diagnostics via GET /api/health', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+    const healthRes = await invokeStudio(handler, { method: 'GET', url: '/api/health' });
+    expect(healthRes.status).toBe(200);
+    expect(healthRes.json.ok).toBe(true);
+    expect(['ok', 'warn', 'error']).toContain(healthRes.json.status);
+    expect(healthRes.json.summary).toBeDefined();
+    expect(typeof healthRes.json.summary.errors).toBe('number');
+    expect(typeof healthRes.json.summary.warnings).toBe('number');
+    expect(typeof healthRes.json.summary.passed).toBe('number');
+    expect(Array.isArray(healthRes.json.checks)).toBe(true);
+    expect(healthRes.json.checks.length).toBeGreaterThan(0);
+    expect(
+      healthRes.json.checks.every(
+        (c: { level: string; message: string; tab: string }) =>
+          ['ok', 'warn', 'error'].includes(c.level) && typeof c.message === 'string' && typeof c.tab === 'string'
+      )
+    ).toBe(true);
+    expect(healthRes.json.checks.some((c: { tab: string }) => c.tab === 'i18n')).toBe(true);
   });
 });
 

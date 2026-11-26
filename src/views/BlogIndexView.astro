@@ -308,7 +308,7 @@ const ogContext: SocialCardContext = {
 
 <script>
   import { formatNumber } from '@/i18n/format';
-  import { getLenis } from '@/scripts/lenis';
+  import { getHeaderOffset, getLenis } from '@/scripts/lenis';
   import { refreshChronoTrig, replayStaggerGrid } from '@/scripts/chronotrig';
   import { paginate } from '@/libs/content/pagination';
   import { cloneTemplateIcon, renderDynamicPagination } from '@/libs/ui/pagination-dom';
@@ -703,7 +703,7 @@ const ogContext: SocialCardContext = {
         filterPage = nextPage;
         void render({ updateUrl: true });
         if (grid) {
-          const headerOffset = document.querySelector('header.fixed') ? -96 : 0;
+          const headerOffset = getHeaderOffset();
           const lenis = getLenis();
           if (lenis) {
             lenis.scrollTo(grid, { offset: headerOffset, duration: 0.9 });

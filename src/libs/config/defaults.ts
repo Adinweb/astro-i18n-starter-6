@@ -251,7 +251,7 @@ export const UI_CONFIG_DEFAULTS = {
   motion: MOTION_CONFIG_DEFAULTS,
 };
 
-/** Default analytics integrations (strictly consent-gated unless cookieless opt-out is explicit). */
+/** Default analytics integrations (strictly consent-gated unless explicitly configured otherwise). */
 export const ANALYTICS_CONFIG_DEFAULTS = {
   ga4Id: '',
   gtmId: '',
@@ -261,6 +261,7 @@ export const ANALYTICS_CONFIG_DEFAULTS = {
   umamiSrc: '',
   clarityId: '',
   consentMode: false,
+  requireConsent: true,
   allowCookielessWithoutBanner: false,
 };
 

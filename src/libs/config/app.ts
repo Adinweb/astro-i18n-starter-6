@@ -508,6 +508,7 @@ export const analyticsConfigSchema = z
       .optional()
       .default(ANALYTICS_CONFIG_DEFAULTS.clarityId),
     consentMode: z.boolean().optional().default(ANALYTICS_CONFIG_DEFAULTS.consentMode),
+    requireConsent: z.boolean().optional().default(ANALYTICS_CONFIG_DEFAULTS.requireConsent),
     allowCookielessWithoutBanner: z
       .boolean()
       .optional()

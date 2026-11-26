@@ -1373,6 +1373,169 @@ export function getStudioState(rootDir = defaultRootDir) {
   };
 }
 
+export function getStudioHealth(rootDir = defaultRootDir) {
+  const mergedConfig = readMergedConfig(rootDir);
+  const localeConfig = readLocaleConfig(rootDir);
+  const envInfo = parseAllowListedEnv(rootDir);
+  const syncPreview = syncDictionaryKeys(rootDir, { dryRun: true, compile: false });
+  const checks = [];
+
+  const pushCheck = (level, message, hint, tab = 'config', subTab = '') => {
+    checks.push({ level, message, hint, tab, subTab });
+  };
+
+  const configErrors = validateConfigObject(mergedConfig, rootDir);
+  for (const err of configErrors) {
+    pushCheck('error', err, 'Fix this configuration field in Config & Branding.', 'config', 'site');
+  }
+
+  const siteUrl = String(envInfo.vars?.SITE_URL || process.env.SITE_URL || '').trim();
+  if (!siteUrl) {
+    pushCheck(
+      'warn',
+      'SITE_URL is not configured in .env.',
+      'Set SITE_URL to your production domain in Project & Wizard -> .env before deployment.',
+      'wizard'
+    );
+  } else if (/(?:^https?:\/\/(?:localhost|127\.0\.0\.1)|example\.(?:com|org|net))/i.test(siteUrl)) {
+    pushCheck(
+      'warn',
+      `SITE_URL ("${siteUrl}") still points to localhost or a placeholder domain.`,
+      'Update SITE_URL to the client production URL before handoff.',
+      'wizard'
+    );
+  } else {
+    pushCheck('ok', `Production SITE_URL is set (${siteUrl}).`, '', 'wizard');
+  }
+
+  if (mergedConfig.site?.name === 'Astro i18n Starter') {
+    pushCheck(
+      'warn',
+      'Site name is still set to the default "Astro i18n Starter".',
+      'Customize site.name for your client brand.',
+      'config',
+      'site'
+    );
+  }
+
+  const hasEndpoint = Boolean(
+    String(mergedConfig.api?.baseUrl || '').trim() ||
+      String(envInfo.vars?.PUBLIC_API_BASE_URL || process.env.PUBLIC_API_BASE_URL || '').trim() ||
+      String(envInfo.vars?.PUBLIC_CONTACT_API_URL || process.env.PUBLIC_CONTACT_API_URL || '').trim() ||
+      mergedConfig.api?.provider === 'web3forms'
+  );
+  const contactEmail = String(mergedConfig.site?.contactEmail || '').trim();
+  if (!hasEndpoint && !contactEmail) {
+    pushCheck(
+      'warn',
+      'Both api.baseUrl and site.contactEmail are empty.',
+      'Set site.contactEmail (mailto fallback) or configure a form API provider.',
+      'config',
+      'analytics'
+    );
+  } else {
+    pushCheck('ok', 'Contact form destination is configured.', '', 'config', 'analytics');
+  }
+
+  if (mergedConfig.social?.github === 'https://github.com') {
+    pushCheck(
+      'warn',
+      'social.github still points to placeholder "https://github.com".',
+      'Set the client profile URL or clear the field.',
+      'config',
+      'business'
+    );
+  }
+
+  const analytics = mergedConfig.analytics || {};
+  const cookiesEnabled = mergedConfig.cookies?.enabled !== false;
+  const requireConsent = analytics.requireConsent !== false;
+  const hasCookieDependentAnalytics = Boolean(analytics.ga4Id || analytics.gtmId || analytics.clarityId);
+  const hasCookielessAnalytics = Boolean(
+    analytics.plausibleDomain || (analytics.umamiWebsiteId && analytics.umamiSrc)
+  );
+  if (!cookiesEnabled) {
+    if (hasCookieDependentAnalytics && requireConsent) {
+      pushCheck(
+        'warn',
+        'GA4/GTM/Clarity are configured with cookies.enabled = false while analytics.requireConsent = true.',
+        'Enable cookies.enabled or turn off analytics.requireConsent if no GDPR banner is used.',
+        'config',
+        'analytics'
+      );
+    }
+    if (hasCookielessAnalytics && requireConsent && analytics.allowCookielessWithoutBanner !== true) {
+      pushCheck(
+        'warn',
+        'Plausible/Umami are blocked because cookies.enabled is false without allowCookielessWithoutBanner.',
+        'Enable allowCookielessWithoutBanner or turn off analytics.requireConsent.',
+        'config',
+        'analytics'
+      );
+    }
+  }
+
+  if (syncPreview.totalAdded > 0) {
+    pushCheck(
+      'warn',
+      `${syncPreview.totalAdded} missing i18n dictionary key(s) detected across locales.`,
+      'Run Sync Missing Keys in Locales & Dictionary.',
+      'i18n'
+    );
+  } else {
+    pushCheck('ok', 'All active locales have complete dictionary keys.', '', 'i18n');
+  }
+
+  let todoCount = 0;
+  for (const loc of localeConfig.locales) {
+    const mergedDict = stripSchema(readMergedMessages(loc, rootDir));
+    for (const val of Object.values(mergedDict)) {
+      if (typeof val === 'string' && val.includes('[TODO:')) {
+        todoCount += 1;
+      }
+    }
+  }
+  if (todoCount > 0) {
+    pushCheck(
+      'warn',
+      `${todoCount} dictionary message(s) still contain "[TODO:" placeholders.`,
+      'Translate pending strings in Locales & Dictionary.',
+      'i18n'
+    );
+  }
+
+  const pagesYmlPath = path.join(rootDir, '.pages.yml');
+  if (fs.existsSync(pagesYmlPath)) {
+    try {
+      const check = syncCollections(rootDir, { check: true, dryRun: true });
+      if (check.ymlChanged || (check.missingDirs?.length || 0) > 0) {
+        pushCheck(
+          'warn',
+          '.pages.yml or content directories are out of sync with configured content types.',
+          'Click Sync Collections in CMS & Schemas.',
+          'cms'
+        );
+      } else {
+        pushCheck('ok', 'CMS schema (.pages.yml) and content directories are in sync.', '', 'cms');
+      }
+    } catch {
+      pushCheck('warn', 'Could not verify .pages.yml sync status.', '', 'cms');
+    }
+  }
+
+  const errors = checks.filter((c) => c.level === 'error').length;
+  const warnings = checks.filter((c) => c.level === 'warn').length;
+  const passed = checks.filter((c) => c.level === 'ok').length;
+  const status = errors > 0 ? 'error' : warnings > 0 ? 'warn' : 'ok';
+
+  return {
+    ok: true,
+    status,
+    summary: { errors, warnings, passed },
+    checks,
+  };
+}
+
 function buildAllowListedCommand(action, payload, rootDir) {
   const node = process.execPath;
   const binScript = (rel) => path.join(rootDir, 'scripts', rel);
@@ -2522,6 +2685,12 @@ export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' 
       if (req.method === 'GET' && pathname === '/api/state') {
         const state = getStudioState(rootDir);
         sendJson(res, 200, { ok: true, ...state });
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/api/health') {
+        const health = getStudioHealth(rootDir);
+        sendJson(res, 200, health);
         return;
       }
 

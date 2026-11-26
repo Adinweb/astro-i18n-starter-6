@@ -10,11 +10,11 @@ declare global {
 let lenis: Lenis | null = null;
 let lifecycleBound = false;
 
-function getHeaderOffset(): number {
+export function getHeaderOffset(): number {
   if (typeof document === 'undefined') return 0;
   const header = document.querySelector<HTMLElement>('header[data-site-header]');
   if (!header) {
-    return document.querySelector('header.fixed') ? -96 : 0;
+    return document.querySelector('.site-header[data-header-stuck="true"], header.fixed') ? -96 : 0;
   }
   if (header.dataset.stickyEnabled !== 'true') return 0;
   const stickyTop = Number.parseFloat(header.dataset.stickyTop ?? '12');

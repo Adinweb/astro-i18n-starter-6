@@ -388,9 +388,11 @@ if (sitemap) {
 
 assert(fs.existsSync(path.join(distDir, 'llms.txt')), 'dist/llms.txt exists');
 const llmsTxt = readHtml('llms.txt');
+const resolvedDefaultSiteName =
+  appConfig.site.localizedNames?.[DEFAULT_LOCALE]?.trim() || appConfig.site.name;
 if (llmsTxt) {
   assert(
-    llmsTxt.includes(`# ${appConfig.site.name}`) && llmsTxt.includes('Sitemap:'),
+    llmsTxt.includes(`# ${resolvedDefaultSiteName}`) && llmsTxt.includes('Sitemap:'),
     'dist/llms.txt includes the site heading and sitemap reference'
   );
 }
@@ -448,6 +450,10 @@ if (blogFeed) {
     }
   }
 } else {
+  assert(
+    !fs.existsSync(path.join(distDir, 'rss.xml')),
+    'dist/rss.xml is omitted when blog feed is disabled'
+  );
   for (const locale of nonDefaultLocales) {
     assert(
       !fs.existsSync(path.join(distDir, 'rss', `${locale}.xml`)),
@@ -461,7 +467,10 @@ const manifest = readHtml('site.webmanifest');
 if (manifest) {
   try {
     const data = JSON.parse(manifest);
-    assert(data.name === appConfig.site.name, 'Manifest name matches merged site config');
+    assert(
+      data.name === resolvedDefaultSiteName,
+      'Manifest name matches merged site config'
+    );
     assert(
       data.short_name === appConfig.site.shortName,
       'Manifest short_name matches merged site config'
