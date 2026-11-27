@@ -30,6 +30,8 @@ interface Props {
   showSocialButtons?: boolean;
   /** External authentication API endpoint path or absolute URL. */
   endpoint?: string;
+  /** Optional external OAuth / SSO start URLs; social buttons only render in live mode when configured. */
+  socialEndpoints?: { github?: string; sso?: string };
   /** Enables interactive UI validation demo on static documentation pages without a backend. */
   preview?: boolean;
   contained?: boolean;
@@ -47,6 +49,7 @@ const {
   allowModeSwitch = true,
   showSocialButtons = true,
   endpoint,
+  socialEndpoints,
   preview = false,
   contained = false,
   surface = 'surface',
@@ -76,9 +79,21 @@ const resolvedSubheading = resolveOptionalHeader(
     : m.block_auth_login_subtitle({}, { locale: activeLocale })
 );
 
+const resolveOptionalAuthUrl = (raw?: string): string | null => {
+  const clean = raw?.trim() ?? '';
+  if (!clean) return null;
+  if (clean.startsWith('/') && !clean.startsWith('//')) return clean;
+  return resolveApiEndpoint(clean, API_CONFIG.baseUrl);
+};
+
 const resolvedEndpoint = endpoint
   ? resolveApiEndpoint(endpoint, API_CONFIG.baseUrl)
   : null;
+const resolvedGithubUrl = resolveOptionalAuthUrl(socialEndpoints?.github);
+const resolvedSsoUrl = resolveOptionalAuthUrl(socialEndpoints?.sso);
+const hasGithubSocial = preview || resolvedGithubUrl !== null;
+const hasSsoSocial = preview || resolvedSsoUrl !== null;
+const renderSocialSection = showSocialButtons && (hasGithubSocial || hasSsoSocial);
 const isInteractive = resolvedEndpoint !== null || preview;
 const emailHref = siteConfig.contactEmail ? `mailto:${siteConfig.contactEmail}` : null;
 const isDev = import.meta.env.DEV;
@@ -111,6 +126,7 @@ const copy = {
   successMsg: m.block_auth_success({}, { locale: activeLocale }),
   errValidation: m.block_auth_error_validation({}, { locale: activeLocale }),
   errPassword: m.block_auth_error_password({}, { locale: activeLocale }),
+  errTerms: m.block_auth_error_terms({}, { locale: activeLocale }),
   errHttp: m.block_auth_error_http({}, { locale: activeLocale }),
   errNetwork: m.block_auth_error_network({}, { locale: activeLocale }),
   errTimeout: m.block_auth_error_timeout({}, { locale: activeLocale }),
@@ -219,31 +235,42 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
               </div>
             )}
 
-            {showSocialButtons && (
+            {renderSocialSection && (
               <div>
-                <div class="grid gap-2.5 sm:grid-cols-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="md"
-                    icon="brand-github"
-                    iconPosition="start"
-                    data-auth-social="github"
-                    class="w-full"
-                  >
-                    {copy.socialGithub}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="md"
-                    icon="shield"
-                    iconPosition="start"
-                    data-auth-social="sso"
-                    class="w-full"
-                  >
-                    {copy.socialGoogle}
-                  </Button>
+                <div
+                  class:list={[
+                    'grid gap-2.5',
+                    hasGithubSocial && hasSsoSocial ? 'sm:grid-cols-2' : 'grid-cols-1',
+                  ]}
+                >
+                  {hasGithubSocial && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="md"
+                      icon="brand-github"
+                      iconPosition="start"
+                      data-auth-social="github"
+                      data-auth-social-url={resolvedGithubUrl ?? ''}
+                      class="w-full"
+                    >
+                      {copy.socialGithub}
+                    </Button>
+                  )}
+                  {hasSsoSocial && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="md"
+                      icon="shield"
+                      iconPosition="start"
+                      data-auth-social="sso"
+                      data-auth-social-url={resolvedSsoUrl ?? ''}
+                      class="w-full"
+                    >
+                      {copy.socialGoogle}
+                    </Button>
+                  )}
                 </div>
 
                 <Divider label={copy.orContinue} locale={activeLocale} class="my-6" />
@@ -260,6 +287,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
               data-msg-success={resolvedEndpoint ? copy.successMsg : copy.previewSuccess}
               data-err-validation={copy.errValidation}
               data-err-password={copy.errPassword}
+              data-err-terms={copy.errTerms}
               data-err-http={copy.errHttp}
               data-err-network={copy.errNetwork}
               data-err-timeout={copy.errTimeout}
@@ -437,7 +465,18 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
 
       card.querySelectorAll<HTMLButtonElement>('[data-auth-social]').forEach((btn) => {
         btn.addEventListener('click', () => {
-          setFeedback('success', form.dataset.msgSuccess ?? '');
+          const socialUrl = btn.dataset.authSocialUrl?.trim() ?? '';
+          if (socialUrl) {
+            window.location.assign(socialUrl);
+            return;
+          }
+          const endpoint = form.dataset.endpoint ?? '';
+          const isPreview = form.dataset.preview === 'true';
+          if (isPreview && !endpoint) {
+            setFeedback('success', form.dataset.msgSuccess ?? '');
+          } else {
+            setFeedback('error', form.dataset.errUnconfigured ?? '');
+          }
         });
       });
 
@@ -446,6 +485,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
         if (!submitBtn || submitBtn.disabled) return;
 
         const formData = new FormData(form);
+        const activeMode = card.dataset.mode === 'signup' ? 'signup' : 'login';
         const email = String(formData.get('email') ?? '').trim();
         const password = String(formData.get('password') ?? '');
         const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -456,6 +496,10 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
         }
         if (password.length < 8) {
           setFeedback('error', form.dataset.errPassword ?? '');
+          return;
+        }
+        if (activeMode === 'signup' && formData.get('terms') !== 'on') {
+          setFeedback('error', form.dataset.errTerms ?? form.dataset.errValidation ?? '');
           return;
         }
 
@@ -479,16 +523,27 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
         const controller = new AbortController();
         const timer = window.setTimeout(() => controller.abort(), 10000);
 
+        const requestBody =
+          activeMode === 'signup'
+            ? {
+                mode: 'signup',
+                name: String(formData.get('name') ?? ''),
+                email,
+                password,
+                termsAccepted: true,
+              }
+            : {
+                mode: 'login',
+                email,
+                password,
+                remember: formData.get('remember') === 'on',
+              };
+
         try {
           const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({
-              mode: card.dataset.mode ?? 'login',
-              name: String(formData.get('name') ?? ''),
-              email,
-              password,
-            }),
+            body: JSON.stringify(requestBody),
             signal: controller.signal,
           });
           if (response.ok) {

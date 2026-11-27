@@ -25,56 +25,56 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
+
+      - name: Security audit
+        run: bun audit
 
       - name: Lint (messages, astro check, tsc)
-        run: pnpm run lint
+        run: npm run lint
 
       - name: Unit tests
-        run: pnpm test
+        run: npm test
 
       - name: i18n audit
-        run: pnpm run audit:i18n
+        run: npm run audit:i18n
 
       - name: Upstream contract check
-        run: pnpm run upstream:check
+        run: npm run upstream:check
 
       - name: Project health (doctor)
-        run: pnpm run doctor
+        run: npm run doctor
 
       - name: Build (Astro + Pagefind)
-        run: pnpm run build
+        run: npm run build
 
       - name: Smoke test built output
-        run: pnpm run smoke
+        run: npm run smoke
 
       - name: Internal link crawl
-        run: pnpm run link:check
+        run: npm run link:check
 
       - name: Install Playwright Chromium
-        run: pnpm exec playwright install chromium --with-deps
+        run: npx playwright install chromium --with-deps
 
       - name: Browser layout, CLS, JS budget & accessibility QA
-        run: pnpm run qa:browser
+        run: npm run qa:browser
 
       - name: Lighthouse performance, accessibility & SEO audit
-        run: pnpm run qa:lighthouse
+        run: npm run qa:lighthouse
 
       - name: Dead code check
-        run: pnpm run knip
+        run: npm run knip
 
       - name: CLI workflow check
-        run: pnpm run verify:cli
+        run: npm run verify:cli
 

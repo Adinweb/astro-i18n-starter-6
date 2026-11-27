@@ -10,45 +10,75 @@ interface Props {
 const { item, depth = 0 } = Astro.props;
 const hasChildren = Boolean(item.children && item.children.length > 0);
 const isDropdown = hasChildren && item.displayMode === 'dropdown';
+const isExpanded = hasActiveNavDescendant(item);
+const panelId = `footer-panel-${item.key}-${crypto.randomUUID().slice(0, 6)}`;
 ---
 
 <li>
   {
     hasChildren ? (
       isDropdown ? (
-        <details class="group/footer" open={hasActiveNavDescendant(item) || undefined}>
-          <summary
-            class:list={[
-              'list-none inline-flex items-center gap-1.5 cursor-pointer transition-colors hover:text-primary [&::-webkit-details-marker]:hidden',
-              item.active ? 'font-semibold text-primary' : 'text-fg/85',
-            ]}
-          >
-            {item.href ? (
+        item.href ? (
+          <div data-disclosure-item>
+            <div class="inline-flex items-center gap-1">
               <a
                 href={item.href}
                 data-nav-link={item.key}
                 target={item.external ? '_blank' : undefined}
                 rel={item.external ? 'noopener noreferrer' : undefined}
                 aria-current={item.active ? 'page' : undefined}
-                class="hover:underline"
+                class:list={[
+                  'inline-flex items-center gap-1 transition-colors hover:text-primary hover:underline',
+                  item.active ? 'font-semibold text-primary' : 'text-fg/85',
+                ]}
               >
-                {item.label}
+                <span>{item.label}</span>
+                {item.external && <Icon name="external-link" size={11} class="shrink-0 opacity-70" />}
               </a>
-            ) : (
+              <button
+                type="button"
+                data-disclosure-trigger
+                aria-expanded={isExpanded ? 'true' : 'false'}
+                aria-controls={panelId}
+                aria-label={item.label}
+                class="inline-flex items-center justify-center rounded p-0.5 text-muted transition-colors hover:text-primary cursor-pointer [&[aria-expanded=true]>svg]:rotate-180"
+              >
+                <Icon name="chevron-down" size={12} class="opacity-70 transition-transform duration-200" />
+              </button>
+            </div>
+            <ul
+              id={panelId}
+              data-disclosure-panel
+              hidden={!isExpanded || undefined}
+              class="mt-1.5 space-y-1.5 ps-3 border-s border-border/70"
+            >
+              {item.children!.map((child) => (
+                <Astro.self item={child} depth={depth + 1} />
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <details class="group/footer" open={isExpanded || undefined}>
+            <summary
+              class:list={[
+                'list-none inline-flex items-center gap-1.5 cursor-pointer transition-colors hover:text-primary [&::-webkit-details-marker]:hidden',
+                item.active ? 'font-semibold text-primary' : 'text-fg/85',
+              ]}
+            >
               <span>{item.label}</span>
-            )}
-            <Icon
-              name="chevron-down"
-              size={12}
-              class="shrink-0 opacity-70 transition-transform duration-200 group-open/footer:rotate-180"
-            />
-          </summary>
-          <ul class="mt-1.5 space-y-1.5 ps-3 border-s border-border/70">
-            {item.children!.map((child) => (
-              <Astro.self item={child} depth={depth + 1} />
-            ))}
-          </ul>
-        </details>
+              <Icon
+                name="chevron-down"
+                size={12}
+                class="shrink-0 opacity-70 transition-transform duration-200 group-open/footer:rotate-180"
+              />
+            </summary>
+            <ul class="mt-1.5 space-y-1.5 ps-3 border-s border-border/70">
+              {item.children!.map((child) => (
+                <Astro.self item={child} depth={depth + 1} />
+              ))}
+            </ul>
+          </details>
+        )
       ) : (
         <div>
           {item.href ? (

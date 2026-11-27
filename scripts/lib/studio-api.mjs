@@ -7,6 +7,7 @@
  * path confinement, SVG sanitization, allow-listed CLI execution (no shell), and a
  * write mutex so Astro SSG output (`dist/`) remains 100% pure static HTML.
  */
+import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
@@ -47,6 +48,7 @@ import {
 import { validateRedirects } from './redirects.mjs';
 import { applySiteSpec, validateSiteSpec } from './site-apply.mjs';
 import { renderStudioHtml } from './studio-ui.mjs';
+import { assertSafeSvg } from './svg-sanitize.mjs';
 import { syncCollections } from '../content-sync.mjs';
 import { upsertEnvContent } from '../client-bootstrap.mjs';
 
@@ -350,7 +352,8 @@ async function readJsonBody(req) {
     req.on('data', (chunk) => {
       total += chunk.length;
       if (total > MAX_BODY_BYTES) {
-        reject(Object.assign(new Error('Request payload exceeds 2 MB limit.'), { statusCode: 413 }));
+        const limitMb = Math.round(MAX_BODY_BYTES / (1024 * 1024));
+        reject(Object.assign(new Error(`Request payload exceeds ${limitMb} MB limit.`), { statusCode: 413 }));
         req.destroy();
         return;
       }
@@ -1800,7 +1803,29 @@ export function getStudioHealth(rootDir = defaultRootDir) {
 function buildAllowListedCommand(action, payload, rootDir) {
   const node = process.execPath;
   const binScript = (rel) => path.join(rootDir, 'scripts', rel);
-  const localBin = (name) => path.join(rootDir, 'node_modules', '.bin', name);
+  const localNodeStep = (pkgName, binName, extraArgs = []) => {
+    const pkgDir = path.join(rootDir, 'node_modules', ...pkgName.split('/'));
+    const manifestPath = path.join(pkgDir, 'package.json');
+    if (fs.existsSync(manifestPath)) {
+      try {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+        const binField = manifest.bin;
+        const relBin =
+          typeof binField === 'string'
+            ? binField
+            : binField && typeof binField === 'object'
+              ? binField[binName]
+              : null;
+        if (typeof relBin === 'string' && relBin.trim()) {
+          return { cmd: node, args: [path.resolve(pkgDir, relBin), ...extraArgs] };
+        }
+      } catch {
+        // Fall through to .bin lookup if package manifest cannot be read
+      }
+    }
+    const ext = process.platform === 'win32' ? '.cmd' : '';
+    return { cmd: path.join(rootDir, 'node_modules', '.bin', `${binName}${ext}`), args: extraArgs };
+  };
 
   switch (action) {
     case 'new:page': {
@@ -1980,26 +2005,26 @@ function buildAllowListedCommand(action, payload, rootDir) {
       return {
         chain: [
           { cmd: node, args: [binScript('messages-compile.mjs')] },
-          { cmd: localBin('tsc'), args: ['--noEmit'] },
-          { cmd: localBin('vitest'), args: ['run', '--no-isolate'] },
+          localNodeStep('typescript', 'tsc', ['--noEmit']),
+          localNodeStep('vitest', 'vitest', ['run', '--no-isolate']),
         ],
       };
     case 'lint':
       return {
         chain: [
           { cmd: node, args: [binScript('messages-compile.mjs')] },
-          { cmd: localBin('astro'), args: ['check'] },
-          { cmd: localBin('tsc'), args: ['--noEmit'] },
+          localNodeStep('astro', 'astro', ['check']),
+          localNodeStep('typescript', 'tsc', ['--noEmit']),
         ],
       };
     case 'knip':
-      return { cmd: localBin('knip'), args: [] };
+      return localNodeStep('knip', 'knip', []);
     case 'build':
       return {
         chain: [
           { cmd: node, args: [binScript('messages-compile.mjs')] },
           { cmd: node, args: [binScript('audit-i18n.mjs'), '--quiet'] },
-          { cmd: localBin('astro'), args: ['build'] },
+          localNodeStep('astro', 'astro', ['build']),
           { cmd: node, args: [binScript('index-pagefind.mjs')] },
         ],
       };
@@ -2010,8 +2035,8 @@ function buildAllowListedCommand(action, payload, rootDir) {
           { cmd: node, args: [binScript('upstream-check.mjs')] },
           { cmd: node, args: [binScript('audit-i18n.mjs'), '--quiet'] },
           { cmd: node, args: [binScript('doctor.mjs')] },
-          { cmd: localBin('vitest'), args: ['run', '--no-isolate'] },
-          { cmd: localBin('astro'), args: ['build'] },
+          localNodeStep('vitest', 'vitest', ['run', '--no-isolate']),
+          localNodeStep('astro', 'astro', ['build']),
           { cmd: node, args: [binScript('index-pagefind.mjs')] },
           { cmd: node, args: [binScript('smoke.mjs'), '--quiet'] },
           { cmd: node, args: [binScript('link-check.mjs'), '--quiet'] },
@@ -2098,27 +2123,6 @@ function savePageSections(rootDir, payload) {
   return { file: path.relative(rootDir, filePath), data: nextData };
 }
 
-function assertSafeSvg(bytes) {
-  const text = bytes.toString('utf-8');
-  if (!/<svg[\s>]/i.test(text)) {
-    throw new Error('Uploaded SVG does not contain a valid <svg> root element.');
-  }
-  const unsafePatterns = [
-    /<script[\s>]/i,
-    /<foreignObject[\s>]/i,
-    /<iframe[\s>]/i,
-    /<object[\s>]/i,
-    /<embed[\s>]/i,
-    /\bon[a-z]+\s*=/i,
-    /(?:javascript|vbscript):/i,
-  ];
-  for (const re of unsafePatterns) {
-    if (re.test(text)) {
-      throw new Error('Rejected SVG logo containing unsafe active content (script/event/iframe).');
-    }
-  }
-}
-
 function saveUploadedLogo(rootDir, payload) {
   const variant = payload.variant === 'dark' ? 'dark' : 'light';
   const dataUrl = String(payload.dataUrl ?? '');
@@ -2165,7 +2169,13 @@ function listStudioAssets(rootDir) {
         if (entry.name.startsWith('.')) continue;
         const abs = assertConfinedPath(baseDir, path.join(dir, entry.name));
         if (entry.isDirectory()) {
-          if (entry.name === 'pagefind' || entry.name === '_astro') continue;
+          if (
+            entry.name === 'pagefind' ||
+            entry.name === '_astro' ||
+            (entry.name === 'aistudio' && path.basename(dir) === 'assets')
+          ) {
+            continue;
+          }
           stack.push(abs);
         } else if (entry.isFile()) {
           const ext = path.extname(entry.name).toLowerCase();
@@ -3157,7 +3167,50 @@ function saveLocaleMeta(rootDir, payload) {
   return { ok: true, locale, meta: currentMeta };
 }
 
+function assertSafeStudioHttpRequest(req, pathname, expectedToken) {
+  if (!req.headers) return;
+  const headers = req.headers;
+
+  const fetchSite = String(headers['sec-fetch-site'] ?? '').trim().toLowerCase();
+  if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'same-site' && fetchSite !== 'none') {
+    throw Object.assign(new Error('Forbidden cross-site request to Studio API.'), { statusCode: 403 });
+  }
+
+  const host = String(headers.host ?? '').trim().toLowerCase();
+  if (host) {
+    for (const headerName of ['origin', 'referer']) {
+      const rawOrigin = headers[headerName];
+      if (!rawOrigin) continue;
+      let parsedOrigin;
+      try {
+        parsedOrigin = new URL(String(rawOrigin));
+      } catch {
+        throw Object.assign(new Error(`Invalid ${headerName} header.`), { statusCode: 403 });
+      }
+      if (parsedOrigin.host.toLowerCase() !== host) {
+        throw Object.assign(new Error(`Forbidden cross-origin ${headerName} for Studio API.`), {
+          statusCode: 403,
+        });
+      }
+    }
+  }
+
+  if (req.method === 'POST' && pathname.startsWith('/api/')) {
+    const contentType = String(headers['content-type'] ?? '').toLowerCase();
+    if (!contentType.includes('application/json')) {
+      throw Object.assign(new Error('Studio API requires Content-Type: application/json.'), {
+        statusCode: 415,
+      });
+    }
+    const token = String(headers['x-studio-token'] ?? '');
+    if (!token || token !== expectedToken) {
+      throw Object.assign(new Error('Invalid or missing Studio CSRF token.'), { statusCode: 403 });
+    }
+  }
+}
+
 export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' } = {}) {
+  const csrfToken = randomBytes(24).toString('hex');
   let writeLock = Promise.resolve();
   const withWriteLock = (fn) => {
     const run = writeLock.then(fn, fn);
@@ -3189,9 +3242,11 @@ export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' 
         return;
       }
 
+      assertSafeStudioHttpRequest(req, pathname, csrfToken);
+
       if (req.method === 'GET' && (pathname === '/' || pathname === '')) {
         const mountedInDev = origUrl.startsWith('/__studio');
-        sendHtml(res, renderStudioHtml({ mountedInDev, previewUrl }));
+        sendHtml(res, renderStudioHtml({ mountedInDev, previewUrl, csrfToken }));
         return;
       }
 

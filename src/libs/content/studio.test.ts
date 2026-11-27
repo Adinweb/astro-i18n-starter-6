@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createStudioHandler } from '../../../scripts/lib/studio-api.mjs';
+import { findUnsafeSvgReason, isSafeSvg } from '../../../scripts/lib/svg-sanitize.mjs';
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..', '..');
 
@@ -51,18 +52,27 @@ async function invokeStudio(
     method = 'GET',
     url = '/',
     originalUrl,
+    headers: reqHeaders,
     body,
-  }: { method?: string; url?: string; originalUrl?: string; body?: unknown }
+  }: {
+    method?: string;
+    url?: string;
+    originalUrl?: string;
+    headers?: Record<string, string>;
+    body?: unknown;
+  }
 ) {
   const req = new EventEmitter() as EventEmitter & {
     method: string;
     url: string;
     originalUrl?: string;
+    headers?: Record<string, string>;
     destroy: () => void;
   };
   req.method = method;
   req.url = url;
   if (originalUrl !== undefined) req.originalUrl = originalUrl;
+  if (reqHeaders !== undefined) req.headers = reqHeaders;
   req.destroy = () => {};
 
   const headers: Record<string, string> = {};
@@ -1125,6 +1135,118 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
     expect(script).toContain('toggle-entry-ref');
     expect(script).toContain('toggle-entry-preview');
     expect(script).toContain('data-cli="preflight"');
+    expect(script).toContain('X-Studio-Token');
+  });
+
+  it('enforces Studio HTTP Origin, Sec-Fetch-Site, Content-Type, CSRF token, aistudio asset exclusion, and deep SVG sanitization', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+
+    // Exclude public/assets/aistudio from listed Studio assets
+    const aistudioDir = path.join(tmpRoot, 'public', 'assets', 'aistudio');
+    fs.mkdirSync(aistudioDir, { recursive: true });
+    fs.writeFileSync(path.join(aistudioDir, 'scratch.png'), Buffer.from('fake'));
+    const assetsRes = await invokeStudio(handler, { method: 'GET', url: '/api/assets' });
+    expect(assetsRes.status).toBe(200);
+    expect(
+      assetsRes.json.assets.some((a: { path: string }) => a.path.includes('/assets/aistudio/'))
+    ).toBe(false);
+
+    // Extract CSRF token from rendered Studio HTML
+    const uiRes = await invokeStudio(handler, {
+      method: 'GET',
+      url: '/',
+      originalUrl: '/__studio/',
+      headers: { host: 'localhost:3000', 'sec-fetch-site': 'same-origin' },
+    });
+    expect(uiRes.status).toBe(200);
+    const bootMatch = uiRes.text.match(/const BOOT = (\{[^;\n]+\});/);
+    expect(bootMatch).not.toBeNull();
+    const bootJson = JSON.parse(bootMatch![1]);
+    expect(typeof bootJson.csrfToken).toBe('string');
+    expect(bootJson.csrfToken.length).toBeGreaterThanOrEqual(32);
+
+    // Reject cross-site Sec-Fetch-Site
+    const crossSite = await invokeStudio(handler, {
+      method: 'GET',
+      url: '/api/state',
+      headers: { host: 'localhost:3000', 'sec-fetch-site': 'cross-site' },
+    });
+    expect(crossSite.status).toBe(403);
+
+    // Reject mismatched Origin
+    const badOrigin = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/cms-save',
+      headers: {
+        host: 'localhost:3000',
+        origin: 'https://evil.example',
+        'content-type': 'application/json',
+        'x-studio-token': bootJson.csrfToken,
+      },
+      body: { reset: true },
+    });
+    expect(badOrigin.status).toBe(403);
+
+    // Reject non-JSON Content-Type
+    const badType = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/cms-save',
+      headers: {
+        host: 'localhost:3000',
+        origin: 'http://localhost:3000',
+        'content-type': 'text/plain',
+        'x-studio-token': bootJson.csrfToken,
+      },
+      body: { reset: true },
+    });
+    expect(badType.status).toBe(415);
+
+    // Reject missing/wrong CSRF token
+    const badToken = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/cms-save',
+      headers: {
+        host: 'localhost:3000',
+        origin: 'http://localhost:3000',
+        'content-type': 'application/json',
+        'x-studio-token': 'wrong-token',
+      },
+      body: { reset: true },
+    });
+    expect(badToken.status).toBe(403);
+
+    // Accept valid same-origin request with CSRF token + JSON Content-Type
+    const validPost = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/cms-save',
+      headers: {
+        host: 'localhost:3000',
+        origin: 'http://localhost:3000',
+        'sec-fetch-site': 'same-origin',
+        'content-type': 'application/json',
+        'x-studio-token': bootJson.csrfToken,
+      },
+      body: { reset: true },
+    });
+    expect(validPost.status).toBe(200);
+
+    // Verify shared SVG sanitizer blocks entity obfuscation, SMIL animate, external <use>, and CSS @import
+    expect(isSafeSvg('<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/></svg>')).toBe(true);
+    expect(
+      findUnsafeSvgReason('<svg><a href="j&#x61;vascript:alert(1)"><rect width="10" height="10"/></a></svg>')
+    ).toBeTruthy();
+    expect(
+      findUnsafeSvgReason('<svg><animate attributeName="href" values="javascript:alert(1)"/></svg>')
+    ).toBeTruthy();
+    expect(
+      findUnsafeSvgReason('<svg><use href="https://evil.example/sprite.svg#icon"/></svg>')
+    ).toBeTruthy();
+    expect(
+      isSafeSvg('<svg><defs><circle id="dot" r="2"/></defs><use href="#dot"/></svg>')
+    ).toBe(true);
+    expect(
+      findUnsafeSvgReason('<svg><style>@import url("https://evil.example/a.css");</style></svg>')
+    ).toBeTruthy();
   });
 });
 

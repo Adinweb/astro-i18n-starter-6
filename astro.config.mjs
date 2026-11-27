@@ -50,6 +50,10 @@ import {
   buildNginxRedirects,
   validateRedirects,
 } from './scripts/lib/redirects.mjs';
+import {
+  buildHtaccessHeaders,
+  buildNginxHeadersConf,
+} from './scripts/lib/deploy-headers.mjs';
 // Application-level values live in one merged config (`app.config.json` -> `client/config.json` -> `client/cms.json`).
 // It is read here rather than imported via TS so the dev server, the fallback site
 // origin, and the app all share the same port.
@@ -119,6 +123,12 @@ function agencyRedirectsIntegration() {
         const deployDir = path.join(rootDir, 'deploy');
         const nginxPath = path.join(deployDir, 'nginx-redirects.conf');
         const htaccessPath = path.join(deployDir, '.htaccess-redirects');
+        const nginxHeadersPath = path.join(deployDir, 'nginx-headers.conf');
+        const htaccessHeadersPath = path.join(deployDir, '.htaccess-headers');
+
+        fs.mkdirSync(deployDir, { recursive: true });
+        fs.writeFileSync(nginxHeadersPath, buildNginxHeadersConf(), 'utf-8');
+        fs.writeFileSync(htaccessHeadersPath, buildHtaccessHeaders(), 'utf-8');
 
         if (rules.length === 0) {
           fs.rmSync(netlifyPath, { force: true });
@@ -128,7 +138,6 @@ function agencyRedirectsIntegration() {
         }
 
         fs.writeFileSync(netlifyPath, buildNetlifyRedirects(rules), 'utf-8');
-        fs.mkdirSync(deployDir, { recursive: true });
         fs.writeFileSync(nginxPath, buildNginxRedirects(rules), 'utf-8');
         fs.writeFileSync(htaccessPath, buildHtaccessRedirects(rules), 'utf-8');
       },
@@ -243,12 +252,16 @@ const disableHmr = ['1', 'true', 'yes'].includes(
   String(process.env.DISABLE_HMR ?? '').toLowerCase()
 );
 
+const disableStudio = ['1', 'true', 'yes'].includes(
+  String(process.env.ASTRO_STUDIO_DISABLE ?? '').toLowerCase()
+);
+
 function studioDevPlugin() {
   return {
     name: 'astro-dev-studio',
     /** @param {import('vite').ViteDevServer} server */
     async configureServer(server) {
-      if (isBuild) return;
+      if (isBuild || disableStudio) return;
       const { createStudioHandler } = await import('./scripts/lib/studio-api.mjs');
       const handler = createStudioHandler({ rootDir });
       server.middlewares.use('/__studio', (req, res, next) => {
@@ -283,7 +296,7 @@ export default defineConfig({
       brandFontsPlugin(),
       tailwindcss(),
       codeInspectorPlugin({ bundler: 'vite' }),
-      ...(!isBuild ? [studioDevPlugin()] : []),
+      ...(!isBuild && !disableStudio ? [studioDevPlugin()] : []),
     ],
     resolve: {
       alias: {

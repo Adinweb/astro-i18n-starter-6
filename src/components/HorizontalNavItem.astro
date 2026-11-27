@@ -1,0 +1,221 @@
+---
+/**
+ * Shared horizontal navigation item renderer (SSOT for desktop header in
+ * `BaseLayout.astro` and horizontal `<NavMenu orientation="horizontal" />`).
+ */
+import HeaderMenuBranch from '@/components/HeaderMenuBranch.astro';
+import Icon from '@/components/ui/Icon.astro';
+import type { NavItem } from '@/libs/config/navigation';
+
+interface Props {
+  item: NavItem;
+  activeUnderline?: boolean;
+}
+
+const { item, activeUnderline = false } = Astro.props;
+
+function flattenInlineLeaves(items: NavItem[]): NavItem[] {
+  const out: NavItem[] = [];
+  for (const node of items) {
+    if (node.href) out.push(node);
+    if (node.children?.length) out.push(...flattenInlineLeaves(node.children));
+  }
+  return out;
+}
+
+const topActiveClass = activeUnderline
+  ? 'font-semibold text-fg underline decoration-primary decoration-2 underline-offset-4'
+  : 'font-semibold text-primary';
+---
+
+{
+  item.children && item.children.length > 0 ? (
+    item.displayMode === 'list' ? (
+      <div class="inline-flex flex-wrap items-center gap-2 rounded-full border border-border/70 bg-bg/50 px-3 py-1">
+        {item.href ? (
+          <a
+            href={item.href}
+            data-nav-link={item.key}
+            target={item.external ? '_blank' : undefined}
+            rel={item.external ? 'noopener noreferrer' : undefined}
+            aria-current={item.active ? 'page' : undefined}
+            class:list={[
+              'shrink-0 whitespace-nowrap font-semibold transition-colors hover:text-primary',
+              item.active ? 'text-primary' : 'text-fg',
+            ]}
+          >
+            {item.label}
+          </a>
+        ) : (
+          <span class="shrink-0 whitespace-nowrap font-semibold text-fg">{item.label}</span>
+        )}
+        <span aria-hidden="true" class="text-border">|</span>
+        <div class="flex flex-wrap items-center gap-2.5">
+          {item.children.map((child) =>
+            child.children && child.children.length > 0 ? (
+              child.displayMode === 'list' ? (
+                <div class="inline-flex flex-wrap items-center gap-1.5">
+                  {child.href ? (
+                    <a
+                      href={child.href}
+                      data-nav-link={child.key}
+                      target={child.external ? '_blank' : undefined}
+                      rel={child.external ? 'noopener noreferrer' : undefined}
+                      aria-current={child.active ? 'page' : undefined}
+                      class:list={[
+                        'shrink-0 whitespace-nowrap font-medium transition-colors hover:text-primary',
+                        child.active ? 'text-primary' : 'text-fg/85',
+                      ]}
+                    >
+                      {child.label}:
+                    </a>
+                  ) : (
+                    <span class="shrink-0 whitespace-nowrap font-medium text-muted">
+                      {child.label}:
+                    </span>
+                  )}
+                  {flattenInlineLeaves(child.children).map((sub) => (
+                    <a
+                      href={sub.href}
+                      data-nav-link={sub.key}
+                      target={sub.external ? '_blank' : undefined}
+                      rel={sub.external ? 'noopener noreferrer' : undefined}
+                      aria-current={sub.active ? 'page' : undefined}
+                      class:list={[
+                        'shrink-0 whitespace-nowrap transition-colors hover:text-primary',
+                        sub.active ? 'font-semibold text-primary' : 'text-fg/80',
+                      ]}
+                    >
+                      {sub.label}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div class="relative group" data-dropdown-item>
+                  <div class="inline-flex items-center gap-0.5">
+                    {child.href && (
+                      <a
+                        href={child.href}
+                        data-nav-link={child.key}
+                        target={child.external ? '_blank' : undefined}
+                        rel={child.external ? 'noopener noreferrer' : undefined}
+                        aria-current={child.active ? 'page' : undefined}
+                        class:list={[
+                          'inline-flex shrink-0 items-center whitespace-nowrap transition-colors hover:text-primary',
+                          child.active ? 'font-semibold text-primary' : 'text-fg/80',
+                        ]}
+                      >
+                        <span data-dropdown-label={child.key}>{child.label}</span>
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      class:list={[
+                        'inline-flex shrink-0 items-center gap-1 whitespace-nowrap transition-colors hover:text-primary cursor-pointer focus-visible:outline-none',
+                        child.active ? 'font-semibold text-primary' : 'text-fg/80',
+                      ]}
+                      aria-expanded="false"
+                      aria-haspopup="true"
+                      aria-label={child.href ? child.label : undefined}
+                      data-dropdown-trigger
+                    >
+                      {!child.href && <span data-dropdown-label={child.key}>{child.label}</span>}
+                      <Icon name="chevron-down" size={12} class="shrink-0 opacity-70" />
+                    </button>
+                  </div>
+                  <div
+                    data-dropdown-menu
+                    class="absolute start-0 top-full pt-1.5 z-50 hidden min-w-44 group-hover:block group-focus-within:block focus-within:block [&[data-force-closed=true]]:!hidden"
+                  >
+                    <div class="rounded-xl border border-border bg-surface p-1.5 shadow-xl" role="menu">
+                      {child.children.map((sub) => (
+                        <HeaderMenuBranch item={sub} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )
+            ) : (
+              <a
+                href={child.href}
+                data-nav-link={child.key}
+                target={child.external ? '_blank' : undefined}
+                rel={child.external ? 'noopener noreferrer' : undefined}
+                aria-current={child.active ? 'page' : undefined}
+                class:list={[
+                  'shrink-0 whitespace-nowrap transition-colors hover:text-primary',
+                  child.active ? 'font-semibold text-primary' : 'text-fg/80',
+                ]}
+              >
+                {child.label}
+              </a>
+            )
+          )}
+        </div>
+      </div>
+    ) : (
+      <div class="relative group" data-dropdown-item>
+        <div class="inline-flex items-center gap-0.5">
+          {item.href ? (
+            <a
+              href={item.href}
+              data-nav-link={item.key}
+              target={item.external ? '_blank' : undefined}
+              rel={item.external ? 'noopener noreferrer' : undefined}
+              aria-current={item.active ? 'page' : undefined}
+              class:list={[
+                'inline-flex shrink-0 items-center whitespace-nowrap transition-colors hover:text-primary py-1',
+                item.active ? topActiveClass : 'text-fg',
+              ]}
+            >
+              <span data-dropdown-label={item.key}>{item.label}</span>
+            </a>
+          ) : null}
+          <button
+            type="button"
+            class:list={[
+              'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap transition-colors hover:text-primary py-1 cursor-pointer focus-visible:outline-none',
+              item.active ? topActiveClass : 'text-fg',
+            ]}
+            aria-expanded="false"
+            aria-haspopup="true"
+            aria-label={item.href ? item.label : undefined}
+            data-dropdown-trigger
+          >
+            {!item.href && <span data-dropdown-label={item.key}>{item.label}</span>}
+            <Icon
+              name="chevron-down"
+              size={13}
+              class="ms-0.5 shrink-0 transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180"
+            />
+          </button>
+        </div>
+
+        <div
+          data-dropdown-menu
+          class="absolute start-0 top-full pt-1.5 z-50 hidden min-w-48 group-hover:block group-focus-within:block focus-within:block [&[data-force-closed=true]]:!hidden"
+        >
+          <div class="rounded-xl border border-border bg-surface p-1.5 shadow-xl" role="menu">
+            {item.children.map((child) => (
+              <HeaderMenuBranch item={child} />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  ) : (
+    <a
+      href={item.href}
+      data-nav-link={item.key}
+      target={item.external ? '_blank' : undefined}
+      rel={item.external ? 'noopener noreferrer' : undefined}
+      aria-current={item.active ? 'page' : undefined}
+      class:list={[
+        'shrink-0 whitespace-nowrap transition-colors hover:text-primary',
+        item.active ? topActiveClass : 'text-fg',
+      ]}
+    >
+      {item.label}
+    </a>
+  )
+}

@@ -11,6 +11,7 @@ interface Props {
 const { item, depth = 0 } = Astro.props;
 const hasChildren = Boolean(item.children && item.children.length > 0);
 const isDropdown = hasChildren && item.displayMode === 'dropdown';
+const isTopLevel = depth === 0;
 
 const scales = {
   0: { row: 'gap-3 rounded-xl px-2 py-2 text-sm', box: 'size-9 rounded-xl border', icon: 17 },
@@ -20,64 +21,82 @@ const scales = {
 
 const clampedDepth = Math.min(Math.max(depth, 0), 2) as 0 | 1 | 2;
 const scale = scales[clampedDepth];
-const isTopLevel = depth === 0;
+const isExpanded = hasActiveNavDescendant(item);
+const panelId = `drawer-panel-${item.key}-${crypto.randomUUID().slice(0, 6)}`;
 ---
 
 {
   hasChildren ? (
     isDropdown ? (
-      <details class="group/drawer" open={hasActiveNavDescendant(item) || undefined}>
-        <summary
-          class:list={[
-            'list-none flex items-center justify-between cursor-pointer transition-colors hover:bg-surface-hover hover:text-primary [&::-webkit-details-marker]:hidden',
-            scale.row,
-            item.active ? 'bg-primary/10 font-semibold text-primary' : 'text-fg',
-          ]}
-        >
-          <span class="flex min-w-0 flex-1 items-center gap-2.5">
-            <span
-              aria-hidden="true"
-              class:list={[
-                'flex shrink-0 items-center justify-center transition-colors',
-                scale.box,
-                isTopLevel
-                  ? item.active
-                    ? 'border-primary/40 bg-primary text-primary-fg shadow-xs'
-                    : 'border-border/70 bg-bg/60 text-muted group-hover/drawer:border-primary/30 group-hover/drawer:text-primary'
-                  : item.active
-                    ? 'text-primary'
-                    : 'text-muted',
-              ]}
+      item.href ? (
+        <div data-disclosure-item>
+          <div class="flex items-center justify-between gap-1">
+            <div class="min-w-0 flex-1">
+              <DrawerNavLink item={item} depth={depth} />
+            </div>
+            <button
+              type="button"
+              data-disclosure-trigger
+              aria-expanded={isExpanded ? 'true' : 'false'}
+              aria-controls={panelId}
+              aria-label={item.label}
+              class="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-hover hover:text-primary cursor-pointer [&[aria-expanded=true]>svg]:rotate-180"
             >
-              <Icon name={item.icon ?? 'layers'} size={scale.icon} />
-            </span>
-            {item.href ? (
-              <a
-                href={item.href}
-                data-nav-link={item.key}
-                target={item.external ? '_blank' : undefined}
-                rel={item.external ? 'noopener noreferrer' : undefined}
-                aria-current={item.active ? 'page' : undefined}
-                class="min-w-0 truncate hover:underline"
-              >
-                {item.label}
-              </a>
-            ) : (
-              <span class="min-w-0 truncate">{item.label}</span>
-            )}
-          </span>
-          <Icon
-            name="chevron-down"
-            size={14}
-            class="shrink-0 text-muted transition-transform duration-200 group-open/drawer:rotate-180"
-          />
-        </summary>
-        <div class="mt-1 space-y-1 ps-3 ms-4 border-s border-border/70">
-          {item.children!.map((child) => (
-            <Astro.self item={child} depth={depth + 1} />
-          ))}
+              <Icon name="chevron-down" size={14} class="transition-transform duration-200" />
+            </button>
+          </div>
+          <div
+            id={panelId}
+            data-disclosure-panel
+            hidden={!isExpanded || undefined}
+            class="mt-1 space-y-1 ps-3 ms-4 border-s border-border/70"
+          >
+            {item.children!.map((child) => (
+              <Astro.self item={child} depth={depth + 1} />
+            ))}
+          </div>
         </div>
-      </details>
+      ) : (
+        <details class="group/drawer" open={isExpanded || undefined}>
+          <summary
+            class:list={[
+              'list-none flex items-center justify-between cursor-pointer transition-colors hover:bg-surface-hover hover:text-primary [&::-webkit-details-marker]:hidden',
+              scale.row,
+              item.active ? 'bg-primary/10 font-semibold text-primary' : 'text-fg',
+            ]}
+          >
+            <span class="flex min-w-0 flex-1 items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                class:list={[
+                  'flex shrink-0 items-center justify-center transition-colors',
+                  scale.box,
+                  isTopLevel
+                    ? item.active
+                      ? 'border-primary/40 bg-primary text-primary-fg shadow-xs'
+                      : 'border-border/70 bg-bg/60 text-muted group-hover/drawer:border-primary/30 group-hover/drawer:text-primary'
+                    : item.active
+                      ? 'text-primary'
+                      : 'text-muted',
+                ]}
+              >
+                <Icon name={item.icon ?? 'layers'} size={scale.icon} />
+              </span>
+              <span class="min-w-0 truncate">{item.label}</span>
+            </span>
+            <Icon
+              name="chevron-down"
+              size={14}
+              class="shrink-0 text-muted transition-transform duration-200 group-open/drawer:rotate-180"
+            />
+          </summary>
+          <div class="mt-1 space-y-1 ps-3 ms-4 border-s border-border/70">
+            {item.children!.map((child) => (
+              <Astro.self item={child} depth={depth + 1} />
+            ))}
+          </div>
+        </details>
+      )
     ) : (
       <div>
         {item.href ? (

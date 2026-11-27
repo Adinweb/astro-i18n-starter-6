@@ -161,6 +161,19 @@ describe('src/libs/content/og-card.ts & faq.ts', () => {
     expect(pngPreset.readUInt32BE(20)).toBe(630);
   });
 
+  it('reuses cached PNG bytes cleanly across repeated renders', async () => {
+    const ctx = {
+      routeKey: 'pages/cache-test/en',
+      title: 'Deterministic Cache Verification',
+      subtitle: 'Reuses SHA-256 fingerprint buffer cleanly.',
+      locale: 'en' as const,
+    };
+    const first = await renderBrandedOgPng(ctx, { cache: true });
+    const second = await renderBrandedOgPng(ctx, { cache: true });
+    expect(first.equals(second)).toBe(true);
+    expect(second.readUInt32BE(16)).toBe(1200);
+  });
+
   it('builds valid Schema.org FAQPage JSON-LD', () => {
     const schema = buildFaqSchema([
       { question: 'How fast is the build?', answer: 'Static HTML ships in milliseconds.' },

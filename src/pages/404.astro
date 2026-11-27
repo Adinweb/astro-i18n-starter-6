@@ -380,26 +380,49 @@ const i18nData = Object.fromEntries(
       document.querySelectorAll('[data-brand-link]').forEach((el) => {
         el.setAttribute('href', data.homeHref);
       });
-      for (const item of data.nav) {
-        document.querySelectorAll(`[data-nav-link="${item.key}"]`).forEach((el) => {
-          if (item.href) el.setAttribute('href', item.href);
-          // Drawer rows keep an icon tile before the label, so the label is
-          // marked: rewriting the first `span` would erase the icon instead.
-          const textSpan = el.querySelector('[data-nav-label]') ?? el.querySelector('span');
-          if (textSpan) textSpan.textContent = item.label;
-          else el.textContent = item.label;
-        });
-      }
-      for (const [key, label] of Object.entries(data.dropdownLabels)) {
-        document.querySelectorAll(`[data-dropdown-label="${key}"]`).forEach((el) => {
+      const activeNavMap = new Map(data.nav.map((item) => [item.key, item]));
+      document.querySelectorAll('[data-nav-link]').forEach((el) => {
+        const key = el.getAttribute('data-nav-link') || '';
+        const item = activeNavMap.get(key);
+        const li = el.closest('li');
+        const toggleTarget =
+          li && !li.querySelector('ul, [data-disclosure-panel]') ? li : el;
+
+        if (!item) {
+          if (toggleTarget instanceof HTMLElement) toggleTarget.hidden = true;
+          return;
+        }
+
+        if (toggleTarget instanceof HTMLElement) toggleTarget.hidden = false;
+        if (item.href) el.setAttribute('href', item.href);
+        // Drawer rows keep an icon tile before the label, so the label is
+        // marked: rewriting the first `span` would erase the icon instead.
+        const textSpan = el.querySelector('[data-nav-label]') ?? el.querySelector('span');
+        if (textSpan) textSpan.textContent = item.label;
+        else el.textContent = item.label;
+      });
+
+      const activeDropdowns = new Map(Object.entries(data.dropdownLabels || {}));
+      document.querySelectorAll('[data-dropdown-label]').forEach((el) => {
+        const key = el.getAttribute('data-dropdown-label') || '';
+        const label = activeDropdowns.get(key);
+        if (label !== undefined) {
           el.textContent = String(label);
-        });
-      }
-      for (const [key, title] of Object.entries(data.footerCols)) {
-        document.querySelectorAll(`[data-footer-col="${key}"]`).forEach((el) => {
+        }
+      });
+
+      const activeFooterCols = new Map(Object.entries(data.footerCols || {}));
+      document.querySelectorAll('[data-footer-col]').forEach((el) => {
+        const key = el.getAttribute('data-footer-col') || '';
+        const title = activeFooterCols.get(key);
+        const colWrap = el.parentElement;
+        if (title === undefined) {
+          if (colWrap instanceof HTMLElement) colWrap.hidden = true;
+        } else {
+          if (colWrap instanceof HTMLElement) colWrap.hidden = false;
           el.textContent = String(title);
-        });
-      }
+        }
+      });
 
       // Update default-locale fallback button safely (avoid pointing to a second 404)
       const defaultLink = document.getElementById('not-found-default-link');

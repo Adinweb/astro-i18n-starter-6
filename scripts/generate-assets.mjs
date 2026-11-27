@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { readAppConfig, rootDir } from './lib/content-types.mjs';
+import { isSafeSvg } from './lib/svg-sanitize.mjs';
 
 let cachedSharp = null;
 async function getSharp() {
@@ -602,7 +603,7 @@ if (logoSourcePath) {
 
   if (path.extname(logoSourcePath).toLowerCase() === '.svg') {
     const rawSvg = fs.readFileSync(logoSourcePath, 'utf-8');
-    if (!/<script[\s>]|<foreignObject[\s>]|\son[a-z]+\s*=|javascript:/i.test(rawSvg)) {
+    if (isSafeSvg(rawSvg)) {
       writeBufferIfAllowed('favicon.svg', Buffer.from(rawSvg, 'utf-8'));
     }
   }

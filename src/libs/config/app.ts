@@ -252,10 +252,10 @@ const uiNavigationFooterColumnSchema = z.object({
   items: z.array(uiNavigationFooterItemSchema).optional(),
 });
 
-export const navDisplayModeSchema = z.enum(['dropdown', 'list']);
+const navDisplayModeSchema = z.enum(['dropdown', 'list']);
 export type NavDisplayMode = z.infer<typeof navDisplayModeSchema>;
 
-export const navItemChildrenDisplaySchema = z.enum(['inherit', 'dropdown', 'list']);
+const navItemChildrenDisplaySchema = z.enum(['inherit', 'dropdown', 'list']);
 export type NavItemChildrenDisplay = z.infer<typeof navItemChildrenDisplaySchema>;
 
 export interface UiNavigationMenuItem {
@@ -281,7 +281,7 @@ function isUnsafeNavigationHref(raw: string): boolean {
   );
 }
 
-export const uiNavigationMenuItemSchema: z.ZodType<UiNavigationMenuItem> = z.lazy(() =>
+const uiNavigationMenuItemSchema: z.ZodType<UiNavigationMenuItem> = z.lazy(() =>
   z
     .object({
       id: z.string().trim().min(1).optional(),
@@ -315,7 +315,7 @@ export const uiNavigationMenuItemSchema: z.ZodType<UiNavigationMenuItem> = z.laz
     })
 );
 
-export const uiNavigationMenuSchema = z.object({
+const uiNavigationMenuSchema = z.object({
   id: z
     .string()
     .trim()
@@ -328,16 +328,15 @@ export const uiNavigationMenuSchema = z.object({
 });
 export type UiNavigationMenu = z.infer<typeof uiNavigationMenuSchema>;
 
-export const uiNavigationFooterSlotEntrySchema = z.union([
+const uiNavigationFooterSlotEntrySchema = z.union([
   z.string().trim().min(1),
   z.object({
     id: z.string().trim().min(1),
     displayMode: navItemChildrenDisplaySchema.optional().default('inherit'),
   }),
 ]);
-export type UiNavigationFooterSlotEntry = z.infer<typeof uiNavigationFooterSlotEntrySchema>;
 
-export const uiNavigationSlotsSchema = z.object({
+const uiNavigationSlotsSchema = z.object({
   header: z.string().trim().min(1).optional(),
   headerDisplayMode: navItemChildrenDisplaySchema.optional(),
   drawer: z.string().trim().min(1).optional(),
@@ -347,7 +346,6 @@ export const uiNavigationSlotsSchema = z.object({
   footerDisplayMode: navItemChildrenDisplaySchema.optional(),
   legal: z.string().trim().min(1).optional(),
 });
-export type UiNavigationSlots = z.infer<typeof uiNavigationSlotsSchema>;
 
 export const uiNavigationSchema = z
   .object({

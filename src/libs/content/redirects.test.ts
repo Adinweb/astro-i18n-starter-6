@@ -1,4 +1,11 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, it, expect } from 'vitest';
+import {
+  buildHtaccessHeaders,
+  buildNetlifyHeaders,
+  buildNginxHeadersConf,
+} from '../../../scripts/lib/deploy-headers.mjs';
 import {
   buildHtaccessRedirects,
   buildNetlifyRedirects,
@@ -87,5 +94,24 @@ describe('Config-driven Redirects Engine (src/libs/content/redirects.ts)', () =>
     expect(htaccess.indexOf('RewriteRule ^legacy/?$')).toBeLessThan(
       htaccess.indexOf('RewriteRule ^old-blog/(.*)$')
     );
+  });
+
+  it('keeps public/_headers synchronized with Nginx and Apache deploy header builders (SSOT)', () => {
+    const publicHeaders = fs.readFileSync(
+      path.resolve(import.meta.dirname, '..', '..', '..', 'public', '_headers'),
+      'utf-8'
+    );
+    expect(buildNetlifyHeaders()).toBe(publicHeaders);
+
+    const nginx = buildNginxHeadersConf();
+    expect(nginx).toContain('add_header X-Content-Type-Options "nosniff" always;');
+    expect(nginx).toContain('add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;');
+    expect(nginx).toContain('location ^~ /_astro/');
+    expect(nginx).toContain('public, max-age=31536000, immutable');
+
+    const htaccess = buildHtaccessHeaders();
+    expect(htaccess).toContain('Header always set X-Frame-Options "SAMEORIGIN"');
+    expect(htaccess).toContain('<FilesMatch "\\.webp$">');
+    expect(htaccess).toContain('Header set Cache-Control "public, max-age=2592000"');
   });
 });

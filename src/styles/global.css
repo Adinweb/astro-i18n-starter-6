@@ -491,6 +491,10 @@ html:not([data-motion='reduced'])
   animation: site-header-stick-enter 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+html:not(.js) [data-disclosure-panel][hidden] {
+  display: block !important;
+}
+
 @media print {
   :root,
   :root[data-theme='dark'] {

@@ -186,15 +186,27 @@ const clarityInitSnippet = clarityId
   type AnalyticsWindow = Window & {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
+    clarity?: (...args: unknown[]) => void;
     plausible?: (eventName: string, opts?: Record<string, unknown>) => void;
     umami?: { track?: () => void };
   };
 
-  function syncGoogleConsentMode() {
+  function syncRuntimeConsentFlags() {
     const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
-    if (gatekeeper?.dataset.consentMode !== 'true') return;
-
+    const directOpen = gatekeeper?.dataset.requireConsent === 'false';
+    const analyticsAllowed = directOpen || document.documentElement.dataset.consentAnalytics === 'true';
     const win = window as AnalyticsWindow;
+
+    const ga4Id = gatekeeper?.dataset.ga4Id;
+    if (ga4Id) {
+      (win as unknown as Record<string, unknown>)[`ga-disable-${ga4Id}`] = !analyticsAllowed;
+    }
+
+    if (typeof win.clarity === 'function') {
+      win.clarity('consent', analyticsAllowed);
+    }
+
+    if (gatekeeper?.dataset.consentMode !== 'true') return;
     if (typeof win.gtag !== 'function') return;
 
     const rootData = document.documentElement.dataset;
@@ -212,7 +224,7 @@ const clarityInitSnippet = clarityId
   }
 
   function trackSoftNavigation() {
-    syncGoogleConsentMode();
+    syncRuntimeConsentFlags();
 
     const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
     const directOpen = gatekeeper?.dataset.requireConsent === 'false';
@@ -268,7 +280,7 @@ const clarityInitSnippet = clarityId
     document.documentElement.dataset.analyticsSpaBound = 'true';
     document.addEventListener('astro:page-load', trackSoftNavigation);
     document.addEventListener(CONSENT_CHANGE_EVENT, () => {
-      syncGoogleConsentMode();
+      syncRuntimeConsentFlags();
       const gatekeeper = document.querySelector<HTMLElement>('[data-analytics-gatekeeper]');
       const directOpen = gatekeeper?.dataset.requireConsent === 'false';
       const cookielessOpen = directOpen || gatekeeper?.dataset.cookielessOpen === 'true';

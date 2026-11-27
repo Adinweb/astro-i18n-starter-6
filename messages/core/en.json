@@ -15,6 +15,7 @@
   "block_auth_error_http": "The authentication endpoint rejected the request. Please try again.",
   "block_auth_error_network": "Unable to reach the authentication endpoint. Check your connection.",
   "block_auth_error_password": "Password must be at least 8 characters.",
+  "block_auth_error_terms": "Please accept the terms of use and privacy policy to continue.",
   "block_auth_error_timeout": "The authentication request timed out.",
   "block_auth_error_unconfigured": "Authentication endpoint is not configured.",
   "block_auth_error_validation": "Please enter a valid email address and password.",

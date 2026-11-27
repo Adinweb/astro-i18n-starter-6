@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -30,6 +31,8 @@ export interface OgCardRenderOptions {
   brand?: BrandThemeInput;
   /** Optional `data:image/...` badge embedded in the top opposite corner (`null` disables auto-logo lookup). */
   logoDataUri?: string | null;
+  /** Caches rendered PNGs under `.astro/og-cache` by SVG + font fingerprint (default `true`). */
+  cache?: boolean;
 }
 
 const CONTROL_CHARS_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
@@ -444,6 +447,28 @@ export async function renderBrandedOgPng(
   const fontBuffers = await loadDeterministicOgFonts(brandInput);
   const isRtl = getLocaleMeta(context.locale).dir === 'rtl';
 
+  const useCache = options.cache !== false;
+  let cacheFile: string | null = null;
+  if (useCache) {
+    const fingerprint = createHash('sha256')
+      .update(svg)
+      .update('|')
+      .update(brandInput.fontPreset ?? 'system')
+      .update('|')
+      .update(brandInput.rtlFontPreset ?? 'vazirmatn')
+      .update('|')
+      .update(fontBuffers.map((buf) => buf.byteLength).join(','))
+      .digest('hex');
+    cacheFile = path.join(process.cwd(), '.astro', 'og-cache', `${fingerprint}.png`);
+    try {
+      if (fs.existsSync(cacheFile)) {
+        return fs.readFileSync(cacheFile);
+      }
+    } catch {
+      // Ignore transient filesystem read errors and re-render cleanly.
+    }
+  }
+
   const fontOptions: NonNullable<ResvgRenderOptions['font']> & { fontBuffers?: Buffer[] } = {
     fontBuffers,
     loadSystemFonts: fontBuffers.length === 0,
@@ -453,7 +478,15 @@ export async function renderBrandedOgPng(
 
   const resvg = new Resvg(svg, { font: fontOptions });
 
-  const pngData = resvg.render().asPng();
-  return Buffer.from(pngData);
+  const buffer = Buffer.from(resvg.render().asPng());
+  if (cacheFile) {
+    try {
+      fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
+      fs.writeFileSync(cacheFile, buffer);
+    } catch {
+      // Ignore read-only filesystems or cache write failures cleanly.
+    }
+  }
+  return buffer;
 }
 
