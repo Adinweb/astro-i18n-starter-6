@@ -1002,6 +1002,130 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
     });
     expect(unsafeRes.status).toBe(400);
   });
+
+  it('lists assets, serves confined asset previews safely, and sanitizes uploaded assets', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+
+    // Upload a tiny 1x1 PNG
+    const pngBase64 =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    const uploadPng = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/upload-asset',
+      body: { filename: 'Hero Banner!.png', dataUrl: `data:image/png;base64,${pngBase64}` },
+    });
+    expect(uploadPng.status).toBe(200);
+    expect(uploadPng.json.publicPath).toBe('/uploads/hero-banner.png');
+    expect(fs.existsSync(path.join(tmpRoot, 'public/uploads/hero-banner.png'))).toBe(true);
+
+    // Upload safe SVG
+    const svgClean = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/></svg>').toString('base64');
+    const uploadSvg = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/upload-asset',
+      body: { filename: 'badge.svg', dataUrl: `data:image/svg+xml;base64,${svgClean}` },
+    });
+    expect(uploadSvg.status).toBe(200);
+    expect(uploadSvg.json.publicPath).toBe('/uploads/badge.svg');
+
+    // Reject malicious SVG with <script>
+    const svgXss = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>').toString('base64');
+    const badSvg = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/upload-asset',
+      body: { filename: 'evil.svg', dataUrl: `data:image/svg+xml;base64,${svgXss}` },
+    });
+    expect(badSvg.status).toBe(400);
+
+    // List assets
+    const listRes = await invokeStudio(handler, { method: 'GET', url: '/api/assets' });
+    expect(listRes.status).toBe(200);
+    expect(listRes.json.assets.some((a: { path: string }) => a.path === '/uploads/hero-banner.png')).toBe(true);
+    expect(listRes.json.assets.some((a: { path: string }) => a.path === '/uploads/badge.svg')).toBe(true);
+
+    // Preview SVG & PNG
+    const prevSvg = await invokeStudio(handler, {
+      method: 'GET',
+      url: '/api/asset-preview?path=%2Fuploads%2Fbadge.svg',
+    });
+    expect(prevSvg.status).toBe(200);
+    expect(prevSvg.text).toContain('<circle');
+
+    // Reject path traversal
+    const traversal = await invokeStudio(handler, {
+      method: 'GET',
+      url: '/api/asset-preview?path=%2F..%2Fpackage.json',
+    });
+    expect(traversal.status).toBe(400);
+  });
+
+  it('exports/imports portable client bundles and exposes upgraded Studio UI tools cleanly', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+
+    const expRes = await invokeStudio(handler, { method: 'GET', url: '/api/client-bundle' });
+    expect(expRes.status).toBe(200);
+    expect(expRes.json.bundle.locales).toBeDefined();
+    expect(expRes.json.bundle.config).toBeDefined();
+    expect(expRes.json.bundle.cms).toBeDefined();
+    expect(expRes.json.bundle.messages).toBeDefined();
+
+    const importedBundle = {
+      ...expRes.json.bundle,
+      config: {
+        ...expRes.json.bundle.config,
+        site: { ...(expRes.json.bundle.config.site || {}), shortName: 'BundleBrand' },
+      },
+      cms: {
+        ...expRes.json.bundle.cms,
+        business: { ...((expRes.json.bundle.cms || {}).business || {}), phone: '+1-555-0199' },
+      },
+      messages: {
+        ...expRes.json.bundle.messages,
+        en: { ...(expRes.json.bundle.messages.en || {}), custom_bundle_key: 'Imported Text' },
+      },
+    };
+    const impRes = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/client-bundle',
+      body: { bundle: importedBundle },
+    });
+    expect(impRes.status).toBe(200);
+    expect(impRes.json.ok).toBe(true);
+
+    const stateAfter = await invokeStudio(handler, { method: 'GET', url: '/api/state' });
+    expect(stateAfter.json.config.site.shortName).toBe('BundleBrand');
+    expect(stateAfter.json.cmsOverrides.business.phone).toBe('+1-555-0199');
+    expect(stateAfter.json.messages.clientByLocale.en.custom_bundle_key).toBe('Imported Text');
+
+    // Reject invalid bundle payload
+    const badBundle = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/client-bundle',
+      body: {
+        bundle: {
+          locales: { defaultLocale: 'xx', locales: ['en'] },
+        },
+      },
+    });
+    expect(badBundle.status).toBe(400);
+
+    // Check upgraded Studio HTML/JS parses and contains new productivity controls
+    const html = await invokeStudio(handler, { method: 'GET', url: '/', originalUrl: '/__studio/' });
+    expect(html.status).toBe(200);
+    expect(html.text).toContain('preview-iframe');
+    expect(html.text).toContain('btn-media');
+    const script = html.text.match(/<script>([\s\S]*?)<\/script>/)![1];
+    expect(() => new Function(script)).not.toThrow();
+    expect(script).toContain('hasAnyDirty');
+    expect(script).toContain('data-menu-collapse');
+    expect(script).toContain('data-pick-icon');
+    expect(script).toContain('data-pick-asset');
+    expect(script).toContain('menuJson');
+    expect(script).toContain('clientBundle');
+    expect(script).toContain('toggle-entry-ref');
+    expect(script).toContain('toggle-entry-preview');
+    expect(script).toContain('data-cli="preflight"');
+  });
 });
 
 

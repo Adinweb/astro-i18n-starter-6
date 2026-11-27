@@ -53,7 +53,7 @@ import { upsertEnvContent } from '../client-bootstrap.mjs';
 const execFileAsync = promisify(execFile);
 const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-const MAX_BODY_BYTES = 2 * 1024 * 1024;
+const MAX_BODY_BYTES = 4 * 1024 * 1024;
 const SAFE_KEY_RE = /^[a-z0-9-]+$/;
 const SAFE_GROUP_RE = /^[\p{L}\p{N}][\p{L}\p{N}_-]*$/u;
 const SAFE_FIELD_NAME_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
@@ -133,6 +133,22 @@ const ALLOWED_LOGO_MIMES = new Map([
   ['image/png', '.png'],
   ['image/webp', '.webp'],
   ['image/jpeg', '.jpg'],
+]);
+const ALLOWED_ASSET_EXTS = new Map([
+  ['.svg', 'image/svg+xml'],
+  ['.png', 'image/png'],
+  ['.webp', 'image/webp'],
+  ['.jpg', 'image/jpeg'],
+  ['.jpeg', 'image/jpeg'],
+  ['.avif', 'image/avif'],
+  ['.ico', 'image/x-icon'],
+]);
+const ALLOWED_UPLOAD_ASSET_MIMES = new Map([
+  ['image/svg+xml', '.svg'],
+  ['image/png', '.png'],
+  ['image/webp', '.webp'],
+  ['image/jpeg', '.jpg'],
+  ['image/avif', '.avif'],
 ]);
 
 const SECTION_BLOCKS_META = [
@@ -1987,6 +2003,20 @@ function buildAllowListedCommand(action, payload, rootDir) {
           { cmd: node, args: [binScript('index-pagefind.mjs')] },
         ],
       };
+    case 'preflight':
+      return {
+        chain: [
+          { cmd: node, args: [binScript('messages-compile.mjs')] },
+          { cmd: node, args: [binScript('upstream-check.mjs')] },
+          { cmd: node, args: [binScript('audit-i18n.mjs'), '--quiet'] },
+          { cmd: node, args: [binScript('doctor.mjs')] },
+          { cmd: localBin('vitest'), args: ['run', '--no-isolate'] },
+          { cmd: localBin('astro'), args: ['build'] },
+          { cmd: node, args: [binScript('index-pagefind.mjs')] },
+          { cmd: node, args: [binScript('smoke.mjs'), '--quiet'] },
+          { cmd: node, args: [binScript('link-check.mjs'), '--quiet'] },
+        ],
+      };
     default:
       throw new Error(`Unsupported or disallowed Studio CLI action "${String(action)}".`);
   }
@@ -2122,6 +2152,244 @@ function saveUploadedLogo(rootDir, payload) {
   const destPath = assertConfinedPath(brandDir, path.join(brandDir, destFile));
   fs.writeFileSync(destPath, bytes);
   return { publicPath: `/brand/${destFile}`, file: path.relative(rootDir, destPath) };
+}
+
+function listStudioAssets(rootDir) {
+  const results = [];
+  const walkImages = (baseDir, source, prefix) => {
+    if (!fs.existsSync(baseDir)) return;
+    const stack = [baseDir];
+    while (stack.length > 0) {
+      const dir = stack.pop();
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.name.startsWith('.')) continue;
+        const abs = assertConfinedPath(baseDir, path.join(dir, entry.name));
+        if (entry.isDirectory()) {
+          if (entry.name === 'pagefind' || entry.name === '_astro') continue;
+          stack.push(abs);
+        } else if (entry.isFile()) {
+          const ext = path.extname(entry.name).toLowerCase();
+          if (!ALLOWED_ASSET_EXTS.has(ext)) continue;
+          const rel = path.relative(baseDir, abs).split(path.sep).join('/');
+          const stat = fs.statSync(abs);
+          results.push({
+            path: `${prefix}${rel}`,
+            name: entry.name,
+            source,
+            ext: ext.slice(1),
+            size: stat.size,
+          });
+        }
+      }
+    }
+  };
+  walkImages(path.join(rootDir, 'public'), 'public', '/');
+  walkImages(path.join(rootDir, 'src', 'assets'), 'assets', 'src/assets/');
+  results.sort((a, b) => a.path.localeCompare(b.path));
+  return { ok: true, assets: results };
+}
+
+function readStudioAssetPreview(rootDir, rawAssetPath) {
+  const relRaw = String(rawAssetPath ?? '').trim();
+  if (!relRaw) {
+    throw Object.assign(new Error('Asset path is required.'), { statusCode: 400 });
+  }
+  let targetPath;
+  if (relRaw.startsWith('/')) {
+    const publicDir = path.join(rootDir, 'public');
+    targetPath = assertConfinedPath(publicDir, path.join(publicDir, relRaw.slice(1)));
+  } else if (relRaw.startsWith('src/assets/')) {
+    const assetsDir = path.join(rootDir, 'src', 'assets');
+    targetPath = assertConfinedPath(assetsDir, path.join(assetsDir, relRaw.slice('src/assets/'.length)));
+  } else {
+    throw Object.assign(new Error('Asset preview path must start with "/" or "src/assets/".'), {
+      statusCode: 400,
+    });
+  }
+  if (!fs.existsSync(targetPath) || !fs.statSync(targetPath).isFile()) {
+    throw Object.assign(new Error('Asset file not found.'), { statusCode: 404 });
+  }
+  const ext = path.extname(targetPath).toLowerCase();
+  const mime = ALLOWED_ASSET_EXTS.get(ext);
+  if (!mime) {
+    throw Object.assign(new Error(`Unsupported asset extension "${ext}".`), { statusCode: 400 });
+  }
+  return { mime, bytes: fs.readFileSync(targetPath) };
+}
+
+function saveUploadedAsset(rootDir, payload) {
+  if (!isPlainObject(payload)) throw new Error('Asset payload must be an object.');
+  const dataUrl = String(payload.dataUrl ?? '');
+  const match = dataUrl.match(/^data:(image\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)$/i);
+  if (!match) {
+    throw new Error('Invalid image data URL. Upload SVG, PNG, WebP, AVIF, or JPG.');
+  }
+  const mime = match[1].toLowerCase();
+  const ext = ALLOWED_UPLOAD_ASSET_MIMES.get(mime);
+  if (!ext) {
+    throw new Error(`Unsupported image MIME type "${mime}".`);
+  }
+  const bytes = Buffer.from(match[2], 'base64');
+  if (bytes.length === 0 || bytes.length > 1.5 * 1024 * 1024) {
+    throw new Error('Uploaded image must be between 1 byte and 1.5 MB.');
+  }
+  if (mime === 'image/svg+xml') {
+    assertSafeSvg(bytes);
+  }
+
+  const rawBase = String(payload.filename ?? 'asset')
+    .replace(/\.[^.]+$/, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  const safeBase = rawBase || 'asset';
+  const uploadsDir = path.join(rootDir, 'public', 'uploads');
+  fs.mkdirSync(uploadsDir, { recursive: true });
+
+  let destFile = `${safeBase}${ext}`;
+  let suffix = 2;
+  while (fs.existsSync(path.join(uploadsDir, destFile))) {
+    destFile = `${safeBase}-${suffix++}${ext}`;
+  }
+  const destPath = assertConfinedPath(uploadsDir, path.join(uploadsDir, destFile));
+  fs.writeFileSync(destPath, bytes);
+  return {
+    ok: true,
+    publicPath: `/uploads/${destFile}`,
+    file: path.relative(rootDir, destPath),
+    size: bytes.length,
+  };
+}
+
+function exportClientBundle(rootDir) {
+  const locales = readLocaleConfig(rootDir);
+  const config = readClientConfig(rootDir);
+  const cms = readCmsConfig(rootDir);
+  const messages = {};
+  for (const loc of locales.locales) {
+    messages[loc] = stripSchema(readClientMessages(loc, rootDir));
+  }
+  return {
+    ok: true,
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    bundle: {
+      locales,
+      config,
+      cms,
+      messages,
+    },
+  };
+}
+
+function importClientBundle(rootDir, payload) {
+  if (!isPlainObject(payload)) throw new Error('Bundle payload must be an object.');
+  const bundle = isPlainObject(payload.bundle) ? payload.bundle : payload;
+
+  // 1. Validate locales if provided
+  let nextLocales = readLocaleConfig(rootDir);
+  if (bundle.locales !== undefined) {
+    if (!isPlainObject(bundle.locales) || !Array.isArray(bundle.locales.locales) || bundle.locales.locales.length === 0) {
+      throw new Error('bundle.locales.locales must be a non-empty array.');
+    }
+    const cleanLocales = bundle.locales.locales.map((l) => assertSafeLocale(l));
+    const defaultLocale = assertSafeLocale(bundle.locales.defaultLocale ?? cleanLocales[0]);
+    if (!cleanLocales.includes(defaultLocale)) {
+      throw new Error(`bundle.locales.defaultLocale "${defaultLocale}" must be included in locales.`);
+    }
+    const cleanMeta = {};
+    if (isPlainObject(bundle.locales.metadata)) {
+      for (const [locRaw, meta] of Object.entries(bundle.locales.metadata)) {
+        const loc = assertSafeLocale(locRaw);
+        if (!isPlainObject(meta)) continue;
+        cleanMeta[loc] = {
+          ...(meta.name ? { name: String(meta.name).trim() } : {}),
+          ...(meta.dir && ['ltr', 'rtl'].includes(meta.dir) ? { dir: meta.dir } : {}),
+          ...(meta.htmlLang ? { htmlLang: assertSafeLocale(meta.htmlLang) } : {}),
+          ...(meta.fontFamily && !/[;{}]/.test(String(meta.fontFamily))
+            ? { fontFamily: String(meta.fontFamily).trim() }
+            : {}),
+        };
+      }
+    }
+    nextLocales = {
+      defaultLocale,
+      locales: cleanLocales,
+      metadata: cleanMeta,
+    };
+  }
+
+  // 2. Validate config & cms merged before writing any files
+  const coreCfg = readCoreConfig(rootDir);
+  const nextConfigInput = bundle.config !== undefined ? bundle.config : readClientConfig(rootDir);
+  if (!isPlainObject(nextConfigInput)) {
+    throw new Error('bundle.config must be an object.');
+  }
+  const nextFullConfig = cleanConfigBeforeWrite(deepMergeConfig(coreCfg, nextConfigInput));
+  const configErrors = validateConfigObject(nextFullConfig, rootDir);
+  if (configErrors.length > 0) {
+    throw Object.assign(new Error(configErrors.join('\n')), { statusCode: 400 });
+  }
+
+  const nextCmsInput = bundle.cms !== undefined ? bundle.cms : readCmsConfig(rootDir);
+  if (!isPlainObject(nextCmsInput)) {
+    throw new Error('bundle.cms must be an object.');
+  }
+  const cleanedCms = pruneEmptyCmsObjects(sanitizeCmsConfig(nextCmsInput));
+  const mergedCmsErrors = validateConfigObject(deepMergeConfig(nextFullConfig, cleanedCms), rootDir);
+  if (mergedCmsErrors.length > 0) {
+    throw Object.assign(new Error(mergedCmsErrors.join('\n')), { statusCode: 400 });
+  }
+
+  // 3. Validate messages before writing
+  const validatedMessages = {};
+  if (bundle.messages !== undefined) {
+    if (!isPlainObject(bundle.messages)) {
+      throw new Error('bundle.messages must be an object keyed by locale.');
+    }
+    for (const [locRaw, dict] of Object.entries(bundle.messages)) {
+      const loc = assertSafeLocale(locRaw);
+      if (!isPlainObject(dict)) {
+        throw new Error(`bundle.messages.${loc} must be an object.`);
+      }
+      const cleanDict = {};
+      for (const [k, v] of Object.entries(dict)) {
+        if (!SAFE_I18N_KEY_RE.test(k)) {
+          throw new Error(`Invalid message key "${k}" in bundle.messages.${loc}.`);
+        }
+        if (typeof v === 'string' || (Array.isArray(v) && v.every((x) => typeof x === 'string'))) {
+          cleanDict[k] = v;
+        } else {
+          throw new Error(`Message "${loc}.${k}" must be a string or array of strings.`);
+        }
+      }
+      validatedMessages[loc] = cleanDict;
+    }
+  }
+
+  // 4. Commit all validated client-tier files atomically inside writeLock
+  if (bundle.locales !== undefined) {
+    writeLocaleConfig(nextLocales, rootDir);
+  }
+  const sparseConfig = writeClientConfig(nextFullConfig, { rootDir, sparse: true });
+  const cmsPath = cmsConfigPathFor(rootDir);
+  fs.mkdirSync(path.dirname(cmsPath), { recursive: true });
+  fs.writeFileSync(cmsPath, `${JSON.stringify(cleanedCms, null, 2)}\n`, 'utf-8');
+
+  for (const [loc, dict] of Object.entries(validatedMessages)) {
+    writeClientMessages(loc, dict, rootDir);
+  }
+  syncCollections(rootDir, { check: false });
+  compileMessages(rootDir);
+
+  return {
+    ok: true,
+    locales: nextLocales.locales,
+    clientOverrides: sparseConfig,
+    cmsOverrides: cleanedCms,
+    updatedMessageLocales: Object.keys(validatedMessages),
+  };
 }
 
 function validateAndNormalizeContentType(payload, existingMergedConfig, rootDir) {
@@ -3090,6 +3358,44 @@ export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' 
         const body = await readJsonBody(req);
         const result = await withWriteLock(() => saveUploadedLogo(rootDir, body));
         sendJson(res, 200, { ok: true, ...result });
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/api/assets') {
+        sendJson(res, 200, listStudioAssets(rootDir));
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/api/asset-preview') {
+        const assetPath = parsed.searchParams.get('path') || '';
+        const { mime, bytes } = readStudioAssetPreview(rootDir, assetPath);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', mime);
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Cache-Control', 'no-store');
+        if (mime === 'image/svg+xml') {
+          res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+        }
+        res.end(bytes);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/api/upload-asset') {
+        const body = await readJsonBody(req);
+        const result = await withWriteLock(() => saveUploadedAsset(rootDir, body));
+        sendJson(res, 200, result);
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/api/client-bundle') {
+        sendJson(res, 200, exportClientBundle(rootDir));
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/api/client-bundle') {
+        const body = await readJsonBody(req);
+        const result = await withWriteLock(() => importClientBundle(rootDir, body));
+        sendJson(res, 200, result);
         return;
       }
 

@@ -228,6 +228,82 @@
     }
     .menu-preview-ul { list-style: none; margin: 4px 0 0; padding: 0; padding-inline-start: 16px; border-inline-start: 1px solid var(--border); }
     .menu-preview-li { margin: 4px 0; }
+    .workspace-split {
+      display: grid;
+      grid-template-columns: 1fr;
+      align-items: start;
+    }
+    body.preview-open .workspace-split {
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 44%);
+      gap: 14px;
+      padding-inline: 14px;
+    }
+    body.preview-open .shell {
+      max-width: 100%;
+      margin: 0;
+      padding-inline: 6px;
+    }
+    .preview-pane {
+      display: none;
+      position: sticky;
+      top: 64px;
+      height: calc(100vh - 118px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-direction: column;
+      overflow: hidden;
+    }
+    body.preview-open .preview-pane { display: flex; }
+    body.console-open.preview-open .preview-pane { height: calc(100vh - 368px); }
+    .preview-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;
+      padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--surface-2);
+    }
+    .preview-stage {
+      flex: 1; overflow: auto; display: flex; justify-content: center; padding: 10px; background: var(--bg);
+    }
+    .preview-frame {
+      width: 100%; height: 100%; border: 1px solid var(--border); border-radius: 10px; background: #fff;
+      transition: width 0.2s ease;
+    }
+    .preview-frame.is-tablet { width: 768px; max-width: 100%; }
+    .preview-frame.is-mobile { width: 390px; max-width: 100%; }
+    .dirty-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 999px;
+      background: var(--warn); margin-inline-start: 6px;
+    }
+    .icon-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 6px; max-height: 55vh; overflow: auto;
+    }
+    .icon-chip-btn {
+      display: flex; align-items: center; justify-content: flex-start; gap: 6px;
+      padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg);
+      cursor: pointer; font-size: 12px; font-family: var(--mono); text-align: start;
+    }
+    .icon-chip-btn:hover, .icon-chip-btn.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, var(--bg)); }
+    .asset-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 10px; max-height: 55vh; overflow: auto;
+    }
+    .asset-card {
+      border: 1px solid var(--border); border-radius: 10px; background: var(--bg); padding: 8px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .asset-thumb {
+      width: 100%; height: 105px; object-fit: contain; background: var(--surface-2);
+      border-radius: 7px; border: 1px solid var(--border); padding: 4px;
+    }
+    .md-preview-box {
+      border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+      background: var(--bg); min-height: 220px; max-height: 360px; overflow: auto; line-height: 1.7;
+    }
+    .md-preview-box h1, .md-preview-box h2, .md-preview-box h3 { margin: 8px 0 4px; }
+    .md-preview-box pre { background: var(--surface-2); padding: 8px 10px; border-radius: 6px; overflow: auto; }
+    .md-preview-box code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; font-size: 12px; }
+    @media (max-width: 1024px) {
+      body.preview-open .workspace-split { grid-template-columns: 1fr; }
+      .preview-pane { position: static; height: 480px; }
+    }
   </style>
 </head>
 <body>
@@ -242,6 +318,8 @@
       <button id="ui-health-badge" type="button" class="badge hidden"></button>
     </div>
     <div class="topbar-actions">
+      <button id="btn-media" type="button" class="btn btn-sm">Media</button>
+      <button id="btn-preview-split" type="button" class="btn btn-sm hidden">Live Preview</button>
       <a id="ui-preview-link" class="btn btn-sm hidden" target="_blank" rel="noopener">Preview ↗</a>
       <button id="btn-refresh" type="button" class="btn btn-sm">↻ Refresh</button>
       <button id="btn-lang" type="button" class="btn btn-sm">EN / فا</button>
@@ -249,10 +327,30 @@
     </div>
   </header>
 
-  <main class="shell">
-    <nav id="tabs-nav" class="tabs"></nav>
-    <section id="tab-content"></section>
-  </main>
+  <div class="workspace-split">
+    <main class="shell">
+      <nav id="tabs-nav" class="tabs"></nav>
+      <section id="tab-content"></section>
+    </main>
+
+    <aside id="preview-pane" class="preview-pane">
+      <div class="preview-bar">
+        <div class="row" style="flex:1; min-width:160px;">
+          <input id="preview-path-input" type="text" class="mono" value="/" style="padding:4px 8px; font-size:12px;" />
+          <button id="btn-preview-go" type="button" class="btn btn-sm">↻</button>
+        </div>
+        <div class="row">
+          <button type="button" class="btn btn-sm" data-preview-device="desktop">Desktop</button>
+          <button type="button" class="btn btn-sm" data-preview-device="tablet">768px</button>
+          <button type="button" class="btn btn-sm" data-preview-device="mobile">390px</button>
+          <button id="btn-preview-close" type="button" class="btn btn-sm">✕</button>
+        </div>
+      </div>
+      <div class="preview-stage">
+        <iframe id="preview-iframe" class="preview-frame" title="Live Site Preview"></iframe>
+      </div>
+    </aside>
+  </div>
 
   <div id="modal-root" class="modal-backdrop hidden">
     <div class="modal-card" id="modal-card"></div>
@@ -584,6 +682,17 @@
     let showDiffJson = false;
     let selectedMenuIndex = 0;
     let navCopyDisplayMode = 'inherit';
+    let collapsedMenuNodes = new Set();
+
+    // Split live preview state
+    let previewOpen = localStorage.getItem('studio_preview_open') === '1';
+    let previewDevice = localStorage.getItem('studio_preview_device') || 'desktop';
+    let previewPath = localStorage.getItem('studio_preview_path') || '/';
+
+    // Dirty state baselines
+    let projectBaselineJson = '';
+    let configBaselineJson = '';
+    let cmsBaselineJson = '';
 
     // Translation dictionary matrix state
     let i18nSearch = '';
@@ -594,9 +703,14 @@
     let msgDirty = {}; // { [locale]: { [key]: value | null } }
     let msgDeleteQueue = new Set();
 
-    // Active modal state
+    // Active modal state & pickers
     let modalState = null;
     let healthReport = null;
+    let iconSearch = '';
+    let assetSearch = '';
+    let entryShowPreview = false;
+    let entryShowRef = false;
+    let entryRefData = null;
 
     function isFa() { return uiLang === 'fa'; }
     function L(faText, enText) { return isFa() ? faText : enText; }
@@ -884,12 +998,20 @@
       }
 
       const preview = document.getElementById('ui-preview-link');
+      const splitBtn = document.getElementById('btn-preview-split');
+      const mediaBtn = document.getElementById('btn-media');
+      if (mediaBtn) mediaBtn.textContent = L('🖼 رسانه', '🖼 Media');
       const href = String(BOOT.sitePreviewHref || '');
       if (href.startsWith('/') || href.startsWith('http://') || href.startsWith('https://')) {
         preview.href = href;
         preview.textContent = c.preview;
         preview.classList.remove('hidden');
+        if (splitBtn) {
+          splitBtn.textContent = previewOpen ? L('✕ بستن پیش‌نمایش', '✕ Close Preview') : L('◫ پیش‌نمایش زنده', '◫ Live Preview');
+          splitBtn.classList.remove('hidden');
+        }
       }
+      syncPreviewPane();
 
       if (state) {
         const pkgBadge = document.getElementById('ui-pkg-badge');
@@ -935,6 +1057,117 @@
       }
     }
 
+    function getDirtyStatus() {
+      const i18nCount =
+        Object.values(msgDirty || {}).reduce((acc, m) => acc + Object.keys(m).length, 0) +
+        (msgDeleteQueue ? msgDeleteQueue.size : 0);
+      return {
+        wizard: Boolean(projectDraft && projectBaselineJson && JSON.stringify(projectDraft) !== projectBaselineJson),
+        config: Boolean(configDraft && configBaselineJson && JSON.stringify(configDraft) !== configBaselineJson),
+        cms: Boolean(cmsDraft && cmsBaselineJson && JSON.stringify(cmsDraft) !== cmsBaselineJson),
+        i18n: i18nCount > 0,
+      };
+    }
+
+    function hasAnyDirty() {
+      const d = getDirtyStatus();
+      return d.wizard || d.config || d.cms || d.i18n;
+    }
+
+    function updateDirtyUi() {
+      const d = getDirtyStatus();
+      document.querySelectorAll('#tabs-nav [data-tab]').forEach((btn) => {
+        const k = btn.dataset.tab;
+        const dot = btn.querySelector('.dirty-dot');
+        const isDirty = Boolean(d[k]);
+        if (isDirty && !dot) {
+          const span = document.createElement('span');
+          span.className = 'dirty-dot';
+          span.title = L('تغییرات ذخیره‌نشده', 'Unsaved changes');
+          btn.appendChild(span);
+        } else if (!isDirty && dot) {
+          dot.remove();
+        }
+      });
+      const cfgBadge = document.getElementById('cfg-dirty-badge');
+      if (cfgBadge) cfgBadge.classList.toggle('hidden', !d.config);
+      const cmsBadge = document.getElementById('cms-dirty-badge');
+      if (cmsBadge) cmsBadge.classList.toggle('hidden', !d.cms);
+    }
+
+    function resolvePreviewBaseUrl() {
+      const base = String(BOOT.sitePreviewHref || '');
+      if (!base) return '';
+      if (base === '/') return window.location.origin;
+      return base.replace(/\/$/, '');
+    }
+
+    function syncPreviewPane({ forceReload = false } = {}) {
+      const base = resolvePreviewBaseUrl();
+      const canShow = Boolean(base);
+      document.body.classList.toggle('preview-open', Boolean(previewOpen && canShow));
+      if (!canShow) return;
+      const frame = document.getElementById('preview-iframe');
+      const pathInp = document.getElementById('preview-path-input');
+      if (pathInp && document.activeElement !== pathInp) pathInp.value = previewPath;
+      document.querySelectorAll('[data-preview-device]').forEach((b) => {
+        b.classList.toggle('btn-primary', b.dataset.previewDevice === previewDevice);
+      });
+      if (frame) {
+        frame.classList.toggle('is-tablet', previewDevice === 'tablet');
+        frame.classList.toggle('is-mobile', previewDevice === 'mobile');
+        if (previewOpen) {
+          const cleanPath = previewPath.startsWith('/') ? previewPath : '/' + previewPath;
+          const targetUrl = base + cleanPath;
+          if (forceReload || frame.dataset.loadedUrl !== targetUrl) {
+            frame.dataset.loadedUrl = targetUrl;
+            frame.src = targetUrl + (forceReload ? (targetUrl.includes('?') ? '&' : '?') + '_t=' + Date.now() : '');
+          }
+        }
+      }
+    }
+
+    function renderSafeMarkdownPreview(md) {
+      const lines = String(md || '').split('\n');
+      const out = [];
+      let inCode = false;
+      let inList = false;
+      const inlineFmt = (s) =>
+        esc(s)
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<span style="color:var(--primary);text-decoration:underline;">$1</span>');
+      for (const line of lines) {
+        if (line.trim().startsWith('```')) {
+          if (inList) { out.push('</ul>'); inList = false; }
+          if (!inCode) { out.push('<pre><code>'); inCode = true; }
+          else { out.push('</code></pre>'); inCode = false; }
+          continue;
+        }
+        if (inCode) { out.push(esc(line) + '\n'); continue; }
+        const h = line.match(/^(#{1,4})\s+(.*)$/);
+        if (h) {
+          if (inList) { out.push('</ul>'); inList = false; }
+          const lvl = h[1].length;
+          out.push(`<h${lvl}>${inlineFmt(h[2])}</h${lvl}>`);
+          continue;
+        }
+        const li = line.match(/^\s*[-*]\s+(.*)$/);
+        if (li) {
+          if (!inList) { out.push('<ul>'); inList = true; }
+          out.push(`<li>${inlineFmt(li[1])}</li>`);
+          continue;
+        }
+        if (inList) { out.push('</ul>'); inList = false; }
+        if (!line.trim()) out.push('<br/>');
+        else out.push(`<p style="margin:4px 0;">${inlineFmt(line)}</p>`);
+      }
+      if (inList) out.push('</ul>');
+      if (inCode) out.push('</code></pre>');
+      return out.join('');
+    }
+
     async function refreshState({ resetDrafts = false } = {}) {
       const [nextState, nextHealth] = await Promise.all([
         apiGet('api/state'),
@@ -942,12 +1175,22 @@
       ]);
       state = nextState;
       if (nextHealth) healthReport = nextHealth;
-      if (!projectDraft || resetDrafts) projectDraft = buildProjectDraft(state);
+      if (!projectDraft || resetDrafts) {
+        projectDraft = buildProjectDraft(state);
+        projectBaselineJson = JSON.stringify(projectDraft);
+      }
       if (!wizardDraft || resetDrafts) wizardDraft = buildDefaultWizardDraft(state);
-      if (!configDraft || resetDrafts) configDraft = buildConfigDraft(state);
-      if (!cmsDraft || resetDrafts) cmsDraft = buildCmsDraft(state);
+      if (!configDraft || resetDrafts) {
+        configDraft = buildConfigDraft(state);
+        configBaselineJson = JSON.stringify(configDraft);
+      }
+      if (!cmsDraft || resetDrafts) {
+        cmsDraft = buildCmsDraft(state);
+        cmsBaselineJson = JSON.stringify(cmsDraft);
+      }
       updateChrome();
       render();
+      if (resetDrafts && previewOpen) syncPreviewPane({ forceReload: true });
     }
 
     async function withBusy(label, fn) {
@@ -1009,15 +1252,90 @@
     }
 
     function openModal(type, data) {
+      if (type === 'entry') {
+        entryShowPreview = false;
+        entryShowRef = false;
+        entryRefData = null;
+      } else if (type === 'iconPicker') {
+        iconSearch = '';
+      } else if (type === 'assets') {
+        assetSearch = '';
+      }
       modalState = { type, data };
       renderModal();
       document.getElementById('modal-root').classList.remove('hidden');
     }
 
     function closeModal() {
+      const parent = modalState?.data?.parentModal || null;
+      if (parent) {
+        modalState = parent;
+        renderModal();
+        return;
+      }
       modalState = null;
       document.getElementById('modal-root').classList.add('hidden');
       document.getElementById('modal-card').innerHTML = '';
+    }
+
+    function getIconTargetValue(target) {
+      if (!target) return '';
+      if (target.startsWith('cfg:')) return String(getPath(configDraft, target.slice(4), '') || '');
+      if (target.startsWith('menuNode:')) {
+        const [, miStr, pathStr, field] = target.split(':');
+        const ref = resolveMenuNodeRef(Number(miStr), pathStr);
+        return String(ref?.node?.[field] || '');
+      }
+      return '';
+    }
+
+    function setIconTargetValue(target, val) {
+      if (!target) return;
+      if (target.startsWith('cfg:')) {
+        setPath(configDraft, target.slice(4), val);
+      } else if (target.startsWith('menuNode:')) {
+        const [, miStr, pathStr, field] = target.split(':');
+        const ref = resolveMenuNodeRef(Number(miStr), pathStr);
+        if (ref) ref.node[field] = val;
+      }
+    }
+
+    function setAssetTargetValue(target, assetPath, parentModal) {
+      if (!target) return;
+      if (target === 'entry:image' && parentModal?.type === 'entry') {
+        parentModal.data.frontmatter = parentModal.data.frontmatter || {};
+        parentModal.data.frontmatter.image = assetPath;
+        return;
+      }
+      if (target.startsWith('sec:')) {
+        const [, scope, idxStr, prop] = target.split(':');
+        const arr = scope === 'modal' && parentModal?.type === 'sections'
+          ? parentModal.data.sections
+          : resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        if (sec) {
+          sec.props = sec.props || {};
+          sec.props[prop] = assetPath;
+        }
+      }
+    }
+
+    async function openAssetsModal(target = '', parentModal = null) {
+      openModal('assets', { target, parentModal, loading: true, assets: [], error: '' });
+      try {
+        const res = await apiGet('api/assets');
+        if (modalState?.type === 'assets') {
+          modalState.data.loading = false;
+          modalState.data.assets = res.assets || [];
+          renderModal();
+        }
+      } catch (err) {
+        if (modalState?.type === 'assets') {
+          modalState.data.loading = false;
+          modalState.data.error = err.message;
+          renderModal();
+        }
+      }
     }
 
     // ---------- Section Composer Helpers ----------
@@ -1108,6 +1426,26 @@
                 ${spacingOpts.map((v) => `<option value="${v}" ${props.spacing === v ? 'selected' : ''}>${v}</option>`).join('')}
               </select>
             </div>` : ''}
+            ${propNames.has('columns') ? `<div class="field"><label>columns</label>
+              <select data-sec-prop-num="${scope}:${idx}:columns">
+                <option value="">(default)</option>
+                ${[2, 3, 4].map((v) => `<option value="${v}" ${Number(props.columns) === v ? 'selected' : ''}>${v}</option>`).join('')}
+              </select>
+            </div>` : ''}
+            ${propNames.has('image') ? `<div class="field"><label>image</label>
+              <div class="row" style="flex-wrap:nowrap;">
+                <input type="text" class="mono" data-sec-prop="${scope}:${idx}:image" value="${esc(typeof props.image === 'string' ? props.image : '')}" />
+                <button type="button" class="btn btn-sm" data-pick-asset="sec:${scope}:${idx}:image">🖼</button>
+              </div>
+            </div>` : ''}
+            ${propNames.has('primaryCta') ? `
+              <div class="field"><label>primaryCta.label</label><input type="text" data-sec-nested="${scope}:${idx}:primaryCta:label" value="${esc(props.primaryCta?.label || '')}" /></div>
+              <div class="field"><label>primaryCta.href</label><input type="text" class="mono" data-sec-nested="${scope}:${idx}:primaryCta:href" value="${esc(props.primaryCta?.href || '')}" /></div>
+            ` : ''}
+            ${propNames.has('secondaryCta') ? `
+              <div class="field"><label>secondaryCta.label</label><input type="text" data-sec-nested="${scope}:${idx}:secondaryCta:label" value="${esc(props.secondaryCta?.label || '')}" /></div>
+              <div class="field"><label>secondaryCta.href</label><input type="text" class="mono" data-sec-nested="${scope}:${idx}:secondaryCta:href" value="${esc(props.secondaryCta?.href || '')}" /></div>
+            ` : ''}
           </div>
           <details>
             <summary class="muted" style="cursor:pointer;">JSON Props (<span data-sec-count="${scope}:${idx}">${Object.keys(props).length}</span>)</summary>
@@ -1570,7 +1908,12 @@
               <div class="field"><label>variant</label>
                 <select data-cfg="ui.topBanner.variant">${BANNER_VARIANTS.map((v) => `<option value="${v}" ${tb.variant === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
               </div>
-              <div class="field"><label>icon</label><input type="text" class="mono" data-cfg="ui.topBanner.icon" value="${esc(tb.icon || 'sparkles')}" /></div>
+              <div class="field"><label>icon</label>
+                <div class="row" style="flex-wrap:nowrap;">
+                  <input type="text" class="mono" data-cfg="ui.topBanner.icon" value="${esc(tb.icon || 'sparkles')}" />
+                  <button type="button" class="btn btn-sm" data-pick-icon="cfg:ui.topBanner.icon">🎨</button>
+                </div>
+              </div>
               <div class="field"><label>heightPx (24-160)</label><input type="number" class="mono" data-cfg-num-opt="ui.topBanner.heightPx" value="${esc(tb.heightPx ?? '')}" /></div>
             </div>
             <div class="grid grid-2">
@@ -1760,10 +2103,13 @@
             const targetType = node._targetType || detectNodeTargetType(node);
             const hasChildren = Array.isArray(node.children) && node.children.length > 0;
             const cDisp = node.childrenDisplay || 'inherit';
+            const collapseKey = `${menuIdx}:${nodePath}`;
+            const isCollapsed = hasChildren && collapsedMenuNodes.has(collapseKey);
             return `
               <div class="menu-node-card ${hasChildren ? 'is-branch' : ''}">
                 <div class="between" style="margin-bottom:8px;">
                   <div class="row">
+                    ${hasChildren ? `<button type="button" class="btn btn-sm" data-menu-collapse="${esc(collapseKey)}" title="${isCollapsed ? L('باز کردن', 'Expand') : L('بستن', 'Collapse')}">${isCollapsed ? '▸' : '▾'}</button>` : ''}
                     <span class="badge">${L('سطح', 'Lvl')} ${depth + 1}</span>
                     <span class="badge mono">${esc(node.id || node.key || node.group || node.contentType || `#${idx + 1}`)}</span>
                     ${hasChildren ? `<span class="badge ok">${node.children.length} ${L('زیرلینک', 'sub')}</span>` : ''}
@@ -1819,7 +2165,10 @@
 
                   <div class="field" style="margin:0;">
                     <label>${L('آیکون (اختیاری)', 'Icon (optional)')}</label>
-                    <input type="text" class="mono" list="studio-icons-datalist" placeholder="layers" data-menu-node="${menuIdx}:${nodePath}:icon" value="${esc(node.icon || '')}" />
+                    <div class="row" style="flex-wrap:nowrap;">
+                      <input type="text" class="mono" list="studio-icons-datalist" placeholder="layers" data-menu-node="${menuIdx}:${nodePath}:icon" value="${esc(node.icon || '')}" />
+                      <button type="button" class="btn btn-sm" title="${L('انتخاب بصری آیکون', 'Pick icon')}" data-pick-icon="menuNode:${menuIdx}:${nodePath}:icon">🎨</button>
+                    </div>
                   </div>
 
                   <div class="field" style="margin:0;">
@@ -1845,7 +2194,7 @@
                   `).join('')}
                 </div>
 
-                ${hasChildren ? `
+                ${hasChildren && !isCollapsed ? `
                   <div class="menu-tree-branch">
                     ${renderMenuTreeEditor(node.children, menuIdx, nodePath, depth + 1)}
                   </div>
@@ -1926,6 +2275,7 @@
                       <button type="button" class="btn btn-sm" data-menu-copy="${esc(activeMenu.id || '')}">${L('کپی کد', 'Copy Tag')}</button>
                     </div>
                     <div class="row">
+                      <button type="button" class="btn btn-sm" data-menu-act="json:${selectedMenuIndex}">{ } JSON</button>
                       <button type="button" class="btn btn-sm" data-menu-act="dup:${selectedMenuIndex}">${L('کپی منو', 'Duplicate')}</button>
                       <button type="button" class="btn btn-sm btn-danger" data-menu-act="del:${selectedMenuIndex}">${L('حذف منو', 'Delete Menu')}</button>
                     </div>
@@ -1958,7 +2308,11 @@
                   <div class="divider"></div>
                   <div class="between" style="margin-bottom:8px;">
                     <strong>${L('ساختار درختی لینک‌ها', 'Menu Links Tree')}</strong>
-                    <button type="button" class="btn btn-sm btn-primary" data-menu-act="add-root:${selectedMenuIndex}">+ ${L('افزودن لینک ریشه', 'Add Root Link')}</button>
+                    <div class="row">
+                      <button type="button" class="btn btn-sm" data-menu-act="expand-all:${selectedMenuIndex}">${L('باز کردن همه', 'Expand All')}</button>
+                      <button type="button" class="btn btn-sm" data-menu-act="collapse-all:${selectedMenuIndex}">${L('بستن همه', 'Collapse All')}</button>
+                      <button type="button" class="btn btn-sm btn-primary" data-menu-act="add-root:${selectedMenuIndex}">+ ${L('افزودن لینک ریشه', 'Add Root Link')}</button>
+                    </div>
                   </div>
 
                   ${(activeMenu.items || []).length === 0 ? `
@@ -2172,9 +2526,15 @@
         <div class="sticky-save-bar">
           <div class="row">
             <button type="button" class="btn" data-action="toggle-diff-json">${L('نمایش/مخفی کردن Diff فعلی', 'Toggle Sparse JSON Diff')}</button>
+            <button type="button" class="btn" data-action="bundle-export">${L('خروجی پکیج کلاینت', 'Export Bundle')}</button>
+            <button type="button" class="btn" data-action="bundle-import-modal">${L('ورودی پکیج کلاینت', 'Import Bundle')}</button>
             <button type="button" class="btn btn-danger" data-action="reset-config-confirm">${L('بازنشانی client/config.json (site:reset)', 'Reset Config (site:reset)')}</button>
           </div>
-          <button type="button" class="btn btn-primary" data-action="save-config">${L('ذخیره تغییرات در client/config.json', 'Save client/config.json')}</button>
+          <div class="row">
+            <span id="cfg-dirty-badge" class="badge warn ${getDirtyStatus().config ? '' : 'hidden'}">${L('تغییرات ذخیره‌نشده', 'Unsaved edits')}</span>
+            <button type="button" class="btn" data-action="discard-config">${L('لغو تغییرات', 'Discard')}</button>
+            <button type="button" class="btn btn-primary" data-action="save-config">${L('ذخیره تغییرات در client/config.json', 'Save client/config.json')}</button>
+          </div>
         </div>
       `;
     }
@@ -2263,6 +2623,8 @@
               <p class="card-sub">${L('لایه سوم تنظیمات (روی client/config.json قرار می‌گیرد)؛ دقیقاً مطابق فیلدهای settings در .pages.yml.', 'Layer 3 overrides matching .pages.yml settings (never bleeds into client/config.json).')}</p>
             </div>
             <div class="row">
+              <span id="cms-dirty-badge" class="badge warn ${getDirtyStatus().cms ? '' : 'hidden'}">${L('تغییرات ذخیره‌نشده', 'Unsaved edits')}</span>
+              <button type="button" class="btn btn-sm" data-action="discard-cms">${L('لغو تغییرات', 'Discard')}</button>
               ${confirmTarget === 'cms:reset'
                 ? `<button type="button" class="btn btn-danger btn-sm" data-action="cms-reset">${L('تأیید پاک‌سازی cms.json', 'Confirm Reset cms.json')}</button>
                    <button type="button" class="btn btn-sm" data-confirm-cancel="1">✕</button>`
@@ -2761,11 +3123,12 @@
           )}
           ${card(
             L('بیلد استاتیک و بررسی خروجی', 'SSG Build & Dist Checks'),
-            L('بیلد کامل Astro SSG + Pagefind، بررسی dist/ و تست لینک‌ها.', 'Build static dist/ + Pagefind search index, run smoke test and link check.'),
+            L('بیلد کامل Astro SSG + Pagefind، بررسی dist/، تست لینک‌ها و preflight کامل تحویل.', 'Build static dist/ + Pagefind search index, run smoke test, link check, and full preflight.'),
             `<button type="button" class="btn btn-accent" data-cli="build">npm run build</button>
              <button type="button" class="btn" data-cli="smoke">smoke</button>
              <button type="button" class="btn" data-cli="link:check">link:check</button>
-             <button type="button" class="btn" data-cli="content:status">content:status</button>`
+             <button type="button" class="btn" data-cli="content:status">content:status</button>
+             <button type="button" class="btn btn-primary" data-cli="preflight">preflight (Full Gate)</button>`
           )}
           ${card(
             L('تولید فایل‌ها و همگام‌سازی', 'Sync & Generators'),
@@ -2788,6 +3151,12 @@
                   <button type="button" class="btn btn-sm" data-confirm-cancel="1">✕</button>`
                : `<button type="button" class="btn btn-danger" data-confirm-arm="tools:reset">site:reset</button>`
              }`
+          )}
+          ${card(
+            L('پکیج انتقال پروژه مشتری (Client Bundle)', 'Client Tier Export / Import'),
+            L('خروجی گرفتن یا ایمپورت یک‌جا از لایه client/ (تنظیمات، CMS، زبان‌ها و ترجمه‌ها) برای پروژه‌های مشابه.', 'Export or import the portable client/ layer (config, cms, locales, messages) across client projects.'),
+            `<button type="button" class="btn btn-primary" data-action="bundle-export">${L('دانلود پکیج JSON', 'Download Client Bundle')}</button>
+             <button type="button" class="btn" data-action="bundle-import-modal">${L('ایمپورت پکیج JSON', 'Import Client Bundle')}</button>`
           )}
         </div>
       `;
@@ -2845,17 +3214,38 @@
               <span class="muted mono">${esc(d.file)}</span>
             </div>
             <div class="row">
+              <button type="button" class="btn btn-sm ${entryShowRef ? 'btn-primary' : ''}" data-action="toggle-entry-ref">${entryShowRef ? L('بستن زبان مرجع', 'Hide Reference') : L('مقایسه با زبان مرجع', 'Reference Locale')}</button>
+              <button type="button" class="btn btn-sm ${entryShowPreview ? 'btn-primary' : ''}" data-action="toggle-entry-preview">${entryShowPreview ? L('بستن پیش‌نمایش', 'Hide MD Preview') : L('پیش‌نمایش متن', 'MD Preview')}</button>
               ${col === 'pages' && d.exists ? `<button type="button" class="btn btn-sm" data-sec-modal="${esc(d.group)}|${esc(d.locale)}">${L('ویرایشگر سکشن‌ها', 'Sections Editor')}</button>` : ''}
               <button type="button" class="btn btn-sm" data-modal-close="1">✕</button>
             </div>
           </div>
+          ${entryShowRef && entryRefData ? `
+            <div class="sec-item" style="background:var(--surface-2); margin-bottom:10px;">
+              <div class="between" style="margin-bottom:4px;">
+                <strong>${L('نسخه مرجع', 'Reference Entry')} (${esc(entryRefData.locale)})</strong>
+                <span class="muted mono">${esc(entryRefData.file || '')}</span>
+              </div>
+              <div class="muted" style="margin-bottom:4px;"><strong>${esc(entryRefData.frontmatter?.title || '')}</strong> · <span class="mono">${esc(entryRefData.frontmatter?.slug || '')}</span></div>
+              ${entryRefData.frontmatter?.description ? `<p class="muted" style="margin:0 0 6px;">${esc(entryRefData.frontmatter.description)}</p>` : ''}
+              <details>
+                <summary class="muted" style="cursor:pointer;">${L('متن مرجع (MDX Body)', 'Reference MDX Body')}</summary>
+                <pre class="console-pre" style="margin-top:6px; max-height:180px;">${esc(entryRefData.body || '')}</pre>
+              </details>
+            </div>
+          ` : ''}
           <div class="grid grid-2">
             <div class="field"><label>title *</label><input type="text" data-efm="title" value="${esc(fm.title || '')}" /></div>
             <div class="field"><label>slug ${col === 'pages' && d.group === 'home' ? '(empty for home)' : '*'}</label><input type="text" class="mono" data-efm="slug" value="${esc(fm.slug ?? '')}" /></div>
           </div>
           <div class="field"><label>description</label><textarea style="min-height:60px;" data-efm="description">${esc(fm.description || '')}</textarea></div>
           <div class="grid grid-2">
-            <div class="field"><label>image (path relative to group or /assets)</label><input type="text" class="mono" data-efm="image" value="${esc(fm.image || '')}" /></div>
+            <div class="field"><label>image (path relative to group or /assets)</label>
+              <div class="row" style="flex-wrap:nowrap;">
+                <input type="text" class="mono" data-efm="image" value="${esc(fm.image || '')}" />
+                <button type="button" class="btn btn-sm" title="${L('انتخاب از مدیر رسانه', 'Pick from Media Manager')}" data-pick-asset="entry:image">🖼</button>
+              </div>
+            </div>
             <div class="field"><label>Status</label><label class="check-pill"><input type="checkbox" data-efm-bool="draft" ${fm.draft ? 'checked' : ''} /><span>draft</span></label></div>
           </div>
 
@@ -2902,7 +3292,14 @@
           ${customFields.length > 0 ? `<div class="divider"></div><div class="grid grid-2">${customInputs}</div>` : ''}
 
           <div class="divider"></div>
-          <div class="field"><label>MDX Body</label><textarea class="mono" style="min-height:220px;" data-entry-body="1">${esc(d.body || '')}</textarea></div>
+          ${entryShowPreview ? `
+            <div class="grid grid-2">
+              <div class="field"><label>MDX Body</label><textarea class="mono" style="min-height:220px;" data-entry-body="1">${esc(d.body || '')}</textarea></div>
+              <div class="field"><label>${L('پیش‌نمایش Markdown', 'Markdown Preview')}</label><div id="entry-md-preview" class="md-preview-box">${renderSafeMarkdownPreview(d.body || '')}</div></div>
+            </div>
+          ` : `
+            <div class="field"><label>MDX Body</label><textarea class="mono" style="min-height:220px;" data-entry-body="1">${esc(d.body || '')}</textarea></div>
+          `}
 
           ${Object.keys(extraFm).length > 0 ? `
             <details style="margin-bottom:10px;">
@@ -3112,6 +3509,120 @@
             `).join('')}
           </div>
         `;
+      } else if (modalState.type === 'iconPicker') {
+        const d = modalState.data;
+        const allIcons = state.availableIcons || [];
+        const q = iconSearch.trim().toLowerCase();
+        const filtered = q ? allIcons.filter((ic) => ic.toLowerCase().includes(q)) : allIcons;
+        card.innerHTML = `
+          <div class="between" style="margin-bottom:10px;">
+            <div>
+              <h3 style="margin:0;">${L('انتخابگر بصری آیکون (Tabler)', 'Visual Icon Picker')}</h3>
+              <span class="muted">${filtered.length} / ${allIcons.length} ${L('آیکون ثبت‌شده در پروژه', 'registered icons')}</span>
+            </div>
+            <div class="row">
+              <button type="button" class="btn btn-sm" data-icon-choose="">${L('حذف آیکون', 'Clear')}</button>
+              <button type="button" class="btn btn-sm" data-modal-close="1">✕</button>
+            </div>
+          </div>
+          <div class="field">
+            <input id="icon-picker-search" type="text" placeholder="${L('جستجوی نام آیکون (مثلاً home, shield, layers)...', 'Search icon name (e.g. home, shield, layers)...')}" value="${esc(iconSearch)}" />
+          </div>
+          <div class="icon-grid">
+            ${filtered.map((ic) => `
+              <button type="button" class="icon-chip-btn ${ic === d.current ? 'active' : ''}" data-icon-choose="${esc(ic)}">
+                <span>${ic === d.current ? '✓' : '◇'}</span>
+                <span>${esc(ic)}</span>
+              </button>
+            `).join('')}
+          </div>
+        `;
+      } else if (modalState.type === 'assets') {
+        const d = modalState.data;
+        const q = assetSearch.trim().toLowerCase();
+        const list = (d.assets || []).filter((a) => !q || a.path.toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
+        card.innerHTML = `
+          <div class="between" style="margin-bottom:10px;">
+            <div>
+              <h3 style="margin:0;">${L('مدیر رسانه و تصاویر (public/ & src/assets/)', 'Media & Assets Manager')}</h3>
+              <span class="muted">${d.loading ? L('در حال بارگذاری...', 'Loading...') : `${list.length} ${L('تصویر', 'assets')}`}</span>
+            </div>
+            <div class="row">
+              <button type="button" class="btn btn-sm" data-action="refresh-assets">↻ ${L('بروزرسانی', 'Refresh')}</button>
+              <button type="button" class="btn btn-sm" data-modal-close="1">✕</button>
+            </div>
+          </div>
+          <div class="grid grid-2" style="margin-bottom:10px;">
+            <div class="field" style="margin:0;">
+              <label>${L('جستجو در تصاویر', 'Filter Assets')}</label>
+              <input id="asset-picker-search" type="text" placeholder="/brand, hero, iso..." value="${esc(assetSearch)}" />
+            </div>
+            <div class="field" style="margin:0;">
+              <label>${L('آپلود تصویر جدید به public/uploads/', 'Upload Image to public/uploads/')}</label>
+              <input id="asset-upload-input" type="file" accept="image/svg+xml,image/png,image/webp,image/jpeg,image/avif" />
+            </div>
+          </div>
+          ${d.error ? `<p style="color:var(--danger);">${esc(d.error)}</p>` : ''}
+          <div class="asset-grid">
+            ${list.map((a) => `
+              <div class="asset-card">
+                <img class="asset-thumb" loading="lazy" src="api/asset-preview?path=${encodeURIComponent(a.path)}" alt="${esc(a.name)}" />
+                <div class="mono" style="font-size:11px; word-break:break-all;">${esc(a.path)}</div>
+                <div class="muted">${esc(a.source)} · ${(a.size / 1024).toFixed(1)} KB</div>
+                <div class="row">
+                  ${d.target ? `<button type="button" class="btn btn-sm btn-primary" data-asset-choose="${esc(a.path)}">${L('انتخاب', 'Use')}</button>` : ''}
+                  <button type="button" class="btn btn-sm" data-asset-copy="${esc(a.path)}">${L('کپی مسیر', 'Copy')}</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else if (modalState.type === 'menuJson') {
+        const d = modalState.data;
+        card.innerHTML = `
+          <div class="between" style="margin-bottom:10px;">
+            <div>
+              <h3 style="margin:0;">${L('ویرایش / انتقال JSON منو', 'Menu JSON Import / Export')}</h3>
+              <span class="muted">${L('می‌توانید این ساختار را کپی کنید یا JSON منوی دیگری را جایگذاری و اعمال کنید.', 'Copy, download, or paste menu JSON and apply it cleanly.')}</span>
+            </div>
+            <button type="button" class="btn btn-sm" data-modal-close="1">✕</button>
+          </div>
+          <div class="field">
+            <textarea id="menu-json-textarea" class="mono" style="min-height:300px;">${esc(d.jsonText || '')}</textarea>
+          </div>
+          <div class="between" style="margin-top:10px;">
+            <div class="row">
+              <button type="button" class="btn btn-sm" data-action="copy-menu-json">${L('کپی JSON', 'Copy JSON')}</button>
+              <button type="button" class="btn btn-sm" data-action="download-menu-json">${L('دانلود فایل .json', 'Download .json')}</button>
+            </div>
+            <div class="row">
+              <button type="button" class="btn" data-modal-close="1">${L('انصراف', 'Cancel')}</button>
+              <button type="button" class="btn btn-primary" data-action="apply-menu-json">${L('اعمال JSON به منو', 'Apply JSON to Menu')}</button>
+            </div>
+          </div>
+        `;
+      } else if (modalState.type === 'clientBundle') {
+        card.innerHTML = `
+          <div class="between" style="margin-bottom:10px;">
+            <div>
+              <h3 style="margin:0;">${L('ورودی پکیج تنظیمات کلاینت (Import Client Bundle)', 'Import Portable Client Bundle')}</h3>
+              <span class="muted">${L('فایل خروجی JSON را انتخاب کنید یا محتوای آن را اینجا جایگذاری کنید (locales, config, cms, messages).', 'Select a bundle JSON file or paste its JSON to restore client/ settings & translations.')}</span>
+            </div>
+            <button type="button" class="btn btn-sm" data-modal-close="1">✕</button>
+          </div>
+          <div class="field">
+            <label>${L('انتخاب فایل JSON', 'Load JSON File')}</label>
+            <input id="client-bundle-file" type="file" accept="application/json,.json" />
+          </div>
+          <div class="field">
+            <label>Bundle JSON</label>
+            <textarea id="client-bundle-textarea" class="mono" style="min-height:240px;" placeholder='{"bundle":{"locales":...,"config":...,"cms":...,"messages":...}}'></textarea>
+          </div>
+          <div class="between" style="margin-top:10px;">
+            <button type="button" class="btn" data-modal-close="1">${L('انصراف', 'Cancel')}</button>
+            <button type="button" class="btn btn-primary" data-action="apply-client-bundle">${L('اعتبارسنجی و ایمپورت پکیج', 'Validate & Import Bundle')}</button>
+          </div>
+        `;
       }
     }
 
@@ -3133,6 +3644,7 @@
       else if (activeTab === 'content') root.innerHTML = renderContentTab();
       else if (activeTab === 'i18n') root.innerHTML = renderI18nTab();
       else root.innerHTML = renderToolsTab();
+      updateDirtyUi();
     }
 
     // ---------- Event Delegation ----------
@@ -3234,6 +3746,51 @@
       if (e.target.closest('#console-clear')) return;
       const body = document.getElementById('console-body');
       setConsoleOpen(body.classList.contains('hidden'));
+    });
+
+    document.getElementById('btn-media')?.addEventListener('click', () => {
+      openAssetsModal('');
+    });
+
+    document.getElementById('btn-preview-split')?.addEventListener('click', () => {
+      previewOpen = !previewOpen;
+      localStorage.setItem('studio_preview_open', previewOpen ? '1' : '0');
+      updateChrome();
+    });
+
+    document.getElementById('btn-preview-close')?.addEventListener('click', () => {
+      previewOpen = false;
+      localStorage.setItem('studio_preview_open', '0');
+      updateChrome();
+    });
+
+    document.getElementById('btn-preview-go')?.addEventListener('click', () => {
+      const val = document.getElementById('preview-path-input')?.value.trim() || '/';
+      previewPath = val.startsWith('/') ? val : '/' + val;
+      localStorage.setItem('studio_preview_path', previewPath);
+      syncPreviewPane({ forceReload: true });
+    });
+
+    document.getElementById('preview-path-input')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btn-preview-go')?.click();
+      }
+    });
+
+    document.getElementById('preview-pane')?.addEventListener('click', (e) => {
+      const devBtn = e.target.closest('[data-preview-device]');
+      if (!devBtn) return;
+      previewDevice = devBtn.dataset.previewDevice || 'desktop';
+      localStorage.setItem('studio_preview_device', previewDevice);
+      syncPreviewPane();
+    });
+
+    window.addEventListener('beforeunload', (e) => {
+      if (hasAnyDirty()) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
     });
 
     document.getElementById('console-clear').addEventListener('click', () => {
@@ -3375,6 +3932,47 @@
           const cnt = document.querySelector(`[data-sec-count="${scope}:${idxStr}"]`);
           if (cnt) cnt.textContent = String(Object.keys(sec.props).length);
         }
+      } else if (el.dataset.secPropNum) {
+        const [scope, idxStr, prop] = el.dataset.secPropNum.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        if (sec) {
+          sec.props = sec.props || {};
+          if (el.value === '') delete sec.props[prop];
+          else sec.props[prop] = Number(el.value);
+          const jsonTa = document.querySelector(`[data-sec-json="${scope}:${idxStr}"]`);
+          if (jsonTa) {
+            jsonTa.value = JSON.stringify(sec.props, null, 2);
+            delete jsonTa.dataset.jsonInvalid;
+            jsonTa.style.borderColor = '';
+          }
+          const cnt = document.querySelector(`[data-sec-count="${scope}:${idxStr}"]`);
+          if (cnt) cnt.textContent = String(Object.keys(sec.props).length);
+        }
+      } else if (el.dataset.secNested) {
+        const [scope, idxStr, parentProp, childProp] = el.dataset.secNested.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        if (sec) {
+          sec.props = sec.props || {};
+          if (el.value === '') {
+            if (sec.props[parentProp] && typeof sec.props[parentProp] === 'object') {
+              delete sec.props[parentProp][childProp];
+              if (Object.keys(sec.props[parentProp]).length === 0) delete sec.props[parentProp];
+            }
+          } else {
+            sec.props[parentProp] = sec.props[parentProp] && typeof sec.props[parentProp] === 'object' ? sec.props[parentProp] : {};
+            sec.props[parentProp][childProp] = el.value;
+          }
+          const jsonTa = document.querySelector(`[data-sec-json="${scope}:${idxStr}"]`);
+          if (jsonTa) {
+            jsonTa.value = JSON.stringify(sec.props, null, 2);
+            delete jsonTa.dataset.jsonInvalid;
+            jsonTa.style.borderColor = '';
+          }
+          const cnt = document.querySelector(`[data-sec-count="${scope}:${idxStr}"]`);
+          if (cnt) cnt.textContent = String(Object.keys(sec.props).length);
+        }
       } else if (el.dataset.secJson) {
         const [scope, idxStr] = el.dataset.secJson.split(':');
         const arr = resolveSectionArray(scope);
@@ -3391,6 +3989,14 @@
               document.querySelectorAll(`[data-sec-prop^="${scope}:${idxStr}:"]`).forEach((inp) => {
                 const prop = inp.dataset.secProp.split(':')[2];
                 inp.value = parsed[prop] ?? '';
+              });
+              document.querySelectorAll(`[data-sec-prop-num^="${scope}:${idxStr}:"]`).forEach((inp) => {
+                const prop = inp.dataset.secPropNum.split(':')[2];
+                inp.value = parsed[prop] ?? '';
+              });
+              document.querySelectorAll(`[data-sec-nested^="${scope}:${idxStr}:"]`).forEach((inp) => {
+                const parts = inp.dataset.secNested.split(':');
+                inp.value = parsed[parts[2]]?.[parts[3]] ?? '';
               });
             } else {
               el.dataset.jsonInvalid = '1';
@@ -3431,7 +4037,11 @@
         else if (el.dataset.efmCustom) fm[el.dataset.efmCustom] = el.value;
         else if (el.dataset.efmCustomNum) fm[el.dataset.efmCustomNum] = el.value === '' ? undefined : Number(el.value);
         else if (el.dataset.efmCustomList) fm[el.dataset.efmCustomList] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
-        else if (el.dataset.entryBody) modalState.data.body = el.value;
+        else if (el.dataset.entryBody) {
+          modalState.data.body = el.value;
+          const prevEl = document.getElementById('entry-md-preview');
+          if (prevEl) prevEl.innerHTML = renderSafeMarkdownPreview(el.value);
+        }
       } else if (modalState?.type === 'sections') {
         if (el.dataset.psec) modalState.data[el.dataset.psec] = el.value;
       } else if (modalState?.type === 'contentType') {
@@ -3488,6 +4098,7 @@
       } else if (modalState?.type === 'localeMeta') {
         if (el.dataset.lm) modalState.data[el.dataset.lm] = el.value;
       }
+      updateDirtyUi();
     }
 
     document.addEventListener('input', (e) => {
@@ -3510,6 +4121,28 @@
         const pos = el.selectionStart;
         render();
         const nextInput = document.getElementById('content-search');
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.setSelectionRange(pos, pos);
+        }
+        return;
+      }
+      if (el.id === 'icon-picker-search') {
+        iconSearch = el.value;
+        const pos = el.selectionStart;
+        renderModal();
+        const nextInput = document.getElementById('icon-picker-search');
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.setSelectionRange(pos, pos);
+        }
+        return;
+      }
+      if (el.id === 'asset-picker-search') {
+        assetSearch = el.value;
+        const pos = el.selectionStart;
+        renderModal();
+        const nextInput = document.getElementById('asset-picker-search');
         if (nextInput) {
           nextInput.focus();
           nextInput.setSelectionRange(pos, pos);
@@ -3596,11 +4229,39 @@
           ct.fields[fi].filter = el.checked ? { enabled: true, mode: 'multi', sort: 'alpha' } : undefined;
           renderModal();
         }
+      } else if (el.id === 'asset-upload-input' && el.files?.[0]) {
+        const file = el.files[0];
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const res = await apiPost('api/upload-asset', { filename: file.name, dataUrl: reader.result });
+            showToast(L('تصویر آپلود شد: ', 'Uploaded: ') + res.publicPath);
+            if (modalState?.type === 'assets') {
+              const listRes = await apiGet('api/assets');
+              modalState.data.assets = listRes.assets || [];
+              renderModal();
+            }
+          } catch (err) {
+            showToast(err.message);
+            logConsole('upload-asset', err.message, false);
+          }
+        };
+        reader.readAsDataURL(file);
+      } else if (el.id === 'client-bundle-file' && el.files?.[0]) {
+        const file = el.files[0];
+        const reader = new FileReader();
+        reader.onload = () => {
+          const ta = document.getElementById('client-bundle-textarea');
+          if (ta) ta.value = String(reader.result || '');
+          showToast(L('فایل پکیج بارگذاری شد', 'Bundle file loaded'));
+        };
+        reader.readAsText(file);
       } else if (el.id === 'add-lang-dir') {
         el.dataset.dirTouched = '1';
       } else if (el.type !== 'checkbox' && el.type !== 'file') {
         syncScalarField(el, true);
       }
+      updateDirtyUi();
     });
 
     document.addEventListener('keydown', (e) => {
@@ -3709,11 +4370,77 @@
         showToast(L('کد منو کپی شد: ', 'Copied: ') + tag);
         return;
       }
+      if (btn.dataset.menuCollapse) {
+        const key = btn.dataset.menuCollapse;
+        if (collapsedMenuNodes.has(key)) collapsedMenuNodes.delete(key);
+        else collapsedMenuNodes.add(key);
+        render();
+        return;
+      }
+      if (btn.dataset.pickIcon) {
+        const target = btn.dataset.pickIcon;
+        openModal('iconPicker', { target, current: getIconTargetValue(target) });
+        return;
+      }
+      if (btn.dataset.iconChoose !== undefined && modalState?.type === 'iconPicker') {
+        setIconTargetValue(modalState.data.target, btn.dataset.iconChoose);
+        closeModal();
+        render();
+        updateDirtyUi();
+        return;
+      }
+      if (btn.dataset.pickAsset) {
+        const target = btn.dataset.pickAsset;
+        const parentModal = modalState && (modalState.type === 'entry' || modalState.type === 'sections') ? modalState : null;
+        await openAssetsModal(target, parentModal);
+        return;
+      }
+      if (btn.dataset.assetChoose && modalState?.type === 'assets') {
+        const assetPath = btn.dataset.assetChoose;
+        const target = modalState.data.target;
+        const parentModal = modalState.data.parentModal;
+        setAssetTargetValue(target, assetPath, parentModal);
+        closeModal();
+        if (!parentModal) {
+          render();
+          updateDirtyUi();
+        }
+        showToast(L('مسیر تصویر جایگذاری شد: ', 'Selected: ') + assetPath);
+        return;
+      }
+      if (btn.dataset.assetCopy) {
+        navigator.clipboard?.writeText(btn.dataset.assetCopy);
+        showToast(L('مسیر کپی شد: ', 'Copied: ') + btn.dataset.assetCopy);
+        return;
+      }
       if (btn.dataset.menuAct) {
         const [op, miStr] = btn.dataset.menuAct.split(':');
         const mi = Number(miStr);
         const menus = configDraft.ui?.navigation?.menus || [];
-        if (op === 'add-root' && menus[mi]) {
+        if (op === 'expand-all' && menus[mi]) {
+          const prefix = `${mi}:`;
+          for (const k of [...collapsedMenuNodes]) {
+            if (k.startsWith(prefix)) collapsedMenuNodes.delete(k);
+          }
+          render();
+        } else if (op === 'collapse-all' && menus[mi]) {
+          const walkCollapse = (items, p = '') => {
+            if (!Array.isArray(items)) return;
+            items.forEach((it, idx) => {
+              const np = p ? `${p}.${idx}` : String(idx);
+              if (Array.isArray(it.children) && it.children.length > 0) {
+                collapsedMenuNodes.add(`${mi}:${np}`);
+                walkCollapse(it.children, np);
+              }
+            });
+          };
+          walkCollapse(menus[mi].items);
+          render();
+        } else if (op === 'json' && menus[mi]) {
+          const cloneMenu = deepClone(menus[mi]);
+          stripTransientMenuFields(cloneMenu.items);
+          openModal('menuJson', { menuIdx: mi, jsonText: JSON.stringify(cloneMenu, null, 2) });
+        } else if (op === 'add-root' && menus[mi]) {
           menus[mi].items = menus[mi].items || [];
           menus[mi].items.push({
             group: state.pages?.[0]?.group || 'about',
@@ -4364,6 +5091,124 @@
           } catch (err) {
             showToast(err.message);
             logConsole('messages-save', err.message, false);
+          }
+        });
+      } else if (act === 'refresh-assets' && modalState?.type === 'assets') {
+        try {
+          const res = await apiGet('api/assets');
+          modalState.data.assets = res.assets || [];
+          modalState.data.error = '';
+          renderModal();
+        } catch (err) {
+          showToast(err.message);
+        }
+      } else if (act === 'copy-menu-json' && modalState?.type === 'menuJson') {
+        const txt = document.getElementById('menu-json-textarea')?.value || '';
+        navigator.clipboard?.writeText(txt);
+        showToast(L('JSON منو کپی شد', 'Menu JSON copied'));
+      } else if (act === 'download-menu-json' && modalState?.type === 'menuJson') {
+        const txt = document.getElementById('menu-json-textarea')?.value || '{}';
+        const menuId = configDraft.ui?.navigation?.menus?.[modalState.data.menuIdx]?.id || 'menu';
+        const blob = new Blob([txt], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `menu-${menuId}.json`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else if (act === 'apply-menu-json' && modalState?.type === 'menuJson') {
+        const txt = document.getElementById('menu-json-textarea')?.value || '';
+        let parsed;
+        try {
+          parsed = JSON.parse(txt);
+        } catch {
+          return showToast(L('فرمت JSON نامعتبر است', 'Invalid JSON syntax'));
+        }
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          return showToast(L('ساختار منو باید یک آبجکت JSON باشد', 'Menu JSON must be an object'));
+        }
+        const id = String(parsed.id || '').trim();
+        if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) {
+          return showToast(L('فیلد id منو معتبر نیست (a-z, 0-9, -, _)', 'Menu id must match [a-zA-Z0-9_-]+'));
+        }
+        const menus = configDraft.ui?.navigation?.menus || [];
+        if (menus.some((m, idx) => idx !== modalState.data.menuIdx && m.id === id)) {
+          return showToast(L('آیدی منو تکراری است: ' + id, 'Duplicate menu id: ' + id));
+        }
+        if (!Array.isArray(parsed.items)) {
+          return showToast(L('فیلد items باید آرایه باشد', 'Menu items must be an array'));
+        }
+        const dm = parsed.displayMode === 'list' ? 'list' : 'dropdown';
+        menus[modalState.data.menuIdx] = { ...parsed, id, displayMode: dm };
+        closeModal();
+        render();
+        showToast(L('منو از JSON به‌روزرسانی شد', 'Menu updated from JSON'));
+      } else if (act === 'toggle-entry-preview' && modalState?.type === 'entry') {
+        entryShowPreview = !entryShowPreview;
+        renderModal();
+      } else if (act === 'toggle-entry-ref' && modalState?.type === 'entry') {
+        entryShowRef = !entryShowRef;
+        if (entryShowRef && !entryRefData) {
+          const defLoc = state.locales?.defaultLocale || 'en';
+          const refLoc = modalState.data.locale === defLoc
+            ? (state.locales?.locales?.find((l) => l !== defLoc) || defLoc)
+            : defLoc;
+          try {
+            const ref = await apiGet(`api/content-entry?collection=${encodeURIComponent(modalState.data.collection)}&group=${encodeURIComponent(modalState.data.group)}&locale=${encodeURIComponent(refLoc)}`);
+            entryRefData = ref;
+          } catch (err) {
+            entryShowRef = false;
+            showToast(err.message);
+          }
+        }
+        renderModal();
+      } else if (act === 'discard-config') {
+        confirmTarget = '';
+        configDraft = buildConfigDraft(state);
+        render();
+        showToast(L('تغییرات ذخیره نشده Config لغو شد', 'Discarded unsaved config changes'));
+      } else if (act === 'discard-cms') {
+        confirmTarget = '';
+        cmsDraft = buildCmsDraft(state);
+        render();
+        showToast(L('تغییرات ذخیره نشده CMS لغو شد', 'Discarded unsaved CMS changes'));
+      } else if (act === 'bundle-export') {
+        await withBusy('bundle-export', async () => {
+          try {
+            const res = await apiGet('api/client-bundle');
+            const txt = JSON.stringify(res.bundle, null, 2);
+            const blob = new Blob([txt], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `client-bundle-${(state.projectMeta?.packageJson?.name || 'site')}.json`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            showToast(L('پکیج client/ دانلود شد', 'Client bundle exported'));
+          } catch (err) {
+            showToast(err.message);
+          }
+        });
+      } else if (act === 'bundle-import-modal') {
+        openModal('clientBundle', {});
+      } else if (act === 'apply-client-bundle' && modalState?.type === 'clientBundle') {
+        const txt = document.getElementById('client-bundle-textarea')?.value || '';
+        let parsed;
+        try {
+          parsed = JSON.parse(txt);
+        } catch {
+          return showToast(L('فرمت JSON پکیج نامعتبر است', 'Invalid bundle JSON syntax'));
+        }
+        await withBusy('client-bundle', async () => {
+          try {
+            const res = await apiPost('api/client-bundle', parsed);
+            logConsole('client-bundle import', JSON.stringify(res, null, 2), true);
+            closeModal();
+            showToast(L('پکیج کلاینت با موفقیت ایمپورت شد', 'Client bundle imported ✓'));
+            await refreshState({ resetDrafts: true });
+          } catch (err) {
+            showToast(err.message);
+            logConsole('client-bundle import', err.message, false);
           }
         });
       } else if (act === 'refresh-health') {
