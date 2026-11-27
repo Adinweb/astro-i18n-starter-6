@@ -19,6 +19,8 @@ import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { buildOgRouteKey, type SocialCardContext } from '@/libs/content/social';
 import { formatNumber } from '@/i18n/format';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
+import CollectionHooks from '@client/CollectionHooks.astro';
+import { CLIENT_COLLECTION_TEMPLATES } from '@client/templates/index';
 import * as m from '@/paraglide/messages';
 
 /**
@@ -49,6 +51,7 @@ const {
   perPage,
 } = Astro.props;
 
+const CustomTemplate = CLIENT_COLLECTION_TEMPLATES[`${contentType}:index`];
 const type = getContentType(contentType);
 const baseTitle = getContentTypeLabel(contentType, locale);
 const description = getContentTypeDescription(contentType, locale);
@@ -97,6 +100,24 @@ const ogContext: SocialCardContext = {
 };
 ---
 
+{
+  CustomTemplate ? (
+    <CustomTemplate
+      collection={contentType}
+      view="index"
+      contentType={contentType}
+      locale={locale}
+      alternates={alternates}
+      switcherAlternates={switcherAlternates}
+      url={url}
+      page={page}
+      totalPages={totalPages}
+      perPage={perPage}
+      schema={indexSchema}
+      ogContext={ogContext}
+      breadcrumbs={breadcrumbs}
+    />
+  ) : (
 <BaseLayout
   title={title}
   description={description}
@@ -111,6 +132,8 @@ const ogContext: SocialCardContext = {
 >
   <PageHeader title={baseTitle} description={description} locale={locale} breadcrumbs={breadcrumbs} />
 
+  <CollectionHooks hook="before-index" collection={contentType} view="index" locale={locale} url={url} />
+
   <CollectionBrowser
     collection={contentType}
     locale={locale}
@@ -121,4 +144,8 @@ const ogContext: SocialCardContext = {
     currentUrl={url}
     syncUrl={true}
   />
+
+  <CollectionHooks hook="after-index" collection={contentType} view="index" locale={locale} url={url} />
 </BaseLayout>
+  )
+}

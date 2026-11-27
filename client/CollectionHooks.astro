@@ -1,0 +1,51 @@
+---
+/**
+ * Client-owned content-collection slot injection hooks rendered inside
+ * `BlogPostView.astro`, `CollectionEntryView.astro`, `BlogIndexView.astro`,
+ * `CollectionIndexView.astro`, and `PageView.astro`.
+ *
+ * Use this file to inject shared blocks or elements (e.g. a CTA banner,
+ * newsletter signup, author bio, disclaimer, or `<SectionComposer />`) across
+ * all entries of a collection (`blog`, `projects`, custom collections) without
+ * duplicating markup in individual `.mdx` files or editing `src/views/`.
+ *
+ * Usage:
+ * Views render `<CollectionHooks hook="..." collection={...} view={...} locale={locale} url={url} entry={entry} />`.
+ *
+ * Hook positions (`hook`):
+ * - `before-content`: directly before `<Content />` on entry & page views
+ * - `after-content`: directly after `<Content />` inside the article column
+ * - `after-entry`: full-width hook below the entry (and related posts)
+ * - `sidebar`: inside the blog post TOC sidebar column
+ * - `before-index`: above the filter bar / grid on blog & collection indexes
+ * - `after-index`: below the grid / pagination on blog & collection indexes
+ */
+import type { Locale } from '@/i18n/locales';
+
+export type CollectionHookSlot =
+  | 'before-content'
+  | 'after-content'
+  | 'after-entry'
+  | 'sidebar'
+  | 'before-index'
+  | 'after-index';
+
+export type CollectionHookView = 'entry' | 'index' | 'page';
+
+interface Props {
+  hook: CollectionHookSlot;
+  collection: string;
+  view: CollectionHookView;
+  locale: Locale;
+  url: string;
+  entry?: unknown;
+}
+
+const { hook, collection, view, locale, url, entry } = Astro.props;
+void hook;
+void collection;
+void view;
+void locale;
+void url;
+void entry;
+---

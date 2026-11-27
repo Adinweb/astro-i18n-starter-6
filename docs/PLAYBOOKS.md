@@ -20,8 +20,9 @@ This document holds the full directory layout and step-by-step verified playbook
 │   ├── content.ts             # Custom Astro contentCollections & CLIENT_CONTENT_TYPES UI metadata
 │   ├── icons.ts & ClientIcons.astro # Extra client Tabler icons merged into <Icon />
 │   ├── LayoutHooks.astro      # Custom `top-banner`, `<head>`, and `<body>`-end slots inside BaseLayout
+│   ├── CollectionHooks.astro  # Custom `before-content`, `after-content`, `after-entry`, `sidebar`, `before-index`, `after-index` hooks for collections & pages
 │   ├── styles.css             # Client CSS tokens & @font-face commercial Persian font slots (@source "../../client")
-│   └── templates/index.ts     # Custom page templates merged into PageView.astro
+│   └── templates/index.ts     # `CLIENT_PAGE_TEMPLATES` & `CLIENT_COLLECTION_TEMPLATES` merged into views/
 ├── deploy/                    # Build-generated server redirect configs (`nginx-redirects.conf`, `.htaccess-redirects`; outside `dist/`)
 ├── docs/
 │   ├── BLOCKS-API.md          # Auto-generated < 5 KB component & Props catalog (`npm run blocks:catalog`)

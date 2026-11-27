@@ -5,6 +5,7 @@
  * `<UiBadge>`, localized pricing (`formatNumber`), interactive wishlist toggle, category
  * filter chips with ChronoTrig cascade replay, OKLCH semantic tokens, and Paraglide defaults.
  */
+import { getImage } from 'astro:assets';
 import ResponsiveImage from '@/components/ui/ResponsiveImage.astro';
 import PageSection from '@/components/PageSection.astro';
 import Button from '@/components/ui/Button.astro';
@@ -15,7 +16,8 @@ import UiBadge from '@/components/ui/UiBadge.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
 import { DEFAULT_HERO_IMAGE, absoluteUrl, siteConfig } from '@/libs/config/app';
-import { resolveContentImageUrl, type ContentImage } from '@/libs/content/media';
+import { resolveAssetImage } from '@/libs/content/assets';
+import { isImageMetadata, resolveContentImageUrl, type ContentImage } from '@/libs/content/media';
 import {
   buildProductListSchema,
   type ProductAvailability,
@@ -103,7 +105,7 @@ const defaultHref = usingDefaults
   : '';
 const defaultCta = m.block_products_cta({}, { locale: activeLocale });
 
-const resolvedItems: readonly ProductItem[] = items ?? [
+const baseItems: readonly ProductItem[] = items ?? [
   {
     title: m.block_products_1_title({}, { locale: activeLocale }),
     description: m.block_products_1_desc({}, { locale: activeLocale }),
@@ -145,6 +147,13 @@ const resolvedItems: readonly ProductItem[] = items ?? [
   },
 ];
 
+const resolvedItems: readonly ProductItem[] = await Promise.all(
+  baseItems.map(async (item) => ({
+    ...item,
+    image: item.image ? await resolveAssetImage(item.image) : undefined,
+  }))
+);
+
 const categories = [...new Set(resolvedItems.map((i) => i.category).filter(Boolean))] as string[];
 const showFilters = enableFilter && categories.length > 1;
 const allLabel = m.block_products_all({}, { locale: activeLocale });
@@ -158,31 +167,47 @@ const gridColsClass =
       ? 'sm:grid-cols-2 xl:grid-cols-4'
       : 'md:grid-cols-2 lg:grid-cols-3';
 
+const resolveSchemaImageUrl = async (img?: ContentImage | null): Promise<string | undefined> => {
+  if (!img) return undefined;
+  if (isImageMetadata(img) && img.format !== 'svg') {
+    const optimized = await getImage({
+      src: img,
+      width: Math.min(img.width, 1200),
+      format: 'webp',
+      quality: 82,
+    });
+    return absoluteUrl(optimized.src);
+  }
+  return resolveContentImageUrl(img, absoluteUrl);
+};
+
 const productListSchema = emitSchema
   ? buildProductListSchema(
-      resolvedItems.map((item) => ({
-        name: item.title,
-        description: item.description,
-        price: item.price,
-        priceCurrency: item.priceCurrency ?? priceCurrency,
-        currency: item.currency ?? item.currencySuffix ?? item.currencyPrefix ?? defaultCurrency,
-        availability: item.availability,
-        sku: item.sku,
-        brand: item.brand ?? siteConfig.name,
-        url:
-          item.href &&
-          (/^https?:\/\//i.test(item.href.trim()) ||
-            (item.href.trim().startsWith('/') &&
-              !item.href.trim().startsWith('//') &&
-              !item.href.trim().startsWith('/\\')))
-            ? item.href.trim().startsWith('http')
-              ? item.href.trim()
-              : absoluteUrl(item.href.trim())
-            : undefined,
-        image: resolveContentImageUrl(item.image, absoluteUrl),
-        rating: item.rating,
-        reviewCount: item.reviewCount,
-      })),
+      await Promise.all(
+        resolvedItems.map(async (item) => ({
+          name: item.title,
+          description: item.description,
+          price: item.price,
+          priceCurrency: item.priceCurrency ?? priceCurrency,
+          currency: item.currency ?? item.currencySuffix ?? item.currencyPrefix ?? defaultCurrency,
+          availability: item.availability,
+          sku: item.sku,
+          brand: item.brand ?? siteConfig.name,
+          url:
+            item.href &&
+            (/^https?:\/\//i.test(item.href.trim()) ||
+              (item.href.trim().startsWith('/') &&
+                !item.href.trim().startsWith('//') &&
+                !item.href.trim().startsWith('/\\')))
+              ? item.href.trim().startsWith('http')
+                ? item.href.trim()
+                : absoluteUrl(item.href.trim())
+              : undefined,
+          image: await resolveSchemaImageUrl(item.image),
+          rating: item.rating,
+          reviewCount: item.reviewCount,
+        }))
+      ),
       absoluteUrl(Astro.url.pathname)
     )
   : null;

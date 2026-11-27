@@ -12,7 +12,7 @@ const defaultRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 
 export const MAX_BLOCKS_API_BYTES = 5120;
 
-const HERO_NAMES = new Set([
+export const HERO_BLOCK_NAMES = [
   'LandingHeroSplit',
   'HeroCenteredEditorial',
   'HeroDashboardShowcase',
@@ -20,10 +20,9 @@ const HERO_NAMES = new Set([
   'HeroInteractivePrompt',
   'HeroProofMarquee',
   'HeroFloatingOrbSplit',
-]);
+];
 
-const SECTION_NAMES = new Set([
-  'SectionComposer',
+export const STRUCTURAL_SECTION_NAMES = [
   'BentoCapabilities',
   'ProofStatsRow',
   'FaqAccordion',
@@ -46,6 +45,18 @@ const SECTION_NAMES = new Set([
   'ProductShowcaseGrid',
   'AuthFormCard',
   'ParallaxSection',
+];
+
+export const ALL_SECTION_BLOCK_NAMES = [
+  ...HERO_BLOCK_NAMES,
+  ...STRUCTURAL_SECTION_NAMES,
+];
+
+const HERO_NAMES = new Set(HERO_BLOCK_NAMES);
+
+const SECTION_NAMES = new Set([
+  'SectionComposer',
+  ...STRUCTURAL_SECTION_NAMES,
 ]);
 
 const SHOWCASE_NAMES = new Set([
@@ -201,7 +212,7 @@ function formatCompactProp(prop) {
   return `${prop.name}${opt}:${shortType}${def}`;
 }
 
-const HERO_PRIORITY_PROPS = [
+export const HERO_PRIORITY_PROPS = [
   'title',
   'titleLead',
   'titleAccent',
@@ -323,4 +334,252 @@ export function generateBlocksApi({ rootDir = defaultRootDir, check = false } = 
     catalog,
     markdown,
   };
+}
+
+function parseModuleAst(filePath) {
+  const source = fs.readFileSync(filePath, 'utf-8');
+  const code = filePath.endsWith('.astro') ? extractFrontmatter(source) : source;
+  const sf = ts.createSourceFile(filePath, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const interfaces = new Map();
+  const typeAliases = new Map();
+  const imports = new Map();
+
+  for (const stmt of sf.statements) {
+    if (ts.isInterfaceDeclaration(stmt)) {
+      interfaces.set(stmt.name.text, { node: stmt, sf });
+    } else if (ts.isTypeAliasDeclaration(stmt)) {
+      typeAliases.set(stmt.name.text, { node: stmt, sf });
+    } else if (ts.isImportDeclaration(stmt) && ts.isStringLiteral(stmt.moduleSpecifier)) {
+      const spec = stmt.moduleSpecifier.text;
+      const clause = stmt.importClause;
+      if (clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+        for (const el of clause.namedBindings.elements) {
+          const localName = el.name.text;
+          const importedName = (el.propertyName ?? el.name).text;
+          imports.set(localName, { spec, importedName });
+        }
+      }
+    }
+  }
+
+  return { sf, interfaces, typeAliases, imports, filePath };
+}
+
+function resolveImportedFile(spec, currentFile, rootDir) {
+  let baseCandidate = null;
+  if (spec.startsWith('@/')) {
+    const rel = spec.slice(2);
+    const roots = rootDir === defaultRootDir ? [rootDir] : [rootDir, defaultRootDir];
+    for (const r of roots) {
+      for (const candidate of [
+        path.join(r, 'src', rel),
+        path.join(r, 'src', `${rel}.ts`),
+        path.join(r, 'src', `${rel}.astro`),
+        path.join(r, 'src', rel, 'index.ts'),
+      ]) {
+        if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+          return candidate;
+        }
+      }
+    }
+    return null;
+  }
+  if (spec.startsWith('.')) {
+    baseCandidate = path.resolve(path.dirname(currentFile), spec);
+    for (const candidate of [baseCandidate, `${baseCandidate}.ts`, `${baseCandidate}.astro`, path.join(baseCandidate, 'index.ts')]) {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+        return candidate;
+      }
+    }
+  }
+  return null;
+}
+
+function unwrapTypeNode(node) {
+  if (!node) return null;
+  if (ts.isTypeOperatorNode(node) && node.operator === ts.SyntaxKind.ReadonlyKeyword) {
+    return unwrapTypeNode(node.type);
+  }
+  if (ts.isParenthesizedTypeNode(node)) {
+    return unwrapTypeNode(node.type);
+  }
+  if (ts.isUnionTypeNode(node)) {
+    const nonNull = node.types.filter(
+      (t) => t.kind !== ts.SyntaxKind.NullKeyword && t.kind !== ts.SyntaxKind.UndefinedKeyword
+    );
+    if (nonNull.length === 1) return unwrapTypeNode(nonNull[0]);
+  }
+  return node;
+}
+
+function extractArrayElementTypeNode(typeNode) {
+  const unwrapped = unwrapTypeNode(typeNode);
+  if (!unwrapped) return null;
+  if (ts.isArrayTypeNode(unwrapped)) {
+    return unwrapTypeNode(unwrapped.elementType);
+  }
+  if (
+    ts.isTypeReferenceNode(unwrapped) &&
+    ['Array', 'ReadonlyArray'].includes(unwrapped.typeName.getText()) &&
+    unwrapped.typeArguments?.length === 1
+  ) {
+    return unwrapTypeNode(unwrapped.typeArguments[0]);
+  }
+  return null;
+}
+
+function resolveTypeSymbol(typeName, mod, getMod, rootDir, depth = 0) {
+  if (depth > 6 || !mod) return null;
+  if (mod.interfaces.has(typeName)) {
+    return { kind: 'interface', decl: mod.interfaces.get(typeName).node, mod };
+  }
+  if (mod.typeAliases.has(typeName)) {
+    const alias = mod.typeAliases.get(typeName).node;
+    return { kind: 'alias', decl: alias, mod };
+  }
+  if (mod.imports.has(typeName)) {
+    const imp = mod.imports.get(typeName);
+    const targetFile = resolveImportedFile(imp.spec, mod.filePath, rootDir);
+    if (!targetFile) return null;
+    return resolveTypeSymbol(imp.importedName, getMod(targetFile), getMod, rootDir, depth + 1);
+  }
+  return null;
+}
+
+const IMAGE_FIELD_NAMES = new Set(['image', 'avatar', 'parallaxImage', 'bottomImage', 'src']);
+
+function classifyFieldNode(propName, typeNode, mod, getMod, rootDir, depth = 0) {
+  const unwrapped = unwrapTypeNode(typeNode);
+  if (!unwrapped) return { kind: 'string' };
+  const rawType = unwrapped.getText(mod.sf).replace(/\s+/g, ' ').trim();
+
+  if (IMAGE_FIELD_NAMES.has(propName) || /\b(?:ContentImage|ImageMetadata)\b/.test(rawType)) {
+    return { kind: 'string', isImage: true };
+  }
+  if (propName === 'icon' || propName.endsWith('Icon')) {
+    return { kind: 'string', isIcon: true };
+  }
+  if (unwrapped.kind === ts.SyntaxKind.BooleanKeyword) {
+    return { kind: 'boolean' };
+  }
+  if (unwrapped.kind === ts.SyntaxKind.NumberKeyword) {
+    return { kind: 'number' };
+  }
+  if (unwrapped.kind === ts.SyntaxKind.StringKeyword) {
+    return { kind: 'string' };
+  }
+  if (ts.isUnionTypeNode(unwrapped)) {
+    const literals = unwrapped.types
+      .filter((t) => ts.isLiteralTypeNode(t) && ts.isStringLiteral(t.literal))
+      .map((t) => t.literal.text);
+    if (literals.length > 0 && literals.length === unwrapped.types.length) {
+      return { kind: 'enum', options: literals };
+    }
+    if (/\b(?:Date|string)\b/.test(rawType) && !rawType.includes('number') && !rawType.includes('boolean')) {
+      return { kind: 'string' };
+    }
+  }
+
+  const elemNode = extractArrayElementTypeNode(unwrapped);
+  if (elemNode) {
+    if (elemNode.kind === ts.SyntaxKind.StringKeyword) {
+      return { kind: 'string[]' };
+    }
+    return { kind: 'json' };
+  }
+
+  if (depth < 2 && ts.isTypeReferenceNode(unwrapped)) {
+    const symName = unwrapped.typeName.getText(mod.sf);
+    const resolved = resolveTypeSymbol(symName, mod, getMod, rootDir, 0);
+    if (resolved?.kind === 'interface') {
+      const subFields = buildFieldsFromInterface(resolved.decl, resolved.mod, getMod, rootDir, depth + 1);
+      return { kind: 'object', fields: subFields };
+    }
+    if (resolved?.kind === 'alias') {
+      return classifyFieldNode(propName, resolved.decl.type, resolved.mod, getMod, rootDir, depth + 1);
+    }
+  }
+
+  if (depth < 2 && ts.isTypeLiteralNode(unwrapped)) {
+    const subFields = buildFieldsFromInterface(unwrapped, mod, getMod, rootDir, depth + 1);
+    return { kind: 'object', fields: subFields };
+  }
+
+  return { kind: 'string' };
+}
+
+function buildFieldsFromInterface(node, mod, getMod, rootDir, depth = 0) {
+  const fields = [];
+  for (const member of node.members || []) {
+    if (!ts.isPropertySignature(member) || !member.name) continue;
+    const name = member.name.getText(mod.sf);
+    const optional = Boolean(member.questionToken);
+    const meta = classifyFieldNode(name, member.type, mod, getMod, rootDir, depth);
+    fields.push({ name, optional, ...meta });
+  }
+  return fields;
+}
+
+export function extractSectionArraySchemas(rootDir = defaultRootDir) {
+  const modCache = new Map();
+  const getMod = (filePath) => {
+    if (!modCache.has(filePath)) {
+      modCache.set(filePath, parseModuleAst(filePath));
+    }
+    return modCache.get(filePath);
+  };
+
+  const schemas = {};
+  for (const blockName of ALL_SECTION_BLOCK_NAMES) {
+    const localComp = path.join(rootDir, 'src', 'components', `${blockName}.astro`);
+    const fallbackComp = path.join(defaultRootDir, 'src', 'components', `${blockName}.astro`);
+    const compPath = fs.existsSync(localComp) ? localComp : fs.existsSync(fallbackComp) ? fallbackComp : null;
+    if (!compPath) continue;
+
+    const mod = getMod(compPath);
+    const propsEntry = mod.interfaces.get('Props');
+    if (!propsEntry) continue;
+
+    const blockSchemas = {};
+    for (const member of propsEntry.node.members) {
+      if (!ts.isPropertySignature(member) || !member.name || !member.type) continue;
+      const propName = member.name.getText(mod.sf);
+      let elemNode = extractArrayElementTypeNode(member.type);
+      if (!elemNode) continue;
+
+      let curMod = mod;
+      for (let hop = 0; hop < 4 && elemNode && ts.isTypeReferenceNode(elemNode); hop++) {
+        const refName = elemNode.typeName.getText(curMod.sf);
+        const resolved = resolveTypeSymbol(refName, curMod, getMod, rootDir, 0);
+        if (!resolved) break;
+        if (resolved.kind === 'interface') {
+          blockSchemas[propName] = {
+            kind: 'object[]',
+            fields: buildFieldsFromInterface(resolved.decl, resolved.mod, getMod, rootDir, 0),
+          };
+          elemNode = null;
+          break;
+        }
+        curMod = resolved.mod;
+        elemNode = unwrapTypeNode(resolved.decl.type);
+      }
+
+      if (!blockSchemas[propName] && elemNode) {
+        if (elemNode.kind === ts.SyntaxKind.StringKeyword) {
+          blockSchemas[propName] = { kind: 'string[]' };
+        } else if (ts.isTypeLiteralNode(elemNode)) {
+          blockSchemas[propName] = {
+            kind: 'object[]',
+            fields: buildFieldsFromInterface(elemNode, curMod, getMod, rootDir, 0),
+          };
+        }
+      }
+    }
+
+    if (Object.keys(blockSchemas).length > 0) {
+      schemas[blockName] = blockSchemas;
+    }
+  }
+
+  return schemas;
 }

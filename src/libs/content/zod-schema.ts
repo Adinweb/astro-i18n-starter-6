@@ -45,13 +45,18 @@ const taxonomyKey = z
     'Use lowercase letters, digits, and single hyphens (for example "design-systems").'
   );
 
+const SRC_ASSET_IMAGE_PATH_RE = /^\/?src\/assets\/(?!.*\.\.)[^\s]+$/i;
+
 export const externalOrPublicImageSchema = z
   .string()
   .trim()
   .min(1)
   .refine(
-    (value) => (value.startsWith('/') && !value.startsWith('//')) || /^https?:\/\//i.test(value),
-    'Use a local asset path, a root-relative public path (e.g. "/uploads/..."), or an http(s) URL.'
+    (value) =>
+      SRC_ASSET_IMAGE_PATH_RE.test(value) ||
+      (value.startsWith('/') && !value.startsWith('//')) ||
+      /^https?:\/\//i.test(value),
+    'Use a local asset path (e.g. "src/assets/uploads/..."), a root-relative public path (e.g. "/uploads/..."), or an http(s) URL.'
   );
 
 function flexibleImageSchema(image: ImageFunction) {
@@ -73,6 +78,7 @@ export const baseCollectionSchema = ({ image }: { image: ImageFunction }) =>
     categories: z.array(taxonomyKey).default([]),
     tags: z.array(taxonomyKey).default([]),
     draft: z.boolean().default(false),
+    template: z.string().min(1).optional(),
   });
 
 function buildSingleFieldZod(field: CollectionFieldConfig, image: ImageFunction): z.ZodType {
@@ -168,6 +174,7 @@ const BASE_SCHEMA_KEYS = new Set([
   'categories',
   'tags',
   'draft',
+  'template',
 ]);
 
 export interface ConfiguredCollectionInput {

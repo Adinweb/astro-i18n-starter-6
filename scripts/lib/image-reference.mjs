@@ -144,3 +144,97 @@ export function placeArtworkFor({ value, rootDir, groupDir, group }) {
   if (!sourceFile) return null;
   return placeArtwork({ sourceFile, groupDir, group });
 }
+
+export const SECTION_IMAGE_PROP_KEYS = new Set([
+  'image',
+  'src',
+  'backgroundImage',
+  'parallaxImage',
+  'bottomImage',
+  'avatar',
+]);
+
+/**
+ * Collects all asset string references inside a page/home `sections` tree.
+ */
+export function collectSectionAssetRefs(node, found = []) {
+  if (Array.isArray(node)) {
+    for (const item of node) collectSectionAssetRefs(item, found);
+    return found;
+  }
+  if (node && typeof node === 'object') {
+    for (const [key, val] of Object.entries(node)) {
+      if (
+        typeof val === 'string' &&
+        (SECTION_IMAGE_PROP_KEYS.has(key) || /^\/?src\/assets\//.test(val.trim()))
+      ) {
+        found.push(val);
+      } else {
+        collectSectionAssetRefs(val, found);
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * Checks whether a local frontmatter/section image reference resolves to an existing file
+ * confined to the entry group, `src/assets/`, `src/content/`, or `public/`.
+ * Remote `https://` URLs and empty values pass without filesystem checks.
+ */
+export function isExistingAssetRef(value, rootDir, groupDir) {
+  if (typeof value !== 'string') return true;
+  const trimmed = value.trim();
+  if (!trimmed || /^https?:\/\//i.test(trimmed) || /^data:image\//i.test(trimmed)) return true;
+
+  const assetsRoot = path.resolve(rootDir, 'src', 'assets');
+  const contentRoot = path.resolve(rootDir, 'src', 'content');
+
+  if (trimmed.startsWith('./') || trimmed.startsWith('../')) {
+    if (!groupDir) return false;
+    const resolved = path.resolve(groupDir, trimmed);
+    const inGroup = resolved.startsWith(path.resolve(groupDir) + path.sep);
+    const inAssets = resolved.startsWith(assetsRoot + path.sep);
+    const inContent = resolved.startsWith(contentRoot + path.sep);
+    return (
+      (inGroup || inAssets || inContent) &&
+      fs.existsSync(resolved) &&
+      fs.statSync(resolved).isFile()
+    );
+  }
+  if (/^\/?src\/assets\//.test(trimmed)) {
+    const rel = trimmed.replace(/^\/+/, '');
+    const resolved = path.resolve(rootDir, rel);
+    return (
+      resolved.startsWith(assetsRoot + path.sep) &&
+      fs.existsSync(resolved) &&
+      fs.statSync(resolved).isFile()
+    );
+  }
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    const publicRoot = path.resolve(rootDir, 'public');
+    const cleanRel = trimmed.split(/[?#]/)[0].replace(/^\/+/, '');
+    const resolved = path.resolve(publicRoot, cleanRel);
+    return (
+      resolved.startsWith(publicRoot + path.sep) &&
+      fs.existsSync(resolved) &&
+      fs.statSync(resolved).isFile()
+    );
+  }
+  return true;
+}
+
+/**
+ * Lists unoptimized PNG/JPEG raster files stored in `public/uploads/`
+ * which bypass Astro build-time WebP optimization.
+ */
+export function findUnoptimizedPublicUploads(rootDir) {
+  const publicUploadsDir = path.join(rootDir, 'public', 'uploads');
+  if (!fs.existsSync(publicUploadsDir)) return [];
+  return fs
+    .readdirSync(publicUploadsDir, { recursive: true })
+    .map((rel) => String(rel).replace(/\\/g, '/'))
+    .filter((rel) => /\.(?:png|jpe?g)$/i.test(rel))
+    .sort();
+}
+

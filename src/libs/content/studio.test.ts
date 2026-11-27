@@ -1025,8 +1025,9 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
       body: { filename: 'Hero Banner!.png', dataUrl: `data:image/png;base64,${pngBase64}` },
     });
     expect(uploadPng.status).toBe(200);
-    expect(uploadPng.json.publicPath).toBe('/uploads/hero-banner.png');
-    expect(fs.existsSync(path.join(tmpRoot, 'public/uploads/hero-banner.png'))).toBe(true);
+    expect(uploadPng.json.assetPath).toBe('src/assets/uploads/hero-banner.png');
+    expect(uploadPng.json.publicPath).toBe('src/assets/uploads/hero-banner.png');
+    expect(fs.existsSync(path.join(tmpRoot, 'src/assets/uploads/hero-banner.png'))).toBe(true);
 
     // Upload safe SVG
     const svgClean = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/></svg>').toString('base64');
@@ -1036,7 +1037,8 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
       body: { filename: 'badge.svg', dataUrl: `data:image/svg+xml;base64,${svgClean}` },
     });
     expect(uploadSvg.status).toBe(200);
-    expect(uploadSvg.json.publicPath).toBe('/uploads/badge.svg');
+    expect(uploadSvg.json.assetPath).toBe('src/assets/uploads/badge.svg');
+    expect(uploadSvg.json.publicPath).toBe('src/assets/uploads/badge.svg');
 
     // Reject malicious SVG with <script>
     const svgXss = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>').toString('base64');
@@ -1050,13 +1052,13 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
     // List assets
     const listRes = await invokeStudio(handler, { method: 'GET', url: '/api/assets' });
     expect(listRes.status).toBe(200);
-    expect(listRes.json.assets.some((a: { path: string }) => a.path === '/uploads/hero-banner.png')).toBe(true);
-    expect(listRes.json.assets.some((a: { path: string }) => a.path === '/uploads/badge.svg')).toBe(true);
+    expect(listRes.json.assets.some((a: { path: string }) => a.path === 'src/assets/uploads/hero-banner.png')).toBe(true);
+    expect(listRes.json.assets.some((a: { path: string }) => a.path === 'src/assets/uploads/badge.svg')).toBe(true);
 
     // Preview SVG & PNG
     const prevSvg = await invokeStudio(handler, {
       method: 'GET',
-      url: '/api/asset-preview?path=%2Fuploads%2Fbadge.svg',
+      url: '/api/asset-preview?path=src%2Fassets%2Fuploads%2Fbadge.svg',
     });
     expect(prevSvg.status).toBe(200);
     expect(prevSvg.text).toContain('<circle');
@@ -1248,6 +1250,186 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
       findUnsafeSvgReason('<svg><style>@import url("https://evil.example/a.css");</style></svg>')
     ).toBeTruthy();
   });
+
+  it('supports confined asset deletion under src/assets/uploads, collection templates metadata, and full social health warnings', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+
+    // 1. Upload an SVG asset and delete it safely via /api/delete-asset
+    const svgBase64 = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/></svg>').toString('base64');
+    const upRes = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/upload-asset',
+      body: { filename: 'sample-card.svg', dataUrl: `data:image/svg+xml;base64,${svgBase64}` },
+    });
+    expect(upRes.status).toBe(200);
+    expect(upRes.json.assetPath).toBe('src/assets/uploads/sample-card.svg');
+    expect(fs.existsSync(path.join(tmpRoot, 'src/assets/uploads/sample-card.svg'))).toBe(true);
+
+    const badDel = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/delete-asset',
+      body: { path: 'src/assets/uploads/../../app.config.json' },
+    });
+    expect(badDel.status).toBe(400);
+
+    const nonUploadDel = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/delete-asset',
+      body: { path: '/og-default.png' },
+    });
+    expect(nonUploadDel.status).toBe(400);
+
+    const delRes = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/delete-asset',
+      body: { path: 'src/assets/uploads/sample-card.svg' },
+    });
+    expect(delRes.status).toBe(200);
+    expect(delRes.json.deleted).toBe('src/assets/uploads/sample-card.svg');
+    expect(fs.existsSync(path.join(tmpRoot, 'src/assets/uploads/sample-card.svg'))).toBe(false);
+
+    // 2. Expose CLIENT_COLLECTION_TEMPLATES keys including collection:entry style keys
+    fs.writeFileSync(
+      path.join(tmpRoot, 'client/templates/index.ts'),
+      `export const CLIENT_PAGE_TEMPLATES = { customLanding: null };\nexport const CLIENT_COLLECTION_TEMPLATES = { 'blog:entry': null, caseStudy: null };\n`,
+      'utf-8'
+    );
+    const stateRes = await invokeStudio(handler, { method: 'GET', url: '/api/state' });
+    expect(stateRes.status).toBe(200);
+    expect(stateRes.json.registeredTemplates).toEqual(['customLanding']);
+    expect(stateRes.json.registeredCollectionTemplates).toEqual(['blog:entry', 'caseStudy']);
+
+    // 3. Flag placeholder social URLs beyond github
+    await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/config-save',
+      body: {
+        patch: {
+          social: {
+            github: 'https://github.com/acme-client',
+            instagram: 'https://instagram.com',
+            telegram: 'https://t.me/',
+          },
+        },
+      },
+    });
+    const healthRes = await invokeStudio(handler, { method: 'GET', url: '/api/health' });
+    expect(healthRes.status).toBe(200);
+    const checkMessages = healthRes.json.checks.map((c: { message: string }) => c.message);
+    expect(checkMessages.some((msg: string) => msg.includes('social.instagram'))).toBe(true);
+    expect(checkMessages.some((msg: string) => msg.includes('social.telegram'))).toBe(true);
+    expect(checkMessages.some((msg: string) => msg.includes('social.github'))).toBe(false);
+  });
+
+  it('exposes arraySchemas in /api/state, renders valid studio-ui script, flags section/upload/slug health issues, and scopes audit-i18n & doctor checks', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+
+    // 1. /api/state exposes AST-extracted arraySchemas
+    const stateRes = await invokeStudio(handler, { method: 'GET', url: '/api/state' });
+    expect(stateRes.status).toBe(200);
+    const faqBlock = stateRes.json.sectionBlocks.find((b: { name: string }) => b.name === 'FaqAccordion');
+    const pricingBlock = stateRes.json.sectionBlocks.find((b: { name: string }) => b.name === 'PricingSection');
+    const teamBlock = stateRes.json.sectionBlocks.find((b: { name: string }) => b.name === 'TeamSection');
+    expect(faqBlock?.arraySchemas?.items?.kind).toBe('object[]');
+    expect(pricingBlock?.arraySchemas?.tiers?.fields?.some((f: { name: string }) => f.name === 'cta')).toBe(true);
+    expect(teamBlock?.arraySchemas?.members?.fields?.find((f: { name: string }) => f.name === 'avatar')?.isImage).toBe(true);
+
+    // 2. Studio HTML renders syntactically valid inline <script> with repeater, toolbar, preview & wizard health strip
+    const uiRes = await invokeStudio(handler, { method: 'GET', url: '/' });
+    expect(uiRes.status).toBe(200);
+    const html = uiRes.rawBody || '';
+    const scriptMatches = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
+    expect(scriptMatches.length).toBeGreaterThanOrEqual(2);
+    for (const m of scriptMatches) {
+      expect(() => new Function(m[1])).not.toThrow();
+    }
+    expect(html).toContain('secItem:');
+    expect(html).toContain('data-sec-arr-add');
+    expect(html).toContain('parentModal');
+    expect(html).toContain('data-preview-url');
+    expect(html).toContain('data-mdx-fmt');
+    expect(html).toContain('entry:mdx-body');
+    expect(html).toContain('wiz-health-strip');
+
+    // 3. Health diagnostics catch broken parallaxImage, unoptimized public/uploads raster, and placeholder slug
+    await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/config-save',
+      body: {
+        patch: {
+          ui: {
+            homeSections: [
+              { block: 'ParallaxSection', props: { title: 'Hero', parallaxImage: '/missing-parallax.jpg' } },
+            ],
+          },
+        },
+      },
+    });
+    fs.mkdirSync(path.join(tmpRoot, 'public/uploads'), { recursive: true });
+    fs.writeFileSync(path.join(tmpRoot, 'public/uploads/heavy-banner.png'), 'png-bytes');
+    const sampleBlogDir = path.join(tmpRoot, 'src/content/blog/demo-placeholder');
+    fs.mkdirSync(sampleBlogDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(sampleBlogDir, 'en.mdx'),
+      `---\ntitle: "Demo Post"\nslug: "my-first-post"\ndescription: "Desc"\npublishedAt: 2026-06-01\ndraft: false\nsections:\n  - block: TeamSection\n    props:\n      members:\n        - name: "Sara"\n          avatar: "./missing-avatar.jpg"\n---\n\nBody.\n`,
+      'utf-8'
+    );
+
+    const healthRes = await invokeStudio(handler, { method: 'GET', url: '/api/health' });
+    expect(healthRes.status).toBe(200);
+    const msgs = healthRes.json.checks.map((c: { message: string }) => c.message);
+    expect(msgs.some((m: string) => m.includes('/missing-parallax.jpg'))).toBe(true);
+    expect(msgs.some((m: string) => m.includes('public/uploads/heavy-banner.png') || m.includes('public/uploads/'))).toBe(true);
+    expect(msgs.some((m: string) => m.includes('my-first-post') || m.includes('Placeholder'))).toBe(true);
+
+    // 4. doctor.mjs --json catches broken section asset in config & frontmatter
+    let doctorJson: { findings?: Array<{ title: string; level: string }> } = {};
+    try {
+      const out = execFileSync(process.execPath, [path.join(tmpRoot, 'scripts/doctor.mjs'), '--json'], {
+        cwd: tmpRoot,
+        encoding: 'utf-8',
+      });
+      doctorJson = JSON.parse(out);
+    } catch (err: any) {
+      doctorJson = JSON.parse(err.stdout || '{}');
+    }
+    const doctorTitles = (doctorJson.findings || []).map((f) => f.title);
+    expect(doctorTitles.some((t) => t.includes('/missing-parallax.jpg'))).toBe(true);
+    expect(doctorTitles.some((t) => t.includes('./missing-avatar.jpg'))).toBe(true);
+    expect(doctorTitles.some((t) => t.includes('public/uploads/'))).toBe(true);
+
+    // 5. audit-i18n.mjs ignores local `m.foo()` without `paraglide/messages` import, and catches undefined `m.*()` when imported
+    const cleanHelperFile = path.join(tmpRoot, 'src/local-m-var.ts');
+    fs.writeFileSync(cleanHelperFile, 'export function f(m: { bogusKey(): string }) { return m.bogusKey(); }\n', 'utf-8');
+    // Reset placeholder slug & missing parallax from tmpRoot so cleanHelperFile is isolated for audit-i18n run?
+    // audit-i18n does NOT fail on missing-parallax or placeholder slug (those are doctor checks); remove missing-avatar blog or add missing fa.mdx? audit-i18n only warns on missing fa.mdx!
+    const cleanAudit = execFileSync(process.execPath, [path.join(tmpRoot, 'scripts/audit-i18n.mjs'), '--json'], {
+      cwd: tmpRoot,
+      encoding: 'utf-8',
+    });
+    const cleanAuditJson = JSON.parse(cleanAudit);
+    expect(cleanAuditJson.ok).toBe(true);
+    expect(cleanAuditJson.errors.some((e: string) => e.includes('bogusKey'))).toBe(false);
+
+    const realImportFile = path.join(tmpRoot, 'src/real-paraglide.ts');
+    fs.writeFileSync(
+      realImportFile,
+      `import * as msgNs from './paraglide/messages';\nexport const x = msgNs.${'missing_audit_test_key'}({});\n`,
+      'utf-8'
+    );
+    let failAuditJson: { ok?: boolean; errors?: string[] } = {};
+    try {
+      execFileSync(process.execPath, [path.join(tmpRoot, 'scripts/audit-i18n.mjs'), '--json'], {
+        cwd: tmpRoot,
+        encoding: 'utf-8',
+      });
+    } catch (err: any) {
+      failAuditJson = JSON.parse(err.stdout || '{}');
+    }
+    expect(failAuditJson.ok).toBe(false);
+    expect(failAuditJson.errors?.some((e) => e.includes('missing_audit_test_key'))).toBe(true);
+  }, 20000);
 });
 
 

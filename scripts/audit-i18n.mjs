@@ -243,8 +243,41 @@ if (baseDictionary) {
     );
   }
 
-  // Every `m.key(...)` call across `src/` and `client/` must resolve to a compiled dictionary entry.
+  // Every Paraglide message call (`m.key(...)` or named/aliased import) across `src/` and `client/`
+  // must come from a file that imports `paraglide/messages` and resolve to a compiled dictionary entry.
   const usedKeys = new Map();
+  const nsImportRe =
+    /import\s+\*\s+as\s+([A-Za-z_$][A-Za-z0-9_$]*)\s+from\s+['"][^'"]*paraglide\/messages(?:\/[^'"]*)?['"]/g;
+  const namedImportRe =
+    /import\s+\{([^}]+)\}\s+from\s+['"][^'"]*paraglide\/messages(?:\/[^'"]*)?['"]/g;
+
+  const collectMessageUsage = (content, relFile) => {
+    if (!content.includes('paraglide/messages')) return;
+
+    const namespaces = new Set();
+    for (const nsMatch of content.matchAll(nsImportRe)) {
+      namespaces.add(nsMatch[1]);
+    }
+    for (const ns of namespaces) {
+      const escapedNs = ns.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const callRe = new RegExp(`\\b${escapedNs}\\.([A-Za-z_][A-Za-z0-9_]*)\\s*\\(`, 'g');
+      for (const callMatch of content.matchAll(callRe)) {
+        usedKeys.set(callMatch[1], relFile);
+      }
+    }
+
+    for (const namedMatch of content.matchAll(namedImportRe)) {
+      for (const part of namedMatch[1].split(',')) {
+        const cleaned = part.trim().replace(/^type\s+/, '');
+        if (!cleaned) continue;
+        const [origName] = cleaned.split(/\s+as\s+/);
+        if (origName && /^[A-Za-z_][A-Za-z0-9_]*$/.test(origName.trim())) {
+          usedKeys.set(origName.trim(), relFile);
+        }
+      }
+    }
+  };
+
   const walkUsage = (dir) => {
     if (!fs.existsSync(dir)) return;
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -254,9 +287,7 @@ if (baseDictionary) {
         walkUsage(fullPath);
       } else if (/\.(astro|ts|tsx|js)$/.test(entry.name)) {
         const content = fs.readFileSync(fullPath, 'utf-8');
-        for (const match of content.matchAll(/\bm\.([A-Za-z_][A-Za-z0-9_]*)\s*\(/g)) {
-          usedKeys.set(match[1], path.relative(rootDir, fullPath));
-        }
+        collectMessageUsage(content, path.relative(rootDir, fullPath));
       }
     }
   };

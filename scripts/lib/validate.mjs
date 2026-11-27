@@ -61,3 +61,30 @@ export function localeCodeError(value, label = 'locale') {
   }
   return null;
 }
+
+export const PLACEHOLDER_SOCIAL_URL_PATTERN =
+  /(?:example\.com|(?:github|twitter|x|instagram|linkedin|youtube|facebook)\.com(?:\/in)?\/?$|t\.me\/?$|your[-_]?handle|username)/i;
+
+export const PLACEHOLDER_SITE_URL_PATTERN =
+  /(?:^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)|example\.(?:com|org|net))/i;
+
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+export function isPlaceholderSocialUrl(value) {
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  return Boolean(trimmed) && PLACEHOLDER_SOCIAL_URL_PATTERN.test(trimmed);
+}
+
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+export function isPlaceholderSiteUrl(value) {
+  if (typeof value !== 'string') return false;
+  const trimmed = value.trim();
+  return Boolean(trimmed) && PLACEHOLDER_SITE_URL_PATTERN.test(trimmed);
+}
+

@@ -4,6 +4,7 @@
  * `ImageMetadata` assets and static/uploaded URLs (`/uploads/...`, `https://...`).
  */
 import { Image } from 'astro:assets';
+import { resolveAssetImage } from '@/libs/content/assets';
 import { computeWidths, isImageMetadata, type ContentImage } from '@/libs/content/media';
 
 interface Props {
@@ -27,7 +28,7 @@ const {
   alt = '',
   widths = [480, 768, 1280],
   sizes,
-  format,
+  format = 'webp',
   quality,
   layout,
   loading = 'lazy',
@@ -38,16 +39,17 @@ const {
   'data-gallery-img': dataGalleryImg,
 } = Astro.props;
 
-const isMeta = isImageMetadata(src);
-const isSvgMeta = isMeta && src.format === 'svg';
-const resolvedWidths = isMeta && !isSvgMeta ? computeWidths(src, widths) : undefined;
+const resolvedSrc = (await resolveAssetImage(src)) ?? src;
+const isMeta = isImageMetadata(resolvedSrc);
+const isSvgMeta = isMeta && resolvedSrc.format === 'svg';
+const resolvedWidths = isMeta && !isSvgMeta ? computeWidths(resolvedSrc, widths) : undefined;
 const galleryAttr = dataGalleryImg !== undefined && dataGalleryImg !== false ? { 'data-gallery-img': '' } : {};
 ---
 
 {
   isMeta ? (
     <Image
-      src={src}
+      src={resolvedSrc}
       alt={alt}
       loading={loading}
       decoding={decoding}
@@ -62,15 +64,17 @@ const galleryAttr = dataGalleryImg !== undefined && dataGalleryImg !== false ? {
       {...galleryAttr}
     />
   ) : (
-    <img
-      src={src}
-      alt={alt}
-      loading={loading}
-      decoding={decoding}
-      class={className}
-      {...(fetchpriority ? { fetchpriority } : {})}
-      {...(persist ? { 'transition:persist': persist } : {})}
-      {...galleryAttr}
-    />
+    typeof resolvedSrc === 'string' && resolvedSrc && (
+      <img
+        src={resolvedSrc}
+        alt={alt}
+        loading={loading}
+        decoding={decoding}
+        class={className}
+        {...(fetchpriority ? { fetchpriority } : {})}
+        {...(persist ? { 'transition:persist': persist } : {})}
+        {...galleryAttr}
+      />
+    )
   )
 }

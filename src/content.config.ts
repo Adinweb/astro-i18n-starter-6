@@ -41,6 +41,7 @@ const BUILT_IN_PROJECT_RESERVED = new Set([
   'year',
   'link',
   'stack',
+  'template',
 ]);
 
 const BUILT_IN_BLOG_RESERVED = new Set([
@@ -54,6 +55,7 @@ const BUILT_IN_BLOG_RESERVED = new Set([
   'categories',
   'tags',
   'draft',
+  'template',
 ]);
 
 const blogExtraFields: readonly CollectionFieldConfig[] = configuredTypes.blog?.fields ?? [];

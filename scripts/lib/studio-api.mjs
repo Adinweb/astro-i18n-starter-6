@@ -14,7 +14,13 @@ import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { BLUEPRINTS } from './blueprints.mjs';
-import { buildBlocksCatalog } from './blocks-catalog.mjs';
+import {
+  buildBlocksCatalog,
+  extractSectionArraySchemas,
+  HERO_BLOCK_NAMES,
+  HERO_PRIORITY_PROPS,
+  STRUCTURAL_SECTION_NAMES,
+} from './blocks-catalog.mjs';
 import { compileMessages } from './compile-messages.mjs';
 import {
   cmsConfigPathFor,
@@ -37,6 +43,11 @@ import {
 } from './content-types.mjs';
 import { parseFrontmatter, stringifyFrontmatter } from './frontmatter.mjs';
 import { syncDictionaryKeys } from './i18n-sync.mjs';
+import {
+  collectSectionAssetRefs,
+  findUnoptimizedPublicUploads,
+  isExistingAssetRef,
+} from './image-reference.mjs';
 import { readLocaleConfig, writeLocaleConfig } from './locales.mjs';
 import {
   readClientMessages,
@@ -47,8 +58,10 @@ import {
 } from './merge-messages.mjs';
 import { validateRedirects } from './redirects.mjs';
 import { applySiteSpec, validateSiteSpec } from './site-apply.mjs';
+import { findPlaceholderSlugs } from './slug.mjs';
 import { renderStudioHtml } from './studio-ui.mjs';
 import { assertSafeSvg } from './svg-sanitize.mjs';
+import { isPlaceholderSiteUrl, isPlaceholderSocialUrl } from './validate.mjs';
 import { syncCollections } from '../content-sync.mjs';
 import { upsertEnvContent } from '../client-bootstrap.mjs';
 
@@ -154,49 +167,8 @@ const ALLOWED_UPLOAD_ASSET_MIMES = new Map([
 ]);
 
 const SECTION_BLOCKS_META = [
-  { name: 'LandingHeroSplit', category: 'hero' },
-  { name: 'HeroCenteredEditorial', category: 'hero' },
-  { name: 'HeroDashboardShowcase', category: 'hero' },
-  { name: 'HeroCommandCli', category: 'hero' },
-  { name: 'HeroInteractivePrompt', category: 'hero' },
-  { name: 'HeroProofMarquee', category: 'hero' },
-  { name: 'HeroFloatingOrbSplit', category: 'hero' },
-  { name: 'BentoCapabilities', category: 'section' },
-  { name: 'ProofStatsRow', category: 'section' },
-  { name: 'FaqAccordion', category: 'section' },
-  { name: 'CtaBanner', category: 'section' },
-  { name: 'PricingSection', category: 'section' },
-  { name: 'TestimonialGrid', category: 'section' },
-  { name: 'TeamSection', category: 'section' },
-  { name: 'PartnerLogos', category: 'section' },
-  { name: 'NewsletterBanner', category: 'section' },
-  { name: 'PromoBanner', category: 'section' },
-  { name: 'AboutSplitSection', category: 'section' },
-  { name: 'ProcessSteps', category: 'section' },
-  { name: 'FeatureTabsSection', category: 'section' },
-  { name: 'ComparisonTable', category: 'section' },
-  { name: 'FeatureCardGrid', category: 'section' },
-  { name: 'ImageGallerySection', category: 'section' },
-  { name: 'LatestPostsSection', category: 'section' },
-  { name: 'ContactSplitSection', category: 'section' },
-  { name: 'CarouselSection', category: 'section' },
-  { name: 'ProductShowcaseGrid', category: 'section' },
-  { name: 'AuthFormCard', category: 'section' },
-  { name: 'ParallaxSection', category: 'section' },
-];
-
-const HERO_PRIORITY_PROPS = [
-  'title',
-  'titleLead',
-  'titleAccent',
-  'titleHighlight',
-  'titleSecondary',
-  'description',
-  'eyebrow',
-  'primaryCta',
-  'secondaryCta',
-  'image',
-  'imageAlt',
+  ...HERO_BLOCK_NAMES.map((name) => ({ name, category: 'hero' })),
+  ...STRUCTURAL_SECTION_NAMES.map((name) => ({ name, category: 'section' })),
 ];
 
 function isPlainObject(value) {
@@ -316,15 +288,16 @@ function isValidPageSlug(value) {
   return value.split('/').every((segment) => segment.length > 0 && isValidSlug(segment));
 }
 
-function readClientTemplateKeys(rootDir) {
+function readClientTemplateKeys(rootDir, exportName = 'CLIENT_PAGE_TEMPLATES') {
   const tplPath = path.join(rootDir, 'client', 'templates', 'index.ts');
   if (!fs.existsSync(tplPath)) return [];
   const raw = fs.readFileSync(tplPath, 'utf-8');
-  const match = raw.match(/CLIENT_PAGE_TEMPLATES[^=]*=\s*\{([\s\S]*?)\}/);
+  const escaped = exportName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = raw.match(new RegExp(`${escaped}[^=]*=\\s*\\{([\\s\\S]*?)\\}`));
   if (!match) return [];
   const keys = [];
   for (const line of match[1].split(',')) {
-    const m = line.trim().match(/^['"]?([a-zA-Z0-9_-]+)['"]?\s*(?::|$)/);
+    const m = line.trim().match(/^['"]?([a-zA-Z0-9_:-]+)['"]?\s*(?::|$)/);
     if (m && m[1]) keys.push(m[1]);
   }
   return keys;
@@ -1476,6 +1449,7 @@ function listArchivedLocales(rootDir) {
 
 function buildSectionSchemaCatalog(rootDir) {
   const rawCatalog = buildBlocksCatalog(rootDir);
+  const arraySchemas = extractSectionArraySchemas(rootDir);
   const byName = new Map();
   for (const entry of [...rawCatalog.heroes, ...rawCatalog.sections]) {
     byName.set(entry.name, entry.props);
@@ -1505,6 +1479,7 @@ function buildSectionSchemaCatalog(rootDir) {
         type: p.type,
         defaultValue: p.defaultValue,
       })),
+      arraySchemas: arraySchemas[meta.name] || {},
     };
   });
 }
@@ -1607,7 +1582,8 @@ export function getStudioState(rootDir = defaultRootDir) {
     pages,
     collections,
     sectionBlocks: buildSectionSchemaCatalog(rootDir),
-    registeredTemplates: readClientTemplateKeys(rootDir),
+    registeredTemplates: readClientTemplateKeys(rootDir, 'CLIENT_PAGE_TEMPLATES'),
+    registeredCollectionTemplates: readClientTemplateKeys(rootDir, 'CLIENT_COLLECTION_TEMPLATES'),
     availableIcons: readAvailableIcons(rootDir),
     messages: {
       coreByLocale: coreMessages,
@@ -1661,7 +1637,7 @@ export function getStudioHealth(rootDir = defaultRootDir) {
       'Set SITE_URL to your production domain in Project & Wizard -> .env before deployment.',
       'wizard'
     );
-  } else if (/(?:^https?:\/\/(?:localhost|127\.0\.0\.1)|example\.(?:com|org|net))/i.test(siteUrl)) {
+  } else if (isPlaceholderSiteUrl(siteUrl)) {
     pushCheck(
       'warn',
       `SITE_URL ("${siteUrl}") still points to localhost or a placeholder domain.`,
@@ -1680,6 +1656,23 @@ export function getStudioHealth(rootDir = defaultRootDir) {
       'config',
       'site'
     );
+  }
+
+  const publicRoot = path.resolve(rootDir, 'public');
+  const logoObj = mergedConfig.brand?.logo;
+  for (const variant of ['light', 'dark']) {
+    const rawLogo = typeof logoObj?.[variant] === 'string' ? logoObj[variant].trim() : '';
+    if (!rawLogo || /^https?:\/\//i.test(rawLogo)) continue;
+    const logoFile = path.resolve(publicRoot, rawLogo.replace(/^\/+/, ''));
+    if (!logoFile.startsWith(publicRoot + path.sep) || !fs.existsSync(logoFile)) {
+      pushCheck(
+        'warn',
+        `brand.logo.${variant} ("${rawLogo}") does not exist in public/.`,
+        'Upload a brand logo or update Brand Logos in Config & Branding.',
+        'config',
+        'brand'
+      );
+    }
   }
 
   const hasEndpoint = Boolean(
@@ -1701,14 +1694,17 @@ export function getStudioHealth(rootDir = defaultRootDir) {
     pushCheck('ok', 'Contact form destination is configured.', '', 'config', 'analytics');
   }
 
-  if (mergedConfig.social?.github === 'https://github.com') {
-    pushCheck(
-      'warn',
-      'social.github still points to placeholder "https://github.com".',
-      'Set the client profile URL or clear the field.',
-      'config',
-      'business'
-    );
+  for (const [socKey, rawVal] of Object.entries(mergedConfig.social || {})) {
+    const val = String(rawVal || '').trim().replace(/\/+$/, '');
+    if (isPlaceholderSocialUrl(val)) {
+      pushCheck(
+        'warn',
+        `social.${socKey} still points to placeholder "${val}".`,
+        'Set the client profile URL or clear the field.',
+        'config',
+        'business'
+      );
+    }
   }
 
   const analytics = mergedConfig.analytics || {};
@@ -1785,6 +1781,83 @@ export function getStudioHealth(rootDir = defaultRootDir) {
     } catch {
       pushCheck('warn', 'Could not verify .pages.yml sync status.', '', 'cms');
     }
+  }
+
+  const unoptimizedRasters = findUnoptimizedPublicUploads(rootDir);
+  if (unoptimizedRasters.length > 0) {
+    pushCheck(
+      'warn',
+      `${unoptimizedRasters.length} raster image(s) in public/uploads/ bypass build-time WebP optimization (${unoptimizedRasters.slice(0, 3).join(', ')}${unoptimizedRasters.length > 3 ? ', …' : ''}).`,
+      'Store uploads in src/assets/uploads/ (automatic WebP optimization on build) or pre-compress to .webp.',
+      'tools',
+      'assets'
+    );
+  }
+
+  const knownTypeSet = new Set(getKnownTypes(rootDir));
+  const activeContentTypes = readContentTypes(mergedConfig, rootDir).filter(
+    (type) => knownTypeSet.has(type.key) && (type.key === 'pages' || type.enabled !== false)
+  );
+  let brokenContentImages = 0;
+  let contentTodoCount = 0;
+  const placeholderContentSlugs = [];
+
+  for (const type of activeContentTypes) {
+    const colDir = path.join(rootDir, 'src', 'content', type.key);
+    if (!fs.existsSync(colDir)) continue;
+    for (const entry of fs.readdirSync(colDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const group = entry.name;
+      const groupDir = path.join(colDir, group);
+      for (const item of findPlaceholderSlugs(groupDir, group, localeConfig.locales)) {
+        placeholderContentSlugs.push(`${type.key}/${group}/${item.locale}`);
+      }
+      for (const loc of localeConfig.locales) {
+        const file = ['mdx', 'md']
+          .map((ext) => path.join(groupDir, `${loc}.${ext}`))
+          .find((candidate) => fs.existsSync(candidate));
+        if (!file) continue;
+        const source = fs.readFileSync(file, 'utf-8');
+        if (source.includes('[TODO:')) contentTodoCount += 1;
+        const { data } = parseFrontmatter(source);
+        if (typeof data.image === 'string' && !isExistingAssetRef(data.image, rootDir, groupDir)) {
+          brokenContentImages += 1;
+        }
+        if (Array.isArray(data.sections)) {
+          for (const ref of collectSectionAssetRefs(data.sections)) {
+            if (!isExistingAssetRef(ref, rootDir, groupDir)) brokenContentImages += 1;
+          }
+        }
+      }
+    }
+  }
+
+  if (brokenContentImages > 0) {
+    pushCheck(
+      'error',
+      `${brokenContentImages} frontmatter/section image reference(s) point to missing files.`,
+      'Fix or re-select broken image paths in Content & Pages.',
+      'content'
+    );
+  }
+  if (placeholderContentSlugs.length > 0) {
+    pushCheck(
+      'warn',
+      `${placeholderContentSlugs.length} content entry slug(s) still use placeholder patterns (${placeholderContentSlugs.slice(0, 3).join(', ')}${placeholderContentSlugs.length > 3 ? ', …' : ''}).`,
+      'Set localized native slugs in Content & Pages before publishing.',
+      'content'
+    );
+  }
+  if (contentTodoCount > 0) {
+    pushCheck(
+      'warn',
+      `${contentTodoCount} content entry file(s) still contain "[TODO:" translation placeholders.`,
+      'Translate remaining [TODO: …] content in Content & Pages.',
+      'content'
+    );
+  }
+  if (brokenContentImages === 0 && placeholderContentSlugs.length === 0 && contentTodoCount === 0) {
+    pushCheck('ok', 'Content collections have valid image paths, native slugs, and no [TODO:] markers.', '', 'content');
   }
 
   const errors = checks.filter((c) => c.level === 'error').length;
@@ -2254,7 +2327,7 @@ function saveUploadedAsset(rootDir, payload) {
     .replace(/^-+|-+$/g, '')
     .slice(0, 48);
   const safeBase = rawBase || 'asset';
-  const uploadsDir = path.join(rootDir, 'public', 'uploads');
+  const uploadsDir = path.join(rootDir, 'src', 'assets', 'uploads');
   fs.mkdirSync(uploadsDir, { recursive: true });
 
   let destFile = `${safeBase}${ext}`;
@@ -2264,12 +2337,40 @@ function saveUploadedAsset(rootDir, payload) {
   }
   const destPath = assertConfinedPath(uploadsDir, path.join(uploadsDir, destFile));
   fs.writeFileSync(destPath, bytes);
+  const assetPath = `src/assets/uploads/${destFile}`;
   return {
     ok: true,
-    publicPath: `/uploads/${destFile}`,
+    assetPath,
+    publicPath: assetPath,
     file: path.relative(rootDir, destPath),
     size: bytes.length,
   };
+}
+
+function deleteStudioAsset(rootDir, payload) {
+  if (!isPlainObject(payload)) throw new Error('Asset delete payload must be an object.');
+  const rawPath = String(payload.path ?? '').trim();
+  if (!rawPath.startsWith('src/assets/uploads/')) {
+    throw Object.assign(
+      new Error('Only uploaded assets under "src/assets/uploads/" can be deleted from Studio.'),
+      { statusCode: 400 }
+    );
+  }
+  const uploadsDir = path.join(rootDir, 'src', 'assets', 'uploads');
+  const rel = rawPath.slice('src/assets/uploads/'.length);
+  if (!rel || rel.includes('\\') || rel.startsWith('/')) {
+    throw Object.assign(new Error('Invalid uploaded asset path.'), { statusCode: 400 });
+  }
+  const targetPath = assertConfinedPath(uploadsDir, path.join(uploadsDir, rel));
+  if (!fs.existsSync(targetPath) || !fs.statSync(targetPath).isFile()) {
+    throw Object.assign(new Error('Uploaded asset file not found.'), { statusCode: 404 });
+  }
+  const ext = path.extname(targetPath).toLowerCase();
+  if (!ALLOWED_ASSET_EXTS.has(ext)) {
+    throw Object.assign(new Error(`Unsupported asset extension "${ext}".`), { statusCode: 400 });
+  }
+  fs.rmSync(targetPath, { force: true });
+  return { ok: true, deleted: rawPath };
 }
 
 function exportClientBundle(rootDir) {
@@ -2970,6 +3071,7 @@ function saveContentEntry(rootDir, payload) {
     'categories',
     'tags',
     'draft',
+    'template',
     ...(collection === 'projects' ? ['client', 'year', 'link', 'stack'] : []),
   ]);
 
@@ -3438,6 +3540,13 @@ export function createStudioHandler({ rootDir = defaultRootDir, previewUrl = '' 
       if (req.method === 'POST' && pathname === '/api/upload-asset') {
         const body = await readJsonBody(req);
         const result = await withWriteLock(() => saveUploadedAsset(rootDir, body));
+        sendJson(res, 200, result);
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/api/delete-asset') {
+        const body = await readJsonBody(req);
+        const result = await withWriteLock(() => deleteStudioAsset(rootDir, body));
         sendJson(res, 200, result);
         return;
       }

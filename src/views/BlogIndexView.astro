@@ -28,6 +28,8 @@ import { buildOgRouteKey, type SocialCardContext } from '@/libs/content/social';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
 import { formatNumber } from '@/i18n/format';
+import CollectionHooks from '@client/CollectionHooks.astro';
+import { CLIENT_COLLECTION_TEMPLATES } from '@client/templates/index';
 import * as m from '@/paraglide/messages';
 
 interface Props {
@@ -44,6 +46,7 @@ interface Props {
 }
 
 const { locale, alternates, switcherAlternates, url, page, totalPages, perPage } = Astro.props;
+const CustomTemplate = CLIENT_COLLECTION_TEMPLATES['blog:index'];
 
 const posts = getSortedLocaleEntries(await getCollection('blog'), locale);
 
@@ -109,6 +112,25 @@ const ogContext: SocialCardContext = {
 };
 ---
 
+{
+  CustomTemplate ? (
+    <CustomTemplate
+      collection="blog"
+      view="index"
+      locale={locale}
+      alternates={alternates}
+      switcherAlternates={switcherAlternates}
+      url={url}
+      page={page}
+      totalPages={totalPages}
+      perPage={perPage}
+      posts={posts}
+      pagePosts={pagePosts}
+      schema={indexSchema}
+      ogContext={ogContext}
+      breadcrumbs={breadcrumbs}
+    />
+  ) : (
 <BaseLayout
   title={pageTitle}
   description={indexDescription}
@@ -138,6 +160,7 @@ const ogContext: SocialCardContext = {
   </PageHero>
 
   <div class="space-y-8">
+    <CollectionHooks hook="before-index" collection="blog" view="index" locale={locale} url={url} />
     {
       posts.length === 0 ? (
         <p class="rounded-2xl border border-dashed border-border bg-surface p-10 text-center text-sm text-muted">
@@ -278,6 +301,7 @@ const ogContext: SocialCardContext = {
         </div>
       )
     }
+    <CollectionHooks hook="after-index" collection="blog" view="index" locale={locale} url={url} />
   </div>
 
   <!--
@@ -294,6 +318,8 @@ const ogContext: SocialCardContext = {
     <Icon name="globe" size={44} />
   </template>
 </BaseLayout>
+  )
+}
 
 <style>
   :global(html:not(.js)) [data-blog-filter] {

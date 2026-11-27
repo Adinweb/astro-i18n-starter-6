@@ -7,6 +7,7 @@ import {
   serializeCollectionEntries,
   sortCollectionEntries,
 } from '@/libs/content/catalog-utils';
+import { resolveAssetImage } from '@/libs/content/assets';
 import { resolveCatalogCover } from '@/libs/content/media';
 import { getContentType, type ContentTypeKey } from '@/libs/content/types';
 
@@ -34,6 +35,12 @@ export async function buildSerializedCollectionCatalog(
     allEntries,
     typeConfig,
     targetLocale,
-    (rawImage) => resolveCatalogCover(rawImage, getImage)
+    async (rawImage) => {
+      const resolved =
+        typeof rawImage === 'string' || (rawImage && typeof rawImage === 'object')
+          ? await resolveAssetImage(rawImage as never)
+          : rawImage;
+      return resolveCatalogCover(resolved, getImage);
+    }
   );
 }

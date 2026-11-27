@@ -31,7 +31,13 @@ import {
   stripSchema,
 } from './lib/merge-messages.mjs';
 import { parseFrontmatter } from './lib/frontmatter.mjs';
+import {
+  collectSectionAssetRefs,
+  findUnoptimizedPublicUploads,
+  isExistingAssetRef,
+} from './lib/image-reference.mjs';
 import { findPlaceholderSlugs } from './lib/slug.mjs';
+import { isPlaceholderSiteUrl, isPlaceholderSocialUrl } from './lib/validate.mjs';
 
 const wantsJson = process.argv.includes('--json');
 const isHandoff = process.argv.includes('--handoff') || process.argv.includes('--strict');
@@ -271,8 +277,8 @@ if (appConfig) {
     }
   }
 
-  const hasPlaceholderSocial = Object.values(appConfig.social ?? {}).some(
-    (url) => typeof url === 'string' && /example\.com|github\.com\/?$/.test(url.trim())
+  const hasPlaceholderSocial = Object.values(appConfig.social ?? {}).some((url) =>
+    isPlaceholderSocialUrl(url)
   );
   if (hasPlaceholderSocial) {
     add(
@@ -376,17 +382,43 @@ if (appConfig) {
   }
 }
 
-const rawSiteUrl = (process.env.SITE_URL ?? '').trim();
+function readEnvFileValue(filePath, key) {
+  if (!fs.existsSync(filePath)) return undefined;
+  let result;
+  for (const rawLine of fs.readFileSync(filePath, 'utf-8').split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+    const match = line.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!match || match[1] !== key) continue;
+    const value = match[2].trim();
+    const quote = value[0];
+    if (value.length > 1 && (quote === '"' || quote === "'") && value.endsWith(quote)) {
+      result = value.slice(1, -1);
+      continue;
+    }
+    const comment = value.indexOf(' #');
+    result = comment === -1 ? value : value.slice(0, comment).trim();
+  }
+  return result;
+}
+
+function readDotEnvValue(key) {
+  let value;
+  for (const file of ['.env', '.env.local', '.env.production', '.env.production.local']) {
+    const found = readEnvFileValue(path.join(rootDir, file), key);
+    if (found !== undefined) value = found;
+  }
+  return value;
+}
+
+const rawSiteUrl = (process.env.SITE_URL ?? readDotEnvValue('SITE_URL') ?? process.env.APP_URL ?? '').trim();
 if (!rawSiteUrl) {
   add(
     strictLevel,
-    'SITE_URL is not set in this shell.',
+    'SITE_URL is not set in the shell or .env.',
     'Set it in .env or CI before a production build so canonical URLs, hreflang, the feed and the sitemap use the real origin.'
   );
-} else if (
-  isHandoff &&
-  /(?:^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)|example\.(?:com|org|net))/i.test(rawSiteUrl)
-) {
+} else if (isHandoff && isPlaceholderSiteUrl(rawSiteUrl)) {
   add(
     'error',
     `SITE_URL ("${rawSiteUrl}") points to localhost or a placeholder domain in handoff mode.`,
@@ -515,10 +547,14 @@ for (const type of types.filter((candidate) => knownTypes.includes(candidate.key
       }
       const source = fs.readFileSync(file, 'utf-8');
       const { data } = parseFrontmatter(source);
-      if (typeof data.title === 'string' && data.title.includes('[TODO:')) todoEntries += 1;
-      if (typeof data.image === 'string' && data.image.startsWith('./')) {
-        const imagePath = path.resolve(groupDir, data.image);
-        if (!fs.existsSync(imagePath)) brokenImages += 1;
+      if (source.includes('[TODO:')) todoEntries += 1;
+      if (typeof data.image === 'string' && !isExistingAssetRef(data.image, rootDir, groupDir)) {
+        brokenImages += 1;
+      }
+      if (Array.isArray(data.sections)) {
+        for (const ref of collectSectionAssetRefs(data.sections)) {
+          if (!isExistingAssetRef(ref, rootDir, groupDir)) brokenImages += 1;
+        }
       }
     }
   }
@@ -533,15 +569,15 @@ for (const type of types.filter((candidate) => knownTypes.includes(candidate.key
   if (brokenImages > 0) {
     add(
       'error',
-      `${type.key}: ${brokenImages} frontmatter image reference(s) point at files that do not exist.`,
-      'Fix the `image: "./<file>"` value or run `npm run assets:generate`.'
+      `${type.key}: ${brokenImages} frontmatter/section image reference(s) point at files that do not exist.`,
+      'Fix the `image` path (`src/assets/...` or `./<file>`) or run `npm run assets:generate`.'
     );
   }
   if (todoEntries > 0) {
     add(
       strictLevel,
-      `${type.key}: ${todoEntries} entr(ies) still carry a [TODO: …] title.`,
-      'Translate the title before publishing that locale.'
+      `${type.key}: ${todoEntries} entr(ies) still contain [TODO: …] placeholders.`,
+      'Translate all remaining [TODO: …] placeholders before publishing that locale.'
     );
   }
 
@@ -560,6 +596,15 @@ for (const type of types.filter((candidate) => knownTypes.includes(candidate.key
   if (missingFiles === 0 && brokenImages === 0 && todoEntries === 0) {
     add('ok', `${type.key}: ${groups.length} group(s) complete across ${locales.length} locale(s).`);
   }
+}
+
+const unoptimizedRasters = findUnoptimizedPublicUploads(rootDir);
+if (unoptimizedRasters.length > 0) {
+  add(
+    'warn',
+    `${unoptimizedRasters.length} raster image(s) in public/uploads/ bypass build-time WebP optimization (${unoptimizedRasters.slice(0, 3).join(', ')}${unoptimizedRasters.length > 3 ? ', …' : ''}).`,
+    'Move them to src/assets/uploads/ (automatic WebP optimization on build) or pre-compress to .webp.'
+  );
 }
 
 if (fs.existsSync(path.join(rootDir, 'starter-kit'))) {

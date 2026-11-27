@@ -17,6 +17,7 @@ import {
 } from '@/libs/content/service';
 import { buildOgRouteKey, type SocialCardContext } from '@/libs/content/social';
 import HomePageTemplate from '@/views/pages/HomePageTemplate.astro';
+import CollectionHooks from '@client/CollectionHooks.astro';
 import { CLIENT_PAGE_TEMPLATES } from '@client/templates/index';
 import * as m from '@/paraglide/messages';
 
@@ -152,6 +153,7 @@ const entryDir = `src/content/pages/${group}`;
               />
             </div>
           )}
+          <CollectionHooks hook="before-content" collection="pages" view="page" locale={locale} url={url} entry={entry} />
           {hasSections && (
             <SectionComposer
               sections={sections}
@@ -161,6 +163,7 @@ const entryDir = `src/content/pages/${group}`;
             />
           )}
           {Content && <Content />}
+          <CollectionHooks hook="after-content" collection="pages" view="page" locale={locale} url={url} entry={entry} />
         </>
       ) : (
         <>
@@ -174,6 +177,7 @@ const entryDir = `src/content/pages/${group}`;
           )}
           {containerMode === 'contained' ? (
             <div class:list={['prose prose-wide', isMinimalHero && 'pt-8 sm:pt-10']}>
+              <CollectionHooks hook="before-content" collection="pages" view="page" locale={locale} url={url} entry={entry} />
               {hasSections && (
                 <SectionComposer
                   sections={sections}
@@ -184,9 +188,11 @@ const entryDir = `src/content/pages/${group}`;
                 />
               )}
               {Content && <Content />}
+              <CollectionHooks hook="after-content" collection="pages" view="page" locale={locale} url={url} entry={entry} />
             </div>
           ) : (
             <article class:list={['prose w-full max-w-5xl', isMinimalHero && 'pt-8 sm:pt-10']}>
+              <CollectionHooks hook="before-content" collection="pages" view="page" locale={locale} url={url} entry={entry} />
               {hasSections && (
                 <SectionComposer
                   sections={sections}
@@ -197,6 +203,7 @@ const entryDir = `src/content/pages/${group}`;
                 />
               )}
               {Content && <Content />}
+              <CollectionHooks hook="after-content" collection="pages" view="page" locale={locale} url={url} entry={entry} />
             </article>
           )}
         </>

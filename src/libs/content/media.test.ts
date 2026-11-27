@@ -76,11 +76,36 @@ describe('src/libs/content/media.ts & externalOrPublicImageSchema', () => {
     expect(getImageMock).toHaveBeenCalledTimes(1);
   });
 
-  it('accepts root-relative public paths and https URLs while rejecting relative or unsafe image strings', () => {
+  it('accepts root-relative public paths, src/assets paths, and https URLs while rejecting relative or unsafe image strings', () => {
     expect(externalOrPublicImageSchema.safeParse('/uploads/cover.webp').success).toBe(true);
+    expect(externalOrPublicImageSchema.safeParse('src/assets/uploads/hero.png').success).toBe(true);
+    expect(externalOrPublicImageSchema.safeParse('/src/assets/uploads/hero.png').success).toBe(true);
     expect(externalOrPublicImageSchema.safeParse('https://cdn.example.org/a.png').success).toBe(true);
+    expect(externalOrPublicImageSchema.safeParse('src/assets/../secret.png').success).toBe(false);
     expect(externalOrPublicImageSchema.safeParse('//evil.example/a.png').success).toBe(false);
     expect(externalOrPublicImageSchema.safeParse('./missing.png').success).toBe(false);
     expect(externalOrPublicImageSchema.safeParse('javascript:alert(1)').success).toBe(false);
+  });
+
+  it('resolves existing src/assets images and returns undefined for missing src/assets paths', async () => {
+    const { normalizePosixAssetPath, resolveAssetImage } = await import('./assets');
+    expect(normalizePosixAssetPath('/src/assets/uploads/../hero/hero-0.jpg')).toBe(
+      '/src/assets/hero/hero-0.jpg'
+    );
+
+    const resolved = await resolveAssetImage('src/assets/hero/hero-0.jpg');
+    expect(resolved).toBeTruthy();
+
+    const resolvedLeadingSlash = await resolveAssetImage('/src/assets/hero/hero-0.jpg');
+    expect(resolvedLeadingSlash).toEqual(resolved);
+
+    const resolvedRelative = await resolveAssetImage('./hero-0.jpg', 'src/assets/hero');
+    expect(resolvedRelative).toEqual(resolved);
+
+    expect(await resolveAssetImage('src/assets/does-not-exist.png')).toBeUndefined();
+    expect(await resolveAssetImage('/uploads/static.webp')).toBe('/uploads/static.webp');
+    expect(await resolveAssetImage('https://cdn.example.org/banner.jpg')).toBe(
+      'https://cdn.example.org/banner.jpg'
+    );
   });
 });

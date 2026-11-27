@@ -4,6 +4,7 @@ import { LOCALES, type Locale } from '@/i18n/locales';
 import { formatDate, formatNumber } from '@/i18n/format';
 import { getReadingTime, type SerializedBlogPost } from '@/libs/content/blog';
 import { getSortedLocaleEntries } from '@/libs/content/entries';
+import { resolveAssetImage } from '@/libs/content/assets';
 import { resolveCatalogCover } from '@/libs/content/media';
 import { getBlogPostHref, isBlogEnabled } from '@/libs/content/service';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
@@ -26,8 +27,9 @@ export async function buildSerializedBlogCatalog(
     const posts = getSortedLocaleEntries(allEntries, locale);
     for (const post of posts) {
       const { title, description, image, categories, tags, publishedAt } = post.data;
+      const resolvedImage = await resolveAssetImage(image);
       const { src: coverSrc, width: coverWidth, height: coverHeight } = await resolveCatalogCover(
-        image,
+        resolvedImage,
         getImage
       );
 

@@ -6,14 +6,24 @@ import { fileURLToPath } from 'node:url';
 import { parseFrontmatter, stringifyFrontmatter } from '../../../scripts/lib/frontmatter.mjs';
 import { applyBlueprintToConfig, BLUEPRINTS, VALID_BLUEPRINTS } from '../../../scripts/lib/blueprints.mjs';
 import {
+  ALL_SECTION_BLOCK_NAMES,
   buildBlocksCatalog,
+  extractSectionArraySchemas,
   generateBlocksApi,
+  HERO_BLOCK_NAMES,
   MAX_BLOCKS_API_BYTES,
   renderBlocksApiMarkdown,
+  STRUCTURAL_SECTION_NAMES,
 } from '../../../scripts/lib/blocks-catalog.mjs';
+import {
+  collectSectionAssetRefs,
+  findUnoptimizedPublicUploads,
+  isExistingAssetRef,
+} from '../../../scripts/lib/image-reference.mjs';
+import { isPlaceholderSiteUrl, isPlaceholderSocialUrl } from '../../../scripts/lib/validate.mjs';
 import { syncDictionaryKeys } from '../../../scripts/lib/i18n-sync.mjs';
 import { applySiteSpec, validateSiteSpec } from '../../../scripts/lib/site-apply.mjs';
-import { HERO_SECTION_NAMES, SECTION_BLOCK_NAMES } from '@/libs/ui/sections';
+import { HERO_SECTION_NAMES, SECTION_BLOCK_NAMES, SECTION_COMPONENTS } from '@/libs/ui/sections';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
@@ -177,6 +187,70 @@ describe('Nested YAML Frontmatter & Agent DX Automation Tools', () => {
       const checkRes = generateBlocksApi({ rootDir: repoRoot, check: true });
       expect(checkRes.overBudget).toBe(false);
       expect(checkRes.changed).toBe(false);
+    });
+
+    it('keeps ALL_SECTION_BLOCK_NAMES and AST arraySchemas in lockstep with Astro components', () => {
+      expect([...ALL_SECTION_BLOCK_NAMES].sort()).toEqual(Object.keys(SECTION_COMPONENTS).sort());
+      expect([...HERO_BLOCK_NAMES].sort()).toEqual([...HERO_SECTION_NAMES].sort());
+      expect(HERO_BLOCK_NAMES.length + STRUCTURAL_SECTION_NAMES.length).toBe(ALL_SECTION_BLOCK_NAMES.length);
+
+      const schemas = extractSectionArraySchemas(repoRoot) as Record<string, any>;
+      expect(schemas.FaqAccordion?.items?.kind).toBe('object[]');
+      expect(schemas.FaqAccordion?.items?.fields.map((f: any) => f.name)).toEqual(['question', 'answer']);
+
+      const tiersFields = schemas.PricingSection?.tiers?.fields || [];
+      const featuresField = tiersFields.find((f: any) => f.name === 'features');
+      const ctaField = tiersFields.find((f: any) => f.name === 'cta');
+      expect(featuresField?.kind).toBe('string[]');
+      expect(ctaField?.kind).toBe('object');
+      expect(ctaField?.fields.map((f: any) => f.name)).toEqual(['label', 'href', 'variant']);
+
+      const memberAvatar = schemas.TeamSection?.members?.fields.find((f: any) => f.name === 'avatar');
+      expect(memberAvatar?.isImage).toBe(true);
+
+      const cliCommands = schemas.HeroCommandCli?.commands?.fields.map((f: any) => f.name);
+      expect(cliCommands).toEqual(['label', 'command', 'note']);
+
+      const cmpValues = schemas.ComparisonTable?.rows?.fields.find((f: any) => f.name === 'values');
+      expect(cmpValues?.kind).toBe('json');
+    });
+  });
+
+  describe('Shared asset & placeholder validators (image-reference.mjs & validate.mjs)', () => {
+    it('extracts nested section asset refs and validates confined relative/public paths cleanly', () => {
+      const refs = collectSectionAssetRefs({
+        block: 'ParallaxSection',
+        props: {
+          parallaxImage: './hero.jpg',
+          bottomImage: '/brand/bottom.png',
+          members: [{ name: 'Ali', avatar: '../../../assets/uploads/ali.webp' }],
+        },
+      });
+      expect(refs).toEqual(['./hero.jpg', '/brand/bottom.png', '../../../assets/uploads/ali.webp']);
+
+      const blogGroupDir = path.join(tmpRoot, 'src', 'content', 'blog', 'post-1');
+      fs.mkdirSync(blogGroupDir, { recursive: true });
+      fs.mkdirSync(path.join(tmpRoot, 'src', 'assets', 'uploads'), { recursive: true });
+      fs.writeFileSync(path.join(tmpRoot, 'src', 'assets', 'uploads', 'photo.webp'), 'x');
+      fs.writeFileSync(path.join(tmpRoot, 'secret.txt'), 'nope');
+
+      expect(isExistingAssetRef('../../../assets/uploads/photo.webp', tmpRoot, blogGroupDir)).toBe(true);
+      expect(isExistingAssetRef('../../../assets/uploads/missing.webp', tmpRoot, blogGroupDir)).toBe(false);
+      expect(isExistingAssetRef('../../../../secret.txt', tmpRoot, blogGroupDir)).toBe(false);
+
+      fs.mkdirSync(path.join(tmpRoot, 'public', 'uploads'), { recursive: true });
+      fs.writeFileSync(path.join(tmpRoot, 'public', 'uploads', 'raw.png'), 'x');
+      fs.writeFileSync(path.join(tmpRoot, 'public', 'uploads', 'opt.webp'), 'x');
+      fs.writeFileSync(path.join(tmpRoot, 'public', 'uploads', 'icon.svg'), '<svg/>');
+      expect(findUnoptimizedPublicUploads(tmpRoot)).toEqual(['public/uploads/raw.png']);
+
+      expect(isPlaceholderSiteUrl('https://example.com')).toBe(true);
+      expect(isPlaceholderSiteUrl('https://acme.example')).toBe(true);
+      expect(isPlaceholderSiteUrl('https://client-real.ir')).toBe(false);
+
+      expect(isPlaceholderSocialUrl('https://instagram.com')).toBe(true);
+      expect(isPlaceholderSocialUrl('https://instagram.com/yourhandle')).toBe(true);
+      expect(isPlaceholderSocialUrl('https://instagram.com/realbrand')).toBe(false);
     });
   });
 

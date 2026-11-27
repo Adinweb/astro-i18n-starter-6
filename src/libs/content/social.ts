@@ -1,5 +1,6 @@
 import { getImage } from 'astro:assets';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
+import { resolveAssetImage } from './assets';
 import { isImageMetadata, type ContentImage } from './media';
 import { buildOgRouteKey, getBrandedOgHref, type SocialCardContext } from './og-card';
 
@@ -48,8 +49,10 @@ export async function getSocialCard(
     return getDefaultSocialImage();
   }
 
-  if (typeof image === 'string') {
-    const trimmed = image.trim();
+  const resolvedImage = (await resolveAssetImage(image)) ?? image;
+
+  if (typeof resolvedImage === 'string') {
+    const trimmed = resolvedImage.trim();
     if (!trimmed) return getDefaultSocialImage();
     return {
       url: absoluteUrl(trimmed),
@@ -58,12 +61,12 @@ export async function getSocialCard(
     };
   }
 
-  if (!isImageMetadata(image)) {
+  if (!isImageMetadata(resolvedImage)) {
     return getDefaultSocialImage();
   }
 
   const card = await getImage({
-    src: image,
+    src: resolvedImage,
     width: siteConfig.ogImageWidth,
     height: siteConfig.ogImageHeight,
     fit: 'cover',

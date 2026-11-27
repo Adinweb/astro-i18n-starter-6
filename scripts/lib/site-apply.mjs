@@ -18,6 +18,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { applyBlueprintToConfig, VALID_BLUEPRINTS } from './blueprints.mjs';
+import { ALL_SECTION_BLOCK_NAMES } from './blocks-catalog.mjs';
 import { compileMessages } from './compile-messages.mjs';
 import { deepMergeConfig, readCoreAndClientConfig, writeClientConfig } from './config.mjs';
 import { contentStub, postStub } from './content-stub.mjs';
@@ -46,37 +47,7 @@ const VALID_HERO_VALUES = new Set(['none', 'minimal', 'default', true, false]);
 const VALID_CONTAINER_VALUES = new Set(['canvas', 'contained', 'prose']);
 const VALID_LOGO_EXTS = new Set(['.svg', '.png', '.webp', '.jpg', '.jpeg']);
 
-const VALID_SECTION_BLOCKS = new Set([
-  'LandingHeroSplit',
-  'HeroCenteredEditorial',
-  'HeroDashboardShowcase',
-  'HeroCommandCli',
-  'HeroInteractivePrompt',
-  'HeroProofMarquee',
-  'HeroFloatingOrbSplit',
-  'BentoCapabilities',
-  'ProofStatsRow',
-  'FaqAccordion',
-  'CtaBanner',
-  'PricingSection',
-  'TestimonialGrid',
-  'TeamSection',
-  'PartnerLogos',
-  'NewsletterBanner',
-  'PromoBanner',
-  'AboutSplitSection',
-  'ProcessSteps',
-  'FeatureTabsSection',
-  'ComparisonTable',
-  'FeatureCardGrid',
-  'ImageGallerySection',
-  'LatestPostsSection',
-  'ContactSplitSection',
-  'CarouselSection',
-  'ProductShowcaseGrid',
-  'AuthFormCard',
-  'ParallaxSection',
-]);
+const VALID_SECTION_BLOCKS = new Set(ALL_SECTION_BLOCK_NAMES);
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);

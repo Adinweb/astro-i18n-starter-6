@@ -1,6 +1,6 @@
 ---
-import type { ImageMetadata } from 'astro';
 import type { Locale } from '@/i18n/locales';
+import { resolveAssetImage } from '@/libs/content/assets';
 import type { ContentImage } from '@/libs/content/media';
 import { HERO_SECTION_NAMES, type PageSectionConfig, type SectionBlockName } from '@/libs/ui/sections';
 
@@ -76,66 +76,12 @@ const SECTION_COMPONENTS: Record<SectionBlockName, any> = {
 
 const HERO_SET = new Set<string>(HERO_SECTION_NAMES);
 const IMAGE_PROP_KEYS = new Set(['image', 'parallaxImage', 'bottomImage', 'avatar']);
-const IMAGE_LOADERS = import.meta.glob<{ default: ImageMetadata }>(
-  '/src/{assets,content}/**/*.{png,jpg,jpeg,webp,avif,svg}'
-);
-
-function normalizePosixPath(input: string): string {
-  const parts = input.split('/');
-  const stack: string[] = [];
-  for (const part of parts) {
-    if (!part || part === '.') continue;
-    if (part === '..') {
-      if (stack.length > 0) stack.pop();
-    } else {
-      stack.push(part);
-    }
-  }
-  return `/${stack.join('/')}`;
-}
 
 async function resolveImagePath(
   rawPath: string,
   entryDir?: string
 ): Promise<ContentImage | undefined> {
-  const trimmed = rawPath.trim();
-  if (!trimmed) return undefined;
-
-  if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed;
-  }
-
-  const candidates: string[] = [];
-  if (trimmed.startsWith('/src/')) {
-    candidates.push(normalizePosixPath(trimmed));
-  } else if (trimmed.startsWith('src/')) {
-    candidates.push(normalizePosixPath(`/${trimmed}`));
-  } else if (trimmed.startsWith('/')) {
-    candidates.push(normalizePosixPath(`/src${trimmed}`));
-    candidates.push(normalizePosixPath(`/src/assets${trimmed}`));
-  } else if ((trimmed.startsWith('./') || trimmed.startsWith('../')) && entryDir) {
-    const cleanDir = entryDir.startsWith('/') ? entryDir : `/${entryDir}`;
-    candidates.push(normalizePosixPath(`${cleanDir}/${trimmed}`));
-  } else {
-    if (entryDir) {
-      const cleanDir = entryDir.startsWith('/') ? entryDir : `/${entryDir}`;
-      candidates.push(normalizePosixPath(`${cleanDir}/${trimmed}`));
-    }
-    candidates.push(normalizePosixPath(`/src/assets/${trimmed}`));
-  }
-
-  for (const key of candidates) {
-    const loader = IMAGE_LOADERS[key];
-    if (loader) {
-      const mod = await loader();
-      return mod.default;
-    }
-  }
-
-  if (trimmed.startsWith('/') && !trimmed.startsWith('/src/') && !trimmed.startsWith('//')) {
-    return normalizePosixPath(trimmed);
-  }
-  return undefined;
+  return await resolveAssetImage(rawPath, entryDir);
 }
 
 async function resolveSectionValue(

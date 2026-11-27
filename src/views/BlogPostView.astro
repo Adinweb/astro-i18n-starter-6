@@ -24,6 +24,8 @@ import { resolveAuthorSchema } from '@/libs/content/schema';
 import { getCategoryLabel, getTagLabel } from '@/libs/content/taxonomy';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
+import CollectionHooks from '@client/CollectionHooks.astro';
+import { CLIENT_COLLECTION_TEMPLATES } from '@client/templates/index';
 import * as m from '@/paraglide/messages';
 
 interface Props {
@@ -34,6 +36,10 @@ interface Props {
 }
 
 const { entry, locale, alternates, url } = Astro.props;
+const CustomTemplate =
+  (entry.data.template ? CLIENT_COLLECTION_TEMPLATES[entry.data.template] : undefined) ??
+  CLIENT_COLLECTION_TEMPLATES['blog:entry'] ??
+  CLIENT_COLLECTION_TEMPLATES.blog;
 const { Content, headings } = await render(entry);
 const { title, description, image, categories, tags, author, publishedAt, updatedAt } = entry.data;
 
@@ -92,6 +98,25 @@ const schema = [
 ];
 ---
 
+{
+  CustomTemplate ? (
+    <CustomTemplate
+      collection="blog"
+      view="entry"
+      entry={entry}
+      Content={Content}
+      headings={headings}
+      locale={locale}
+      alternates={alternates}
+      url={url}
+      schema={schema}
+      ogContext={ogContext}
+      breadcrumbs={breadcrumbs}
+      relatedPosts={relatedPosts}
+      newerPost={newerPost}
+      olderPost={olderPost}
+    />
+  ) : (
 <BaseLayout
   title={title}
   description={description}
@@ -161,9 +186,11 @@ const schema = [
       }
 
       <article class:list={['w-full', tocHeadings.length === 0 && 'max-w-5xl']}>
+        <CollectionHooks hook="before-content" collection="blog" view="entry" locale={locale} url={url} entry={entry} />
         <div class="prose max-w-none">
           <Content />
         </div>
+        <CollectionHooks hook="after-content" collection="blog" view="entry" locale={locale} url={url} entry={entry} />
 
         {
           tags.length > 0 && (
@@ -269,6 +296,7 @@ const schema = [
               ))}
             </ol>
           </div>
+          <CollectionHooks hook="sidebar" collection="blog" view="entry" locale={locale} url={url} entry={entry} />
         </aside>
       )
     }
@@ -297,7 +325,10 @@ const schema = [
       </section>
     )
   }
+  <CollectionHooks hook="after-entry" collection="blog" view="entry" locale={locale} url={url} entry={entry} />
 </BaseLayout>
+  )
+}
 
 <script>
   let activeTocObserver: IntersectionObserver | null = null;

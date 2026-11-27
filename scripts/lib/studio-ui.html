@@ -300,6 +300,29 @@
     .md-preview-box h1, .md-preview-box h2, .md-preview-box h3 { margin: 8px 0 4px; }
     .md-preview-box pre { background: var(--surface-2); padding: 8px 10px; border-radius: 6px; overflow: auto; }
     .md-preview-box code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; font-size: 12px; }
+    .md-preview-img {
+      max-width: 100%; max-height: 180px; border-radius: 8px; border: 1px solid var(--border);
+      display: block; margin: 6px 0; background: var(--surface-2); object-fit: contain;
+    }
+    .mdx-toolbar {
+      display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 8px;
+      border: 1px solid var(--border); border-bottom: none;
+      border-radius: 8px 8px 0 0; background: var(--surface-2);
+    }
+    .mdx-toolbar + textarea { border-top-left-radius: 0; border-top-right-radius: 0; }
+    .sec-repeater {
+      border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+      margin-top: 8px; background: var(--surface);
+    }
+    .sec-rep-item {
+      border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+      margin-top: 6px; background: var(--bg);
+    }
+    .wiz-health-strip {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+      padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg); margin-bottom: 12px;
+    }
     @media (max-width: 1024px) {
       body.preview-open .workspace-split { grid-template-columns: 1fr; }
       .preview-pane { position: static; height: 480px; }
@@ -711,6 +734,7 @@
     let entryShowPreview = false;
     let entryShowRef = false;
     let entryRefData = null;
+    let entryCursorPos = { start: 0, end: 0 };
 
     function isFa() { return uiLang === 'fa'; }
     function L(faText, enText) { return isFa() ? faText : enText; }
@@ -1130,13 +1154,56 @@
       }
     }
 
+    function buildEntryPreviewUrl(collection, group, locale, slug = '') {
+      if (!state?.locales) return '';
+      const defLoc = state.locales.defaultLocale || 'en';
+      const prefix = locale === defLoc ? '' : '/' + locale;
+      const cleanSlug = String(slug || '').trim().replace(/^\/+|\/+$/g, '');
+      if (collection === 'pages') {
+        if (group === 'home' || !cleanSlug) return prefix ? prefix + '/' : '/';
+        return `${prefix}/${cleanSlug}/`;
+      }
+      const ct = (state.contentTypes || []).find((x) => x.key === collection);
+      if (!ct || ct.enabled === false) return '';
+      const base = String(ct.base || collection).replace(/^\/+|\/+$/g, '');
+      if (!cleanSlug) return `${prefix}/${base}/`;
+      return `${prefix}/${base}/${cleanSlug}/`;
+    }
+
+    function navigatePreviewTo(targetPath) {
+      if (!targetPath) return;
+      previewPath = targetPath.startsWith('/') ? targetPath : '/' + targetPath;
+      localStorage.setItem('studio_preview_path', previewPath);
+      if (previewOpen) syncPreviewPane({ forceReload: true });
+    }
+
     function renderSafeMarkdownPreview(md) {
       const lines = String(md || '').split('\n');
       const out = [];
       let inCode = false;
       let inList = false;
+      const resolveMdImgUrl = (rawSrc) => {
+        const src = String(rawSrc || '').replace(/&amp;/g, '&').trim();
+        if (/^(\.\.\/)+assets\//.test(src)) {
+          const rel = 'src/' + src.replace(/^(\.\.\/)+/, '');
+          return 'api/asset-preview?path=' + encodeURIComponent(rel);
+        }
+        if (/^\/?src\/assets\//.test(src)) {
+          return 'api/asset-preview?path=' + encodeURIComponent(src.replace(/^\/+/, ''));
+        }
+        if (src.startsWith('/') && !src.startsWith('//')) {
+          return 'api/asset-preview?path=' + encodeURIComponent(src);
+        }
+        if (/^https?:\/\//i.test(src)) return src;
+        return '';
+      };
       const inlineFmt = (s) =>
         esc(s)
+          .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, rawSrc) => {
+            const previewSrc = resolveMdImgUrl(rawSrc);
+            if (!previewSrc) return `<span class="muted">[img: ${alt}]</span>`;
+            return `<img class="md-preview-img" src="${esc(previewSrc)}" alt="${alt}" loading="lazy" />`;
+          })
           .replace(/`([^`]+)`/g, '<code>$1</code>')
           .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
           .replace(/\*([^*]+)\*/g, '<em>$1</em>')
@@ -1169,6 +1236,102 @@
       if (inList) out.push('</ul>');
       if (inCode) out.push('</code></pre>');
       return out.join('');
+    }
+
+    function applyMdxFormat(op) {
+      if (modalState?.type !== 'entry') return;
+      const ta = document.querySelector('[data-entry-body]');
+      const cur = String(modalState.data.body || '');
+      const s = ta ? ta.selectionStart : Math.max(0, Math.min(cur.length, entryCursorPos.start || 0));
+      const e = ta ? ta.selectionEnd : Math.max(s, Math.min(cur.length, entryCursorPos.end || s));
+      const sel = cur.slice(s, e);
+      let insert = sel;
+      let nextStart = s;
+      let nextEnd = s;
+      if (op === 'h2' || op === 'h3') {
+        const prefix = op === 'h2' ? '## ' : '### ';
+        const lineStart = cur.lastIndexOf('\n', Math.max(0, s - 1)) + 1;
+        const text = sel || L('تیتر بخش', 'Heading');
+        if (sel) {
+          insert = prefix + text;
+          nextStart = s + prefix.length;
+          nextEnd = nextStart + text.length;
+        } else {
+          const beforeLine = cur.slice(0, lineStart);
+          const needsNl = lineStart > 0 && cur[lineStart - 1] !== '\n' ? '\n' : '';
+          modalState.data.body = beforeLine + needsNl + prefix + cur.slice(lineStart);
+          nextStart = lineStart + needsNl.length + prefix.length;
+          nextEnd = nextStart;
+          if (ta) {
+            ta.value = modalState.data.body;
+            ta.focus();
+            ta.setSelectionRange(nextStart, nextEnd);
+          }
+          entryCursorPos = { start: nextStart, end: nextEnd };
+          const prevEl = document.getElementById('entry-md-preview');
+          if (prevEl) prevEl.innerHTML = renderSafeMarkdownPreview(modalState.data.body);
+          updateDirtyUi();
+          return;
+        }
+      } else if (op === 'bold') {
+        const inner = sel || L('متن بولد', 'bold text');
+        insert = `**${inner}**`;
+        nextStart = s + 2;
+        nextEnd = nextStart + inner.length;
+      } else if (op === 'italic') {
+        const inner = sel || L('متن ایتالیک', 'italic text');
+        insert = `*${inner}*`;
+        nextStart = s + 1;
+        nextEnd = nextStart + inner.length;
+      } else if (op === 'code') {
+        if (sel.includes('\n')) {
+          insert = '```\n' + sel + '\n```';
+          nextStart = s + 4;
+          nextEnd = nextStart + sel.length;
+        } else {
+          const inner = sel || 'code';
+          insert = '`' + inner + '`';
+          nextStart = s + 1;
+          nextEnd = nextStart + inner.length;
+        }
+      } else if (op === 'link') {
+        const label = sel || L('متن لینک', 'link text');
+        insert = `[${label}](https://)`;
+        nextStart = s + label.length + 3;
+        nextEnd = insert.length - 1 + s;
+      }
+      modalState.data.body = cur.slice(0, s) + insert + cur.slice(e);
+      entryCursorPos = { start: nextStart, end: nextEnd };
+      if (ta) {
+        ta.value = modalState.data.body;
+        ta.focus();
+        ta.setSelectionRange(nextStart, nextEnd);
+      }
+      const prevEl = document.getElementById('entry-md-preview');
+      if (prevEl) prevEl.innerHTML = renderSafeMarkdownPreview(modalState.data.body);
+      updateDirtyUi();
+    }
+
+    function renderMdxEditorBlock(bodyText, showPreview) {
+      const toolbarHtml = `
+        <div class="mdx-toolbar">
+          <button type="button" class="btn btn-sm" data-mdx-fmt="h2" title="Heading 2">H2</button>
+          <button type="button" class="btn btn-sm" data-mdx-fmt="h3" title="Heading 3">H3</button>
+          <button type="button" class="btn btn-sm" data-mdx-fmt="bold" title="Bold"><strong>B</strong></button>
+          <button type="button" class="btn btn-sm" data-mdx-fmt="italic" title="Italic"><em>I</em></button>
+          <button type="button" class="btn btn-sm mono" data-mdx-fmt="code" title="Code">&lt;/&gt;</button>
+          <button type="button" class="btn btn-sm" data-mdx-fmt="link" title="Link">🔗</button>
+          <button type="button" class="btn btn-sm" data-pick-asset="entry:mdx-body" title="${L('درج تصویر از مدیر رسانه (مسیر نسبی بهینه‌سازی WebP)', 'Insert image from Media Manager')}">🖼 ${L('درج تصویر', 'Insert Image')}</button>
+        </div>
+      `;
+      const editorCol = `<div class="field"><label>MDX Body</label>${toolbarHtml}<textarea class="mono" style="min-height:220px;" data-entry-body="1">${esc(bodyText || '')}</textarea></div>`;
+      if (showPreview) {
+        return `<div class="grid grid-2">
+          ${editorCol}
+          <div class="field"><label>${L('پیش‌نمایش Markdown', 'Markdown Preview')}</label><div id="entry-md-preview" class="md-preview-box">${renderSafeMarkdownPreview(bodyText || '')}</div></div>
+        </div>`;
+      }
+      return editorCol;
     }
 
     async function refreshState({ resetDrafts = false } = {}) {
@@ -1281,7 +1444,28 @@
       document.getElementById('modal-card').innerHTML = '';
     }
 
-    function getIconTargetValue(target) {
+    function resolveScopedSection(scope, idxStr, parentModal = modalState) {
+      const arr = scope === 'modal' && parentModal?.type === 'sections'
+        ? parentModal.data.sections
+        : resolveSectionArray(scope);
+      return arr?.[Number(idxStr)] || null;
+    }
+
+    function syncSectionJsonUi(scope, idxStr) {
+      const sec = resolveScopedSection(scope, idxStr, modalState);
+      if (!sec) return;
+      sec.props = sec.props || {};
+      const jsonTa = document.querySelector(`[data-sec-json="${scope}:${idxStr}"]`);
+      if (jsonTa) {
+        jsonTa.value = JSON.stringify(sec.props, null, 2);
+        delete jsonTa.dataset.jsonInvalid;
+        jsonTa.style.borderColor = '';
+      }
+      const cnt = document.querySelector(`[data-sec-count="${scope}:${idxStr}"]`);
+      if (cnt) cnt.textContent = String(Object.keys(sec.props).length);
+    }
+
+    function getIconTargetValue(target, parentModal = null) {
       if (!target) return '';
       if (target.startsWith('cfg:')) return String(getPath(configDraft, target.slice(4), '') || '');
       if (target.startsWith('menuNode:')) {
@@ -1289,10 +1473,15 @@
         const ref = resolveMenuNodeRef(Number(miStr), pathStr);
         return String(ref?.node?.[field] || '');
       }
+      if (target.startsWith('secItem:')) {
+        const [, scope, idxStr, prop, itemIdxStr, field] = target.split(':');
+        const sec = resolveScopedSection(scope, idxStr, parentModal);
+        return String(sec?.props?.[prop]?.[Number(itemIdxStr)]?.[field] || '');
+      }
       return '';
     }
 
-    function setIconTargetValue(target, val) {
+    function setIconTargetValue(target, val, parentModal = null) {
       if (!target) return;
       if (target.startsWith('cfg:')) {
         setPath(configDraft, target.slice(4), val);
@@ -1300,6 +1489,18 @@
         const [, miStr, pathStr, field] = target.split(':');
         const ref = resolveMenuNodeRef(Number(miStr), pathStr);
         if (ref) ref.node[field] = val;
+      } else if (target.startsWith('secItem:')) {
+        const [, scope, idxStr, prop, itemIdxStr, field] = target.split(':');
+        const sec = resolveScopedSection(scope, idxStr, parentModal);
+        const ii = Number(itemIdxStr);
+        if (sec) {
+          sec.props = sec.props || {};
+          if (Array.isArray(sec.props[prop]) && sec.props[prop][ii] && typeof sec.props[prop][ii] === 'object') {
+            if (val === '') delete sec.props[prop][ii][field];
+            else sec.props[prop][ii][field] = val;
+            syncSectionJsonUi(scope, idxStr);
+          }
+        }
       }
     }
 
@@ -1310,15 +1511,50 @@
         parentModal.data.frontmatter.image = assetPath;
         return;
       }
+      if (target === 'entry:mdx-body' && parentModal?.type === 'entry') {
+        const mdSrc = assetPath.startsWith('src/assets/')
+          ? '../../../' + assetPath.slice('src/'.length)
+          : assetPath;
+        const cur = String(parentModal.data.body || '');
+        const start = entryCursorPos && typeof entryCursorPos.start === 'number'
+          ? Math.max(0, Math.min(cur.length, entryCursorPos.start))
+          : cur.length;
+        const end = entryCursorPos && typeof entryCursorPos.end === 'number'
+          ? Math.max(start, Math.min(cur.length, entryCursorPos.end))
+          : start;
+        const snippet = `![${L('تصویر', 'image')}](${mdSrc})`;
+        parentModal.data.body = cur.slice(0, start) + snippet + cur.slice(end);
+        entryCursorPos = { start: start + snippet.length, end: start + snippet.length };
+        return;
+      }
+      if (target.startsWith('entry:custom:') && parentModal?.type === 'entry') {
+        const fieldName = target.slice('entry:custom:'.length);
+        parentModal.data.frontmatter = parentModal.data.frontmatter || {};
+        parentModal.data.frontmatter[fieldName] = assetPath;
+        return;
+      }
+      if (target.startsWith('cfg:')) {
+        setPath(configDraft, target.slice(4), assetPath);
+        return;
+      }
       if (target.startsWith('sec:')) {
         const [, scope, idxStr, prop] = target.split(':');
-        const arr = scope === 'modal' && parentModal?.type === 'sections'
-          ? parentModal.data.sections
-          : resolveSectionArray(scope);
-        const sec = arr?.[Number(idxStr)];
+        const sec = resolveScopedSection(scope, idxStr, parentModal);
         if (sec) {
           sec.props = sec.props || {};
           sec.props[prop] = assetPath;
+        }
+        return;
+      }
+      if (target.startsWith('secItem:')) {
+        const [, scope, idxStr, prop, itemIdxStr, field] = target.split(':');
+        const sec = resolveScopedSection(scope, idxStr, parentModal);
+        const ii = Number(itemIdxStr);
+        if (sec) {
+          sec.props = sec.props || {};
+          sec.props[prop] = Array.isArray(sec.props[prop]) ? sec.props[prop] : [];
+          sec.props[prop][ii] = sec.props[prop][ii] && typeof sec.props[prop][ii] === 'object' ? sec.props[prop][ii] : {};
+          sec.props[prop][ii][field] = assetPath;
         }
       }
     }
@@ -1342,6 +1578,112 @@
     }
 
     // ---------- Section Composer Helpers ----------
+    function renderRepeaterField(scope, secIdx, propName, itemIdx, item, field) {
+      const val = item && typeof item === 'object' ? item[field.name] : undefined;
+      const baseKey = `${scope}:${secIdx}:${propName}:${itemIdx}:${field.name}`;
+      const reqStar = field.optional ? '' : ' *';
+      if (field.kind === 'boolean') {
+        return `<div class="field"><label>${esc(field.name)}${reqStar}</label>
+          <label class="check-pill"><input type="checkbox" data-sec-item-bool="${esc(baseKey)}" ${val ? 'checked' : ''} /><span>${val ? 'true' : 'false'}</span></label></div>`;
+      }
+      if (field.kind === 'number') {
+        return `<div class="field"><label>${esc(field.name)}${reqStar}</label>
+          <input type="number" step="any" class="mono" data-sec-item-num="${esc(baseKey)}" value="${esc(val ?? '')}" /></div>`;
+      }
+      if (field.kind === 'enum' && Array.isArray(field.options)) {
+        return `<div class="field"><label>${esc(field.name)}${reqStar}</label>
+          <select data-sec-item="${esc(baseKey)}">
+            <option value="">(default)</option>
+            ${field.options.map((opt) => `<option value="${esc(opt)}" ${val === opt ? 'selected' : ''}>${esc(opt)}</option>`).join('')}
+          </select></div>`;
+      }
+      if (field.kind === 'string[]') {
+        return `<div class="field"><label>${esc(field.name)}${reqStar} (comma-sep)</label>
+          <input type="text" data-sec-item-list="${esc(baseKey)}" value="${esc(Array.isArray(val) ? val.join(', ') : (val || ''))}" /></div>`;
+      }
+      if (field.kind === 'object' && Array.isArray(field.fields)) {
+        const subObj = val && typeof val === 'object' ? val : {};
+        return field.fields.map((sub) => {
+          const subKey = `${baseKey}:${sub.name}`;
+          if (sub.kind === 'enum' && Array.isArray(sub.options)) {
+            return `<div class="field"><label>${esc(field.name)}.${esc(sub.name)}</label>
+              <select data-sec-item-sub="${esc(subKey)}">
+                <option value="">(default)</option>
+                ${sub.options.map((opt) => `<option value="${esc(opt)}" ${subObj[sub.name] === opt ? 'selected' : ''}>${esc(opt)}</option>`).join('')}
+              </select></div>`;
+          }
+          return `<div class="field"><label>${esc(field.name)}.${esc(sub.name)}</label>
+            <input type="text" class="${sub.name === 'href' ? 'mono' : ''}" data-sec-item-sub="${esc(subKey)}" value="${esc(subObj[sub.name] ?? '')}" /></div>`;
+        }).join('');
+      }
+      if (field.kind === 'json') {
+        return `<div class="field"><label>${esc(field.name)}${reqStar} (JSON)</label>
+          <input type="text" class="mono" data-sec-item-json="${esc(baseKey)}" value="${esc(val !== undefined ? JSON.stringify(val) : '')}" /></div>`;
+      }
+      if (field.isImage) {
+        return `<div class="field"><label>${esc(field.name)}${reqStar}</label>
+          <div class="row" style="flex-wrap:nowrap;">
+            <input type="text" class="mono" data-sec-item="${esc(baseKey)}" value="${esc(val ?? '')}" />
+            <button type="button" class="btn btn-sm" title="${L('انتخاب تصویر', 'Pick Asset')}" data-pick-asset="secItem:${esc(baseKey)}">🖼</button>
+          </div></div>`;
+      }
+      if (field.isIcon) {
+        return `<div class="field"><label>${esc(field.name)}${reqStar}</label>
+          <div class="row" style="flex-wrap:nowrap;">
+            <input type="text" class="mono" data-sec-item="${esc(baseKey)}" value="${esc(val ?? '')}" />
+            <button type="button" class="btn btn-sm" title="${L('انتخاب آیکون', 'Pick Icon')}" data-pick-icon="secItem:${esc(baseKey)}">🎨</button>
+          </div></div>`;
+      }
+      return `<div class="field"><label>${esc(field.name)}${reqStar}</label>
+        <input type="text" class="${field.name === 'href' || field.name === 'url' ? 'mono' : ''}" data-sec-item="${esc(baseKey)}" value="${esc(val ?? '')}" /></div>`;
+    }
+
+    function renderSectionRepeaters(scope, idx, props, arraySchemas) {
+      const entries = Object.entries(arraySchemas || {});
+      if (!entries.length) return '';
+      return entries.map(([propName, schema]) => {
+        const arr = Array.isArray(props[propName]) ? props[propName] : [];
+        const autoOpen = arr.length > 0 || entries.length === 1;
+        const itemsHtml = arr.map((item, itemIdx) => {
+          if (schema.kind === 'string[]') {
+            return `<div class="sec-rep-item row" style="justify-content:space-between;">
+              <input type="text" style="flex:1;" data-sec-str-item="${scope}:${idx}:${esc(propName)}:${itemIdx}" value="${esc(typeof item === 'string' ? item : '')}" />
+              <div class="row">
+                <button type="button" class="btn btn-sm" data-sec-arr-move="${scope}:${idx}:${esc(propName)}:${itemIdx}:-1" ${itemIdx === 0 ? 'disabled' : ''}>↑</button>
+                <button type="button" class="btn btn-sm" data-sec-arr-move="${scope}:${idx}:${esc(propName)}:${itemIdx}:1" ${itemIdx === arr.length - 1 ? 'disabled' : ''}>↓</button>
+                <button type="button" class="btn btn-sm btn-danger" data-sec-arr-del="${scope}:${idx}:${esc(propName)}:${itemIdx}">✕</button>
+              </div>
+            </div>`;
+          }
+          const fields = schema.fields || [];
+          return `<div class="sec-rep-item">
+            <div class="between" style="margin-bottom:6px;">
+              <span class="muted mono">#${itemIdx + 1}</span>
+              <div class="row">
+                <button type="button" class="btn btn-sm" data-sec-arr-move="${scope}:${idx}:${esc(propName)}:${itemIdx}:-1" ${itemIdx === 0 ? 'disabled' : ''}>↑</button>
+                <button type="button" class="btn btn-sm" data-sec-arr-move="${scope}:${idx}:${esc(propName)}:${itemIdx}:1" ${itemIdx === arr.length - 1 ? 'disabled' : ''}>↓</button>
+                <button type="button" class="btn btn-sm btn-danger" data-sec-arr-del="${scope}:${idx}:${esc(propName)}:${itemIdx}">✕</button>
+              </div>
+            </div>
+            <div class="grid grid-3">${fields.map((f) => renderRepeaterField(scope, idx, propName, itemIdx, item, f)).join('')}</div>
+          </div>`;
+        }).join('');
+
+        return `<details class="sec-repeater" ${autoOpen ? 'open' : ''}>
+          <summary class="between" style="cursor:pointer;">
+            <span><strong>${esc(propName)}</strong> (<span data-sec-arr-count="${scope}:${idx}:${esc(propName)}">${arr.length}</span>)</span>
+          </summary>
+          <div style="margin-top:6px;">
+            <div class="between" style="margin-bottom:4px;">
+              <span class="muted">${esc(schema.kind || 'array')}</span>
+              <button type="button" class="btn btn-sm btn-primary" data-sec-arr-add="${scope}:${idx}:${esc(propName)}">+ ${L('افزودن آیتم', 'Add Item')}</button>
+            </div>
+            ${itemsHtml || `<p class="muted" style="margin:4px 0;">${L('آیتمی ثبت نشده است (در صورت نبود، مقادیر پیش‌فرض کامپوننت نمایش داده می‌شود).', 'No custom items yet (component defaults apply until added).')}</p>`}
+          </div>
+        </details>`;
+      }).join('');
+    }
+
     function renderSectionList(sections, scope) {
       if (!sections.length) {
         return `<p class="muted">${L('هنوز هیچ سکشن و هیرویی اضافه نشده است.', 'No sections added yet.')}</p>`;
@@ -1435,12 +1777,14 @@
                 ${[2, 3, 4].map((v) => `<option value="${v}" ${Number(props.columns) === v ? 'selected' : ''}>${v}</option>`).join('')}
               </select>
             </div>` : ''}
-            ${propNames.has('image') ? `<div class="field"><label>image</label>
-              <div class="row" style="flex-wrap:nowrap;">
-                <input type="text" class="mono" data-sec-prop="${scope}:${idx}:image" value="${esc(typeof props.image === 'string' ? props.image : '')}" />
-                <button type="button" class="btn btn-sm" data-pick-asset="sec:${scope}:${idx}:image">🖼</button>
+            ${['image', 'parallaxImage', 'bottomImage'].filter((imgProp) => propNames.has(imgProp)).map((imgProp) => `
+              <div class="field"><label>${imgProp}</label>
+                <div class="row" style="flex-wrap:nowrap;">
+                  <input type="text" class="mono" data-sec-prop="${scope}:${idx}:${imgProp}" value="${esc(typeof props[imgProp] === 'string' ? props[imgProp] : '')}" />
+                  <button type="button" class="btn btn-sm" data-pick-asset="sec:${scope}:${idx}:${imgProp}">🖼</button>
+                </div>
               </div>
-            </div>` : ''}
+            `).join('')}
             ${propNames.has('primaryCta') ? `
               <div class="field"><label>primaryCta.label</label><input type="text" data-sec-nested="${scope}:${idx}:primaryCta:label" value="${esc(props.primaryCta?.label || '')}" /></div>
               <div class="field"><label>primaryCta.href</label><input type="text" class="mono" data-sec-nested="${scope}:${idx}:primaryCta:href" value="${esc(props.primaryCta?.href || '')}" /></div>
@@ -1450,7 +1794,8 @@
               <div class="field"><label>secondaryCta.href</label><input type="text" class="mono" data-sec-nested="${scope}:${idx}:secondaryCta:href" value="${esc(props.secondaryCta?.href || '')}" /></div>
             ` : ''}
           </div>
-          <details>
+          ${renderSectionRepeaters(scope, idx, props, meta?.arraySchemas)}
+          <details style="margin-top:8px;">
             <summary class="muted" style="cursor:pointer;">JSON Props (<span data-sec-count="${scope}:${idx}">${Object.keys(props).length}</span>)</summary>
             <textarea class="mono" style="margin-top:6px;" data-sec-json="${scope}:${idx}">${esc(JSON.stringify(props, null, 2))}</textarea>
           </details>
@@ -1509,7 +1854,37 @@
         `<option value="${esc(b.name)}">[${esc(b.category)}] ${esc(b.name)}</option>`
       ).join('');
 
+      const pendingChecks = (healthReport?.checks || []).filter((c) => c.level !== 'ok');
+      const healthSummary = healthReport?.summary || { errors: 0, warnings: 0, passed: 0 };
+      const cleanDemoArmed = confirmTarget === 'wiz:clean-demo';
+
       return `
+        <div class="wiz-health-strip">
+          <div class="row">
+            <span class="badge ${healthSummary.errors > 0 ? 'err' : healthSummary.warnings > 0 ? 'warn' : 'ok'}">
+              ${healthSummary.errors > 0
+                ? L(`${healthSummary.errors} خطا · ${healthSummary.warnings} هشدار`, `${healthSummary.errors} err · ${healthSummary.warnings} warn`)
+                : healthSummary.warnings > 0
+                  ? L(`${healthSummary.warnings} مورد آماده تحویل`, `${healthSummary.warnings} handoff items`)
+                  : L('آماده تحویل به مشتری ✓', 'Handoff Ready ✓')}
+            </span>
+            ${pendingChecks.slice(0, 2).map((chk) => `
+              <button type="button" class="btn btn-sm" data-health-jump="${esc(chk.tab || 'wizard')}:${esc(chk.subTab || '')}" title="${esc(chk.hint || '')}">
+                ${esc(chk.message.length > 52 ? chk.message.slice(0, 50) + '…' : chk.message)}
+              </button>
+            `).join('')}
+          </div>
+          <div class="row">
+            <button type="button" class="btn btn-sm" data-action="open-health">${L('چک‌لیست سلامت', 'Health Report')}</button>
+            ${state.starterAvailable ? (
+              cleanDemoArmed
+                ? `<button type="button" class="btn btn-sm btn-danger" data-cli="starter:seed" data-cli-clean="1">${L('تأیید حذف محتوای دمو', 'Confirm Clean Demo')}</button>
+                   <button type="button" class="btn btn-sm" data-confirm-cancel="1">✕</button>`
+                : `<button type="button" class="btn btn-sm" data-confirm-arm="wiz:clean-demo">🧹 ${L('پاک‌سازی محتوای دمو', 'Clean Demo Content')}</button>`
+            ) : ''}
+          </div>
+        </div>
+
         <div class="card">
           <div class="between">
             <div>
@@ -1671,6 +2046,7 @@
               <button type="button" class="btn btn-sm btn-primary" data-action="wiz-add-sec">+ ${L('افزودن سکشن', 'Add Section')}</button>
             </div>
           </div>
+          <p class="muted" style="margin-top:0; margin-bottom:8px;">${L('نکته چندزبانگی: ui.homeSections بین همه زبان‌ها مشترک است. برای تیتر یا چیدمان متفاوت در هر زبان، پس از ساخت در تب محتوا روی دکمه Sections فایل home/en.mdx و home/fa.mdx تنظیم کنید.', 'Multilingual tip: ui.homeSections is shared across locales. For per-locale titles or layouts, edit frontmatter sections on home/<locale>.mdx in the Content tab.')}</p>
           ${renderSectionList(wizardDraft.homeSections, 'wizard')}
 
           <details style="margin-top:10px;">
@@ -1752,7 +2128,12 @@
                 </div>
                 <div class="grid grid-2">
                   <div class="field"><label>description</label><input type="text" data-cfg="site.authors.${esc(id)}.description" value="${esc(a.description || '')}" /></div>
-                  <div class="field"><label>image</label><input type="text" class="mono" data-cfg="site.authors.${esc(id)}.image" value="${esc(a.image || '')}" /></div>
+                  <div class="field"><label>image</label>
+                    <div class="row" style="flex-wrap:nowrap;">
+                      <input type="text" class="mono" data-cfg="site.authors.${esc(id)}.image" value="${esc(a.image || '')}" />
+                      <button type="button" class="btn btn-sm" title="${L('انتخاب از مدیر رسانه', 'Pick from Media Manager')}" data-pick-asset="cfg:site.authors.${esc(id)}.image">🖼</button>
+                    </div>
+                  </div>
                 </div>
                 <div class="field"><label>sameAs (comma-sep profile URLs)</label><input type="text" class="mono" data-cfg-list="site.authors.${esc(id)}.sameAs" value="${esc((a.sameAs || []).join(', '))}" /></div>
               </div>
@@ -1892,6 +2273,7 @@
                 <button type="button" class="btn btn-sm btn-primary" data-action="cfg-add-sec">+ ${L('افزودن سکشن', 'Add Section')}</button>
               </div>
             </div>
+            <p class="muted" style="margin-top:0; margin-bottom:8px;">${L('برای چیدمان یا تیتر متفاوت در هر زبان، به جای تنظیم سراسری اینجا، آرایه sections را در frontmatter هر فایل (مثلاً home/en.mdx و home/fa.mdx از تب محتوا) ثبت کنید.', 'For per-locale homepage copy or layout, set frontmatter sections on each home/<locale>.mdx file in the Content tab instead of global ui.homeSections.')}</p>
             ${renderSectionList(cfg.ui.homeSections || [], 'config')}
           </div>
         `;
@@ -2792,6 +3174,7 @@
               const locArm = 'entrydel:' + activeCollection + ':' + g.group + ':' + loc;
               const isLocArmed = confirmTarget === locArm;
               const canDelLocale = existingLocaleCount > 1 && !(activeCollection === 'pages' && g.group === 'home' && loc === state.locales.defaultLocale);
+              const entryPreviewUrl = buildEntryPreviewUrl(activeCollection, g.group, loc, info.slug);
               return `<td>
                 <div style="margin-bottom:4px;"><strong>${esc(info.title || g.group)}</strong></div>
                 <div class="row" style="margin-bottom:4px;">
@@ -2802,6 +3185,7 @@
                 </div>
                 <div class="row">
                   <button type="button" class="btn btn-sm btn-primary" data-entry-edit="${esc(activeCollection)}|${esc(g.group)}|${esc(loc)}">${L('ویرایش', 'Edit')}</button>
+                  ${resolvePreviewBaseUrl() && entryPreviewUrl ? `<button type="button" class="btn btn-sm" title="${L('پیش‌نمایش زنده صفحه', 'Open in Live Preview')}" data-preview-url="${esc(entryPreviewUrl)}">👁</button>` : ''}
                   ${activeCollection === 'pages' ? `<button type="button" class="btn btn-sm" data-sec-modal="${esc(g.group)}|${esc(loc)}">${L('سکشن‌ها', 'Sections')} (${info.sections?.length || 0})</button>` : ''}
                   ${canDelLocale ? (
                     isLocArmed
@@ -3204,11 +3588,20 @@
             const maxAttr = f.max !== undefined && f.max !== '' ? `max="${esc(f.max)}"` : '';
             return `<div class="field"><label>${esc(f.label || f.name)}${reqMark}</label><input type="number" step="any" ${minAttr} ${maxAttr} class="mono" data-efm-custom-num="${esc(f.name)}" value="${esc(val ?? '')}" /></div>`;
           }
+          if (f.type === 'image') {
+            return `<div class="field"><label>${esc(f.label || f.name)}${reqMark}</label>
+              <div class="row" style="flex-wrap:nowrap;">
+                <input type="text" class="mono" data-efm-custom="${esc(f.name)}" value="${esc(val ?? '')}" />
+                <button type="button" class="btn btn-sm" title="${L('انتخاب از مدیر رسانه', 'Pick from Media Manager')}" data-pick-asset="entry:custom:${esc(f.name)}">🖼</button>
+              </div>
+            </div>`;
+          }
           return `<div class="field"><label>${esc(f.label || f.name)}${reqMark}</label><input type="${f.type === 'date' ? 'date' : f.type === 'url' ? 'url' : 'text'}" class="${f.type === 'date' || f.type === 'url' ? 'mono' : ''}" data-efm-custom="${esc(f.name)}" value="${esc(f.type === 'date' ? String(val ?? '').slice(0, 10) : (val ?? ''))}" /></div>`;
         }).join('');
 
         const normalizedHero = fm.hero === false ? 'none' : fm.hero === true ? 'default' : String(fm.hero ?? 'none');
         const templateKeys = state.registeredTemplates || [];
+        const collectionTemplateKeys = state.registeredCollectionTemplates || [];
 
         card.innerHTML = `
           <div class="between" style="margin-bottom:10px;">
@@ -3217,6 +3610,12 @@
               <span class="muted mono">${esc(d.file)}</span>
             </div>
             <div class="row">
+              ${(() => {
+                const u = d.exists ? buildEntryPreviewUrl(col, d.group, d.locale, fm.slug) : '';
+                return u && resolvePreviewBaseUrl()
+                  ? `<button type="button" class="btn btn-sm" title="${L('پیش‌نمایش زنده صفحه', 'Open in Live Preview')}" data-preview-url="${esc(u)}">👁</button>`
+                  : '';
+              })()}
               <button type="button" class="btn btn-sm ${entryShowRef ? 'btn-primary' : ''}" data-action="toggle-entry-ref">${entryShowRef ? L('بستن زبان مرجع', 'Hide Reference') : L('مقایسه با زبان مرجع', 'Reference Locale')}</button>
               <button type="button" class="btn btn-sm ${entryShowPreview ? 'btn-primary' : ''}" data-action="toggle-entry-preview">${entryShowPreview ? L('بستن پیش‌نمایش', 'Hide MD Preview') : L('پیش‌نمایش متن', 'MD Preview')}</button>
               ${col === 'pages' && d.exists ? `<button type="button" class="btn btn-sm" data-sec-modal="${esc(d.group)}|${esc(d.locale)}">${L('ویرایشگر سکشن‌ها', 'Sections Editor')}</button>` : ''}
@@ -3292,17 +3691,17 @@
             </div>
           ` : ''}
 
+          ${col !== 'pages' ? `
+            <div class="field"><label>template (CLIENT_COLLECTION_TEMPLATES)</label>
+              <input type="text" class="mono" list="collection-template-list" placeholder="${esc(col)} / ${esc(col)}:entry" data-efm="template" value="${esc(fm.template || '')}" />
+              <datalist id="collection-template-list">${collectionTemplateKeys.map((tk) => `<option value="${esc(tk)}"></option>`).join('')}</datalist>
+            </div>
+          ` : ''}
+
           ${customFields.length > 0 ? `<div class="divider"></div><div class="grid grid-2">${customInputs}</div>` : ''}
 
           <div class="divider"></div>
-          ${entryShowPreview ? `
-            <div class="grid grid-2">
-              <div class="field"><label>MDX Body</label><textarea class="mono" style="min-height:220px;" data-entry-body="1">${esc(d.body || '')}</textarea></div>
-              <div class="field"><label>${L('پیش‌نمایش Markdown', 'Markdown Preview')}</label><div id="entry-md-preview" class="md-preview-box">${renderSafeMarkdownPreview(d.body || '')}</div></div>
-            </div>
-          ` : `
-            <div class="field"><label>MDX Body</label><textarea class="mono" style="min-height:220px;" data-entry-body="1">${esc(d.body || '')}</textarea></div>
-          `}
+          ${renderMdxEditorBlock(d.body || '', entryShowPreview)}
 
           ${Object.keys(extraFm).length > 0 ? `
             <details style="margin-bottom:10px;">
@@ -3319,13 +3718,18 @@
       } else if (modalState.type === 'sections') {
         const d = modalState.data;
         const blockOpts = state.sectionBlocks.map((b) => `<option value="${esc(b.name)}">[${esc(b.category)}] ${esc(b.name)}</option>`).join('');
+        const pageInfo = (state.pages || []).find((p) => p.group === d.group)?.locales?.[d.locale];
+        const secPreviewUrl = pageInfo ? buildEntryPreviewUrl('pages', d.group, d.locale, pageInfo.slug) : '';
         card.innerHTML = `
           <div class="between" style="margin-bottom:10px;">
             <div>
               <h3 style="margin:0;">${L('ویرایش سکشن‌های صفحه', 'Edit Page Sections')}</h3>
               <span class="muted mono">${esc(d.group)} / ${esc(d.locale)}.mdx</span>
             </div>
-            <button type="button" class="btn btn-sm" data-modal-close="1">✕</button>
+            <div class="row">
+              ${resolvePreviewBaseUrl() && secPreviewUrl ? `<button type="button" class="btn btn-sm" title="${L('پیش‌نمایش زنده صفحه', 'Open in Live Preview')}" data-preview-url="${esc(secPreviewUrl)}">👁</button>` : ''}
+              <button type="button" class="btn btn-sm" data-modal-close="1">✕</button>
+            </div>
           </div>
           <div class="grid grid-3">
             <div class="field"><label>hero</label>
@@ -3561,13 +3965,16 @@
               <input id="asset-picker-search" type="text" placeholder="/brand, hero, iso..." value="${esc(assetSearch)}" />
             </div>
             <div class="field" style="margin:0;">
-              <label>${L('آپلود تصویر جدید به public/uploads/', 'Upload Image to public/uploads/')}</label>
+              <label>${L('آپلود تصویر جدید به src/assets/uploads/ (بهینه‌سازی خودکار به WebP)', 'Upload Image to src/assets/uploads/ (Auto WebP on Build)')}</label>
               <input id="asset-upload-input" type="file" accept="image/svg+xml,image/png,image/webp,image/jpeg,image/avif" />
             </div>
           </div>
           ${d.error ? `<p style="color:var(--danger);">${esc(d.error)}</p>` : ''}
           <div class="asset-grid">
-            ${list.map((a) => `
+            ${list.map((a) => {
+              const isUpload = String(a.path || '').startsWith('src/assets/uploads/');
+              const isDelArmed = isUpload && d.confirmDeletePath === a.path;
+              return `
               <div class="asset-card">
                 <img class="asset-thumb" loading="lazy" src="api/asset-preview?path=${encodeURIComponent(a.path)}" alt="${esc(a.name)}" />
                 <div class="mono" style="font-size:11px; word-break:break-all;">${esc(a.path)}</div>
@@ -3575,9 +3982,15 @@
                 <div class="row">
                   ${d.target ? `<button type="button" class="btn btn-sm btn-primary" data-asset-choose="${esc(a.path)}">${L('انتخاب', 'Use')}</button>` : ''}
                   <button type="button" class="btn btn-sm" data-asset-copy="${esc(a.path)}">${L('کپی مسیر', 'Copy')}</button>
+                  ${isUpload ? (
+                    isDelArmed
+                      ? `<button type="button" class="btn btn-sm btn-danger" data-asset-del-exec="${esc(a.path)}">${L('تأیید حذف', 'Confirm')}</button><button type="button" class="btn btn-sm" data-asset-del-cancel="1">✕</button>`
+                      : `<button type="button" class="btn btn-sm btn-danger" title="${L('حذف فایل آپلودی', 'Delete uploaded file')}" data-asset-del-arm="${esc(a.path)}">🗑</button>`
+                  ) : ''}
                 </div>
               </div>
-            `).join('')}
+            `;
+            }).join('')}
           </div>
         `;
       } else if (modalState.type === 'menuJson') {
@@ -3967,14 +4380,92 @@
             sec.props[parentProp] = sec.props[parentProp] && typeof sec.props[parentProp] === 'object' ? sec.props[parentProp] : {};
             sec.props[parentProp][childProp] = el.value;
           }
-          const jsonTa = document.querySelector(`[data-sec-json="${scope}:${idxStr}"]`);
-          if (jsonTa) {
-            jsonTa.value = JSON.stringify(sec.props, null, 2);
-            delete jsonTa.dataset.jsonInvalid;
-            jsonTa.style.borderColor = '';
+          syncSectionJsonUi(scope, idxStr);
+        }
+      } else if (el.dataset.secStrItem) {
+        const [scope, idxStr, prop, iiStr] = el.dataset.secStrItem.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        const ii = Number(iiStr);
+        if (sec && Array.isArray(sec.props?.[prop])) {
+          sec.props[prop][ii] = el.value;
+          syncSectionJsonUi(scope, idxStr);
+        }
+      } else if (el.dataset.secItem) {
+        const [scope, idxStr, prop, iiStr, field] = el.dataset.secItem.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        const ii = Number(iiStr);
+        if (sec && Array.isArray(sec.props?.[prop])) {
+          sec.props[prop][ii] = sec.props[prop][ii] && typeof sec.props[prop][ii] === 'object' ? sec.props[prop][ii] : {};
+          if (el.value === '') delete sec.props[prop][ii][field];
+          else sec.props[prop][ii][field] = el.value;
+          syncSectionJsonUi(scope, idxStr);
+        }
+      } else if (el.dataset.secItemNum) {
+        const [scope, idxStr, prop, iiStr, field] = el.dataset.secItemNum.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        const ii = Number(iiStr);
+        if (sec && Array.isArray(sec.props?.[prop])) {
+          sec.props[prop][ii] = sec.props[prop][ii] && typeof sec.props[prop][ii] === 'object' ? sec.props[prop][ii] : {};
+          if (el.value === '') delete sec.props[prop][ii][field];
+          else sec.props[prop][ii][field] = Number(el.value);
+          syncSectionJsonUi(scope, idxStr);
+        }
+      } else if (el.dataset.secItemList) {
+        const [scope, idxStr, prop, iiStr, field] = el.dataset.secItemList.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        const ii = Number(iiStr);
+        if (sec && Array.isArray(sec.props?.[prop])) {
+          sec.props[prop][ii] = sec.props[prop][ii] && typeof sec.props[prop][ii] === 'object' ? sec.props[prop][ii] : {};
+          const items = el.value.split(',').map((s) => s.trim()).filter(Boolean);
+          if (items.length === 0) delete sec.props[prop][ii][field];
+          else sec.props[prop][ii][field] = items;
+          syncSectionJsonUi(scope, idxStr);
+        }
+      } else if (el.dataset.secItemSub) {
+        const [scope, idxStr, prop, iiStr, field, sub] = el.dataset.secItemSub.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        const ii = Number(iiStr);
+        if (sec && Array.isArray(sec.props?.[prop])) {
+          sec.props[prop][ii] = sec.props[prop][ii] && typeof sec.props[prop][ii] === 'object' ? sec.props[prop][ii] : {};
+          if (el.value === '') {
+            if (sec.props[prop][ii][field] && typeof sec.props[prop][ii][field] === 'object') {
+              delete sec.props[prop][ii][field][sub];
+              if (Object.keys(sec.props[prop][ii][field]).length === 0) delete sec.props[prop][ii][field];
+            }
+          } else {
+            sec.props[prop][ii][field] = sec.props[prop][ii][field] && typeof sec.props[prop][ii][field] === 'object' ? sec.props[prop][ii][field] : {};
+            sec.props[prop][ii][field][sub] = el.value;
           }
-          const cnt = document.querySelector(`[data-sec-count="${scope}:${idxStr}"]`);
-          if (cnt) cnt.textContent = String(Object.keys(sec.props).length);
+          syncSectionJsonUi(scope, idxStr);
+        }
+      } else if (el.dataset.secItemJson) {
+        const [scope, idxStr, prop, iiStr, field] = el.dataset.secItemJson.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        const ii = Number(iiStr);
+        if (sec && Array.isArray(sec.props?.[prop])) {
+          sec.props[prop][ii] = sec.props[prop][ii] && typeof sec.props[prop][ii] === 'object' ? sec.props[prop][ii] : {};
+          if (!el.value.trim()) {
+            delete sec.props[prop][ii][field];
+            delete el.dataset.jsonInvalid;
+            el.style.borderColor = '';
+            syncSectionJsonUi(scope, idxStr);
+          } else {
+            try {
+              sec.props[prop][ii][field] = JSON.parse(el.value);
+              delete el.dataset.jsonInvalid;
+              el.style.borderColor = '';
+              syncSectionJsonUi(scope, idxStr);
+            } catch {
+              el.dataset.jsonInvalid = '1';
+              el.style.borderColor = 'var(--danger)';
+            }
+          }
         }
       } else if (el.dataset.secJson) {
         const [scope, idxStr] = el.dataset.secJson.split(':');
@@ -4000,6 +4491,10 @@
               document.querySelectorAll(`[data-sec-nested^="${scope}:${idxStr}:"]`).forEach((inp) => {
                 const parts = inp.dataset.secNested.split(':');
                 inp.value = parsed[parts[2]]?.[parts[3]] ?? '';
+              });
+              document.querySelectorAll(`[data-sec-arr-count^="${scope}:${idxStr}:"]`).forEach((cntEl) => {
+                const prop = cntEl.dataset.secArrCount.split(':')[2];
+                cntEl.textContent = String(Array.isArray(parsed[prop]) ? parsed[prop].length : 0);
               });
             } else {
               el.dataset.jsonInvalid = '1';
@@ -4042,6 +4537,7 @@
         else if (el.dataset.efmCustomList) fm[el.dataset.efmCustomList] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
         else if (el.dataset.entryBody) {
           modalState.data.body = el.value;
+          entryCursorPos = { start: el.selectionStart || 0, end: el.selectionEnd || 0 };
           const prevEl = document.getElementById('entry-md-preview');
           if (prevEl) prevEl.innerHTML = renderSafeMarkdownPreview(el.value);
         }
@@ -4238,7 +4734,7 @@
         reader.onload = async () => {
           try {
             const res = await apiPost('api/upload-asset', { filename: file.name, dataUrl: reader.result });
-            showToast(L('تصویر آپلود شد: ', 'Uploaded: ') + res.publicPath);
+            showToast(L('تصویر آپلود شد: ', 'Uploaded: ') + (res.assetPath || res.publicPath));
             if (modalState?.type === 'assets') {
               const listRes = await apiGet('api/assets');
               modalState.data.assets = listRes.assets || [];
@@ -4259,6 +4755,18 @@
           showToast(L('فایل پکیج بارگذاری شد', 'Bundle file loaded'));
         };
         reader.readAsText(file);
+      } else if (el.dataset.secItemBool) {
+        const [scope, idxStr, prop, iiStr, field] = el.dataset.secItemBool.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        const ii = Number(iiStr);
+        if (sec && Array.isArray(sec.props?.[prop])) {
+          sec.props[prop][ii] = sec.props[prop][ii] && typeof sec.props[prop][ii] === 'object' ? sec.props[prop][ii] : {};
+          if (el.checked) sec.props[prop][ii][field] = true;
+          else delete sec.props[prop][ii][field];
+          if (el.nextElementSibling) el.nextElementSibling.textContent = el.checked ? 'true' : 'false';
+          syncSectionJsonUi(scope, idxStr);
+        }
       } else if (el.id === 'add-lang-dir') {
         el.dataset.dirTouched = '1';
       } else if (el.type !== 'checkbox' && el.type !== 'file') {
@@ -4266,6 +4774,16 @@
       }
       updateDirtyUi();
     });
+
+    const syncEntryCursor = (e) => {
+      const el = e.target;
+      if (el?.dataset?.entryBody) {
+        entryCursorPos = { start: el.selectionStart || 0, end: el.selectionEnd || 0 };
+      }
+    };
+    document.addEventListener('keyup', syncEntryCursor);
+    document.addEventListener('click', syncEntryCursor);
+    document.addEventListener('select', syncEntryCursor);
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && modalState) {
@@ -4380,15 +4898,78 @@
         render();
         return;
       }
+      if (btn.dataset.secArrAdd) {
+        const [scope, idxStr, prop] = btn.dataset.secArrAdd.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        if (sec) {
+          sec.props = sec.props || {};
+          const meta = state.sectionBlocks.find((b) => b.name === sec.block);
+          const schema = meta?.arraySchemas?.[prop];
+          sec.props[prop] = Array.isArray(sec.props[prop]) ? sec.props[prop] : [];
+          sec.props[prop].push(schema?.kind === 'string[]' ? '' : {});
+          if (scope === 'modal') renderModal(); else render();
+          updateDirtyUi();
+        }
+        return;
+      }
+      if (btn.dataset.secArrMove) {
+        const [scope, idxStr, prop, iiStr, deltaStr] = btn.dataset.secArrMove.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        const items = sec?.props?.[prop];
+        const i = Number(iiStr), d = Number(deltaStr), j = i + d;
+        if (Array.isArray(items) && j >= 0 && j < items.length) {
+          [items[i], items[j]] = [items[j], items[i]];
+          if (scope === 'modal') renderModal(); else render();
+          updateDirtyUi();
+        }
+        return;
+      }
+      if (btn.dataset.secArrDel) {
+        const [scope, idxStr, prop, iiStr] = btn.dataset.secArrDel.split(':');
+        const arr = resolveSectionArray(scope);
+        const sec = arr?.[Number(idxStr)];
+        const items = sec?.props?.[prop];
+        if (Array.isArray(items)) {
+          items.splice(Number(iiStr), 1);
+          if (items.length === 0) delete sec.props[prop];
+          if (scope === 'modal') renderModal(); else render();
+          updateDirtyUi();
+        }
+        return;
+      }
+      if (btn.dataset.previewUrl) {
+        const url = btn.dataset.previewUrl;
+        previewPath = url.startsWith('/') ? url : '/' + url;
+        previewOpen = true;
+        localStorage.setItem('studio_preview_path', previewPath);
+        localStorage.setItem('studio_preview_open', '1');
+        if (modalState) {
+          modalState = null;
+          document.getElementById('modal-root').classList.add('hidden');
+          document.getElementById('modal-card').innerHTML = '';
+        }
+        updateChrome();
+        syncPreviewPane({ forceReload: true });
+        return;
+      }
+      if (btn.dataset.mdxFmt) {
+        applyMdxFormat(btn.dataset.mdxFmt);
+        return;
+      }
       if (btn.dataset.pickIcon) {
         const target = btn.dataset.pickIcon;
-        openModal('iconPicker', { target, current: getIconTargetValue(target) });
+        const parentModal = modalState && (modalState.type === 'entry' || modalState.type === 'sections') ? modalState : null;
+        openModal('iconPicker', { target, current: getIconTargetValue(target, parentModal), parentModal });
         return;
       }
       if (btn.dataset.iconChoose !== undefined && modalState?.type === 'iconPicker') {
-        setIconTargetValue(modalState.data.target, btn.dataset.iconChoose);
+        const target = modalState.data.target;
+        const parentModal = modalState.data.parentModal;
+        setIconTargetValue(target, btn.dataset.iconChoose, parentModal);
         closeModal();
-        render();
+        if (!parentModal) render();
         updateDirtyUi();
         return;
       }
@@ -4404,16 +4985,41 @@
         const parentModal = modalState.data.parentModal;
         setAssetTargetValue(target, assetPath, parentModal);
         closeModal();
-        if (!parentModal) {
-          render();
-          updateDirtyUi();
-        }
+        if (!parentModal) render();
+        updateDirtyUi();
         showToast(L('مسیر تصویر جایگذاری شد: ', 'Selected: ') + assetPath);
         return;
       }
       if (btn.dataset.assetCopy) {
         navigator.clipboard?.writeText(btn.dataset.assetCopy);
         showToast(L('مسیر کپی شد: ', 'Copied: ') + btn.dataset.assetCopy);
+        return;
+      }
+      if (btn.dataset.assetDelArm && modalState?.type === 'assets') {
+        modalState.data.confirmDeletePath = btn.dataset.assetDelArm;
+        renderModal();
+        return;
+      }
+      if (btn.dataset.assetDelCancel && modalState?.type === 'assets') {
+        modalState.data.confirmDeletePath = '';
+        renderModal();
+        return;
+      }
+      if (btn.dataset.assetDelExec && modalState?.type === 'assets') {
+        const assetPath = btn.dataset.assetDelExec;
+        await withBusy('delete-asset', async () => {
+          try {
+            await apiPost('api/delete-asset', { path: assetPath });
+            modalState.data.confirmDeletePath = '';
+            const listRes = await apiGet('api/assets');
+            modalState.data.assets = listRes.assets || [];
+            renderModal();
+            showToast(L('تصویر حذف شد: ', 'Deleted: ') + assetPath);
+          } catch (err) {
+            showToast(err.message);
+            logConsole('delete-asset', err.message, false);
+          }
+        });
         return;
       }
       if (btn.dataset.menuAct) {
@@ -4988,19 +5594,24 @@
         if (!(modalState.data.collection === 'pages' && modalState.data.group === 'home') && !String(fm.slug || '').trim()) {
           return showToast(L('فیلد slug الزامی است', 'Slug is required'));
         }
-        for (const f of modalState.data.customFields || []) {
-          if (!f.required) continue;
+        const entryTypeDef = (state.contentTypes || []).find((x) => x.key === modalState.data.collection) || {};
+        for (const f of entryTypeDef.fields || []) {
+          if (!f.required || f.default !== undefined) continue;
           const v = fm[f.name];
           if (v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)) {
             return showToast(L(`فیلد الزامی «${f.name}» نباید خالی باشد`, `Required field "${f.name}" cannot be empty`));
           }
         }
+        const savedCol = modalState.data.collection;
+        const savedGroup = modalState.data.group;
+        const savedLocale = modalState.data.locale;
+        const savedSlug = fm.slug;
         await withBusy('content-entry', async () => {
           try {
             const res = await apiPost('api/content-entry', {
-              collection: modalState.data.collection,
-              group: modalState.data.group,
-              locale: modalState.data.locale,
+              collection: savedCol,
+              group: savedGroup,
+              locale: savedLocale,
               frontmatter: modalState.data.frontmatter,
               body: modalState.data.body,
             });
@@ -5008,6 +5619,8 @@
             closeModal();
             showToast(L('محتوا ذخیره شد', 'Entry saved'));
             await refreshState();
+            const savedUrl = buildEntryPreviewUrl(savedCol, savedGroup, savedLocale, savedSlug);
+            if (previewOpen && savedUrl) navigatePreviewTo(savedUrl);
           } catch (err) {
             showToast(err.message);
             logConsole('content-entry', err.message, false);
@@ -5021,9 +5634,11 @@
         if (hasInvalidJsonInputs(document.getElementById('modal-card'))) {
           return showToast(L('لطفاً خطای JSON سکشن‌ها را برطرف کنید', 'Fix invalid JSON props first'));
         }
+        const d = modalState.data;
+        const savedGroup = d.group;
+        const savedLocale = d.locale;
         await withBusy('page-sections', async () => {
           try {
-            const d = modalState.data;
             const res = await apiPost('api/page-sections', {
               group: d.group, locale: d.locale, hero: d.hero, container: d.container, flushTop: d.flushTop, sections: d.sections,
             });
@@ -5031,6 +5646,9 @@
             closeModal();
             showToast(L('سکشن‌ها ذخیره شدند', 'Sections saved'));
             await refreshState();
+            const pageInfo = (state.pages || []).find((p) => p.group === savedGroup)?.locales?.[savedLocale];
+            const savedUrl = pageInfo ? buildEntryPreviewUrl('pages', savedGroup, savedLocale, pageInfo.slug) : '';
+            if (previewOpen && savedUrl) navigatePreviewTo(savedUrl);
           } catch (err) {
             showToast(err.message);
             logConsole('page-sections', err.message, false);
@@ -5214,6 +5832,14 @@
             logConsole('client-bundle import', err.message, false);
           }
         });
+      } else if (act === 'open-health') {
+        apiGet('api/health')
+          .then((rep) => {
+            healthReport = rep;
+            updateChrome();
+            openModal('health', rep);
+          })
+          .catch((err) => showToast(err.message));
       } else if (act === 'refresh-health') {
         apiGet('api/health')
           .then((rep) => {

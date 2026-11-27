@@ -143,6 +143,7 @@ const requiredClientFiles = [
   'client/icons.ts',
   'client/ClientIcons.astro',
   'client/LayoutHooks.astro',
+  'client/CollectionHooks.astro',
   'client/templates/index.ts',
   'client/navigation.ts',
   'client/content.ts',
@@ -179,6 +180,16 @@ const hookAssertions = [
     file: 'src/views/PageView.astro',
     pattern: /\.\.\.CLIENT_PAGE_TEMPLATES/,
     label: 'CLIENT_PAGE_TEMPLATES spread in src/views/PageView.astro',
+  },
+  {
+    file: 'src/views/BlogPostView.astro',
+    pattern: /@client\/CollectionHooks\.astro/,
+    label: 'CollectionHooks slot hook in src/views/BlogPostView.astro',
+  },
+  {
+    file: 'src/views/CollectionEntryView.astro',
+    pattern: /CLIENT_COLLECTION_TEMPLATES/,
+    label: 'CLIENT_COLLECTION_TEMPLATES lookup in src/views/CollectionEntryView.astro',
   },
   {
     file: 'src/i18n/locales.ts',

@@ -27,6 +27,8 @@ import { buildOgRouteKey, getSocialCard, type SocialCardContext } from '@/libs/c
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { formatYear } from '@/i18n/format';
 import { getLocaleMeta, type Locale } from '@/i18n/locales';
+import CollectionHooks from '@client/CollectionHooks.astro';
+import { CLIENT_COLLECTION_TEMPLATES } from '@client/templates/index';
 import * as m from '@/paraglide/messages';
 
 /**
@@ -44,8 +46,13 @@ interface Props {
 }
 
 const { contentType, entry, locale, alternates, url } = Astro.props;
-const { Content } = await render(entry as CollectionEntry<'projects'>);
 const rawData = entry.data as Record<string, unknown>;
+const templateName = typeof rawData.template === 'string' ? rawData.template : undefined;
+const CustomTemplate =
+  (templateName ? CLIENT_COLLECTION_TEMPLATES[templateName] : undefined) ??
+  CLIENT_COLLECTION_TEMPLATES[`${contentType}:entry`] ??
+  CLIENT_COLLECTION_TEMPLATES[contentType];
+const { Content } = await render(entry as CollectionEntry<'projects'>);
 const { title, description, image, client, year, link, stack = [], categories = [] } = entry.data;
 
 const typeConfig = getContentType(contentType);
@@ -130,6 +137,22 @@ for (const field of typeConfig.fields) {
 }
 ---
 
+{
+  CustomTemplate ? (
+    <CustomTemplate
+      collection={contentType}
+      view="entry"
+      contentType={contentType}
+      entry={entry}
+      Content={Content}
+      locale={locale}
+      alternates={alternates}
+      url={url}
+      schema={schema}
+      ogContext={ogContext}
+      breadcrumbs={breadcrumbs}
+    />
+  ) : (
 <BaseLayout
   title={title}
   description={description}
@@ -231,9 +254,13 @@ for (const field of typeConfig.fields) {
       )
     }
 
+    <CollectionHooks hook="before-content" collection={contentType} view="entry" locale={locale} url={url} entry={entry} />
+
     <div class="prose max-w-none">
       <Content />
     </div>
+
+    <CollectionHooks hook="after-content" collection={contentType} view="entry" locale={locale} url={url} entry={entry} />
 
     <footer class="mt-10 border-t border-border pt-6">
       <a
@@ -245,4 +272,8 @@ for (const field of typeConfig.fields) {
       </a>
     </footer>
   </article>
+
+  <CollectionHooks hook="after-entry" collection={contentType} view="entry" locale={locale} url={url} entry={entry} />
 </BaseLayout>
+  )
+}
