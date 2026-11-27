@@ -1,4 +1,4 @@
-import type { ImageMetadata } from 'astro';
+import type { ContentImage } from '@/libs/content/media';
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { DEFAULT_LOCALE, LOCALES, type Locale } from '@/i18n/locales';
 import { getPathname, localizeHref, stripLocale, withTrailingSlash } from '@/i18n/paths';
@@ -23,7 +23,7 @@ interface GenericCollectionEntryData {
   title: string;
   slug: string;
   description?: string;
-  image?: ImageMetadata;
+  image?: ContentImage;
   draft?: boolean;
   publishedAt?: Date;
   updatedAt?: Date;

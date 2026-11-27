@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getSiteRoutes } from '@/libs/content/service';
 import { absoluteUrl } from '@/libs/config/app';
-import { DEFAULT_LOCALE } from '@/i18n/locales';
+import { DEFAULT_LOCALE, getLocaleMeta, type Locale } from '@/i18n/locales';
 
 function escapeXml(value: string): string {
   return value
@@ -52,7 +52,8 @@ export const GET: APIRoute = async () => {
         .filter(([, altPath]) => Boolean(altPath))
         .map(([locale, altPath]) => {
           const altHref = escapeXml(absoluteUrl(altPath!));
-          return `    <xhtml:link rel="alternate" hreflang="${escapeXml(locale)}" href="${altHref}" />`;
+          const hreflang = getLocaleMeta(locale as Locale)?.htmlLang ?? locale;
+          return `    <xhtml:link rel="alternate" hreflang="${escapeXml(hreflang)}" href="${altHref}" />`;
         })
         .join('\n');
 

@@ -1,6 +1,6 @@
 ---
 import type { CollectionEntry } from 'astro:content';
-import { Image } from 'astro:assets';
+import ResponsiveImage from '@/components/ui/ResponsiveImage.astro';
 import Icon from '@/components/ui/Icon.astro';
 import UiBadge from '@/components/ui/UiBadge.astro';
 import type { Locale } from '@/i18n/locales';
@@ -24,18 +24,7 @@ const { post, locale, href, priority = false, headingTag = 'h2' } = Astro.props;
 const HeadingTag = headingTag;
 
 const { title, description, image, categories, tags, publishedAt } = post.data;
-// `image` is the metadata Astro resolved from the entry's frontmatter.
 const cover = image;
-/**
- * Renditions offered to the browser. Inside `.layout-container` (`1280px`),
- * each 3-column card is ~390px wide, so `[320, 480, 640, 800]` covers 1x and
- * 2x DPR cleanly without upscaling native sources.
- */
-const coverWidths = cover
-  ? [...new Set([320, 480, 640, 800, cover.width])]
-      .filter((width) => width <= cover.width)
-      .sort((a, b) => a - b)
-  : [];
 const category = categories[0];
 const formattedDate = formatDate(publishedAt, locale, 'short');
 const readingTime = getReadingTime(post.body);
@@ -57,10 +46,10 @@ const hiddenTagCount = tags.length - visibleTags.length;
     <div class="relative aspect-[16/9] overflow-hidden bg-linear-to-br from-primary/20 via-surface-hover to-accent/15">
     {
       cover ? (
-        <Image
+        <ResponsiveImage
           src={cover}
           alt=""
-          widths={coverWidths}
+          widths={[320, 480, 640, 800]}
           sizes="(min-width: 1280px) 390px, (min-width: 1024px) 31vw, (min-width: 640px) 46vw, 94vw"
           format="webp"
           quality={75}

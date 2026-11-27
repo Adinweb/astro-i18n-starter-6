@@ -5,7 +5,7 @@
  * `<UiBadge>`, `<HeroHeadline>`, `<Button>`, `<ChipGroup>`, `<PartnerStrip>`, and
  * `<HeroParallaxLayer>`.
  */
-import type { ImageMetadata } from 'astro';
+import type { ContentImage } from '@/libs/content/media';
 import AnnouncementPill from '@/components/ui/AnnouncementPill.astro';
 import BackdropLayer, { type BackdropVariant } from '@/components/ui/BackdropLayer.astro';
 import Button from '@/components/ui/Button.astro';
@@ -35,7 +35,7 @@ interface Props {
   surface?: 'default' | 'hero' | 'surface' | 'subtle';
   backdrop?: BackdropVariant;
   framedRails?: 'none' | 'dashed' | 'solid';
-  parallaxImage?: ImageMetadata | null;
+  parallaxImage?: ContentImage | null;
   parallaxAlt?: string;
   parallaxSpeed?: HeroParallaxSpeed;
   parallaxOverlay?: HeroParallaxOverlay;

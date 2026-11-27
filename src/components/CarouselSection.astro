@@ -5,8 +5,7 @@
  * localized slide counters (`formatNumber`), optional autoplay respecting `data-motion="reduced"`,
  * `<Image>` optimization with `DEFAULT_HERO_IMAGE` fallback, and Paraglide defaults.
  */
-import { Image } from 'astro:assets';
-import type { ImageMetadata } from 'astro';
+import ResponsiveImage from '@/components/ui/ResponsiveImage.astro';
 import PageSection from '@/components/PageSection.astro';
 import Button from '@/components/ui/Button.astro';
 import Icon from '@/components/ui/Icon.astro';
@@ -16,6 +15,7 @@ import UiBadge from '@/components/ui/UiBadge.astro';
 import { formatNumber } from '@/i18n/format';
 import type { Locale } from '@/i18n/locales';
 import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import type { ContentImage } from '@/libs/content/media';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
@@ -24,7 +24,7 @@ export interface CarouselSlide {
   badge?: string;
   title: string;
   description: string;
-  image?: ImageMetadata;
+  image?: ContentImage;
   imageAlt?: string;
   ctaLabel?: string;
   ctaHref?: string;
@@ -174,7 +174,7 @@ const cardSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface'
               >
               <div class="lg:col-span-6">
                 <div class="overflow-hidden rounded-2xl border border-border bg-bg shadow-xs">
-                  <Image
+                  <ResponsiveImage
                     src={slideImage}
                     alt={slide.imageAlt ?? slide.title}
                     widths={[560, 920]}

@@ -175,8 +175,10 @@ h3 {
 }
 
 /* Display font pairing applies to Latin headings/display elements while preserving
-   zero-specificity fallback so :lang(fa)/:lang(ar) script stacks always win. */
-:where(h1, h2, h3, h4, .font-display):where(:not(:lang(fa)):not(:lang(ar))) {
+   zero-specificity fallback so Persian/Arabic-script stacks always win. */
+:where(h1, h2, h3, h4, .font-display):where(
+  :not(:lang(fa)):not(:lang(prs)):not(:lang(ar)):not(:lang(ur)):not(:lang(ps)):not(:lang(ckb)):not(:lang(sd)):not(:lang(ug))
+) {
   font-family: var(--font-display);
 }
 
@@ -194,22 +196,28 @@ h3 {
   font-family: var(--font-sans);
 }
 
-:lang(fa) {
+:lang(fa),
+:lang(prs) {
   font-family: var(--font-fa);
 }
 
-:lang(ar) {
+:lang(ar),
+:lang(ur),
+:lang(ps),
+:lang(ckb),
+:lang(sd),
+:lang(ug) {
   font-family: var(--font-ar);
 }
 
 /*
  * Cursive RTL script protection.
- * Non-zero letter-spacing disconnects joined Persian and Arabic glyphs.
- * Force zero tracking across `fa`/`ar` trees while preserving explicit
+ * Non-zero letter-spacing disconnects joined Persian and Arabic-script glyphs.
+ * Force zero tracking across Arabic-script trees while preserving explicit
  * Latin islands (`[dir='ltr']`, `:lang(en)`).
  */
-:where(:lang(fa), :lang(ar)),
-:where(:lang(fa), :lang(ar)) :not([dir='ltr']):not(:lang(en)) {
+:where(:lang(fa), :lang(prs), :lang(ar), :lang(ur), :lang(ps), :lang(ckb), :lang(sd), :lang(ug)),
+:where(:lang(fa), :lang(prs), :lang(ar), :lang(ur), :lang(ps), :lang(ckb), :lang(sd), :lang(ug)) :not([dir='ltr']):not(:lang(en)) {
   letter-spacing: 0 !important;
 }
 

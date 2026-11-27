@@ -82,7 +82,7 @@ function compactType(raw) {
     .replace(/\s+/g, ' ')
     .replace(/readonly\s+/g, '')
     .replace(/\s*\|\s*/g, '|')
-    .replace(/ImageMetadata/g, 'Image')
+    .replace(/(?:ContentImage|ImageMetadata)/g, 'Image')
     .replace(/Locale\s*\|\s*string/g, 'Locale')
     .trim();
 }

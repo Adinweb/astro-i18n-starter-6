@@ -5,8 +5,7 @@
  * `<AnnouncementPill>`, `<HeroHeadline>`, `<Button>`, `<IconBox>`, `<Card>`,
  * and `<HeroParallaxLayer>`.
  */
-import { Image } from 'astro:assets';
-import type { ImageMetadata } from 'astro';
+import ResponsiveImage from '@/components/ui/ResponsiveImage.astro';
 import AnnouncementPill from '@/components/ui/AnnouncementPill.astro';
 import AvatarGroup, { type AvatarItem } from '@/components/ui/AvatarGroup.astro';
 import BackdropLayer, { type BackdropVariant } from '@/components/ui/BackdropLayer.astro';
@@ -26,6 +25,7 @@ import IconBox from '@/components/ui/IconBox.astro';
 import TopBanner from '@/components/ui/TopBanner.astro';
 import type { Locale } from '@/i18n/locales';
 import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import type { ContentImage } from '@/libs/content/media';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale } from '@/libs/ui/locale';
 import type { HeroAnnouncement, HeroCtaAction, HeroTopBanner } from '@/libs/ui/types';
@@ -50,7 +50,7 @@ interface Props {
   locale?: Locale | string;
   surface?: 'default' | 'hero' | 'surface' | 'subtle';
   backdrop?: BackdropVariant;
-  parallaxImage?: ImageMetadata | null;
+  parallaxImage?: ContentImage | null;
   parallaxAlt?: string;
   parallaxSpeed?: HeroParallaxSpeed;
   parallaxOverlay?: HeroParallaxOverlay;
@@ -79,7 +79,7 @@ interface Props {
   subscribeSubmitLabel?: string;
   featuresRow?: readonly HeroSplitFeature[] | null;
   trustNote?: string | null;
-  image?: ImageMetadata | null;
+  image?: ContentImage | null;
   imageAlt?: string;
   mediaStatsOverlay?: readonly HeroSplitMediaStat[] | null;
   flipColumns?: boolean;
@@ -520,15 +520,15 @@ const subErrNetworkMsg = m.newsletter_error_network({}, { locale: activeLocale }
                           : 'border-border bg-surface',
                     ]}
                   >
-                    <Image
+                    <ResponsiveImage
                       src={resolvedImage}
                       alt={imageAlt || resolvedTitle}
                       widths={[640, 960, 1280]}
                       sizes="(min-width: 1024px) 46vw, 94vw"
-                      class:list={[
+                      class={[
                         'w-full object-cover',
                         edgeBleedFrame ? 'aspect-[16/10] rounded-xl lg:rounded-e-none lg:rounded-s-2xl' : 'aspect-[16/10]',
-                      ]}
+                      ].join(' ')}
                       loading={compact ? 'lazy' : 'eager'}
                       fetchpriority={compact ? undefined : 'high'}
                     />

@@ -25,19 +25,16 @@
  * when the background is actually the same — a different artwork always
  * replaces it.
  */
-import { Image } from 'astro:assets';
-import type { ImageMetadata } from 'astro';
+import ResponsiveImage from '@/components/ui/ResponsiveImage.astro';
 import { DEFAULT_HERO_IMAGE, HERO_TITLE_ID } from '@/libs/config/app';
+import { isImageMetadata, type ContentImage } from '@/libs/content/media';
 
 interface Props {
   /**
    * Image of the page. Used as the background of the band. Defaults to the
    * shared photograph when the page has no image of its own.
-   *
-   * Content entries hand over the metadata Astro resolved for them, so the
-   * band is served from the optimized renditions of the very same file.
    */
-  image?: ImageMetadata;
+  image?: ContentImage;
   headingId?: string | null;
   compact?: boolean;
   /** Non-asset identifier used for `transition:persist` without referencing `background.src`. */
@@ -45,25 +42,16 @@ interface Props {
 }
 
 const { image, headingId = HERO_TITLE_ID, compact = false, persistKey } = Astro.props;
-const background = image ?? DEFAULT_HERO_IMAGE;
+const background: ContentImage = image ?? DEFAULT_HERO_IMAGE;
 const resolvedPersistKey =
   persistKey ??
-  (image ? `${background.width}x${background.height}:${background.format}` : 'default');
+  (image
+    ? isImageMetadata(background)
+      ? `${background.width}x${background.height}:${background.format}`
+      : background
+    : 'default');
 const backdropKey = compact ? undefined : `hero-backdrop:${resolvedPersistKey}`;
-
-/**
- * Renditions offered to the browser. The band is full-bleed, so `sizes` is
- * `100vw`.
- *
- * The list never asks for more than the source has, and it always contains
- * the source width itself — so the browser can serve the picture at its
- * native size instead of scaling a smaller rendition up.
- */
-const widths = [
-  ...new Set([480, 768, 1024, 1280, 1920, 2560, background.width]),
-]
-  .filter((width) => width <= background.width)
-  .sort((a, b) => a - b);
+const widths = [480, 768, 1024, 1280, 1920, 2560];
 ---
 
 <section
@@ -76,7 +64,7 @@ const widths = [
 >
   <!-- The page image *is* the background of this section. -->
   <div class="absolute inset-0" data-hero-background aria-hidden="true">
-    <Image
+    <ResponsiveImage
       src={background}
       alt=""
       widths={widths}
@@ -87,7 +75,7 @@ const widths = [
       loading={compact ? 'lazy' : 'eager'}
       decoding="async"
       fetchpriority={compact ? undefined : 'high'}
-      transition:persist={backdropKey}
+      persist={backdropKey}
       class="absolute inset-0 h-full w-full scale-105 object-cover blur-md"
     />
     <!-- Tonal wash: ties the picture to the theme's dark base. -->

@@ -1,0 +1,76 @@
+---
+/**
+ * Shared responsive image renderer supporting both build-time Astro
+ * `ImageMetadata` assets and static/uploaded URLs (`/uploads/...`, `https://...`).
+ */
+import { Image } from 'astro:assets';
+import { computeWidths, isImageMetadata, type ContentImage } from '@/libs/content/media';
+
+interface Props {
+  src: ContentImage;
+  alt?: string;
+  widths?: readonly number[];
+  sizes?: string;
+  format?: 'webp' | 'avif' | 'png' | 'jpeg';
+  quality?: number;
+  layout?: 'constrained' | 'full-width' | 'fixed' | 'none';
+  loading?: 'eager' | 'lazy';
+  decoding?: 'async' | 'sync' | 'auto';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  persist?: string;
+  class?: string;
+  'data-gallery-img'?: boolean | string;
+}
+
+const {
+  src,
+  alt = '',
+  widths = [480, 768, 1280],
+  sizes,
+  format,
+  quality,
+  layout,
+  loading = 'lazy',
+  decoding = 'async',
+  fetchpriority,
+  persist,
+  class: className,
+  'data-gallery-img': dataGalleryImg,
+} = Astro.props;
+
+const isMeta = isImageMetadata(src);
+const isSvgMeta = isMeta && src.format === 'svg';
+const resolvedWidths = isMeta && !isSvgMeta ? computeWidths(src, widths) : undefined;
+const galleryAttr = dataGalleryImg !== undefined && dataGalleryImg !== false ? { 'data-gallery-img': '' } : {};
+---
+
+{
+  isMeta ? (
+    <Image
+      src={src}
+      alt={alt}
+      loading={loading}
+      decoding={decoding}
+      class={className}
+      {...(resolvedWidths ? { widths: resolvedWidths } : {})}
+      {...(sizes ? { sizes } : {})}
+      {...(format && !isSvgMeta ? { format } : {})}
+      {...(quality !== undefined && !isSvgMeta ? { quality } : {})}
+      {...(layout ? { layout } : {})}
+      {...(fetchpriority ? { fetchpriority } : {})}
+      {...(persist ? { 'transition:persist': persist } : {})}
+      {...galleryAttr}
+    />
+  ) : (
+    <img
+      src={src}
+      alt={alt}
+      loading={loading}
+      decoding={decoding}
+      class={className}
+      {...(fetchpriority ? { fetchpriority } : {})}
+      {...(persist ? { 'transition:persist': persist } : {})}
+      {...galleryAttr}
+    />
+  )
+}

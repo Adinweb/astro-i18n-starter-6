@@ -45,6 +45,19 @@ const taxonomyKey = z
     'Use lowercase letters, digits, and single hyphens (for example "design-systems").'
   );
 
+export const externalOrPublicImageSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .refine(
+    (value) => (value.startsWith('/') && !value.startsWith('//')) || /^https?:\/\//i.test(value),
+    'Use a local asset path, a root-relative public path (e.g. "/uploads/..."), or an http(s) URL.'
+  );
+
+function flexibleImageSchema(image: ImageFunction) {
+  return z.union([image(), externalOrPublicImageSchema]);
+}
+
 /**
  * Base schema shared by every content collection.
  */
@@ -53,7 +66,7 @@ export const baseCollectionSchema = ({ image }: { image: ImageFunction }) =>
     title: z.string().min(1),
     slug: slugSchema,
     description: z.string().optional(),
-    image: image().optional(),
+    image: flexibleImageSchema(image).optional(),
     author: z.string().min(1).optional(),
     publishedAt: z.coerce.date().optional(),
     updatedAt: z.coerce.date().optional(),
@@ -91,7 +104,7 @@ function buildSingleFieldZod(field: CollectionFieldConfig, image: ImageFunction)
       break;
     }
     case 'image': {
-      schema = image();
+      schema = flexibleImageSchema(image);
       break;
     }
     case 'enum': {

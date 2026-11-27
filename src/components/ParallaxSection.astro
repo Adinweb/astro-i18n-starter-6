@@ -5,12 +5,12 @@
  * contained cards (`variant="card"` or `contained`), RTL-safe scrims, reduced
  * motion / print flattening, and Paraglide-localized defaults.
  */
-import { Image } from 'astro:assets';
-import type { ImageMetadata } from 'astro';
+import ResponsiveImage from '@/components/ui/ResponsiveImage.astro';
 import PageSection from '@/components/PageSection.astro';
 import Button from '@/components/ui/Button.astro';
 import type { Locale } from '@/i18n/locales';
 import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import type { ContentImage } from '@/libs/content/media';
 import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import { resolveComponentLocale } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
@@ -25,7 +25,7 @@ export interface ParallaxAction {
 interface Props {
   id?: string;
   locale?: Locale | string;
-  image?: ImageMetadata;
+  image?: ContentImage;
   imageAlt?: string;
   eyebrow?: string | null;
   title?: string;
@@ -111,16 +111,12 @@ const resolvedSecondaryCta =
           }
         : undefined));
 
-const background = image ?? DEFAULT_HERO_IMAGE;
+const background: ContentImage = image ?? DEFAULT_HERO_IMAGE;
 const isCard = contained || variant === 'card';
 const isCentered = align === 'center';
 const hasSlot = Astro.slots.has('default');
 
-const widths = [
-  ...new Set([480, 768, 1024, 1280, 1920, 2560, background.width]),
-]
-  .filter((width) => width <= background.width)
-  .sort((a, b) => a - b);
+const widths = [480, 768, 1024, 1280, 1920, 2560];
 
 const HEIGHT_CLASSES = {
   sm: isCard ? 'min-h-[16rem] py-10 sm:min-h-[19rem] sm:py-12' : 'min-h-[18rem] py-12 sm:min-h-[21rem] sm:py-16',
@@ -151,7 +147,7 @@ const HEIGHT_CLASSES = {
       class="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit] [transform:translateZ(0)] print:hidden"
     >
       <div data-parallax-media>
-        <Image
+        <ResponsiveImage
           src={background}
           alt={imageAlt}
           widths={widths}
@@ -160,10 +156,10 @@ const HEIGHT_CLASSES = {
           quality={75}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
-          class:list={[
+          class={[
             'h-full w-full object-cover',
             blur && 'blur-sm',
-          ]}
+          ].filter(Boolean).join(' ')}
         />
       </div>
 

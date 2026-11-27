@@ -19,13 +19,22 @@ const args = process.argv.slice(2);
 const langCode = args.find((a) => !a.startsWith('--'));
 let langName = '';
 let dir = 'ltr';
+let dirExplicit = false;
 let contentOption = null;
 let fromLocale = '';
 let isDraft = true;
 
 for (const arg of args) {
   if (arg.startsWith('--name=')) langName = arg.slice(7);
-  else if (arg.startsWith('--dir=')) dir = arg.slice(6);
+  else if (arg.startsWith('--dir=')) {
+    const rawDir = arg.slice(6).trim().toLowerCase();
+    if (rawDir !== 'ltr' && rawDir !== 'rtl') {
+      console.error(`Invalid --dir="${rawDir}". Expected "ltr" or "rtl".`);
+      process.exit(1);
+    }
+    dir = rawDir;
+    dirExplicit = true;
+  }
   else if (arg.startsWith('--from=')) fromLocale = arg.slice(7);
   else if (arg.startsWith('--source=')) fromLocale = arg.slice(9);
   else if (arg.startsWith('--source-lang=')) fromLocale = arg.slice(14);
@@ -70,13 +79,26 @@ const defaultNames = {
   pt: 'Português',
   tr: 'Türkçe',
   ar: 'العربية',
+  fa: 'فارسی',
+  prs: 'دری',
+  ur: 'اردو',
+  ps: 'پښتو',
+  ckb: 'کوردی',
+  he: 'עברית',
   ru: 'Русский',
+  uk: 'Українська',
+  pl: 'Polski',
+  hi: 'हिन्दी',
   ja: '日本語',
+  ko: '한국어',
   zh: '中文',
 };
 
-langName = langName || defaultNames[langCode] || langCode.toUpperCase();
-if (['ar', 'fa', 'he', 'ur'].includes(langCode)) {
+const baseLang = langCode.split('-')[0].toLowerCase();
+const RTL_BASE_LANGS = new Set(['ar', 'fa', 'prs', 'he', 'iw', 'ur', 'ps', 'ckb', 'sd', 'ug', 'yi', 'dv']);
+
+langName = langName || defaultNames[langCode] || defaultNames[baseLang] || langCode.toUpperCase();
+if (!dirExplicit && RTL_BASE_LANGS.has(baseLang)) {
   dir = 'rtl';
 }
 
@@ -139,12 +161,13 @@ async function resolveContentOptions() {
 const { shouldCreate: shouldPopulateContent, source: sourceLocale } = await resolveContentOptions();
 
 // 1. Update client/locales.json
-const fontVar =
-  langCode === 'ar'
+const PERSIAN_FONT_LANGS = new Set(['fa', 'prs']);
+const ARABIC_FONT_LANGS = new Set(['ar', 'ur', 'ps', 'ckb', 'sd', 'ug']);
+const fontVar = PERSIAN_FONT_LANGS.has(baseLang)
+  ? 'var(--font-fa)'
+  : ARABIC_FONT_LANGS.has(baseLang)
     ? 'var(--font-ar)'
-    : dir === 'rtl'
-      ? 'var(--font-fa)'
-      : 'var(--font-sans)';
+    : 'var(--font-sans)';
 
 let localesChanged = false;
 if (!localeConfig.locales.includes(langCode)) {

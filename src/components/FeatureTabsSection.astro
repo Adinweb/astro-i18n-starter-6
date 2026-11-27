@@ -6,8 +6,7 @@
  * preview or semantic artwork frame, idempotent View Transitions binding, and
  * full Paraglide defaults.
  */
-import { Image } from 'astro:assets';
-import type { ImageMetadata } from 'astro';
+import ResponsiveImage from '@/components/ui/ResponsiveImage.astro';
 import PageSection from '@/components/PageSection.astro';
 import Button from '@/components/ui/Button.astro';
 import Icon from '@/components/ui/Icon.astro';
@@ -15,6 +14,7 @@ import IconBox from '@/components/ui/IconBox.astro';
 import SectionHeader from '@/components/ui/SectionHeader.astro';
 import type { Locale } from '@/i18n/locales';
 import { DEFAULT_HERO_IMAGE } from '@/libs/config/app';
+import type { ContentImage } from '@/libs/content/media';
 import { resolveComponentLocale, resolveOptionalHeader } from '@/libs/ui/locale';
 import * as m from '@/paraglide/messages';
 
@@ -33,7 +33,7 @@ export interface FeatureTabItem {
   description: string;
   highlights?: readonly string[];
   cta?: FeatureTabCta;
-  image?: ImageMetadata | null;
+  image?: ContentImage | null;
   imageAlt?: string;
 }
 
@@ -255,7 +255,7 @@ const panelSurface = !contained && surface === 'surface' ? 'bg-bg' : 'bg-surface
                 {showMedia && tab.image && (
                   <div class="lg:col-span-6">
                     <div class="overflow-hidden rounded-2xl border border-border bg-bg shadow-sm">
-                      <Image
+                      <ResponsiveImage
                         src={tab.image}
                         alt={tab.imageAlt ?? tab.title}
                         widths={[560, 880]}

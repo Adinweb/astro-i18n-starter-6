@@ -5,6 +5,8 @@ import {
   escapeXml,
   getBrandedOgHref,
   loadDeterministicOgFonts,
+  measureVisualWidth,
+  needsSystemFontFallback,
   renderBrandedOgPng,
   renderBrandedOgSvg,
   wrapTextLines,
@@ -181,6 +183,23 @@ describe('src/libs/content/og-card.ts & faq.ts', () => {
     expect(schema['@type']).toBe('FAQPage');
     expect(Array.isArray(schema.mainEntity)).toBe(true);
     expect((schema.mainEntity as Array<{ name: string }>)[0].name).toBe('How fast is the build?');
+  });
+
+  it('wraps CJK headlines using visual width so unbroken strings fit inside maxChars', () => {
+    const cjkTitle = '日本語のテストタイトルがとても長い場合の折り返し処理を確認する';
+    const lines = wrapTextLines(cjkTitle, 26, 3);
+    expect(lines.length).toBeGreaterThanOrEqual(2);
+    expect(lines.length).toBeLessThanOrEqual(3);
+    expect(lines.every((line) => measureVisualWidth(line) <= 27)).toBe(true);
+  });
+
+  it('triggers system font fallback only when text contains glyphs outside bundled Latin/Arabic fonts', () => {
+    expect(needsSystemFontFallback('Multilingual Astro Starter — Fast & Clean')).toBe(false);
+    expect(needsSystemFontFallback('معماری سریع برای وب‌سایت‌های دو‌زبانه، «تست»')).toBe(false);
+    expect(needsSystemFontFallback('日本語タイトル')).toBe(true);
+    expect(needsSystemFontFallback('Привет мир')).toBe(true);
+    expect(needsSystemFontFallback('שלום עולם')).toBe(true);
+    expect(needsSystemFontFallback('Fast 🚀 Launch')).toBe(true);
   });
 });
 

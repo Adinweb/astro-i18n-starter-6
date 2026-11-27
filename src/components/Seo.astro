@@ -1,5 +1,5 @@
 ---
-import type { ImageMetadata } from 'astro';
+import type { ContentImage } from '@/libs/content/media';
 import { absoluteUrl, siteConfig } from '@/libs/config/app';
 import { getRssFeedHref, isBlogFeedEnabled } from '@/libs/content/service';
 import { formatDocumentTitle } from '@/libs/content/seo';
@@ -14,8 +14,8 @@ interface Props {
   url: string;
   alternates: Partial<Record<Locale, string>>;
   siteName?: string;
-  /** Artwork of the entry, already resolved by Astro's image pipeline. */
-  image?: ImageMetadata;
+  /** Artwork of the entry (Astro ImageMetadata, public upload path, or external URL). */
+  image?: ContentImage;
   /** Metadata used to resolve the route's branded OpenGraph PNG when enabled. */
   ogContext?: SocialCardContext;
   type?: 'website' | 'article';
@@ -93,7 +93,7 @@ const fullTitle = formatDocumentTitle(title, siteName);
 {/* Hreflang: one entry per available reciprocal translation + x-default when default locale exists. */}
 {
   alternateHrefs.map(([loc, href]) => (
-    <link rel="alternate" hreflang={loc} href={href} />
+    <link rel="alternate" hreflang={getLocaleMeta(loc as Locale)?.htmlLang ?? loc} href={href} />
   ))
 }
 {xDefaultUrl && <link rel="alternate" hreflang="x-default" href={xDefaultUrl} />}

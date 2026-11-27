@@ -347,7 +347,8 @@ if (rootHtml) {
     `Hreflang count is ${expected} (found ${langs.length}: ${langs.join(', ')})`
   );
   for (const locale of LOCALES) {
-    assert(langs.includes(locale), `Hreflang includes "${locale}"`);
+    const expectedLang = htmlLangFor(locale);
+    assert(langs.includes(expectedLang), `Hreflang includes "${expectedLang}"`);
   }
   assert(langs.includes('x-default'), 'Hreflang includes "x-default"');
 }
@@ -363,9 +364,10 @@ if (sitemap) {
     'Sitemap emits x-default alternates'
   );
   for (const locale of LOCALES) {
+    const expectedLang = htmlLangFor(locale);
     assert(
-      sitemap.includes(`hreflang="${locale}"`),
-      `Sitemap includes hreflang="${locale}"`
+      sitemap.includes(`hreflang="${expectedLang}"`),
+      `Sitemap includes hreflang="${expectedLang}"`
     );
   }
   if (totalPublishedPosts > 0) {
@@ -444,7 +446,7 @@ if (blogFeed) {
         `dist/rss/${locale}.xml declares xml:lang="${htmlLangFor(locale)}"`
       );
       assert(
-        !localeRss.includes(`hreflang="${DEFAULT_LOCALE}"`),
+        !localeRss.includes(`hreflang="${htmlLangFor(DEFAULT_LOCALE)}"`),
         `dist/rss/${locale}.xml contains only "${locale}" entries`
       );
     }
@@ -966,7 +968,7 @@ if (blogPaginated && postsPerPage > 0) {
         if (
           !targetHtml ||
           !selfCanonical ||
-          !targetHtml.includes(`hreflang="${locale}" href="${selfCanonical}"`)
+          !targetHtml.includes(`hreflang="${htmlLangFor(locale)}" href="${selfCanonical}"`)
         ) {
           reciprocalOk = false;
           break;

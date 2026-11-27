@@ -75,8 +75,80 @@ export function getBrandedOgHref(routeKey: string): string {
   return `/og/${cleanKey}.png`;
 }
 
+function isWideCodePoint(code: number): boolean {
+  return (
+    (code >= 0x1100 && code <= 0x11ff) ||
+    (code >= 0x2e80 && code <= 0x9fff) ||
+    (code >= 0xac00 && code <= 0xd7af) ||
+    (code >= 0xf900 && code <= 0xfaff) ||
+    (code >= 0xfe30 && code <= 0xfe6f) ||
+    (code >= 0xff00 && code <= 0xffef) ||
+    code >= 0x1f300
+  );
+}
+
+function glyphVisualWidth(ch: string): number {
+  const code = ch.codePointAt(0) ?? 0;
+  return isWideCodePoint(code) ? 1.9 : 1;
+}
+
+export function measureVisualWidth(value: string): number {
+  let width = 0;
+  for (const ch of value) {
+    width += glyphVisualWidth(ch);
+  }
+  return width;
+}
+
+function takeWithinVisualWidth(value: string, budget: number): { head: string; tail: string } {
+  let width = 0;
+  let head = '';
+  const chars = [...value];
+  for (let i = 0; i < chars.length; i += 1) {
+    const ch = chars[i];
+    const w = glyphVisualWidth(ch);
+    if (width + w > budget && head.length > 0) {
+      return { head, tail: chars.slice(i).join('') };
+    }
+    head += ch;
+    width += w;
+  }
+  return { head, tail: '' };
+}
+
+function isBundledScriptCodePoint(code: number): boolean {
+  return (
+    code <= 0x024f ||
+    (code >= 0x0600 && code <= 0x06ff) ||
+    (code >= 0x0750 && code <= 0x077f) ||
+    (code >= 0x2000 && code <= 0x206f) ||
+    (code >= 0xfb50 && code <= 0xfdff) ||
+    (code >= 0xfe70 && code <= 0xfeff)
+  );
+}
+
 /**
- * Word-wraps copy cleanly for fixed-width SVG `<tspan>` blocks.
+ * Bundled Vazirmatn / Latin `@fontsource-variable` buffers cover Latin and
+ * Arabic/Persian glyphs deterministically. Any text outside those Unicode
+ * blocks (CJK, Cyrillic, Hebrew, Devanagari, Emoji, etc.) enables system font
+ * fallback in `resvg` so cards never render tofu boxes.
+ */
+export function needsSystemFontFallback(...texts: Array<string | undefined>): boolean {
+  for (const text of texts) {
+    if (!text) continue;
+    for (const ch of text) {
+      const code = ch.codePointAt(0);
+      if (code !== undefined && !isBundledScriptCodePoint(code)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Word-wraps copy cleanly for fixed-width SVG `<tspan>` blocks while
+ * accounting for wide CJK/fullwidth glyphs and long unbroken runs.
  */
 export function wrapTextLines(text: string, maxChars: number, maxLines: number): string[] {
   const normalized = text.replace(/\s+/g, ' ').trim();
@@ -88,13 +160,14 @@ export function wrapTextLines(text: string, maxChars: number, maxLines: number):
 
   const pushTruncated = (value: string) => {
     const clean = value.trimEnd();
-    if (clean.length <= maxChars) return `${clean}…`;
-    return `${clean.slice(0, Math.max(1, maxChars - 1)).trimEnd()}…`;
+    if (measureVisualWidth(clean) <= maxChars) return `${clean}…`;
+    const { head } = takeWithinVisualWidth(clean, Math.max(1, maxChars - 1));
+    return `${head.trimEnd()}…`;
   };
 
   for (let i = 0; i < words.length; i += 1) {
     let word = words[i];
-    if (word.length > maxChars) {
+    if (measureVisualWidth(word) > maxChars) {
       if (current) {
         lines.push(current);
         current = '';
@@ -103,18 +176,20 @@ export function wrapTextLines(text: string, maxChars: number, maxLines: number):
           return lines;
         }
       }
-      while (word.length > maxChars && lines.length < maxLines) {
+      while (measureVisualWidth(word) > maxChars && lines.length < maxLines) {
         if (lines.length === maxLines - 1) {
-          lines.push(`${word.slice(0, Math.max(1, maxChars - 1))}…`);
+          const { head } = takeWithinVisualWidth(word, Math.max(1, maxChars - 1));
+          lines.push(`${head.trimEnd()}…`);
           return lines;
         }
-        lines.push(word.slice(0, maxChars));
-        word = word.slice(maxChars);
+        const { head, tail } = takeWithinVisualWidth(word, maxChars);
+        lines.push(head);
+        word = tail;
       }
     }
 
     const candidate = current ? `${current} ${word}` : word;
-    if (candidate.length <= maxChars) {
+    if (measureVisualWidth(candidate) <= maxChars) {
       current = candidate;
     } else {
       lines.push(current);
@@ -445,7 +520,17 @@ export async function renderBrandedOgPng(
   const typography = resolveOgTypography(brandInput);
   const svg = renderBrandedOgSvg(context, { ...options, logoDataUri });
   const fontBuffers = await loadDeterministicOgFonts(brandInput);
-  const isRtl = getLocaleMeta(context.locale).dir === 'rtl';
+  const meta = getLocaleMeta(context.locale);
+  const isRtl = meta.dir === 'rtl';
+  const useSystemFonts =
+    fontBuffers.length === 0 ||
+    needsSystemFontFallback(
+      context.title,
+      context.subtitle,
+      context.kicker,
+      options.siteName ?? siteConfig.name,
+      meta.name
+    );
 
   const useCache = options.cache !== false;
   let cacheFile: string | null = null;
@@ -456,6 +541,8 @@ export async function renderBrandedOgPng(
       .update(brandInput.fontPreset ?? 'system')
       .update('|')
       .update(brandInput.rtlFontPreset ?? 'vazirmatn')
+      .update('|')
+      .update(String(useSystemFonts))
       .update('|')
       .update(fontBuffers.map((buf) => buf.byteLength).join(','))
       .digest('hex');
@@ -471,7 +558,7 @@ export async function renderBrandedOgPng(
 
   const fontOptions: NonNullable<ResvgRenderOptions['font']> & { fontBuffers?: Buffer[] } = {
     fontBuffers,
-    loadSystemFonts: fontBuffers.length === 0,
+    loadSystemFonts: useSystemFonts,
     defaultFontFamily: isRtl ? typography.rtlFamily : typography.latinFamily,
     sansSerifFamily: isRtl ? typography.rtlFamily : typography.latinFamily,
   };

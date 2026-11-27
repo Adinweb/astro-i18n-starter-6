@@ -7,6 +7,7 @@ import {
   serializeCollectionEntries,
   sortCollectionEntries,
 } from '@/libs/content/catalog-utils';
+import { resolveCatalogCover } from '@/libs/content/media';
 import { getContentType, type ContentTypeKey } from '@/libs/content/types';
 
 export { formatEntryFieldForDisplay, sortCollectionEntries };
@@ -33,27 +34,6 @@ export async function buildSerializedCollectionCatalog(
     allEntries,
     typeConfig,
     targetLocale,
-    async (rawImage) => {
-      const image = rawImage as
-        | { width: number; height: number; src: string; format: 'png' | 'jpg' | 'webp' }
-        | undefined;
-      if (!image) return { src: null, width: null, height: null };
-
-      const targetWidth = Math.min(800, image.width);
-      const optimized = await getImage({
-        src: image as Parameters<typeof getImage>[0]['src'],
-        width: targetWidth,
-        format: 'webp',
-        quality: 75,
-      });
-
-      return {
-        src: optimized.src,
-        width: Number(optimized.attributes.width) || targetWidth,
-        height:
-          Number(optimized.attributes.height) ||
-          Math.round((targetWidth * image.height) / image.width),
-      };
-    }
+    (rawImage) => resolveCatalogCover(rawImage, getImage)
   );
 }

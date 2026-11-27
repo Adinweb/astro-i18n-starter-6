@@ -4,7 +4,7 @@
  * `<BackdropLayer>`, `<HeroPreviewNav>`, `<AvatarGroup>`, `<UiBadge>`,
  * `<HeroHeadline>`, `<CodeBlock>`, `<Button>`, `<Icon>`, and `<PartnerStrip>`.
  */
-import type { ImageMetadata } from 'astro';
+import type { ContentImage } from '@/libs/content/media';
 import AvatarGroup from '@/components/ui/AvatarGroup.astro';
 import BackdropLayer, { type BackdropVariant } from '@/components/ui/BackdropLayer.astro';
 import Button from '@/components/ui/Button.astro';
@@ -34,7 +34,7 @@ interface Props {
   locale?: Locale | string;
   surface?: 'default' | 'hero' | 'surface' | 'subtle';
   backdrop?: BackdropVariant;
-  parallaxImage?: ImageMetadata | null;
+  parallaxImage?: ContentImage | null;
   parallaxAlt?: string;
   parallaxSpeed?: HeroParallaxSpeed;
   parallaxOverlay?: HeroParallaxOverlay;
