@@ -7,6 +7,9 @@ import {
   getLegalNavigation,
   getNavigationSlots,
   getNavigation,
+  getMenuById,
+  getAllMenus,
+  hasActiveNavDescendant,
   PAGE_ITEMS,
   BLOG_ITEM,
   getContentTypeIcon,
@@ -401,5 +404,189 @@ describe('src/libs/config/navigation.ts', () => {
       });
     });
   });
+
+  describe('Named tree menus (menus + slots + displayMode)', () => {
+    it('resolves multi-level nested menus by ID with dropdown/list overrides and active state bubbling', async () => {
+      vi.mocked(service.getPageUrl).mockImplementation(async (group: string, locale: string) => {
+        if (group === 'unpublished') return null;
+        if (group === 'home') return locale === DEFAULT_LOCALE ? '/' : `/${locale}/`;
+        return locale === DEFAULT_LOCALE ? `/${group}/` : `/${locale}/${group}/`;
+      });
+
+      const uiNavigation = {
+        menus: [
+          {
+            id: 'main-header',
+            titles: { en: 'Main Header', fa: 'منوی هدر' },
+            displayMode: 'dropdown' as const,
+            items: [
+              { group: 'home', icon: 'home' },
+              {
+                id: 'solutions',
+                label: 'Solutions',
+                labels: { en: 'Solutions', fa: 'راهکارها' },
+                childrenDisplay: 'list' as const,
+                children: [
+                  { group: 'unpublished', label: 'Hidden Draft' },
+                  {
+                    id: 'enterprise',
+                    label: 'Enterprise',
+                    childrenDisplay: 'dropdown' as const,
+                    children: [
+                      { group: 'features', label: 'Platform Features' },
+                      { href: 'https://ext.example.com', external: true, label: 'External Portal' },
+                    ],
+                  },
+                ],
+              },
+              { contentType: 'blog' },
+              { contentType: 'disabled-type', label: 'Disabled' },
+            ],
+          },
+          {
+            id: 'footer-company',
+            titles: { en: 'Company Menu', fa: 'شرکت' },
+            displayMode: 'list' as const,
+            items: [
+              { group: 'about', labels: { en: 'About Us', fa: 'درباره ما' } },
+              { href: '/contact/#support', label: 'Support' },
+            ],
+          },
+        ],
+        slots: {
+          header: 'main-header',
+          footer: ['footer-company'],
+          footerMode: 'replace' as const,
+          legal: 'footer-company',
+        },
+      };
+
+      const resolvedEn = await getMenuById('main-header', 'en', '/features/', { uiNavigation });
+      expect(resolvedEn?.id).toBe('main-header');
+      expect(resolvedEn?.title).toBe('Main Header');
+      expect(resolvedEn?.displayMode).toBe('dropdown');
+
+      // Unpublished page and disabled contentType are filtered out
+      expect(resolvedEn?.items.map((i) => i.key)).toEqual(['home', 'solutions', 'blog']);
+
+      const solutions = resolvedEn?.items.find((i) => i.key === 'solutions');
+      expect(solutions?.displayMode).toBe('list');
+      expect(solutions?.active).toBe(true);
+      expect(hasActiveNavDescendant(solutions!)).toBe(true);
+      expect(solutions?.children?.map((c) => c.key)).toEqual(['enterprise']);
+
+      const enterprise = solutions?.children?.[0];
+      expect(enterprise?.displayMode).toBe('dropdown');
+      expect(enterprise?.active).toBe(true);
+      expect(enterprise?.children).toHaveLength(2);
+      expect(enterprise?.children?.[1]).toMatchObject({
+        href: 'https://ext.example.com',
+        external: true,
+        active: false,
+      });
+
+      const resolvedFa = await getMenuById('main-header', 'fa', '/fa/features/', { uiNavigation });
+      expect(resolvedFa?.title).toBe('منوی هدر');
+      expect(resolvedFa?.items.find((i) => i.key === 'solutions')?.label).toBe('راهکارها');
+
+      const allMenus = await getAllMenus('en', '/', { uiNavigation });
+      expect(allMenus.map((mItem) => mItem.id)).toEqual(['main-header', 'footer-company']);
+      expect(await getMenuById('non-existent', 'en', '/', { uiNavigation })).toBeNull();
+
+      // Slots binding: header -> main-header, drawer inherits header when unset, footer replaces defaults
+      const slots = await getNavigationSlots('en', '/features/', {
+        ...sampleNavOptions,
+        uiNavigation,
+      });
+      expect(slots.header.map((i) => i.key)).toEqual(['home', 'solutions', 'blog']);
+      expect(slots.drawer.map((i) => i.key)).toEqual(['home', 'solutions', 'blog']);
+      expect(slots.footer).toHaveLength(1);
+      expect(slots.footer[0]).toMatchObject({
+        key: 'footer-company',
+        title: 'Company Menu',
+        displayMode: 'list',
+      });
+      expect(slots.legal.map((i) => i.key)).toEqual(['about', '/contact/#support']);
+
+      // Append mode keeps default footer columns + appends assigned menu column
+      const appendedFooter = await getFooterNavigation('en', '/', {
+        ...sampleNavOptions,
+        uiNavigation: {
+          ...uiNavigation,
+          slots: { footer: ['footer-company'], footerMode: 'append' },
+        },
+      });
+      expect(appendedFooter.map((c) => c.key)).toContain('product');
+      expect(appendedFooter.map((c) => c.key)).toContain('footer-company');
+    });
+
+    it('renders the same menu ID as dropdown in Header and list in Footer/Drawer via placement overrides', async () => {
+      vi.mocked(service.getPageUrl).mockImplementation(async (group: string, locale: string) =>
+        locale === DEFAULT_LOCALE ? `/${group}/` : `/${locale}/${group}/`
+      );
+
+      const uiNavigation = {
+        menus: [
+          {
+            id: 'shared-nav',
+            title: 'Shared Navigation',
+            displayMode: 'dropdown' as const,
+            items: [
+              {
+                id: 'products',
+                label: 'Products',
+                childrenDisplay: 'dropdown' as const,
+                children: [
+                  {
+                    id: 'cloud',
+                    label: 'Cloud',
+                    childrenDisplay: 'dropdown' as const,
+                    children: [{ group: 'features', label: 'Features' }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        slots: {
+          header: 'shared-nav',
+          headerDisplayMode: 'dropdown' as const,
+          drawer: 'shared-nav',
+          drawerDisplayMode: 'list' as const,
+          footer: [{ id: 'shared-nav', displayMode: 'list' as const }],
+          footerMode: 'replace' as const,
+        },
+      };
+
+      const slots = await getNavigationSlots('en', '/features/', {
+        ...sampleNavOptions,
+        uiNavigation,
+      });
+
+      // Header keeps dropdown across all levels
+      expect(slots.header[0]?.displayMode).toBe('dropdown');
+      expect(slots.header[0]?.children?.[0]?.displayMode).toBe('dropdown');
+
+      // Drawer and Footer render the exact same menu as expanded list across all levels
+      expect(slots.drawer[0]?.displayMode).toBe('list');
+      expect(slots.drawer[0]?.children?.[0]?.displayMode).toBe('list');
+
+      expect(slots.footer[0]?.key).toBe('shared-nav');
+      expect(slots.footer[0]?.displayMode).toBe('list');
+      expect(slots.footer[0]?.items[0]?.displayMode).toBe('list');
+      expect(slots.footer[0]?.items[0]?.children?.[0]?.displayMode).toBe('list');
+
+      // Direct NavMenu placement override via getMenuById
+      const listMenu = await getMenuById('shared-nav', 'en', '/features/', {
+        uiNavigation,
+        menuDisplayMode: 'list',
+      });
+      expect(listMenu?.displayMode).toBe('list');
+      expect(listMenu?.items[0]?.displayMode).toBe('list');
+      expect(listMenu?.items[0]?.children?.[0]?.displayMode).toBe('list');
+    });
+  });
 });
+
+
 

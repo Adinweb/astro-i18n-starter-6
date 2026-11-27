@@ -122,6 +122,10 @@ const VALID_BUSINESS_TYPES = new Set([
   'Store',
 ]);
 const VALID_API_PROVIDERS = new Set(['custom', 'web3forms', 'formspree', 'basin', 'webhook']);
+const VALID_MENU_DISPLAY_MODES = new Set(['dropdown', 'list']);
+const VALID_ITEM_CHILDREN_DISPLAY = new Set(['inherit', 'dropdown', 'list']);
+const VALID_FOOTER_SLOT_MODES = new Set(['append', 'replace']);
+const SAFE_MENU_ID_RE = /^[a-zA-Z0-9_-]+$/;
 const SAFE_HERO_VALUES = new Set(['none', 'minimal', 'default', true, false]);
 const SAFE_CONTAINER_VALUES = new Set(['canvas', 'contained', 'prose']);
 const ALLOWED_LOGO_MIMES = new Map([
@@ -813,6 +817,137 @@ function validateConfigObject(cfg, rootDir) {
           }
         });
       }
+      if (cfg.ui.navigation.menus !== undefined) {
+        if (!Array.isArray(cfg.ui.navigation.menus)) {
+          errors.push('ui.navigation.menus must be an array.');
+        } else {
+          const seenMenuIds = new Set();
+          const validateMenuItemsTree = (items, pathPrefix, depth = 0) => {
+            if (depth > 10) {
+              errors.push(`${pathPrefix}: maximum nesting depth (10) exceeded.`);
+              return;
+            }
+            if (!Array.isArray(items)) {
+              errors.push(`${pathPrefix} must be an array.`);
+              return;
+            }
+            items.forEach((item, idx) => {
+              const itemPath = `${pathPrefix}[${idx}]`;
+              if (!isPlainObject(item)) {
+                errors.push(`${itemPath} must be an object.`);
+                return;
+              }
+              const hasTarget = Boolean(
+                String(item.group ?? '').trim() ||
+                  String(item.contentType ?? '').trim() ||
+                  String(item.href ?? '').trim()
+              );
+              const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+              if (!hasTarget && !hasChildren) {
+                errors.push(
+                  `${itemPath} must specify "group", "contentType", "href", or at least one child item.`
+                );
+              }
+              if (item.href && isUnsafeProtocolHref(item.href)) {
+                errors.push(`${itemPath}.href uses a disallowed URL scheme.`);
+              }
+              if (
+                item.childrenDisplay !== undefined &&
+                item.childrenDisplay !== '' &&
+                !VALID_ITEM_CHILDREN_DISPLAY.has(item.childrenDisplay)
+              ) {
+                errors.push(
+                  `${itemPath}.childrenDisplay must be "inherit", "dropdown", or "list".`
+                );
+              }
+              if (item.children !== undefined) {
+                validateMenuItemsTree(item.children, `${itemPath}.children`, depth + 1);
+              }
+            });
+          };
+
+          cfg.ui.navigation.menus.forEach((menu, mi) => {
+            if (!isPlainObject(menu)) {
+              errors.push(`ui.navigation.menus[${mi}] must be an object.`);
+              return;
+            }
+            const menuId = String(menu.id ?? '').trim();
+            if (!menuId) {
+              errors.push(`ui.navigation.menus[${mi}].id is required.`);
+            } else if (!SAFE_MENU_ID_RE.test(menuId)) {
+              errors.push(
+                `ui.navigation.menus[${mi}].id "${menuId}" must use ASCII letters, digits, "_" or "-".`
+              );
+            } else if (seenMenuIds.has(menuId)) {
+              errors.push(`Duplicate ui.navigation.menus id "${menuId}".`);
+            } else {
+              seenMenuIds.add(menuId);
+            }
+            if (
+              menu.displayMode !== undefined &&
+              menu.displayMode !== '' &&
+              !VALID_MENU_DISPLAY_MODES.has(menu.displayMode)
+            ) {
+              errors.push(`ui.navigation.menus[${mi}].displayMode must be "dropdown" or "list".`);
+            }
+            if (menu.items !== undefined) {
+              validateMenuItemsTree(menu.items, `ui.navigation.menus[${mi}].items`);
+            }
+          });
+        }
+      }
+      if (cfg.ui.navigation.slots !== undefined) {
+        if (!isPlainObject(cfg.ui.navigation.slots)) {
+          errors.push('ui.navigation.slots must be an object.');
+        } else {
+          const slots = cfg.ui.navigation.slots;
+          for (const slotKey of ['header', 'drawer', 'legal']) {
+            if (slots[slotKey] !== undefined && typeof slots[slotKey] !== 'string') {
+              errors.push(`ui.navigation.slots.${slotKey} must be a string.`);
+            }
+          }
+          for (const dmKey of ['headerDisplayMode', 'drawerDisplayMode', 'footerDisplayMode']) {
+            if (
+              slots[dmKey] !== undefined &&
+              slots[dmKey] !== '' &&
+              !VALID_ITEM_CHILDREN_DISPLAY.has(slots[dmKey])
+            ) {
+              errors.push(
+                `ui.navigation.slots.${dmKey} must be "inherit", "dropdown", or "list".`
+              );
+            }
+          }
+          if (slots.footer !== undefined) {
+            if (!Array.isArray(slots.footer)) {
+              errors.push('ui.navigation.slots.footer must be an array of menu IDs or { id, displayMode } objects.');
+            } else {
+              slots.footer.forEach((entry, fi) => {
+                if (typeof entry === 'string') return;
+                if (!isPlainObject(entry) || !String(entry.id ?? '').trim()) {
+                  errors.push(`ui.navigation.slots.footer[${fi}] must be a menu ID string or { id, displayMode } object.`);
+                  return;
+                }
+                if (
+                  entry.displayMode !== undefined &&
+                  entry.displayMode !== '' &&
+                  !VALID_ITEM_CHILDREN_DISPLAY.has(entry.displayMode)
+                ) {
+                  errors.push(
+                    `ui.navigation.slots.footer[${fi}].displayMode must be "inherit", "dropdown", or "list".`
+                  );
+                }
+              });
+            }
+          }
+          if (
+            slots.footerMode !== undefined &&
+            slots.footerMode !== '' &&
+            !VALID_FOOTER_SLOT_MODES.has(slots.footerMode)
+          ) {
+            errors.push('ui.navigation.slots.footerMode must be "append" or "replace".');
+          }
+        }
+      }
     }
   }
 
@@ -1103,10 +1238,97 @@ function cleanConfigBeforeWrite(cfg) {
           return nc;
         });
       }
+      if (Array.isArray(next.ui.navigation.menus)) {
+        const cleanMenuItemsTree = (items) =>
+          items
+            .filter((it) => isPlainObject(it))
+            .map((it) => {
+              const ni = { ...it };
+              delete ni._targetType;
+              for (const strKey of ['id', 'key', 'group', 'contentType', 'href', 'icon', 'label']) {
+                if (typeof ni[strKey] === 'string') ni[strKey] = ni[strKey].trim();
+                if (ni[strKey] === '') delete ni[strKey];
+              }
+              if (ni.external === false) delete ni.external;
+              if (ni.childrenDisplay === '' || ni.childrenDisplay === 'inherit') {
+                delete ni.childrenDisplay;
+              }
+              if (isPlainObject(ni.labels)) {
+                ni.labels = stripEmptyMapEntries(ni.labels);
+                if (Object.keys(ni.labels).length === 0) delete ni.labels;
+              }
+              if (Array.isArray(ni.children)) {
+                ni.children = cleanMenuItemsTree(ni.children);
+                if (ni.children.length === 0) delete ni.children;
+              }
+              return ni;
+            });
+
+        next.ui.navigation.menus = next.ui.navigation.menus
+          .filter((menu) => isPlainObject(menu))
+          .map((menu) => {
+            const nm = { ...menu };
+            if (typeof nm.id === 'string') nm.id = nm.id.trim();
+            if (typeof nm.title === 'string') nm.title = nm.title.trim();
+            if (nm.title === '') delete nm.title;
+            if (isPlainObject(nm.titles)) {
+              nm.titles = stripEmptyMapEntries(nm.titles);
+              if (Object.keys(nm.titles).length === 0) delete nm.titles;
+            }
+            if (nm.displayMode === '') delete nm.displayMode;
+            nm.items = Array.isArray(nm.items) ? cleanMenuItemsTree(nm.items) : [];
+            return nm;
+          });
+      }
+      if (isPlainObject(next.ui.navigation.slots)) {
+        const ns = { ...next.ui.navigation.slots };
+        for (const slotKey of ['header', 'drawer', 'legal']) {
+          if (typeof ns[slotKey] === 'string') ns[slotKey] = ns[slotKey].trim();
+          if (ns[slotKey] === '') delete ns[slotKey];
+        }
+        for (const dmKey of ['headerDisplayMode', 'drawerDisplayMode', 'footerDisplayMode']) {
+          if (typeof ns[dmKey] === 'string') ns[dmKey] = ns[dmKey].trim();
+          if (ns[dmKey] === '' || ns[dmKey] === 'inherit') delete ns[dmKey];
+        }
+        if (Array.isArray(ns.footer)) {
+          const seenFooterIds = new Set();
+          const cleanedFooter = [];
+          for (const entry of ns.footer) {
+            if (typeof entry === 'string') {
+              const id = entry.trim();
+              if (!id || seenFooterIds.has(id)) continue;
+              seenFooterIds.add(id);
+              cleanedFooter.push(id);
+            } else if (isPlainObject(entry)) {
+              const id = String(entry.id ?? '').trim();
+              if (!id || seenFooterIds.has(id)) continue;
+              seenFooterIds.add(id);
+              const dm = typeof entry.displayMode === 'string' ? entry.displayMode.trim() : '';
+              if (dm === 'dropdown' || dm === 'list') {
+                cleanedFooter.push({ id, displayMode: dm });
+              } else {
+                cleanedFooter.push(id);
+              }
+            }
+          }
+          ns.footer = cleanedFooter;
+          if (ns.footer.length === 0) delete ns.footer;
+        }
+        if (ns.footerMode === '' || ns.footerMode === 'append') {
+          delete ns.footerMode;
+        }
+        if (Object.keys(ns).length === 0) {
+          delete next.ui.navigation.slots;
+        } else {
+          next.ui.navigation.slots = ns;
+        }
+      }
       const hasPages = Array.isArray(next.ui.navigation.pages) && next.ui.navigation.pages.length > 0;
       const hasCols =
         Array.isArray(next.ui.navigation.footerColumns) && next.ui.navigation.footerColumns.length > 0;
-      if (!hasPages && !hasCols) {
+      const hasMenus = Array.isArray(next.ui.navigation.menus) && next.ui.navigation.menus.length > 0;
+      const hasSlots = isPlainObject(next.ui.navigation.slots) && Object.keys(next.ui.navigation.slots).length > 0;
+      if (!hasPages && !hasCols && !hasMenus && !hasSlots) {
         delete next.ui.navigation;
       }
     }
@@ -1367,6 +1589,7 @@ export function getStudioState(rootDir = defaultRootDir) {
     collections,
     sectionBlocks: buildSectionSchemaCatalog(rootDir),
     registeredTemplates: readClientTemplateKeys(rootDir),
+    availableIcons: readAvailableIcons(rootDir),
     messages: {
       coreByLocale: coreMessages,
       clientByLocale: clientMessages,
@@ -1376,6 +1599,23 @@ export function getStudioState(rootDir = defaultRootDir) {
       missingByLocale: syncPreview.addedByLocale,
     },
   };
+}
+
+function readAvailableIcons(rootDir) {
+  const icons = new Set();
+  const coreIconsPath = fs.existsSync(path.join(rootDir, 'src/libs/ui/icons.ts'))
+    ? path.join(rootDir, 'src/libs/ui/icons.ts')
+    : path.join(defaultRootDir, 'src/libs/ui/icons.ts');
+  for (const absPath of [coreIconsPath, path.join(rootDir, 'client/icons.ts')]) {
+    if (!fs.existsSync(absPath)) continue;
+    const raw = fs.readFileSync(absPath, 'utf-8');
+    const arrMatch = raw.match(/\[([\s\S]*?)\]\s*as\s*const/);
+    if (!arrMatch) continue;
+    for (const m of arrMatch[1].matchAll(/['"]([a-z0-9-]+)['"]/g)) {
+      icons.add(m[1]);
+    }
+  }
+  return [...icons];
 }
 
 export function getStudioHealth(rootDir = defaultRootDir) {

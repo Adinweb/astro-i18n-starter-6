@@ -275,6 +275,95 @@ export function validateSiteSpec(spec, { rootDir = defaultRootDir } = {}) {
               });
             }
           }
+          if (nav.menus !== undefined) {
+            if (!Array.isArray(nav.menus)) {
+              errors.push('spec.ui.navigation.menus must be an array.');
+            } else {
+              const seenIds = new Set();
+              const validateTree = (items, prefix) => {
+                if (!Array.isArray(items)) {
+                  errors.push(`${prefix} must be an array.`);
+                  return;
+                }
+                items.forEach((it, ii) => {
+                  const p = `${prefix}[${ii}]`;
+                  if (!isPlainObject(it)) {
+                    errors.push(`${p} must be an object.`);
+                    return;
+                  }
+                  const hasTarget = Boolean(
+                    String(it.group ?? '').trim() ||
+                      String(it.contentType ?? '').trim() ||
+                      String(it.href ?? '').trim()
+                  );
+                  const hasChildren = Array.isArray(it.children) && it.children.length > 0;
+                  if (!hasTarget && !hasChildren) {
+                    errors.push(`${p} must define "group", "contentType", "href", or "children".`);
+                  }
+                  if (it.children !== undefined) {
+                    validateTree(it.children, `${p}.children`);
+                  }
+                });
+              };
+              nav.menus.forEach((menu, mi) => {
+                if (!isPlainObject(menu) || !String(menu.id ?? '').trim()) {
+                  errors.push(`spec.ui.navigation.menus[${mi}] must define a non-empty "id".`);
+                  return;
+                }
+                const id = String(menu.id).trim();
+                if (seenIds.has(id)) {
+                  errors.push(`Duplicate spec.ui.navigation.menus id "${id}".`);
+                }
+                seenIds.add(id);
+                if (
+                  menu.displayMode !== undefined &&
+                  !['dropdown', 'list'].includes(menu.displayMode)
+                ) {
+                  errors.push(`spec.ui.navigation.menus[${mi}].displayMode must be "dropdown" or "list".`);
+                }
+                if (menu.items !== undefined) {
+                  validateTree(menu.items, `spec.ui.navigation.menus[${mi}].items`);
+                }
+              });
+            }
+          }
+          if (nav.slots !== undefined) {
+            if (!isPlainObject(nav.slots)) {
+              errors.push('spec.ui.navigation.slots must be an object.');
+            } else {
+              for (const dmKey of ['headerDisplayMode', 'drawerDisplayMode', 'footerDisplayMode']) {
+                if (
+                  nav.slots[dmKey] !== undefined &&
+                  !['inherit', 'dropdown', 'list'].includes(nav.slots[dmKey])
+                ) {
+                  errors.push(
+                    `spec.ui.navigation.slots.${dmKey} must be "inherit", "dropdown", or "list".`
+                  );
+                }
+              }
+              if (nav.slots.footer !== undefined) {
+                if (!Array.isArray(nav.slots.footer)) {
+                  errors.push('spec.ui.navigation.slots.footer must be an array.');
+                } else {
+                  nav.slots.footer.forEach((entry, fi) => {
+                    if (typeof entry === 'string') return;
+                    if (!isPlainObject(entry) || !String(entry.id ?? '').trim()) {
+                      errors.push(`spec.ui.navigation.slots.footer[${fi}] must be a string ID or { id, displayMode } object.`);
+                      return;
+                    }
+                    if (
+                      entry.displayMode !== undefined &&
+                      !['inherit', 'dropdown', 'list'].includes(entry.displayMode)
+                    ) {
+                      errors.push(
+                        `spec.ui.navigation.slots.footer[${fi}].displayMode must be "inherit", "dropdown", or "list".`
+                      );
+                    }
+                  });
+                }
+              }
+            }
+          }
         }
       }
     }

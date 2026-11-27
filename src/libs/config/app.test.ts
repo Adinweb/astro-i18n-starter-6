@@ -635,6 +635,118 @@ describe('src/libs/config/app.ts', () => {
       expect(() => uiNavigationSchema.parse({ pages: [{ group: '' }] })).toThrow();
     });
 
+    it('validates recursive tree menus, display modes (dropdown/list), slots, duplicate IDs, and unsafe hrefs', () => {
+      const parsed = uiNavigationSchema.parse({
+        menus: [
+          {
+            id: 'main-nav',
+            title: 'Main Navigation',
+            titles: { en: 'Main Navigation', fa: 'منوی اصلی' },
+            displayMode: 'dropdown',
+            items: [
+              { group: 'home', icon: 'home' },
+              {
+                id: 'solutions',
+                label: 'Solutions',
+                childrenDisplay: 'list',
+                children: [
+                  {
+                    contentType: 'projects',
+                    childrenDisplay: 'dropdown',
+                    children: [
+                      { href: '/projects/enterprise/', label: 'Enterprise' },
+                      { href: 'https://docs.example.com', external: true, label: 'Docs' },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            id: 'footer-links',
+            displayMode: 'list',
+            items: [{ group: 'about' }, { href: '/privacy/', label: 'Privacy' }],
+          },
+        ],
+        slots: {
+          header: 'main-nav',
+          drawer: 'main-nav',
+          footer: ['footer-links'],
+          footerMode: 'replace',
+          legal: 'footer-links',
+        },
+      });
+
+      expect(parsed.menus).toHaveLength(2);
+      expect(parsed.menus?.[0]?.items[1]?.children?.[0]?.children).toHaveLength(2);
+      expect(parsed.menus?.[0]?.items[1]?.childrenDisplay).toBe('list');
+      expect(parsed.slots?.footerMode).toBe('replace');
+
+      // Duplicate menu IDs must fail
+      expect(() =>
+        uiNavigationSchema.parse({
+          menus: [
+            { id: 'dup', items: [{ group: 'home' }] },
+            { id: 'dup', items: [{ group: 'about' }] },
+          ],
+        })
+      ).toThrow();
+
+      // Unsafe protocol href inside nested children must fail
+      expect(() =>
+        uiNavigationSchema.parse({
+          menus: [
+            {
+              id: 'bad-menu',
+              items: [
+                {
+                  id: 'parent',
+                  label: 'Parent',
+                  children: [{ href: 'javascript:alert(1)', label: 'XSS' }],
+                },
+              ],
+            },
+          ],
+        })
+      ).toThrow();
+
+      // Placement-level displayMode overrides on slots (including same menu in header vs footer)
+      const placementParsed = uiNavigationSchema.parse({
+        menus: [
+          {
+            id: 'shared-menu',
+            displayMode: 'dropdown',
+            items: [
+              {
+                id: 'docs',
+                label: 'Docs',
+                children: [{ href: '/docs/intro/', label: 'Intro' }],
+              },
+            ],
+          },
+        ],
+        slots: {
+          header: 'shared-menu',
+          headerDisplayMode: 'dropdown',
+          drawer: 'shared-menu',
+          drawerDisplayMode: 'list',
+          footer: [{ id: 'shared-menu', displayMode: 'list' }],
+          footerMode: 'replace',
+          footerDisplayMode: 'dropdown',
+        },
+      });
+      expect(placementParsed.slots?.headerDisplayMode).toBe('dropdown');
+      expect(placementParsed.slots?.drawerDisplayMode).toBe('list');
+      expect(placementParsed.slots?.footerDisplayMode).toBe('dropdown');
+      expect(placementParsed.slots?.footer?.[0]).toEqual({ id: 'shared-menu', displayMode: 'list' });
+
+      expect(() =>
+        uiNavigationSchema.parse({
+          slots: { headerDisplayMode: 'accordion' as never },
+        })
+      ).toThrow();
+    });
+
     it('validates ui.homeSections and pageSectionItemSchema across registered blocks', () => {
       const section = pageSectionItemSchema.parse({
         block: 'LandingHeroSplit',

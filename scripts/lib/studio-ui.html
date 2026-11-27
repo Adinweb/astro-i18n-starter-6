@@ -203,6 +203,31 @@
     }
     .muted { color: var(--muted); font-size: 12px; }
     .divider { height: 1px; background: var(--border); margin: 12px 0; }
+    .menu-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .menu-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px;
+      border-radius: 9px; border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); cursor: pointer; font-size: 12.5px; font-weight: 600;
+    }
+    .menu-pill:hover { border-color: var(--primary); }
+    .menu-pill.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 16%, var(--bg)); }
+    .menu-tree-branch {
+      margin-top: 8px; padding-inline-start: 16px;
+      border-inline-start: 2px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+    }
+    .menu-node-card {
+      border: 1px solid var(--border); background: var(--bg); border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 8px;
+    }
+    .menu-node-card.is-branch {
+      border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+    }
+    .menu-preview-box {
+      border: 1px dashed var(--border); border-radius: 10px; padding: 12px;
+      background: color-mix(in srgb, var(--surface-2) 55%, var(--bg));
+    }
+    .menu-preview-ul { list-style: none; margin: 4px 0 0; padding: 0; padding-inline-start: 16px; border-inline-start: 1px solid var(--border); }
+    .menu-preview-li { margin: 4px 0; }
   </style>
 </head>
 <body>
@@ -279,7 +304,7 @@
           banner: 'بنر اطلاع‌رسانی و تماس سریع',
           business: 'کسب‌وکار، سوشال و وبلاگ',
           analytics: 'آنالیتیکس، کوکی و API فرم‌ها',
-          nav: 'ناوبری، ریدایرکت و سرور',
+          nav: 'منوها، ناوبری و سرور',
         },
       },
       en: {
@@ -307,7 +332,7 @@
           banner: 'Top Banner & QuickContact',
           business: 'Business, Social & Blog',
           analytics: 'Analytics, Cookies & API',
-          nav: 'Navigation, Redirects & Server',
+          nav: 'Menus, Navigation & Server',
         },
       },
     };
@@ -557,6 +582,8 @@
     let confirmTarget = '';
     let showPagesYmlRaw = false;
     let showDiffJson = false;
+    let selectedMenuIndex = 0;
+    let navCopyDisplayMode = 'inherit';
 
     // Translation dictionary matrix state
     let i18nSearch = '';
@@ -727,6 +754,18 @@
       cfg.ui.navigation = cfg.ui.navigation || {};
       cfg.ui.navigation.pages = cfg.ui.navigation.pages || [];
       cfg.ui.navigation.footerColumns = cfg.ui.navigation.footerColumns || [];
+      cfg.ui.navigation.menus = cfg.ui.navigation.menus || [];
+      const rawSlots = cfg.ui.navigation.slots || {};
+      cfg.ui.navigation.slots = {
+        header: rawSlots.header || '',
+        headerDisplayMode: rawSlots.headerDisplayMode || 'inherit',
+        drawer: rawSlots.drawer || '',
+        drawerDisplayMode: rawSlots.drawerDisplayMode || 'inherit',
+        footer: Array.isArray(rawSlots.footer) ? rawSlots.footer : [],
+        footerMode: rawSlots.footerMode || 'append',
+        footerDisplayMode: rawSlots.footerDisplayMode || 'inherit',
+        legal: rawSlots.legal || '',
+      };
       cfg.ui.homeSections = cfg.ui.homeSections || [];
       cfg.blog = cfg.blog || { postsPerPage: 9, showReadingTime: true, showTableOfContents: true, showRelatedPosts: true };
       cfg.business = cfg.business || { type: 'Organization' };
@@ -1695,65 +1734,406 @@
           </div>
         `;
       } else {
-        // nav, redirects, server
+        // menus, nav, redirects, server
+        const menus = cfg.ui.navigation?.menus || [];
+        if (selectedMenuIndex >= menus.length) selectedMenuIndex = Math.max(0, menus.length - 1);
+        const slots = cfg.ui.navigation?.slots || { header: '', drawer: '', footer: [], footerMode: 'append', legal: '' };
         const navPages = cfg.ui.navigation?.pages || [];
         const cols = cfg.ui.navigation?.footerColumns || [];
         const redirects = cfg.redirects || [];
-        panel = `
-          <div class="card">
-            <div class="between" style="margin-bottom:8px;">
-              <h3>${L('منوی هدر و ناوبری صفحات (ui.navigation.pages)', 'Header Navigation (ui.navigation.pages)')}</h3>
-              <button type="button" class="btn btn-sm btn-primary" data-action="cfg-add-navpage">+ Add Nav Page</button>
-            </div>
-            ${navPages.length === 0 ? `<p class="muted">${L('خالی است (به صورت خودکار از client/navigation.ts یا صفحات منتشرشده استفاده می‌شود).', 'Empty (uses client/navigation.ts or published pages automatically).')}</p>` : navPages.map((np, i) => `
-              <div class="row" style="margin-bottom:6px;">
-                <input type="text" class="mono" style="width:130px;" placeholder="group" data-cfg="ui.navigation.pages.${i}.group" value="${esc(np.group || '')}" />
-                <input type="text" class="mono" style="width:110px;" placeholder="icon" data-cfg="ui.navigation.pages.${i}.icon" value="${esc(np.icon || '')}" />
-                <input type="text" style="width:130px;" placeholder="label" data-cfg="ui.navigation.pages.${i}.label" value="${esc(np.label || '')}" />
-                ${locs.map((loc) => `<input type="text" style="width:130px;" placeholder="labels.${esc(loc)}" data-cfg="ui.navigation.pages.${i}.labels.${esc(loc)}" value="${esc(np.labels?.[loc] || '')}" />`).join('')}
-                <button type="button" class="btn btn-sm" data-cfg-move-navpage="${i}:-1" ${i === 0 ? 'disabled' : ''}>↑</button>
-                <button type="button" class="btn btn-sm" data-cfg-move-navpage="${i}:1" ${i === navPages.length - 1 ? 'disabled' : ''}>↓</button>
-                <button type="button" class="btn btn-sm btn-danger" data-cfg-del-navpage="${i}">✕</button>
-              </div>
-            `).join('')}
+        const pageGroups = (state.pages || []).map((p) => p.group);
+        const contentTypeItems = (state.contentTypes || []).filter((ct) => ct.key !== 'pages');
+        const iconsList = state.availableIcons || [];
+        const activeMenu = menus[selectedMenuIndex] || null;
 
-            <div class="divider"></div>
-            <div class="between" style="margin-bottom:8px;">
-              <h3>${L('ستون‌های فوتر (ui.navigation.footerColumns)', 'Footer Columns (ui.navigation.footerColumns)')}</h3>
-              <button type="button" class="btn btn-sm btn-primary" data-action="cfg-add-fcol">+ Add Footer Column</button>
-            </div>
-            ${cols.map((col, ci) => `
-              <div class="sec-item">
-                <div class="between" style="margin-bottom:6px;">
+        const detectNodeTargetType = (node) => {
+          if (node.group) return 'group';
+          if (node.contentType) return 'contentType';
+          if (node.href !== undefined && node.href !== '') return 'href';
+          return 'branch';
+        };
+
+        const renderMenuTreeEditor = (items, menuIdx, parentPath = '', depth = 0) => {
+          if (!Array.isArray(items) || items.length === 0) return '';
+          return items.map((node, idx) => {
+            const nodePath = parentPath ? `${parentPath}.${idx}` : String(idx);
+            const targetType = node._targetType || detectNodeTargetType(node);
+            const hasChildren = Array.isArray(node.children) && node.children.length > 0;
+            const cDisp = node.childrenDisplay || 'inherit';
+            return `
+              <div class="menu-node-card ${hasChildren ? 'is-branch' : ''}">
+                <div class="between" style="margin-bottom:8px;">
                   <div class="row">
-                    <input type="text" class="mono" style="width:130px;" placeholder="key" data-cfg="ui.navigation.footerColumns.${ci}.key" value="${esc(col.key || '')}" />
-                    <input type="text" style="width:140px;" placeholder="title" data-cfg="ui.navigation.footerColumns.${ci}.title" value="${esc(col.title || '')}" />
-                    ${locs.map((loc) => `<input type="text" style="width:130px;" placeholder="titles.${esc(loc)}" data-cfg="ui.navigation.footerColumns.${ci}.titles.${esc(loc)}" value="${esc(col.titles?.[loc] || '')}" />`).join('')}
+                    <span class="badge">${L('سطح', 'Lvl')} ${depth + 1}</span>
+                    <span class="badge mono">${esc(node.id || node.key || node.group || node.contentType || `#${idx + 1}`)}</span>
+                    ${hasChildren ? `<span class="badge ok">${node.children.length} ${L('زیرلینک', 'sub')}</span>` : ''}
                   </div>
                   <div class="row">
-                    <button type="button" class="btn btn-sm" data-cfg-move-fcol="${ci}:-1" ${ci === 0 ? 'disabled' : ''}>↑</button>
-                    <button type="button" class="btn btn-sm" data-cfg-move-fcol="${ci}:1" ${ci === cols.length - 1 ? 'disabled' : ''}>↓</button>
-                    <button type="button" class="btn btn-sm" data-cfg-add-fitem="${ci}">+ Item</button>
-                    <button type="button" class="btn btn-sm btn-danger" data-cfg-del-fcol="${ci}">✕</button>
+                    <button type="button" class="btn btn-sm" title="${L('بالا', 'Move Up')}" data-menu-node-act="up:${menuIdx}:${nodePath}" ${idx === 0 ? 'disabled' : ''}>↑</button>
+                    <button type="button" class="btn btn-sm" title="${L('پایین', 'Move Down')}" data-menu-node-act="down:${menuIdx}:${nodePath}" ${idx === items.length - 1 ? 'disabled' : ''}>↓</button>
+                    <button type="button" class="btn btn-sm" title="${L('تبدیل به زیرمجموعه لینک قبلی', 'Indent under previous')}" data-menu-node-act="indent:${menuIdx}:${nodePath}" ${idx === 0 ? 'disabled' : ''}>↳</button>
+                    <button type="button" class="btn btn-sm" title="${L('بیرون آوردن یک سطح', 'Outdent one level')}" data-menu-node-act="outdent:${menuIdx}:${nodePath}" ${depth === 0 ? 'disabled' : ''}>↰</button>
+                    <button type="button" class="btn btn-sm btn-accent" data-menu-node-act="add-child:${menuIdx}:${nodePath}">+ ${L('زیرلینک', 'Child')}</button>
+                    <button type="button" class="btn btn-sm btn-danger" title="${L('حذف', 'Delete')}" data-menu-node-act="del:${menuIdx}:${nodePath}">✕</button>
                   </div>
                 </div>
-                ${(col.items || []).map((it, ii) => `
-                  <div class="row" style="margin-top:6px;">
-                    <input type="text" class="mono" style="width:110px;" placeholder="group" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.group" value="${esc(it.group || '')}" />
-                    <input type="text" class="mono" style="width:130px;" placeholder="href" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.href" value="${esc(it.href || '')}" />
-                    <input type="text" class="mono" style="width:95px;" placeholder="icon" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.icon" value="${esc(it.icon || '')}" />
-                    <input type="text" style="width:110px;" placeholder="label" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.label" value="${esc(it.label || '')}" />
-                    ${locs.map((loc) => `<input type="text" style="width:110px;" placeholder="${esc(loc)}" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.labels.${esc(loc)}" value="${esc(it.labels?.[loc] || '')}" />`).join('')}
-                    <label class="check-pill"><input type="checkbox" data-cfg-bool="ui.navigation.footerColumns.${ci}.items.${ii}.external" ${it.external ? 'checked' : ''} /><span>ext</span></label>
-                    <button type="button" class="btn btn-sm" data-cfg-move-fitem="${ci}:${ii}:-1" ${ii === 0 ? 'disabled' : ''}>↑</button>
-                    <button type="button" class="btn btn-sm" data-cfg-move-fitem="${ci}:${ii}:1" ${ii === (col.items || []).length - 1 ? 'disabled' : ''}>↓</button>
-                    <button type="button" class="btn btn-sm btn-danger" data-cfg-del-fitem="${ci}:${ii}">✕</button>
+
+                <div class="grid grid-4" style="gap:8px; margin-bottom:8px;">
+                  <div class="field" style="margin:0;">
+                    <label>${L('نوع لینک', 'Link Target')}</label>
+                    <select data-menu-node-type="${menuIdx}:${nodePath}">
+                      <option value="group" ${targetType === 'group' ? 'selected' : ''}>${L('صفحه سایت (Page)', 'Site Page (group)')}</option>
+                      <option value="contentType" ${targetType === 'contentType' ? 'selected' : ''}>${L('بخش محتوا (Collection)', 'Collection (contentType)')}</option>
+                      <option value="href" ${targetType === 'href' ? 'selected' : ''}>${L('لینک دلخواه / انکر (URL)', 'Custom URL / Anchor')}</option>
+                      <option value="branch" ${targetType === 'branch' ? 'selected' : ''}>${L('گروه والد بدون لینک (Branch)', 'Group Header Only')}</option>
+                    </select>
+                  </div>
+
+                  ${targetType === 'group' ? `
+                    <div class="field" style="margin:0;">
+                      <label>${L('صفحه مقصد (group)', 'Page Group')}</label>
+                      <input type="text" class="mono" list="studio-pages-datalist" placeholder="about" data-menu-node="${menuIdx}:${nodePath}:group" value="${esc(node.group || '')}" />
+                    </div>
+                  ` : targetType === 'contentType' ? `
+                    <div class="field" style="margin:0;">
+                      <label>${L('کالکشن (contentType)', 'Collection')}</label>
+                      <select class="mono" data-menu-node="${menuIdx}:${nodePath}:contentType">
+                        <option value="">-- select --</option>
+                        ${contentTypeItems.map((ct) => `<option value="${esc(ct.key)}" ${node.contentType === ct.key ? 'selected' : ''}>${esc(ct.key)}</option>`).join('')}
+                      </select>
+                    </div>
+                  ` : targetType === 'href' ? `
+                    <div class="field" style="margin:0;">
+                      <label>${L('آدرس (href)', 'URL / Path (href)')}</label>
+                      <div class="row" style="flex-wrap:nowrap;">
+                        <input type="text" class="mono" placeholder="/features/#rtl" data-menu-node="${menuIdx}:${nodePath}:href" value="${esc(node.href || '')}" />
+                        <label class="check-pill" style="white-space:nowrap;"><input type="checkbox" data-menu-node-bool="${menuIdx}:${nodePath}:external" ${node.external ? 'checked' : ''} /><span>ext</span></label>
+                      </div>
+                    </div>
+                  ` : `
+                    <div class="field" style="margin:0;">
+                      <label>${L('شناسه گره (id)', 'Node ID')}</label>
+                      <input type="text" class="mono" placeholder="resources" data-menu-node="${menuIdx}:${nodePath}:id" value="${esc(node.id || '')}" />
+                    </div>
+                  `}
+
+                  <div class="field" style="margin:0;">
+                    <label>${L('آیکون (اختیاری)', 'Icon (optional)')}</label>
+                    <input type="text" class="mono" list="studio-icons-datalist" placeholder="layers" data-menu-node="${menuIdx}:${nodePath}:icon" value="${esc(node.icon || '')}" />
+                  </div>
+
+                  <div class="field" style="margin:0;">
+                    <label>${L('نمایش زیرلینک‌ها', 'Sub-links Display')}</label>
+                    <select data-menu-node="${menuIdx}:${nodePath}:childrenDisplay">
+                      <option value="inherit" ${cDisp === 'inherit' ? 'selected' : ''}>${L('ارث‌بری از منو', 'Inherit Menu')} (${activeMenu?.displayMode === 'list' ? L('لیست', 'List') : L('کشویی', 'Dropdown')})</option>
+                      <option value="dropdown" ${cDisp === 'dropdown' ? 'selected' : ''}>${L('کشویی (Dropdown)', 'Dropdown')}</option>
+                      <option value="list" ${cDisp === 'list' ? 'selected' : ''}>${L('لیست باز (List)', 'Expanded List')}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="grid grid-${Math.min(4, Math.max(2, locs.length + 1))}" style="gap:8px;">
+                  <div class="field" style="margin:0;">
+                    <label>${L('برچسب پیش‌فرض', 'Default Label')}</label>
+                    <input type="text" placeholder="Label" data-menu-node="${menuIdx}:${nodePath}:label" value="${esc(node.label || '')}" />
+                  </div>
+                  ${locs.map((loc) => `
+                    <div class="field" style="margin:0;">
+                      <label>${L('برچسب', 'Label')} (${esc(loc)})</label>
+                      <input type="text" placeholder="${esc(loc)}" data-menu-node-label="${menuIdx}:${nodePath}:${esc(loc)}" value="${esc(node.labels?.[loc] || '')}" />
+                    </div>
+                  `).join('')}
+                </div>
+
+                ${hasChildren ? `
+                  <div class="menu-tree-branch">
+                    ${renderMenuTreeEditor(node.children, menuIdx, nodePath, depth + 1)}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('');
+        };
+
+        const renderMenuTreePreview = (items, menuDisplayMode) => {
+          if (!Array.isArray(items) || items.length === 0) return `<span class="muted">${L('بدون لینک', 'No items')}</span>`;
+          return `<ul class="menu-preview-ul">${items.map((node) => {
+            const label = node.labels?.[uiLang] || node.label || node.group || node.contentType || node.href || node.id || 'Item';
+            const hasChildren = Array.isArray(node.children) && node.children.length > 0;
+            const effMode = node.childrenDisplay && node.childrenDisplay !== 'inherit' ? node.childrenDisplay : menuDisplayMode;
+            const badge = hasChildren
+              ? `<span class="badge ${effMode === 'list' ? 'ok' : ''}" style="font-size:10px;">${effMode === 'list' ? L('لیست', 'list') : L('کشویی', 'dropdown')}</span>`
+              : '';
+            const targetBadge = node.group ? `page:${node.group}` : node.contentType ? `type:${node.contentType}` : node.href ? node.href : 'group-only';
+            return `
+              <li class="menu-preview-li">
+                <div class="row" style="gap:6px;">
+                  <strong>${esc(label)}</strong>
+                  <span class="muted mono" style="font-size:11px;">(${esc(targetBadge)})</span>
+                  ${badge}
+                </div>
+                ${hasChildren ? renderMenuTreePreview(node.children, menuDisplayMode) : ''}
+              </li>
+            `;
+          }).join('')}</ul>`;
+        };
+
+        panel = `
+          <datalist id="studio-pages-datalist">
+            ${pageGroups.map((g) => `<option value="${esc(g)}"></option>`).join('')}
+          </datalist>
+          <datalist id="studio-icons-datalist">
+            ${iconsList.map((ic) => `<option value="${esc(ic)}"></option>`).join('')}
+          </datalist>
+
+          <div class="card">
+            <div class="between" style="margin-bottom:8px;">
+              <div>
+                <h3>${L('مدیریت منوهای درختی با شناسه یکتا (ui.navigation.menus)', 'Tree Menu Manager (ui.navigation.menus)')}</h3>
+                <p class="card-sub" style="margin:0;">${L('منوهای چندسطحی با آیدی اختصاصی بسازید، حالت نمایش زیرلینک‌ها (Dropdown یا List) را مشخص کنید و در بخش‌های مختلف سایت قرار دهید.', 'Create multi-level tree menus with unique IDs, choose Dropdown vs List display for nested links, and assign them to site slots or embed with <NavMenu menuId="..." />.')}</p>
+              </div>
+              <div class="row">
+                <button type="button" class="btn btn-sm" data-action="cfg-import-default-menu">+ ${L('ایجاد منوی نمونه از صفحات فعلی', 'Import Starter Menu')}</button>
+                <button type="button" class="btn btn-sm btn-primary" data-action="cfg-add-menu">+ ${L('منوی جدید', 'New Menu')}</button>
+              </div>
+            </div>
+
+            ${menus.length === 0 ? `
+              <p class="muted">${L('هنوز منوی سفارشی تعریف نشده است (سایت از ناوبری خودکار صفحات استفاده می‌کند). برای شروع روی «منوی جدید» یا «ایجاد منوی نمونه» کلیک کنید.', 'No custom menus defined yet (site uses automatic page navigation). Click "+ New Menu" or "+ Import Starter Menu" to get started.')}</p>
+            ` : `
+              <div class="menu-tabs">
+                ${menus.map((m, mi) => `
+                  <button type="button" class="menu-pill ${mi === selectedMenuIndex ? 'active' : ''}" data-menu-select="${mi}">
+                    <span class="mono">#${esc(m.id || `menu-${mi + 1}`)}</span>
+                    <span>${esc(m.titles?.[uiLang] || m.title || '')}</span>
+                    <span class="badge">${(m.items || []).length}</span>
+                    <span class="badge ${m.displayMode === 'list' ? 'ok' : ''}">${m.displayMode === 'list' ? L('لیست', 'List') : L('کشویی', 'Dropdown')}</span>
+                  </button>
+                `).join('')}
+              </div>
+
+              ${activeMenu ? `
+                <div class="sec-item" style="background:var(--surface-2);">
+                  <div class="between" style="margin-bottom:10px;">
+                    <div class="row">
+                      <strong>${L('تنظیمات منو:', 'Menu Settings:')}</strong>
+                      <code class="badge mono">&lt;NavMenu menuId=&quot;${esc(activeMenu.id || '')}&quot;${navCopyDisplayMode && navCopyDisplayMode !== 'inherit' ? ` displayMode=&quot;${esc(navCopyDisplayMode)}&quot;` : ''} /&gt;</code>
+                      <select data-menu-copy-mode style="width:auto; padding:4px 8px; font-size:12px;">
+                        <option value="inherit" ${navCopyDisplayMode === 'inherit' ? 'selected' : ''}>${L('حالت منو (پیش‌فرض)', 'Menu Default')}</option>
+                        <option value="dropdown" ${navCopyDisplayMode === 'dropdown' ? 'selected' : ''}>displayMode="dropdown"</option>
+                        <option value="list" ${navCopyDisplayMode === 'list' ? 'selected' : ''}>displayMode="list"</option>
+                      </select>
+                      <button type="button" class="btn btn-sm" data-menu-copy="${esc(activeMenu.id || '')}">${L('کپی کد', 'Copy Tag')}</button>
+                    </div>
+                    <div class="row">
+                      <button type="button" class="btn btn-sm" data-menu-act="dup:${selectedMenuIndex}">${L('کپی منو', 'Duplicate')}</button>
+                      <button type="button" class="btn btn-sm btn-danger" data-menu-act="del:${selectedMenuIndex}">${L('حذف منو', 'Delete Menu')}</button>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-4" style="gap:10px;">
+                    <div class="field" style="margin:0;">
+                      <label>${L('آیدی یکتا (id)', 'Unique Menu ID')}</label>
+                      <input type="text" class="mono" placeholder="main-header" data-menu-field="${selectedMenuIndex}:id" value="${esc(activeMenu.id || '')}" />
+                    </div>
+                    <div class="field" style="margin:0;">
+                      <label>${L('حالت پیش‌فرض زیرمنو (قابل تغییر در هر جایگاه)', 'Default Submenu Mode (Overridable per Slot)')}</label>
+                      <select data-menu-field="${selectedMenuIndex}:displayMode">
+                        <option value="dropdown" ${(activeMenu.displayMode || 'dropdown') === 'dropdown' ? 'selected' : ''}>${L('کشویی (Dropdown)', 'Dropdown (Submenus)')}</option>
+                        <option value="list" ${activeMenu.displayMode === 'list' ? 'selected' : ''}>${L('لیست باز (List)', 'Expanded List (Tree)')}</option>
+                      </select>
+                    </div>
+                    <div class="field" style="margin:0;">
+                      <label>${L('عنوان منو (پیش‌فرض)', 'Menu Title (Default)')}</label>
+                      <input type="text" placeholder="Main Navigation" data-menu-field="${selectedMenuIndex}:title" value="${esc(activeMenu.title || '')}" />
+                    </div>
+                    ${locs.map((loc) => `
+                      <div class="field" style="margin:0;">
+                        <label>${L('عنوان منو', 'Title')} (${esc(loc)})</label>
+                        <input type="text" placeholder="${esc(loc)}" data-menu-title="${selectedMenuIndex}:${esc(loc)}" value="${esc(activeMenu.titles?.[loc] || '')}" />
+                      </div>
+                    `).join('')}
+                  </div>
+
+                  <div class="divider"></div>
+                  <div class="between" style="margin-bottom:8px;">
+                    <strong>${L('ساختار درختی لینک‌ها', 'Menu Links Tree')}</strong>
+                    <button type="button" class="btn btn-sm btn-primary" data-menu-act="add-root:${selectedMenuIndex}">+ ${L('افزودن لینک ریشه', 'Add Root Link')}</button>
+                  </div>
+
+                  ${(activeMenu.items || []).length === 0 ? `
+                    <p class="muted">${L('این منو هنوز لینکی ندارد.', 'This menu has no links yet.')}</p>
+                  ` : renderMenuTreeEditor(activeMenu.items, selectedMenuIndex)}
+
+                  <div class="menu-preview-box" style="margin-top:12px;">
+                    <div class="between" style="margin-bottom:6px;">
+                      <strong style="font-size:12.5px;">${L('پیش‌نمایش ساختار درختی منو', 'Tree Structure Preview')}</strong>
+                      <span class="badge">${activeMenu.displayMode === 'list' ? L('حالت پیش‌فرض: لیست', 'Default: List') : L('حالت پیش‌فرض: کشویی', 'Default: Dropdown')}</span>
+                    </div>
+                    ${renderMenuTreePreview(activeMenu.items || [], activeMenu.displayMode || 'dropdown')}
+                  </div>
+                </div>
+              ` : ''}
+            `}
+
+            <div class="divider"></div>
+            <h3>${L('جایگاه نمایش منوها و نحوه نمایش در هر جایگاه (ui.navigation.slots)', 'Site Slot Assignments & Per-Placement Display Mode (ui.navigation.slots)')}</h3>
+            <p class="card-sub">${L('می‌توانید یک منوی یکسان را همزمان در چند جایگاه (مثلاً هدر و فوتر) قرار دهید و برای هر جایگاه مستقل انتخاب کنید زیرمنوها کشویی (Dropdown) باشند یا لیست باز (List).', 'Assign the same menu ID to multiple slots (e.g. Header and Footer) and choose independently at placement time whether nested links render as Dropdown or Expanded List.')}</p>
+            <div class="grid grid-3" style="gap:10px;">
+              <div class="sec-item" style="margin:0;">
+                <div class="field" style="margin:0 0 8px;">
+                  <label>${L('منوی هدر دسکتاپ (slots.header)', 'Desktop Header (slots.header)')}</label>
+                  <select data-cfg="ui.navigation.slots.header">
+                    <option value="">${L('پیش‌فرض خودکار سایت', 'Default (Auto)')}</option>
+                    ${menus.map((m) => `<option value="${esc(m.id)}" ${slots.header === m.id ? 'selected' : ''}>#${esc(m.id)} ${m.title ? `(${esc(m.title)})` : ''}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="field" style="margin:0;">
+                  <label>${L('نحوه نمایش زیرمنوها در هدر', 'Header Submenu Display')}</label>
+                  <select data-cfg="ui.navigation.slots.headerDisplayMode">
+                    <option value="inherit" ${(slots.headerDisplayMode || 'inherit') === 'inherit' ? 'selected' : ''}>${L('پیروی از تنظیمات منو', 'Inherit Menu Default')}</option>
+                    <option value="dropdown" ${slots.headerDisplayMode === 'dropdown' ? 'selected' : ''}>${L('کشویی (Dropdown)', 'Dropdown')}</option>
+                    <option value="list" ${slots.headerDisplayMode === 'list' ? 'selected' : ''}>${L('لیست باز (List)', 'Expanded List')}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="sec-item" style="margin:0;">
+                <div class="field" style="margin:0 0 8px;">
+                  <label>${L('منوی کشویی موبایل (slots.drawer)', 'Mobile Drawer (slots.drawer)')}</label>
+                  <select data-cfg="ui.navigation.slots.drawer">
+                    <option value="">${L('هم‌تراز با هدر / پیش‌فرض', 'Follow Header / Default')}</option>
+                    ${menus.map((m) => `<option value="${esc(m.id)}" ${slots.drawer === m.id ? 'selected' : ''}>#${esc(m.id)} ${m.title ? `(${esc(m.title)})` : ''}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="field" style="margin:0;">
+                  <label>${L('نحوه نمایش زیرمنوها در منوی موبایل', 'Drawer Submenu Display')}</label>
+                  <select data-cfg="ui.navigation.slots.drawerDisplayMode">
+                    <option value="inherit" ${(slots.drawerDisplayMode || 'inherit') === 'inherit' ? 'selected' : ''}>${L('پیروی از تنظیمات منو', 'Inherit Menu Default')}</option>
+                    <option value="dropdown" ${slots.drawerDisplayMode === 'dropdown' ? 'selected' : ''}>${L('کشویی / آکاردئونی (Dropdown)', 'Collapsible Dropdown')}</option>
+                    <option value="list" ${slots.drawerDisplayMode === 'list' ? 'selected' : ''}>${L('لیست باز درختی (List)', 'Expanded List')}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="sec-item" style="margin:0;">
+                <div class="field" style="margin:0;">
+                  <label>${L('لینک‌های حقوقی پایین فوتر (slots.legal)', 'Footer Legal Bar (slots.legal)')}</label>
+                  <select data-cfg="ui.navigation.slots.legal">
+                    <option value="">${L('پیش‌فرض خودکار سایت', 'Default (Auto)')}</option>
+                    ${menus.map((m) => `<option value="${esc(m.id)}" ${slots.legal === m.id ? 'selected' : ''}>#${esc(m.id)} ${m.title ? `(${esc(m.title)})` : ''}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-2" style="margin-top:10px; gap:10px;">
+              <div class="sec-item" style="margin:0;">
+                <label style="display:block; font-weight:600; font-size:12.5px; margin-bottom:6px;">${L('منوهای ستون‌های فوتر و حالت نمایش هرکدام (slots.footer)', 'Footer Menu Columns & Per-Column Display (slots.footer)')}</label>
+                ${menus.length === 0 ? `<span class="muted">${L('ابتدا یک منو بسازید.', 'Create a menu first.')}</span>` : `
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    ${menus.map((m) => {
+                      const fEntry = (slots.footer || []).find((x) => (typeof x === 'string' ? x === m.id : x?.id === m.id));
+                      const fChecked = Boolean(fEntry);
+                      const fMode = typeof fEntry === 'object' && fEntry ? (fEntry.displayMode || 'inherit') : 'inherit';
+                      return `
+                        <div class="between" style="gap:8px; padding:4px 8px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2);">
+                          <label class="check-pill" style="margin:0; border:none; background:transparent; padding:0;">
+                            <input type="checkbox" data-slot-footer="${esc(m.id)}" ${fChecked ? 'checked' : ''} />
+                            <span class="mono">#${esc(m.id)}</span>
+                            ${m.title ? `<span class="muted">(${esc(m.title)})</span>` : ''}
+                          </label>
+                          <select data-slot-footer-mode="${esc(m.id)}" ${fChecked ? '' : 'disabled'} style="width:auto; padding:3px 8px; font-size:12px;">
+                            <option value="inherit" ${fMode === 'inherit' ? 'selected' : ''}>${L('پیروی از فوتر/منو', 'Inherit')}</option>
+                            <option value="dropdown" ${fMode === 'dropdown' ? 'selected' : ''}>${L('کشویی (Dropdown)', 'Dropdown')}</option>
+                            <option value="list" ${fMode === 'list' ? 'selected' : ''}>${L('لیست باز (List)', 'List')}</option>
+                          </select>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                `}
+              </div>
+              <div class="sec-item" style="margin:0;">
+                <div class="field" style="margin:0 0 8px;">
+                  <label>${L('نحوه ترکیب ستون‌های فوتر (slots.footerMode)', 'Footer Column Mode (slots.footerMode)')}</label>
+                  <select data-cfg="ui.navigation.slots.footerMode">
+                    <option value="append" ${(slots.footerMode || 'append') === 'append' ? 'selected' : ''}>${L('افزودن کنار ستون‌های پیش‌فرض (append)', 'Append alongside default columns')}</option>
+                    <option value="replace" ${slots.footerMode === 'replace' ? 'selected' : ''}>${L('جایگزینی ستون‌های پیش‌فرض (replace)', 'Replace default columns')}</option>
+                  </select>
+                </div>
+                <div class="field" style="margin:0;">
+                  <label>${L('حالت پیش‌فرض زیرمنو در فوتر (slots.footerDisplayMode)', 'Default Submenu Display in Footer')}</label>
+                  <select data-cfg="ui.navigation.slots.footerDisplayMode">
+                    <option value="inherit" ${(slots.footerDisplayMode || 'inherit') === 'inherit' ? 'selected' : ''}>${L('پیروی از تنظیمات هر منو', 'Inherit Each Menu Default')}</option>
+                    <option value="list" ${slots.footerDisplayMode === 'list' ? 'selected' : ''}>${L('لیست باز (List)', 'Expanded List')}</option>
+                    <option value="dropdown" ${slots.footerDisplayMode === 'dropdown' ? 'selected' : ''}>${L('کشویی (Dropdown)', 'Dropdown')}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <details>
+              <summary style="cursor:pointer; font-weight:700;">${L('تنظیمات کلاسیک ناوبری و ستون‌های فوتر (ui.navigation.pages / footerColumns)', 'Legacy Navigation Overrides (ui.navigation.pages / footerColumns)')}</summary>
+              <div style="margin-top:12px;">
+                <div class="between" style="margin-bottom:8px;">
+                  <h3>${L('منوی هدر و ناوبری صفحات (ui.navigation.pages)', 'Header Navigation (ui.navigation.pages)')}</h3>
+                  <button type="button" class="btn btn-sm btn-primary" data-action="cfg-add-navpage">+ Add Nav Page</button>
+                </div>
+                ${navPages.length === 0 ? `<p class="muted">${L('خالی است (به صورت خودکار از client/navigation.ts یا صفحات منتشرشده استفاده می‌شود).', 'Empty (uses client/navigation.ts or published pages automatically).')}</p>` : navPages.map((np, i) => `
+                  <div class="row" style="margin-bottom:6px;">
+                    <input type="text" class="mono" style="width:130px;" placeholder="group" data-cfg="ui.navigation.pages.${i}.group" value="${esc(np.group || '')}" />
+                    <input type="text" class="mono" style="width:110px;" placeholder="icon" data-cfg="ui.navigation.pages.${i}.icon" value="${esc(np.icon || '')}" />
+                    <input type="text" style="width:130px;" placeholder="label" data-cfg="ui.navigation.pages.${i}.label" value="${esc(np.label || '')}" />
+                    ${locs.map((loc) => `<input type="text" style="width:130px;" placeholder="labels.${esc(loc)}" data-cfg="ui.navigation.pages.${i}.labels.${esc(loc)}" value="${esc(np.labels?.[loc] || '')}" />`).join('')}
+                    <button type="button" class="btn btn-sm" data-cfg-move-navpage="${i}:-1" ${i === 0 ? 'disabled' : ''}>↑</button>
+                    <button type="button" class="btn btn-sm" data-cfg-move-navpage="${i}:1" ${i === navPages.length - 1 ? 'disabled' : ''}>↓</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-cfg-del-navpage="${i}">✕</button>
+                  </div>
+                `).join('')}
+
+                <div class="divider"></div>
+                <div class="between" style="margin-bottom:8px;">
+                  <h3>${L('ستون‌های فوتر (ui.navigation.footerColumns)', 'Footer Columns (ui.navigation.footerColumns)')}</h3>
+                  <button type="button" class="btn btn-sm btn-primary" data-action="cfg-add-fcol">+ Add Footer Column</button>
+                </div>
+                ${cols.map((col, ci) => `
+                  <div class="sec-item">
+                    <div class="between" style="margin-bottom:6px;">
+                      <div class="row">
+                        <input type="text" class="mono" style="width:130px;" placeholder="key" data-cfg="ui.navigation.footerColumns.${ci}.key" value="${esc(col.key || '')}" />
+                        <input type="text" style="width:140px;" placeholder="title" data-cfg="ui.navigation.footerColumns.${ci}.title" value="${esc(col.title || '')}" />
+                        ${locs.map((loc) => `<input type="text" style="width:130px;" placeholder="titles.${esc(loc)}" data-cfg="ui.navigation.footerColumns.${ci}.titles.${esc(loc)}" value="${esc(col.titles?.[loc] || '')}" />`).join('')}
+                      </div>
+                      <div class="row">
+                        <button type="button" class="btn btn-sm" data-cfg-move-fcol="${ci}:-1" ${ci === 0 ? 'disabled' : ''}>↑</button>
+                        <button type="button" class="btn btn-sm" data-cfg-move-fcol="${ci}:1" ${ci === cols.length - 1 ? 'disabled' : ''}>↓</button>
+                        <button type="button" class="btn btn-sm" data-cfg-add-fitem="${ci}">+ Item</button>
+                        <button type="button" class="btn btn-sm btn-danger" data-cfg-del-fcol="${ci}">✕</button>
+                      </div>
+                    </div>
+                    ${(col.items || []).map((it, ii) => `
+                      <div class="row" style="margin-top:6px;">
+                        <input type="text" class="mono" style="width:110px;" placeholder="group" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.group" value="${esc(it.group || '')}" />
+                        <input type="text" class="mono" style="width:130px;" placeholder="href" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.href" value="${esc(it.href || '')}" />
+                        <input type="text" class="mono" style="width:95px;" placeholder="icon" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.icon" value="${esc(it.icon || '')}" />
+                        <input type="text" style="width:110px;" placeholder="label" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.label" value="${esc(it.label || '')}" />
+                        ${locs.map((loc) => `<input type="text" style="width:110px;" placeholder="${esc(loc)}" data-cfg="ui.navigation.footerColumns.${ci}.items.${ii}.labels.${esc(loc)}" value="${esc(it.labels?.[loc] || '')}" />`).join('')}
+                        <label class="check-pill"><input type="checkbox" data-cfg-bool="ui.navigation.footerColumns.${ci}.items.${ii}.external" ${it.external ? 'checked' : ''} /><span>ext</span></label>
+                        <button type="button" class="btn btn-sm" data-cfg-move-fitem="${ci}:${ii}:-1" ${ii === 0 ? 'disabled' : ''}>↑</button>
+                        <button type="button" class="btn btn-sm" data-cfg-move-fitem="${ci}:${ii}:1" ${ii === (col.items || []).length - 1 ? 'disabled' : ''}>↓</button>
+                        <button type="button" class="btn btn-sm btn-danger" data-cfg-del-fitem="${ci}:${ii}">✕</button>
+                      </div>
+                    `).join('')}
                   </div>
                 `).join('')}
               </div>
-            `).join('')}
+            </details>
+          </div>
 
-            <div class="divider"></div>
+          <div class="card">
             <div class="between" style="margin-bottom:8px;">
               <h3>${L('تغییر مسیرها (redirects)', 'URL Redirects (redirects)')}</h3>
               <button type="button" class="btn btn-sm btn-primary" data-action="cfg-add-redirect">+ Add Redirect</button>
@@ -2765,6 +3145,43 @@
       return modalState?.data?.sections;
     }
 
+    function resolveMenuNodeRef(menuIdx, pathStr) {
+      const menu = configDraft.ui?.navigation?.menus?.[menuIdx];
+      if (!menu || !Array.isArray(menu.items) || !pathStr) return null;
+      const indices = String(pathStr).split('.').map(Number);
+      if (!indices.length || indices.some((n) => !Number.isInteger(n) || n < 0)) return null;
+
+      let parentList = menu.items;
+      let parentNode = null;
+      let grandParentList = null;
+      let parentIndex = -1;
+
+      for (let i = 0; i < indices.length; i++) {
+        const idx = indices[i];
+        if (!Array.isArray(parentList) || idx < 0 || idx >= parentList.length) return null;
+        const node = parentList[idx];
+        if (i === indices.length - 1) {
+          return { parentList, index: idx, node, parentNode, grandParentList, parentIndex };
+        }
+        grandParentList = parentList;
+        parentIndex = idx;
+        parentNode = node;
+        parentList = node.children;
+      }
+      return null;
+    }
+
+    function stripTransientMenuFields(items) {
+      if (!Array.isArray(items)) return;
+      for (const item of items) {
+        if (!item || typeof item !== 'object') continue;
+        delete item._targetType;
+        if (Array.isArray(item.children)) {
+          stripTransientMenuFields(item.children);
+        }
+      }
+    }
+
     document.getElementById('tabs-nav').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-tab]');
       if (!btn) return;
@@ -2842,6 +3259,63 @@
         else if (el.dataset.cfg.startsWith('brand.')) {
           const colInp = document.querySelector(`[data-cfg-color="${el.dataset.cfg}"]`);
           if (colInp && /^#[0-9a-fA-F]{6}$/.test(el.value)) colInp.value = el.value;
+        }
+      } else if (el.dataset.menuCopyMode !== undefined) {
+        navCopyDisplayMode = el.value || 'inherit';
+        if (isChange) render();
+      } else if (el.dataset.slotFooterMode) {
+        const menuId = el.dataset.slotFooterMode;
+        configDraft.ui.navigation = configDraft.ui.navigation || {};
+        configDraft.ui.navigation.slots = configDraft.ui.navigation.slots || {};
+        const arr = [...(configDraft.ui.navigation.slots.footer || [])];
+        const idx = arr.findIndex((x) => (typeof x === 'string' ? x === menuId : x?.id === menuId));
+        if (idx >= 0) {
+          const mode = el.value || 'inherit';
+          arr[idx] = mode === 'dropdown' || mode === 'list' ? { id: menuId, displayMode: mode } : menuId;
+          configDraft.ui.navigation.slots.footer = arr;
+        }
+      } else if (el.dataset.menuField) {
+        const [miStr, field] = el.dataset.menuField.split(':');
+        const menu = configDraft.ui?.navigation?.menus?.[Number(miStr)];
+        if (menu) {
+          menu[field] = el.value;
+          if (isChange && (field === 'displayMode' || field === 'id')) render();
+        }
+      } else if (el.dataset.menuTitle) {
+        const [miStr, loc] = el.dataset.menuTitle.split(':');
+        const menu = configDraft.ui?.navigation?.menus?.[Number(miStr)];
+        if (menu) {
+          menu.titles = menu.titles || {};
+          menu.titles[loc] = el.value;
+        }
+      } else if (el.dataset.menuNode) {
+        const [miStr, pathStr, field] = el.dataset.menuNode.split(':');
+        const ref = resolveMenuNodeRef(Number(miStr), pathStr);
+        if (ref) {
+          ref.node[field] = el.value;
+          if (isChange && (field === 'childrenDisplay' || field === 'contentType')) render();
+        }
+      } else if (el.dataset.menuNodeLabel) {
+        const [miStr, pathStr, loc] = el.dataset.menuNodeLabel.split(':');
+        const ref = resolveMenuNodeRef(Number(miStr), pathStr);
+        if (ref) {
+          ref.node.labels = ref.node.labels || {};
+          ref.node.labels[loc] = el.value;
+        }
+      } else if (el.dataset.menuNodeType) {
+        const [miStr, pathStr] = el.dataset.menuNodeType.split(':');
+        const ref = resolveMenuNodeRef(Number(miStr), pathStr);
+        if (ref) {
+          const nextType = el.value;
+          ref.node._targetType = nextType;
+          delete ref.node.group;
+          delete ref.node.contentType;
+          delete ref.node.href;
+          delete ref.node.external;
+          if (nextType === 'group') ref.node.group = state.pages?.[0]?.group || 'about';
+          else if (nextType === 'contentType') ref.node.contentType = state.contentTypes?.find((c) => c.key !== 'pages')?.key || 'blog';
+          else if (nextType === 'href') ref.node.href = '/';
+          render();
         }
       } else if (el.dataset.cfgColor) {
         setPath(configDraft, el.dataset.cfgColor, el.value);
@@ -3061,6 +3535,23 @@
         else wizardDraft.selectedPages.delete(el.dataset.wizPage);
       } else if (el.dataset.cfgBool) {
         setPath(configDraft, el.dataset.cfgBool, el.checked);
+      } else if (el.dataset.menuNodeBool) {
+        const [miStr, pathStr, field] = el.dataset.menuNodeBool.split(':');
+        const ref = resolveMenuNodeRef(Number(miStr), pathStr);
+        if (ref) ref.node[field] = el.checked;
+      } else if (el.dataset.slotFooter) {
+        const menuId = el.dataset.slotFooter;
+        configDraft.ui.navigation = configDraft.ui.navigation || {};
+        configDraft.ui.navigation.slots = configDraft.ui.navigation.slots || {};
+        const arr = [...(configDraft.ui.navigation.slots.footer || [])];
+        const existingIdx = arr.findIndex((x) => (typeof x === 'string' ? x === menuId : x?.id === menuId));
+        if (el.checked && existingIdx < 0) {
+          arr.push(menuId);
+        } else if (!el.checked && existingIdx >= 0) {
+          arr.splice(existingIdx, 1);
+        }
+        configDraft.ui.navigation.slots.footer = arr;
+        render();
       } else if (el.dataset.cfgQcCh) {
         const ch = el.dataset.cfgQcCh;
         const list = new Set(configDraft.ui.quickContact.channels || []);
@@ -3201,6 +3692,86 @@
       if (btn.dataset.cfgDelTopic !== undefined) {
         configDraft.api.topics.splice(Number(btn.dataset.cfgDelTopic), 1);
         render();
+        return;
+      }
+      if (btn.dataset.menuSelect !== undefined) {
+        selectedMenuIndex = Number(btn.dataset.menuSelect);
+        render();
+        return;
+      }
+      if (btn.dataset.menuCopy !== undefined) {
+        const modeAttr =
+          navCopyDisplayMode && navCopyDisplayMode !== 'inherit'
+            ? ` displayMode="${navCopyDisplayMode}"`
+            : '';
+        const tag = `<NavMenu menuId="${btn.dataset.menuCopy}"${modeAttr} />`;
+        navigator.clipboard?.writeText(tag);
+        showToast(L('کد منو کپی شد: ', 'Copied: ') + tag);
+        return;
+      }
+      if (btn.dataset.menuAct) {
+        const [op, miStr] = btn.dataset.menuAct.split(':');
+        const mi = Number(miStr);
+        const menus = configDraft.ui?.navigation?.menus || [];
+        if (op === 'add-root' && menus[mi]) {
+          menus[mi].items = menus[mi].items || [];
+          menus[mi].items.push({
+            group: state.pages?.[0]?.group || 'about',
+            label: '',
+            labels: {},
+            childrenDisplay: 'inherit',
+          });
+          render();
+        } else if (op === 'dup' && menus[mi]) {
+          const copy = deepClone(menus[mi]);
+          const existingIds = new Set(menus.map((m) => m.id));
+          let idx = 2;
+          let nextId = `${copy.id || 'menu'}-copy`;
+          while (existingIds.has(nextId)) nextId = `${copy.id || 'menu'}-copy-${idx++}`;
+          copy.id = nextId;
+          menus.push(copy);
+          selectedMenuIndex = menus.length - 1;
+          render();
+        } else if (op === 'del' && menus[mi]) {
+          menus.splice(mi, 1);
+          selectedMenuIndex = Math.max(0, Math.min(selectedMenuIndex, menus.length - 1));
+          render();
+        }
+        return;
+      }
+      if (btn.dataset.menuNodeAct) {
+        const [op, miStr, pathStr] = btn.dataset.menuNodeAct.split(':');
+        const mi = Number(miStr);
+        const ref = resolveMenuNodeRef(mi, pathStr);
+        if (ref) {
+          const { parentList, index, node, parentNode, grandParentList, parentIndex } = ref;
+          if (op === 'up' && index > 0) {
+            [parentList[index - 1], parentList[index]] = [parentList[index], parentList[index - 1]];
+          } else if (op === 'down' && index < parentList.length - 1) {
+            [parentList[index + 1], parentList[index]] = [parentList[index], parentList[index + 1]];
+          } else if (op === 'indent' && index > 0) {
+            const prevSibling = parentList[index - 1];
+            parentList.splice(index, 1);
+            prevSibling.children = prevSibling.children || [];
+            prevSibling.children.push(node);
+          } else if (op === 'outdent' && parentNode && grandParentList) {
+            parentList.splice(index, 1);
+            if (parentList.length === 0) delete parentNode.children;
+            grandParentList.splice(parentIndex + 1, 0, node);
+          } else if (op === 'add-child') {
+            node.children = node.children || [];
+            node.children.push({
+              group: state.pages?.[0]?.group || 'about',
+              label: '',
+              labels: {},
+              childrenDisplay: 'inherit',
+            });
+          } else if (op === 'del') {
+            parentList.splice(index, 1);
+            if (parentNode && parentList.length === 0) delete parentNode.children;
+          }
+          render();
+        }
         return;
       }
       if (btn.dataset.cfgMoveNavpage) {
@@ -3479,6 +4050,79 @@
         configDraft.api.topics = configDraft.api.topics || [];
         configDraft.api.topics.push({ value: 'general', label: 'General', labels: {} });
         render();
+      } else if (act === 'cfg-add-menu') {
+        configDraft.ui.navigation = configDraft.ui.navigation || {};
+        configDraft.ui.navigation.menus = configDraft.ui.navigation.menus || [];
+        const existing = new Set(configDraft.ui.navigation.menus.map((m) => m.id));
+        let idx = 1;
+        let id = 'main-menu';
+        while (existing.has(id)) id = `menu-${++idx}`;
+        configDraft.ui.navigation.menus.push({
+          id,
+          title: id,
+          titles: {},
+          displayMode: 'dropdown',
+          items: [
+            { group: 'home', icon: 'home', labels: {} },
+          ],
+        });
+        selectedMenuIndex = configDraft.ui.navigation.menus.length - 1;
+        render();
+      } else if (act === 'cfg-import-default-menu') {
+        configDraft.ui.navigation = configDraft.ui.navigation || {};
+        configDraft.ui.navigation.menus = configDraft.ui.navigation.menus || [];
+        const existing = new Set(configDraft.ui.navigation.menus.map((m) => m.id));
+        let idx = 1;
+        let id = 'header-menu';
+        while (existing.has(id)) id = `header-menu-${++idx}`;
+        const items = [];
+        for (const p of state.pages || []) {
+          items.push({
+            group: p.group,
+            icon: p.group === 'home' ? 'home' : 'file',
+            labels: {},
+          });
+        }
+        for (const ct of state.contentTypes || []) {
+          if (ct.key === 'pages' || !ct.enabled || !ct.index) continue;
+          items.push({
+            contentType: ct.key,
+            icon: ct.icon || (ct.key === 'blog' ? 'newspaper' : 'folder'),
+            labels: {},
+          });
+        }
+        if ((state.pages || []).some((p) => p.group === 'features')) {
+          items.push({
+            id: 'resources',
+            icon: 'layers',
+            label: 'Resources',
+            labels: { fa: 'منابع', en: 'Resources' },
+            childrenDisplay: 'dropdown',
+            children: [
+              { group: 'features', icon: 'book-open', label: 'Overview', labels: { fa: 'نمای کلی', en: 'Overview' } },
+              {
+                id: 'explore',
+                icon: 'compass',
+                label: 'Explore',
+                labels: { fa: 'بیشتر بدانید', en: 'Explore' },
+                childrenDisplay: 'list',
+                children: [
+                  { href: '/features/#rtl', icon: 'globe', label: 'RTL Support', labels: { fa: 'پشتیبانی RTL', en: 'RTL Support' } },
+                  { href: '/features/#design', icon: 'palette', label: 'Design System', labels: { fa: 'سیستم طراحی', en: 'Design System' } },
+                ],
+              },
+            ],
+          });
+        }
+        configDraft.ui.navigation.menus.push({
+          id,
+          title: 'Main Menu',
+          titles: { fa: 'منوی اصلی', en: 'Main Menu' },
+          displayMode: 'dropdown',
+          items,
+        });
+        selectedMenuIndex = configDraft.ui.navigation.menus.length - 1;
+        render();
       } else if (act === 'cfg-add-navpage') {
         configDraft.ui.navigation = configDraft.ui.navigation || {};
         configDraft.ui.navigation.pages = configDraft.ui.navigation.pages || [];
@@ -3515,6 +4159,11 @@
           try {
             const payload = deepClone(configDraft);
             delete payload.content;
+            if (Array.isArray(payload.ui?.navigation?.menus)) {
+              for (const m of payload.ui.navigation.menus) {
+                stripTransientMenuFields(m.items);
+              }
+            }
             const res = await apiPost('api/config-save', { patch: payload, replace: true });
             logConsole('config-save', JSON.stringify(res.clientOverrides, null, 2), true);
             showToast(L('تنظیمات در client/config.json ذخیره شد', 'Saved client/config.json'));

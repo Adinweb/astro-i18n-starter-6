@@ -850,6 +850,159 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
     ).toBe(true);
     expect(healthRes.json.checks.some((c: { tab: string }) => c.tab === 'i18n')).toBe(true);
   });
+
+  it('supports tree menus with unique IDs, dropdown/list display modes, slots, and transient cleanup in Studio API & UI', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+
+    const stateRes = await invokeStudio(handler, { method: 'GET', url: '/api/state' });
+    expect(stateRes.status).toBe(200);
+    expect(Array.isArray(stateRes.json.availableIcons)).toBe(true);
+    expect(stateRes.json.availableIcons).toContain('home');
+
+    const html = await invokeStudio(handler, { method: 'GET', url: '/', originalUrl: '/__studio/' });
+    expect(html.status).toBe(200);
+    const script = html.text.match(/<script>([\s\S]*?)<\/script>/)![1];
+    expect(() => new Function(script)).not.toThrow();
+    expect(script).toContain('resolveMenuNodeRef');
+    expect(script).toContain('ui.navigation.menus');
+    expect(script).toContain('ui.navigation.slots');
+    expect(script).toContain('headerDisplayMode');
+    expect(script).toContain('drawerDisplayMode');
+    expect(script).toContain('footerDisplayMode');
+    expect(script).toContain('data-slot-footer-mode');
+    expect(script).toContain('data-menu-copy-mode');
+    expect(script).toContain('<NavMenu menuId=');
+
+    const saveRes = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/config-save',
+      body: {
+        patch: {
+          ui: {
+            navigation: {
+              menus: [
+                {
+                  id: 'main-nav',
+                  title: 'Main Nav',
+                  titles: { en: 'Main Nav', fa: 'منوی اصلی' },
+                  displayMode: 'dropdown',
+                  items: [
+                    { group: 'home', icon: 'home', _targetType: 'group' },
+                    {
+                      id: 'products',
+                      label: 'Products',
+                      _targetType: 'branch',
+                      childrenDisplay: 'list',
+                      children: [
+                        {
+                          href: '/blog/',
+                          label: 'Blog Updates',
+                          _targetType: 'href',
+                          childrenDisplay: 'inherit',
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  id: 'company-nav',
+                  title: 'Company Nav',
+                  displayMode: 'list',
+                  items: [{ group: 'about' }],
+                },
+              ],
+              slots: {
+                header: 'main-nav',
+                headerDisplayMode: 'dropdown',
+                drawer: 'main-nav',
+                drawerDisplayMode: 'list',
+                footer: [
+                  { id: 'main-nav', displayMode: 'list' },
+                  { id: 'company-nav', displayMode: 'inherit' },
+                ],
+                footerMode: 'replace',
+                footerDisplayMode: 'inherit',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(saveRes.status).toBe(200);
+    const savedMenus = saveRes.json.clientOverrides.ui.navigation.menus;
+    expect(savedMenus).toHaveLength(2);
+    expect(savedMenus[0].id).toBe('main-nav');
+    expect(savedMenus[0].items[0]._targetType).toBeUndefined();
+    expect(savedMenus[0].items[1].childrenDisplay).toBe('list');
+    expect(savedMenus[0].items[1].children[0].childrenDisplay).toBeUndefined();
+    expect(saveRes.json.clientOverrides.ui.navigation.slots).toEqual({
+      header: 'main-nav',
+      headerDisplayMode: 'dropdown',
+      drawer: 'main-nav',
+      drawerDisplayMode: 'list',
+      footer: [{ id: 'main-nav', displayMode: 'list' }, 'company-nav'],
+      footerMode: 'replace',
+    });
+
+    // Reject invalid slot displayMode
+    const badSlotMode = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/config-save',
+      body: {
+        patch: {
+          ui: {
+            navigation: {
+              slots: {
+                headerDisplayMode: 'mega-grid',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(badSlotMode.status).toBe(400);
+
+    // Reject duplicate menu IDs
+    const dupRes = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/config-save',
+      body: {
+        patch: {
+          ui: {
+            navigation: {
+              menus: [
+                { id: 'dup-id', items: [{ group: 'home' }] },
+                { id: 'dup-id', items: [{ href: '/about/' }] },
+              ],
+            },
+          },
+        },
+      },
+    });
+    expect(dupRes.status).toBe(400);
+
+    // Reject unsafe protocol href in nested child
+    const unsafeRes = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/config-save',
+      body: {
+        patch: {
+          ui: {
+            navigation: {
+              menus: [
+                {
+                  id: 'xss-test',
+                  items: [{ id: 'root', label: 'Root', children: [{ href: 'javascript:alert(1)' }] }],
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+    expect(unsafeRes.status).toBe(400);
+  });
 });
+
 
 

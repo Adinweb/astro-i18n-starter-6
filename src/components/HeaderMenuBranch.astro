@@ -1,0 +1,121 @@
+---
+import Icon from '@/components/ui/Icon.astro';
+import type { NavItem } from '@/libs/config/navigation';
+
+interface Props {
+  item: NavItem;
+  depth?: number;
+}
+
+const { item, depth = 1 } = Astro.props;
+const hasChildren = Boolean(item.children && item.children.length > 0);
+const isListGroup = hasChildren && item.displayMode === 'list';
+---
+
+{
+  hasChildren ? (
+    isListGroup ? (
+      <div class="py-1" role="none">
+        {item.href ? (
+          <a
+            href={item.href}
+            data-nav-link={item.key}
+            target={item.external ? '_blank' : undefined}
+            rel={item.external ? 'noopener noreferrer' : undefined}
+            aria-current={item.active ? 'page' : undefined}
+            class:list={[
+              'flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors hover:bg-surface-hover hover:text-primary',
+              item.active ? 'bg-primary/10 text-primary' : 'text-fg',
+            ]}
+          >
+            <span>{item.label}</span>
+            {item.external && <Icon name="external-link" size={12} class="shrink-0 opacity-60" />}
+          </a>
+        ) : (
+          <div class="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+            {item.label}
+          </div>
+        )}
+        <div class="mt-0.5 ms-2.5 ps-2 border-s border-border/60 space-y-0.5" role="group">
+          {item.children!.map((child) => (
+            <Astro.self item={child} depth={depth + 1} />
+          ))}
+        </div>
+      </div>
+    ) : (
+      <div class="relative group/sub" data-subdropdown-item>
+        <div class="flex items-center justify-between gap-1 rounded-lg transition-colors hover:bg-surface-hover">
+          {item.href ? (
+            <>
+              <a
+                href={item.href}
+                data-nav-link={item.key}
+                role="menuitem"
+                target={item.external ? '_blank' : undefined}
+                rel={item.external ? 'noopener noreferrer' : undefined}
+                aria-current={item.active ? 'page' : undefined}
+                class:list={[
+                  'flex-1 truncate px-2.5 py-1.5 text-xs transition-colors hover:text-primary',
+                  item.active ? 'font-semibold text-primary' : 'text-fg',
+                ]}
+              >
+                {item.label}
+              </a>
+              <button
+                type="button"
+                class="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-muted transition-colors hover:text-primary cursor-pointer focus-visible:outline-none"
+                aria-expanded="false"
+                aria-haspopup="true"
+                aria-label={item.label}
+                data-subdropdown-trigger
+              >
+                <Icon name="chevron-right" size={13} class="rtl:rotate-180 opacity-75" />
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              class:list={[
+                'flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors hover:text-primary cursor-pointer focus-visible:outline-none',
+                item.active ? 'font-semibold text-primary' : 'text-fg',
+              ]}
+              aria-expanded="false"
+              aria-haspopup="true"
+              data-subdropdown-trigger
+            >
+              <span class="truncate">{item.label}</span>
+              <Icon name="chevron-right" size={13} class="shrink-0 rtl:rotate-180 opacity-75" />
+            </button>
+          )}
+        </div>
+
+        <div
+          data-subdropdown-menu
+          class="lg:absolute top-0 start-full ps-1.5 z-50 hidden min-w-44 group-hover/sub:block group-focus-within/sub:block focus-within/sub:block [&[data-force-closed=true]]:!hidden"
+        >
+          <div class="rounded-xl border border-border bg-surface p-1.5 shadow-xl" role="menu">
+            {item.children!.map((child) => (
+              <Astro.self item={child} depth={depth + 1} />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  ) : (
+    <a
+      href={item.href}
+      data-nav-link={item.key}
+      role="menuitem"
+      target={item.external ? '_blank' : undefined}
+      rel={item.external ? 'noopener noreferrer' : undefined}
+      aria-current={item.active ? 'page' : undefined}
+      class:list={[
+        'flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors hover:bg-surface-hover hover:text-primary',
+        item.active ? 'bg-primary/10 font-semibold text-primary' : 'text-fg',
+      ]}
+    >
+      <span class="truncate">{item.label}</span>
+      {item.external && <Icon name="external-link" size={12} class="shrink-0 opacity-60" />}
+    </a>
+  )
+}

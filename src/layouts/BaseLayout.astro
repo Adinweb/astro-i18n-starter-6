@@ -23,7 +23,9 @@ import QuickContactWidget from '@/components/QuickContactWidget.astro';
 import IconButton from '@/components/ui/IconButton.astro';
 import Button from '@/components/ui/Button.astro';
 import Icon from '@/components/ui/Icon.astro';
-import DrawerNavLink from '@/components/DrawerNavLink.astro';
+import DrawerMenuNode from '@/components/DrawerMenuNode.astro';
+import HeaderMenuBranch from '@/components/HeaderMenuBranch.astro';
+import FooterMenuNode from '@/components/FooterMenuNode.astro';
 import DrawerSearch from '@/components/DrawerSearch.astro';
 import LayoutHooks from '@client/LayoutHooks.astro';
 import 'virtual:brand-fonts';
@@ -479,25 +481,149 @@ const structuredData = schema ?? [
             {
               headerNav.map((item) => {
                 if (item.children && item.children.length > 0) {
+                  if (item.displayMode === 'list') {
+                    return (
+                      <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-bg/50 px-2.5 py-1">
+                        {item.href ? (
+                          <a
+                            href={item.href}
+                            data-nav-link={item.key}
+                            target={item.external ? '_blank' : undefined}
+                            rel={item.external ? 'noopener noreferrer' : undefined}
+                            class:list={[
+                              'shrink-0 whitespace-nowrap font-semibold transition-colors hover:text-primary',
+                              item.active ? 'text-primary' : 'text-fg',
+                            ]}
+                          >
+                            {item.label}
+                          </a>
+                        ) : (
+                          <span class="shrink-0 whitespace-nowrap font-semibold text-fg">
+                            {item.label}
+                          </span>
+                        )}
+                        <span aria-hidden="true" class="text-border">|</span>
+                        <div class="flex items-center gap-2.5">
+                          {item.children.map((child) =>
+                            child.children && child.children.length > 0 ? (
+                              child.displayMode === 'list' ? (
+                                <div class="inline-flex items-center gap-1.5">
+                                  {child.href ? (
+                                    <a
+                                      href={child.href}
+                                      data-nav-link={child.key}
+                                      target={child.external ? '_blank' : undefined}
+                                      rel={child.external ? 'noopener noreferrer' : undefined}
+                                      class:list={[
+                                        'shrink-0 whitespace-nowrap font-medium transition-colors hover:text-primary',
+                                        child.active ? 'text-primary' : 'text-fg/85',
+                                      ]}
+                                    >
+                                      {child.label}:
+                                    </a>
+                                  ) : (
+                                    <span class="shrink-0 whitespace-nowrap font-medium text-muted">
+                                      {child.label}:
+                                    </span>
+                                  )}
+                                  {child.children.map((sub) =>
+                                    sub.href ? (
+                                      <a
+                                        href={sub.href}
+                                        data-nav-link={sub.key}
+                                        target={sub.external ? '_blank' : undefined}
+                                        rel={sub.external ? 'noopener noreferrer' : undefined}
+                                        class:list={[
+                                          'shrink-0 whitespace-nowrap transition-colors hover:text-primary',
+                                          sub.active ? 'font-semibold text-primary' : 'text-fg/80',
+                                        ]}
+                                      >
+                                        {sub.label}
+                                      </a>
+                                    ) : null
+                                  )}
+                                </div>
+                              ) : (
+                                <div class="relative group" data-dropdown-item>
+                                  <button
+                                    type="button"
+                                    class="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-fg/80 transition-colors hover:text-primary cursor-pointer"
+                                    aria-expanded="false"
+                                    aria-haspopup="true"
+                                    data-dropdown-trigger
+                                  >
+                                    <span data-dropdown-label={child.key}>{child.label}</span>
+                                    <Icon name="chevron-down" size={12} class="shrink-0 opacity-70" />
+                                  </button>
+                                  <div
+                                    data-dropdown-menu
+                                    class="absolute start-0 top-full pt-1.5 z-50 hidden min-w-44 group-hover:block group-focus-within:block focus-within:block [&[data-force-closed=true]]:!hidden"
+                                  >
+                                    <div class="rounded-xl border border-border bg-surface p-1.5 shadow-xl" role="menu">
+                                      {child.children.map((sub) => (
+                                        <HeaderMenuBranch item={sub} />
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            ) : (
+                              <a
+                                href={child.href}
+                                data-nav-link={child.key}
+                                target={child.external ? '_blank' : undefined}
+                                rel={child.external ? 'noopener noreferrer' : undefined}
+                                class:list={[
+                                  'shrink-0 whitespace-nowrap transition-colors hover:text-primary',
+                                  child.active ? 'font-semibold text-primary' : 'text-fg/80',
+                                ]}
+                              >
+                                {child.label}
+                              </a>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div class="relative group" data-dropdown-item>
-                      <button
-                        type="button"
-                        class:list={[
-                          'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap transition-colors hover:text-primary py-1 cursor-pointer focus-visible:outline-none',
-                          item.active ? 'font-semibold text-fg underline decoration-primary decoration-2 underline-offset-4' : 'text-fg',
-                        ]}
-                        aria-expanded="false"
-                        aria-haspopup="true"
-                        data-dropdown-trigger
-                      >
-                        <span data-dropdown-label={item.key}>{item.label}</span>
-                        <Icon
-                          name="chevron-down"
-                          size={13}
-                          class="ms-1 shrink-0 transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180"
-                        />
-                      </button>
+                      <div class="inline-flex items-center gap-0.5">
+                        {item.href ? (
+                          <a
+                            href={item.href}
+                            data-nav-link={item.key}
+                            target={item.external ? '_blank' : undefined}
+                            rel={item.external ? 'noopener noreferrer' : undefined}
+                            aria-current={item.active ? 'page' : undefined}
+                            class:list={[
+                              'inline-flex shrink-0 items-center whitespace-nowrap transition-colors hover:text-primary py-1',
+                              item.active ? 'font-semibold text-fg underline decoration-primary decoration-2 underline-offset-4' : 'text-fg',
+                            ]}
+                          >
+                            <span data-dropdown-label={item.key}>{item.label}</span>
+                          </a>
+                        ) : null}
+                        <button
+                          type="button"
+                          class:list={[
+                            'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap transition-colors hover:text-primary py-1 cursor-pointer focus-visible:outline-none',
+                            item.active ? 'font-semibold text-fg underline decoration-primary decoration-2 underline-offset-4' : 'text-fg',
+                          ]}
+                          aria-expanded="false"
+                          aria-haspopup="true"
+                          aria-label={item.href ? item.label : undefined}
+                          data-dropdown-trigger
+                        >
+                          {!item.href && <span data-dropdown-label={item.key}>{item.label}</span>}
+                          <Icon
+                            name="chevron-down"
+                            size={13}
+                            class="ms-0.5 shrink-0 transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180"
+                          />
+                        </button>
+                      </div>
 
                       <div
                         data-dropdown-menu
@@ -507,60 +633,9 @@ const structuredData = schema ?? [
                           class="rounded-xl border border-border bg-surface p-1.5 shadow-xl"
                           role="menu"
                         >
-                          {item.children.map((child) => {
-                            if (child.children && child.children.length > 0) {
-                              return (
-                                <div class="relative group/sub" data-subdropdown-item>
-                                  <button
-                                    type="button"
-                                    class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-fg transition-colors hover:bg-surface-hover hover:text-primary cursor-pointer text-start"
-                                    aria-haspopup="true"
-                                    aria-expanded="false"
-                                    data-subdropdown-trigger
-                                  >
-                                    <span data-dropdown-label={child.key}>{child.label}</span>
-                                    <Icon name="chevron-right" size={13} class="rtl:rotate-180 opacity-70" />
-                                  </button>
-                                  <div
-                                    data-subdropdown-menu
-                                    class="absolute start-full top-0 ps-1.5 z-50 hidden min-w-44 group-hover/sub:block group-focus-within/sub:block focus-within:block [&[data-force-closed=true]]:!hidden"
-                                  >
-                                    <div
-                                      class="rounded-xl border border-border bg-surface p-1.5 shadow-xl"
-                                      role="menu"
-                                    >
-                                      {child.children.map((subChild) => (
-                                        <a
-                                          href={subChild.href}
-                                          data-nav-link={subChild.key}
-                                          role="menuitem"
-                                          class:list={[
-                                            'block rounded-lg px-3 py-2 text-sm transition-colors hover:bg-surface-hover hover:text-primary',
-                                            subChild.active ? 'bg-primary/10 font-medium text-primary' : 'text-fg',
-                                          ]}
-                                        >
-                                          {subChild.label}
-                                        </a>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            return (
-                              <a
-                                href={child.href}
-                                data-nav-link={child.key}
-                                role="menuitem"
-                                class:list={[
-                                  'block rounded-lg px-3 py-2 text-sm transition-colors hover:bg-surface-hover hover:text-primary',
-                                  child.active ? 'bg-primary/10 font-medium text-primary' : 'text-fg',
-                                ]}
-                              >
-                                {child.label}
-                              </a>
-                            );
-                          })}
+                          {item.children.map((child) => (
+                            <HeaderMenuBranch item={child} />
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -571,6 +646,8 @@ const structuredData = schema ?? [
                   <a
                     href={item.href}
                     data-nav-link={item.key}
+                    target={item.external ? '_blank' : undefined}
+                    rel={item.external ? 'noopener noreferrer' : undefined}
                     aria-current={item.active ? 'page' : undefined}
                     class:list={[
                       'shrink-0 whitespace-nowrap transition-colors hover:text-primary',
@@ -769,60 +846,7 @@ const structuredData = schema ?? [
               so the submenu does not read as an unrelated block inside the menu.
             -->
             <nav class="space-y-1 font-medium" aria-label={m.common_menu({}, { locale })}>
-              {
-                drawerNav.map((item) => {
-                  if (item.children && item.children.length > 0) {
-                    return (
-                      <div class="space-y-0.5">
-                        {/* The branch row names the list below it; it is not a control. */}
-                        <p class="flex items-center gap-3 rounded-xl px-2 py-2 text-sm font-semibold text-fg">
-                          <span class="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-bg/60 text-fg/70">
-                            <Icon name={item.icon ?? 'layers'} size={17} />
-                          </span>
-                          <span data-dropdown-label={item.key} class="min-w-0 flex-1 truncate">
-                            {item.label}
-                          </span>
-                        </p>
-
-                        {/* `ms-6.5` puts the guide under the 36px tile's centre. */}
-                        <ul class="ms-6.5 space-y-0.5 border-s border-border/70 ps-2">
-                          {item.children.map((child) => {
-                            if (child.children && child.children.length > 0) {
-                              return (
-                                <li class="space-y-0.5">
-                                  <p class="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-muted">
-                                    <span class="flex size-8 shrink-0 items-center justify-center">
-                                      <Icon name={child.icon ?? 'file'} size={16} />
-                                    </span>
-                                    <span data-dropdown-label={child.key} class="min-w-0 flex-1 truncate">
-                                      {child.label}
-                                    </span>
-                                  </p>
-                                  {/* One more level: the guide steps in under the 32px tile's centre. */}
-                                  <ul class="ms-6 space-y-0.5 border-s border-border/60 ps-1.5">
-                                    {child.children.map((subChild) => (
-                                      <li>
-                                        <DrawerNavLink item={subChild} depth={2} />
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </li>
-                              );
-                            }
-                            return (
-                              <li>
-                                <DrawerNavLink item={child} depth={1} />
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    );
-                  }
-
-                  return <DrawerNavLink item={item} />;
-                })
-              }
+              {drawerNav.map((item) => <DrawerMenuNode item={item} depth={0} />)}
             </nav>
 
             <!-- Dedicated Languages Section (NO popups!) -->
@@ -1024,21 +1048,7 @@ const structuredData = schema ?? [
                 </span>
                 <ul class="space-y-2 text-xs">
                   {col.items.map((item) => (
-                    <li>
-                      <a
-                        href={item.href}
-                        data-nav-link={item.key}
-                        target={item.external ? '_blank' : undefined}
-                        rel={item.external ? 'noopener noreferrer' : undefined}
-                        class:list={[
-                          'inline-flex items-center gap-1.5 transition-colors hover:text-primary',
-                          item.active ? 'text-primary font-medium' : 'text-fg/80',
-                        ]}
-                      >
-                        <span>{item.label}</span>
-                        {item.external && <Icon name="external-link" size={11} class="opacity-60 shrink-0" />}
-                      </a>
-                    </li>
+                    <FooterMenuNode item={item} />
                   ))}
                 </ul>
               </div>
@@ -1060,6 +1070,8 @@ const structuredData = schema ?? [
                   <a
                     href={item.href}
                     data-nav-link={item.key}
+                    target={item.external ? '_blank' : undefined}
+                    rel={item.external ? 'noopener noreferrer' : undefined}
                     class="hover:underline transition-colors hover:text-fg"
                   >
                     {item.label}

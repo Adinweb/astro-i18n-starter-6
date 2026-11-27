@@ -252,10 +252,124 @@ const uiNavigationFooterColumnSchema = z.object({
   items: z.array(uiNavigationFooterItemSchema).optional(),
 });
 
-export const uiNavigationSchema = z.object({
-  pages: z.array(uiNavigationPageSchema).optional(),
-  footerColumns: z.array(uiNavigationFooterColumnSchema).optional(),
+export const navDisplayModeSchema = z.enum(['dropdown', 'list']);
+export type NavDisplayMode = z.infer<typeof navDisplayModeSchema>;
+
+export const navItemChildrenDisplaySchema = z.enum(['inherit', 'dropdown', 'list']);
+export type NavItemChildrenDisplay = z.infer<typeof navItemChildrenDisplaySchema>;
+
+export interface UiNavigationMenuItem {
+  id?: string;
+  key?: string;
+  group?: string;
+  contentType?: string;
+  href?: string;
+  external?: boolean;
+  icon?: string;
+  label?: string;
+  labels?: Record<string, string>;
+  childrenDisplay?: NavItemChildrenDisplay;
+  children?: UiNavigationMenuItem[];
+}
+
+function isUnsafeNavigationHref(raw: string): boolean {
+  const normalized = raw.trim().replace(/[\u0000-\u0020]+/g, '').toLowerCase();
+  return (
+    normalized.startsWith('javascript:') ||
+    normalized.startsWith('vbscript:') ||
+    normalized.startsWith('data:')
+  );
+}
+
+export const uiNavigationMenuItemSchema: z.ZodType<UiNavigationMenuItem> = z.lazy(() =>
+  z
+    .object({
+      id: z.string().trim().min(1).optional(),
+      key: z.string().trim().min(1).optional(),
+      group: z.string().trim().min(1).optional(),
+      contentType: z.string().trim().min(1).optional(),
+      href: z.string().trim().min(1).optional(),
+      external: z.boolean().optional().default(false),
+      icon: z.string().trim().min(1).optional(),
+      label: z.string().optional(),
+      labels: localizedStringMapSchema.optional(),
+      childrenDisplay: navItemChildrenDisplaySchema.optional().default('inherit'),
+      children: z.array(uiNavigationMenuItemSchema).optional(),
+    })
+    .superRefine((item, ctx) => {
+      const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+      if (!item.group && !item.contentType && !item.href && !hasChildren) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'Menu item must specify "group", "contentType", "href", or at least one child item.',
+        });
+      }
+      if (item.href && isUnsafeNavigationHref(item.href)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['href'],
+          message: 'Menu item href uses a disallowed URL scheme.',
+        });
+      }
+    })
+);
+
+export const uiNavigationMenuSchema = z.object({
+  id: z
+    .string()
+    .trim()
+    .min(1)
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Menu ID must use ASCII letters, digits, "_" or "-".'),
+  title: z.string().optional(),
+  titles: localizedStringMapSchema.optional(),
+  displayMode: navDisplayModeSchema.optional().default('dropdown'),
+  items: z.array(uiNavigationMenuItemSchema).default([]),
 });
+export type UiNavigationMenu = z.infer<typeof uiNavigationMenuSchema>;
+
+export const uiNavigationFooterSlotEntrySchema = z.union([
+  z.string().trim().min(1),
+  z.object({
+    id: z.string().trim().min(1),
+    displayMode: navItemChildrenDisplaySchema.optional().default('inherit'),
+  }),
+]);
+export type UiNavigationFooterSlotEntry = z.infer<typeof uiNavigationFooterSlotEntrySchema>;
+
+export const uiNavigationSlotsSchema = z.object({
+  header: z.string().trim().min(1).optional(),
+  headerDisplayMode: navItemChildrenDisplaySchema.optional(),
+  drawer: z.string().trim().min(1).optional(),
+  drawerDisplayMode: navItemChildrenDisplaySchema.optional(),
+  footer: z.array(uiNavigationFooterSlotEntrySchema).optional(),
+  footerMode: z.enum(['append', 'replace']).optional().default('append'),
+  footerDisplayMode: navItemChildrenDisplaySchema.optional(),
+  legal: z.string().trim().min(1).optional(),
+});
+export type UiNavigationSlots = z.infer<typeof uiNavigationSlotsSchema>;
+
+export const uiNavigationSchema = z
+  .object({
+    pages: z.array(uiNavigationPageSchema).optional(),
+    footerColumns: z.array(uiNavigationFooterColumnSchema).optional(),
+    menus: z.array(uiNavigationMenuSchema).optional(),
+    slots: uiNavigationSlotsSchema.optional(),
+  })
+  .superRefine((nav, ctx) => {
+    if (!nav.menus) return;
+    const seen = new Set<string>();
+    nav.menus.forEach((menu, index) => {
+      if (seen.has(menu.id)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['menus', index, 'id'],
+          message: `Duplicate navigation menu id "${menu.id}".`,
+        });
+      }
+      seen.add(menu.id);
+    });
+  });
 export type UiNavigationConfig = z.infer<typeof uiNavigationSchema>;
 
 export const uiConfigSchema = z.object({

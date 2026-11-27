@@ -6,9 +6,17 @@ import { getHomeHref, getPageUrl } from '@/libs/content/service';
 import {
   getContentTypeIndexHref,
   getContentTypeLabel,
+  getIndexedContentTypes,
   getNavigableContentTypes,
 } from '@/libs/content/types';
-import { siteConfig, type UiNavigationConfig } from '@/libs/config/app';
+import {
+  siteConfig,
+  type NavDisplayMode,
+  type NavItemChildrenDisplay,
+  type UiNavigationConfig,
+  type UiNavigationMenu,
+  type UiNavigationMenuItem,
+} from '@/libs/config/app';
 import { CLIENT_CONTENT_TYPES } from '@client/content';
 import {
   CLIENT_PAGE_ITEMS,
@@ -30,12 +38,24 @@ export interface NavItem {
    * and falls back to `file`.
    */
   icon?: string;
+  /**
+   * Controls how nested child items under this item are rendered (`dropdown` vs `list`).
+   */
+  displayMode?: NavDisplayMode;
   children?: NavItem[];
 }
 
 export interface FooterColumn {
   key: string;
   title: string;
+  displayMode?: NavDisplayMode;
+  items: NavItem[];
+}
+
+export interface ResolvedMenu {
+  id: string;
+  title: string;
+  displayMode: NavDisplayMode;
   items: NavItem[];
 }
 
@@ -172,13 +192,220 @@ export function isActive(href: string | undefined, currentUrl: string): boolean 
 export interface NavigationBuildOptions {
   pageItems?: readonly ClientPageNavItem[];
   uiNavigation?: UiNavigationConfig;
+  menuDisplayMode?: NavItemChildrenDisplay;
   primaryExtras?: (ctx: NavContext) => Promise<NavItem[]>;
   footerColumns?: (ctx: NavContext) => Promise<FooterColumn[]>;
   legalItems?: (ctx: NavContext) => Promise<NavItem[]>;
 }
 
 /**
- * Primary navigation shared by desktop header and mobile drawer.
+ * Returns true if the item itself or any nested descendant is active.
+ */
+export function hasActiveNavDescendant(item: NavItem): boolean {
+  if (item.active) return true;
+  if (!item.children?.length) return false;
+  return item.children.some((child) => hasActiveNavDescendant(child));
+}
+
+function isDirectNonLocalizedHref(href: string): boolean {
+  return (
+    href.startsWith('#') ||
+    /^(?:https?:\/\/|mailto:|tel:)/i.test(href)
+  );
+}
+
+async function resolveMenuItemHref(
+  item: UiNavigationMenuItem,
+  locale: Locale
+): Promise<{ href?: string; external?: boolean; brokenTarget: boolean }> {
+  if (item.group) {
+    const href =
+      (await getPageUrl(item.group, locale)) ??
+      (item.group === 'home' ? await getHomeHref(locale) : null);
+    if (!href) {
+      return { brokenTarget: true };
+    }
+    return { href, external: false, brokenTarget: false };
+  }
+
+  if (item.contentType) {
+    const enabled = getIndexedContentTypes().some((t) => t.key === item.contentType);
+    if (!enabled) {
+      return { brokenTarget: true };
+    }
+    return {
+      href: getContentTypeIndexHref(item.contentType, locale),
+      external: false,
+      brokenTarget: false,
+    };
+  }
+
+  if (item.href) {
+    const trimmed = item.href.trim();
+    if (!trimmed) return { brokenTarget: true };
+    const direct = isDirectNonLocalizedHref(trimmed);
+    const resolvedHref = item.external || direct ? trimmed : localizeHref(trimmed, locale);
+    return {
+      href: resolvedHref,
+      external: Boolean(item.external),
+      brokenTarget: false,
+    };
+  }
+
+  return { brokenTarget: false };
+}
+
+async function resolveConfigMenuItems(
+  rawItems: readonly UiNavigationMenuItem[],
+  locale: Locale,
+  currentUrl: string,
+  menuDisplayMode: NavDisplayMode,
+  forcedDisplayMode?: NavDisplayMode
+): Promise<NavItem[]> {
+  const resolved: NavItem[] = [];
+
+  for (const item of rawItems) {
+    const hasDeclaredTarget = Boolean(item.group || item.contentType || item.href);
+    const target = await resolveMenuItemHref(item, locale);
+    const children = item.children?.length
+      ? await resolveConfigMenuItems(
+          item.children,
+          locale,
+          currentUrl,
+          menuDisplayMode,
+          forcedDisplayMode
+        )
+      : [];
+
+    // Drop leaf items pointing at unpublished pages/disabled content types
+    if (hasDeclaredTarget && target.brokenTarget && children.length === 0) {
+      continue;
+    }
+    if (!target.href && children.length === 0) {
+      continue;
+    }
+
+    const label =
+      item.labels?.[locale]?.trim() ||
+      item.label?.trim() ||
+      (item.group ? lookupCatalog(`nav_${item.group}`, locale) : null) ||
+      (item.contentType ? getContentTypeLabel(item.contentType, locale) : null) ||
+      humanizeKey(item.key ?? item.id ?? item.group ?? item.contentType ?? item.href ?? 'link');
+
+    const key =
+      item.key?.trim() ||
+      item.id?.trim() ||
+      item.group?.trim() ||
+      item.contentType?.trim() ||
+      item.href?.trim() ||
+      label;
+
+    const icon =
+      item.icon?.trim() ||
+      (item.contentType ? getContentTypeIcon(item.contentType) : undefined);
+
+    const effectiveDisplayMode: NavDisplayMode =
+      forcedDisplayMode ??
+      (item.childrenDisplay && item.childrenDisplay !== 'inherit'
+        ? item.childrenDisplay
+        : menuDisplayMode);
+
+    const selfActive =
+      target.href && !target.external && !target.href.startsWith('#')
+        ? isActive(target.href, currentUrl)
+        : false;
+    const childActive = children.some((child) => hasActiveNavDescendant(child));
+
+    const navItem: NavItem = {
+      key,
+      label,
+      ...(target.href ? { href: target.href } : {}),
+      active: selfActive || childActive,
+      ...(target.external ? { external: true } : {}),
+      ...(icon ? { icon } : {}),
+      ...(children.length > 0 ? { displayMode: effectiveDisplayMode, children } : {}),
+    };
+
+    resolved.push(navItem);
+  }
+
+  return resolved;
+}
+
+async function resolveConfiguredMenu(
+  menu: UiNavigationMenu,
+  locale: Locale,
+  currentUrl: string,
+  displayModeOverride?: NavItemChildrenDisplay
+): Promise<ResolvedMenu> {
+  const forcedDisplayMode: NavDisplayMode | undefined =
+    displayModeOverride === 'dropdown' || displayModeOverride === 'list'
+      ? displayModeOverride
+      : undefined;
+  const baseDisplayMode: NavDisplayMode = menu.displayMode === 'list' ? 'list' : 'dropdown';
+  const displayMode: NavDisplayMode = forcedDisplayMode ?? baseDisplayMode;
+  const title =
+    menu.titles?.[locale]?.trim() ||
+    menu.title?.trim() ||
+    lookupCatalog(`menu_${menu.id}`, locale) ||
+    humanizeKey(menu.id);
+  const items = await resolveConfigMenuItems(
+    menu.items ?? [],
+    locale,
+    currentUrl,
+    baseDisplayMode,
+    forcedDisplayMode
+  );
+
+  return {
+    id: menu.id,
+    title,
+    displayMode,
+    items,
+  };
+}
+
+function findConfiguredMenu(
+  menuId: string | undefined,
+  uiNavigation?: UiNavigationConfig
+): UiNavigationMenu | undefined {
+  if (!menuId) return undefined;
+  const menus = uiNavigation?.menus;
+  if (!menus?.length) return undefined;
+  return menus.find((mItem) => mItem.id === menuId);
+}
+
+/**
+ * Resolves a single configured menu by its unique ID (`ui.navigation.menus[*].id`).
+ */
+export async function getMenuById(
+  menuId: string,
+  locale: Locale,
+  currentUrl = '',
+  options: NavigationBuildOptions = {}
+): Promise<ResolvedMenu | null> {
+  const effectiveUiNav = options.uiNavigation ?? siteConfig.ui.navigation;
+  const menu = findConfiguredMenu(menuId, effectiveUiNav);
+  if (!menu) return null;
+  return resolveConfiguredMenu(menu, locale, currentUrl, options.menuDisplayMode);
+}
+
+/**
+ * Resolves all configured named menus in `ui.navigation.menus`.
+ */
+export async function getAllMenus(
+  locale: Locale,
+  currentUrl = '',
+  options: NavigationBuildOptions = {}
+): Promise<ResolvedMenu[]> {
+  const effectiveUiNav = options.uiNavigation ?? siteConfig.ui.navigation;
+  const menus = effectiveUiNav?.menus ?? [];
+  return Promise.all(menus.map((menu) => resolveConfiguredMenu(menu, locale, currentUrl)));
+}
+
+/**
+ * Primary navigation shared by desktop header and mobile drawer when no slot
+ * override (`ui.navigation.slots.header` / `drawer`) is bound.
  */
 async function buildPrimaryNavigation(
   locale: Locale,
@@ -218,17 +445,42 @@ export async function getHeaderNavigation(
   currentUrl = '',
   options: NavigationBuildOptions = {}
 ): Promise<NavItem[]> {
+  const effectiveUiNav = options.uiNavigation ?? siteConfig.ui.navigation;
+  const headerMenu = findConfiguredMenu(effectiveUiNav?.slots?.header, effectiveUiNav);
+  if (headerMenu) {
+    return (
+      await resolveConfiguredMenu(
+        headerMenu,
+        locale,
+        currentUrl,
+        effectiveUiNav?.slots?.headerDisplayMode
+      )
+    ).items;
+  }
   return buildPrimaryNavigation(locale, currentUrl, options);
 }
 
 /**
- * Builds the mobile drawer navigation items (the same list as the header).
+ * Builds the mobile drawer navigation items (defaults to the header slot/menu unless overridden).
  */
 export async function getDrawerNavigation(
   locale: Locale,
   currentUrl = '',
   options: NavigationBuildOptions = {}
 ): Promise<NavItem[]> {
+  const effectiveUiNav = options.uiNavigation ?? siteConfig.ui.navigation;
+  const drawerMenuId = effectiveUiNav?.slots?.drawer || effectiveUiNav?.slots?.header;
+  const drawerMenu = findConfiguredMenu(drawerMenuId, effectiveUiNav);
+  if (drawerMenu) {
+    return (
+      await resolveConfiguredMenu(
+        drawerMenu,
+        locale,
+        currentUrl,
+        effectiveUiNav?.slots?.drawerDisplayMode
+      )
+    ).items;
+  }
   return buildPrimaryNavigation(locale, currentUrl, options);
 }
 
@@ -291,7 +543,40 @@ export async function getFooterNavigation(
   };
 
   const extraColumns = await extraFooterFn({ locale, currentUrl, isActive });
-  const columns: FooterColumn[] = [pagesColumn, resourcesColumn, companyColumn, ...extraColumns];
+  const footerSlotEntries = effectiveUiNav?.slots?.footer ?? [];
+  const slotFooterDisplayMode = effectiveUiNav?.slots?.footerDisplayMode;
+  const replaceDefaultFooter =
+    effectiveUiNav?.slots?.footerMode === 'replace' && footerSlotEntries.length > 0;
+
+  const columns: FooterColumn[] = replaceDefaultFooter
+    ? [...extraColumns]
+    : [pagesColumn, resourcesColumn, companyColumn, ...extraColumns];
+
+  for (const entry of footerSlotEntries) {
+    const menuId = typeof entry === 'string' ? entry : entry.id;
+    const entryOverride =
+      typeof entry === 'string'
+        ? undefined
+        : entry.displayMode && entry.displayMode !== 'inherit'
+          ? entry.displayMode
+          : undefined;
+    const effectiveOverride = entryOverride ?? slotFooterDisplayMode;
+    const menu = findConfiguredMenu(menuId, effectiveUiNav);
+    if (!menu) continue;
+    const resolved = await resolveConfiguredMenu(menu, locale, currentUrl, effectiveOverride);
+    const nextCol: FooterColumn = {
+      key: resolved.id,
+      title: resolved.title,
+      displayMode: resolved.displayMode,
+      items: resolved.items,
+    };
+    const existingIdx = columns.findIndex((col) => col.key === nextCol.key);
+    if (existingIdx >= 0) {
+      columns[existingIdx] = nextCol;
+    } else {
+      columns.push(nextCol);
+    }
+  }
 
   if (effectiveUiNav?.footerColumns?.length) {
     for (const cfgCol of effectiveUiNav.footerColumns) {
@@ -365,6 +650,11 @@ export async function getLegalNavigation(
   currentUrl = '',
   options: NavigationBuildOptions = {}
 ): Promise<NavItem[]> {
+  const effectiveUiNav = options.uiNavigation ?? siteConfig.ui.navigation;
+  const legalMenu = findConfiguredMenu(effectiveUiNav?.slots?.legal, effectiveUiNav);
+  if (legalMenu) {
+    return (await resolveConfiguredMenu(legalMenu, locale, currentUrl)).items;
+  }
   const legalFn = options.legalItems ?? getClientLegalNavigation;
   return legalFn({ locale, currentUrl, isActive });
 }
@@ -377,13 +667,14 @@ export async function getNavigationSlots(
   currentUrl = '',
   options: NavigationBuildOptions = {}
 ): Promise<NavigationSlots> {
-  const [primary, footer, legal] = await Promise.all([
-    buildPrimaryNavigation(locale, currentUrl, options),
+  const [header, drawer, footer, legal] = await Promise.all([
+    getHeaderNavigation(locale, currentUrl, options),
+    getDrawerNavigation(locale, currentUrl, options),
     getFooterNavigation(locale, currentUrl, options),
     getLegalNavigation(locale, currentUrl, options),
   ]);
 
-  return { header: primary, drawer: primary, footer, legal };
+  return { header, drawer, footer, legal };
 }
 
 /**
