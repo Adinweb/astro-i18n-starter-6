@@ -74,6 +74,17 @@ const SITE_INIT_PASS_THROUGH_PREFIXES = new Set([
   'blog',
   'projects',
   'cta-page',
+  'business-type',
+  'legal-name',
+  'phone',
+  'whatsapp',
+  'business-telegram',
+  'address',
+  'city',
+  'country',
+  'working-hours',
+  'map-url',
+  'geo',
   'github',
   'twitter',
   'linkedin',
@@ -118,7 +129,9 @@ Environment (.env):
 Plus all \`site:init\` flags:
   --name, --short-name, --desc, --author, --email, --blueprint=<${VALID_BLUEPRINTS.join('|')}>,
   --preset, --primary, --accent, --font, --rtl-font, --og-mode, --default-theme,
-  --logo, --logo-dark, --default-locale, --single-lang, --multi-lang, --blog, --projects, ...
+  --logo, --logo-dark, --default-locale, --single-lang, --multi-lang, --blog, --projects,
+  --business-type, --legal-name, --phone, --whatsapp, --business-telegram,
+  --address, --city, --country, --working-hours, --map-url, --geo=<lat,lng>, ...
 `);
     process.exit(0);
   }

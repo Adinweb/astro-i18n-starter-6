@@ -1794,11 +1794,26 @@ export function getStudioHealth(rootDir = defaultRootDir) {
     );
   }
 
+  const brokenHomeSectionRefs = Array.isArray(mergedConfig.ui?.homeSections)
+    ? collectSectionAssetRefs(mergedConfig.ui.homeSections).filter(
+        (ref) => !isExistingAssetRef(ref, rootDir, rootDir)
+      )
+    : [];
+  if (brokenHomeSectionRefs.length > 0) {
+    pushCheck(
+      'error',
+      `${brokenHomeSectionRefs.length} ui.homeSections image reference(s) point to missing files (${brokenHomeSectionRefs.slice(0, 3).join(', ')}${brokenHomeSectionRefs.length > 3 ? ', …' : ''}).`,
+      'Fix or re-select broken image paths in Home Sections.',
+      'config',
+      'sections'
+    );
+  }
+
   const knownTypeSet = new Set(getKnownTypes(rootDir));
   const activeContentTypes = readContentTypes(mergedConfig, rootDir).filter(
     (type) => knownTypeSet.has(type.key) && (type.key === 'pages' || type.enabled !== false)
   );
-  let brokenContentImages = 0;
+  const brokenContentRefs = [];
   let contentTodoCount = 0;
   const placeholderContentSlugs = [];
 
@@ -1821,21 +1836,22 @@ export function getStudioHealth(rootDir = defaultRootDir) {
         if (source.includes('[TODO:')) contentTodoCount += 1;
         const { data } = parseFrontmatter(source);
         if (typeof data.image === 'string' && !isExistingAssetRef(data.image, rootDir, groupDir)) {
-          brokenContentImages += 1;
+          brokenContentRefs.push(data.image);
         }
         if (Array.isArray(data.sections)) {
           for (const ref of collectSectionAssetRefs(data.sections)) {
-            if (!isExistingAssetRef(ref, rootDir, groupDir)) brokenContentImages += 1;
+            if (!isExistingAssetRef(ref, rootDir, groupDir)) brokenContentRefs.push(ref);
           }
         }
       }
     }
   }
 
+  const brokenContentImages = brokenContentRefs.length;
   if (brokenContentImages > 0) {
     pushCheck(
       'error',
-      `${brokenContentImages} frontmatter/section image reference(s) point to missing files.`,
+      `${brokenContentImages} frontmatter/section image reference(s) point to missing files (${brokenContentRefs.slice(0, 3).join(', ')}${brokenContentRefs.length > 3 ? ', …' : ''}).`,
       'Fix or re-select broken image paths in Content & Pages.',
       'content'
     );
@@ -3071,9 +3087,17 @@ function saveContentEntry(rootDir, payload) {
     'categories',
     'tags',
     'draft',
+    'noindex',
     'template',
     ...(collection === 'projects' ? ['client', 'year', 'link', 'stack'] : []),
   ]);
+
+  if (fm.noindex !== undefined) {
+    if (typeof fm.noindex !== 'boolean') {
+      fm.noindex = fm.noindex === 'true' || fm.noindex === true;
+    }
+    if (!fm.noindex) delete fm.noindex;
+  }
 
   for (const field of typeFields) {
     if (!field?.name || reservedFieldKeys.has(field.name)) continue;

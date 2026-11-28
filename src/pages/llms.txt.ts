@@ -10,7 +10,9 @@ function buildLocaleSections(
   targetLocale: Locale,
   headingPrefix = ''
 ): string[] {
-  const localeRoutes = routes.filter((route) => route.props.locale === targetLocale);
+  const localeRoutes = routes.filter(
+    (route) => route.props.locale === targetLocale && !route.props.entry?.data?.noindex
+  );
   const pageLines: string[] = [];
   const blogLines: string[] = [];
   let blogIndexUrl: string | undefined;

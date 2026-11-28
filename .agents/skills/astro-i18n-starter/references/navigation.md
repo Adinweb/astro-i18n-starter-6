@@ -19,12 +19,22 @@ export interface NavItem {
   external?: boolean;
   /** Semantic icon name from `src/libs/ui/icons.ts`; the drawer renders it. */
   icon?: string;
+  /** Controls how nested child items under this item are rendered (`dropdown` vs `list`). */
+  displayMode?: NavDisplayMode;
   children?: NavItem[];
 }
 
 export interface FooterColumn {
   key: string;
   title: string;
+  displayMode?: NavDisplayMode;
+  items: NavItem[];
+}
+
+export interface ResolvedMenu {
+  id: string;
+  title: string;
+  displayMode: NavDisplayMode;
   items: NavItem[];
 }
 
@@ -131,16 +141,17 @@ export function getContentTypeNavItems(locale: Locale, currentUrl = ''): NavItem
 
 ## 5. Extending Navigation Menus (`ui.navigation` & `client/navigation.ts`)
 
-You can declare navigation items either via config (`client/config.json` → `ui.navigation.pages` / `ui.navigation.footerColumns`, which **merge cleanly** over `client/navigation.ts` by matching `group`/`key` and appending new items) or programmatically in `client/navigation.ts`:
+You can declare navigation items either via config (`client/config.json` → `ui.navigation`) or programmatically in `client/navigation.ts`:
 1. Ensure the page exists under `src/content/pages/<page-key>/` (`npm run new:page <page-key>` or `npm run site:apply`).
-2. Add one entry to `ui.navigation.pages` in `client/config.json` (e.g. `{ "group": "contact", "icon": "mail", "labels": { "en": "Contact", "fa": "تماس" } }`) **or** `CLIENT_PAGE_ITEMS` in `client/navigation.ts` — the single list the header **and** the drawer read:
+2. **Simple page & footer overrides (`pages`, `footerColumns`)**: Add entries to `ui.navigation.pages` in `client/config.json` (which **merge cleanly** over `CLIENT_PAGE_ITEMS` by `group`) or edit `CLIENT_PAGE_ITEMS` in `client/navigation.ts`:
    ```ts
    { group: 'contact', icon: 'mail', label: (locale: Locale) => m.nav_contact({}, { locale }) },
    ```
    `icon` names an entry of `src/libs/ui/icons.ts` or `client/icons.ts`; the mobile drawer shows it in the row's tile, and a missing entry simply falls back to `file`.
-3. For extra dropdowns/anchors, programmatic footer-only columns, or legal links, use `ui.navigation.footerColumns` in `client/config.json` or edit `getClientPrimaryExtras`, `getClientFooterColumns`, and `getClientLegalNavigation` in `client/navigation.ts`.
-4. Use compiled Paraglide message functions (`m.nav_<key>({}, { locale })`) or inline `labels` maps.
-5. Run `npm run check:quick` to verify active state and TypeScript types.
+3. **Reusable tree menus & slots (`menus`, `slots`, `<NavMenu />`)**: Define named multi-level menus in `ui.navigation.menus` (`id`, `title`/`titles`, `displayMode: 'dropdown' | 'list'`, recursive `items[]` with `group`/`contentType`/`href`/`childrenDisplay`) and bind them via `ui.navigation.slots` (`header`, `headerDisplayMode`, `drawer`, `drawerDisplayMode`, `footer`, `footerMode: 'append' | 'replace'`, `footerDisplayMode`, `legal`), or embed any named menu directly in Astro/MDX via `<NavMenu menuId="..." displayMode="..." orientation="horizontal|vertical" />` (`src/components/NavMenu.astro` using `getMenuById()`).
+4. For programmatic extras, custom footer columns, or legal links, edit `getClientPrimaryExtras`, `getClientFooterColumns`, and `getClientLegalNavigation` in `client/navigation.ts`.
+5. Use compiled Paraglide message functions (`m.nav_<key>({}, { locale })`) or inline `labels` maps.
+6. Run `npm run check:quick` to verify active state and TypeScript types.
 
 ---
 

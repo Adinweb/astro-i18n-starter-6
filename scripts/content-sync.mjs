@@ -92,6 +92,7 @@ const CORE_COLLECTION_BLOCKS = {
       'slug',
       'description',
       'draft',
+      'noindex',
       'hero',
       'container',
       'flushTop',
@@ -118,6 +119,10 @@ const CORE_COLLECTION_BLOCKS = {
         type: string
       - name: draft
         label: Draft
+        type: boolean
+        default: false
+      - name: noindex
+        label: Hide from Search (noindex)
         type: boolean
         default: false
       - name: hero
@@ -157,6 +162,7 @@ const CORE_COLLECTION_BLOCKS = {
       'categories',
       'tags',
       'draft',
+      'noindex',
       'image',
     ]),
     yaml: `  - name: blog
@@ -200,6 +206,10 @@ const CORE_COLLECTION_BLOCKS = {
         label: Draft
         type: boolean
         default: false
+      - name: noindex
+        label: Hide from Search (noindex)
+        type: boolean
+        default: false
       - name: image
         label: Cover Image
         type: image
@@ -218,6 +228,7 @@ const CORE_COLLECTION_BLOCKS = {
       'stack',
       'categories',
       'draft',
+      'noindex',
       'image',
     ]),
     yaml: `  - name: projects
@@ -260,6 +271,10 @@ const CORE_COLLECTION_BLOCKS = {
         label: Draft
         type: boolean
         default: false
+      - name: noindex
+        label: Hide from Search (noindex)
+        type: boolean
+        default: false
       - name: image
         label: Cover Image
         type: image
@@ -287,7 +302,7 @@ export function renderCollectionCmsBlock(type) {
   }
 
   const label = type.labels?.en?.trim() || humanize(type.key);
-  const reserved = new Set(['title', 'slug', 'description', 'draft', 'image', 'body']);
+  const reserved = new Set(['title', 'slug', 'description', 'draft', 'noindex', 'image', 'body']);
   const customFields = configuredFields.filter(
     (f) => f?.name && f.cms !== false && !reserved.has(f.name)
   );
@@ -321,6 +336,10 @@ export function renderCollectionCmsBlock(type) {
   lines.push(
     `      - name: draft`,
     `        label: Draft`,
+    `        type: boolean`,
+    `        default: false`,
+    `      - name: noindex`,
+    `        label: Hide from Search (noindex)`,
     `        type: boolean`,
     `        default: false`,
     `      - name: image`,

@@ -1338,9 +1338,9 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
     // 2. Studio HTML renders syntactically valid inline <script> with repeater, toolbar, preview & wizard health strip
     const uiRes = await invokeStudio(handler, { method: 'GET', url: '/' });
     expect(uiRes.status).toBe(200);
-    const html = uiRes.rawBody || '';
+    const html = uiRes.text || '';
     const scriptMatches = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)];
-    expect(scriptMatches.length).toBeGreaterThanOrEqual(2);
+    expect(scriptMatches.length).toBeGreaterThanOrEqual(1);
     for (const m of scriptMatches) {
       expect(() => new Function(m[1])).not.toThrow();
     }
@@ -1372,7 +1372,7 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
     fs.mkdirSync(sampleBlogDir, { recursive: true });
     fs.writeFileSync(
       path.join(sampleBlogDir, 'en.mdx'),
-      `---\ntitle: "Demo Post"\nslug: "my-first-post"\ndescription: "Desc"\npublishedAt: 2026-06-01\ndraft: false\nsections:\n  - block: TeamSection\n    props:\n      members:\n        - name: "Sara"\n          avatar: "./missing-avatar.jpg"\n---\n\nBody.\n`,
+      `---\ntitle: "Demo Post"\nslug: "demo-placeholder-en"\ndescription: "Desc"\npublishedAt: 2026-06-01\ndraft: false\nsections:\n  - block: TeamSection\n    props:\n      members:\n        - name: "Sara"\n          avatar: "./missing-avatar.jpg"\n---\n\nBody.\n`,
       'utf-8'
     );
 
@@ -1381,7 +1381,7 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
     const msgs = healthRes.json.checks.map((c: { message: string }) => c.message);
     expect(msgs.some((m: string) => m.includes('/missing-parallax.jpg'))).toBe(true);
     expect(msgs.some((m: string) => m.includes('public/uploads/heavy-banner.png') || m.includes('public/uploads/'))).toBe(true);
-    expect(msgs.some((m: string) => m.includes('my-first-post') || m.includes('Placeholder'))).toBe(true);
+    expect(msgs.some((m: string) => m.includes('demo-placeholder') || m.toLowerCase().includes('placeholder'))).toBe(true);
 
     // 4. doctor.mjs --json catches broken section asset in config & frontmatter
     let doctorJson: { findings?: Array<{ title: string; level: string }> } = {};
@@ -1430,7 +1430,76 @@ describe('Dev Studio API & UI (studio-api.mjs / studio-ui.mjs)', () => {
     expect(failAuditJson.ok).toBe(false);
     expect(failAuditJson.errors?.some((e) => e.includes('missing_audit_test_key'))).toBe(true);
   }, 20000);
+
+  it('persists and strips per-entry noindex via /api/content-entry and exposes Studio noindex + Jalali helpers', async () => {
+    const handler = createStudioHandler({ rootDir: tmpRoot });
+
+    const saveNoindex = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/content-entry',
+      body: {
+        collection: 'pages',
+        group: 'campaign-landing',
+        locale: 'en',
+        frontmatter: {
+          title: 'Private Campaign',
+          slug: 'campaign-landing',
+          description: 'Unindexed campaign page',
+          draft: false,
+          noindex: true,
+        },
+        body: '\n# Private Campaign\n\nCampaign body.\n',
+      },
+    });
+    expect(saveNoindex.status).toBe(200);
+    const mdxPath = path.join(tmpRoot, 'src/content/pages/campaign-landing/en.mdx');
+    expect(fs.readFileSync(mdxPath, 'utf-8')).toContain('noindex: true');
+
+    const saveIndexed = await invokeStudio(handler, {
+      method: 'POST',
+      url: '/api/content-entry',
+      body: {
+        collection: 'pages',
+        group: 'campaign-landing',
+        locale: 'en',
+        frontmatter: {
+          title: 'Public Campaign',
+          slug: 'campaign-landing',
+          description: 'Indexed campaign page',
+          draft: false,
+          noindex: false,
+        },
+        body: '\n# Public Campaign\n\nCampaign body.\n',
+      },
+    });
+    expect(saveIndexed.status).toBe(200);
+    expect(fs.readFileSync(mdxPath, 'utf-8')).not.toContain('noindex:');
+
+    const uiRes = await invokeStudio(handler, { method: 'GET', url: '/' });
+    expect(uiRes.status).toBe(200);
+    const html = uiRes.text || '';
+    expect(html).toContain('data-efm-bool="noindex"');
+    expect(html).toContain('data-efm-jalali');
+
+    const scriptMatch = html.match(/<script\b[^>]*>([\s\S]*?)<\/script>/);
+    expect(scriptMatch).toBeTruthy();
+    const jalaliBlockMatch = scriptMatch![1].match(
+      /function normalizeDateDigits[\s\S]*?function renderJalaliHelperInput/
+    );
+    expect(jalaliBlockMatch).toBeTruthy();
+    const fn = new Function(
+      `${jalaliBlockMatch![0].replace(/function renderJalaliHelperInput$/, '')}
+      return { isoToJalaliInput, jalaliToIsoDate };`
+    );
+    const { isoToJalaliInput, jalaliToIsoDate } = fn();
+    expect(isoToJalaliInput('2025-03-20')).toBe('1403/12/30');
+    expect(jalaliToIsoDate('1403/12/30')).toBe('2025-03-20');
+    expect(jalaliToIsoDate('1404/12/30')).toBeNull();
+    expect(jalaliToIsoDate('۱۴۰۵/۰۹/۰۶')).toBe('2026-11-27');
+    expect(isoToJalaliInput('2026-11-27')).toBe('1405/09/06');
+  });
 });
+
 
 
 

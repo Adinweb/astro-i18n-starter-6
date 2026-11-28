@@ -14,7 +14,12 @@ export const GET: APIRoute = async ({ params }) => {
 
   const routes = await getSiteRoutes();
   const items = routes
-    .filter((route) => route.props.entry && route.props.locale === locale)
+    .filter(
+      (route) =>
+        route.props.entry &&
+        !route.props.entry.data.noindex &&
+        route.props.locale === locale
+    )
     .map((route) => {
       const entry = route.props.entry!;
       return {

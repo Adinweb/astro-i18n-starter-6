@@ -749,6 +749,115 @@
         .replace(/'/g, '&#39;');
     }
 
+    function normalizeDateDigits(raw) {
+      return String(raw ?? '')
+        .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+        .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+        .trim();
+    }
+    function divInt(a, b) { return ~~(a / b); }
+    function modInt(a, b) { return a - ~~(a / b) * b; }
+    function jalCal(jy) {
+      const breaks = [-61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210, 1635, 2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178];
+      const bl = breaks.length;
+      const gy = jy + 621;
+      let leapJ = -14;
+      let jp = breaks[0];
+      let jm = 0;
+      let jump = 0;
+      if (jy < jp || jy >= breaks[bl - 1]) return null;
+      for (let i = 1; i < bl; i += 1) {
+        jm = breaks[i];
+        jump = jm - jp;
+        if (jy < jm) break;
+        leapJ = leapJ + divInt(jump, 33) * 8 + divInt(modInt(jump, 33), 4);
+        jp = jm;
+      }
+      let n = jy - jp;
+      leapJ = leapJ + divInt(n, 33) * 8 + divInt(modInt(n, 33) + 3, 4);
+      if (modInt(jump, 33) === 4 && jump - n === 4) leapJ += 1;
+      const leapG = divInt(gy, 4) - divInt((divInt(gy, 100) + 1) * 3, 4) - 150;
+      const march = 20 + leapJ - leapG;
+      if (jump - n < 6) n = n - jump + divInt(jump + 4, 33) * 33;
+      let leap = modInt(modInt(n + 1, 33) - 1, 4);
+      if (leap === -1) leap = 4;
+      return { leap, gy, march };
+    }
+    function g2d(gy, gm, gd) {
+      const d = divInt((gy + divInt(gm - 8, 6) + 100100) * 1461, 4)
+        + divInt(153 * modInt(gm + 9, 12) + 2, 5)
+        + gd - 34840408;
+      return d - divInt(divInt(gy + 100100 + divInt(gm - 8, 6), 100) * 3, 4) + 752;
+    }
+    function d2g(jdn) {
+      let j = 4 * jdn + 139361631;
+      j = j + divInt(divInt(4 * jdn + 183187720, 146097) * 3, 4) * 4 - 3908;
+      const i = divInt(modInt(j, 1461), 4) * 5 + 308;
+      const gd = divInt(modInt(i, 153), 5) + 1;
+      const gm = modInt(divInt(i, 153), 12) + 1;
+      const gy = divInt(j, 1461) - 100100 + divInt(8 - gm, 6);
+      return { gy, gm, gd };
+    }
+    function j2d(jy, jm, jd) {
+      const r = jalCal(jy);
+      if (!r) return null;
+      return g2d(r.gy, 3, r.march) + (jm - 1) * 31 - divInt(jm, 7) * (jm - 7) + jd - 1;
+    }
+    function d2j(jdn) {
+      const gy = d2g(jdn).gy;
+      let jy = gy - 621;
+      const r = jalCal(jy);
+      if (!r) return null;
+      const jdn1f = g2d(gy, 3, r.march);
+      let k = jdn - jdn1f;
+      if (k >= 0) {
+        if (k <= 185) {
+          return { jy, jm: 1 + divInt(k, 31), jd: modInt(k, 31) + 1 };
+        }
+        k -= 186;
+      } else {
+        jy -= 1;
+        k += 179;
+        if (r.leap === 1) k += 1;
+      }
+      return { jy, jm: 7 + divInt(k, 30), jd: modInt(k, 30) + 1 };
+    }
+    function isoToJalaliInput(isoStr) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(isoStr || '').trim());
+      if (!m) return '';
+      const gy = Number(m[1]);
+      const gm = Number(m[2]);
+      const gd = Number(m[3]);
+      if (gm < 1 || gm > 12 || gd < 1 || gd > 31) return '';
+      const j = d2j(g2d(gy, gm, gd));
+      if (!j) return '';
+      return `${String(j.jy).padStart(4, '0')}/${String(j.jm).padStart(2, '0')}/${String(j.jd).padStart(2, '0')}`;
+    }
+    function jalaliToIsoDate(raw) {
+      const norm = normalizeDateDigits(raw);
+      const m = /^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})$/.exec(norm);
+      if (!m) return null;
+      const jy = Number(m[1]);
+      const jm = Number(m[2]);
+      const jd = Number(m[3]);
+      if (jm < 1 || jm > 12 || jd < 1) return null;
+      const cal = jalCal(jy);
+      if (!cal) return null;
+      const maxDay = jm <= 6 ? 31 : jm <= 11 ? 30 : (cal.leap === 0 ? 30 : 29);
+      if (jd > maxDay) return null;
+      const jdn = j2d(jy, jm, jd);
+      if (jdn === null) return null;
+      const g = d2g(jdn);
+      return `${String(g.gy).padStart(4, '0')}-${String(g.gm).padStart(2, '0')}-${String(g.gd).padStart(2, '0')}`;
+    }
+    function renderJalaliHelperInput(bindTarget, isoValue) {
+      const val = isoToJalaliInput(String(isoValue || '').slice(0, 10));
+      return `<div class="row" style="margin-top:4px; gap:6px; flex-wrap:nowrap;">
+        <span class="badge" title="${L('تاریخ شمسی (با تایپ مستقیم به میلادی تبدیل می‌شود)', 'Jalali / Solar Hijri equivalent (editable)')}">${L('شمسی', 'Jalali')}</span>
+        <input type="text" class="mono" placeholder="1405/09/06" style="padding:4px 8px; font-size:12px;" data-efm-jalali="${esc(bindTarget)}" value="${esc(val)}" />
+      </div>`;
+    }
+
     function deepClone(obj) {
       return JSON.parse(JSON.stringify(obj ?? {}));
     }
@@ -3561,7 +3670,7 @@
         const col = d.collection;
         const typeDef = (state.contentTypes || []).find((x) => x.key === col) || {};
         const customFields = typeDef.fields || [];
-        const knownKeys = new Set(['title', 'slug', 'description', 'draft', 'image', 'hero', 'container', 'flushTop', 'template', 'sections', 'publishedAt', 'updatedAt', 'author', 'categories', 'tags', 'client', 'year', 'link', 'stack', ...customFields.map((f) => f.name)]);
+        const knownKeys = new Set(['title', 'slug', 'description', 'draft', 'noindex', 'image', 'hero', 'container', 'flushTop', 'template', 'sections', 'publishedAt', 'updatedAt', 'author', 'categories', 'tags', 'client', 'year', 'link', 'stack', ...customFields.map((f) => f.name)]);
         const extraFm = Object.fromEntries(Object.entries(fm).filter(([k]) => !knownKeys.has(k)));
 
         const customInputs = customFields.map((f) => {
@@ -3596,7 +3705,11 @@
               </div>
             </div>`;
           }
-          return `<div class="field"><label>${esc(f.label || f.name)}${reqMark}</label><input type="${f.type === 'date' ? 'date' : f.type === 'url' ? 'url' : 'text'}" class="${f.type === 'date' || f.type === 'url' ? 'mono' : ''}" data-efm-custom="${esc(f.name)}" value="${esc(f.type === 'date' ? String(val ?? '').slice(0, 10) : (val ?? ''))}" /></div>`;
+          if (f.type === 'date') {
+            const isoVal = String(val ?? '').slice(0, 10);
+            return `<div class="field"><label>${esc(f.label || f.name)}${reqMark}</label><input type="date" class="mono" data-efm-custom="${esc(f.name)}" value="${esc(isoVal)}" />${renderJalaliHelperInput(`custom:${f.name}`, isoVal)}</div>`;
+          }
+          return `<div class="field"><label>${esc(f.label || f.name)}${reqMark}</label><input type="${f.type === 'url' ? 'url' : 'text'}" class="${f.type === 'url' ? 'mono' : ''}" data-efm-custom="${esc(f.name)}" value="${esc(val ?? '')}" /></div>`;
         }).join('');
 
         const normalizedHero = fm.hero === false ? 'none' : fm.hero === true ? 'default' : String(fm.hero ?? 'none');
@@ -3648,7 +3761,13 @@
                 <button type="button" class="btn btn-sm" title="${L('انتخاب از مدیر رسانه', 'Pick from Media Manager')}" data-pick-asset="entry:image">🖼</button>
               </div>
             </div>
-            <div class="field"><label>Status</label><label class="check-pill"><input type="checkbox" data-efm-bool="draft" ${fm.draft ? 'checked' : ''} /><span>draft</span></label></div>
+            <div class="field">
+              <label>${L('وضعیت انتشار و سئو', 'Status & Indexing')}</label>
+              <div class="row">
+                <label class="check-pill"><input type="checkbox" data-efm-bool="draft" ${fm.draft ? 'checked' : ''} /><span>draft</span></label>
+                <label class="check-pill" title="${L('عدم ایندکس در گوگل، نقشه سایت و جستجو', 'Exclude from robots index, sitemap, feeds & search')}"><input type="checkbox" data-efm-bool="noindex" ${fm.noindex ? 'checked' : ''} /><span>noindex</span></label>
+              </div>
+            </div>
           </div>
 
           ${col === 'pages' ? `
@@ -3669,8 +3788,8 @@
 
           ${col === 'blog' ? `
             <div class="grid grid-3">
-              <div class="field"><label>publishedAt *</label><input type="date" class="mono" data-efm="publishedAt" value="${esc(String(fm.publishedAt || '').slice(0, 10))}" /></div>
-              <div class="field"><label>updatedAt</label><input type="date" class="mono" data-efm="updatedAt" value="${esc(String(fm.updatedAt || '').slice(0, 10))}" /></div>
+              <div class="field"><label>publishedAt *</label><input type="date" class="mono" data-efm="publishedAt" value="${esc(String(fm.publishedAt || '').slice(0, 10))}" />${renderJalaliHelperInput('efm:publishedAt', fm.publishedAt)}</div>
+              <div class="field"><label>updatedAt</label><input type="date" class="mono" data-efm="updatedAt" value="${esc(String(fm.updatedAt || '').slice(0, 10))}" />${renderJalaliHelperInput('efm:updatedAt', fm.updatedAt)}</div>
               <div class="field"><label>author</label><input type="text" data-efm="author" value="${esc(fm.author || '')}" /></div>
             </div>
             <div class="grid grid-2">
@@ -4529,11 +4648,49 @@
         }
       } else if (modalState?.type === 'entry') {
         const fm = modalState.data.frontmatter;
-        if (el.dataset.efm) fm[el.dataset.efm] = el.value;
-        else if (el.dataset.efmNum) fm[el.dataset.efmNum] = el.value === '' ? undefined : Number(el.value);
+        if (el.dataset.efmJalali) {
+          const target = el.dataset.efmJalali;
+          const [kind, fieldName] = target.split(':');
+          const pairSelector = kind === 'custom'
+            ? `[data-efm-custom="${CSS.escape(fieldName)}"]`
+            : `[data-efm="${CSS.escape(fieldName)}"]`;
+          const pairEl = document.getElementById('modal-card')?.querySelector(pairSelector);
+          const rawVal = el.value.trim();
+          if (!rawVal) {
+            fm[fieldName] = '';
+            if (pairEl) pairEl.value = '';
+            el.style.borderColor = '';
+          } else {
+            const iso = jalaliToIsoDate(rawVal);
+            if (iso) {
+              fm[fieldName] = iso;
+              if (pairEl) pairEl.value = iso;
+              el.style.borderColor = 'var(--accent)';
+            } else {
+              el.style.borderColor = 'var(--warn)';
+            }
+          }
+        } else if (el.dataset.efm) {
+          fm[el.dataset.efm] = el.value;
+          if (el.type === 'date') {
+            const jEl = document.getElementById('modal-card')?.querySelector(`[data-efm-jalali="efm:${CSS.escape(el.dataset.efm)}"]`);
+            if (jEl) {
+              jEl.value = isoToJalaliInput(el.value);
+              jEl.style.borderColor = '';
+            }
+          }
+        } else if (el.dataset.efmNum) fm[el.dataset.efmNum] = el.value === '' ? undefined : Number(el.value);
         else if (el.dataset.efmList) fm[el.dataset.efmList] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
-        else if (el.dataset.efmCustom) fm[el.dataset.efmCustom] = el.value;
-        else if (el.dataset.efmCustomNum) fm[el.dataset.efmCustomNum] = el.value === '' ? undefined : Number(el.value);
+        else if (el.dataset.efmCustom) {
+          fm[el.dataset.efmCustom] = el.value;
+          if (el.type === 'date') {
+            const jEl = document.getElementById('modal-card')?.querySelector(`[data-efm-jalali="custom:${CSS.escape(el.dataset.efmCustom)}"]`);
+            if (jEl) {
+              jEl.value = isoToJalaliInput(el.value);
+              jEl.style.borderColor = '';
+            }
+          }
+        } else if (el.dataset.efmCustomNum) fm[el.dataset.efmCustomNum] = el.value === '' ? undefined : Number(el.value);
         else if (el.dataset.efmCustomList) fm[el.dataset.efmCustomList] = el.value.split(',').map((s) => s.trim()).filter(Boolean);
         else if (el.dataset.entryBody) {
           modalState.data.body = el.value;

@@ -380,6 +380,19 @@ if (appConfig) {
   if (redirects.length > 0 && redirectErrors.length === 0) {
     add('ok', `${redirects.length} redirect rule(s) validated.`);
   }
+
+  const brokenHomeSectionRefs = Array.isArray(appConfig.ui?.homeSections)
+    ? collectSectionAssetRefs(appConfig.ui.homeSections).filter(
+        (ref) => !isExistingAssetRef(ref, rootDir, rootDir)
+      )
+    : [];
+  if (brokenHomeSectionRefs.length > 0) {
+    add(
+      'error',
+      `ui.homeSections: ${brokenHomeSectionRefs.length} image reference(s) point at files that do not exist (${brokenHomeSectionRefs.slice(0, 3).join(', ')}${brokenHomeSectionRefs.length > 3 ? ', …' : ''}).`,
+      'Fix or re-select broken image paths in `ui.homeSections` (`client/config.json`).'
+    );
+  }
 }
 
 function readEnvFileValue(filePath, key) {
@@ -532,7 +545,7 @@ for (const type of types.filter((candidate) => knownTypes.includes(candidate.key
   }
 
   let missingFiles = 0;
-  let brokenImages = 0;
+  const brokenImageRefs = [];
   let todoEntries = 0;
 
   for (const group of groups) {
@@ -549,16 +562,17 @@ for (const type of types.filter((candidate) => knownTypes.includes(candidate.key
       const { data } = parseFrontmatter(source);
       if (source.includes('[TODO:')) todoEntries += 1;
       if (typeof data.image === 'string' && !isExistingAssetRef(data.image, rootDir, groupDir)) {
-        brokenImages += 1;
+        brokenImageRefs.push(data.image);
       }
       if (Array.isArray(data.sections)) {
         for (const ref of collectSectionAssetRefs(data.sections)) {
-          if (!isExistingAssetRef(ref, rootDir, groupDir)) brokenImages += 1;
+          if (!isExistingAssetRef(ref, rootDir, groupDir)) brokenImageRefs.push(ref);
         }
       }
     }
   }
 
+  const brokenImages = brokenImageRefs.length;
   if (missingFiles > 0) {
     add(
       strictLevel,
@@ -569,7 +583,7 @@ for (const type of types.filter((candidate) => knownTypes.includes(candidate.key
   if (brokenImages > 0) {
     add(
       'error',
-      `${type.key}: ${brokenImages} frontmatter/section image reference(s) point at files that do not exist.`,
+      `${type.key}: ${brokenImages} frontmatter/section image reference(s) point at files that do not exist (${brokenImageRefs.slice(0, 3).join(', ')}${brokenImageRefs.length > 3 ? ', …' : ''}).`,
       'Fix the `image` path (`src/assets/...` or `./<file>`) or run `npm run assets:generate`.'
     );
   }

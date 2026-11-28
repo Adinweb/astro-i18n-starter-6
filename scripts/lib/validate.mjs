@@ -66,7 +66,7 @@ export const PLACEHOLDER_SOCIAL_URL_PATTERN =
   /(?:example\.com|(?:github|twitter|x|instagram|linkedin|youtube|facebook)\.com(?:\/in)?\/?$|t\.me\/?$|your[-_]?handle|username)/i;
 
 export const PLACEHOLDER_SITE_URL_PATTERN =
-  /(?:^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)|example\.(?:com|org|net))/i;
+  /(?:^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)|(?:^|[./])example\.(?:com|org|net)(?:[:/?#]|$)|\.example(?:[:/?#]|$))/i;
 
 /**
  * @param {unknown} value

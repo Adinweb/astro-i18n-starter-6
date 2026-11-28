@@ -37,6 +37,7 @@ const VALID_FONTS = Object.keys(themePresets.latinFonts);
 const VALID_RTL_FONTS = Object.keys(themePresets.rtlFonts);
 const VALID_OG_MODES = ['branded', 'artwork', 'default'];
 const VALID_THEMES = ['system', 'light', 'dark'];
+const VALID_BUSINESS_TYPES = ['Organization', 'LocalBusiness', 'ProfessionalService', 'MedicalBusiness', 'Store'];
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -62,6 +63,19 @@ Brand & Typography:
   --default-theme=<${VALID_THEMES.join('|')}>
   --logo=<path>                  Copy local light/primary logo (.svg/.png/.webp/.jpg) to public/brand/
   --logo-dark=<path>             Copy local dark-mode logo variant to public/brand/
+
+Business & Local SEO:
+  --business-type=<${VALID_BUSINESS_TYPES.join('|')}>
+  --legal-name="<Legal Name>"    Official legal entity name
+  --phone="<phone>"              Public business phone
+  --whatsapp="<number-or-url>"   WhatsApp contact number or wa.me URL
+  --business-telegram="<handle>" Business Telegram handle or URL
+  --address="<street>"           Street address
+  --city="<city>"                City name
+  --country="<country>"          Country name or code
+  --working-hours="<hours>"      Opening hours (e.g. "Sat-Wed 09:00-18:00")
+  --map-url="<https://...>"      Map embed URL
+  --geo=<lat,lng>                Coordinates (e.g. "35.6892,51.3890", empty clears)
 
 Languages & Content Modules:
   --default-locale=<code>        Set default locale (e.g. en, fa)
@@ -129,6 +143,17 @@ for (const arg of args) {
     else if (key === 'blog') opts.blog = parseBool(val, '--blog');
     else if (key === 'projects') opts.projects = parseBool(val, '--projects');
     else if (key === 'cta-page') opts.ctaPage = val;
+    else if (key === 'business-type') opts.businessType = val;
+    else if (key === 'legal-name') opts.legalName = val;
+    else if (key === 'phone') opts.phone = val;
+    else if (key === 'whatsapp') opts.whatsapp = val;
+    else if (key === 'business-telegram') opts.businessTelegram = val;
+    else if (key === 'address') opts.address = val;
+    else if (key === 'city') opts.city = val;
+    else if (key === 'country') opts.country = val;
+    else if (key === 'working-hours') opts.workingHours = val;
+    else if (key === 'map-url') opts.mapEmbedUrl = val;
+    else if (key === 'geo') opts.geo = val;
     else if (key === 'github') opts.github = val;
     else if (key === 'twitter') opts.twitter = val;
     else if (key === 'linkedin') opts.linkedin = val;
@@ -303,6 +328,48 @@ if (!registeredLocales.includes(targetLocale)) {
 if (opts.ctaPage !== undefined && !/^[a-z0-9-]+$/.test(opts.ctaPage)) {
   errors.push(`Invalid --cta-page "${opts.ctaPage}". Expected lowercase page key.`);
 }
+if (opts.businessType !== undefined && !VALID_BUSINESS_TYPES.includes(opts.businessType)) {
+  errors.push(
+    `Invalid --business-type "${opts.businessType}". Valid: ${VALID_BUSINESS_TYPES.join(', ')}.`
+  );
+}
+if (opts.mapEmbedUrl !== undefined && opts.mapEmbedUrl.trim() !== '') {
+  try {
+    const parsedMapUrl = new URL(opts.mapEmbedUrl.trim());
+    if (!['http:', 'https:'].includes(parsedMapUrl.protocol)) {
+      errors.push(`Invalid --map-url "${opts.mapEmbedUrl}". Expected http:// or https:// URL.`);
+    }
+  } catch {
+    errors.push(`Invalid --map-url "${opts.mapEmbedUrl}". Expected valid URL.`);
+  }
+}
+let parsedGeo;
+let clearGeo = false;
+if (opts.geo !== undefined) {
+  const rawGeo = opts.geo.trim();
+  if (rawGeo === '') {
+    clearGeo = true;
+  } else {
+    const parts = rawGeo.split(',').map((s) => s.trim());
+    const lat = parts.length === 2 ? Number(parts[0]) : NaN;
+    const lng = parts.length === 2 ? Number(parts[1]) : NaN;
+    if (
+      parts.length !== 2 ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      errors.push(
+        `Invalid --geo "${opts.geo}". Expected "<lat>,<lng>" with lat in [-90, 90] and lng in [-180, 180].`
+      );
+    } else {
+      parsedGeo = { lat, lng };
+    }
+  }
+}
 
 const VALID_LOGO_EXTS = new Set(['.svg', '.png', '.webp', '.jpg', '.jpeg']);
 const resolveLogoInput = (rawPath, flagName) => {
@@ -414,6 +481,26 @@ config.social = {
   instagram: opts.instagram ?? config.social?.instagram ?? '',
   telegram: opts.telegram ?? config.social?.telegram ?? '',
 };
+
+const nextBusiness = {
+  ...(config.business ?? {}),
+  ...(opts.businessType !== undefined ? { type: opts.businessType } : {}),
+  ...(opts.legalName !== undefined ? { legalName: opts.legalName.trim() } : {}),
+  ...(opts.phone !== undefined ? { phone: opts.phone.trim() } : {}),
+  ...(opts.whatsapp !== undefined ? { whatsapp: opts.whatsapp.trim() } : {}),
+  ...(opts.businessTelegram !== undefined ? { telegram: opts.businessTelegram.trim() } : {}),
+  ...(opts.address !== undefined ? { address: opts.address.trim() } : {}),
+  ...(opts.city !== undefined ? { city: opts.city.trim() } : {}),
+  ...(opts.country !== undefined ? { country: opts.country.trim() } : {}),
+  ...(opts.workingHours !== undefined ? { workingHours: opts.workingHours.trim() } : {}),
+  ...(opts.mapEmbedUrl !== undefined ? { mapEmbedUrl: opts.mapEmbedUrl.trim() } : {}),
+};
+if (clearGeo) {
+  delete nextBusiness.geo;
+} else if (parsedGeo) {
+  nextBusiness.geo = parsedGeo;
+}
+config.business = nextBusiness;
 
 writeClientConfig(config, { rootDir, sparse: true });
 console.log('✅ Updated client/config.json.');

@@ -11,7 +11,7 @@ export const GET: APIRoute = async () => {
   const routes = await getSiteRoutes();
 
   const items = routes
-    .filter((route) => route.props.entry)
+    .filter((route) => route.props.entry && !route.props.entry.data.noindex)
     .map((route) => {
       const entry = route.props.entry!;
       return {

@@ -273,8 +273,10 @@ Every `pages`, `blog`, and `projects` entry inherits `Seo.astro`, `sitemap.xml.t
 6. **Images, Alt Text & Branded OG Cards**:
    * Keep a `./<group>.png` (or custom local asset) in `image:` so Astro optimizes responsive WebP artwork. Provide descriptive `imageAlt` on visual blocks (`LandingHeroSplit`, `ParallaxSection`, `ImageGallerySection`, MDX `<Image>`).
    * Choose `brand.socialCardMode` in `client/config.json`: `"branded"` generates high-contrast `1200×630` RTL/LTR PNG cards per page/post; `"artwork"` uses the cropped entry `image`.
-7. **Drafts & Indexing Boundary**:
-   * Setting `draft: true` keeps an entry out of static routes, `sitemap.xml`, Atom feeds, and Pagefind search. Note that `baseSchema` in `src/content.config.ts` does not define a per-entry `noindex` frontmatter flag (only `404.astro` / `BaseLayout` props carry `noindex`); if a client needs live unindexed campaign pages, add an optional `noindex: z.boolean().default(false)` field to `baseSchema` and wire it in `PageView` / `sitemap.xml.ts`.
+7. **Drafts & Per-Entry `noindex` Boundary**:
+   * Setting `draft: true` keeps an entry out of static routes, `sitemap.xml`, Atom feeds, and Pagefind search.
+   * Setting `noindex: true` in any entry's frontmatter (`baseCollectionSchema` in `src/libs/content/zod-schema.ts`, synced into `.pages.yml` and Studio's Entry modal) keeps the page live at its URL while emitting `<meta name="robots" content="noindex, nofollow">` + `data-pagefind-ignore` and excluding it from `sitemap.xml` (including `hreflang` alternates), `/llms.txt`, Atom feeds, and `/api/search-dev*.json`.
 8. **Post-Edit SEO Verification**:
    * Run `npm run content:status` (translation coverage), `npm run doctor` (placeholder slugs, broken images, config, analytics/GDPR), `npm run audit:i18n`, `SITE_URL=https://yourdomain.com npm run build`, `npm run smoke` (canonical, `hreflang`, OG PNGs, JSON-LD, `/llms.txt`, redirects, single `<h1>`, Pagefind), and `npm run link:check` (internal links, `#anchors`, & exact redirect targets).
+
 

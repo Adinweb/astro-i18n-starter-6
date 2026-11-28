@@ -14,9 +14,15 @@ function escapeXml(value: string): string {
 
 export const GET: APIRoute = async () => {
   const routes = await getSiteRoutes();
+  const noindexUrls = new Set(
+    routes
+      .filter((route) => Boolean(route.props.entry?.data?.noindex))
+      .map((route) => route.props.url)
+  );
+  const indexedRoutes = routes.filter((route) => !route.props.entry?.data?.noindex);
 
   const latestModifiedByType = new Map<string, Date>();
-  for (const route of routes) {
+  for (const route of indexedRoutes) {
     let typeKey: string | null = null;
     let candidate: Date | undefined;
 
@@ -40,16 +46,17 @@ export const GET: APIRoute = async () => {
     }
   }
 
-  const urlEntries = routes
+  const urlEntries = indexedRoutes
     .map((route) => {
       const locUrl = escapeXml(absoluteUrl(route.props.url));
       const defaultAlternate = route.props.alternates[DEFAULT_LOCALE];
-      const xDefaultTag = defaultAlternate
-        ? `\n    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(absoluteUrl(defaultAlternate))}" />`
-        : '';
+      const xDefaultTag =
+        defaultAlternate && !noindexUrls.has(defaultAlternate)
+          ? `\n    <xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(absoluteUrl(defaultAlternate))}" />`
+          : '';
 
       const alternateTags = Object.entries(route.props.alternates)
-        .filter(([, altPath]) => Boolean(altPath))
+        .filter(([, altPath]) => Boolean(altPath) && !noindexUrls.has(altPath!))
         .map(([locale, altPath]) => {
           const altHref = escapeXml(absoluteUrl(altPath!));
           const hreflang = getLocaleMeta(locale as Locale)?.htmlLang ?? locale;

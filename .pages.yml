@@ -28,6 +28,10 @@ content:
         label: Draft
         type: boolean
         default: false
+      - name: noindex
+        label: Hide from Search (noindex)
+        type: boolean
+        default: false
       - name: hero
         label: Hero Variant
         type: select
@@ -95,6 +99,10 @@ content:
         label: Draft
         type: boolean
         default: false
+      - name: noindex
+        label: Hide from Search (noindex)
+        type: boolean
+        default: false
       - name: image
         label: Cover Image
         type: image
@@ -140,6 +148,10 @@ content:
         list: true
       - name: draft
         label: Draft
+        type: boolean
+        default: false
+      - name: noindex
+        label: Hide from Search (noindex)
         type: boolean
         default: false
       - name: image

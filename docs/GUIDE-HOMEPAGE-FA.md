@@ -41,7 +41,7 @@
 
 > برای یک پروژهٔ واقعی مشتری **C** را انتخاب کنید: طراحی در یک فایل `.astro` درون `client/templates/` می‌ماند (بدون دست‌زدن به هسته)،
 > متن هر زبان در MDX خودش، و بازبینی/تغییر بعدی ساده است. اگر فقط یک لندینگ ساده
-> می‌خواهید، **B** سریع‌ترین گزینه است.
+> می‌خواهید، **B** (یا تعریف اعلان‌محور `sections` / `ui.homeSections` از طریق `SectionComposer.astro`، `site:apply` و **Dev Studio** در `/__studio/`) سریع‌ترین گزینه است.
 
 ---
 
@@ -682,7 +682,7 @@ import * as m from '@/paraglide/messages';
 ```bash
 npm run upstream:check # بررسی جداسازی لایهٔ هسته و client/
 npm run lint           # messages + astro check + tsc (خطای تایپ/شمای محتوا اینجا گیر می‌افتد)
-npm test               # ۲۹ فایل تست واحد (۲۹۷ تست)
+npm test               # ۳۶ فایل تست واحد (۳۶۶ تست)
 npm run audit:i18n     # هم‌ترازی زبان‌ها، کلیدها، مسیرها، RTL
 npm run doctor:handoff # بررسی سلامت + دروازهٔ سخت‌گیرانهٔ پیش از تحویل مشتری
 npm run build          # Astro + Pagefind

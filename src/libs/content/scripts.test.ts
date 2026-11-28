@@ -831,4 +831,115 @@ describe('scripts/lib/qa-metrics.mjs & scripts/client-bootstrap.mjs', () => {
   });
 });
 
+describe('site-init.mjs LocalBusiness/Geo flags & site-reset.mjs --clean-aistudio', () => {
+  let sandboxDir = '';
+
+  beforeEach(() => {
+    sandboxDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astro-site-init-cli-'));
+    fs.copyFileSync(path.join(process.cwd(), 'app.config.json'), path.join(sandboxDir, 'app.config.json'));
+    fs.copyFileSync(path.join(process.cwd(), '.pages.yml'), path.join(sandboxDir, '.pages.yml'));
+    fs.mkdirSync(path.join(sandboxDir, 'src', 'libs', 'config'), { recursive: true });
+    fs.copyFileSync(
+      path.join(process.cwd(), 'src', 'libs', 'config', 'theme-presets.json'),
+      path.join(sandboxDir, 'src', 'libs', 'config', 'theme-presets.json')
+    );
+    fs.cpSync(path.join(process.cwd(), 'client'), path.join(sandboxDir, 'client'), { recursive: true });
+    fs.cpSync(path.join(process.cwd(), 'messages'), path.join(sandboxDir, 'messages'), { recursive: true });
+    fs.cpSync(path.join(process.cwd(), 'scripts'), path.join(sandboxDir, 'scripts'), { recursive: true });
+    const nmSrc = path.join(process.cwd(), 'node_modules');
+    const nmDest = path.join(sandboxDir, 'node_modules');
+    if (fs.existsSync(nmSrc) && !fs.existsSync(nmDest)) {
+      fs.symlinkSync(nmSrc, nmDest, 'dir');
+    }
+  });
+
+  afterEach(() => {
+    fs.rmSync(sandboxDir, { recursive: true, force: true });
+  });
+
+  it('persists sparse LocalBusiness & Geo flags in client/config.json and rejects invalid inputs', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const scriptPath = path.join(sandboxDir, 'scripts', 'site-init.mjs');
+
+    execFileSync(
+      process.execPath,
+      [
+        scriptPath,
+        '--name=Tehran Dental',
+        '--business-type=MedicalBusiness',
+        '--legal-name=Tehran Dental Clinic',
+        '--phone=+98-21-55551234',
+        '--whatsapp=+989121234567',
+        '--business-telegram=tehrandental',
+        '--address=Valiasr St, No. 120',
+        '--city=Tehran',
+        '--country=IR',
+        '--working-hours=Sat-Thu 09:00-19:00',
+        '--map-url=https://maps.google.com/?q=35.6892,51.3890',
+        '--geo=35.6892,51.3890',
+        '--skip-assets',
+        '--yes',
+      ],
+      { cwd: sandboxDir, stdio: 'pipe' }
+    );
+
+    const saved = JSON.parse(fs.readFileSync(path.join(sandboxDir, 'client', 'config.json'), 'utf-8'));
+    expect(saved.business).toEqual({
+      type: 'MedicalBusiness',
+      legalName: 'Tehran Dental Clinic',
+      phone: '+98-21-55551234',
+      whatsapp: '+989121234567',
+      telegram: 'tehrandental',
+      address: 'Valiasr St, No. 120',
+      city: 'Tehran',
+      country: 'IR',
+      workingHours: 'Sat-Thu 09:00-19:00',
+      mapEmbedUrl: 'https://maps.google.com/?q=35.6892,51.3890',
+      geo: { lat: 35.6892, lng: 51.389 },
+    });
+
+    expect(() =>
+      execFileSync(
+        process.execPath,
+        [scriptPath, '--business-type=InvalidType', '--skip-assets', '--yes'],
+        { cwd: sandboxDir, stdio: 'pipe' }
+      )
+    ).toThrow();
+
+    expect(() =>
+      execFileSync(
+        process.execPath,
+        [scriptPath, '--geo=95.0,51.0', '--skip-assets', '--yes'],
+        { cwd: sandboxDir, stdio: 'pipe' }
+      )
+    ).toThrow();
+
+    expect(() =>
+      execFileSync(
+        process.execPath,
+        [scriptPath, '--map-url=javascript:alert(1)', '--skip-assets', '--yes'],
+        { cwd: sandboxDir, stdio: 'pipe' }
+      )
+    ).toThrow();
+  }, 20000);
+
+  it('removes dev-only public/assets/aistudio only when --clean-aistudio is passed to site-reset.mjs', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const aistudioDir = path.join(sandboxDir, 'public', 'assets', 'aistudio');
+    fs.mkdirSync(aistudioDir, { recursive: true });
+    fs.writeFileSync(path.join(aistudioDir, 'note.md'), '# dev note\n', 'utf-8');
+
+    const resetPath = path.join(sandboxDir, 'scripts', 'site-reset.mjs');
+    execFileSync(process.execPath, [resetPath, '--yes'], { cwd: sandboxDir, stdio: 'pipe' });
+    expect(fs.existsSync(aistudioDir)).toBe(true);
+
+    execFileSync(process.execPath, [resetPath, '--yes', '--clean-aistudio'], {
+      cwd: sandboxDir,
+      stdio: 'pipe',
+    });
+    expect(fs.existsSync(aistudioDir)).toBe(false);
+  });
+});
+
+
 

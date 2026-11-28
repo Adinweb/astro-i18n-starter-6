@@ -130,6 +130,8 @@ const schema = [
   url={url}
   alternates={alternates}
   hero
+  noindex={Boolean(entry.data.noindex)}
+  noPagefind={Boolean(entry.data.noindex)}
 >
   <PageHero slot="hero" image={image} persistKey={image ? `blog:${group}` : 'default'}>
     <BlogPostHeroContent

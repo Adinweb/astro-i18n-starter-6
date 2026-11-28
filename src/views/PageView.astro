@@ -117,6 +117,8 @@ const entryDir = `src/content/pages/${group}`;
       hero={isDefaultHero}
       flushTop={!isDefaultHero && entry.data.flushTop}
       canvas={isCanvas}
+      noindex={Boolean(entry.data.noindex)}
+      noPagefind={Boolean(entry.data.noindex)}
     >
       {isDefaultHero && (
         <PageHero

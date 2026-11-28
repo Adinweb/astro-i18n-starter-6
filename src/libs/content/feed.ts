@@ -23,7 +23,9 @@ function escapeXml(value: string): string {
 export async function buildLocaleAtomFeed(locale: Locale): Promise<Response> {
   const meta = getLocaleMeta(locale);
   const localizedSiteName = resolveLocalizedSiteName(siteConfig, locale, m.site_name({}, { locale }));
-  const posts = getSortedLocaleEntries(await getCollection('blog'), locale);
+  const posts = getSortedLocaleEntries(await getCollection('blog'), locale).filter(
+    (post) => !post.data.noindex
+  );
 
   const entries = posts
     .map((post) => {

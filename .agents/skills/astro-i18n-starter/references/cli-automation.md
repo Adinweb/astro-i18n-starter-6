@@ -26,9 +26,12 @@ npm run site:init -- [--name="Acme Studio"] [--short-name="Acme"] [--desc="..."]
   [--og-mode=branded|artwork|default] [--default-theme=system|light|dark] \
   [--default-locale=<code>] [--single-lang|--multi-lang] [--blog=true|false] [--projects=true|false] \
   [--cta-page=<key>] [--github=...] [--twitter=...] [--linkedin=...] [--instagram=...] [--telegram=...] \
-  [--skip-assets] [--yes]
+  [--business-type=Organization|LocalBusiness|ProfessionalService|MedicalBusiness|Store] \
+  [--legal-name="..."] [--phone="..."] [--whatsapp="..."] [--business-telegram="..."] \
+  [--address="..."] [--city="..."] [--country="..."] [--working-hours="..."] \
+  [--map-url=https://...] [--geo=<lat,lng>] [--skip-assets] [--yes]
 ```
-* Updates `client/config.json` (sparse diff against `app.config.json`), applies optional industry `--blueprint` presets (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal` from `scripts/lib/blueprints.mjs`, each injecting domain `content.types` and invoking `content:sync` without sample data), validates & copies optional `--logo` / `--logo-dark` assets into `public/brand/logo*` (passing empty `--logo=` clears the uploaded logo), keeps `site_description` synchronized in `client/messages/<targetLocale>.json`, optionally switches default/solo locale mode in `client/locales.json`, and refreshes brand icons / `og-default.png` unless `--skip-assets` is passed. Runs interactively when stdin is a TTY or headlessly with `--yes`.
+* Updates `client/config.json` (sparse diff against `app.config.json`), applies optional industry `--blueprint` presets (`corporate`, `agency`, `portfolio`, `medical`, `catalog`, `legal` from `scripts/lib/blueprints.mjs`, each injecting domain `content.types` and invoking `content:sync` without sample data), optionally populates `business` Local SEO identity & coordinates (`--business-type`, `--legal-name`, `--phone`, `--whatsapp`, `--business-telegram`, `--address`, `--city`, `--country`, `--working-hours`, `--map-url`, `--geo=<lat,lng>`), validates & copies optional `--logo` / `--logo-dark` assets into `public/brand/logo*` (passing empty `--logo=` clears the uploaded logo), keeps `site_description` synchronized in `client/messages/<targetLocale>.json`, optionally switches default/solo locale mode in `client/locales.json`, and refreshes brand icons / `og-default.png` unless `--skip-assets` is passed. Runs interactively when stdin is a TTY or headlessly with `--yes`.
 * **One-Shot Declarative Site Provisioner (`site:apply`)**:
   ```bash
   npm run site:apply -- --spec=site-spec.json [--dry-run] [--skip-assets] [--json]
@@ -36,16 +39,17 @@ npm run site:init -- [--name="Acme Studio"] [--short-name="Acme"] [--desc="..."]
   Validates and applies a complete JSON site spec in a single transaction: `blueprint`, `site`, `brand` (incl. `logo` copying to `public/brand/`), `business`, `social`, `analytics`, `cookies`, `api`, `redirects`, `ui` (incl. `navigation` and `homeSections`), `content.types` (`content:sync`), `messages`, `pages` (with `nav` merge and `sections`), `entries` across built-in/custom collections, `locale` switches (`defaultLocale`, `solo`), automatic `i18n:sync-keys`, and brand/cover assets.
 * **Resetting a workspace between client projects (`site:reset`)**:
   ```bash
-  npm run site:reset -- --yes [--clean-starter]
+  npm run site:reset -- --yes [--clean-starter] [--clean-aistudio]
   ```
-  Resets `client/config.json` and `client/cms.json` back to `{}` and cleans generated `deploy/` redirect snippets and `public/brand/` logos (`--clean-starter` also invokes `starter:seed --clean` to return `src/content/` to clean minimal base).
+  Resets `client/config.json` and `client/cms.json` back to `{}` and cleans generated `deploy/` redirect snippets and `public/brand/` logos (`--clean-starter` also invokes `starter:seed --clean` to return `src/content/` to clean minimal base; `--clean-aistudio` also removes the dev-only `public/assets/aistudio/` reference folder).
 
 * **One-Step Client Project Bootstrap (`client:bootstrap`)**:
   ```bash
   npm run client:bootstrap -- [--reset] [--seed=all|clean|pages] [--name="Acme Studio"] [--blueprint=corporate|agency|...] \
+    [--business-type=LocalBusiness] [--phone="..."] [--city="..."] [--geo=<lat,lng>] \
     [--logo=logo.svg] [--from-logo=logo.svg] [--site-url=https://acme.com] [--contact-url=...] [--turnstile-key=...] [--handoff] [--yes]
   ```
-  Orchestrates workspace reset/seeding, `site:init`, `.env` updates (`SITE_URL`, `PUBLIC_API_BASE_URL`, `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL`, `PUBLIC_TURNSTILE_SITE_KEY`, `PUBLIC_WEB3FORMS_KEY`), logo-derived favicon/PWA icon generation, and `doctor` / `doctor --handoff` in one command.
+  Orchestrates workspace reset/seeding, `site:init` (passing through branding, blueprint, social, and `business`/`--geo` flags), `.env` updates (`SITE_URL`, `PUBLIC_API_BASE_URL`, `PUBLIC_CONTACT_API_URL`, `PUBLIC_NEWSLETTER_API_URL`, `PUBLIC_TURNSTILE_SITE_KEY`, `PUBLIC_WEB3FORMS_KEY`), logo-derived favicon/PWA icon generation, and `doctor` / `doctor --handoff` in one command.
 
 ### 2.1 Static Pages (`new:page`)
 ```bash

@@ -91,6 +91,8 @@ const highlights = [
   alternates={alternates}
   flushTop
   canvas
+  noindex={Boolean(entry.data.noindex)}
+  noPagefind={Boolean(entry.data.noindex)}
 >
   {
     declarativeSections.length > 0 ? (

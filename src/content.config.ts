@@ -37,6 +37,7 @@ const BUILT_IN_PROJECT_RESERVED = new Set([
   'categories',
   'tags',
   'draft',
+  'noindex',
   'client',
   'year',
   'link',
@@ -55,6 +56,7 @@ const BUILT_IN_BLOG_RESERVED = new Set([
   'categories',
   'tags',
   'draft',
+  'noindex',
   'template',
 ]);
 

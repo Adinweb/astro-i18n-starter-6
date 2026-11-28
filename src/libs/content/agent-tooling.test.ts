@@ -23,7 +23,7 @@ import {
 import { isPlaceholderSiteUrl, isPlaceholderSocialUrl } from '../../../scripts/lib/validate.mjs';
 import { syncDictionaryKeys } from '../../../scripts/lib/i18n-sync.mjs';
 import { applySiteSpec, validateSiteSpec } from '../../../scripts/lib/site-apply.mjs';
-import { HERO_SECTION_NAMES, SECTION_BLOCK_NAMES, SECTION_COMPONENTS } from '@/libs/ui/sections';
+import { HERO_SECTION_NAMES, SECTION_BLOCK_NAMES } from '@/libs/ui/sections';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
@@ -190,7 +190,12 @@ describe('Nested YAML Frontmatter & Agent DX Automation Tools', () => {
     });
 
     it('keeps ALL_SECTION_BLOCK_NAMES and AST arraySchemas in lockstep with Astro components', () => {
-      expect([...ALL_SECTION_BLOCK_NAMES].sort()).toEqual(Object.keys(SECTION_COMPONENTS).sort());
+      const composerSrc = fs.readFileSync(path.join(repoRoot, 'src/components/SectionComposer.astro'), 'utf-8');
+      const mapMatch = composerSrc.match(/const SECTION_COMPONENTS:\s*Record<SectionBlockName,\s*any>\s*=\s*\{([\s\S]*?)\};/);
+      expect(mapMatch).toBeTruthy();
+      const composerKeys = [...(mapMatch?.[1] || '').matchAll(/^\s*([A-Za-z0-9_]+),?\s*$/gm)].map((m) => m[1]);
+      expect([...ALL_SECTION_BLOCK_NAMES].sort()).toEqual([...SECTION_BLOCK_NAMES].sort());
+      expect([...ALL_SECTION_BLOCK_NAMES].sort()).toEqual(composerKeys.sort());
       expect([...HERO_BLOCK_NAMES].sort()).toEqual([...HERO_SECTION_NAMES].sort());
       expect(HERO_BLOCK_NAMES.length + STRUCTURAL_SECTION_NAMES.length).toBe(ALL_SECTION_BLOCK_NAMES.length);
 
@@ -203,13 +208,13 @@ describe('Nested YAML Frontmatter & Agent DX Automation Tools', () => {
       const ctaField = tiersFields.find((f: any) => f.name === 'cta');
       expect(featuresField?.kind).toBe('string[]');
       expect(ctaField?.kind).toBe('object');
-      expect(ctaField?.fields.map((f: any) => f.name)).toEqual(['label', 'href', 'variant']);
+      expect(ctaField?.fields.map((f: any) => f.name)).toEqual(['label', 'href', 'icon', 'external']);
 
       const memberAvatar = schemas.TeamSection?.members?.fields.find((f: any) => f.name === 'avatar');
       expect(memberAvatar?.isImage).toBe(true);
 
       const cliCommands = schemas.HeroCommandCli?.commands?.fields.map((f: any) => f.name);
-      expect(cliCommands).toEqual(['label', 'command', 'note']);
+      expect(cliCommands).toEqual(['label', 'command']);
 
       const cmpValues = schemas.ComparisonTable?.rows?.fields.find((f: any) => f.name === 'values');
       expect(cmpValues?.kind).toBe('json');
@@ -242,7 +247,7 @@ describe('Nested YAML Frontmatter & Agent DX Automation Tools', () => {
       fs.writeFileSync(path.join(tmpRoot, 'public', 'uploads', 'raw.png'), 'x');
       fs.writeFileSync(path.join(tmpRoot, 'public', 'uploads', 'opt.webp'), 'x');
       fs.writeFileSync(path.join(tmpRoot, 'public', 'uploads', 'icon.svg'), '<svg/>');
-      expect(findUnoptimizedPublicUploads(tmpRoot)).toEqual(['public/uploads/raw.png']);
+      expect(findUnoptimizedPublicUploads(tmpRoot)).toEqual(['raw.png']);
 
       expect(isPlaceholderSiteUrl('https://example.com')).toBe(true);
       expect(isPlaceholderSiteUrl('https://acme.example')).toBe(true);

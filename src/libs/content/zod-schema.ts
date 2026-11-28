@@ -78,6 +78,7 @@ export const baseCollectionSchema = ({ image }: { image: ImageFunction }) =>
     categories: z.array(taxonomyKey).default([]),
     tags: z.array(taxonomyKey).default([]),
     draft: z.boolean().default(false),
+    noindex: z.boolean().default(false),
     template: z.string().min(1).optional(),
   });
 
@@ -174,6 +175,7 @@ const BASE_SCHEMA_KEYS = new Set([
   'categories',
   'tags',
   'draft',
+  'noindex',
   'template',
 ]);
 
